@@ -135,6 +135,10 @@ class ELRLR_Parameter(Parameter):
             for name, fidelity in zip(self.names, fidelities):
                 print('{}: {:.3f}'.format(name, fidelity))
 
+        if self.print:
+            for name, fidelity in zip(self.names, fidelities):
+                print('{}: {:.3f}'.format(name, fidelity))
+
         if self.return_traces:
             return fidelities + (traces, traces_AWG)
         else:
@@ -179,7 +183,7 @@ class T1_Parameter(Parameter):
 
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names.copy()
-        self.shapes = ((),)
+        self.shapes = ((),()    )
         if self.return_traces:
             self.names += self.pulsemaster.acquisition.names
             self.labels += self.pulsemaster.acquisition.labels
