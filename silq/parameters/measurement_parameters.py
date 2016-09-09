@@ -2,7 +2,7 @@ from time import sleep
 
 import qcodes as qc
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from personal.tools import analysis
+from silq.analysis import analysis
 
 
 class ELR_Parameter(Parameter):
@@ -36,7 +36,8 @@ class ELR_Parameter(Parameter):
         self.pulsemaster.acquisition_channels('AC')
         self.pulsemaster.setup(average_mode='none')
 
-        self.names = ['up_proportion', 'fidelity_empty', 'fidelity_load', 'fidelity_read']
+        self.names = ['up_proportion', 'fidelity_empty', 'fidelity_load',
+                      'fidelity_read' 'num_traces_loaded']
         self.labels = self.names.copy()
         self.shapes = ((), (), (), ())
         if self.return_traces:
@@ -167,7 +168,7 @@ class T1_Parameter(Parameter):
         self.pulsemaster.acquisition_channels('AC')
         self.pulsemaster.setup(average_mode='none')
 
-        self.names = ['up_proportion']
+        self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names.copy()
         self.shapes = ((),)
         if self.return_traces:
@@ -177,14 +178,13 @@ class T1_Parameter(Parameter):
 
     def get(self):
         traces, traces_AWG = self.pulsemaster.acquisition()
-        up_proportion = analysis.find_up_proportion(
+        up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=traces,
-            threshold_voltage=self.threshold_voltage,
-            return_mean=True)
+            threshold_voltage=self.threshold_voltage)
         if self.return_traces:
-            return up_proportion, traces, traces_AWG
+            return up_proportion, num_traces_loaded, traces, traces_AWG
         else:
-            return up_proportion,
+            return up_proportion, num_traces_loaded
 
     def set(self, tau):
         self.tau = tau
