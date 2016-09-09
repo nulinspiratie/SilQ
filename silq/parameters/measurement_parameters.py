@@ -3,7 +3,7 @@ from time import sleep
 import qcodes as qc
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from silq.analysis import analysis
-
+from silq.tools import data_tools
 
 class ELR_Parameter(Parameter):
 
@@ -85,13 +85,9 @@ class ELRLR_Parameter(Parameter):
 
         self._meta_attrs.extend(['stages'])
 
-    def setup(self, samples=100, t_start=0.1,
-              return_traces=False, print=False):
+    def setup(self, samples=100, return_traces=False, print=False):
         self.return_traces = return_traces
         self.print = print
-
-        self.start_point = round(t_start * 1e-3 * \
-                           self.pulsemaster.digitizer_sample_rate())
 
         self.pulsemaster.stages(self.stages)
 
@@ -128,12 +124,7 @@ class ELRLR_Parameter(Parameter):
     def get(self):
         traces, traces_AWG = self.pulsemaster.acquisition()
         self.trace_segments = self.segment_traces(traces)
-        fidelities = analysis.analyse_ELRLR(trace_segments=self.trace_segments,
-                                            start_point=self.start_point)
-
-        if self.print:
-            for name, fidelity in zip(self.names, fidelities):
-                print('{}: {:.3f}'.format(name, fidelity))
+        fidelities = analysis.analyse_ELRLR(trace_segments=self.trace_segments)
 
         if self.print:
             for name, fidelity in zip(self.names, fidelities):
@@ -164,13 +155,11 @@ class T1_Parameter(Parameter):
 
         self._meta_attrs.extend(['stages'])
 
-    def setup(self, samples=50, t_start = 0.1,
-              return_traces=False, threshold_voltage=None):
+    def setup(self, samples=50, return_traces=False, threshold_voltage=None,
+              data_manager=None):
         self.threshold_voltage = threshold_voltage
         self.return_traces = return_traces
-
-        self.start_point = round(t_start * 1e-3 * \
-                                 self.pulsemaster.digitizer_sample_rate())
+        self.data_manager = data_manager
 
         self.pulsemaster.stages(self.stages)
         self.pulsemaster.sequence(['empty', 'load', 'read'])
@@ -183,7 +172,7 @@ class T1_Parameter(Parameter):
 
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names.copy()
-        self.shapes = ((),()    )
+        self.shapes = ((),)
         if self.return_traces:
             self.names += self.pulsemaster.acquisition.names
             self.labels += self.pulsemaster.acquisition.labels
@@ -193,8 +182,22 @@ class T1_Parameter(Parameter):
         traces, traces_AWG = self.pulsemaster.acquisition()
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=traces,
-            threshold_voltage=self.threshold_voltage,
-            start_point=self.start_point)
+            threshold_voltage=self.threshold_voltage)
+
+        # Store raw traces if raw_data_manager is provided
+        if self.data_manager is not None:
+            # Pause until data_manager is done measuring
+            while self.data_manager.ask('get_measuring'):
+                sleep(0.01)
+
+            self.data_set = data_tools.create_raw_data_set(
+                name='tau_{}'.format(round(self.tau)),
+                data_manager=self.data_manager,
+                shape=self.shape,
+                formatter=self.formatter)
+            data_tools.store_data(data_manager=self.data_manager,
+                                  result=traces)
+
         if self.return_traces:
             return up_proportion, num_traces_loaded, traces, traces_AWG
         else:
