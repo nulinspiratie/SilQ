@@ -85,9 +85,13 @@ class ELRLR_Parameter(Parameter):
 
         self._meta_attrs.extend(['stages'])
 
-    def setup(self, samples=100, return_traces=False, print=False):
+    def setup(self, samples=100, t_start=0.1,
+              return_traces=False, print=False):
         self.return_traces = return_traces
         self.print = print
+
+        self.start_point = round(t_start * 1e-3 * \
+                           self.pulsemaster.digitizer_sample_rate())
 
         self.pulsemaster.stages(self.stages)
 
@@ -124,7 +128,8 @@ class ELRLR_Parameter(Parameter):
     def get(self):
         traces, traces_AWG = self.pulsemaster.acquisition()
         self.trace_segments = self.segment_traces(traces)
-        fidelities = analysis.analyse_ELRLR(trace_segments=self.trace_segments)
+        fidelities = analysis.analyse_ELRLR(trace_segments=self.trace_segments,
+                                            start_point=self.start_point)
 
         if self.print:
             for name, fidelity in zip(self.names, fidelities):
@@ -155,9 +160,13 @@ class T1_Parameter(Parameter):
 
         self._meta_attrs.extend(['stages'])
 
-    def setup(self, samples=50, return_traces=False, threshold_voltage=None):
+    def setup(self, samples=50, t_start = 0.1,
+              return_traces=False, threshold_voltage=None):
         self.threshold_voltage = threshold_voltage
         self.return_traces = return_traces
+
+        self.start_point = round(t_start * 1e-3 * \
+                                 self.pulsemaster.digitizer_sample_rate())
 
         self.pulsemaster.stages(self.stages)
         self.pulsemaster.sequence(['empty', 'load', 'read'])
@@ -180,7 +189,8 @@ class T1_Parameter(Parameter):
         traces, traces_AWG = self.pulsemaster.acquisition()
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=traces,
-            threshold_voltage=self.threshold_voltage)
+            threshold_voltage=self.threshold_voltage,
+            start_point=self.start_point)
         if self.return_traces:
             return up_proportion, num_traces_loaded, traces, traces_AWG
         else:
