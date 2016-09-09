@@ -97,18 +97,21 @@ def analyse_read(traces, threshold_voltage=None, plot=False, return_fidelity=Tru
     if threshold_voltage is None:
         print('Could not find two peaks for empty and load state')
         # Return the full trace length as mean if return_mean=True
-        return 0, traces.shape[1] if return_fidelity else []
+        return 0, 0, traces.shape[1] if return_fidelity else []
 
     # Filter out the traces that start off loaded
     idx_begin_loaded = edge_voltage(traces, edge='begin', state='low',
                                          threshold_voltage=threshold_voltage)
     traces_loaded = traces[idx_begin_loaded]
+    num_traces_loaded = sum(idx_begin_loaded)
 
     if not any(idx_begin_loaded):
-        print('None of the load traces start with an loaded state')
-        return float('nan'), traces.shape[1] if return_fidelity else []
+        print('None of the load traces start with a loaded state')
+        return (float('nan'), num_traces_loaded,
+               traces.shape[1] if return_fidelity else [])
 
-    up_proportion = find_up_proportion(traces_loaded, threshold_voltage=threshold_voltage)
+    up_proportion = find_up_proportion(traces_loaded,
+                                       threshold_voltage=threshold_voltage)
 
     # Filter out the traces that at some point have conductance
     # Assume that if there is current, the electron must have been up
@@ -116,9 +119,10 @@ def analyse_read(traces, threshold_voltage=None, plot=False, return_fidelity=Tru
                                   for trace in traces_loaded
                                   if np.max(trace) > threshold_voltage]
     if return_fidelity:
-        return up_proportion, 1 - np.mean(final_conductance_idx_list)/ traces.shape[1]
+        return (up_proportion, num_traces_loaded,
+                1 - np.mean(final_conductance_idx_list)/ traces.shape[1])
     else:
-        return up_proportion, final_conductance_idx_list
+        return (up_proportion, num_traces_loaded, final_conductance_idx_list)
 
 def analyse_load(traces, plot=False, return_idx=False):
     idx_list = np.arange(len(traces))
@@ -185,9 +189,11 @@ def analyse_empty(traces, plot=False, return_idx=False):
 def analyse_ELR(trace_segments, plot=False):
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
     fidelity_load = analyse_load(trace_segments['load'], plot=plot)
-    up_proportion, fidelity_read = analyse_read(trace_segments['read'], plot=plot)
+    up_proportion, num_traces_loaded, fidelity_read = \
+        analyse_read(trace_segments['read'], plot=plot)
 
-    return up_proportion, fidelity_empty, fidelity_load, fidelity_read
+    return up_proportion, fidelity_empty, fidelity_load, fidelity_read, \
+           num_traces_loaded
 
 def analyse_ELRLR(trace_segments, plot=False):
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
@@ -198,8 +204,10 @@ def analyse_ELRLR(trace_segments, plot=False):
     if threshold_voltage is None:
         up_proportion, fidelity_read, dark_counts, difference_up_dark = [0, 0, 0, 0]
     else:
-        up_proportion, fidelity_read = analyse_read(trace_segments['read1'], threshold_voltage=threshold_voltage)
-        dark_counts, _ = analyse_read(trace_segments['read2'], threshold_voltage=threshold_voltage)
+        up_proportion, _, fidelity_read = \
+            analyse_read(trace_segments['read1'], threshold_voltage=threshold_voltage)
+        dark_counts, _, _ = analyse_read(trace_segments['read2'],
+                                      threshold_voltage=threshold_voltage)
         difference_up_dark = up_proportion - dark_counts
 
     return (fidelity_empty, fidelity_load, fidelity_read,
