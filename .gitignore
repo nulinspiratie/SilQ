@@ -1,2 +1,5 @@
 *.xml
 .idea
+lecroy_driver
+*-checkpoint.ipynb
+__pycache__
