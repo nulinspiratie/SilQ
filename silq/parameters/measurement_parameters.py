@@ -4,6 +4,8 @@ import qcodes as qc
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from silq.analysis import analysis
 from silq.tools import data_tools
+from qcodes.data import hdf5_format
+h5fmt = hdf5_format.HDF5Format()
 
 class ELR_Parameter(Parameter):
 
@@ -83,7 +85,11 @@ class ELRLR_Parameter(Parameter):
         self.stages = {stage['name']: stage for stage in
                        [self.stage_empty, self.stage_load, self.stage_read]}
 
-        self._meta_attrs.extend(['stages'])
+        self.return_traces = None
+        self.start_point = None
+        self.pts = None
+        self._meta_attrs.extend(['stages', 'return_traces', 'start_point',
+                                 'pts'])
 
     def setup(self, samples=100, t_start=0.1,
               return_traces=False, print=False):
@@ -158,14 +164,22 @@ class T1_Parameter(Parameter):
         self.stages = {stage['name']: stage for stage in
                        [self.stage_empty, self.stage_load, self.stage_read]}
 
-        self._meta_attrs.extend(['stages'])
+        self.threshold_voltage = None
+        self.return_traces = None
+        self.data_manager = None
+        self.formatter = None
+        self.start_point = None
+
+        self._meta_attrs.extend(['stages', 'threshold_voltage',
+                                 'return_traces', 'start_point'])
 
     def setup(self, samples=50, t_start = 0.1,
               return_traces=False, threshold_voltage=None,
-              data_manager=None):
+              data_manager=None, formatter=h5fmt):
         self.threshold_voltage = threshold_voltage
         self.return_traces = return_traces
         self.data_manager = data_manager
+        self.formatter = formatter
 
         self.start_point = round(t_start * 1e-3 * \
                                  self.pulsemaster.digitizer_sample_rate())
@@ -181,7 +195,7 @@ class T1_Parameter(Parameter):
 
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names.copy()
-        self.shapes = ((),)
+        self.shapes = ((), ())
         if self.return_traces:
             self.names += self.pulsemaster.acquisition.names
             self.labels += self.pulsemaster.acquisition.labels
@@ -191,7 +205,8 @@ class T1_Parameter(Parameter):
         traces, traces_AWG = self.pulsemaster.acquisition()
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=traces,
-            threshold_voltage=self.threshold_voltage)
+            threshold_voltage=self.threshold_voltage,
+            start_point=self.start_point)
 
         # Store raw traces if raw_data_manager is provided
         if self.data_manager is not None:
@@ -202,10 +217,10 @@ class T1_Parameter(Parameter):
             self.data_set = data_tools.create_raw_data_set(
                 name='tau_{}'.format(round(self.tau)),
                 data_manager=self.data_manager,
-                shape=self.shape,
+                shape=traces.shape,
                 formatter=self.formatter)
             data_tools.store_data(data_manager=self.data_manager,
-                                  result=traces)
+                                  result=   traces)
 
         if self.return_traces:
             return up_proportion, num_traces_loaded, traces, traces_AWG
