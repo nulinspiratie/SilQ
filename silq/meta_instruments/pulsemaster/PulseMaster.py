@@ -69,7 +69,7 @@ class PulseMaster(Instrument):
                            )
         self.add_parameter(name='digitizer_sample_rate',
                            parameter_class=ManualParameter,
-                           initial_value=1e6,
+                           initial_value=2e5,
                            vals=vals.Numbers()
                            )
 
