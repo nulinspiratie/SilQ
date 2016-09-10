@@ -92,9 +92,12 @@ class ELRLR_Parameter(Parameter):
                                  'pts'])
 
     def setup(self, samples=100, t_start=0.1,
-              return_traces=False, print=False):
+              return_traces=False, print=False,
+              data_manager=None, formatter=h5fmt):
         self.return_traces = return_traces
         self.print = print
+        self.data_manager = data_manager
+        self.formatter = formatter
 
         self.start_point = round(t_start * 1e-3 * \
                            self.pulsemaster.digitizer_sample_rate())
@@ -136,6 +139,20 @@ class ELRLR_Parameter(Parameter):
         self.trace_segments = self.segment_traces(traces)
         fidelities = analysis.analyse_ELRLR(trace_segments=self.trace_segments,
                                             start_point=self.start_point)
+
+        # Store raw traces if raw_data_manager is provided
+        if self.data_manager is not None:
+            # Pause until data_manager is done measuring
+            while self.data_manager.ask('get_measuring'):
+                sleep(0.01)
+
+            self.data_set = data_tools.create_raw_data_set(
+                name='ELRLR',
+                data_manager=self.data_manager,
+                shape=traces.shape,
+                formatter=self.formatter)
+            data_tools.store_data(data_manager=self.data_manager,
+                                  result=traces)
 
         if self.print:
             for name, fidelity in zip(self.names, fidelities):
@@ -215,12 +232,12 @@ class T1_Parameter(Parameter):
                 sleep(0.01)
 
             self.data_set = data_tools.create_raw_data_set(
-                name='tau_{}'.format(round(self.tau)),
+                name='tau_{:d}'.format(int(round(self.tau))),
                 data_manager=self.data_manager,
                 shape=traces.shape,
                 formatter=self.formatter)
             data_tools.store_data(data_manager=self.data_manager,
-                                  result=   traces)
+                                  result=traces)
 
         if self.return_traces:
             return up_proportion, num_traces_loaded, traces, traces_AWG
