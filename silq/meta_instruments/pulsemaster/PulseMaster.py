@@ -157,7 +157,7 @@ class PulseMaster(Instrument):
         samples_per_record = int(16 * round(float(sample_rate * read_length * 1e-3) / 16))
 
         # TODO proper automatic buffer time out
-        buffer_timeout = 20000  # max(20000, 2.5*total_duration)
+        buffer_timeout = 40000  # max(20000, 2.5*total_duration)
 
         self.ATS_controller.average_mode(average_mode)
         self.ATS_controller.update_acquisition_kwargs(samples_per_record=samples_per_record,
