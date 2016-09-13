@@ -327,9 +327,9 @@ class DC_Parameter(Parameter):
         self.pulsemaster.acquisition_channels('A')
         self.pulsemaster.setup(average_mode='point')
 
-        self.names = self.pulsemaster.acquisition.names
-        self.labels = self.pulsemaster.acquisition.labels
-        self.units = self.pulsemaster.acquisition.units
+        # self.names = self.pulsemaster.acquisition.names
+        # self.labels = self.pulsemaster.acquisition.labels
+        # self.units = self.pulsemaster.acquisition.units
 
         self.pulsemaster.start()
 
