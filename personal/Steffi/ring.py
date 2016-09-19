@@ -6,17 +6,20 @@ class Ring():
         self.weight = weight
         self.owner = owner
 
-    def impressPeople(self):
+    def impress(self, value):
+        shiny = value
         return shiny
 
-    def
+    def own(self):
+        self.owner = slave
+        return
+
 
 class SauronsRing(Ring):
     def __init__(self, name, diameter, material, weight, inscription, owner,  **kwargs):
         super().__init__(name, diameter, material, weight, **kwargs)
 
         self.inscription = inscription
-        self.owner = owner
 
 
     def ruleThemAll(self, allhumans):
