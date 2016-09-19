@@ -27,7 +27,7 @@ The measurement software SilQ and QCodes can be imported as a package, just like
 To use the measurement software in your script, use the following line
 ```
 import qcodes as qc
-import silq as sq
+import silq
 ```
 
 
