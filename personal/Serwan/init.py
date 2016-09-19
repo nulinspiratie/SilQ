@@ -12,4 +12,3 @@ import sys
 #     with open(filename, "r") as fh:
 #         exec(fh.read()+"\n", globals, locals)
 
-x = 2
