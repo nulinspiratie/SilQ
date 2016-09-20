@@ -1,3 +1,5 @@
+from silq.analysis import analysis, fit_toolbox
+
 class T1_Measurement:
     def __init__(self, location, B0, skip=[]):
         self.B0 = B0
