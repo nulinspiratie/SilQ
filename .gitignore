@@ -3,3 +3,5 @@
 lecroy_driver
 *-checkpoint.ipynb
 __pycache__
+data
+~$*
