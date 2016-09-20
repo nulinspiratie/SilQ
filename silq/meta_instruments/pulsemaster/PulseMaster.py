@@ -96,13 +96,36 @@ class PulseMaster(Instrument):
 
         pulse = self.sequence()[0]
         self.pulseblaster.send_instruction(0, 'continue', 0, marker_cycles)
-        start = self.pulseblaster.send_instruction(0, 'continue', 0,
-                                                   self.stages()[pulse]['duration'] * ms - marker_cycles)
+
+        # Check if delay is close to limit of 'continue' command (2**32).
+        # If it is, use command 'long_delay' instead'
+        duration = np.round(self.stages()[pulse]['duration'] * ms - marker_cycles)
+        if duration < 1e9:
+            start = self.pulseblaster.send_instruction(
+                0, 'continue', 0, duration)
+        else:
+            start = self.pulseblaster.send_instruction(
+                0, 'continue', 0, marker_cycles)
+            duration = round(duration - marker_cycles)
+            divisor = int(np.ceil(duration/1e9))
+            delay = int(duration / divisor)
+            self.pulseblaster.send_instruction(
+                0, 'long_delay', divisor, delay)
 
         for pulse in self.full_sequence()[1:]:
             self.pulseblaster.send_instruction(1, 'continue', 0, marker_cycles)
-            self.pulseblaster.send_instruction(0, 'continue', 0,
-                                               self.stages()[pulse]['duration'] * ms - marker_cycles)
+            duration = self.stages()[pulse]['duration'] * ms - marker_cycles
+            if duration < 1e9:
+                self.pulseblaster.send_instruction(
+                    0, 'continue', 0, duration)
+            else:
+                self.pulseblaster.send_instruction(
+                    0, 'continue', 0, marker_cycles)
+                duration = round(duration - marker_cycles)
+                divisor = int(np.ceil(duration/1e9))
+                delay = int(duration / divisor)
+                self.pulseblaster.send_instruction(
+                    0, 'long_delay', divisor, delay)
 
         self.pulseblaster.send_instruction(1, 'branch', start, marker_cycles)
 
