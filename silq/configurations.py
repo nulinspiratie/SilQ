@@ -12,10 +12,14 @@ _configurations = {
     'Serwan': {'folder': r"personal\Serwan\init",
                'macs': [113780617482],
                'modes': {
-                   'test1':{'select':['num2', 'num3']},
-                   'test2':{'ignore':['imports', 'num2']},
-                   'test3':{}
+                   'test1': {'select': ['num2', 'num3']},
+                   'test2': {'ignore': ['imports', 'num2']},
+                   'test3': {}
                }},
     'EWJN': {'folder': r"experiments\EWJN\init",
-             'macs': []}
+             'macs': [140870679927045],
+             'modes': {
+                 'analysis': {'select': ['imports', 'functions', 'data',
+                                         'analysis', 'plotting']}
+             }}
 }
