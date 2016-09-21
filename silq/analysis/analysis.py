@@ -6,6 +6,8 @@ from qcodes import Instrument
 import qcodes.instrument.parameter as parameter
 from qcodes.utils import validators as vals
 
+def supercoolfunction():
+    return 42
 
 def find_high_low(traces, plot=False, threshold_peak=0.02):
     hist, bin_edges = np.histogram(np.ravel(traces), bins=30)
