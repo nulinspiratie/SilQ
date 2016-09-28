@@ -6,22 +6,19 @@ from qcodes.utils import validators as vals
 
 
 class PulseMaster(Instrument):
-    shared_kwargs = ['setup']
+    shared_kwargs = ['layout']
 
-    def __init__(self, name, setup, **kwargs):
+    def __init__(self, name, layout, **kwargs):
         super().__init__(name, **kwargs)
 
-        self.setup = setup
+        self.layout = layout
 
         self.instruments = {instrument.name: instrument
-                            for instrument in self.setup.instruments}
+                            for instrument in self.layout.instruments}
 
-        self.add_parameter('trigger_instrument',
+        self.add_parameter('pulse_sequence',
                            parameter_class=ManualParameter,
                            initial_value=None,
-                           vals=vals.Enum(*self.instruments.keys()))
+                           vals=vals.Anything())
 
-        self.add_parameter('acquisition_instrument',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
-                           vals=vals.Enum(*self.instruments.keys()))
+
