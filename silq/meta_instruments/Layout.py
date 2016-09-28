@@ -6,7 +6,7 @@ from qcodes.utils import validators as vals
 
 
 class Layout:
-    # Should make into an instrument
+    # TODO Should make into an instrument
     def __init__(self, instruments):
         self.instruments = instruments
         self.instrument_interfaces = [self.add_instrument(instrument)
@@ -38,24 +38,30 @@ class Layout:
         pass
 
     def setup(self, pulse_sequence):
+        # Clear pulse sequences of all instruments
         for instrument in self.instruments:
             instrument.pulse_sequence.clear()
+
+        # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
             instrument = self.get_pulse_instrument(pulse)
 
-            # Determine
-            if instrument == self.trigger_instrument():
-                instrument.pulse_sequence.add(pulse, connection=None)
-            else:
+            instrument.pulse_sequence.add(pulse, connection=instrument.trigger)
+
+            # If instrument is not the main triggering instrument, add triggers
+            # to each of the triggering instruments until you reach the main
+            # triggering instrument.
+            while instrument != self.trigger_instrument():
                 connection = instrument.trigger
-                instrument.pulse_sequence.add(pulse, connection=connection)
+                # Replace instrument by its triggering instrument
+                instrument = connection.output_instrument
+                instrument.pulse_sequence.add('trigger', connection=connection)
 
-                triggering_instrument = connection.output_instrument
-                while triggering_instrument != self.trigger_instrument():
-                    instrument = triggering_instrument
-                    instrument.pulse_sequence.add('trigger', )
+        # Setup each of the instruments using its pulse_sequence
+        for instrument in self.instruments:
+            instrument.setup()
 
-
+        # TODO setup acquisition instrument
 
 
 class Connection:
