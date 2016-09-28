@@ -1,4 +1,4 @@
-
+from silq.meta_instruments.PulseSequence import PulseSequence
 
 class InstrumentInterface():
     def __init__(self, instrument):
@@ -6,6 +6,11 @@ class InstrumentInterface():
 
         self.input_channels = []
         self.output_channels = []
+
+        # Connection with instrument that triggers this instrument
+        self.trigger = None
+
+        self.pulse_sequence = PulseSequence()
 
 
 class Channel:
