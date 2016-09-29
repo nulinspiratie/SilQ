@@ -8,7 +8,7 @@ class ArbStudio1104_Interface(InstrumentInterface):
     def __init__(self, instrument):
         super().__init__(instrument)
 
-        self.output_channels = [Channel(self, name='ch{}'.format(k),
+        self.output_channels = [Channel(self, name='ch{}'.format(k), id=k,
                                         output=True) for k in [1, 2, 3, 4]]
         self.trigger_in_channel = Channel(self, name='trig_in',
                                           input_trigger=True)
@@ -39,23 +39,31 @@ class ArbStudio1104_Interface(InstrumentInterface):
                           eval("self.instrument.ch{}_sampling_rate_prescaler()"
                                "".format(ch)) for ch in self.active_channels]
 
+        # Generate waveforms and sequences
         self.generate_waveforms()
         self.generate_sequences()
 
-        for ch in self.active_channels:
+        for channel in self.active_channels:
+
             eval("self.instrument.{ch}_trigger_source('fp_trigger_in')".format(
-                ch=ch))
-            eval("self.instrument.{ch}_trigger_mode('stepped')".format(ch=ch))
-            eval('self.instrument.{ch}_clear_waveforms()'.format(ch=ch))
+                ch=channel.name))
+            eval("self.instrument.{ch}_trigger_mode('stepped')".format(
+                ch=channel.name))
+            eval('self.instrument.{ch}_clear_waveforms()'.format(
+                ch=channel.name))
+
             # Add waveforms to channel
-            for waveform in self.waveforms[ch]:
+            for waveform in self.waveforms[channel.name]:
                 eval('self.instrument.{ch}_add_waveform({waveform}'.format(
-                    ch=ch, waveform=self.waveform))
+                    ch=channel.name, waveform=self.waveform))
+
             # Add sequence to channel
             eval('self.instrument.{ch}_sequence({sequence}'.format(
-                ch=ch, sequence=self.sequences[ch]))
-        self.instrument.load_waveforms(channels=self.arbstudio_channels())
-        self.instrument.load_sequence(channels=self.arbstudio_channels())
+                ch=channel.name, sequence=self.sequences[channel.name]))
+
+        active_channels_id = [channel.id for channel in self.active_channels]
+        self.instrument.load_waveforms(channels=active_channels_id)
+        self.instrument.load_sequence(channels=active_channels_id)
 
     def generate_waveforms(self):
         # Set time t_pulse to zero, will increase as we iterate over pulses
