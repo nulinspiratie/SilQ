@@ -1,5 +1,4 @@
-import numpy as np
-from silq.meta_instruments.PulseSequence import PulseSequence
+from silq.pulses import PulseSequence
 
 class InstrumentInterface():
     def __init__(self, instrument):
