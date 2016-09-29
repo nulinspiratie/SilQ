@@ -27,5 +27,46 @@ x = 2
 #
 #
 #
-# if __name__ == "__main__":
-#     ATS = ATS_driver.ATS9440('ATS', server_name='Alazar_server')
+from functools import partial
+if __name__ == "__main__":
+    def print_function(*args, **kwargs):
+        print('args={args}, kwargs={kwargs}'.format(args=args, kwargs=kwargs))
+
+
+    class AddChannelFunctions:
+        def __init__(self, channels, functions):
+            self.channels = channels
+            self.functions = functions
+
+        def __call__(self, cls):
+            def print_function(*args, **kwargs):
+                print('args={args}, kwargs={kwargs}'.format(args=args,
+                                                            kwargs=kwargs))
+
+            for channel in self.channels:
+                for function in self.functions:
+                    print_function_targeted = partial(print_function,
+                                                      ch=channel,
+                                                      function=function)
+                    exec("cls.{ch}_{fn} = print_function_targeted".format(
+                        ch=str(channel), fn=function))
+                    #         cls.ch1_trig_in = print_function
+            return cls
+
+
+    channels = ['ch1', 'ch2', 'ch3', 'ch4']
+    functions = ['trigger_source', 'trigger_mode', 'add_waveform', 'sequence']
+
+
+    @AddChannelFunctions(channels, functions)
+    class MockArbStudio:
+        def __init__(self):
+            pass
+
+
+    arbstudio = MockArbStudio()
+
+    from silq.meta_instruments.instrument_interfaces import \
+        get_instrument_interface
+
+    get_instrument_interface(arbstudio)

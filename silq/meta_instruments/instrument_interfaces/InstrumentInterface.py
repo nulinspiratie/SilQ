@@ -33,8 +33,9 @@ class InstrumentInterface():
 
 
 class Channel:
-    def __init__(self, name, id=None, input=False, output=False,
+    def __init__(self, instrument, name, id=None, input=False, output=False,
                  input_trigger=False, output_trigger=False):
+        self.instrument = instrument
         self.name = name
         self.id = id
         self.input = input
