@@ -1,4 +1,3 @@
-from silq.meta_instruments.instrument_interfaces import get_instrument_interface
 from silq.meta_instruments import pulses
 
 # from qcodes import Instrument
@@ -68,6 +67,8 @@ class Layout:
         return filtered_connections
 
     def add_instrument(self, instrument):
+        from silq.meta_instruments.instrument_interfaces import \
+            get_instrument_interface
         instrument_interface = get_instrument_interface(instrument)
         self.instruments += [instrument]
         self.instrument_interfaces += [instrument_interface]

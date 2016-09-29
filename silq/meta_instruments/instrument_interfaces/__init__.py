@@ -1,13 +1,16 @@
+import silq
+
 from .InstrumentInterface import InstrumentInterface, Channel
 from .lecroy.ArbStudio1104 import ArbStudio1104_Interface
 
 instrument_interfaces = {
-    'ArbStudio1104': ArbStudio1104_Interface
+    'ArbStudio1104': ArbStudio1104_Interface,
+    'MockArbStudio': ArbStudio1104_Interface
 }
 
 def get_instrument_interface(instrument):
     # TODO Need to find correct name of instrument
-    instrument_name = instrument.__class__
+    instrument_name = instrument.__class__.__name__
 
     instrument_interface_class = instrument_interfaces[instrument_name]
 

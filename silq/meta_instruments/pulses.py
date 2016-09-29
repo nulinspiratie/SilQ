@@ -71,7 +71,7 @@ class PulseCondition():
 class Pulse:
     @classmethod
     def create_implementation(cls, pulse_implementation, pulse_conditions):
-        return pulse_implementation(cls, pulse_conditions)
+        return pulse_implementation(cls, pulse_conditions=pulse_conditions)
 
     def __init__(self, t_start, t_stop=None, duration=None,
                  connection=None):
