@@ -1,4 +1,5 @@
 from silq.meta_instruments.instrument_interfaces import get_instrument_interface
+from silq.meta_instruments import pulses
 
 # from qcodes import Instrument
 from qcodes.instrument.parameter import Parameter, ManualParameter
@@ -38,7 +39,18 @@ class Layout:
 
 
     def get_pulse_instrument(self, pulse):
-        pass
+        instruments = [instrument_interface for instrument_interface in
+                       self.instrument_interfaces if
+                       instrument_interface.has_pulse_implementation(pulse)]
+        if not instruments:
+            raise Exception('No instruments have an implementation for pulse '
+                            '{}'.format(pulse))
+        elif len(instruments) > 1:
+            raise Exception('More than one instrument have an implementation '
+                            'for pulse {}. Functionality to choose instrument '
+                            'not yet implemented'.format(pulse))
+        else:
+            return instruments[0]
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulse sequences of all instruments
@@ -54,11 +66,15 @@ class Layout:
             # If instrument is not the main triggering instrument, add triggers
             # to each of the triggering instruments until you reach the main
             # triggering instrument.
+            # TODO this should only be done in some cases, for instance if an
+            # Arbstudio is the input instrument and is in burst mode
             while instrument != self.trigger_instrument():
                 connection = instrument.trigger
                 # Replace instrument by its triggering instrument
                 instrument = connection.output_instrument
-                instrument.pulse_sequence.add('trigger', connection=connection)
+                instrument.pulse_sequence.add(
+                    pulses.TriggerPulse(t_start=pulse.t_start,
+                                        connection=connection))
 
         # Setup each of the instruments using its pulse_sequence
         for instrument in self.instruments:
@@ -72,6 +88,7 @@ class Connection:
                  input_instrument, input_channel,
                  trigger=False, acquire=False):
         """
+        Class representing a connection between instrument channels.
 
         Args:
             output_instrument:
@@ -82,6 +99,8 @@ class Connection:
                 instrument
             acquire (bool): Sets if this channel is used for acquisition
         """
+        # TODO add optionality of having multiple channels connected.
+        # TODO Add mirroring of other channel.
         self.output_instrument = output_instrument
         self.output_channel = output_channel
 
