@@ -1,8 +1,6 @@
-from silq.meta_instruments import pulses
-
-# from qcodes import Instrument
-from qcodes.instrument.parameter import Parameter, ManualParameter
+from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
+from silq.pulses import TriggerPulse
 
 
 class Layout:
@@ -80,11 +78,11 @@ class Layout:
                        self.instrument_interfaces if
                        instrument_interface.get_pulse_implementation(pulse)]
         if not instruments:
-            raise Exception('No instruments have an implementation for pulse '
+            raise Exception('No instruments have an implementation for pulses '
                             '{}'.format(pulse))
         elif len(instruments) > 1:
             raise Exception('More than one instrument have an implementation '
-                            'for pulse {}. Functionality to choose instrument '
+                            'for pulses {}. Functionality to choose instrument '
                             'not yet implemented'.format(pulse))
         else:
             return instruments[0]
@@ -110,7 +108,7 @@ class Layout:
 
 
     def target_pulse_sequence(self, pulse_sequence):
-        # Clear pulse sequences of all instruments
+        # Clear pulses sequences of all instruments
         for instrument in self.instruments:
             instrument.pulse_sequence.clear()
 
@@ -131,8 +129,8 @@ class Layout:
                 # Replace instrument by its triggering instrument
                 instrument = connection.output_instrument
                 instrument.pulse_sequence.add(
-                    pulses.TriggerPulse(t_start=pulse.t_start,
-                                        connection=connection))
+                    TriggerPulse(t_start=pulse.t_start,
+                                             connection=connection))
 
         # Setup each of the instruments using its pulse_sequence
         for instrument in self.instruments:
