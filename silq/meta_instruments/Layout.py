@@ -1,4 +1,4 @@
-from silq.meta_instruments import instrument_interfaces
+from silq.meta_instruments.instrument_interfaces import get_instrument_interface
 
 # from qcodes import Instrument
 from qcodes.instrument.parameter import Parameter, ManualParameter
@@ -24,20 +24,23 @@ class Layout:
                            vals=vals.Enum(*self.instruments.keys()))
 
     def add_connection(self, output_instrument, output_channel,
-                       input_instrument, input_channel,
-                       delay=0):
+                       input_instrument, input_channel, **kwargs):
         connection = Connection(output_instrument, output_channel,
-                                input_instrument, input_channel,
-                                delay)
+                                input_instrument, input_channel, **kwargs)
         self.connections += [connection]
+        return connection
 
     def add_instrument(self, instrument):
-        return instrument_interfaces.get_instrument_interface(instrument)
+        instrument_interface = get_instrument_interface(instrument)
+        self.instruments += [instrument]
+        self.instrument_interfaces += [instrument_interface]
+        return instrument_interface
+
 
     def get_pulse_instrument(self, pulse):
         pass
 
-    def setup(self, pulse_sequence):
+    def target_pulse_sequence(self, pulse_sequence):
         # Clear pulse sequences of all instruments
         for instrument in self.instruments:
             instrument.pulse_sequence.clear()
@@ -67,8 +70,18 @@ class Layout:
 class Connection:
     def __init__(self, output_instrument, output_channel,
                  input_instrument, input_channel,
-                 trigger=False,
-                 delay=0):
+                 trigger=False, acquire=False):
+        """
+
+        Args:
+            output_instrument:
+            output_channel:
+            input_instrument:
+            input_channel:
+            trigger (bool): Sets the output channel to trigger the input
+                instrument
+            acquire (bool): Sets if this channel is used for acquisition
+        """
         self.output_instrument = output_instrument
         self.output_channel = output_channel
 
@@ -79,4 +92,4 @@ class Connection:
         if self.trigger:
             self.input_instrument.trigger = self
 
-        self.delay = delay
+        self.acquire = acquire

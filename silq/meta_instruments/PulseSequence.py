@@ -9,6 +9,7 @@ class PulseSequence:
         return self.pulses[index]
 
     def add(self, pulse):
+        # TODO deal with case when pulse is a string (e.g. 'trigger')
         self.pulses.append(pulse)
         self.sort()
 
