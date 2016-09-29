@@ -1,3 +1,4 @@
+import numpy as np
 from silq.meta_instruments.PulseSequence import PulseSequence
 
 class InstrumentInterface():
@@ -12,7 +13,11 @@ class InstrumentInterface():
 
         self.pulse_sequence = PulseSequence()
 
-        self.implementations = []
+        self.pulse_implementations = []
+
+    def has_pulse_implementation(self, pulse):
+        return np.any([pulse_implementation.is_implementation(pulse)
+                       for pulse_implementation in self.pulse_implementations])
 
 
 class PulseImplementation():
@@ -23,6 +28,13 @@ class PulseImplementation():
 
     def add_pulse_condition(self, property, condition):
         self.pulse_conditions == [PulseCondition(self, property, condition)]
+
+    def is_implementation(self, pulse):
+        if pulse.__class__ != self.pulse_class:
+            return False
+        else:
+            return np.all([pulse_condition.satisfies(pulse)
+                           for pulse_condition in self.pulse_conditions])
 
 
 class PulseCondition():

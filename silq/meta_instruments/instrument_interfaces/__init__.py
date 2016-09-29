@@ -1,4 +1,5 @@
-from .InstrumentInterface import InstrumentInterface, Channel
+from .InstrumentInterface import InstrumentInterface, Channel, \
+    PulseImplementation
 from .lecroy.ArbStudio1104 import ArbStudio1104_Interface
 
 instrument_interfaces = {
