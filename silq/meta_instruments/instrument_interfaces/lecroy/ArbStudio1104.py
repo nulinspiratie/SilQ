@@ -1,7 +1,8 @@
 from silq.meta_instruments.instrument_interfaces \
     import InstrumentInterface, Channel
 from silq.meta_instruments.PulseSequence import PulseSequence
-from silq.meta_instruments import pulses, layout
+from silq.meta_instruments import pulses
+from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 
 
 class ArbStudio1104_Interface(InstrumentInterface):
@@ -21,9 +22,10 @@ class ArbStudio1104_Interface(InstrumentInterface):
             #     pulse_conditions=('frequency', {'min':1e6, 'max':50e6})
             # ),
             pulses.DCPulse.create_implementation(DCPulseImplementation,
-                pulse_conditions=('amplitude', {'min': 0, 'max': 2.5})
+                pulse_conditions=[('amplitude', {'min': 0, 'max': 2.5})]
             ),
             pulses.TriggerPulse.create_implementation(
+                TriggerPulseImplementation,
                 pulse_conditions=[]
             )
         ]
@@ -34,10 +36,10 @@ class ArbStudio1104_Interface(InstrumentInterface):
         self.active_channels = set([pulse.connection.output_channel
                         for pulse in self.pulse_sequence])
 
-        # Find sampling rates (these may be different for different channels)
-        sampling_rates = [self.instrument.sampling_rate /
-                          eval("self.instrument.ch{}_sampling_rate_prescaler()"
-                               "".format(ch)) for ch in self.active_channels]
+        # # Find sampling rates (these may be different for different channels)
+        # sampling_rates = [self.instrument.sampling_rate /
+        #                   eval("self.instrument.ch{}_sampling_rate_prescaler()"
+        #                        "".format(ch)) for ch in self.active_channels]
 
         # Generate waveforms and sequences
         self.generate_waveforms()
@@ -93,8 +95,8 @@ class ArbStudio1104_Interface(InstrumentInterface):
 
 
 class DCPulseImplementation(pulses.PulseImplementation):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, pulse_class, **kwargs):
+        super().__init__(pulse_class, **kwargs)
 
     def implement_pulse(self, DC_pulse):
         """
@@ -108,10 +110,10 @@ class DCPulseImplementation(pulses.PulseImplementation):
             {output_channel: pulse arr} dictionary for each output channel
         """
         # Arbstudio requires a minimum of four points to be returned
-        if isinstance(DC_pulse.connection, layout.SingleConnection):
+        if isinstance(DC_pulse.connection, SingleConnection):
             return {DC_pulse.connection.output['channel']:
                         [DC_pulse.amplitude] * 4}
-        elif isinstance(DC_pulse.connection, layout.CombinedConnection):
+        elif isinstance(DC_pulse.connection, CombinedConnection):
             return {ch: [DC_pulse.amplitude] * 4
                     for ch in DC_pulse.connection.output['channels']}
         else:
@@ -120,11 +122,11 @@ class DCPulseImplementation(pulses.PulseImplementation):
 
 
 class TriggerPulseImplementation(pulses.PulseImplementation):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, pulse_class, **kwargs):
+        super().__init__(pulse_class, **kwargs)
 
     def implement_pulse(self, trigger_pulse):
-        if isinstance(trigger_pulse.connection, layout.SingleConnection):
+        if isinstance(trigger_pulse.connection, SingleConnection):
             pass
-        elif isinstance(trigger_pulse.connection, layout.CombinedConnection):
+        elif isinstance(trigger_pulse.connection, CombinedConnection):
             pass
