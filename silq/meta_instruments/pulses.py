@@ -20,14 +20,19 @@ class SinePulse(Pulse):
         self.frequency = frequency
         self.amplitude = amplitude
 
-        class DCPulse(Pulse):
-            def __init__(self, amplitude, **kwargs):
-                super().__init__(kwargs)
-
-                self.frequency = frequency
-                self.amplitude = amplitude
-
     def __repr__(self):
         return 'SinePulse(f={:.2f} MHz, A={}, t_start={}, t_stop={})'.format(
             self.frequency/1e6, self.amplitude, self.t_start, self.t_stop
         )
+
+
+class DCPulse(Pulse):
+    def __init__(self, amplitude, **kwargs):
+        super().__init__(kwargs)
+
+        self.amplitude = amplitude
+
+
+class TriggerPulse(Pulse):
+    def __init__(self, **kwargs):
+        super().__init__(kwargs)
