@@ -105,11 +105,11 @@ class SinePulse(Pulse):
 
 class DCPulse(Pulse):
     def __init__(self, amplitude, **kwargs):
-        super().__init__(kwargs)
+        super().__init__(**kwargs)
 
         self.amplitude = amplitude
 
 
 class TriggerPulse(Pulse):
     def __init__(self, **kwargs):
-        super().__init__(kwargs)
+        super().__init__(**kwargs)
