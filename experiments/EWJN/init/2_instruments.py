@@ -4,7 +4,7 @@ import qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers as ATS_c
 import qcodes.instrument_drivers.lecroy.ArbStudio1104 as arbstudio_driver
 import qcodes.instrument_drivers.spincore.PulseBlasterESRPRO as pulseblaster_driver
 import qcodes.instrument_drivers.stanford_research.SIM900 as SIM900_driver
-from silq.meta_instruments import PulseMaster_old as pulsemaster_driver
+from silq.meta_instruments import pulsemaster_old as pulsemaster_driver
 
 dll_path = os.path.join(os.getcwd(),'C:\lecroy_driver\\Library\\ArbStudioSDK.dll')
 arbstudio = arbstudio_driver.ArbStudio1104('ArbStudio', dll_path)
