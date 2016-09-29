@@ -65,7 +65,7 @@ class Layout:
         return filtered_connections
 
     def add_instrument(self, instrument):
-        from silq.meta_instruments.instrument_interfaces import \
+        from silq.instrument_interfaces import \
             get_instrument_interface
         instrument_interface = get_instrument_interface(instrument)
         self.instruments += [instrument]

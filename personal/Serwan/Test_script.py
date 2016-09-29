@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     arbstudio = MockArbStudio()
 
-    from silq.meta_instruments.instrument_interfaces import \
+    from silq.instrument_interfaces import \
         get_instrument_interface
 
     get_instrument_interface(arbstudio)
