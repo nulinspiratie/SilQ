@@ -1,8 +1,7 @@
 from silq.meta_instruments.instrument_interfaces \
     import InstrumentInterface, Channel
-from silq.meta_instruments.PulseSequence import PulseSequence
-from silq.meta_instruments import pulses
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
+from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
 
 
 class ArbStudio1104_Interface(InstrumentInterface):
@@ -21,10 +20,11 @@ class ArbStudio1104_Interface(InstrumentInterface):
             # pulses.SinePulse.create_implementation(
             #     pulse_conditions=('frequency', {'min':1e6, 'max':50e6})
             # ),
-            pulses.DCPulse.create_implementation(DCPulseImplementation,
+            DCPulse.create_implementation(
+                DCPulseImplementation,
                 pulse_conditions=[('amplitude', {'min': 0, 'max': 2.5})]
             ),
-            pulses.TriggerPulse.create_implementation(
+            TriggerPulse.create_implementation(
                 TriggerPulseImplementation,
                 pulse_conditions=[]
             )
@@ -74,7 +74,7 @@ class ArbStudio1104_Interface(InstrumentInterface):
         self.waveforms = {ch: [] for ch in self.active_channels}
         for pulse in self.pulse_sequence:
             assert pulse.t_start == t_pulse, \
-                "Pulse {}: pulse.t_start = {} does not match {}".format(
+                "Pulse {}: pulses.t_start = {} does not match {}".format(
                     pulse, pulse.t_start, t_pulse)
 
             pulse_implementation = self.get_pulse_implementation(pulse)
@@ -83,7 +83,7 @@ class ArbStudio1104_Interface(InstrumentInterface):
             for ch in self.active_channels:
                 self.waveforms[ch].append(channels_waveform[ch])
 
-            # Increase t_pulse to match start of next pulse
+            # Increase t_pulse to match start of next pulses
             t_pulse += pulse.duration
         return self.waveforms
 
@@ -94,20 +94,20 @@ class ArbStudio1104_Interface(InstrumentInterface):
 
 
 
-class DCPulseImplementation(pulses.PulseImplementation):
+class DCPulseImplementation(PulseImplementation):
     def __init__(self, pulse_class, **kwargs):
         super().__init__(pulse_class, **kwargs)
 
     def implement_pulse(self, DC_pulse):
         """
-        Implements the DC pulse for the ArbStudio for SingleConnection and
-        CombinedConnection. For a CombinedConnection, it weighs the DC pulse
+        Implements the DC pulses for the ArbStudio for SingleConnection and
+        CombinedConnection. For a CombinedConnection, it weighs the DC pulses
         amplitude by the corresponding channel scaling factor (default 1).
         Args:
-            DC_pulse: DC pulse to implement
+            DC_pulse: DC pulses to implement
 
         Returns:
-            {output_channel: pulse arr} dictionary for each output channel
+            {output_channel: pulses arr} dictionary for each output channel
         """
         # Arbstudio requires a minimum of four points to be returned
         if isinstance(DC_pulse.connection, SingleConnection):
@@ -121,7 +121,7 @@ class DCPulseImplementation(pulses.PulseImplementation):
                 DC_pulse.connection))
 
 
-class TriggerPulseImplementation(pulses.PulseImplementation):
+class TriggerPulseImplementation(PulseImplementation):
     def __init__(self, pulse_class, **kwargs):
         super().__init__(pulse_class, **kwargs)
 
