@@ -15,9 +15,12 @@ class InstrumentInterface():
 
         self.pulse_implementations = []
 
-    def has_pulse_implementation(self, pulse):
-        return np.any([pulse_implementation.is_implementation(pulse)
-                       for pulse_implementation in self.pulse_implementations])
+    def get_pulse_implementation(self, pulse):
+        for pulse_implementation in self.pulse_implementations:
+            if pulse_implementation.is_implementation(pulse):
+                return pulse_implementation
+        else:
+            return None
 
     def setup(self):
         pass

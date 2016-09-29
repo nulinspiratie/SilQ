@@ -6,6 +6,11 @@ class PulseImplementation():
         self.pulse_conditions = [PulseCondition(self, property, condition) for
                                  (property, condition) in pulse_conditions]
 
+    def __bool__(self):
+        # Set truth value of a PulseImplementation to True, to make it easier
+        # to use in list comprehensions.
+        return True
+
     def add_pulse_condition(self, property, condition):
         self.pulse_conditions == [PulseCondition(self, property, condition)]
 
@@ -65,8 +70,8 @@ class PulseCondition():
 
 class Pulse:
     @classmethod
-    def create_implementation(cls, pulse_conditions):
-        return PulseImplementation(cls, pulse_conditions)
+    def create_implementation(cls, pulse_implementation, pulse_conditions):
+        return pulse_implementation(cls, pulse_conditions)
 
     def __init__(self, t_start, t_stop=None, duration=None,
                  connection=None):
