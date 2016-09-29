@@ -1,5 +1,32 @@
 import numpy as np
 
+
+class PulseSequence:
+    def __init__(self):
+        self.pulses = []
+        self.duration = 0
+
+    def __getitem__(self, index):
+        return self.pulses[index]
+
+    def add(self, pulse):
+        # TODO deal with case when pulses is a string (e.g. 'trigger')
+        self.pulses.append(pulse)
+        self.sort()
+
+    def sort(self):
+        t_start_list = np.array([pulse.t_start for pulse in self.pulses])
+        idx_sorted = np.argsort(t_start_list)
+        self.pulses = [self.pulses[idx] for idx in idx_sorted]
+
+        # Update duration of PulseSequence
+        self.duration = max([pulse.t_stop for pulse in self.pulses])
+        return self.pulses
+
+    def clear(self):
+        self.pulses = []
+
+
 class PulseImplementation():
     def __init__(self, pulse_class, pulse_conditions=[]):
         self.pulse_class = pulse_class
@@ -38,11 +65,11 @@ class PulseCondition():
 
     def satisfies(self, pulse):
         """
-        Checks if a given pulse satisfies this Pulsecondition
+        Checks if a given pulses satisfies this Pulsecondition
         Args:
             pulse: Pulse to be checked
 
-        Returns: Bool depending on if the pulse satisfies PulseCondition
+        Returns: Bool depending on if the pulses satisfies PulseCondition
 
         """
         property_value = getattr(pulse, self.property)
@@ -64,52 +91,5 @@ class PulseCondition():
             else:
                 return True
         else:
-            raise Exception("Cannot interpret pulse condition: {}".format(
+            raise Exception("Cannot interpret pulses condition: {}".format(
                 self.condition))
-
-
-class Pulse:
-    @classmethod
-    def create_implementation(cls, pulse_implementation, pulse_conditions):
-        return pulse_implementation(cls, pulse_conditions=pulse_conditions)
-
-    def __init__(self, t_start, t_stop=None, duration=None,
-                 connection=None):
-        self.t_start = t_start
-
-        if t_stop is not None:
-            self.t_stop = t_stop
-            self.duration = t_stop - t_start
-        elif duration is not None:
-            self.duration = duration
-            self.t_stop = t_start + duration
-        else:
-            raise Exception("Must provide either t_stop or duration")
-
-        self.connection = connection
-
-
-
-class SinePulse(Pulse):
-    def __init__(self, frequency, amplitude, **kwargs):
-        super().__init__(**kwargs)
-
-        self.frequency = frequency
-        self.amplitude = amplitude
-
-    def __repr__(self):
-        return 'SinePulse(f={:.2f} MHz, A={}, t_start={}, t_stop={})'.format(
-            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop
-        )
-
-
-class DCPulse(Pulse):
-    def __init__(self, amplitude, **kwargs):
-        super().__init__(**kwargs)
-
-        self.amplitude = amplitude
-
-
-class TriggerPulse(Pulse):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
