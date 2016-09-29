@@ -41,7 +41,7 @@ class Layout:
     def get_pulse_instrument(self, pulse):
         instruments = [instrument_interface for instrument_interface in
                        self.instrument_interfaces if
-                       instrument_interface.has_pulse_implementation(pulse)]
+                       instrument_interface.get_pulse_implementation(pulse)]
         if not instruments:
             raise Exception('No instruments have an implementation for pulse '
                             '{}'.format(pulse))
