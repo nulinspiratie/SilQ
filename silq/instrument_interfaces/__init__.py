@@ -1,11 +1,11 @@
 import silq
 
 from .interface import InstrumentInterface, Channel
-from .lecroy.ArbStudio1104_interface import ArbStudio1104_Interface
+from .lecroy.ArbStudio1104_interface import ArbStudio1104Interface
 
 instrument_interfaces = {
-    'ArbStudio1104': ArbStudio1104_Interface,
-    'MockArbStudio': ArbStudio1104_Interface
+    'ArbStudio1104': ArbStudio1104Interface,
+    'MockArbStudio': ArbStudio1104Interface
 }
 
 def get_instrument_interface(instrument):
