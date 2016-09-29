@@ -4,7 +4,7 @@ from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
 
 
-class ArbStudio1104_Interface(InstrumentInterface):
+class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument):
         super().__init__(instrument)
 
