@@ -31,6 +31,42 @@ class Layout:
         self.connections += [connection]
         return connection
 
+    def get_connections(self, output_instrument=None, output_channel=None,
+                        input_instrument=None, input_channel=None):
+        """
+        Returns all connections that satisfy given kwargs
+        Args:
+            output_instrument: Connections must have output_instrument
+            output_channel: Connections must have output_channel
+            input_instrument: Connections must have input_instrument
+            input_channel: Connections must have input_channel
+
+        Returns:
+            Connections that satisfy kwarg constraints
+        """
+        filtered_connections = self.connections
+        if output_instrument is not None:
+            filtered_connections = filter(
+                lambda c: c.output_instrument == output_instrument,
+                filtered_connections
+            )
+        if output_channel is not None:
+            filtered_connections = filter(
+                lambda c: c.output_channel == output_channel,
+                filtered_connections
+            )
+        if input_instrument is not None:
+            filtered_connections = filter(
+                lambda c: c.input_instrument == input_instrument,
+                filtered_connections
+            )
+        if input_channel is not None:
+            filtered_connections = filter(
+                lambda c: c.input_channel == input_channel,
+                filtered_connections
+            )
+        return filtered_connections
+
     def add_instrument(self, instrument):
         instrument_interface = get_instrument_interface(instrument)
         self.instruments += [instrument]
@@ -52,6 +88,26 @@ class Layout:
         else:
             return instruments[0]
 
+    def get_pulse_connection(self, pulse, instrument=None, **kwargs):
+        if instrument is None:
+            instrument = self.get_pulse_instrument(pulse)
+
+        connections = self.get_connections(output_instrument=instrument,
+                                           **kwargs)
+
+        default_connections = [connection for connection in connections
+                               if connection.default]
+        if not default_connections:
+            raise Exception('Instrument {} has connections {}, but none are '
+                            'set as default'.format(instrument, connections))
+        elif len(default_connections) > 1:
+            raise Exception('Instrument {} has connections {}, and more than'
+                            'one are set as default'.format(instrument,
+                                                            connections))
+        else:
+            return default_connections[0]
+
+
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulse sequences of all instruments
         for instrument in self.instruments:
@@ -59,15 +115,16 @@ class Layout:
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
+            # Get default output instrument
             instrument = self.get_pulse_instrument(pulse)
-
-            instrument.pulse_sequence.add(pulse, connection=instrument.trigger)
+            connection = self.get_pulse_connection(pulse, instrument=instrument)
+            instrument.pulse_sequence.add(pulse, connection=connection)
 
             # If instrument is not the main triggering instrument, add triggers
             # to each of the triggering instruments until you reach the main
             # triggering instrument.
             # TODO this should only be done in some cases, for instance if an
-            # Arbstudio is the input instrument and is in burst mode
+            # Arbstudio is the input instrument and is in stepped mode
             while instrument != self.trigger_instrument():
                 connection = instrument.trigger
                 # Replace instrument by its triggering instrument
@@ -84,9 +141,17 @@ class Layout:
 
 
 class Connection:
+    def __init__(self, default=False):
+        self.input = {}
+        self.output = {}
+
+        # TODO make default dependent on implementation
+        self.default = default
+
+class SingleConnection(Connection):
     def __init__(self, output_instrument, output_channel,
                  input_instrument, input_channel,
-                 trigger=False, acquire=False):
+                 trigger=False, acquire=False, **kwargs):
         """
         Class representing a connection between instrument channels.
 
@@ -97,18 +162,49 @@ class Connection:
             input_channel:
             trigger (bool): Sets the output channel to trigger the input
                 instrument
-            acquire (bool): Sets if this channel is used for acquisition
+            acquire (bool): Sets if this connection is used for acquisition
+            default (bool): Sets if this connection is the default for pulses
         """
         # TODO add optionality of having multiple channels connected.
         # TODO Add mirroring of other channel.
-        self.output_instrument = output_instrument
-        self.output_channel = output_channel
+        super().__init__(**kwargs)
 
-        self.input_instrument = input_instrument
-        self.input_channel = input_channel
+        self.output['instrument'] = output_instrument
+        self.output['channel'] = output_channel
+
+        self.input['instrument'] = input_instrument
+        self.input['channel'] = input_channel
 
         self.trigger = trigger
         if self.trigger:
             self.input_instrument.trigger = self
 
         self.acquire = acquire
+
+class CombinedConnection(Connection):
+    def __init__(self, connections, scaling_factors=None,**kwargs):
+        super().__init__(**kwargs)
+        self.connections = connections
+        self.output['instruments'] = set([connection.output['instrument']
+                                          for connection in connections])
+        if len(self.output['instruments']) == 1:
+            self.output['instrument'] = self.output['instruments'][0]
+        else:
+            raise Exception('Connections with multiple output instruments not'
+                            'yet supported')
+        self.output['channels'] = set([connection.output['channels']
+                                       for connection in connections])
+        self.input['instruments'] = set([connection.input['instrument']
+                                         for connection in connections])
+        self.input['channels'] = set([connection.input['channels']
+                                      for connection in connections])
+
+        if scaling_factors is None:
+            scaling_factors = {connection.input['channel']: 1
+                               for connection in connections}
+        elif type(scaling_factors) is list:
+            # Convert scaling factors to dictionary with channel keys
+            scaling_factors = {connection.input['channel']: scaling_factor
+                               for (connection, scaling_factor)
+                               in zip(connections, scaling_factors)}
+        self.scaling_factors = scaling_factors
