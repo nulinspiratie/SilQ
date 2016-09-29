@@ -1,7 +1,7 @@
 import silq
 
-from .InstrumentInterface import InstrumentInterface, Channel
-from .lecroy.ArbStudio1104 import ArbStudio1104_Interface
+from .interface import InstrumentInterface, Channel
+from .lecroy.ArbStudio1104_interface import ArbStudio1104_Interface
 
 instrument_interfaces = {
     'ArbStudio1104': ArbStudio1104_Interface,
