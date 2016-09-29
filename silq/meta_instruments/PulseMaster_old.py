@@ -19,7 +19,6 @@ class PulseMaster(Instrument):
 
         self.final_delay = 2
 
-
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=10,
