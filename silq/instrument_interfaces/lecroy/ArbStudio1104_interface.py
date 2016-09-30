@@ -104,7 +104,6 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.sequences
 
 
-
 class DCPulseImplementation(PulseImplementation):
     def __init__(self, pulse_class, **kwargs):
         super().__init__(pulse_class, **kwargs)

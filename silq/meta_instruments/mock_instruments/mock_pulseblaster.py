@@ -21,6 +21,9 @@ class MockPulseBlaster(Instrument):
                               call_cmd=partial(print_function, function=function),
                               args=[vals.Anything()])
 
+        self.add_parameter('instructions',
+                           get_cmd = lambda: self._instructions)
+
     def send_instruction(self, flags, instruction, inst_args, length):
         print_function(flags, instruction, inst_args, length,
                        function='send_instruction')
