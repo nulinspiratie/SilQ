@@ -8,7 +8,6 @@ from qcodes.utils import validators as vals
 
 class Layout(Instrument):
     shared_kwargs=['instruments']
-    # TODO Should make into an instrument
     def __init__(self, name, instruments, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -42,7 +41,8 @@ class Layout(Instrument):
         return connection
 
     def get_connections(self, output_instrument=None, output_channel=None,
-                        input_instrument=None, input_channel=None):
+                        input_instrument=None, input_channel=None,
+                        trigger=None):
         """
         Returns all connections that satisfy given kwargs
         Args:
@@ -85,6 +85,13 @@ class Layout(Instrument):
                 lambda c: c.input['channel'] == input_channel,
                 filtered_connections
             )
+        if trigger is not None:
+            filtered_connections = filter(
+                lambda c: c.trigger==trigger,
+                filtered_connections
+            )
+
+
         return list(filtered_connections)
 
     def _add_instrument(self, instrument):
@@ -179,12 +186,21 @@ class Layout(Instrument):
             # TODO this should only be done in some cases, for instance if an
             # Arbstudio is the input instrument and is in stepped mode
             while instrument.name != self.trigger_instrument():
-                connection = instrument.trigger
+                print(instrument.name, self.trigger_instrument())
+                trigger_connections = self.get_connections(
+                    input_instrument=instrument, trigger=True)
+                assert len(trigger_connections) == 1, \
+                    "Did not find exactly one triggering connection: {}. " \
+                    "All connections: {}".format(
+                        trigger_connections, self.connections
+                    )
+                connection = trigger_connections[0]
+                print('found trigger connection')
                 # Replace instrument by its triggering instrument
-                instrument = self.instruments[
-                    connection.output['instrument']]
+                instrument = self._instruments[connection.output['instrument']]
                 instrument.pulse_sequence.add(
-                    TriggerPulse(t_start=pulse.t_start, connection=connection))
+                    TriggerPulse(t_start=pulse.t_start, connection=connection,  
+                                 t_stop=pulse.t_start))
 
         # Setup each of the instruments using its pulse_sequence
         for instrument in self._instruments.values():
@@ -253,6 +269,7 @@ class SingleConnection(Connection):
             output_str += ', acquire'
         output_str += ')'
         return output_str
+
 
 class CombinedConnection(Connection):
     def __init__(self, connections, scaling_factors=None, **kwargs):
