@@ -1,14 +1,19 @@
+from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 from silq.pulses import TriggerPulse
 
-
-class Layout:
+class Layout(Instrument):
+    shared_kwargs=['instruments']
     # TODO Should make into an instrument
-    def __init__(self, instruments):
-        self.instruments = instruments
-        self.instrument_interfaces = [self.add_instrument(instrument)
-                                      for instrument in instruments]
+    def __init__(self, name, instruments, **kwargs):
+        super().__init__(name, **kwargs)
+        self.instruments = {}
+        self.instrument_interfaces = {}
+
+        for instrument in instruments:
+            self.add_instrument(instrument)
+
         self.connections = []
 
         self.add_parameter('trigger_instrument',
@@ -68,14 +73,19 @@ class Layout:
         from silq.instrument_interfaces import \
             get_instrument_interface
         instrument_interface = get_instrument_interface(instrument)
-        self.instruments += [instrument]
-        self.instrument_interfaces += [instrument_interface]
+        self.instruments[instrument.name] = instrument
+        self.instrument_interfaces[instrument.name] = instrument_interface
         return instrument_interface
 
+    def get_instrument_interface(self, instrument_name):
+        return self.instrument_interfaces[instrument_name]
+
+    def get_instrument_interfaces(self):
+        return self.instrument_interfaces
 
     def get_pulse_instrument(self, pulse):
         instruments = [instrument_interface for instrument_interface in
-                       self.instrument_interfaces if
+                       self.instrument_interfaces.values() if
                        instrument_interface.get_pulse_implementation(pulse)]
         if not instruments:
             raise Exception('No instruments have an implementation for pulses '
@@ -109,7 +119,7 @@ class Layout:
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
-        for instrument in self.instruments:
+        for instrument in self.instruments.values():
             instrument.pulse_sequence.clear()
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
@@ -133,7 +143,7 @@ class Layout:
                                              connection=connection))
 
         # Setup each of the instruments using its pulse_sequence
-        for instrument in self.instruments:
+        for instrument in self.instruments.values():
             instrument.setup()
 
         # TODO setup acquisition instrument
@@ -148,16 +158,13 @@ class Connection:
         self.default = default
 
 class SingleConnection(Connection):
-    def __init__(self, output_instrument, output_channel,
-                 input_instrument, input_channel,
+    def __init__(self, output_channel, input_channel,
                  trigger=False, acquire=False, **kwargs):
         """
         Class representing a connection between instrument channels.
 
         Args:
-            output_instrument:
             output_channel:
-            input_instrument:
             input_channel:
             trigger (bool): Sets the output channel to trigger the input
                 instrument
@@ -168,11 +175,11 @@ class SingleConnection(Connection):
         # TODO Add mirroring of other channel.
         super().__init__(**kwargs)
 
-        self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
+        self.output['instrument'] = output_channel.instrument
 
-        self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
+        self.input['instrument'] = input_channel.instrument
 
         self.trigger = trigger
         if self.trigger:
