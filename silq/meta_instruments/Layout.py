@@ -1,9 +1,10 @@
 from functools import partial
+from silq.pulses import TriggerPulse
+from silq.instrument_interfaces import InstrumentInterface, Channel
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
-from silq.pulses import TriggerPulse
 
 class Layout(Instrument):
     shared_kwargs=['instruments']
@@ -35,58 +36,51 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def get_connections(self,
-                        output_instrument=None, output_instrument_name=None,
-                        output_channel=None, output_channel_name=None,
-                        input_instrument=None, input_instrument_name=None,
-                        input_channel=None, input_channel_name=None):
+    def get_connections(self, output_instrument=None, output_channel=None,
+                        input_instrument=None, input_channel=None):
         """
         Returns all connections that satisfy given kwargs
         Args:
             output_instrument: Connections must have output_instrument
-            output_instrument_name: Connections must have output_instrument_name
             output_channel: Connections must have output_channel
-            output_channel_name: Connections must have output_channel_name
             input_instrument: Connections must have input_instrument
-            input_instrument_name: Connections must have input_instrument_name
             input_channel: Connections must have input_channel
-            input_channel_name: Connections must have input_channel_name
 
         Returns:
             Connections that satisfy kwarg constraints
         """
         filtered_connections = self.connections
         if output_instrument is not None:
-            output_instrument_name = output_instrument.name
-        if output_instrument_name is not None:
+            if isinstance(output_instrument, InstrumentInterface):
+                output_instrument = output_instrument.name
             filtered_connections = filter(
-                lambda c: c.output['instrument_name'] == output_instrument_name,
+                lambda c: c.output['instrument_name'] == output_instrument,
                 filtered_connections
             )
 
         if output_channel is not None:
-            output_channel_name = output_channel.name
-        if output_channel_name is not None:
+            if isinstance(output_instrument, Channel):
+                output_channel = output_channel.name
             filtered_connections = filter(
-                lambda c: c.output['channel_name'] == output_channel_name,
+                lambda c: c.output['channel'] == output_channel,
                 filtered_connections
             )
 
         if input_instrument is not None:
-            input_instrument_name = input_instrument.name
-        if input_instrument_name is not None:
+            if isinstance(input_instrument, InstrumentInterface):
+                input_instrument = input_instrument.name
             filtered_connections = filter(
-                lambda c: c.input['instrument_name'] == input_instrument_name,
+                lambda c: c.input['instrument_name'] == input_instrument,
                 filtered_connections
             )
         if input_channel is not None:
-            input_channel_name = input_channel.name
-        if input_channel_name is not None:
+            if isinstance(input_instrument, Channel):
+                input_channel = input_channel.name
             filtered_connections = filter(
-                lambda c: c.input['channel_name'] == input_channel_name,
+                lambda c: c.input['channel'] == input_channel,
                 filtered_connections
             )
-        return filtered_connections
+        return list(filtered_connections)
 
     def _add_instrument(self, instrument):
         from silq.instrument_interfaces import \
@@ -107,7 +101,7 @@ class Layout(Instrument):
                             'not yet implemented'.format(pulse))
         else:
             return instruments[0]
-        
+
     def get_pulse_instrument_name(self, pulse):
         instrument = self._get_pulse_instrument(pulse)
         return instrument.name
@@ -150,7 +144,6 @@ class Layout(Instrument):
                                                             connections))
         else:
             return default_connections[0]
-
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
@@ -200,8 +193,8 @@ class SingleConnection(Connection):
         Args:
             output: Specification of output channel.
                 Can be:
-                    str "{instrument_name}.{output_channel}"
-                    tuple ({instrument_name}, {output_channel})
+                    str "{instrument_name}.{output_channel_name}"
+                    tuple ({instrument_name}, {output_channel_name})
             input_channel:
             trigger (bool): Sets the output channel to trigger the input
                 instrument
