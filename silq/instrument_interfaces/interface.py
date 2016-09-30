@@ -10,9 +10,6 @@ class InstrumentInterface():
 
         self.channels = {}
 
-        # Connection with instrument that triggers this instrument
-        self.trigger = None
-
         self.pulse_sequence = PulseSequence()
 
         self.pulse_implementations = []
