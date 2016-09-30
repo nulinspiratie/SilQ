@@ -13,14 +13,8 @@ class Pulse:
         # TODO Allow t_start to not be given
         self.t_start = t_start
 
-        if t_stop is not None:
-            self.t_stop = t_stop
-            self.duration = t_stop - t_start
-        elif duration is not None:
-            self.duration = duration
-            self.t_stop = t_start + duration
-        else:
-            raise Exception("Must provide either t_stop or duration")
+        self.t_stop = t_stop
+        self.duration = duration
 
         self.connection = connection
 
@@ -32,6 +26,13 @@ class Pulse:
 class SinePulse(Pulse):
     def __init__(self, frequency, amplitude, **kwargs):
         super().__init__(**kwargs)
+
+        if self.t_stop is not None:
+            self.duration = self.t_stop - self.t_start
+        elif self.duration is not None:
+            self.t_stop = self.t_start + self.duration
+        else:
+            raise Exception("Must provide either t_stop or duration")
 
         self.frequency = frequency
         self.amplitude = amplitude
@@ -45,6 +46,12 @@ class SinePulse(Pulse):
 class DCPulse(Pulse):
     def __init__(self, amplitude, **kwargs):
         super().__init__(**kwargs)
+        if self.t_stop is not None:
+            self.duration = self.t_stop - self.t_start
+        elif self.duration is not None:
+            self.t_stop = self.t_start + self.duration
+        else:
+            raise Exception("Must provide either t_stop or duration")
 
         self.amplitude = amplitude
 
