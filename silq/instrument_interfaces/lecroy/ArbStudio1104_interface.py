@@ -8,12 +8,16 @@ class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument):
         super().__init__(instrument)
 
-        self.output_channels = [Channel(self, name='ch{}'.format(k), id=k,
-                                        output=True) for k in [1, 2, 3, 4]]
+        self.output_channels = {
+            'ch{}'.format(k): Channel(self, name='ch{}'.format(k), id=k,
+                                      output=True) for k in [1, 2, 3, 4]}
         self.trigger_in_channel = Channel(self, name='trig_in',
                                           input_trigger=True)
         self.trigger_out_channel = Channel(self, name='trig_out',
                                            output_trigger=True)
+        self.channels = {**self.output_channels,
+                         'trig_in': self.trigger_in_channel,
+                         'trig_out': self.trigger_out_channel}
 
         self.pulse_implementations = [
             # TODO implement SinePulse
