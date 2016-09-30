@@ -37,7 +37,6 @@ class MockArbStudio(Instrument):
                                initial_value=[],
                                vals=vals.Anything())
 
-
     def _add_waveform(self, channel, waveform):
         print_function(channel=channel, function='add_waveform',
                        waveform=waveform)
