@@ -89,6 +89,14 @@ class Layout(Instrument):
         self._instruments[instrument.name] = instrument_interface
 
     def _get_pulse_instrument(self, pulse):
+        """
+        Retrieves the instrument interface to output pulse
+        Args:
+            pulse: Pulse for which to find the default instrument interface
+
+        Returns:
+            Instrument interface for pulse
+        """
         instruments = [instrument for instrument in
                        self._instruments.values() if
                        instrument.get_pulse_implementation(pulse)]
@@ -155,17 +163,21 @@ class Layout(Instrument):
             # Get default output instrument
             instrument = self._get_pulse_instrument(pulse)
             connection = self.get_pulse_connection(pulse, instrument=instrument)
-            instrument.pulse_sequence.add(pulse, connection=connection)
+
+            targeted_pulse = pulse.copy()
+            targeted_pulse.connection = connection
+            instrument.pulse_sequence.add(targeted_pulse)
 
             # If instrument is not the main triggering instrument, add triggers
             # to each of the triggering instruments until you reach the main
             # triggering instrument.
             # TODO this should only be done in some cases, for instance if an
             # Arbstudio is the input instrument and is in stepped mode
-            while instrument != self.trigger_instrument():
+            while instrument.name != self.trigger_instrument():
                 connection = instrument.trigger
                 # Replace instrument by its triggering instrument
-                instrument = connection.output_instrument
+                instrument = self.instruments[
+                    connection.output['instrument_name']]
                 instrument.pulse_sequence.add(
                     TriggerPulse(t_start=pulse.t_start, connection=connection))
 
