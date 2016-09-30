@@ -4,8 +4,10 @@ class InstrumentInterface():
     def __init__(self, instrument):
         self.instrument = instrument
 
-        self.input_channels = []
-        self.output_channels = []
+        self.input_channels = {}
+        self.output_channels = {}
+
+        self.channels = {}
 
         # Connection with instrument that triggers this instrument
         self.trigger = None
