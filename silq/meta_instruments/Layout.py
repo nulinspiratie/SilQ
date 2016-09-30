@@ -36,6 +36,11 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
+    def combine_connections(self, *connections, **kwargs):
+        connection = CombinedConnection(connections=connections, **kwargs)
+        self.connections += [connection]
+        return connection
+
     def get_connections(self, output_instrument=None, output_channel=None,
                         input_instrument=None, input_channel=None):
         """
@@ -54,7 +59,7 @@ class Layout(Instrument):
             if isinstance(output_instrument, InstrumentInterface):
                 output_instrument = output_instrument.name
             filtered_connections = filter(
-                lambda c: c.output['instrument_name'] == output_instrument,
+                lambda c: c.output['instrument'] == output_instrument,
                 filtered_connections
             )
 
@@ -70,7 +75,7 @@ class Layout(Instrument):
             if isinstance(input_instrument, InstrumentInterface):
                 input_instrument = input_instrument.name
             filtered_connections = filter(
-                lambda c: c.input['instrument_name'] == input_instrument,
+                lambda c: c.input['instrument'] == input_instrument,
                 filtered_connections
             )
         if input_channel is not None:
@@ -177,7 +182,7 @@ class Layout(Instrument):
                 connection = instrument.trigger
                 # Replace instrument by its triggering instrument
                 instrument = self.instruments[
-                    connection.output['instrument_name']]
+                    connection.output['instrument']]
                 instrument.pulse_sequence.add(
                     TriggerPulse(t_start=pulse.t_start, connection=connection))
 
@@ -221,14 +226,14 @@ class SingleConnection(Connection):
             output_instrument, output_channel = output.split('.')
         elif type(output) is tuple:
             output_instrument, output_channel = output
-        self.output['instrument_name'] = output_instrument
+        self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
 
         if type(input) is str:
             input_instrument, input_channel = input.split('.')
         elif type(input) is tuple:
             input_instrument, input_channel = input
-        self.input['instrument_name'] = input_instrument
+        self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
 
         self.trigger = trigger
@@ -238,8 +243,8 @@ class SingleConnection(Connection):
 
     def __repr__(self):
         output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument_name'], self.output['channel'],
-            self.input['instrument_name'], self.input['channel'])
+            self.output['instrument'], self.output['channel'],
+            self.input['instrument'], self.input['channel'])
         if self.trigger:
             output_str += ', trigger'
         if self.default:
@@ -250,22 +255,22 @@ class SingleConnection(Connection):
         return output_str
 
 class CombinedConnection(Connection):
-    def __init__(self, connections, scaling_factors=None,**kwargs):
+    def __init__(self, connections, scaling_factors=None, **kwargs):
         super().__init__(**kwargs)
         self.connections = connections
-        self.output['instruments'] = set([connection.output['instrument']
-                                          for connection in connections])
+        self.output['instruments'] = list(set([connection.output['instrument']
+                                          for connection in connections]))
         if len(self.output['instruments']) == 1:
             self.output['instrument'] = self.output['instruments'][0]
         else:
             raise Exception('Connections with multiple output instruments not'
                             'yet supported')
-        self.output['channels'] = set([connection.output['channels']
-                                       for connection in connections])
-        self.input['instruments'] = set([connection.input['instrument']
-                                         for connection in connections])
-        self.input['channels'] = set([connection.input['channels']
-                                      for connection in connections])
+        self.output['channels'] = list(set([connection.output['channel']
+                                       for connection in connections]))
+        self.input['instruments'] = list(set([connection.input['instrument']
+                                         for connection in connections]))
+        self.input['channels'] = list(set([connection.input['channel']
+                                      for connection in connections]))
 
         if scaling_factors is None:
             scaling_factors = {connection.input['channel']: 1
