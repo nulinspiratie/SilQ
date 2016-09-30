@@ -1,5 +1,5 @@
 import numpy as np
-
+import copy
 
 class Pulse:
     @classmethod
@@ -23,6 +23,9 @@ class Pulse:
             raise Exception("Must provide either t_stop or duration")
 
         self.connection = connection
+
+    def copy(self):
+        return copy.copy(self)
 
 
 

@@ -26,7 +26,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             # ),
             DCPulse.create_implementation(
                 DCPulseImplementation,
-                pulse_conditions=[('amplitude', {'min': 0, 'max': 2.5})]
+                pulse_conditions=[('amplitude', {'min': -2.5, 'max': 2.5})]
             ),
             TriggerPulse.create_implementation(
                 TriggerPulseImplementation,
@@ -37,8 +37,8 @@ class ArbStudio1104Interface(InstrumentInterface):
     def setup(self):
         # TODO implement setup for modes other than stepped
         # Transform into set to ensure that elements are unique
-        self.active_channels = set([pulse.connection.output_channel
-                        for pulse in self.pulse_sequence])
+        self.active_channels = set([pulse.connection.output['channel']
+                                    for pulse in self.pulse_sequence])
 
         # # Find sampling rates (these may be different for different channels)
         # sampling_rates = [self.instrument.sampling_rate /
@@ -52,22 +52,23 @@ class ArbStudio1104Interface(InstrumentInterface):
         for channel in self.active_channels:
 
             eval("self.instrument.{ch}_trigger_source('fp_trigger_in')".format(
-                ch=channel.name))
+                ch=channel))
             eval("self.instrument.{ch}_trigger_mode('stepped')".format(
-                ch=channel.name))
+                ch=channel))
             eval('self.instrument.{ch}_clear_waveforms()'.format(
-                ch=channel.name))
+                ch=channel))
 
             # Add waveforms to channel
-            for waveform in self.waveforms[channel.name]:
-                eval('self.instrument.{ch}_add_waveform({waveform}'.format(
-                    ch=channel.name, waveform=self.waveform))
+            for waveform in self.waveforms[channel]:
+                eval('self.instrument.{ch}_add_waveform({waveform})'.format(
+                    ch=channel, waveform=waveform))
 
             # Add sequence to channel
-            eval('self.instrument.{ch}_sequence({sequence}'.format(
-                ch=channel.name, sequence=self.sequences[channel.name]))
+            eval('self.instrument.{ch}_sequence({sequence})'.format(
+                ch=channel, sequence=self.sequences[channel]))
 
-        active_channels_id = [channel.id for channel in self.active_channels]
+        active_channels_id = [self.channels[channel].id
+                              for channel in self.active_channels]
         self.instrument.load_waveforms(channels=active_channels_id)
         self.instrument.load_sequence(channels=active_channels_id)
 
