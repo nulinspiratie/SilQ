@@ -50,7 +50,8 @@ class Channel:
         self.output_trigger = output_trigger
 
     def __repr__(self):
-        output_str = "Channel {name} (id={id})".format(name=self.name, id=self.id)
+        output_str = "Channel {name} (id={id})".format(name=self.name,
+                                                       id=self.id)
         if self.input:
             output_str += ', input'
         if self.output:

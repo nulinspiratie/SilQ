@@ -37,8 +37,14 @@ class ArbStudio1104Interface(InstrumentInterface):
     def setup(self):
         # TODO implement setup for modes other than stepped
         # Transform into set to ensure that elements are unique
-        self.active_channels = set([pulse.connection.output['channel']
-                                    for pulse in self.pulse_sequence])
+        self.active_channels = []
+        for pulse in self.pulse_sequence:
+            output = pulse.connection.output
+            if output.get('channel', None):
+                self.active_channels += [output['channel']]
+            elif output.get('channels', None):
+                self.active_channels += output['channels']
+        self.active_channels = list(set(self.active_channels))
 
         # # Find sampling rates (these may be different for different channels)
         # sampling_rates = [self.instrument.sampling_rate /
