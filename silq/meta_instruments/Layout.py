@@ -1,3 +1,5 @@
+from functools import partial
+
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
@@ -8,95 +10,94 @@ class Layout(Instrument):
     # TODO Should make into an instrument
     def __init__(self, name, instruments, **kwargs):
         super().__init__(name, **kwargs)
-        self.instruments = {}
-        self.instrument_interfaces = {}
 
+        # Add interfaces for each instrument to self.instruments
+        self._instruments = {}
         for instrument in instruments:
-            self.add_instrument(instrument)
+            self._add_instrument(instrument)
 
         self.connections = []
 
         self.add_parameter('trigger_instrument',
                            parameter_class=ManualParameter,
                            initial_value=None,
-                           vals=vals.Enum(*self.instruments.keys()))
+                           vals=vals.Enum(*self._instruments.keys()))
 
         self.add_parameter('acquisition_instrument',
                            parameter_class=ManualParameter,
                            initial_value=None,
-                           vals=vals.Enum(*self.instruments.keys()))
+                           vals=vals.Enum(*self._instruments.keys()))
+        self.add_parameter('instruments',
+                           get_cmd=lambda: list(self._instruments.keys()))
 
-    def add_connection(self, output_instrument, output_channel,
-                       input_instrument, input_channel, **kwargs):
-        connection = Connection(output_instrument, output_channel,
-                                input_instrument, input_channel, **kwargs)
+    def add_connection(self, output, input, **kwargs):
+        connection = SingleConnection(output, input, **kwargs)
         self.connections += [connection]
         return connection
 
-    def get_connections(self, output_instrument=None, output_channel=None,
-                        input_instrument=None, input_channel=None):
+    def get_connections(self,
+                        output_instrument=None, output_instrument_name=None,
+                        output_channel=None, output_channel_name=None,
+                        input_instrument=None, input_instrument_name=None,
+                        input_channel=None, input_channel_name=None):
         """
         Returns all connections that satisfy given kwargs
         Args:
             output_instrument: Connections must have output_instrument
+            output_instrument_name: Connections must have output_instrument_name
             output_channel: Connections must have output_channel
+            output_channel_name: Connections must have output_channel_name
             input_instrument: Connections must have input_instrument
+            input_instrument_name: Connections must have input_instrument_name
             input_channel: Connections must have input_channel
+            input_channel_name: Connections must have input_channel_name
 
         Returns:
             Connections that satisfy kwarg constraints
         """
         filtered_connections = self.connections
         if output_instrument is not None:
+            output_instrument_name = output_instrument.name
+        if output_instrument_name is not None:
             filtered_connections = filter(
-                lambda c: c.output_instrument == output_instrument,
+                lambda c: c.output['instrument_name'] == output_instrument_name,
                 filtered_connections
             )
+
         if output_channel is not None:
+            output_channel_name = output_channel.name
+        if output_channel_name is not None:
             filtered_connections = filter(
-                lambda c: c.output_channel == output_channel,
+                lambda c: c.output['channel_name'] == output_channel_name,
                 filtered_connections
             )
+
         if input_instrument is not None:
+            input_instrument_name = input_instrument.name
+        if input_instrument_name is not None:
             filtered_connections = filter(
-                lambda c: c.input_instrument == input_instrument,
+                lambda c: c.input['instrument_name'] == input_instrument_name,
                 filtered_connections
             )
         if input_channel is not None:
+            input_channel_name = input_channel.name
+        if input_channel_name is not None:
             filtered_connections = filter(
-                lambda c: c.input_channel == input_channel,
+                lambda c: c.input['channel_name'] == input_channel_name,
                 filtered_connections
             )
         return filtered_connections
 
-    def add_instrument(self, instrument):
+    def _add_instrument(self, instrument):
         from silq.instrument_interfaces import \
             get_instrument_interface
         instrument_interface = get_instrument_interface(instrument)
-        self.instruments[instrument.name] = instrument
-        self.instrument_interfaces[instrument.name] = instrument_interface
-        return instrument_interface
+        self._instruments[instrument.name] = instrument_interface
 
-    def get_instrument_interface(self, instrument_name):
-        return self.instrument_interfaces[instrument_name]
-
-    def get_instrument_interfaces(self):
-        return self.instrument_interfaces
-
-    def print_instrument_interfaces(self):
-        # print(self.instrument_interfaces)
-        # for interface in self.instrument_interfaces.values():
-        #     print(interface.instrument)
-        for interface in self.instrument_interfaces.values():
-            print('interface: {}'.format(interface))
-            instrument = interface.instrument
-            print('instrument: {}'.format(instrument))
-            return interface
-
-    def get_pulse_instrument(self, pulse):
-        instruments = [instrument_interface for instrument_interface in
-                       self.instrument_interfaces.values() if
-                       instrument_interface.get_pulse_implementation(pulse)]
+    def _get_pulse_instrument(self, pulse):
+        instruments = [instrument for instrument in
+                       self._instruments.values() if
+                       instrument.get_pulse_implementation(pulse)]
         if not instruments:
             raise Exception('No instruments have an implementation for pulses '
                             '{}'.format(pulse))
@@ -106,13 +107,37 @@ class Layout(Instrument):
                             'not yet implemented'.format(pulse))
         else:
             return instruments[0]
+        
+    def get_pulse_instrument_name(self, pulse):
+        instrument = self._get_pulse_instrument(pulse)
+        return instrument.name
 
-    def get_pulse_connection(self, pulse, instrument=None, **kwargs):
-        if instrument is None:
-            instrument = self.get_pulse_instrument(pulse)
+    def get_pulse_connection(self, pulse, instrument=None, instrument_name=None,
+                             **kwargs):
+        """
+        Obtain default connection for a given pulse. If no instrument or
+        instrument_name is given, the instrument is determined from
+        self.get_pulse_instrument.
+        Args:
+            pulse: Pulse for which to find default connection
+            instrument (optional): Output instrument of pulse
+            instrument_name (optional): Output instrument name of pulse
+            **kwargs: Additional kwargs to specify connection
 
-        connections = self.get_connections(output_instrument=instrument,
-                                           **kwargs)
+        Returns:
+            Connection object for pulse
+        """
+        if instrument is not None:
+            connections = self.get_connections(
+                output_instrument=instrument, **kwargs)
+        elif instrument_name is not None:
+            connections = self.get_connections(
+                output_instrument_name=instrument_name, **kwargs)
+        else:
+            instrument = self._get_pulse_instrument(pulse)
+            connections = self.get_connections(
+                output_instrument=instrument, **kwargs)
+
 
         default_connections = [connection for connection in connections
                                if connection.default]
@@ -129,13 +154,13 @@ class Layout(Instrument):
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
-        for instrument in self.instruments.values():
+        for instrument in self._instruments.values():
             instrument.pulse_sequence.clear()
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
             # Get default output instrument
-            instrument = self.get_pulse_instrument(pulse)
+            instrument = self._get_pulse_instrument(pulse)
             connection = self.get_pulse_connection(pulse, instrument=instrument)
             instrument.pulse_sequence.add(pulse, connection=connection)
 
@@ -149,11 +174,10 @@ class Layout(Instrument):
                 # Replace instrument by its triggering instrument
                 instrument = connection.output_instrument
                 instrument.pulse_sequence.add(
-                    TriggerPulse(t_start=pulse.t_start,
-                                             connection=connection))
+                    TriggerPulse(t_start=pulse.t_start, connection=connection))
 
         # Setup each of the instruments using its pulse_sequence
-        for instrument in self.instruments.values():
+        for instrument in self._instruments.values():
             instrument.setup()
 
         # TODO setup acquisition instrument
@@ -168,13 +192,16 @@ class Connection:
         self.default = default
 
 class SingleConnection(Connection):
-    def __init__(self, output_channel, input_channel,
+    def __init__(self, output, input,
                  trigger=False, acquire=False, **kwargs):
         """
         Class representing a connection between instrument channels.
 
         Args:
-            output_channel:
+            output: Specification of output channel.
+                Can be:
+                    str "{instrument_name}.{output_channel}"
+                    tuple ({instrument_name}, {output_channel})
             input_channel:
             trigger (bool): Sets the output channel to trigger the input
                 instrument
@@ -185,17 +212,37 @@ class SingleConnection(Connection):
         # TODO Add mirroring of other channel.
         super().__init__(**kwargs)
 
+        if type(output) is str:
+            output_instrument, output_channel = output.split('.')
+        elif type(output) is tuple:
+            output_instrument, output_channel = output
+        self.output['instrument_name'] = output_instrument
         self.output['channel'] = output_channel
-        self.output['instrument'] = output_channel.instrument
 
+        if type(input) is str:
+            input_instrument, input_channel = input.split('.')
+        elif type(input) is tuple:
+            input_instrument, input_channel = input
+        self.input['instrument_name'] = input_instrument
         self.input['channel'] = input_channel
-        self.input['instrument'] = input_channel.instrument
 
         self.trigger = trigger
-        if self.trigger:
-            self.input_instrument.trigger = self
+        # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
+
+    def __repr__(self):
+        output_str = "Connection{{{}.{}->{}.{}}}(".format(
+            self.output['instrument_name'], self.output['channel'],
+            self.input['instrument_name'], self.input['channel'])
+        if self.trigger:
+            output_str += ', trigger'
+        if self.default:
+            output_str += ', default'
+        if self.acquire:
+            output_str += ', acquire'
+        output_str += ')'
+        return output_str
 
 class CombinedConnection(Connection):
     def __init__(self, connections, scaling_factors=None,**kwargs):
