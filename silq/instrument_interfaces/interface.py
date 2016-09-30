@@ -2,8 +2,8 @@ from silq.pulses import PulseSequence
 
 class InstrumentInterface():
     def __init__(self, instrument):
-        self.instrument = None
-        self.instrument_name = instrument.name
+        self.instrument = instrument
+        self.name = instrument.name
 
         self.input_channels = {}
         self.output_channels = {}
@@ -18,7 +18,7 @@ class InstrumentInterface():
         self.pulse_implementations = []
 
     def __repr__(self):
-        return '{} interface'.format(self.instrument_name)
+        return '{} interface'.format(self.name)
 
     def get_pulse_implementation(self, pulse):
         for pulse_implementation in self.pulse_implementations:
