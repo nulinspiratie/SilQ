@@ -1,1 +1,2 @@
 from .mock_arbstudio import MockArbStudio
+from .mock_pulseblaster import MockPulseBlaster
