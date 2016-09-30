@@ -83,6 +83,16 @@ class Layout(Instrument):
     def get_instrument_interfaces(self):
         return self.instrument_interfaces
 
+    def print_instrument_interfaces(self):
+        # print(self.instrument_interfaces)
+        # for interface in self.instrument_interfaces.values():
+        #     print(interface.instrument)
+        for interface in self.instrument_interfaces.values():
+            print('interface: {}'.format(interface))
+            instrument = interface.instrument
+            print('instrument: {}'.format(instrument))
+            return interface
+
     def get_pulse_instrument(self, pulse):
         instruments = [instrument_interface for instrument_interface in
                        self.instrument_interfaces.values() if
