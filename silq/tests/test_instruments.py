@@ -1,4 +1,5 @@
 from qcodes import Instrument
+from qcodes.utils import validators as vals
 
 class TestInnerInstrument(Instrument):
     def __init__(self, name, **kwargs):
@@ -14,3 +15,15 @@ class TestOuterInstrument(Instrument):
 
     def get_instruments(self):
         return self.instruments
+
+
+class TestInstrument(Instrument):
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.add_parameter(name='param',
+                           set_cmd=self.fun,
+                           vals=vals.Anything())
+
+    def fun(self, *args):
+        for arg in args:
+            print(arg)
