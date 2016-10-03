@@ -4,8 +4,8 @@ from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 
 
 class ChipInterface(InstrumentInterface):
-    def __init__(self, instrument):
-        super().__init__(instrument)
+    def __init__(self, instrument_name, **kwargs):
+        super().__init__(instrument_name, **kwargs)
 
         self.output_channels = {
             'source_drain': Channel(self, name='source_drain', output=True)}
