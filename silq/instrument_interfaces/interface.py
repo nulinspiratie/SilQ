@@ -1,16 +1,23 @@
 from silq.pulses import PulseSequence
 
-class InstrumentInterface():
-    def __init__(self, instrument):
-        self.instrument = instrument
-        self.name = instrument.name
+from qcodes import Instrument
+from qcodes.instrument.parameter import ManualParameter
+from qcodes.utils import validators as vals
+
+class InstrumentInterface(Instrument):
+    def __init__(self, instrument_name, **kwargs):
+        super().__init__(name=instrument_name + '_interface', **kwargs)
+        self.instrument = self.find_instrument(name=instrument_name)
 
         self.input_channels = {}
         self.output_channels = {}
 
         self.channels = {}
 
-        self.pulse_sequence = PulseSequence()
+        self.add_parameter('pulse_sequence',
+                           parameter_class=ManualParameter,
+                           initial_value=PulseSequence(),
+                           vals=vals.Anything())
 
         self.pulse_implementations = []
 
@@ -23,6 +30,27 @@ class InstrumentInterface():
                 return pulse_implementation
         else:
             return None
+
+    def add_pulse(self, pulse):
+        """
+        Add a pulse to self.pulse_sequence. Necessary since the interface can be a remote instrument.
+        Args:
+            pulse: Pulse to add
+
+        Returns:
+            None
+        """
+        self.pulse_sequence().add(pulse)
+
+    def clear_pulses(self):
+        """
+       Clear all pulses from self.pulse_sequence. Necessary since the interface can be a remote instrument.
+        Args:
+            None
+        Returns:
+            None
+        """
+        self.pulse_sequence.clear()
 
     def setup(self):
         pass
