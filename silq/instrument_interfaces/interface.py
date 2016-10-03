@@ -14,6 +14,10 @@ class InstrumentInterface(Instrument):
 
         self.channels = {}
 
+        self.add_parameter('instrument_name',
+                           parameter_class=ManualParameter,
+                           initial_value=instrument_name,
+                           vals=vals.Anything())
         self.add_parameter('pulse_sequence',
                            parameter_class=ManualParameter,
                            initial_value=PulseSequence(),
@@ -50,7 +54,7 @@ class InstrumentInterface(Instrument):
         Returns:
             None
         """
-        self.pulse_sequence.clear()
+        self.pulse_sequence().clear()
 
     def setup(self):
         pass

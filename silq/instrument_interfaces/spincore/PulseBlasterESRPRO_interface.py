@@ -5,8 +5,8 @@ from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
 
 
 class PulseBlasterESRPROInterface(InstrumentInterface):
-    def __init__(self, instrument):
-        super().__init__(instrument)
+    def __init__(self, instrument_name, **kwargs):
+        super().__init__(instrument_name, **kwargs)
 
         self.output_channels = {
             'ch{}'.format(k): Channel(self, name='ch{}'.format(k), id=k,
