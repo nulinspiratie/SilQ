@@ -14,13 +14,14 @@ class InstrumentInterface(Instrument):
 
         self.channels = {}
 
+        self._pulse_sequence = PulseSequence()
         self.add_parameter('instrument_name',
                            parameter_class=ManualParameter,
                            initial_value=instrument_name,
                            vals=vals.Anything())
         self.add_parameter('pulse_sequence',
-                           parameter_class=ManualParameter,
-                           initial_value=PulseSequence(),
+                           get_cmd=lambda: self._pulse_sequence,
+                           set_cmd=self._set_pulse_sequence,
                            vals=vals.Anything())
 
         self.pulse_implementations = []
@@ -35,26 +36,43 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def add_pulse(self, pulse):
+    def _set_pulse_sequence(self, val):
         """
-        Add a pulse to self.pulse_sequence. Necessary since the interface can be a remote instrument.
+        set function for parameter self.pulse_sequence.
+        This function is created because properties/methods of the pulse_sequencecannot directly be
+        modified/accessed from outside an interface object.
+        This set command therefore allows access to properties/methods.
+
+        Usage is as follows:
+        If val is a PulseSequence, self.pulse_sequence will be replaced.
+        if val is string 'sort' or 'clear', that function will be called.
+        If val is a tuple (key (str), value), the action is dependent on key
+        If key is 'add', then value is the pulse to be added.
+        Else key should be a property, and value is its updated value
         Args:
-            pulse: Pulse to add
+            val: Either a PulseSequence, string, or a tuple (key, value) (see above)
 
         Returns:
             None
         """
-        self.pulse_sequence().add(pulse)
+        if type(val) == PulseSequence:
+            self._pulse_sequence = val
+        elif type(val) == str:
+            if val == 'clear':
+                self._pulse_sequence.clear()
+            elif val == 'sort':
+                self._pulse_sequence.sort()
+            else:
+                raise Exception('Pulse sequence command {} not understood'.format(val))
+        elif type(val) == tuple:
+            property, value = val
+            if property == 'add':
+                self._pulse_sequence.add(value)
+            else:
+                setattr(self._pulse_sequence, property, value)
+        else:
+            raise Exception('Pulse sequence command {} not understood'.format(val))
 
-    def clear_pulses(self):
-        """
-       Clear all pulses from self.pulse_sequence. Necessary since the interface can be a remote instrument.
-        Args:
-            None
-        Returns:
-            None
-        """
-        self.pulse_sequence().clear()
 
     def setup(self):
         pass

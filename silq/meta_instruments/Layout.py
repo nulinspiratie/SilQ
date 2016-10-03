@@ -29,12 +29,6 @@ class Layout(Instrument):
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
 
-    # def close(self):
-    #     for interface in self._interfaces.values():
-    #         print('closing {}'.format(interface))
-    #         interface.close()
-    #     super().close()
-
     def add_connection(self, output, input, **kwargs):
         connection = SingleConnection(output, input, **kwargs)
         self.connections += [connection]
@@ -135,8 +129,7 @@ class Layout(Instrument):
         interface = self._get_pulse_interface(pulse)
         return interface.instrument_name()
 
-    def get_pulse_connection(self, pulse, interface=None, instrument=None,
-                             **kwargs):
+    def get_pulse_connection(self, pulse, interface=None, instrument=None, **kwargs):
         """
         Obtain default connection for a given pulse. If no instrument or
         instrument_name is given, the instrument is determined from
@@ -177,7 +170,7 @@ class Layout(Instrument):
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
-            interface.clear_pulses()
+            interface.pulse_sequence('clear')
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -187,7 +180,7 @@ class Layout(Instrument):
 
             targeted_pulse = pulse.copy()
             targeted_pulse.connection = connection
-            interface.add_pulse(targeted_pulse)
+            interface.pulse_sequence(('add', targeted_pulse))
 
             # If instrument is not the main triggering instrument, add triggers
             # to each of the triggering instruments until you reach the main
@@ -207,12 +200,13 @@ class Layout(Instrument):
                 print('found trigger connection')
                 # Replace instrument by its triggering instrument
                 interface = self._interfaces[connection.output['instrument']]
-                interface.add_pulse(
+                interface.pulse_sequence(('add',
                     TriggerPulse(t_start=pulse.t_start, connection=connection,
-                                 t_stop=pulse.t_start))
+                                 t_stop=pulse.t_start)))
 
         # Setup each of the instruments using its pulse_sequence
         for interface in self._interfaces.values():
+            interface.pulse_sequence(('duration', pulse_sequence.duration))
             interface.setup()
 
         # TODO setup acquisition instrument
@@ -225,6 +219,7 @@ class Connection:
 
         # TODO make default dependent on implementation
         self.default = default
+
 
 class SingleConnection(Connection):
     def __init__(self, output, input,

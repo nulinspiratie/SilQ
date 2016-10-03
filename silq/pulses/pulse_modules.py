@@ -20,7 +20,7 @@ class PulseSequence:
         self.pulses = [self.pulses[idx] for idx in idx_sorted]
 
         # Update duration of PulseSequence
-        self.duration = max([pulse.t_stop for pulse in self.pulses])
+        # self.duration = max([pulse.t_stop for pulse in self.pulses])
         return self.pulses
 
     def clear(self):
