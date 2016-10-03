@@ -38,7 +38,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO implement setup for modes other than stepped
         # Transform into set to ensure that elements are unique
         self.active_channels = []
-        for pulse in self.pulse_sequence:
+        for pulse in self.pulse_sequence():
             output = pulse.connection.output
             if output.get('channel', None):
                 self.active_channels += [output['channel']]
@@ -83,7 +83,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         t_pulse = 0
 
         self.waveforms = {ch: [] for ch in self.active_channels}
-        for pulse in self.pulse_sequence:
+        for pulse in self.pulse_sequence():
             assert pulse.t_start == t_pulse, \
                 "Pulse {}: pulses.t_start = {} does not match {}".format(
                     pulse, pulse.t_start, t_pulse)
