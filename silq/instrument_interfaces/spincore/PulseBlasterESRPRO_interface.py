@@ -31,7 +31,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def setup(self):
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
-        # Factor of 2 needed because apparently the core clock is not the same as the sampling rate
+        # Factor of 2 needed because apparently the core clock is not the same
+        # as the sampling rate
         # TODO check if this is correct
         us = 2 * core_clock # points per microsecond
         ms = us * 1e3 # points per millisecond
@@ -44,12 +45,13 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         # Iteratively remove pulses from remaining_pulses as they are programmed
         remaining_pulses = self._pulse_sequence.pulses
-
-        # Determine trigger cycles
-        trigger_duration = remaining_pulses[0].trigger_duration
-        assert all([pulse.trigger_duration == trigger_duration for pulse in remaining_pulses]), \
-            "Cannot handle different pulse trigger durations yet."
-        trigger_cycles = round(trigger_duration * us)
+        if remaining_pulses:
+            # Determine trigger cycles
+            trigger_duration = remaining_pulses[0].trigger_duration
+            assert all([pulse.trigger_duration == trigger_duration
+                        for pulse in remaining_pulses]), \
+                "Cannot handle different pulse trigger durations yet."
+            trigger_cycles = round(trigger_duration * us)
 
         t = 0
         while remaining_pulses:
@@ -57,14 +59,16 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t_start_list = [pulse.t_start for pulse in remaining_pulses]
             t_start_min = min(t_start_list)
 
+            # Segment remaining pulses into next pulses and others
+            active_pulses = [pulse for pulse in remaining_pulses
+                             if pulse.t_start == t_start_min]
+            remaining_pulses = [pulse for pulse in remaining_pulses
+                                if pulse.t_start != t_start_min]
+
             if t_start_min > t:
                 wait_duration = t_start_min - t
                 wait_cycles = wait_duration * ms
                 self.instrument.send_instruction(0, 'continue', 0, wait_cycles)
-
-            # Segment remaining pulses in the ones that are up next and the others
-            active_pulses = [pulse for pulse in remaining_pulses if pulse.t_start == t_start_min]
-            remaining_pulses = [pulse for pulse in remaining_pulses if pulse.t_start != t_start_min]
 
             # Ignore first trigger if parameter value is true.
             # Some sequence modes require the first trigger to be ignored
@@ -72,16 +76,16 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # TODO deal with this correctly
                 pass
 
-            total_channel_value = sum([pulse.implement_pulse for pulse in active_pulses])
-            self.pulseblaster.send_instruction(total_channel_value, 'continue', 0, trigger_cycles)
+            total_channel_value = sum([self.implement_pulse(pulse)
+                                       for pulse in active_pulses])
+            self.instrument.send_instruction(total_channel_value, 'continue',
+                                             0, trigger_cycles)
             t += trigger_duration
 
-
-
+        self.instrument.stop_programming()
 
 
 class TriggerPulseImplementation(PulseImplementation):
-    trigger_duration = 1 # us
     def __init__(self, pulse_class, **kwargs):
         super().__init__(pulse_class, **kwargs)
 
