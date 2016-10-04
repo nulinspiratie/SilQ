@@ -36,6 +36,10 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
+    def implement_pulse(self, pulse):
+        pulse_implementation = self.get_pulse_implementation(pulse)
+        return pulse_implementation.implement_pulse(pulse)
+
     def _set_pulse_sequence(self, val):
         """
         set function for parameter self.pulse_sequence.

@@ -88,8 +88,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                 "Pulse {}: pulses.t_start = {} does not match {}".format(
                     pulse, pulse.t_start, t_pulse)
 
-            pulse_implementation = self.get_pulse_implementation(pulse)
-            channels_waveform = pulse_implementation.implement_pulse(pulse)
+            channels_waveform = self.implement_pulse(pulse)
 
             for ch in self.active_channels:
                 self.waveforms[ch].append(channels_waveform[ch])

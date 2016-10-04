@@ -15,11 +15,19 @@ class MockPulseBlaster(Instrument):
         self._instructions = []
 
         functions = ['stop', 'start', 'start_programming', 'stop_programming',
-                     'detect_boards', 'select_board']
+                     'detect_boards']
+        for function in functions:
+            self.add_function(function,
+                              call_cmd=partial(print_function, function=function))
+        functions = ['select_board']
         for function in functions:
             self.add_function(function,
                               call_cmd=partial(print_function, function=function),
                               args=[vals.Anything()])
+
+        self.add_parameter('core_clock',
+                           parameter_class=ManualParameter,
+                           initial_value=500)
 
         self.add_parameter('instructions',
                            get_cmd = lambda: self._instructions)
