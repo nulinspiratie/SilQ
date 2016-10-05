@@ -47,8 +47,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         remaining_pulses = self._pulse_sequence.pulses
         if remaining_pulses:
             # Determine trigger cycles
-            trigger_duration = remaining_pulses[0].trigger_duration
-            assert all([pulse.trigger_duration == trigger_duration
+            trigger_duration = remaining_pulses[0].duration
+            assert all([pulse.duration == trigger_duration
                         for pulse in remaining_pulses]), \
                 "Cannot handle different pulse trigger durations yet."
             trigger_cycles = round(trigger_duration * us)
@@ -63,7 +63,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             active_pulses = [pulse for pulse in remaining_pulses
                              if pulse.t_start == t_start_min]
             remaining_pulses = [pulse for pulse in remaining_pulses
-                                if pulse.t_start != t_start_min]
+                                    if pulse.t_start != t_start_min]
 
             if t_start_min > t:
                 wait_duration = t_start_min - t
@@ -73,9 +73,11 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             # Ignore first trigger if parameter value is true.
             # Some sequence modes require the first trigger to be ignored
             if t_start_min == 0 and self.ignore_first_trigger():
-                # TODO deal with this correctly
+                self.instrument.send_instruction(0, 'continue', 0,
+                                                 trigger_cycles)
+            else:
+                # self.
                 pass
-
             total_channel_value = sum([self.implement_pulse(pulse)
                                        for pulse in active_pulses])
             self.instrument.send_instruction(total_channel_value, 'continue',

@@ -66,8 +66,8 @@ class DCPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    trigger_duration = 1 # us
-    def __init__(self, trigger_duration=trigger_duration, **kwargs):
+    duration = 1 # us
+    def __init__(self, duration=duration, **kwargs):
         super().__init__(**kwargs)
 
-        self.trigger_duration = trigger_duration # us
+        self.duration = duration # us
