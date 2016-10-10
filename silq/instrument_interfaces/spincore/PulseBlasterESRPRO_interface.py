@@ -69,8 +69,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                         if pulse.t_start != t_start_min]
 
                 # Send wait instruction until next trigger
-                if t_start_min > t:
-                    wait_duration = t_start_min - t
+                wait_duration = t_start_min - t
+                if wait_duration:
                     wait_cycles = wait_duration * ms
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      wait_cycles)
@@ -89,7 +89,17 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                                      0, trigger_cycles)
                 t += trigger_duration
             else:
-                # Add final instruction, either a trigger, or a wait
+                # Add final instructions
+
+                # Wait until end of pulse sequence
+                wait_duration = self._pulse_sequence.duration - t
+                if wait_duration:
+                    wait_cycles = wait_duration * ms
+                    self.instrument.send_instruction(0, 'continue', 0,
+                                                     wait_cycles)
+                    t += wait_duration
+
+                # Check if a final trigger pulse is needed
                 active_pulses = [pulse for pulse in pulses
                                  if pulse.t_start == 0]
                 if active_pulses and self.ignore_first_trigger():
