@@ -76,12 +76,11 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 self.instrument.send_instruction(0, 'continue', 0,
                                                  trigger_cycles)
             else:
-                # self.
-                pass
-            total_channel_value = sum([self.implement_pulse(pulse)
-                                       for pulse in active_pulses])
-            self.instrument.send_instruction(total_channel_value, 'continue',
-                                             0, trigger_cycles)
+                total_channel_value = sum([self.implement_pulse(pulse)
+                                           for pulse in active_pulses])
+                self.instrument.send_instruction(total_channel_value,
+                                                 'continue',
+                                                 0, trigger_cycles)
             t += trigger_duration
 
         self.instrument.stop_programming()
