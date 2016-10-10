@@ -13,6 +13,7 @@ class PulseSequence:
         # TODO deal with case when pulses is a string (e.g. 'trigger')
         self.pulses.append(pulse)
         self.sort()
+        self.duration = max([pulse.t_stop for pulse in self.pulses])
 
     def sort(self):
         t_start_list = np.array([pulse.t_start for pulse in self.pulses])
@@ -25,6 +26,7 @@ class PulseSequence:
 
     def clear(self):
         self.pulses = []
+        self.duration = 0
 
 
 class PulseImplementation():
