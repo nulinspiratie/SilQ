@@ -43,45 +43,66 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.select_board(0)
         self.instrument.start_programming()
 
-        # Iteratively remove pulses from remaining_pulses as they are programmed
-        remaining_pulses = self._pulse_sequence.pulses
-        if remaining_pulses:
+        pulses = self._pulse_sequence.pulses
+
+        if pulses:
             # Determine trigger cycles
-            trigger_duration = remaining_pulses[0].duration
+            trigger_duration = pulses[0].duration
             assert all([pulse.duration == trigger_duration
-                        for pulse in remaining_pulses]), \
+                        for pulse in pulses]), \
                 "Cannot handle different pulse trigger durations yet."
             trigger_cycles = round(trigger_duration * us)
 
-        t = 0
-        while remaining_pulses:
-            # Determine start of next pulse(s)
-            t_start_list = [pulse.t_start for pulse in remaining_pulses]
-            t_start_min = min(t_start_list)
+            t = 0
+            # Iteratively remove pulses from remaining_pulses as they are
+            # programmed
+            remaining_pulses = pulses
+            while remaining_pulses:
+                # Determine start of next pulse(s)
+                t_start_list = [pulse.t_start for pulse in remaining_pulses]
+                t_start_min = min(t_start_list)
 
-            # Segment remaining pulses into next pulses and others
-            active_pulses = [pulse for pulse in remaining_pulses
-                             if pulse.t_start == t_start_min]
-            remaining_pulses = [pulse for pulse in remaining_pulses
-                                    if pulse.t_start != t_start_min]
+                # Segment remaining pulses into next pulses and others
+                active_pulses = [pulse for pulse in remaining_pulses
+                                 if pulse.t_start == t_start_min]
+                remaining_pulses = [pulse for pulse in remaining_pulses
+                                        if pulse.t_start != t_start_min]
 
-            if t_start_min > t:
-                wait_duration = t_start_min - t
-                wait_cycles = wait_duration * ms
-                self.instrument.send_instruction(0, 'continue', 0, wait_cycles)
+                # Send wait instruction until next trigger
+                if t_start_min > t:
+                    wait_duration = t_start_min - t
+                    wait_cycles = wait_duration * ms
+                    self.instrument.send_instruction(0, 'continue', 0,
+                                                     wait_cycles)
+                    t += wait_duration
 
-            # Ignore first trigger if parameter value is true.
-            # Some sequence modes require the first trigger to be ignored
-            if t_start_min == 0 and self.ignore_first_trigger():
-                self.instrument.send_instruction(0, 'continue', 0,
-                                                 trigger_cycles)
+                # Ignore first trigger if parameter value is true.
+                # Some sequence modes require the first trigger to be ignored
+                if t_start_min == 0 and self.ignore_first_trigger():
+                    self.instrument.send_instruction(0, 'continue', 0,
+                                                     trigger_cycles)
+                else:
+                    total_channel_value = sum([self.implement_pulse(pulse)
+                                               for pulse in active_pulses])
+                    self.instrument.send_instruction(total_channel_value,
+                                                     'continue',
+                                                     0, trigger_cycles)
+                t += trigger_duration
             else:
-                total_channel_value = sum([self.implement_pulse(pulse)
-                                           for pulse in active_pulses])
+                # Add final instruction, either a trigger, or a wait
+                active_pulses = [pulse for pulse in pulses
+                                 if pulse.t_start == 0]
+                if active_pulses and self.ignore_first_trigger():
+                    # If any pulses start at t=0 and the first trigger should be
+                    # ignored, a trigger is added at the end of programming.
+                    total_channel_value = sum([self.implement_pulse(pulse)
+                                               for pulse in active_pulses])
+                else:
+                    # Otherwise wait for the trigger duration
+                    total_channel_value = 0
                 self.instrument.send_instruction(total_channel_value,
-                                                 'continue',
-                                                 0, trigger_cycles)
-            t += trigger_duration
+                                                 'branch',
+                                                 1, trigger_cycles)
 
         self.instrument.stop_programming()
 
