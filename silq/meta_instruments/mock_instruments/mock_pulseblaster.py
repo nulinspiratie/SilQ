@@ -12,8 +12,6 @@ class MockPulseBlaster(Instrument):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
 
-        self._instructions = []
-
         functions = ['stop', 'start', 'start_programming', 'stop_programming',
                      'detect_boards']
         for function in functions:
@@ -30,9 +28,12 @@ class MockPulseBlaster(Instrument):
                            initial_value=500)
 
         self.add_parameter('instructions',
-                           get_cmd = lambda: self._instructions)
+                           parameter_class = ManualParameter,
+                           initial_value=[],
+                           vals=vals.Anything())
 
     def send_instruction(self, flags, instruction, inst_args, length):
         print_function(flags, instruction, inst_args, length,
                        function='send_instruction')
-        self._instructions += [(flags, instruction, inst_args, length)]
+        self.instructions(self.instructions() +
+                          [(flags, instruction, inst_args, length)])

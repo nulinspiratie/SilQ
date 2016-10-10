@@ -70,7 +70,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
                 # Send wait instruction until next trigger
                 wait_duration = t_start_min - t
-                if wait_duration:
+                if wait_duration > 0:
                     wait_cycles = wait_duration * ms
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      wait_cycles)
