@@ -1,19 +1,20 @@
-from functools import partial
 from silq.pulses import TriggerPulse
-from silq.instrument_interfaces import InstrumentInterface, Channel
+from silq.instrument_interfaces import Channel
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
+
 class Layout(Instrument):
-    shared_kwargs=['instrument_interfaces']
+    shared_kwargs = ['instrument_interfaces']
+
     def __init__(self, name, instrument_interfaces, **kwargs):
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
         self._interfaces = {interface.instrument_name(): interface
-                             for interface in instrument_interfaces}
+                            for interface in instrument_interfaces}
 
         self.connections = []
 
@@ -29,8 +30,8 @@ class Layout(Instrument):
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
 
-    def add_connection(self, output, input, **kwargs):
-        connection = SingleConnection(output, input, **kwargs)
+    def add_connection(self, output_arg, input_arg, **kwargs):
+        connection = SingleConnection(output_arg, input_arg, **kwargs)
         self.connections += [connection]
         return connection
 
@@ -39,8 +40,9 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def get_connections(self, output_interface=None, output_instrument=None, output_channel=None,
-                        input_interface=None, input_instrument=None, input_channel=None,
+    def get_connections(self, output_interface=None, output_instrument=None,
+                        output_channel=None, input_interface=None,
+                        input_instrument=None, input_channel=None,
                         trigger=None):
         """
         Returns all connections that satisfy given kwargs
@@ -51,7 +53,7 @@ class Layout(Instrument):
             input_interface: Connections must have input_interface
             input_instrument: Connections must have input_instrument name
             input_channel: Connections must have input_channel
-
+            trigger: Connection must be a triggering connection
         Returns:
             Connections that satisfy kwarg constraints
         """
@@ -88,10 +90,9 @@ class Layout(Instrument):
             )
         if trigger is not None:
             filtered_connections = filter(
-                lambda c: c.trigger==trigger,
+                lambda c: c.trigger == trigger,
                 filtered_connections
             )
-
 
         return list(filtered_connections)
 
@@ -105,8 +106,8 @@ class Layout(Instrument):
             Instrument interface for pulse
         """
         interfaces = [interface for interface in
-                       self._interfaces.values() if
-                       interface.get_pulse_implementation(pulse)]
+                      self._interfaces.values() if
+                      interface.get_pulse_implementation(pulse)]
         if not interfaces:
             raise Exception('No instruments have an implementation for pulses '
                             '{}'.format(pulse))
@@ -129,7 +130,8 @@ class Layout(Instrument):
         interface = self._get_pulse_interface(pulse)
         return interface.instrument_name()
 
-    def get_pulse_connection(self, pulse, interface=None, instrument=None, **kwargs):
+    def get_pulse_connection(self, pulse, interface=None, instrument=None,
+                             **kwargs):
         """
         Obtain default connection for a given pulse. If no instrument or
         instrument_name is given, the instrument is determined from
@@ -153,7 +155,6 @@ class Layout(Instrument):
             interface = self._get_pulse_interface(pulse)
             connections = self.get_connections(
                 output_interface=interface, **kwargs)
-
 
         default_connections = [connection for connection in connections
                                if connection.default]
@@ -201,8 +202,9 @@ class Layout(Instrument):
                 # Replace instrument by its triggering instrument
                 interface = self._interfaces[connection.output['instrument']]
                 interface.pulse_sequence(('add',
-                    TriggerPulse(t_start=pulse.t_start, connection=connection,
-                                 t_stop=pulse.t_start)))
+                                          TriggerPulse(t_start=pulse.t_start,
+                                                       connection=connection,
+                                                       t_stop=pulse.t_start)))
 
         # Setup each of the instruments using its pulse_sequence
         for interface in self._interfaces.values():
@@ -222,13 +224,13 @@ class Connection:
 
 
 class SingleConnection(Connection):
-    def __init__(self, output, input,
+    def __init__(self, output_arg, input_arg,
                  trigger=False, acquire=False, **kwargs):
         """
         Class representing a connection between instrument channels.
 
         Args:
-            output: Specification of output channel.
+            output_arg: Specification of output channel.
                 Can be:
                     str "{instrument_name}.{output_channel_name}"
                     tuple ({instrument_name}, {output_channel_name})
@@ -242,17 +244,21 @@ class SingleConnection(Connection):
         # TODO Add mirroring of other channel.
         super().__init__(**kwargs)
 
-        if type(output) is str:
-            output_instrument, output_channel = output.split('.')
-        elif type(output) is tuple:
-            output_instrument, output_channel = output
+        if type(output_arg) is str:
+            output_instrument, output_channel = output_arg.split('.')
+        elif type(output_arg) is tuple:
+            output_instrument, output_channel = output_arg
+        else:
+            raise TypeError('Connection output must be a string or tuple')
         self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
 
-        if type(input) is str:
-            input_instrument, input_channel = input.split('.')
-        elif type(input) is tuple:
-            input_instrument, input_channel = input
+        if type(input_arg) is str:
+            input_instrument, input_channel = input_arg.split('.')
+        elif type(input_arg) is tuple:
+            input_instrument, input_channel = input_arg
+        else:
+            raise TypeError('Connection input must be a string or tuple')
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
 
