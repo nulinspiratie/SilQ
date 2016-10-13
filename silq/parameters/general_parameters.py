@@ -32,6 +32,27 @@ class CombinedParameter(Parameter):
             parameter(val * ratio)
             sleep(0.005)
 
+class ScaledParameter(Parameter):
+    def __init__(self, parameter, ratio=1,
+                 name=None, label=None, units=None, **kwargs):
+        if name is None:
+            name = parameter.name
+        if label is None:
+            label = parameter.name
+        if units is None:
+            units = parameter.units
+        super().__init__(name, label=label, units=units, **kwargs)
+        self.parameter = parameter
+
+        self.ratio = ratio
+        self._meta_attrs.extend(['ratio'])
+
+    def get(self):
+        return self.parameter() / self.ratio
+
+    def set(self, val):
+        self.parameter(val * self.ratio)
+
 class TestStoreParameter(Parameter):
     def __init__(self, data_manager, shape=(100,2), formatter=None, **kwargs):
         self.data_manager = data_manager
@@ -89,7 +110,6 @@ class StoreParameter(Parameter):
             mode=data_mode,
             data_manager=self.data_manager, name='test_data_parameter',
             formatter=formatter)
-
 
     def get(self):
         result = np.random.randint(1, 100, size=self.shape)
