@@ -9,8 +9,7 @@ from qcodes.instrument_drivers.AlazarTech.ATS import AcquisitionController
 
 
 class BasicATSInterface(InstrumentInterface, AcquisitionController):
-    """Basic AcquisitionController tested on ATS9360
-    returns unprocessed data averaged by record with 2 channels
+    """Basic AcquisitionController tested on ATS9440
     """
     def __init__(self, name, instrument_name, **kwargs):
         InstrumentInterface.__init__(name, instrument_name, **kwargs)
