@@ -214,9 +214,9 @@ class Layout(Instrument):
         interface.pulse_sequence(('add', targeted_pulse))
 
         # Also target any pulses that are in additional_pulses, such as triggers
-        print('additional pulses: {}'.format(targeted_pulse.additional_pulses))
+        # print('additional pulses: {}'.format(targeted_pulse.additional_pulses))
         for additional_pulse in targeted_pulse.additional_pulses:
-            print('main pulse {} needs {}'.format(pulse, additional_pulse))
+            # print('main pulse {} needs {}'.format(pulse, additional_pulse))
             self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
