@@ -13,3 +13,12 @@ class ChipInterface(InstrumentInterface):
             channel_name: Channel(self, name=channel_name, input=True)
                                for channel_name in ['TGAC', 'DF']}
         self.channels = {**self.input_channels, **self.output_channels}
+
+    def setup(self):
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
