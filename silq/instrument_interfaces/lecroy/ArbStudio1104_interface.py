@@ -22,7 +22,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.pulse_implementations = [
             # TODO implement SinePulse
-            # pulses.SinePulse.create_implementation(
+            # SinePulse(
             #     pulse_requirements=('frequency', {'min':1e6, 'max':50e6})
             # ),
             DCPulseImplementation(

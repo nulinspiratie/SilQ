@@ -54,6 +54,16 @@ class PulseSequence:
     def __getitem__(self, index):
         return self.pulses[index]
 
+    def __repr__(self):
+        output= 'PulseSequence with {} pulses, duration: {}\n'.format(
+            len(self.pulses), self.duration)
+        for pulse in self.pulses:
+            pulse_repr = repr(pulse)
+            # Add a tab to each line
+            pulse_repr = '\t'.join(pulse_repr.splitlines(True))
+            output += pulse_repr + '\n'
+        return output
+
     def add(self, pulse):
         # TODO deal with case when pulses is a string (e.g. 'trigger')
         self.pulses.append(pulse)
