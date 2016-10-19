@@ -5,9 +5,6 @@ from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 
-def print_function(*args, **kwargs):
-    print('args={args}, kwargs={kwargs}'.format(args=args, kwargs=kwargs))
-
 class MockPulseBlaster(Instrument):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
@@ -16,11 +13,13 @@ class MockPulseBlaster(Instrument):
                      'detect_boards']
         for function in functions:
             self.add_function(function,
-                              call_cmd=partial(print_function, function=function))
+                              call_cmd=partial(self.print_function,
+                                               function=function))
         functions = ['select_board']
         for function in functions:
             self.add_function(function,
-                              call_cmd=partial(print_function, function=function),
+                              call_cmd=partial(self.print_function,
+                                               function=function),
                               args=[vals.Anything()])
 
         self.add_parameter('core_clock',
@@ -31,9 +30,19 @@ class MockPulseBlaster(Instrument):
                            parameter_class = ManualParameter,
                            initial_value=[],
                            vals=vals.Anything())
+        self.add_parameter('silent',
+                           parameter_class = ManualParameter,
+                           initial_value=False,
+                           vals=vals.Bool())
 
     def send_instruction(self, flags, instruction, inst_args, length):
-        print_function(flags, instruction, inst_args, length,
-                       function='send_instruction')
+        if not self.silent():
+            self.print_function(flags, instruction, inst_args, length,
+                           function='send_instruction')
         self.instructions(self.instructions() +
                           [(flags, instruction, inst_args, length)])
+
+    def print_function(self, *args, **kwargs):
+        if not self.silent():
+            print('args={args}, kwargs={kwargs}'.format(args=args,
+                                                        kwargs=kwargs))

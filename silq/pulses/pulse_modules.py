@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 class PulseRequirement():
     def __init__(self, property, requirement):
@@ -61,7 +62,7 @@ class PulseSequence:
             pulse_repr = repr(pulse)
             # Add a tab to each line
             pulse_repr = '\t'.join(pulse_repr.splitlines(True))
-            output += pulse_repr + '\n'
+            output += '\t' + pulse_repr + '\n'
         return output
 
     def add(self, pulse):
@@ -125,7 +126,7 @@ class PulseImplementation:
 
         # Copy over all attributes from the pulse
         for attr, val in vars(pulse).items():
-            setattr(targeted_pulse, attr, val)
+            setattr(targeted_pulse, attr, copy.deepcopy(val))
         return targeted_pulse
 
     def implement(self):

@@ -46,19 +46,19 @@ class Pulse:
         #                            for prop in properties])
 
         if self.connection_requirements:
-            properties_str += '\nrequirements: {}'.format(
+            properties_str += '\n\trequirements: {}'.format(
                 self.connection_requirements)
         if hasattr(self, 'additional_pulses') and self.additional_pulses:
-            properties_str += '\nadditional_pulses:'
+            properties_str += '\n\tadditional_pulses:'
             for pulse in self.additional_pulses:
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
-                properties_str  += '\n{}'.format(pulse_repr)
+                properties_str  += '\n\t{}'.format(pulse_repr)
 
         return '{pulse_type}({properties})'.format(
             pulse_type=self.__class__.__name__, properties=properties_str)
 
     def copy(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
 
 
