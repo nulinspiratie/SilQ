@@ -4,6 +4,7 @@ from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
+
 class InstrumentInterface(Instrument):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(name=instrument_name + '_interface', **kwargs)
@@ -29,16 +30,24 @@ class InstrumentInterface(Instrument):
     def __repr__(self):
         return '{} interface'.format(self.name)
 
-    def get_pulse_implementation(self, pulse):
+    def get_pulse_implementation(self, pulse, is_primary=False):
+        """
+        Get a target implementation of a pulse if the instrument is capable
+        of implementing the pulse. Whether or not it is capable depends on if
+        it has an implementation that satisfies the pulse requirements
+        Args:
+            pulse: pulse to be targeted
+            is_primary: whether or not the instrument is the primary instrument
+
+        Returns:
+            Targeted pulse if it can be implemented. Otherwise None
+        """
         for pulse_implementation in self.pulse_implementations:
-            if pulse_implementation.is_implementation(pulse):
-                return pulse_implementation.target_pulse(pulse, self)
+            if pulse_implementation.satisfies_requirements(pulse):
+                return pulse_implementation.target_pulse(pulse, self,
+                                                         is_primary=is_primary)
         else:
             return None
-
-    def implement_pulse(self, pulse):
-        pulse_implementation = self.get_pulse_implementation(pulse)
-        return pulse_implementation.implement_pulse(pulse)
 
     def _set_pulse_sequence(self, val):
         """
@@ -72,15 +81,14 @@ class InstrumentInterface(Instrument):
                 raise Exception(
                     'Pulse sequence command {} not understood'.format(val))
         elif type(val) == tuple:
-            property, value = val
-            if property == 'add':
+            key, value = val
+            if key == 'add':
                 self._pulse_sequence.add(value)
             else:
-                setattr(self._pulse_sequence, property, value)
+                setattr(self._pulse_sequence, key, value)
         else:
             raise Exception(
                 'Pulse sequence command {} not understood'.format(val))
-
 
     def setup(self):
         raise NotImplementedError(
