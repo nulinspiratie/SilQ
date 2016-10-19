@@ -78,6 +78,12 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.load_waveforms(channels=active_channels_id)
         self.instrument.load_sequence(channels=active_channels_id)
 
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
     def generate_waveforms(self):
         # Set time t_pulse to zero, will increase as we iterate over pulses
         t_pulse = 0
