@@ -36,6 +36,9 @@ class PulseImplementation():
         self.pulse_conditions = [PulseCondition(self, property, condition) for
                                  (property, condition) in pulse_conditions]
 
+        # Once implementation has targeted a pulse, this will become self.pulse
+        self.pulse = None
+
         # List of pulses that need to be impementable as well, such as a
         # triggering pulse. Each pulse has requirements in
         # pulse.connection_requirements, such as that the pulse must be provided
@@ -60,7 +63,7 @@ class PulseImplementation():
             return np.all([pulse_condition.satisfies(pulse)
                            for pulse_condition in self.pulse_conditions])
 
-    def target_pulse(self, pulse):
+    def target_pulse(self, pulse, interface):
         '''
         This tailors a PulseImplementation to a specific pulse.
         This is useful for reasons such as adding pulse_requirements such as a
@@ -71,7 +74,9 @@ class PulseImplementation():
         Returns:
             Copy of pulse instrument, targeted to specific pulse
         '''
-        return self.copy()
+        pulse_implementation = self.copy()
+        pulse_implementation.pulse = pulse
+        return pulse_implementation
 
 
 class PulseCondition():

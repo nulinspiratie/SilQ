@@ -17,8 +17,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.channels = {**self.output_channels}
 
         self.pulse_implementations = [
-            TriggerPulse.create_implementation(
-                TriggerPulseImplementation,
+            TriggerPulseImplementation(
                 pulse_conditions=[]
             )
         ]
@@ -123,8 +122,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         pass
 
 class TriggerPulseImplementation(PulseImplementation):
-    def __init__(self, pulse_class, **kwargs):
-        super().__init__(pulse_class, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(TriggerPulse, **kwargs)
 
     def implement_pulse(self, trigger_pulse):
         output_channel_name = trigger_pulse.connection.output['channel']

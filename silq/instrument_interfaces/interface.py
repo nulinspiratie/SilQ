@@ -32,7 +32,7 @@ class InstrumentInterface(Instrument):
     def get_pulse_implementation(self, pulse):
         for pulse_implementation in self.pulse_implementations:
             if pulse_implementation.is_implementation(pulse):
-                return pulse_implementation.target_pulse(pulse)
+                return pulse_implementation.target_pulse(pulse, self)
         else:
             return None
 
@@ -43,7 +43,8 @@ class InstrumentInterface(Instrument):
     def _set_pulse_sequence(self, val):
         """
         set function for parameter self.pulse_sequence.
-        This function is created because properties/methods of the pulse_sequencecannot directly be
+        This function is created because properties/methods of the
+        pulse_sequence cannot directly be
         modified/accessed from outside an interface object.
         This set command therefore allows access to properties/methods.
 
@@ -54,7 +55,8 @@ class InstrumentInterface(Instrument):
         If key is 'add', then value is the pulse to be added.
         Else key should be a property, and value is its updated value
         Args:
-            val: Either a PulseSequence, string, or a tuple (key, value) (see above)
+            val: Either a PulseSequence, string, or a tuple (key, value)
+                 (see above)
 
         Returns:
             None
@@ -67,7 +69,8 @@ class InstrumentInterface(Instrument):
             elif val == 'sort':
                 self._pulse_sequence.sort()
             else:
-                raise Exception('Pulse sequence command {} not understood'.format(val))
+                raise Exception(
+                    'Pulse sequence command {} not understood'.format(val))
         elif type(val) == tuple:
             property, value = val
             if property == 'add':
@@ -75,7 +78,8 @@ class InstrumentInterface(Instrument):
             else:
                 setattr(self._pulse_sequence, property, value)
         else:
-            raise Exception('Pulse sequence command {} not understood'.format(val))
+            raise Exception(
+                'Pulse sequence command {} not understood'.format(val))
 
 
     def setup(self):
