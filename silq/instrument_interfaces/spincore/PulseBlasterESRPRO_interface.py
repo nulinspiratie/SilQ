@@ -18,7 +18,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         self.pulse_implementations = [
             TriggerPulseImplementation(
-                pulse_conditions=[]
+                pulse_requirements=[]
             )
         ]
 
@@ -43,6 +43,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.start_programming()
 
         pulses = self._pulse_sequence.pulses
+        print('pulseblaster pulses: {}'.format(pulses))
 
         if pulses:
             # Determine trigger cycles
@@ -81,7 +82,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      trigger_cycles)
                 else:
-                    total_channel_value = sum([self.implement_pulse(pulse)
+                    total_channel_value = sum([pulse.implement()
                                                for pulse in active_pulses])
                     self.instrument.send_instruction(total_channel_value,
                                                      'continue',
@@ -104,7 +105,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 if active_pulses and self.ignore_first_trigger():
                     # If any pulses start at t=0 and the first trigger should be
                     # ignored, a trigger is added at the end of programming.
-                    total_channel_value = sum([self.implement_pulse(pulse)
+                    total_channel_value = sum([pulse.implement()
                                                for pulse in active_pulses])
                 else:
                     # Otherwise wait for the trigger duration
@@ -121,13 +122,12 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         pass
 
-class TriggerPulseImplementation(PulseImplementation):
+class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
-        super().__init__(TriggerPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
-    def implement_pulse(self, trigger_pulse):
-        output_channel_name = trigger_pulse.connection.output['channel']
-
+    def implement(self):
+        output_channel_name = self.connection.output['channel']
         # Split channel number from string (e.g. "ch3" -> 3)
         output_channel = int(output_channel_name[2])
         channel_value = 2**(output_channel-1)

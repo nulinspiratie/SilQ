@@ -106,35 +106,39 @@ class Layout(Instrument):
             Instrument interface for pulse
         """
         #
-        print('Getting interface for pulse: {}'.format(pulse))
+        # print('Getting interface for pulse: {}'.format(pulse))
 
         # Only look at interfaces that are the output instrument for a
         # connection that satisfies pulse.connection_requirements
         connections = self.get_connections(**pulse.connection_requirements)
-        print('All connections: {}'.format(self.connections))
-        print('Available connections: {}'.format(connections))
+        # print('All connections: {}'.format(self.connections))
+        # print('Available connections: {}'.format(connections))
 
         output_instruments = set([connection.output['instrument']
                                 for connection in connections])
-        print('Output instruments: {}'.format(output_instruments))
+        # print('Output instruments: {}'.format(output_instruments))
 
         interfaces = {instrument: self._interfaces[instrument]
                       for instrument in output_instruments}
-        print('potential interfaces: {}'.format(interfaces))
+        # print('potential interfaces: {}'.format(interfaces))
 
         matched_interfaces = []
         for instrument_name, interface in interfaces.items():
-            pulse_implementation = interface.get_pulse_implementation(pulse)
+            is_primary = self.primary_instrument() == \
+                         interface.instrument_name()
+            # print('{} is primary: {}'.format(instrument_name, is_primary))
+            pulse_implementation = interface.get_pulse_implementation(
+                pulse, is_primary=is_primary)
 
             # Skip to next interface if there is no pulse implementation
             if pulse_implementation is None:
                 continue
 
-            # Test if all pulse requirements of this pulse also have a matching
+            # Test if all additional pulses of this pulse also have a matching
             # interface. Note that this is recursive.
-            if not all([self._get_pulse_interface(pulse_requirement) is not None
-                        for pulse_requirement
-                        in pulse_implementation.pulse_requirements]):
+            if not all([self._get_pulse_interface(additional_pulse) is not None
+                        for additional_pulse
+                        in pulse_implementation.additional_pulses]):
                 continue
             else:
                 matched_interfaces.append(interface)
@@ -176,43 +180,44 @@ class Layout(Instrument):
         Returns:
             Connection object for pulse
         """
+        connection_requirements = pulse.connection_requirements.copy()
+
         if interface is not None:
-            connections = self.get_connections(
-                output_interface=interface, **kwargs)
+            connection_requirements['output_interface'] = interface
         elif instrument is not None:
-            connections = self.get_connections(
-                output_instrument=instrument, **kwargs)
+            connection_requirements['output_instrument'] = instrument
         else:
-            interface = self._get_pulse_interface(pulse)
-            connections = self.get_connections(
-                output_interface=interface, **kwargs)
+            connection_requirements['output_interface'] = \
+                self._get_pulse_interface(pulse)
 
-        default_connections = [connection for connection in connections
-                               if connection.default]
-        if not default_connections:
-            raise Exception('Instrument {} has connections {}, but none are '
-                            'set as default'.format(interface, connections))
-        elif len(default_connections) > 1:
-            raise Exception('Instrument {} has connections {}, and more than'
-                            'one are set as default'.format(interface,
-                                                            connections))
+        connections = self.get_connections(**connection_requirements, **kwargs)
+
+        if len(connections) > 1:
+            connections = [connection for connection in connections
+                           if connection.default]
+
+        if len(connections) != 1:
+            raise Exception('Instrument {} did not have suitable connection out'
+                            ' of connections {}'.format(interface, connections))
         else:
-            return default_connections[0]
+            return connections[0]
 
-    def _target_pulse(self, pulse):
+    def _target_pulse(self, pulse, **kwargs):
         # Get default output instrument
         interface = self._get_pulse_interface(pulse)
         connection = self.get_pulse_connection(pulse, interface=interface)
 
-        targeted_pulse = pulse.copy()
+        is_primary = self.primary_instrument() == interface.instrument_name()
+        targeted_pulse = interface.get_pulse_implementation(
+            pulse, is_primary=is_primary)
         targeted_pulse.connection = connection
         interface.pulse_sequence(('add', targeted_pulse))
 
-        pulse_implementation = interface.get_pulse_implementation(targeted_pulse)
-
-        # Also target any pulses that are in the pulse_requirements
-        for pulse_requirement in pulse_implementation.pulse_requirements:
-            self._target_pulse(pulse_requirement)
+        # Also target any pulses that are in additional_pulses, such as triggers
+        print('additional pulses: {}'.format(targeted_pulse.additional_pulses))
+        for additional_pulse in targeted_pulse.additional_pulses:
+            print('main pulse {} needs {}'.format(pulse, additional_pulse))
+            self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments

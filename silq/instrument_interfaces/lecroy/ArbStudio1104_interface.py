@@ -23,13 +23,13 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.pulse_implementations = [
             # TODO implement SinePulse
             # pulses.SinePulse.create_implementation(
-            #     pulse_conditions=('frequency', {'min':1e6, 'max':50e6})
+            #     pulse_requirements=('frequency', {'min':1e6, 'max':50e6})
             # ),
             DCPulseImplementation(
-                pulse_conditions=[('amplitude', {'min': -2.5, 'max': 2.5})]
+                pulse_requirements=[('amplitude', {'min': -2.5, 'max': 2.5})]
             ),
             TriggerPulseImplementation(
-                pulse_conditions=[]
+                pulse_requirements=[]
             )
         ]
 
@@ -98,7 +98,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                 "Pulse {}: pulses.t_start = {} does not match {}".format(
                     pulse, pulse.t_start, t_pulse)
 
-            channels_waveform = self.implement_pulse(pulse)
+            channels_waveform = pulse.implement()
 
             for ch in self.active_channels:
                 self.waveforms[ch].append(channels_waveform[ch])
@@ -113,23 +113,27 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.sequences
 
 
-class DCPulseImplementation(PulseImplementation):
+class DCPulseImplementation(DCPulse, PulseImplementation):
     def __init__(self, **kwargs):
-        super().__init__(DCPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
-    def target_pulse(self, pulse, interface):
-        pulse_implementation = super().target_pulse(pulse, interface=interface)
-        pulse_implementation.pulse_requirements.append(
-            TriggerPulse(t_start=pulse.t_start,
-                         duration=interface.trigger_in_duration(),
-                         connection_requirements={
-                             'input_instrument': interface.instrument_name(),
-                             'trigger': True}
-                         )
-        )
-        return pulse_implementation
+    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
 
-    def implement_pulse(self):
+        if not is_primary:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=interface.trigger_in_duration(),
+                             connection_requirements={
+                                 'input_instrument':
+                                     interface.instrument_name(),
+                                 'trigger': True}
+                             )
+            )
+        return targeted_pulse
+
+    def implement(self):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
@@ -140,35 +144,32 @@ class DCPulseImplementation(PulseImplementation):
             {output_channel: pulses arr} dictionary for each output channel
         """
         # Arbstudio requires a minimum of four points to be returned
-        if isinstance(self.pulse.connection, SingleConnection):
-            return {self.pulse.connection.output['channel']:
-                        [self.pulse.amplitude] * 4}
-        elif isinstance(self.pulse.connection, CombinedConnection):
-            return {ch: [self.pulse.amplitude] * 4
-                    for ch in self.pulse.connection.output['channels']}
+        if isinstance(self.connection, SingleConnection):
+            return {self.connection.output['channel']:
+                        [self.amplitude] * 4}
+        elif isinstance(self.connection, CombinedConnection):
+            return {ch: [self.amplitude] * 4
+                    for ch in self.connection.output['channels']}
         else:
             raise Exception("No implementation for connection {}".format(
-                self.pulse.connection))
+                self.connection))
 
 
-class TriggerPulseImplementation(PulseImplementation):
+class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
-        super().__init__(TriggerPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
-    def target_pulse(self, pulse, interface):
-        pulse_implementation = super().target_pulse(pulse, interface=interface)
-        pulse_implementation.pulse_requirements.append(
-            TriggerPulse(t_start=pulse.t_start,
-                         duration=interface.trigger_in_duration(),
-                         connection_requirements={
-                             'input_instrument': interface.instrument_name(),
-                             'trigger': True}
-                         )
-        )
-        return pulse_implementation
-
-    def implement_pulse(self, trigger_pulse):
-        if isinstance(trigger_pulse.connection, SingleConnection):
-            pass
-        elif isinstance(trigger_pulse.connection, CombinedConnection):
-            pass
+    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
+        if not is_primary:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=interface.trigger_in_duration(),
+                             connection_requirements={
+                                 'input_instrument':
+                                     interface.instrument_name(),
+                                 'trigger': True}
+                             )
+            )
+        return targeted_pulse
