@@ -18,7 +18,7 @@ class Layout(Instrument):
 
         self.connections = []
 
-        self.add_parameter('trigger_instrument',
+        self.add_parameter('primary_instrument',
                            parameter_class=ManualParameter,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
@@ -105,21 +105,22 @@ class Layout(Instrument):
         Returns:
             Instrument interface for pulse
         """
-
-        # print('Getting interface for pulse: {}'.format(pulse))
+        #
+        print('Getting interface for pulse: {}'.format(pulse))
 
         # Only look at interfaces that are the output instrument for a
         # connection that satisfies pulse.connection_requirements
         connections = self.get_connections(**pulse.connection_requirements)
-        # print('Available connections: {}'.format(connections))
+        print('All connections: {}'.format(self.connections))
+        print('Available connections: {}'.format(connections))
 
         output_instruments = set([connection.output['instrument']
                                 for connection in connections])
-        # print('Output instruments: {}'.format(output_instruments))
+        print('Output instruments: {}'.format(output_instruments))
 
         interfaces = {instrument: self._interfaces[instrument]
                       for instrument in output_instruments}
-        # print('potential interfaces: {}'.format(interfaces))
+        print('potential interfaces: {}'.format(interfaces))
 
         matched_interfaces = []
         for instrument_name, interface in interfaces.items():
@@ -209,31 +210,9 @@ class Layout(Instrument):
 
         pulse_implementation = interface.get_pulse_implementation(targeted_pulse)
 
+        # Also target any pulses that are in the pulse_requirements
         for pulse_requirement in pulse_implementation.pulse_requirements:
             self._target_pulse(pulse_requirement)
-
-        # If instrument is not the main triggering instrument, add triggers
-        # to each of the triggering instruments until you reach the main
-        # triggering instrument.
-        # TODO this should only be done in some cases, for instance if an
-        # Arbstudio is the input instrument and is in stepped mode
-        while interface.instrument_name() != self.trigger_instrument():
-            print(interface.instrument_name(), self.trigger_instrument())
-            trigger_connections = self.get_connections(
-                input_interface=interface, trigger=True)
-            assert len(trigger_connections) == 1, \
-                "Did not find exactly one triggering connection: {}. " \
-                "All connections: {}".format(
-                    trigger_connections, self.connections
-                )
-            connection = trigger_connections[0]
-            print('found trigger connection')
-            # Replace instrument by its triggering instrument
-            interface = self._interfaces[connection.output['instrument']]
-            interface.pulse_sequence(('add',
-                                      TriggerPulse(t_start=pulse.t_start,
-                                                   connection=connection,
-                                                   t_stop=pulse.t_start)))
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
