@@ -1,1 +1,2 @@
+from .ATS_interface import ATSInterface
 from .BasicATS_interface import BasicATSInterface
