@@ -43,7 +43,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.start_programming()
 
         pulses = self._pulse_sequence.pulses
-        print('pulseblaster pulses: {}'.format(pulses))
 
         if pulses:
             # Determine trigger cycles
