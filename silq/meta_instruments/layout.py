@@ -105,18 +105,48 @@ class Layout(Instrument):
         Returns:
             Instrument interface for pulse
         """
-        interfaces = [interface for interface in
-                      self._interfaces.values() if
-                      interface.get_pulse_implementation(pulse)]
-        if not interfaces:
+
+        # print('Getting interface for pulse: {}'.format(pulse))
+
+        # Only look at interfaces that are the output instrument for a
+        # connection that satisfies pulse.connection_requirements
+        connections = self.get_connections(**pulse.connection_requirements)
+        # print('Available connections: {}'.format(connections))
+
+        output_instruments = set([connection.output['instrument']
+                                for connection in connections])
+        # print('Output instruments: {}'.format(output_instruments))
+
+        interfaces = {instrument: self._interfaces[instrument]
+                      for instrument in output_instruments}
+        # print('potential interfaces: {}'.format(interfaces))
+
+        matched_interfaces = []
+        for instrument_name, interface in interfaces.items():
+            pulse_implementation = interface.get_pulse_implementation(pulse)
+
+            # Skip to next interface if there is no pulse implementation
+            if pulse_implementation is None:
+                continue
+
+            # Test if all pulse requirements of this pulse also have a matching
+            # interface. Note that this is recursive.
+            if not all([self._get_pulse_interface(pulse_requirement) is not None
+                        for pulse_requirement
+                        in pulse_implementation.pulse_requirements]):
+                continue
+            else:
+                matched_interfaces.append(interface)
+
+        if not matched_interfaces:
             raise Exception('No instruments have an implementation for pulses '
                             '{}'.format(pulse))
-        elif len(interfaces) > 1:
+        elif len(matched_interfaces) > 1:
             raise Exception('More than one instrument have an implementation '
                             'for pulses {}. Functionality to choose instrument '
                             'not yet implemented'.format(pulse))
         else:
-            return interfaces[0]
+            return matched_interfaces[0]
 
     def get_pulse_instrument(self, pulse):
         """
@@ -168,6 +198,43 @@ class Layout(Instrument):
         else:
             return default_connections[0]
 
+    def _target_pulse(self, pulse):
+        # Get default output instrument
+        interface = self._get_pulse_interface(pulse)
+        connection = self.get_pulse_connection(pulse, interface=interface)
+
+        targeted_pulse = pulse.copy()
+        targeted_pulse.connection = connection
+        interface.pulse_sequence(('add', targeted_pulse))
+
+        pulse_implementation = interface.get_pulse_implementation(targeted_pulse)
+
+        for pulse_requirement in pulse_implementation.pulse_requirements:
+            self._target_pulse(pulse_requirement)
+
+        # If instrument is not the main triggering instrument, add triggers
+        # to each of the triggering instruments until you reach the main
+        # triggering instrument.
+        # TODO this should only be done in some cases, for instance if an
+        # Arbstudio is the input instrument and is in stepped mode
+        while interface.instrument_name() != self.trigger_instrument():
+            print(interface.instrument_name(), self.trigger_instrument())
+            trigger_connections = self.get_connections(
+                input_interface=interface, trigger=True)
+            assert len(trigger_connections) == 1, \
+                "Did not find exactly one triggering connection: {}. " \
+                "All connections: {}".format(
+                    trigger_connections, self.connections
+                )
+            connection = trigger_connections[0]
+            print('found trigger connection')
+            # Replace instrument by its triggering instrument
+            interface = self._interfaces[connection.output['instrument']]
+            interface.pulse_sequence(('add',
+                                      TriggerPulse(t_start=pulse.t_start,
+                                                   connection=connection,
+                                                   t_stop=pulse.t_start)))
+
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -175,36 +242,7 @@ class Layout(Instrument):
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
-            # Get default output instrument
-            interface = self._get_pulse_interface(pulse)
-            connection = self.get_pulse_connection(pulse, interface=interface)
-
-            targeted_pulse = pulse.copy()
-            targeted_pulse.connection = connection
-            interface.pulse_sequence(('add', targeted_pulse))
-
-            # If instrument is not the main triggering instrument, add triggers
-            # to each of the triggering instruments until you reach the main
-            # triggering instrument.
-            # TODO this should only be done in some cases, for instance if an
-            # Arbstudio is the input instrument and is in stepped mode
-            while interface.instrument_name() != self.trigger_instrument():
-                print(interface.instrument_name(), self.trigger_instrument())
-                trigger_connections = self.get_connections(
-                    input_interface=interface, trigger=True)
-                assert len(trigger_connections) == 1, \
-                    "Did not find exactly one triggering connection: {}. " \
-                    "All connections: {}".format(
-                        trigger_connections, self.connections
-                    )
-                connection = trigger_connections[0]
-                print('found trigger connection')
-                # Replace instrument by its triggering instrument
-                interface = self._interfaces[connection.output['instrument']]
-                interface.pulse_sequence(('add',
-                                          TriggerPulse(t_start=pulse.t_start,
-                                                       connection=connection,
-                                                       t_stop=pulse.t_start)))
+            self._target_pulse(pulse)
 
         # Setup each of the instruments using its pulse_sequence
         for interface in self._interfaces.values():

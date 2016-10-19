@@ -32,7 +32,7 @@ class InstrumentInterface(Instrument):
     def get_pulse_implementation(self, pulse):
         for pulse_implementation in self.pulse_implementations:
             if pulse_implementation.is_implementation(pulse):
-                return pulse_implementation
+                return pulse_implementation.target_pulse(pulse)
         else:
             return None
 
@@ -79,13 +79,16 @@ class InstrumentInterface(Instrument):
 
 
     def setup(self):
-        pass
+        raise NotImplementedError(
+            'This method should be implemented in a subclass')
 
     def start(self):
-        pass
+        raise NotImplementedError(
+            'This method should be implemented in a subclass')
 
     def stop(self):
-        pass
+        raise NotImplementedError(
+            'This method should be implemented in a subclass')
 
 
 class Channel:

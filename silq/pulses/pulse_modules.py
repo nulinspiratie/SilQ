@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class PulseSequence:
@@ -35,10 +36,19 @@ class PulseImplementation():
         self.pulse_conditions = [PulseCondition(self, property, condition) for
                                  (property, condition) in pulse_conditions]
 
+        # List of pulses that need to be impementable as well, such as a
+        # triggering pulse. Each pulse has requirements in
+        # pulse.connection_requirements, such as that the pulse must be provided
+        # from the triggering instrument
+        self.pulse_requirements = []
+
     def __bool__(self):
         # Set truth value of a PulseImplementation to True, to make it easier
         # to use in list comprehensions.
         return True
+
+    def copy(self):
+        return copy.copy(self)
 
     def add_pulse_condition(self, property, condition):
         self.pulse_conditions == [PulseCondition(self, property, condition)]
@@ -49,6 +59,19 @@ class PulseImplementation():
         else:
             return np.all([pulse_condition.satisfies(pulse)
                            for pulse_condition in self.pulse_conditions])
+
+    def target_pulse(self, pulse):
+        '''
+        This tailors a PulseImplementation to a specific pulse.
+        This is useful for reasons such as adding pulse_requirements such as a
+        triggering pulse
+        Args:
+            pulse: pulse to target
+
+        Returns:
+            Copy of pulse instrument, targeted to specific pulse
+        '''
+        return self.copy()
 
 
 class PulseCondition():
