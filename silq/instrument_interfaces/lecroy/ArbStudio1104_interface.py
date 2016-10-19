@@ -3,6 +3,7 @@ from silq.instrument_interfaces \
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
 
+from qcodes.instrument.parameter import ManualParameter
 
 class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
@@ -24,15 +25,18 @@ class ArbStudio1104Interface(InstrumentInterface):
             # pulses.SinePulse.create_implementation(
             #     pulse_conditions=('frequency', {'min':1e6, 'max':50e6})
             # ),
-            DCPulse.create_implementation(
-                DCPulseImplementation,
+            DCPulseImplementation(
                 pulse_conditions=[('amplitude', {'min': -2.5, 'max': 2.5})]
             ),
-            TriggerPulse.create_implementation(
-                TriggerPulseImplementation,
+            TriggerPulseImplementation(
                 pulse_conditions=[]
             )
         ]
+
+        self.add_parameter('trigger_in_duration',
+                           parameter_class=ManualParameter,
+                           units='us',
+                           initial_value=0.01)
 
     def setup(self):
         # TODO implement setup for modes other than stepped
@@ -110,35 +114,58 @@ class ArbStudio1104Interface(InstrumentInterface):
 
 
 class DCPulseImplementation(PulseImplementation):
-    def __init__(self, pulse_class, **kwargs):
-        super().__init__(pulse_class, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(DCPulse, **kwargs)
 
-    def implement_pulse(self, DC_pulse):
+    def target_pulse(self, pulse, interface):
+        pulse_implementation = super().target_pulse(pulse, interface=interface)
+        pulse_implementation.pulse_requirements.append(
+            TriggerPulse(t_start=pulse.t_start,
+                         duration=interface.trigger_in_duration(),
+                         connection_requirements={
+                             'input_instrument': interface.instrument_name(),
+                             'trigger': True}
+                         )
+        )
+        return pulse_implementation
+
+    def implement_pulse(self):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
         amplitude by the corresponding channel scaling factor (default 1).
         Args:
-            DC_pulse: DC pulses to implement
 
         Returns:
             {output_channel: pulses arr} dictionary for each output channel
         """
         # Arbstudio requires a minimum of four points to be returned
-        if isinstance(DC_pulse.connection, SingleConnection):
-            return {DC_pulse.connection.output['channel']:
-                        [DC_pulse.amplitude] * 4}
-        elif isinstance(DC_pulse.connection, CombinedConnection):
-            return {ch: [DC_pulse.amplitude] * 4
-                    for ch in DC_pulse.connection.output['channels']}
+        if isinstance(self.pulse.connection, SingleConnection):
+            return {self.pulse.connection.output['channel']:
+                        [self.pulse.amplitude] * 4}
+        elif isinstance(self.pulse.connection, CombinedConnection):
+            return {ch: [self.pulse.amplitude] * 4
+                    for ch in self.pulse.connection.output['channels']}
         else:
             raise Exception("No implementation for connection {}".format(
-                DC_pulse.connection))
+                self.pulse.connection))
 
 
 class TriggerPulseImplementation(PulseImplementation):
-    def __init__(self, pulse_class, **kwargs):
-        super().__init__(pulse_class, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(TriggerPulse, **kwargs)
+
+    def target_pulse(self, pulse, interface):
+        pulse_implementation = super().target_pulse(pulse, interface=interface)
+        pulse_implementation.pulse_requirements.append(
+            TriggerPulse(t_start=pulse.t_start,
+                         duration=interface.trigger_in_duration(),
+                         connection_requirements={
+                             'input_instrument': interface.instrument_name(),
+                             'trigger': True}
+                         )
+        )
+        return pulse_implementation
 
     def implement_pulse(self, trigger_pulse):
         if isinstance(trigger_pulse.connection, SingleConnection):

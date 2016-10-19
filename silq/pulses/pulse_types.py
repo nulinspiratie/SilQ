@@ -2,10 +2,6 @@ import numpy as np
 import copy
 
 class Pulse:
-    @classmethod
-    def create_implementation(cls, pulse_implementation, pulse_conditions):
-        return pulse_implementation(cls, pulse_conditions=pulse_conditions)
-
     def __init__(self, name='', t_start=None, t_stop=None, duration=None,
                  connection=None, connection_requirements={}):
         self.name = name
@@ -56,9 +52,14 @@ class SinePulse(Pulse):
         self.amplitude = amplitude
 
     def __repr__(self):
-        return 'SinePulse(f={:.2f} MHz, A={}, t_start={}, t_stop={})'.format(
-            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop
-        )
+        properties = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
+            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
+
+        if self.connection_requirements:
+            properties += ', requirements={}'.format(
+                self.connection_requirements)
+
+        return 'SinePulse({})'.format(properties)
 
 
 class DCPulse(Pulse):
@@ -74,9 +75,14 @@ class DCPulse(Pulse):
         self.amplitude = amplitude
 
     def __repr__(self):
-        return 'DCPulse(A={}, t_start={}, t_stop={})'.format(
-            self.amplitude, self.t_start, self.t_stop
-        )
+        properties = 'A={}, t_start={}, t_stop={}'.format(
+            self.amplitude, self.t_start, self.t_stop)
+
+        if self.connection_requirements:
+            properties += ', requirements={}'.format(
+                self.connection_requirements)
+
+        return 'DCPulse({})'.format(properties)
 
 
 class TriggerPulse(Pulse):
@@ -87,6 +93,10 @@ class TriggerPulse(Pulse):
         self.duration = duration # us
 
     def __repr__(self):
-        return 'TriggerPulse(t_start={}, duration={})'.format(
-            self.t_start, self.duration
-        )
+        properties = 't_start={}, duration={}'.format(
+            self.t_start, self.duration)
+        if self.connection_requirements:
+            properties += ', requirements={}'.format(
+                self.connection_requirements)
+
+        return 'TriggerPulse({})'.format(properties)
