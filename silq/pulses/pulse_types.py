@@ -41,6 +41,22 @@ class Pulse:
         # Pulse is always equal to true
         return True
 
+    def _get_repr(self, properties_str):
+        # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
+        #                            for prop in properties])
+
+        if self.connection_requirements:
+            properties_str += '\nrequirements: {}'.format(
+                self.connection_requirements)
+        if hasattr(self, 'additional_pulses') and self.additional_pulses:
+            properties_str += '\nadditional_pulses:'
+            for pulse in self.additional_pulses:
+                pulse_repr = '\t'.join(repr(pulse).splitlines(True))
+                properties_str  += '\n{}'.format(pulse_repr)
+
+        return '{pulse_type}({properties})'.format(
+            pulse_type=self.__class__.__name__, properties=properties_str)
+
     def copy(self):
         return copy.copy(self)
 
@@ -54,14 +70,10 @@ class SinePulse(Pulse):
         self.amplitude = amplitude
 
     def __repr__(self):
-        properties = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
+        properties_str = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
             self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
 
-        if self.connection_requirements:
-            properties += ', requirements={}'.format(
-                self.connection_requirements)
-
-        return 'SinePulse({})'.format(properties)
+        return super()._get_repr(properties_str)
 
 
 class DCPulse(Pulse):
@@ -71,14 +83,10 @@ class DCPulse(Pulse):
         self.amplitude = amplitude
 
     def __repr__(self):
-        properties = 'A={}, t_start={}, t_stop={}'.format(
+        properties_str = 'A={}, t_start={}, t_stop={}'.format(
             self.amplitude, self.t_start, self.t_stop)
 
-        if self.connection_requirements:
-            properties += ', requirements={}'.format(
-                self.connection_requirements)
-
-        return 'DCPulse({})'.format(properties)
+        return super()._get_repr(properties_str)
 
 
 class TriggerPulse(Pulse):
@@ -88,10 +96,7 @@ class TriggerPulse(Pulse):
 
 
     def __repr__(self):
-        properties = 't_start={}, duration={}'.format(
+        properties_str = 't_start={}, duration={}'.format(
             self.t_start, self.duration)
-        if self.connection_requirements:
-            properties += ', requirements={}'.format(
-                self.connection_requirements)
 
-        return 'TriggerPulse({})'.format(properties)
+        return super()._get_repr(properties_str)
