@@ -274,6 +274,7 @@ class SingleConnection(Connection):
             raise TypeError('Connection output must be a string or tuple')
         self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
+        self.output['str'] = '{}.{}'.format(output_instrument, output_channel)
 
         if type(input_arg) is str:
             input_instrument, input_channel = input_arg.split('.')
@@ -283,6 +284,7 @@ class SingleConnection(Connection):
             raise TypeError('Connection input must be a string or tuple')
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
+        self.input['str'] = '{}.{}'.format(input_instrument, input_channel)
 
         self.trigger = trigger
         # TODO add this connection to input_instrument.trigger

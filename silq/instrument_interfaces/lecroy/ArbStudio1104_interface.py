@@ -1,5 +1,4 @@
-from silq.instrument_interfaces \
-    import InstrumentInterface, Channel
+from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
 
