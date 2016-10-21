@@ -105,7 +105,8 @@ class InstrumentInterface(Instrument):
 
 class Channel:
     def __init__(self, instrument, name, id=None, input=False, output=False,
-                 input_trigger=False, output_trigger=False):
+                 input_trigger=False, output_trigger=False,
+                 input_TTL=False, output_TTL=False):
         self.instrument = instrument
         self.name = name
         self.id = id
@@ -114,6 +115,9 @@ class Channel:
 
         self.input_trigger = input_trigger
         self.output_trigger = output_trigger
+
+        self.input_TTL = input_TTL
+        self.output_TTL = output_TTL
 
     def __repr__(self):
         output_str = "Channel {name} (id={id})".format(name=self.name,
