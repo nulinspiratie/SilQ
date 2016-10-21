@@ -16,7 +16,19 @@ class ATSInterface(InstrumentInterface):
             'ch'+idx: Channel(self, name='ch'+idx, id=idx,
                               input=True) for idx in ['A', 'B', 'C', 'D']
         }
-        self.trigger_channel = pass
+        self.trigger_in = Channel(self, name='trig_in',
+                                  input_trigger=True)
+        self.trigger_out = Channel(self, name='trig_out',
+                                  output_trigger=True)
+        self.aux_channels = {
+            'aux'+idx: Channel(self, name='aux'+idx,
+                               input_TTL=True,
+                               output_TTL=True) for idx in [1, 2]
+        }
+        self.channels = {**self.input_channels,
+                         **self.aux_channels,
+                         'trig_in': self.trigger_in,
+                         'trig_out': self.trigger_out}
 
         # Create a dictionary of the acquisition controller classes along with
         # the acquisition controllers
