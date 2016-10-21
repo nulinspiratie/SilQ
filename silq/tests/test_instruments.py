@@ -20,10 +20,9 @@ class TestOuterInstrument(Instrument):
 class TestInstrument(Instrument):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.add_parameter(name='param',
-                           set_cmd=self.fun,
+        self.add_parameter(name='x_val',
+                           get_cmd=lambda: self.x,
                            vals=vals.Anything())
 
-    def fun(self, *args):
-        for arg in args:
-            print(arg)
+    def set_x(self, val):
+        self.x = val
