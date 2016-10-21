@@ -12,19 +12,18 @@ class ATSInterface(InstrumentInterface):
                  **kwargs):
         super().__init__(name, instrument_name, **kwargs)
 
-        self.acquisition_channls = {
-            'ch'+idx: Channel(self, name='ch'+idx, id=idx,
-                              input=True) for idx in ['A', 'B', 'C', 'D']
-            }
+        # Degine channels
+        self.acquisition_channls = {'ch'+idx: Channel(self, name='ch'+idx,
+                                                      id=idx, input=True)
+                                    for idx in ['A', 'B', 'C', 'D']}
         self.trigger_in = Channel(self, name='trig_in',
                                   input_trigger=True)
         self.trigger_out = Channel(self, name='trig_out',
                                    output_trigger=True)
-        self.aux_channels = {
-            'aux'+idx: Channel(self, name='aux'+idx,
-                               input_TTL=True,
-                               output_TTL=True) for idx in [1, 2]
-            }
+        self.aux_channels = {'aux'+idx: Channel(self, name='aux'+idx,
+                                                input_TTL=True,
+                                                output_TTL=True)
+                             for idx in [1, 2]}
         self.channels = {**self.acquisition_channls,
                          **self.aux_channels,
                          'trig_in': self.trigger_in,
@@ -75,10 +74,25 @@ class ATSInterface(InstrumentInterface):
                            initial_value=[],
                            vals=vals.Anything())
 
+        self.add_parameer(name='trigger_channel',
+                          parameter_class=ManualParameter,
+                          vals=vals.Enum('trig_in',
+                                         *self.acquisition_channels.keys()))
+
     def setup(self):
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
                 'Basic_AcquisitionController']
+
+            # Setup triggering
+            if self.trigger_channel() == 'trig_in':
+                trigger_source1 =
+            else:
+                pass
+
+
+            self.instrument.config(trigger_operation=trigger_operation)
+
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()
@@ -97,9 +111,26 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
-        def _acquisition(self):
-            raise NotImplementedError(
-                'This method should be implemented in a subclass')
+    def setup_trigger(self):
+        config_settings = {}
+
+        if self.acquisition_mode() == 'trigger':
+            if self.trigger_channel() == 'trig_in':
+                config_settings['trigger_source1'] =
+            else:
+                pass
+
+            trigger_operation = 'TRIG_ENGINE_OP_J'
+        else:
+            raise Exception('Acquisition mode {} not implemented'.format(
+                self.acquisition_mode()
+            ))
+
+        self.instrument.config(**config_settings)
+
+    def _acquisition(self):
+        raise NotImplementedError(
+            'This method should be implemented in a subclass')
 
     def acquisition_setting(self, setting):
         """
