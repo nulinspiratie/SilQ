@@ -1,17 +1,23 @@
 import numpy as np
 import inspect
 
-from silq.instrument_interfaces import InstrumentInterface
+from silq.instrument_interfaces import InstrumentInterface, Channel
 
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
-from qcodes.instrument_drivers.AlazarTech.ATS import AcquisitionController
 
 
 class ATSInterface(InstrumentInterface):
     def __init__(self, name, instrument_name, acquisition_controller_names,
                  **kwargs):
-        InstrumentInterface.__init__(name, instrument_name, **kwargs)
+        super().__init__(name, instrument_name, **kwargs)
+
+        self.input_channels = {
+            'ch'+idx: Channel(self, name='ch'+idx, id=idx,
+                              input=True) for idx in ['A', 'B', 'C', 'D']
+        }
+        self.trigger_channel = pass
+
         # Create a dictionary of the acquisition controller classes along with
         # the acquisition controllers
         self.acquisition_controllers = {}
@@ -52,6 +58,11 @@ class ATSInterface(InstrumentInterface):
                            initial_value='trace',
                            vals=vals.Enum('none', 'trace', 'point'))
 
+        self.add_parameter(name='acquisition_channels',
+                           parameer_class=ManualParameter,
+                           initial_value=[],
+                           vals=vals.Enum)
+
     def setup(self):
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
@@ -66,6 +77,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
+        channel_selection()
     def _acquisition(self):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
