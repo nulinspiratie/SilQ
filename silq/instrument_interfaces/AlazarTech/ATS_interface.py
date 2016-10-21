@@ -12,20 +12,20 @@ class ATSInterface(InstrumentInterface):
                  **kwargs):
         super().__init__(name, instrument_name, **kwargs)
 
-        self.input_channels = {
+        self.acquisition_channls = {
             'ch'+idx: Channel(self, name='ch'+idx, id=idx,
                               input=True) for idx in ['A', 'B', 'C', 'D']
-        }
+            }
         self.trigger_in = Channel(self, name='trig_in',
                                   input_trigger=True)
         self.trigger_out = Channel(self, name='trig_out',
-                                  output_trigger=True)
+                                   output_trigger=True)
         self.aux_channels = {
             'aux'+idx: Channel(self, name='aux'+idx,
                                input_TTL=True,
                                output_TTL=True) for idx in [1, 2]
-        }
-        self.channels = {**self.input_channels,
+            }
+        self.channels = {**self.acquisition_channls,
                          **self.aux_channels,
                          'trig_in': self.trigger_in,
                          'trig_out': self.trigger_out}
@@ -73,7 +73,7 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='acquisition_channels',
                            parameer_class=ManualParameter,
                            initial_value=[],
-                           vals=vals.Enum)
+                           vals=vals.Anything())
 
     def setup(self):
         if self.acquisition_mode() == 'trigger':
@@ -84,15 +84,22 @@ class ATSInterface(InstrumentInterface):
                 self.acquisition_mode()
             ))
 
+        # Specify setting for acquisition channels
+        channel_ids = [self.channels[ch].id for ch in
+                       self.acquisition_channels()]
+        # Channel_selection must be a sorted string of acquisition channel ids
+        self.acquisition_settings['channel_selection'] = \
+            ''.join(sorted(channel_ids))
+
+
         self.acquisition_controller.set_acquisition_settings(
             self.acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
-        channel_selection()
-    def _acquisition(self):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
+        def _acquisition(self):
+            raise NotImplementedError(
+                'This method should be implemented in a subclass')
 
     def acquisition_setting(self, setting):
         """
