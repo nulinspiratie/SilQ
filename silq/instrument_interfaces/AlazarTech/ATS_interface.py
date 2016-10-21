@@ -12,7 +12,6 @@ class ATSInterface(InstrumentInterface):
     def __init__(self, name, instrument_name, acquisition_controller_names,
                  **kwargs):
         InstrumentInterface.__init__(name, instrument_name, **kwargs)
-
         # Create a dictionary of the acquisition controller classes along with
         # the acquisition controllers
         self.acquisition_controllers = {}
@@ -21,6 +20,10 @@ class ATSInterface(InstrumentInterface):
                 acquisition_controller_name)
             cls = acquisition_controller._instrument_class.__name__
             self.acquisition_controllers[cls] = acquisition_controller
+
+        # Active acquisition controller is initially none, and gets chosen
+        # during setup
+        self.acquisition_controller = None
 
         self.acquisition_settings = {}
         # Obtain a list of all valid ATS acquisition settings
@@ -36,14 +39,32 @@ class ATSInterface(InstrumentInterface):
                            shapes=((),),
                            snapshot_value=False)
 
+        self.add_parameter(name='acquisition_mode',
+                           parameter_class=ManualParameter,
+                           vals=vals.Enum('trigger', 'continuous'))
+
         self.add_parameter(name='active_acquisition_controller',
-                           vals=vals.Enum('auto',
-                                          *self.acquisition_controllers.keys()))
+                           get_cmd=lambda: self.acquisition_controller.name,
+                           vals=vals.Enum(*self.acquisition_controllers.keys()))
+
+        self.add_parameter(name='average_mode',
+                           parameter_class=ManualParameter,
+                           initial_value='trace',
+                           vals=vals.Enum('none', 'trace', 'point'))
 
     def setup(self):
-        # TODO change when necessary
-        # acquisition_controller
-        pass
+        if self.acquisition_mode() == 'trigger':
+            self.acquisition_controller = self.acquisition_controllers[
+                'Basic_AcquisitionController']
+        else:
+            raise Exception('Acquisition mode {} not implemented'.format(
+                self.acquisition_mode()
+            ))
+
+        self.acquisition_controller.set_acquisition_settings(
+            self.acquisition_settings)
+        self.acquisition_controller.average_mode(self.average_mode())
+        self.acquisition_controller.setup()
 
     def _acquisition(self):
         raise NotImplementedError(
@@ -65,11 +86,28 @@ class ATSInterface(InstrumentInterface):
         """
         assert setting in self._acquisition_settings_names, \
             "Kwarg {} is not a valid ATS acquisition setting".format(setting)
-        if setting in self.settings.keys():
-            return self.settings[setting]
+        if setting in self.acquisition_settings.keys():
+            return self.acquisition_settings[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
             return self.instrument.parameters[setting].get_latest()
+
+    def set_acquisition_settings(self, settings):
+        """
+        Sets the acquisition settings for the ATS through its controller.
+        It additionally checks if the settings are all actual ATS acquisition
+        settings, and raises an error otherwise.
+
+        Args:
+            settings: acquisition settings for the acquisition controller
+
+        Returns:
+            None
+        """
+        assert all([setting in self._acquisition_settings_names
+                    for setting in settings]), \
+            "Settings are not all valid ATS acquisition settings"
+        self.acquisition_settings = settings
 
     def update_acquisition_settings(self, **settings):
         settings_valid = all(map(
