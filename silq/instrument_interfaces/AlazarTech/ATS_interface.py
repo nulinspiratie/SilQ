@@ -12,7 +12,7 @@ class ATSInterface(InstrumentInterface):
                  **kwargs):
         super().__init__(name, instrument_name, **kwargs)
 
-        # Degine channels
+        # Define channels
         self.acquisition_channls = {'ch'+idx: Channel(self, name='ch'+idx,
                                                       id=idx, input=True)
                                     for idx in ['A', 'B', 'C', 'D']}
@@ -29,8 +29,7 @@ class ATSInterface(InstrumentInterface):
                          'trig_in': self.trigger_in,
                          'trig_out': self.trigger_out}
 
-        # Create a dictionary of the acquisition controller classes along with
-        # the acquisition controllers
+        # Organize acquisition controllers
         self.acquisition_controllers = {}
         for acquisition_controller_name in acquisition_controller_names:
             acquisition_controller = self.find_instrument(
@@ -38,14 +37,21 @@ class ATSInterface(InstrumentInterface):
             cls = acquisition_controller._instrument_class.__name__
             self.acquisition_controllers[cls] = acquisition_controller
 
-        # Active acquisition controller is initially none, and gets chosen
-        # during setup
+        # Active acquisition controller is chosen during setup
         self.acquisition_controller = None
 
         self.acquisition_settings = {}
+
+        self.configuration_settings = {}
+
+        # Obtain a list of all valid ATS configuration settings
+        self._configuration_settings_names = \
+            inspect.signature(self.instrument.config).parameters.keys()
         # Obtain a list of all valid ATS acquisition settings
         self._acquisition_settings_names = \
             inspect.signature(self.instrument.acquire).parameters.keys()
+        self._settings_names = self._acquisition_settings_names + \
+                               self._configuration_settings_names
 
         # Names and shapes must have initial value, even through they will be
         # overwritten in set_acquisition_settings. If we don't do this, the
@@ -61,8 +67,12 @@ class ATSInterface(InstrumentInterface):
                            vals=vals.Enum('trigger', 'continuous'))
 
         self.add_parameter(name='active_acquisition_controller',
-                           get_cmd=lambda: self.acquisition_controller.name,
-                           vals=vals.Enum(*self.acquisition_controllers.keys()))
+                           get_cmd=lambda: (
+                               self.acquisition_controller.name if
+                               self.acquisition_controller is not None
+                               else 'None'),
+                           vals=vals.Enum('None',
+                                          *self.acquisition_controllers.keys()))
 
         self.add_parameter(name='average_mode',
                            parameter_class=ManualParameter,
@@ -84,19 +94,9 @@ class ATSInterface(InstrumentInterface):
             self.acquisition_controller = self.acquisition_controllers[
                 'Basic_AcquisitionController']
 
-            # Setup triggering
-            if self.trigger_channel() == 'trig_in':
-                trigger_source1 =
-            else:
-                pass
-
-
-            self.instrument.config(trigger_operation=trigger_operation)
-
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
-                self.acquisition_mode()
-            ))
+                self.acquisition_mode()))
 
         # Specify setting for acquisition channels
         channel_ids = [self.channels[ch].id for ch in
@@ -104,6 +104,8 @@ class ATSInterface(InstrumentInterface):
         # Channel_selection must be a sorted string of acquisition channel ids
         self.acquisition_settings['channel_selection'] = \
             ''.join(sorted(channel_ids))
+
+        # Setup ATS configuration
 
 
         self.acquisition_controller.set_acquisition_settings(
@@ -132,27 +134,48 @@ class ATSInterface(InstrumentInterface):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
-    def acquisition_setting(self, setting):
+    def setting(self, setting):
         """
-        Obtain an acquisition setting for the ATS.
-        It first checks if the setting is an actual ATS acquisition kwarg, and
-        raises an error otherwise.
-        It then checks if the setting is in ATS_controller._acquisition_settings
-        If not, it will retrieve the ATS latest parameter value
+        Obtain a setting for the ATS.
+        It first checks if the setting is an actual ATS kwarg, and raises an
+        error otherwise.
+        It then checks if it is a configuration or acquisition setting.
+        If the setting is specified in self.configuration/acquisition_setting,
+        it returns that value, else it returns the value set in the ATS
 
         Args:
-            setting: acquisition kwarg to look for
+            setting: configuration or acquisition setting to look for
 
         Returns:
-            Value of the acquisition setting
+            Value of the setting
         """
-        assert setting in self._acquisition_settings_names, \
+        assert setting in self._settings_names, \
             "Kwarg {} is not a valid ATS acquisition setting".format(setting)
-        if setting in self.acquisition_settings.keys():
+        if setting in self.configuration_settings.keys():
+            return self.configuration_settings[setting]
+        elif self.acquisition_settings.keys():
             return self.acquisition_settings[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
             return self.instrument.parameters[setting].get_latest()
+
+    def set_configuration_settings(self, settings):
+        """
+        Sets the configuration settings for the ATS through its controller.
+        It additionally checks if the settings are all actual ATS configuration
+        settings, and raises an error otherwise.
+
+        Args:
+            settings: configuration settings for the acquisition controller
+
+        Returns:
+            None
+        """
+        assert all([setting in self._configuration_settings_names
+                    for setting in settings]), \
+            "Settings are not all valid ATS configuration settings"
+        self.configuration_settings = settings
+
 
     def set_acquisition_settings(self, settings):
         """
@@ -171,10 +194,16 @@ class ATSInterface(InstrumentInterface):
             "Settings are not all valid ATS acquisition settings"
         self.acquisition_settings = settings
 
-    def update_acquisition_settings(self, **settings):
+    def update_settings(self, **settings):
         settings_valid = all(map(
-            lambda setting: setting in self._acquisition_settings_names,
-            settings.keys()))
+            lambda setting: setting in self._settings_names, settings.keys()))
         assert settings_valid, \
-            'Not all settings are valid ATS acquisition settings'
+            'Not all settings are valid ATS settings'
+
+        configuration_settings = {k: v for k, v in settings.items()
+                                  if k in self._configuration_settings_names}
+        self.configuration_settings.update(**configuration_settings)
+
+        acquisition_settings = {k: v for k, v in settings.items()
+                                  if k in self._acquisition_settings_names}
         self.acquisition_settings.update(**settings)
