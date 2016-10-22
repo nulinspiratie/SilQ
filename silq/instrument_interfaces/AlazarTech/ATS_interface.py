@@ -98,15 +98,14 @@ class ATSInterface(InstrumentInterface):
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
 
-        # Specify setting for acquisition channels
-        channel_ids = [self.channels[ch].id for ch in
-                       self.acquisition_channels()]
+        # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
-        self.acquisition_settings['channel_selection'] = \
-            ''.join(sorted(channel_ids))
+        channel_ids = ''.join(sorted(
+            [self.channels[ch].id for ch in self.acquisition_channels()]))
+        self.update_settings(channel_selection=channel_ids)
 
         # Setup ATS configuration
-
+        self.instrument.config(**self.configuration_settings)
 
         self.acquisition_controller.set_acquisition_settings(
             self.acquisition_settings)
@@ -117,12 +116,13 @@ class ATSInterface(InstrumentInterface):
         config_settings = {}
 
         if self.acquisition_mode() == 'trigger':
+            config_settings()
             if self.trigger_channel() == 'trig_in':
                 config_settings['trigger_source1'] =
             else:
                 pass
 
-            trigger_operation = 'TRIG_ENGINE_OP_J'
+            trigger_operation = 'J'
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()
@@ -159,7 +159,7 @@ class ATSInterface(InstrumentInterface):
             # Must get latest value, since it may not be updated in ATS
             return self.instrument.parameters[setting].get_latest()
 
-    def set_configuration_settings(self, settings):
+    def set_configuration_settings(self, **settings):
         """
         Sets the configuration settings for the ATS through its controller.
         It additionally checks if the settings are all actual ATS configuration
@@ -177,7 +177,7 @@ class ATSInterface(InstrumentInterface):
         self.configuration_settings = settings
 
 
-    def set_acquisition_settings(self, settings):
+    def set_acquisition_settings(self, **settings):
         """
         Sets the acquisition settings for the ATS through its controller.
         It additionally checks if the settings are all actual ATS acquisition
