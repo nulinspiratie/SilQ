@@ -5,7 +5,7 @@ import copy
 
 class Pulse:
     def __init__(self, name='', t_start=None, t_stop=None, duration=None,
-                 connection=None, connection_requirements={}):
+                 acquire=False, connection=None, connection_requirements={}):
         self.name = name
 
         # TODO Allow t_start to not be given
@@ -20,6 +20,7 @@ class Pulse:
         else:
             raise Exception("Must provide either t_stop or duration")
 
+        self.acquire = acquire
         self.connection = connection
 
         # List of potential connection requirements.
@@ -61,18 +62,20 @@ class Pulse:
         return copy.deepcopy(self)
 
     def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
-                             connection=None, **kwargs):
+                             acquire=None, connection=None, **kwargs):
 
         if t_start is not None and self.t_start != t_start:
             return False
-        if t_stop is not None and self.t_stop != t_stop:
+        elif t_stop is not None and self.t_stop != t_stop:
             return False
-        if duration is not None and self.duration != duration:
+        elif duration is not None and self.duration != duration:
             return False
-        if connection is not None and self.connection != connection:
+        elif acquire is not None and self.acquire != acquire:
             return False
-
-        return True
+        elif connection is not None and self.connection != connection:
+            return False
+        else:
+            return True
 
 
 class SinePulse(Pulse):

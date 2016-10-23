@@ -242,28 +242,27 @@ class Connection:
             Bool depending on if the connection satisfies conditions
         """
 
-        # Output conditions
         if output_interface is not None:
             output_instrument = output_interface.instrument_name()
-        if self.output.get('instrument', None) != output_instrument:
-            return False
-        if isinstance(output_channel, Channel):
-            output_channel = output_channel.name
-        if self.output.get('channel', None) != output_channel:
-            return False
-
-        # Input conditions
         if input_interface is not None:
             input_instrument = input_interface.instrument_name()
-        if self.input.get('instrument', None) != input_instrument:
-            return False
+
+        if isinstance(output_channel, Channel):
+            output_channel = output_channel.name
         if isinstance(input_channel, Channel):
             input_channel = input_channel.name
-        if self.input.get('channel', None) != input_channel:
+
+        # Test conditions
+        if self.output.get('instrument', None) != output_instrument:
             return False
-
-        return True
-
+        elif self.output.get('channel', None) != output_channel:
+            return False
+        elif self.input.get('instrument', None) != input_instrument:
+            return False
+        elif self.input.get('channel', None) != input_channel:
+            return False
+        else:
+            return True
 
 
 class SingleConnection(Connection):
