@@ -196,11 +196,24 @@ class Layout(Instrument):
             self._target_pulse(pulse)
 
         # Setup each of the instruments using its pulse_sequence
-        for interface in self._interfaces.values():
+        for instrument, interface in self._interfaces.items():
+            # The acquisition instrument is setup at the end
+            if instrument == self.acquisition_instrument():
+                continue
+
             interface.pulse_sequence(('duration', pulse_sequence.duration))
             interface.setup()
 
-        # TODO setup acquisition instrument
+            # Add pulses (if any) to acquitisition_instrument if the input of
+            # the pulse is the acquisition_instrument
+            acquisition_pulses = interface.pulse_sequence().get_pulses(
+                input_instrument=self.acquisition_instrument())
+            if acquisition_pulses:
+                self._interfaces[self.acquisition_instrument()].pulse_sequence(
+                    ('add', acquisition_pulses))
+
+        # Setup acquisition_instrument
+        self._interfaces[self.acquisition_instrument()].setup()
 
 
 class Connection:
