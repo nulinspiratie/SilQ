@@ -27,6 +27,11 @@ class Layout(Instrument):
                            parameter_class=ManualParameter,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
+        self.add_parameter('acquisition_outputs',
+                           parameter_class=ManualParameter,
+                           initial_value=(['chip.output'] if 'chip' in
+                                          self._interfaces.keys() else []),
+                           vals=vals.Anything())
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
 
