@@ -45,10 +45,7 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def get_connections(self, output_interface=None, output_instrument=None,
-                        output_channel=None, input_interface=None,
-                        input_instrument=None, input_channel=None,
-                        trigger=None):
+    def get_connections(self, **conditions):
         """
         Returns all connections that satisfy given kwargs
         Args:
@@ -62,44 +59,9 @@ class Layout(Instrument):
         Returns:
             Connections that satisfy kwarg constraints
         """
-        filtered_connections = self.connections
-        if output_interface is not None:
-            output_instrument = output_interface.instrument_name()
-        if output_instrument is not None:
-            filtered_connections = filter(
-                lambda c: c.output['instrument'] == output_instrument,
-                filtered_connections
-            )
+        return [connection for connection in self.connections
+                if connection.satisfies_conditions(**conditions)]
 
-        if output_channel is not None:
-            if isinstance(output_instrument, Channel):
-                output_channel = output_channel.name
-            filtered_connections = filter(
-                lambda c: c.output['channel'] == output_channel,
-                filtered_connections
-            )
-
-        if input_interface is not None:
-            input_instrument = input_interface.instrument_name()
-        if input_instrument is not None:
-            filtered_connections = filter(
-                lambda c: c.input['instrument'] == input_instrument,
-                filtered_connections
-            )
-        if input_channel is not None:
-            if isinstance(input_instrument, Channel):
-                input_channel = input_channel.name
-            filtered_connections = filter(
-                lambda c: c.input['channel'] == input_channel,
-                filtered_connections
-            )
-        if trigger is not None:
-            filtered_connections = filter(
-                lambda c: c.trigger == trigger,
-                filtered_connections
-            )
-
-        return list(filtered_connections)
 
     def _get_pulse_interface(self, pulse):
         """
@@ -249,6 +211,46 @@ class Connection:
         # TODO make default dependent on implementation
         self.default = default
 
+    def satisfies_conditions(self, input_arg=None, input_instrument=None,
+                             input_channel=None, input_interface=None,
+                             output_arg=None, output_instrument=None,
+                             output_channel=None, output_interface=None):
+        """
+        Checks if this connection satisfies conditions
+        Args:
+            output_interface: Connection must have output_interface
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+            input_interface: Connection must have input_interface
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+
+        # Output conditions
+        if output_interface is not None:
+            output_instrument = output_interface.instrument_name()
+        if self.output.get('instrument', None) != output_instrument:
+            return False
+        if isinstance(output_channel, Channel):
+            output_channel = output_channel.name
+        if self.output.get('channel', None) != output_channel:
+            return False
+
+        # Input conditions
+        if input_interface is not None:
+            input_instrument = input_interface.instrument_name()
+        if self.input.get('instrument', None) != input_instrument:
+            return False
+        if isinstance(input_channel, Channel):
+            input_channel = input_channel.name
+        if self.input.get('channel', None) != input_channel:
+            return False
+
+        return True
+
+
 
 class SingleConnection(Connection):
     def __init__(self, output_arg, input_arg,
@@ -308,6 +310,28 @@ class SingleConnection(Connection):
             output_str += ', acquire'
         output_str += ')'
         return output_str
+
+    def satisfies_conditions(self, trigger=None, **kwargs):
+        """
+        Checks if this connection satisfies conditions
+        Args:
+            output_interface: Connection must have output_interface
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+            input_interface: Connection must have input_interface
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+        if not super().satisfies_conditions(**kwargs):
+            return False
+
+        if trigger is not None and self.trigger != trigger:
+            return False
+
+        return True
+
 
 
 class CombinedConnection(Connection):
