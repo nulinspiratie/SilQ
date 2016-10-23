@@ -8,9 +8,9 @@ from qcodes.utils import validators as vals
 
 
 class ATSInterface(InstrumentInterface):
-    def __init__(self, name, instrument_name, acquisition_controller_names,
+    def __init__(self, instrument_name, acquisition_controller_names,
                  **kwargs):
-        super().__init__(name, instrument_name, **kwargs)
+        super().__init__(instrument_name, **kwargs)
 
         # Define channels
         self.acquisition_channls = {'ch'+idx: Channel(self, name='ch'+idx,
@@ -23,7 +23,7 @@ class ATSInterface(InstrumentInterface):
         self.aux_channels = {'aux'+idx: Channel(self, name='aux'+idx,
                                                 input_TTL=True,
                                                 output_TTL=True)
-                             for idx in [1, 2]}
+                             for idx in ['1', '2']}
         self.channels = {**self.acquisition_channls,
                          **self.aux_channels,
                          'trig_in': self.trigger_in,
@@ -51,7 +51,7 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_settings_names = \
             inspect.signature(self.instrument.acquire).parameters.keys()
         self._settings_names = self._acquisition_settings_names + \
-                               self._configuration_settings_names
+            self._configuration_settings_names
 
         # Names and shapes must have initial value, even through they will be
         # overwritten in set_acquisition_settings. If we don't do this, the
@@ -84,10 +84,17 @@ class ATSInterface(InstrumentInterface):
                            initial_value=[],
                            vals=vals.Anything())
 
-        self.add_parameer(name='trigger_channel',
-                          parameter_class=ManualParameter,
-                          vals=vals.Enum('trig_in',
-                                         *self.acquisition_channels.keys()))
+        self.add_parameter(name='trigger_channel',
+                           parameter_class=ManualParameter,
+                           vals=vals.Enum('trig_in', 'disable',
+                                          *self.acquisition_channels.keys()))
+        self.add_parameter(name='trigger_slope',
+                           parameter_class=ManualParameter,
+                           vals=vals.Enum('positive', 'negative'))
+        self.add_parameter(name='trigger_threshold',
+                           units='V',
+                           parameter_class=ManualParameter,
+                           vals=vals.Numbers())
 
     def setup(self):
         self.configuration_settings.clear()
@@ -100,27 +107,25 @@ class ATSInterface(InstrumentInterface):
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
 
-        self.setup_trigger()
-
         # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
         channel_ids = ''.join(sorted(
             [self.channels[ch].id for ch in self.acquisition_channels()]))
         self.update_settings(channel_selection=channel_ids)
 
-        # Setup ATS configuration
-        self.instrument.config(**self.configuration_settings)
-
-        self.acquisition_controller.set_acquisition_settings(
-            **self.acquisition_settings)
-        self.acquisition_controller.average_mode(self.average_mode())
-        self.acquisition_controller.setup()
+        self.setup_trigger()
+        self.setup_ATS()
+        self.setup_acquisition_controller()
 
     def setup_trigger(self):
-
         if self.acquisition_mode() == 'trigger':
             if self.trigger_channel() == 'trig_in':
                 self.update_settings(external_trigger_range=5)
+
+
+            acquisition_pulses = self._pulse_sequence.get_pulses(
+                acquire=True, input_channel=self.trigger_channel())
+            start_pulse = max()
 
             self.update_settings(trigger_operation='J',
                                  trigger_enging1='J',
@@ -134,6 +139,15 @@ class ATSInterface(InstrumentInterface):
                 self.acquisition_mode()
             ))
 
+    def setup_ATS(self):
+        # Setup ATS configuration
+        self.instrument.config(**self.configuration_settings)
+
+    def setup_acquisition_controller(self):
+        self.acquisition_controller.set_acquisition_settings(
+            **self.acquisition_settings)
+        self.acquisition_controller.average_mode(self.average_mode())
+        self.acquisition_controller.setup()
 
     def _acquisition(self):
         raise NotImplementedError(
@@ -180,7 +194,6 @@ class ATSInterface(InstrumentInterface):
                     for setting in settings]), \
             "Settings are not all valid ATS configuration settings"
         self.configuration_settings = settings
-
 
     def set_acquisition_settings(self, **settings):
         """
