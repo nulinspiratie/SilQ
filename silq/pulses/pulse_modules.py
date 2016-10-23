@@ -65,9 +65,12 @@ class PulseSequence:
             output += '\t' + pulse_repr + '\n'
         return output
 
-    def add(self, pulse):
-        # TODO deal with case when pulses is a string (e.g. 'trigger')
-        self.pulses.append(pulse)
+    def add(self, pulses):
+        if not isinstance(pulses, list):
+            pulses = [pulses]
+
+        self.pulses += pulses
+
         self.sort()
         self.duration = max([pulse.t_stop for pulse in self.pulses])
 
