@@ -84,6 +84,10 @@ class PulseSequence:
         self.pulses = []
         self.duration = 0
 
+    def get_pulses(self, **conditions):
+        return [pulse for pulse in self.pulses if
+                pulse.connection.satisfies_conditions(**conditions)]
+
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
