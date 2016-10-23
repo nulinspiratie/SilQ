@@ -88,8 +88,55 @@ class PulseSequence:
         self.duration = 0
 
     def get_pulses(self, **conditions):
-        return [pulse for pulse in self.pulses if
-                pulse.connection.satisfies_conditions(**conditions)]
+        pulses = self.pulses
+
+        # Filter pulses by pulse conditions
+        pulses = [pulse for pulse in pulses
+                  if pulse.satisfies_conditions(**conditions)]
+
+        # Filter pulses by pulse connection conditions
+        pulses = [pulse for pulse in pulses if
+                  pulse.connection.satisfies_conditions(**conditions)]
+
+        return pulses
+
+    def get_pulse(self, **conditions):
+        pulses = self.get_pulses(**conditions)
+        assert len(pulses) == 1, \
+            "Found {} pulses instead one one. Pulses: {}, conditions: {}"\
+                .format(len(pulses, pulses, conditions))
+        return pulses[0]
+
+    def get_transition_voltages(self, pulse=None, connection=None, t=None):
+        """
+        Finds the voltages at the transition between two pulses.
+        Args:
+            pulse: pulse starting at transition voltage. If not provided,
+                connection and t must both be provided
+            connection: connection along which the voltage transition occurs
+            t: Time at which the voltage transition occurs
+
+        Returns:
+            Tuple with voltage before, after transition
+        """
+        if pulse is not None:
+            connection = pulse.connection
+            t = pulse.t_start
+
+        if connection is None or t is None:
+            raise Exception('Not enough arguments provided')
+
+        # Find pulses that start and stop at t. If t=0, the pulse before this
+        #  will be the last pulse in the sequence
+        pre_pulse = self.get_pulse(connection=connection,
+                                   t_stop=(self.duration if t==0 else t))
+        post_pulse = self.get_pulse(connection=connection, t_start=t)
+
+        pre_voltage = pre_pulse.get_voltage(self.duration if t==0 else t)
+        post_voltage = post_pulse.get_voltage(t)
+
+        return pre_voltage, post_voltage
+
 
 
 class PulseImplementation:

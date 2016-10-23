@@ -227,7 +227,8 @@ class Connection:
     def satisfies_conditions(self, input_arg=None, input_instrument=None,
                              input_channel=None, input_interface=None,
                              output_arg=None, output_instrument=None,
-                             output_channel=None, output_interface=None):
+                             output_channel=None, output_interface=None,
+                             **kwargs):
         """
         Checks if this connection satisfies conditions
         Args:
