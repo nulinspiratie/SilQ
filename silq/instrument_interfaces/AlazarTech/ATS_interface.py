@@ -90,13 +90,17 @@ class ATSInterface(InstrumentInterface):
                                          *self.acquisition_channels.keys()))
 
     def setup(self):
+        self.configuration_settings.clear()
+        self.acquisition_settings.clear()
+
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
                 'Basic_AcquisitionController']
-
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
+
+        self.setup_trigger()
 
         # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
@@ -108,27 +112,28 @@ class ATSInterface(InstrumentInterface):
         self.instrument.config(**self.configuration_settings)
 
         self.acquisition_controller.set_acquisition_settings(
-            self.acquisition_settings)
+            **self.acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
     def setup_trigger(self):
-        config_settings = {}
 
         if self.acquisition_mode() == 'trigger':
-            config_settings()
             if self.trigger_channel() == 'trig_in':
-                config_settings['trigger_source1'] =
-            else:
-                pass
+                self.update_settings(external_trigger_range=5)
 
-            trigger_operation = 'J'
+            self.update_settings(trigger_operation='J',
+                                 trigger_enging1='J',
+                                 trigger_source1=self.trigger_channel(),
+                                 trigger_slope1=trigger_slope,
+                                 trigger_level1=trigger_level,
+                                 external_trigger_coupling='DC',
+                                 trigger_delay=0)
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()
             ))
 
-        self.instrument.config(**config_settings)
 
     def _acquisition(self):
         raise NotImplementedError(
