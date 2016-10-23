@@ -60,6 +60,19 @@ class Pulse:
     def copy(self):
         return copy.deepcopy(self)
 
+    def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
+                             connection=None, **kwargs):
+
+        if t_start is not None and self.t_start != t_start:
+            return False
+        if t_stop is not None and self.t_stop != t_stop:
+            return False
+        if duration is not None and self.duration != duration:
+            return False
+        if connection is not None and self.connection != connection:
+            return False
+
+        return True
 
 
 class SinePulse(Pulse):
