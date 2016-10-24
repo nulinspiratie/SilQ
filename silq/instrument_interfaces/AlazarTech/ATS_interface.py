@@ -121,11 +121,25 @@ class ATSInterface(InstrumentInterface):
         if self.acquisition_mode() == 'trigger':
             if self.trigger_channel() == 'trig_in':
                 self.update_settings(external_trigger_range=5)
-
+                trigger_range = 5
+            else:
+                trigger_range = self.setting('channel_range' +
+                                             self.trigger_channel())
 
             acquisition_pulses = self._pulse_sequence.get_pulses(
                 acquire=True, input_channel=self.trigger_channel())
-            start_pulse = max()
+            start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
+            pre_voltage, post_voltage = \
+                self._pulse_sequence.get_transition_voltages(pulse=start_pulse)
+            assert post_voltage != pre_voltage, \
+                'Could not determine trigger voltage transition'
+
+            trigger_slope = 'positive' if post_voltage > pre_voltage \
+                else 'negative'
+            trigger_voltage = (pre_voltage + post_voltage) / 2
+            # Trigger level is between 0 (-trigger_range)
+            # and 255 (+trigger_range)
+            trigger_level = int(128 + 127 * (trigger_voltage / trigger_range))
 
             self.update_settings(trigger_operation='J',
                                  trigger_enging1='J',
