@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+import inspect
+
 
 class PulseRequirement():
     def __init__(self, property, requirement):
@@ -52,6 +54,11 @@ class PulseSequence:
         self.pulses = []
         self.duration = 0
 
+        # These are needed to separate
+        from silq.meta_instruments.layout import connection_conditions
+        from silq.pulses import pulse_conditions
+        self.connection_conditions = connection_conditions
+        self.pulse_conditions = pulse_conditions
     def __getitem__(self, index):
         return self.pulses[index]
 
@@ -91,12 +98,19 @@ class PulseSequence:
         pulses = self.pulses
 
         # Filter pulses by pulse conditions
+        pulse_conditions = {k: v for k, v in conditions.items()
+                            if k in self.pulse_conditions}
         pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(**conditions)]
+                  if pulse.satisfies_conditions(**pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
-        pulses = [pulse for pulse in pulses if
-                  pulse.connection.satisfies_conditions(**conditions)]
+        connection_conditions = {k: v for k, v in conditions.items()
+                                if k in self.connection_conditions}
+        if connection_conditions:
+            pulses = [pulse for pulse in pulses if
+                      pulse.connection is not None and
+                      pulse.connection.satisfies_conditions(
+                          **connection_conditions)]
 
         return pulses
 
