@@ -1,7 +1,11 @@
 import numpy as np
 import copy
 
+from silq.tools.general_tools import get_truth
 
+# Set of valid connection conditions for satisfies_conditions. These are
+# useful when multiple objects have distinct satisfies_conditions kwargs
+pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'connection']
 
 class Pulse:
     def __init__(self, name='', t_start=None, t_stop=None, duration=None,
@@ -62,18 +66,37 @@ class Pulse:
         return copy.deepcopy(self)
 
     def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
-                             acquire=None, connection=None, **kwargs):
+                             acquire=None, connection=None):
+        """
+        Checks if pulse satisfies certain conditions.
+        Each kwarg is a condition, and can be a value (equality testing) or it
+        can be a tuple (relation, value), in which case the relation is tested.
+        Possible relations: '>', '<', '>=', '<=', '=='
+        Args:
+            t_start:
+            t_stop:
+            duration:
+            acquire:
+            connection:
+            **kwargs:
 
-        if t_start is not None and self.t_start != t_start:
-            return False
-        elif t_stop is not None and self.t_stop != t_stop:
-            return False
-        elif duration is not None and self.duration != duration:
-            return False
-        elif acquire is not None and self.acquire != acquire:
-            return False
-        elif connection is not None and self.connection != connection:
-            return False
+        Returns:
+            Bool depending on if all conditions are satisfied.
+        """
+        properties = ['t_start', 't_stop', 'duration', 'acquire', 'connection']
+
+        for property in properties:
+            # Get arg value from property name
+            val = eval(property)
+
+            # If the arg is a tuple, the first element specifies its relation
+            if isinstance(val, (list, tuple)):
+                relation, val = val
+            else:
+                relation = '=='
+
+            if not get_truth(val, getattr(self, property)):
+                return False
         else:
             return True
 
