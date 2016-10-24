@@ -1,10 +1,16 @@
-from silq.pulses import TriggerPulse
+import inspect
+
 from silq.instrument_interfaces import Channel
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
+# Set of valid connection conditions for satisfies_conditions. These are
+# useful when multiple objects have distinct satisfies_conditions kwargs
+connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
+                         'input_interface','output_arg', 'output_instrument',
+                         'output_channel', 'output_interface','trigger']
 
 class Layout(Instrument):
     shared_kwargs = ['instrument_interfaces']
@@ -310,6 +316,11 @@ class SingleConnection(Connection):
         # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
+
+        self.connection_conditions.update = set(inspect.signature(
+            self.satisfies_conditions).parameters.keys())
+        self.connection_conditions.discard('self')
+        self.connection_conditions.discard('kwargs')
 
     def __repr__(self):
         output_str = "Connection{{{}.{}->{}.{}}}(".format(
