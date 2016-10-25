@@ -118,7 +118,7 @@ class PulseSequence:
         pulses = self.get_pulses(**conditions)
         assert len(pulses) == 1, \
             "Found {} pulses instead one one. Pulses: {}, conditions: {}"\
-                .format(len(pulses, pulses, conditions))
+                .format(len(pulses), pulses, conditions)
         return pulses[0]
 
     def get_transition_voltages(self, pulse=None, connection=None, t=None):
