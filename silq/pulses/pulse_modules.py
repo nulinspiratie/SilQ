@@ -138,7 +138,7 @@ class PulseSequence:
             t = pulse.t_start
 
         if connection is None or t is None:
-            raise Exception('Not enough arguments provided')
+            raise TypeError('Not enough arguments provided')
 
         # Find pulses that start and stop at t. If t=0, the pulse before this
         #  will be the last pulse in the sequence
