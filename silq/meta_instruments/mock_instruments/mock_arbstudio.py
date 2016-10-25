@@ -1,15 +1,15 @@
 from functools import partial
 
-from qcodes import Instrument
+from . import MockInstrument
+
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 
 
-class MockArbStudio(Instrument):
+class MockArbStudio(MockInstrument):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
-        self._silent = False
 
         channels = [1, 2, 3, 4]
         channel_functions = ['trigger_source', 'trigger_mode',
@@ -37,11 +37,6 @@ class MockArbStudio(Instrument):
                                initial_value=[],
                                vals=vals.Anything())
 
-        self.add_parameter('silent',
-                           parameter_class=ManualParameter,
-                           initial_value=False,
-                           vals=vals.Bool())
-
 
     def _add_waveform(self, channel, waveform):
         self.print_function(channel=channel, function='add_waveform',
@@ -58,8 +53,3 @@ class MockArbStudio(Instrument):
 
     def get_waveforms(self):
         return self._waveforms
-
-    def print_function(self, *args, **kwargs):
-        if not self.silent():
-            print('args={args}, kwargs={kwargs}'.format(args=args,
-                                                        kwargs=kwargs))
