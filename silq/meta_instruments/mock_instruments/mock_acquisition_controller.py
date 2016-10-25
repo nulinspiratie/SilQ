@@ -32,7 +32,8 @@ class MockAcquisitionController(MockInstrument):
         self.add_parameter(name='acquisition',
                            get_cmd=lambda: self._acquisition_settings)
 
-        super().__init__(name, **kwargs)
+    def setup(self):
+        pass
 
     def _get_alazar(self):
         """
