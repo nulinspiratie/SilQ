@@ -12,7 +12,7 @@ class MockInstrument(Instrument):
                            initial_value=silent,
                            vals=vals.Bool())
 
-    def print_function(self, *args, **kwargs):
+    def print_function(self, *args, function='{f}', **kwargs):
         if not self.silent():
-            print('args={args}, kwargs={kwargs}'.format(args=args,
-                                                        kwargs=kwargs))
+            print('{ins}.{fun}(args={args}, kwargs={kwargs})'.format(
+                ins=self.name, fun=function, args=args, kwargs=kwargs))
