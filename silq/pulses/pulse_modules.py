@@ -62,6 +62,12 @@ class PulseSequence:
     def __getitem__(self, index):
         return self.pulses[index]
 
+    def __len__(self):
+        return len(self.pulses)
+
+    def __bool__(self):
+        return len(self.pulses) > 0
+
     def __repr__(self):
         output= 'PulseSequence with {} pulses, duration: {}\n'.format(
             len(self.pulses), self.duration)
