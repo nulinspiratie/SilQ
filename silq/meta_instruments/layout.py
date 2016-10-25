@@ -68,7 +68,6 @@ class Layout(Instrument):
         return [connection for connection in self.connections
                 if connection.satisfies_conditions(**conditions)]
 
-
     def _get_pulse_interface(self, pulse):
         """
         Retrieves the instrument interface to output pulse
@@ -99,7 +98,6 @@ class Layout(Instrument):
         for instrument_name, interface in interfaces.items():
             is_primary = self.primary_instrument() == \
                          interface.instrument_name()
-            # print('{} is primary: {}'.format(instrument_name, is_primary))
             pulse_implementation = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary)
 
@@ -214,12 +212,13 @@ class Layout(Instrument):
             # the pulse is the acquisition_instrument
             acquisition_pulses = interface.pulse_sequence().get_pulses(
                 input_instrument=self.acquisition_instrument())
-            if acquisition_pulses:
+            if acquisition_pulses and self.acquisition_instrument() is not None:
                 self._interfaces[self.acquisition_instrument()].pulse_sequence(
                     ('add', acquisition_pulses))
 
         # Setup acquisition_instrument
-        self._interfaces[self.acquisition_instrument()].setup()
+        if self.acquisition_instrument() is not None:
+            self._interfaces[self.acquisition_instrument()].setup()
 
 
 class Connection:
@@ -259,13 +258,17 @@ class Connection:
             input_channel = input_channel.name
 
         # Test conditions
-        if self.output.get('instrument', None) != output_instrument:
+        if output_instrument is not None and \
+                        self.output.get('instrument', None) != output_instrument:
             return False
-        elif self.output.get('channel', None) != output_channel:
+        elif output_channel is not None and \
+                        self.output.get('channel', None) != output_channel:
             return False
-        elif self.input.get('instrument', None) != input_instrument:
+        elif input_instrument is not None and \
+                        self.input.get('instrument', None) != input_instrument:
             return False
-        elif self.input.get('channel', None) != input_channel:
+        elif input_channel is not None and \
+                        self.input.get('channel', None) != input_channel:
             return False
         else:
             return True
@@ -316,11 +319,6 @@ class SingleConnection(Connection):
         # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
-
-        self.connection_conditions.update = set(inspect.signature(
-            self.satisfies_conditions).parameters.keys())
-        self.connection_conditions.discard('self')
-        self.connection_conditions.discard('kwargs')
 
     def __repr__(self):
         output_str = "Connection{{{}.{}->{}.{}}}(".format(
