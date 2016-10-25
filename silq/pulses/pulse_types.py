@@ -5,7 +5,8 @@ from silq.tools.general_tools import get_truth
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'connection']
+pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'connection',
+                    'amplitude']
 
 class Pulse:
     def __init__(self, name='', t_start=None, t_stop=None, duration=None,
@@ -66,7 +67,7 @@ class Pulse:
         return copy.deepcopy(self)
 
     def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
-                             acquire=None, connection=None):
+                             acquire=None, connection=None, amplitude=None):
         """
         Checks if pulse satisfies certain conditions.
         Each kwarg is a condition, and can be a value (equality testing) or it
@@ -83,19 +84,24 @@ class Pulse:
         Returns:
             Bool depending on if all conditions are satisfied.
         """
-        properties = ['t_start', 't_stop', 'duration', 'acquire', 'connection']
 
-        for property in properties:
+        for property in pulse_conditions:
+
             # Get arg value from property name
             val = eval(property)
+
+            if val is None:
+                continue
+            elif not hasattr(self, property):
+                return False
 
             # If the arg is a tuple, the first element specifies its relation
             if isinstance(val, (list, tuple)):
                 relation, val = val
             else:
                 relation = '=='
-
-            if not get_truth(val, getattr(self, property)):
+            if not get_truth(test_val=getattr(self, property), target_val=val,
+                             relation=relation):
                 return False
         else:
             return True

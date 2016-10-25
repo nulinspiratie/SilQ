@@ -14,7 +14,6 @@ def execfile(filename, globals=None, locals=None):
 def get_truth(test_val, target_val, relation='=='):
     """
     Tests if the test_val satisfies the relation to target_val.
-    If test_val is None, it returns True by default
     Args:
         test_val: lhs of relation with target_val.
         target_val: rhs of relation with test_val
@@ -22,14 +21,11 @@ def get_truth(test_val, target_val, relation='=='):
             Can be: '>', '<', '>=', '<=', '=='
 
     Returns:
-        Bool depending on if relation holds, or if test_val is None
+        Bool depending on if relation holds
     """
     ops = {'>': operator.gt,
            '<': operator.lt,
            '>=': operator.ge,
            '<=': operator.le,
            '==': operator.eq}
-    if test_val is None:
-        return True
-    else:
-        return ops[relation](test_val, target_val)
+    return ops[relation](test_val, target_val)
