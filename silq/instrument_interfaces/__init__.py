@@ -1,6 +1,4 @@
-import silq
 from .interface import InstrumentInterface, Channel
-
 
 
 def get_instrument_interface(instrument):
@@ -8,13 +6,16 @@ def get_instrument_interface(instrument):
     from .chip_interface import ChipInterface
     from .spincore.PulseBlasterESRPRO_interface import \
         PulseBlasterESRPROInterface
+    from .AlazarTech.ATS_interface import ATSInterface
 
     instrument_interfaces = {
         'ArbStudio1104': ArbStudio1104Interface,
         'MockArbStudio': ArbStudio1104Interface,
         'PulseBlasterESRPRO': PulseBlasterESRPROInterface,
         'MockPulseBlaster': PulseBlasterESRPROInterface,
-        'Chip': ChipInterface
+        'Chip': ChipInterface,
+        'ATS9440': ATSInterface,
+        'MockATS': ATSInterface
     }
 
     # TODO Need to find correct name of instrument
@@ -24,6 +25,7 @@ def get_instrument_interface(instrument):
 
     instrument_interface_class = instrument_interfaces[instrument_class]
 
-    instrument_interface = instrument_interface_class(instrument_name=instrument.name,
-                                                      server_name=instrument._server_name)
+    instrument_interface = instrument_interface_class(
+        instrument_name=instrument.name,
+        server_name=instrument._server_name)
     return instrument_interface
