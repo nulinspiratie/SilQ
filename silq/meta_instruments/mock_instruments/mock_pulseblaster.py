@@ -1,11 +1,12 @@
 from functools import partial
 
-from qcodes import Instrument
+from . import MockInstrument
+
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 
-class MockPulseBlaster(Instrument):
+class MockPulseBlaster(MockInstrument):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -30,10 +31,6 @@ class MockPulseBlaster(Instrument):
                            parameter_class = ManualParameter,
                            initial_value=[],
                            vals=vals.Anything())
-        self.add_parameter('silent',
-                           parameter_class = ManualParameter,
-                           initial_value=False,
-                           vals=vals.Bool())
 
     def send_instruction(self, flags, instruction, inst_args, length):
         if not self.silent():
@@ -41,8 +38,3 @@ class MockPulseBlaster(Instrument):
                            function='send_instruction')
         self.instructions(self.instructions() +
                           [(flags, instruction, inst_args, length)])
-
-    def print_function(self, *args, **kwargs):
-        if not self.silent():
-            print('args={args}, kwargs={kwargs}'.format(args=args,
-                                                        kwargs=kwargs))
