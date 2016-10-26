@@ -8,7 +8,7 @@ class ChipInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self.output_channels = {
-            'source_drain': Channel(self, name='source_drain', output=True)}
+            'output': Channel(self, name='SD_output', output=True)}
         self.input_channels = {
             channel_name: Channel(self, name=channel_name, input=True)
                                for channel_name in ['TGAC', 'DF']}
