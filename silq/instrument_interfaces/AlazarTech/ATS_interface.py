@@ -1,12 +1,13 @@
 import numpy as np
 import inspect
 
-from silq.instrument_interfaces import InstrumentInterface, Channel
-
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
+
+from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.tools import get_instrument_class
+from silq.pulses import MeasurementPulse, TriggerPulse, PulseImplementation
 
 
 class ATSInterface(InstrumentInterface):
@@ -30,6 +31,12 @@ class ATSInterface(InstrumentInterface):
                          **self.aux_channels,
                          'trig_in': self.trigger_in,
                          'trig_out': self.trigger_out}
+
+        self.pulse_implementations = [
+            MeasurementPulseImplementation(
+                pulse_requirements=[]
+            )
+        ]
 
         # Organize acquisition controllers
         self.acquisition_controllers = {}
@@ -118,6 +125,11 @@ class ATSInterface(InstrumentInterface):
             cls_name = get_instrument_class(acquisition_controller)
         self.acquisition_controllers[cls_name] = acquisition_controller
 
+    def get_final_additional_pulses(self):
+        t_start_min = min(pulse.t_start for pulse in self._pulse_sequence)
+        acquisition_trigger_pulse = TriggerPulse(t_start=t_start_min)
+        return acquisition_trigger_pulse
+
     def setup(self):
         self.configuration_settings.clear()
         self.acquisition_settings.clear()
@@ -191,9 +203,6 @@ class ATSInterface(InstrumentInterface):
             **self.acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
-
-    def get_final_additional_pulses(self):
-        pass
 
     def start(self):
         pass
@@ -278,3 +287,41 @@ class ATSInterface(InstrumentInterface):
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
         self.acquisition_settings.update(**acquisition_settings)
+
+
+
+class MeasurementPulseImplementation(MeasurementPulse, PulseImplementation):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=MeasurementPulse,
+                                     **kwargs)
+
+    def satisfies_requirements(self, pulse):
+        # Override class matching, since every pulse can be a measurement pulse
+        return super().satisfies_conditions(pulse, match_class=False)
+
+
+    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
+        return targeted_pulse
+
+    def implement(self):
+        """
+        Implements the DC pulses for the ArbStudio for SingleConnection and
+        CombinedConnection. For a CombinedConnection, it weighs the DC pulses
+        amplitude by the corresponding channel scaling factor (default 1).
+        Args:
+
+        Returns:
+            {output_channel: pulses arr} dictionary for each output channel
+        """
+        # Arbstudio requires a minimum of four points to be returned
+        if isinstance(self.connection, SingleConnection):
+            return {self.connection.output['channel']:
+                        [self.amplitude] * 4}
+        elif isinstance(self.connection, CombinedConnection):
+            return {ch: [self.amplitude] * 4
+                    for ch in self.connection.output['channels']}
+        else:
+            raise Exception("No implementation for connection {}".format(
+                self.connection))
