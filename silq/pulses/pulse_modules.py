@@ -70,7 +70,7 @@ class PulseSequence:
         return len(self.pulses) > 0
 
     def __repr__(self):
-        output= 'PulseSequence with {} pulses, duration: {}\n'.format(
+        output = 'PulseSequence with {} pulses, duration: {}\n'.format(
             len(self.pulses), self.duration)
         for pulse in self.pulses:
             pulse_repr = repr(pulse)
@@ -86,9 +86,11 @@ class PulseSequence:
         for pulse in pulses:
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p) for p in self.pulses):
-                raise SyntaxError('Cannot add pulse because it overlaps.\n '
-                                  'Pulse 1: {}\n\nPulse2: {}'.format(pulse1,
-                                                                     pulse2))
+                raise SyntaxError(
+                    'Cannot add pulse because it overlaps.\n'
+                    'Pulse 1: {}\n\nPulse2: {}'.format(
+                        pulse, [p for p in self.pulses
+                                if self.pulses_overlap(pulse, p)]))
             self.pulses.append(pulse)
 
         self.sort()
@@ -130,7 +132,7 @@ class PulseSequence:
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
-                                if k in self.connection_conditions}
+                                 if k in self.connection_conditions}
         if connection_conditions:
             pulses = [pulse for pulse in pulses if
                       pulse.connection is not None and
@@ -141,10 +143,13 @@ class PulseSequence:
 
     def get_pulse(self, **conditions):
         pulses = self.get_pulses(**conditions)
-        assert len(pulses) == 1, \
-            "Found {} pulses instead one one. Pulses: {}, conditions: {}"\
-                .format(len(pulses), pulses, conditions)
-        return pulses[0]
+        if not pulses:
+            return None
+        elif len(pulses) == 1:
+            return pulses[0]
+        else:
+            raise RuntimeError('Found more than one pulse satisfiying '
+                               'conditions {}'.format(conditions))
 
     def get_transition_voltages(self, pulse=None, connection=None, t=None):
         """
@@ -159,23 +164,30 @@ class PulseSequence:
             Tuple with voltage before, after transition
         """
         if pulse is not None:
+            post_pulse = pulse
             connection = pulse.connection
             t = pulse.t_start
-
-        if connection is None or t is None:
+        elif connection is not None and t is not None:
+            post_pulse = self.get_pulse(connection=connection, t_start=t)
+        else:
             raise TypeError('Not enough arguments provided')
 
-        # Find pulses that start and stop at t. If t=0, the pulse before this
+        # Find pulses thar stop sat t. If t=0, the pulse before this
         #  will be the last pulse in the sequence
         pre_pulse = self.get_pulse(connection=connection,
-                                   t_stop=(self.duration if t==0 else t))
-        post_pulse = self.get_pulse(connection=connection, t_start=t)
+                                   t_stop=(self.duration if t == 0 else t))
 
-        pre_voltage = pre_pulse.get_voltage(self.duration if t==0 else t)
+        if pre_pulse is not None:
+            pre_voltage = pre_pulse.get_voltage(self.duration if t == 0 else t)
+        elif connection.output['channel'].output_TTL is not None:
+            # Choose pre voltage as low from TTL
+            pre_voltage = connection.output['channel'].output_TTL[0]
+        else:
+            raise RuntimeError('Could not determine pre voltage for transition')
+
         post_voltage = post_pulse.get_voltage(t)
 
         return pre_voltage, post_voltage
-
 
 
 class PulseImplementation:
