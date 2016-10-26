@@ -169,9 +169,10 @@ class Layout(Instrument):
             raise Exception('No instruments have an implementation for pulses '
                             '{}'.format(pulse))
         elif len(matched_interfaces) > 1:
-            raise Exception('More than one instrument have an implementation '
-                            'for pulses {}. Functionality to choose instrument '
-                            'not yet implemented'.format(pulse))
+            raise Exception('More than one interface has an implementation for '
+                            'pulse. Functionality to choose instrument not yet '
+                            'implemented.\nInterfaces: {}, pulse: {}'.format(
+                matched_interfaces, pulse))
         else:
             return matched_interfaces[0]
 
