@@ -87,6 +87,9 @@ class ArbStudio1104Interface(InstrumentInterface):
     def stop(self):
         pass
 
+    def get_final_additional_pulses(self):
+        pass
+
     def generate_waveforms(self):
         # Set time t_pulse to zero, will increase as we iterate over pulses
         t_pulse = 0
