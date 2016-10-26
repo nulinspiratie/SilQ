@@ -49,7 +49,19 @@ class Layout(Instrument):
             return None
 
     def add_connection(self, output_arg, input_arg, **kwargs):
-        connection = SingleConnection(output_arg, input_arg, **kwargs)
+        output_instrument, output_channel_name = output_arg.split('.')
+        output_interface = self._interfaces[output_instrument]
+        output_channel = output_interface.get_channel(output_channel_name)
+
+        input_instrument, input_channel_name = input_arg.split('.')
+        input_interface = self._interfaces[input_instrument]
+        input_channel = input_interface.get_channel(input_channel_name)
+
+        connection = SingleConnection(output_instrument=output_instrument,
+                                      output_channel=output_channel,
+                                      input_instrument=input_instrument,
+                                      input_channel=input_channel,
+                                      **kwargs)
         self.connections += [connection]
         return connection
 
@@ -234,6 +246,9 @@ class Layout(Instrument):
         targeted_pulse = interface.get_pulse_implementation(
             pulse, is_primary=is_primary)
         targeted_pulse.connection = connection
+        print('targeted pulse: {} \nconnection: {}'.format(
+            targeted_pulse, targeted_pulse.connection
+        ))
         interface.pulse_sequence(('add', targeted_pulse))
 
         # Add pulse to acquisition instrument if it must be acquired
@@ -263,6 +278,9 @@ class Layout(Instrument):
                 self._target_pulse(pulse)
 
             interface.pulse_sequence(('duration', pulse_sequence.duration))
+
+    def setup(self):
+        for interface in self._get_interfaces_hierarchical():
             interface.setup()
 
 
@@ -306,23 +324,24 @@ class Connection:
 
         # Test conditions
         if output_instrument is not None and \
-                    self.output.get('instrument', None) != output_instrument:
+                    self.output['instrument'] != output_instrument:
             return False
         elif output_channel is not None and \
-                        self.output.get('channel', None) != output_channel:
+                        self.output['channel'].name != output_channel:
             return False
         elif input_instrument is not None and \
-                        self.input.get('instrument', None) != input_instrument:
+                        self.input['instrument'] != input_instrument:
             return False
         elif input_channel is not None and \
-                        self.input.get('channel', None) != input_channel:
+                        self.input['channel'].name != input_channel:
             return False
         else:
             return True
 
 
 class SingleConnection(Connection):
-    def __init__(self, output_arg, input_arg,
+    def __init__(self, output_instrument, output_channel,
+                 input_instrument, input_channel,
                  trigger=False, acquire=False, **kwargs):
         """
         Class representing a connection between instrument channels.
@@ -342,25 +361,15 @@ class SingleConnection(Connection):
         # TODO Add mirroring of other channel.
         super().__init__(**kwargs)
 
-        if type(output_arg) is str:
-            output_instrument, output_channel = output_arg.split('.')
-        elif type(output_arg) is tuple:
-            output_instrument, output_channel = output_arg
-        else:
-            raise TypeError('Connection output must be a string or tuple')
         self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
-        self.output['str'] = '{}.{}'.format(output_instrument, output_channel)
+        self.output['str'] = '{}.{}'.format(output_instrument,
+                                            output_channel.name)
 
-        if type(input_arg) is str:
-            input_instrument, input_channel = input_arg.split('.')
-        elif type(input_arg) is tuple:
-            input_instrument, input_channel = input_arg
-        else:
-            raise TypeError('Connection input must be a string or tuple')
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
-        self.input['str'] = '{}.{}'.format(input_instrument, input_channel)
+        self.input['str'] = '{}.{}'.format(input_instrument,
+                                           input_channel.name)
 
         self.trigger = trigger
         # TODO add this connection to input_instrument.trigger
@@ -369,8 +378,8 @@ class SingleConnection(Connection):
 
     def __repr__(self):
         output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument'], self.output['channel'],
-            self.input['instrument'], self.input['channel'])
+            self.output['instrument'], self.output['channel'].name,
+            self.input['instrument'], self.input['channel'].name)
         if self.trigger:
             output_str += ', trigger'
         if self.default:
@@ -380,7 +389,7 @@ class SingleConnection(Connection):
         output_str += ')'
         return output_str
 
-    def satisfies_conditions(self, trigger=None, **kwargs):
+    def satisfies_conditions(self, trigger=None, acquire=None, **kwargs):
         """
         Checks if this connection satisfies conditions
         Args:
@@ -395,12 +404,12 @@ class SingleConnection(Connection):
         """
         if not super().satisfies_conditions(**kwargs):
             return False
-
-        if trigger is not None and self.trigger != trigger:
+        elif trigger is not None and self.trigger != trigger:
             return False
-
-        return True
-
+        elif acquire is not None and self.acquire != acquire:
+            return False
+        else:
+            return True
 
 
 class CombinedConnection(Connection):
