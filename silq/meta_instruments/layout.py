@@ -132,7 +132,7 @@ class Layout(Instrument):
         # print('Available connections: {}'.format(connections))
 
         output_instruments = set([connection.output['instrument']
-                                for connection in connections])
+                                  for connection in connections])
         # print('Output instruments: {}'.format(output_instruments))
 
         interfaces = {instrument: self._interfaces[instrument]
@@ -237,9 +237,7 @@ class Layout(Instrument):
             additional_pulses += acquisition_pulse.additional_pulses
 
         # Also target any pulses that are in additional_pulses, such as triggers
-        # print('additional pulses: {}'.format(targeted_pulse.additional_pulses))
         for additional_pulse in additional_pulses:
-            # print('main pulse {} needs {}'.format(pulse, additional_pulse))
             self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
@@ -251,26 +249,17 @@ class Layout(Instrument):
         for pulse in pulse_sequence:
             self._target_pulse(pulse)
 
-        # Setup each of the instruments using its pulse_sequence
-        for instrument, interface in self._interfaces.items():
-            # The acquisition instrument is setup at the end
-            if instrument == self.acquisition_instrument():
-                continue
+        # Setup each of the instruments hierarchically using its pulse_sequence
+        # The ordering is because instruments might need final pulses from
+        # triggering instruments (e.g. triggering pulses that can only be
+        # defined once all other pulses have been given)
+        for interface in self.get_interfaces_hierarchical():
+            additional_pulses = interface.get_final_additional_pulses()
+            for pulse in additional_pulses:
+                self._target_pulse(pulse)
 
             interface.pulse_sequence(('duration', pulse_sequence.duration))
             interface.setup()
-
-            # Add pulses (if any) to acquitisition_instrument if the input of
-            # the pulse is the acquisition_instrument
-            acquisition_pulses = interface.pulse_sequence().get_pulses(
-                input_instrument=self.acquisition_instrument())
-            if acquisition_pulses and self.acquisition_instrument() is not None:
-                self._interfaces[self.acquisition_instrument()].pulse_sequence(
-                    ('add', acquisition_pulses))
-
-        # Setup acquisition_instrument
-        if self.acquisition_instrument() is not None:
-            self._interfaces[self.acquisition_instrument()].setup()
 
 
 class Connection:
@@ -289,9 +278,11 @@ class Connection:
         """
         Checks if this connection satisfies conditions
         Args:
+            output_arg: Connection must have output 'instrument.channel'
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
+            input_arg: Connection must have input 'instrument.channel'
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
@@ -311,7 +302,7 @@ class Connection:
 
         # Test conditions
         if output_instrument is not None and \
-                        self.output.get('instrument', None) != output_instrument:
+                    self.output.get('instrument', None) != output_instrument:
             return False
         elif output_channel is not None and \
                         self.output.get('channel', None) != output_channel:
