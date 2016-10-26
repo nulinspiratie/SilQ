@@ -21,6 +21,14 @@ class MockATS(MockInstrument):
         self._settings_names = self._acquisition_settings_names + \
             self._configuration_settings_names
 
+        self._configuration_settings = {}
+        self._acquisition_settings = {}
+        self.add_parameter(name='configuration_settings',
+                           get_cmd=lambda: self._configuration_settings)
+        self.add_parameter(name='acquisition_settings',
+                           get_cmd=lambda: self._acquisition_settings)
+
+
 
     def config(self, clock_source=None, sample_rate=None, clock_edge=None,
                decimation=None, coupling=None, channel_range=None,
@@ -31,11 +39,12 @@ class MockATS(MockInstrument):
                trigger_slope2=None, trigger_level2=None,
                external_trigger_coupling=None, external_trigger_range=None,
                trigger_delay=None, timeout_ticks=None):
-        settings = {}
+        self._configuration_settings.clear()
         for setting in self._configuration_settings_names:
             if locals()[setting] is not None:
-                settings[setting] = locals()[setting]
-        self.print_function(function='config', **settings)
+                self._configuration_settings[setting] = locals()[setting]
+
+        self.print_function(function='config', **self._configuration_settings)
 
     def acquire(self, mode=None, samples_per_record=None,
                 records_per_buffer=None, buffers_per_acquisition=None,
@@ -45,8 +54,9 @@ class MockATS(MockInstrument):
                 interleave_samples=None, get_processed_data=None,
                 allocated_buffers=None, buffer_timeout=None,
                 acquisition_controller=None):
-        settings = {}
+        self._acquisition_settings.clear()
         for setting in self._acquisition_settings_names:
             if locals()[setting] is not None:
-                settings[setting] = locals()[setting]
-        self.print_function(function='config', **settings)
+                self._acquisition_settings[setting] = locals()[setting]
+        self.print_function(function='config',
+                            **self._acquisition_settings)
