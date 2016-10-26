@@ -35,7 +35,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.add_parameter('trigger_in_duration',
                            parameter_class=ManualParameter,
                            units='us',
-                           initial_value=0.01)
+                           initial_value=0.1)
 
     def setup(self):
         # TODO implement setup for modes other than stepped
@@ -88,7 +88,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         pass
 
     def get_final_additional_pulses(self):
-        pass
+        return []
 
     def generate_waveforms(self):
         # Set time t_pulse to zero, will increase as we iterate over pulses
