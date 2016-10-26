@@ -49,7 +49,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             trigger_duration = pulses[0].duration
             assert all([pulse.duration == trigger_duration
                         for pulse in pulses]), \
-                "Cannot handle different pulse trigger durations yet."
+                "Cannot handle different pulse trigger durations yet." \
+                "Durations: {}".format([pulse.duration for pulse in pulses])
             trigger_cycles = round(trigger_duration * us)
 
             t = 0
@@ -122,7 +123,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         pass
 
     def get_final_additional_pulses(self):
-        pass
+        return []
 
 
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
