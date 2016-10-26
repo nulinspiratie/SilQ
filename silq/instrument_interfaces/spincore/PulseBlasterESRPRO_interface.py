@@ -121,6 +121,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         pass
 
+    def get_final_additional_pulses(self):
+        pass
+
+
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
