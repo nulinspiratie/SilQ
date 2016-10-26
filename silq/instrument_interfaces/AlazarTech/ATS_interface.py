@@ -32,12 +32,6 @@ class ATSInterface(InstrumentInterface):
                          'trig_in': self.trigger_in,
                          'trig_out': self.trigger_out}
 
-        self.pulse_implementations = [
-            MeasurementPulseImplementation(
-                pulse_requirements=[]
-            )
-        ]
-
         # Organize acquisition controllers
         self.acquisition_controllers = {}
         for acquisition_controller_name in acquisition_controller_names:
@@ -133,9 +127,9 @@ class ATSInterface(InstrumentInterface):
             acquisition_trigger_pulse = \
                 TriggerPulse(t_start=t_start_min,
                              connection_requirements={
-                                 'input_instrument':
-                                     self.instrument_name(),
-                                 'trigger': True}
+                                 'input_instrument': self.instrument_name(),
+                                 'trigger': True},
+                             acquire=True
                              )
         return [acquisition_trigger_pulse]
 
@@ -173,6 +167,12 @@ class ATSInterface(InstrumentInterface):
 
             acquisition_pulses = self._pulse_sequence.get_pulses(
                 acquire=True, input_channel=self.trigger_channel())
+            print('All pulses: {}'.format(self._pulse_sequence))
+            print('acquire pulses: {}'.format(self._pulse_sequence.get_pulses(
+                acquire=True)))
+            print('channel pulses: {}'.format(self._pulse_sequence.get_pulses(
+                input_channel=self.trigger_channel())))
+            print('ATS acquisition pulses: {}'.format(acquisition_pulses))
             if acquisition_pulses:
                 start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
@@ -296,50 +296,3 @@ class ATSInterface(InstrumentInterface):
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
         self.acquisition_settings.update(**acquisition_settings)
-
-
-
-class MeasurementPulseImplementation(MeasurementPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=MeasurementPulse,
-                                     **kwargs)
-
-    def satisfies_requirements(self, pulse):
-        # Override class matching, since every pulse can be a measurement pulse
-        if not super().satisfies_requirements(pulse,match_class=False):
-            return False
-        elif isinstance(pulse, MeasurementPulse):
-            # Measurement pulses are accepted by default
-            return True
-        elif not isinstance(pulse, PulseImplementation):
-            # Only accept pulses that are already targeted
-            return False
-        else:
-            return True
-
-
-    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
-        return targeted_pulse
-
-    def implement(self):
-        """
-        Implements the DC pulses for the ArbStudio for SingleConnection and
-        CombinedConnection. For a CombinedConnection, it weighs the DC pulses
-        amplitude by the corresponding channel scaling factor (default 1).
-        Args:
-
-        Returns:
-            {output_channel: pulses arr} dictionary for each output channel
-        """
-        # Arbstudio requires a minimum of four points to be returned
-        if isinstance(self.connection, SingleConnection):
-            return {self.connection.output['channel']:
-                        [self.amplitude] * 4}
-        elif isinstance(self.connection, CombinedConnection):
-            return {ch: [self.amplitude] * 4
-                    for ch in self.connection.output['channels']}
-        else:
-            raise Exception("No implementation for connection {}".format(
-                self.connection))
