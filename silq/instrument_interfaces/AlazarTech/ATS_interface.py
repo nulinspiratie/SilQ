@@ -135,6 +135,8 @@ class ATSInterface(InstrumentInterface):
             [self.channels[ch].id for ch in self.acquisition_channels()]))
         self.update_settings(channel_selection=channel_ids)
 
+        # TODO Check/target pulse sequence and
+
         self.setup_trigger()
         self.setup_ATS()
         self.setup_acquisition_controller()
@@ -189,6 +191,14 @@ class ATSInterface(InstrumentInterface):
             **self.acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
+
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 
     def _acquisition(self):
         raise NotImplementedError(
