@@ -6,6 +6,7 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
+from silq.tools import get_instrument_class
 
 
 class ATSInterface(InstrumentInterface):
@@ -114,7 +115,7 @@ class ATSInterface(InstrumentInterface):
         acquisition_controller = self.find_instrument(
             acquisition_controller_name)
         if cls_name is None:
-            cls_name = acquisition_controller._instrument_class.__name__
+            cls_name = get_instrument_class(acquisition_controller)
         self.acquisition_controllers[cls_name] = acquisition_controller
 
     def setup(self):
