@@ -192,6 +192,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
+    def get_final_additional_pulses(self):
         pass
 
     def start(self):
