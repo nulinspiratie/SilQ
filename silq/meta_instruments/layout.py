@@ -41,6 +41,10 @@ class Layout(Instrument):
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
 
+    @property
+    def acquisition_interface(self):
+        return self._interfaces[self.acquisition_instrument()]
+
     def add_connection(self, output_arg, input_arg, **kwargs):
         connection = SingleConnection(output_arg, input_arg, **kwargs)
         self.connections += [connection]
@@ -233,7 +237,10 @@ class Layout(Instrument):
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             acquisition_pulse = \
-                self.acquisition_instrument().add_pulse(targeted_pulse)
+                self.acquisition_interface.get_pulse_implementation(
+                    targeted_pulse)
+            self.acquisition_interface.pulse_sequence(
+                ('add', acquisition_pulse))
             additional_pulses += acquisition_pulse.additional_pulses
 
         # Also target any pulses that are in additional_pulses, such as triggers
