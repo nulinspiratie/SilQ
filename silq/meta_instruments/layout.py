@@ -235,19 +235,13 @@ class Layout(Instrument):
             pulse, is_primary=is_primary)
         targeted_pulse.connection = connection
         interface.pulse_sequence(('add', targeted_pulse))
-        additional_pulses = targeted_pulse.additional_pulses
 
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            acquisition_pulse = \
-                self.acquisition_interface.get_pulse_implementation(
-                    targeted_pulse)
-            self.acquisition_interface.pulse_sequence(
-                ('add', acquisition_pulse))
-            additional_pulses += acquisition_pulse.additional_pulses
+            self.acquisition_interface.pulse_sequence(('add', targeted_pulse))
 
         # Also target any pulses that are in additional_pulses, such as triggers
-        for additional_pulse in additional_pulses:
+        for additional_pulse in targeted_pulse.additional_pulses:
             self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
