@@ -50,9 +50,10 @@ class PulseRequirement():
 
 
 class PulseSequence:
-    def __init__(self):
+    def __init__(self, allow_pulse_overlap=True):
         self.pulses = []
         self.duration = 0
+        self.allow_pulse_overlap = allow_pulse_overlap
 
         # These are needed to separate
         from silq.meta_instruments.layout import connection_conditions
@@ -82,7 +83,13 @@ class PulseSequence:
         if not isinstance(pulses, list):
             pulses = [pulses]
 
-        self.pulses += pulses
+        for pulse in pulses:
+            if not self.allow_pulse_overlap and \
+                    any(self.pulses_overlap(pulse, p) for p in self.pulses):
+                raise SyntaxError('Cannot add pulse because it overlaps.\n '
+                                  'Pulse 1: {}\n\nPulse2: {}'.format(pulse1,
+                                                                     pulse2))
+            self.pulses.append(pulse)
 
         self.sort()
         self.duration = max([pulse.t_stop for pulse in self.pulses])
@@ -99,6 +106,18 @@ class PulseSequence:
     def clear(self):
         self.pulses = []
         self.duration = 0
+
+    def pulses_overlap(self, pulse1, pulse2):
+        if (pulse1.t_stop <= pulse2.t_start) or \
+               (pulse1.t_start >= pulse2.t_stop):
+            #
+            return False
+        elif pulse1.connection is not None and pulse2.connection is not None \
+                and pulse1.connection['str'] != pulse2.connection['str']:
+            # If the outputs are different, they don't overlap
+            return False
+        else:
+            return True
 
     def get_pulses(self, **conditions):
         pulses = self.pulses
