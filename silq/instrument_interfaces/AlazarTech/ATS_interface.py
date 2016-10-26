@@ -126,9 +126,18 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controllers[cls_name] = acquisition_controller
 
     def get_final_additional_pulses(self):
-        t_start_min = min(pulse.t_start for pulse in self._pulse_sequence)
-        acquisition_trigger_pulse = TriggerPulse(t_start=t_start_min)
-        return acquisition_trigger_pulse
+        if not self._pulse_sequence:
+            return []
+        else:
+            t_start_min = min(pulse.t_start for pulse in self._pulse_sequence)
+            acquisition_trigger_pulse = \
+                TriggerPulse(t_start=t_start_min,
+                             connection_requirements={
+                                 'input_instrument':
+                                     self.instrument_name(),
+                                 'trigger': True}
+                             )
+        return [acquisition_trigger_pulse]
 
     def setup(self):
         self.configuration_settings.clear()
@@ -297,7 +306,16 @@ class MeasurementPulseImplementation(MeasurementPulse, PulseImplementation):
 
     def satisfies_requirements(self, pulse):
         # Override class matching, since every pulse can be a measurement pulse
-        return super().satisfies_requirements(pulse,match_class=False)
+        if not super().satisfies_requirements(pulse,match_class=False):
+            return False
+        elif isinstance(pulse, MeasurementPulse):
+            # Measurement pulses are accepted by default
+            return True
+        elif not isinstance(pulse, PulseImplementation):
+            # Only accept pulses that are already targeted
+            return False
+        else:
+            return True
 
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
