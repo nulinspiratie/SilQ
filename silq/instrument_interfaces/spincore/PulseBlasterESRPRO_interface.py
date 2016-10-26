@@ -135,4 +135,5 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         # Split channel number from string (e.g. "ch3" -> 3)
         output_channel = int(output_channel_name[2])
         channel_value = 2**(output_channel-1)
+        print('channel {} has value {}'.format(output_channel_name, channel_value))
         return channel_value
