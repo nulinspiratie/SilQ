@@ -153,7 +153,8 @@ class ATSInterface(InstrumentInterface):
             if acquisition_pulses:
                 start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
-                    self._pulse_sequence.get_transition_voltages(pulse=start_pulse)
+                    self._pulse_sequence.get_transition_voltages(
+                        pulse=start_pulse)
                 assert post_voltage != pre_voltage, \
                     'Could not determine trigger voltage transition'
 
@@ -265,4 +266,4 @@ class ATSInterface(InstrumentInterface):
 
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
-        self.acquisition_settings.update(**settings)
+        self.acquisition_settings.update(**acquisition_settings)
