@@ -43,7 +43,10 @@ class Layout(Instrument):
 
     @property
     def acquisition_interface(self):
-        return self._interfaces[self.acquisition_instrument()]
+        if self.acquisition_instrument() is not None:
+            return self._interfaces[self.acquisition_instrument()]
+        else:
+            return None
 
     def add_connection(self, output_arg, input_arg, **kwargs):
         connection = SingleConnection(output_arg, input_arg, **kwargs)
@@ -72,7 +75,7 @@ class Layout(Instrument):
         return [connection for connection in self.connections
                 if connection.satisfies_conditions(**conditions)]
 
-    def get_interfaces_hierarchical(self, sorted_interfaces=[]):
+    def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
         Determines the hierarchy for instruments, ensuring that instruments
         in the list never trigger instruments later in the list.
@@ -83,7 +86,6 @@ class Layout(Instrument):
         Returns:
             Hierarchically sorted list of interfaces
         """
-
         # Find all interfaces that have not been sorted yet
         remaining_interfaces = {
             instrument: interface
@@ -101,21 +103,21 @@ class Layout(Instrument):
             # Find instruments that are triggered by interface
             trigger_instruments = set(connection.input['instrument']
                                       for connection in trigger_connections)
-
             # Add interface to sorted interface if it does not trigger any of
             # the remaining interfaces
             if all(instrument not in remaining_interfaces
                    for instrument in trigger_instruments):
                 sorted_interfaces.append(interface)
 
-            if not any(interface in sorted_interfaces for interface in
-                       remaining_interfaces.values()):
-                raise RecursionError("Could not find hierarchy for instruments"
-                                     "This likely means that instruments are "
-                                     "triggering each other")
+        # Ensure that we are not in an infinite loop
+        if not any(interface in sorted_interfaces for interface in
+                   remaining_interfaces.values()):
+            raise RecursionError("Could not find hierarchy for instruments."
+                                 " This likely means that instruments are "
+                                 "triggering each other")
 
         # Go to next level in recursion
-        self.get_interfaces_hierarchical(sorted_interfaces)
+        return self._get_interfaces_hierarchical(sorted_interfaces)
 
     def _get_pulse_interface(self, pulse):
         """
@@ -260,7 +262,7 @@ class Layout(Instrument):
         # The ordering is because instruments might need final pulses from
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
-        for interface in self.get_interfaces_hierarchical():
+        for interface in self._get_interfaces_hierarchical():
             additional_pulses = interface.get_final_additional_pulses()
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
