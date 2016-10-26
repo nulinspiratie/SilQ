@@ -176,8 +176,8 @@ class PulseImplementation:
     def add_pulse_requirement(self, property, requirement):
         self.pulse_requirements += [PulseRequirement(property, requirement)]
 
-    def satisfies_requirements(self, pulse):
-        if not self.pulse_class == pulse.__class__:
+    def satisfies_requirements(self, pulse, match_class=True):
+        if match_class and not self.pulse_class == pulse.__class__:
             return False
         else:
             return np.all([pulse_requirements.satisfies(pulse)
