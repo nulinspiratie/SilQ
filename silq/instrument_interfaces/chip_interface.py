@@ -24,4 +24,4 @@ class ChipInterface(InstrumentInterface):
         pass
 
     def get_final_additional_pulses(self):
-        pass
+        return []
