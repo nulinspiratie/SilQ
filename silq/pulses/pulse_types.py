@@ -155,9 +155,9 @@ class DCPulse(Pulse):
 
 class TriggerPulse(Pulse):
     duration = 1 # us
+
     def __init__(self, duration=duration, **kwargs):
         super().__init__(duration=duration, **kwargs)
-
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
@@ -173,3 +173,18 @@ class TriggerPulse(Pulse):
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
         return self.amplitude
+
+
+class MeasurementPulse(Pulse):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __repr__(self):
+        properties_str = 't_start={}, duration={}'.format(
+            self.t_start, self.duration)
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        raise NotImplementedError('Measurement pulses do not have a voltage')
