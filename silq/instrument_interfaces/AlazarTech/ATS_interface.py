@@ -297,7 +297,7 @@ class MeasurementPulseImplementation(MeasurementPulse, PulseImplementation):
 
     def satisfies_requirements(self, pulse):
         # Override class matching, since every pulse can be a measurement pulse
-        return super().satisfies_conditions(pulse, match_class=False)
+        return super().satisfies_requirements(pulse,match_class=False)
 
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
