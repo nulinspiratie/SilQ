@@ -51,7 +51,7 @@ class Pulse:
         # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
         #                            for prop in properties])
 
-        if self.conectin:
+        if self.connection:
             properties_str += '\n\tconnection: {}'.format(self.connection)
         if self.connection_requirements:
             properties_str += '\n\trequirements: {}'.format(
