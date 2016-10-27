@@ -9,12 +9,17 @@ class ArbStudio1104Interface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self.output_channels = {
-            'ch{}'.format(k): Channel(self, name='ch{}'.format(k), id=k,
+            'ch{}'.format(k): Channel(instrument_name=self.name,
+                                      name='ch{}'.format(k), id=k,
                                       output=True) for k in [1, 2, 3, 4]}
-        self.trigger_in_channel = Channel(self, name='trig_in',
+        self.trigger_in_channel = Channel(instrument_name=self.name,
+                                          name='trig_in',
                                           input_trigger=True)
-        self.trigger_out_channel = Channel(self, name='trig_out',
-                                           output_trigger=True)
+        self.trigger_out_channel = Channel(instrument_name=self.name,
+                                           name='trig_out',
+                                           output_TTL=(0, 3.3))
+        # TODO check Arbstudio output TTL high
+
         self.channels = {**self.output_channels,
                          'trig_in': self.trigger_in_channel,
                          'trig_out': self.trigger_out_channel}
@@ -44,9 +49,9 @@ class ArbStudio1104Interface(InstrumentInterface):
         for pulse in self.pulse_sequence():
             output = pulse.connection.output
             if output.get('channel', None):
-                self.active_channels += [output['channel']]
+                self.active_channels += [output['channel'].name]
             elif output.get('channels', None):
-                self.active_channels += output['channels']
+                self.active_channels += output['channels'].name
         self.active_channels = list(set(self.active_channels))
 
         # # Find sampling rates (these may be different for different channels)
@@ -147,10 +152,10 @@ class DCPulseImplementation(DCPulse, PulseImplementation):
         """
         # Arbstudio requires a minimum of four points to be returned
         if isinstance(self.connection, SingleConnection):
-            return {self.connection.output['channel']:
+            return {self.connection.output['channel'].name:
                         [self.amplitude] * 4}
         elif isinstance(self.connection, CombinedConnection):
-            return {ch: [self.amplitude] * 4
+            return {ch.name: [self.amplitude] * 4
                     for ch in self.connection.output['channels']}
         else:
             raise Exception("No implementation for connection {}".format(
