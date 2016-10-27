@@ -279,14 +279,16 @@ class Layout(Instrument):
                 self._get_pulse_interface(pulse)
 
         connections = self.get_connections(**connection_requirements, **kwargs)
-
         if len(connections) > 1:
             connections = [connection for connection in connections
                            if connection.default]
 
         if len(connections) != 1:
-            raise Exception('Instrument {} did not have suitable connection out'
-                            ' of connections {}'.format(interface, connections))
+            raise Exception(
+                'Instrument {} did not have suitable connection out of '
+                'connections {}. requirements: {}'.format(
+                    interface.instrument_name, connections,
+                    connection_requirements))
         else:
             return connections[0]
 
@@ -296,18 +298,28 @@ class Layout(Instrument):
         connection = self.get_pulse_connection(pulse, interface=interface)
 
         is_primary = self.primary_instrument() == interface.instrument_name()
-        targeted_pulse = interface.get_pulse_implementation(
-            pulse, is_primary=is_primary)
-        targeted_pulse.connection = connection
-        interface.pulse_sequence(('add', targeted_pulse))
 
-        # Add pulse to acquisition instrument if it must be acquired
-        if pulse.acquire:
-            self.acquisition_interface.pulse_sequence(('add', targeted_pulse))
+        # In case a connection consists of multiple connections, create a
+        # separate pulse for each sub-connecion
+        if isinstance(connection, CombinedConnection):
+            connections = connection.connectionss
+        else:
+            connections = connection
 
-        # Also target any pulses that are in additional_pulses, such as triggers
-        for additional_pulse in targeted_pulse.additional_pulses:
-            self._target_pulse(additional_pulse)
+        for connection in connections:
+            targeted_pulse = interface.get_pulse_implementation(
+                pulse, is_primary=is_primary)
+            targeted_pulse.connection = connection
+            interface.pulse_sequence(('add', targeted_pulse))
+
+            # Add pulse to acquisition instrument if it must be acquired
+            if pulse.acquire:
+                self.acquisition_interface.pulse_sequence(
+                    ('add', targeted_pulse))
+
+            # Also target any pulses that are in additional_pulses, such as triggers
+            for additional_pulse in targeted_pulse.additional_pulses:
+                self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
@@ -518,6 +530,8 @@ class CombinedConnection(Connection):
                                        for connection in connections]))
         self.input['instruments'] = list(set([connection.input['instrument']
                                          for connection in connections]))
+        if len(self.input['instruments']) == 1:
+            self.input['instrument'] = self.input['instruments'][0]
         self.input['channels'] = list(set([connection.input['channel']
                                       for connection in connections]))
 
