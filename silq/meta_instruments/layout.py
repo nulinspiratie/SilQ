@@ -1,3 +1,4 @@
+import numpy as np
 from collections import OrderedDict as od
 import inspect
 
@@ -342,7 +343,7 @@ class Layout(Instrument):
         # (these are the second tuple values in self.acquisition_outputs)
         if self.acquisition_interface is not None and \
                 self.acquisition_interface.pulse_sequence():
-            self.acquisition.names = self.acquisition_channels.keys()
+            self.acquisition.names = list(self.acquisition_channels.keys())
             self.acquisition.labels = self.acquisition.names
             self.acquisition.units = self.acquisition_interface.acquisition.units
             self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
