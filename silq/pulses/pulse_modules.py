@@ -79,6 +79,19 @@ class PulseSequence:
             output += '\t' + pulse_repr + '\n'
         return output
 
+    def replace(self, pulse_sequence):
+        """
+        Replace all attributes of this pulse_sequence with another one
+        Args:
+            pulse_sequence: New pulse_sequence
+
+        Returns:
+            None
+        """
+        # Copy over all attributes from the pulse
+        for attr, val in vars(pulse_sequence).items():
+            setattr(self, attr, copy.deepcopy(val))
+
     def add(self, pulses):
         if not isinstance(pulses, list):
             pulses = [pulses]
