@@ -162,27 +162,28 @@ class PulseMaster(Instrument):
         trigger_slope = 'TRIG_SLOPE_NEGATIVE' if voltage_difference > 0 else 'TRIG_SLOPE_POSITIVE'
 
         # trigger level <128 is below 0V, >128 is above 0V
-        trigger_level = round(128 * (1 + 0.5 * (pre_acquisition_voltage - voltage_difference / 2)))
+        channel_range = 4
+        trigger_level = round(128 * (1 + (pre_acquisition_voltage - voltage_difference / 2) / channel_range))
 
         self.ATS.config(trigger_source1='CHANNEL_C',
                         trigger_level1=trigger_level,
                         trigger_slope1=trigger_slope,
                         external_trigger_coupling='DC',
                         trigger_operation='TRIG_ENGINE_OP_J',
-                        channel_range=2,
+                        channel_range=channel_range,
                         sample_rate=self.digitizer_sample_rate(),
                         coupling='DC')
 
     def configure_ATS_controller(self, average_mode='none'):
         read_length = sum([self.stages()[stage]['duration'] for stage in self.acquisition_stages()])
-        sample_rate = self.ATS_controller._get_alazar_parameter('sample_rate')
+        sample_rate = self.ATS.sample_rate()
         samples_per_record = int(16 * round(float(sample_rate * read_length * 1e-3) / 16))
 
         # TODO proper automatic buffer time out
         buffer_timeout = 80000  # max(20000, 2.5*total_duration)
 
         self.ATS_controller.average_mode(average_mode)
-        self.ATS_controller.update_acquisition_kwargs(samples_per_record=samples_per_record,
+        self.ATS_controller.update_acquisitionkwargs(samples_per_record=samples_per_record,
                                                       records_per_buffer=1,
                                                       buffers_per_acquisition=self.samples(),
                                                       buffer_timeout=buffer_timeout,
