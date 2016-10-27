@@ -1,8 +1,10 @@
-from silq.pulses import PulseSequence
+from functools import partial
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
+
+from silq.pulses import PulseSequence
 
 
 class InstrumentInterface(Instrument):
@@ -16,13 +18,20 @@ class InstrumentInterface(Instrument):
         self._channels = {}
 
         self._pulse_sequence = PulseSequence()
+        self._input_pulse_sequence = PulseSequence()
         self.add_parameter('instrument_name',
                            parameter_class=ManualParameter,
                            initial_value=instrument_name,
                            vals=vals.Anything())
         self.add_parameter('pulse_sequence',
                            get_cmd=lambda: self._pulse_sequence,
-                           set_cmd=self._set_pulse_sequence,
+                           set_cmd=partial(self._set_pulse_sequence,
+                                           self._pulse_sequence),
+                           vals=vals.Anything())
+        self.add_parameter('input_pulse_sequence',
+                           get_cmd=lambda: self._input_pulse_sequence,
+                           set_cmd=partial(self._set_pulse_sequence,
+                                           self._input_pulse_sequence),
                            vals=vals.Anything())
 
         self.pulse_implementations = []
@@ -61,7 +70,7 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def _set_pulse_sequence(self, val):
+    def _set_pulse_sequence(self, pulse_sequence, val):
         """
         set function for parameter self.pulse_sequence.
         This function is created because properties/methods of the
@@ -83,21 +92,21 @@ class InstrumentInterface(Instrument):
             None
         """
         if type(val) == PulseSequence:
-            self._pulse_sequence = val
+            pulse_sequence.replace(val)
         elif type(val) == str:
             if val == 'clear':
-                self._pulse_sequence.clear()
+                pulse_sequence.clear()
             elif val == 'sort':
-                self._pulse_sequence.sort()
+                pulse_sequence.sort()
             else:
                 raise Exception(
                     'Pulse sequence command {} not understood'.format(val))
         elif type(val) == tuple:
             key, value = val
             if key == 'add':
-                self._pulse_sequence.add(value)
+                pulse_sequence.add(value)
             else:
-                setattr(self._pulse_sequence, key, value)
+                setattr(pulse_sequence, key, value)
         else:
             raise Exception(
                 'Pulse sequence command {} not understood'.format(val))

@@ -312,6 +312,10 @@ class Layout(Instrument):
             targeted_pulse.connection = connection
             interface.pulse_sequence(('add', targeted_pulse))
 
+            # Also add pulse to input interface pulse sequence
+            input_interface = self._interfaces(connection.input['instrument'])
+            input_interface.input_pulse_sequence(('add', targeted_pulse))
+
             # Add pulse to acquisition instrument if it must be acquired
             if pulse.acquire:
                 self.acquisition_interface.pulse_sequence(
