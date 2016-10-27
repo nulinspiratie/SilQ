@@ -278,7 +278,19 @@ class Layout(Instrument):
 
     def setup(self):
         for interface in self._get_interfaces_hierarchical():
-            interface.setup()
+            if interface.pulse_sequence():
+                interface.setup()
+
+    def start(self):
+        for interface in self._get_interfaces_hierarchical():
+            if interface == self.acquisition_interface:
+                continue
+            else:
+                interface.start()
+
+    def stop(self):
+        for interface in self._get_interfaces_hierarchical():
+            interface.stop()
 
 
 class Connection:
