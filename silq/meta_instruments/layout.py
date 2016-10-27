@@ -50,6 +50,9 @@ class Layout(Instrument):
                            shapes=((),),
                            snapshot_value=False)
 
+        print('*** {}'.format(self.acquisition_interface))
+        print('*** {}'.format(self.acquisition_channels))
+
     @property
     def acquisition_interface(self):
         if self.acquisition_instrument() is not None:
@@ -59,20 +62,30 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        """
-        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-         The acquisition_label is the label associated with a certain
-         acquisition channel. This is settable via layout.acquisition_outputs
-         The acquisition_channel_name is the actual channel name of the
-         acquisition controller.
-        """
-        acquisition_connections = od((output_label,
-            self.get_connection(output_arg=output_arg,
-                                input_instrument=self.acquisition_instrument()))
-            for output_arg, output_label in self.acquisition_outputs().items())
-        acquisition_channels = od(
-            (output_label(), connection.input['channel'].name)
-            for output_label, connection in acquisition_connections.items())
+        # Returns a dictionary acquisition_label: acquisition_channel_name pairs.
+        #  The acquisition_label is the label associated with a certain
+        #  acquisition channel. This is settable via layout.acquisition_outputs
+        #  The acquisition_channel_name is the actual channel name of the
+        #  acquisition controller.
+
+        acquisition_channels = od()
+        for output_arg, output_label in self.acquisition_outputs():
+            pass
+            # Use try/except in case not all connections exist
+            try:
+                connection = self.get_connection(
+                    output_arg=output_arg,
+                    input_instrument=self.acquisition_instrument())
+                acquisition_channels[output_label] = \
+                    connection.input['channel'].name
+            except:
+                print('could not find connection for {}'.format(
+                    output_arg))
+                connections = self.get_connections(
+                    output_arg=output_arg,
+                    input_instrument=self.acquisition_instrument())
+                print(connections)
+                return None
         return acquisition_channels
 
     def add_connection(self, output_arg, input_arg, **kwargs):
@@ -332,10 +345,12 @@ class Layout(Instrument):
         # Setup acquisition parameter metadata
         # Set acquisition names and labels to equal output labels
         # (these are the second tuple values in self.acquisition_outputs)
-        self.acquisition.names = self.acquisition_channels.keys()
-        self.acquisition.labels = self.acquisition.names
-        self.acquisition.units = self.acquisition_interface.acquisition.units
-        self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
+        if self.acquisition_interface is not None and \
+                self.acquisition_interface.pulse_sequence():
+            self.acquisition.names = self.acquisition_channels.keys()
+            self.acquisition.labels = self.acquisition.names
+            self.acquisition.units = self.acquisition_interface.acquisition.units
+            self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
 
     def start(self):
         for interface in self._get_interfaces_hierarchical():
@@ -386,6 +401,10 @@ class Connection:
         Returns:
             Bool depending on if the connection satisfies conditions
         """
+        if output_arg is not None:
+            output_instrument, output_channel = output_arg.split('.')
+        if input_arg is not None:
+            input_instrument, input_channel = input_arg.split('.')
 
         if output_interface is not None:
             output_instrument = output_interface.instrument_name()
