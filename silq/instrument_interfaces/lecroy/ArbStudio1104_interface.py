@@ -42,7 +42,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                            units='us',
                            initial_value=0.1)
 
-    def setup(self):
+    def setup(self, **kwargs):
         # TODO implement setup for modes other than stepped
         # Transform into set to ensure that elements are unique
         self.active_channels = []

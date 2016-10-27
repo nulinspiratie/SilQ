@@ -28,7 +28,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                            initial_value=False,
                            vals=vals.Bool())
 
-    def setup(self):
+    def setup(self, **kwargs):
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
         # Factor of 2 needed because apparently the core clock is not the same

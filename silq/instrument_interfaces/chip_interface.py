@@ -18,7 +18,7 @@ class ChipInterface(InstrumentInterface):
                                for channel_name in ['TGAC', 'DF']}
         self._channels = {**self._input_channels, **self._output_channels}
 
-    def setup(self):
+    def setup(self, **kwargs):
         pass
 
     def start(self):
