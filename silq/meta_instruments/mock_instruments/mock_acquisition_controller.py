@@ -30,10 +30,29 @@ class MockAcquisitionController(MockInstrument):
                            get_cmd=lambda: self._acquisition_settings)
 
         self.add_parameter(name='acquisition',
+                           names=['channel_signal'],
+                           shapes=((),),
                            get_cmd=lambda: self._acquisition_settings)
 
     def setup(self):
-        pass
+        channel_selection = self.get_acquisition_setting('channel_selection')
+        samples_per_record = self.get_acquisition_setting('samples_per_record')
+        records_per_buffer = self.get_acquisition_setting('records_per_buffer')
+        buffers_per_acquisition = self.get_acquisition_setting('buffers_per_acquisition')
+        self.acquisition.names = tuple(['Channel_{}_signal'.format(ch) for ch in
+                                        self.get_acquisition_setting('channel_selection')])
+
+        self.acquisition.labels = self.acquisition.names
+        self.acquisition.units = ['V'*len(channel_selection)]
+
+        if self.average_mode() == 'point':
+            self.acquisition.shapes = tuple([()]*len(channel_selection))
+        elif self.average_mode() == 'trace':
+            shape = (samples_per_record,)
+            self.acquisition.shapes = tuple([shape] * len(channel_selection))
+        else:
+            shape = (records_per_buffer * buffers_per_acquisition, samples_per_record)
+            self.acquisition.shapes = tuple([shape] * len(channel_selection))
 
     def _get_alazar(self):
         """
