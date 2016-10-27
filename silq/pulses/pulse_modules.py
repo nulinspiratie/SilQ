@@ -50,9 +50,18 @@ class PulseRequirement():
 
 
 class PulseSequence:
-    def __init__(self, allow_pulse_overlap=True):
+    def __init__(self, allow_untargeted_pulses=True,
+                 allow_targeted_pulses=True, allow_pulse_overlap=True):
+        """
+        A PulseSequence object is a container for pulses.
+        It can be used to store untargeted or targeted pulses
+        Args:
+            allow_pulse_overlap:
+        """
         self.pulses = []
         self.duration = 0
+        self.allow_untargeted_pulses = allow_pulse_overlap
+        self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
 
         # These are needed to separate
@@ -93,6 +102,22 @@ class PulseSequence:
             setattr(self, attr, copy.deepcopy(val))
 
     def add(self, pulses):
+        """
+        Adds pulse(s) to the PulseSequence.
+        Pulses can be a list of pulses or a single pulse.
+        It performs the following additional checks before adding a pulse
+        - If the pulse overlaps with other pulses and
+            PulseSequence.allow_pulses_overlap is False, it raises a SyntaxError
+        - If the pulses are untargeted and PulseSequence.allow_untargeted_pulses
+            is False, it raises a SyntaxError
+        - If the pulses are targeted and PulseSequence.allow_targeted_pulses
+            is False, it raises a SyntaxError
+        Args:
+            pulses: pulse or list of pulses to add
+
+        Returns:
+            None
+        """
         if not isinstance(pulses, list):
             pulses = [pulses]
 
@@ -104,7 +129,16 @@ class PulseSequence:
                     'Pulse 1: {}\n\nPulse2: {}'.format(
                         pulse, [p for p in self.pulses
                                 if self.pulses_overlap(pulse, p)]))
-            self.pulses.append(pulse)
+            elif not isinstance(pulse, PulseImplementation) and \
+                    not self.allow_untargeted_pulses:
+                raise SyntaxError(
+                    'Not allowed to add untargeted pulse {}'.format(pulse))
+            elif isinstance(pulse, PulseImplementation) and \
+                    not self.allow_targeted_pulses:
+                raise SyntaxError(
+                    'Not allowed to add targeted pulse {}'.format(pulse))
+            else:
+                self.pulses.append(pulse)
 
         self.sort()
         self.duration = max([pulse.t_stop for pulse in self.pulses])
@@ -123,6 +157,16 @@ class PulseSequence:
         self.duration = 0
 
     def pulses_overlap(self, pulse1, pulse2):
+        """
+        Tests if pulse1 and pulse2 overlap in time and connection.
+        If either of the pulses does not have a connection, this is not tested.
+        Args:
+            pulse1: First pulse
+            pulse2: Second pulse
+
+        Returns:
+            True or False depending on if they overlap
+        """
         if (pulse1.t_stop <= pulse2.t_start) or \
                (pulse1.t_start >= pulse2.t_stop):
             #

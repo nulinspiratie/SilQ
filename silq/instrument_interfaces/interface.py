@@ -17,8 +17,10 @@ class InstrumentInterface(Instrument):
 
         self._channels = {}
 
-        self._pulse_sequence = PulseSequence()
-        self._input_pulse_sequence = PulseSequence()
+        self._pulse_sequence = PulseSequence(allow_untargeted_pulses=False,
+                                             allow_pulse_overlap=False)
+        self._input_pulse_sequence = PulseSequence(
+            allow_untargeted_pulses=False, allow_pulse_overlap=False)
         self.add_parameter('instrument_name',
                            parameter_class=ManualParameter,
                            initial_value=instrument_name,
