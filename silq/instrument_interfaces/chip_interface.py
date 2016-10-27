@@ -7,16 +7,16 @@ class ChipInterface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
-        self.output_channels = {
+        self._output_channels = {
             'output': Channel(instrument_name=self.name,
                               name='output',
                               output=True)}
-        self.input_channels = {
+        self._input_channels = {
             channel_name: Channel(instrument_name=self.name,
                                   name=channel_name,
                                   input=True)
                                for channel_name in ['TGAC', 'DF']}
-        self.channels = {**self.input_channels, **self.output_channels}
+        self._channels = {**self._input_channels, **self._output_channels}
 
     def setup(self):
         pass

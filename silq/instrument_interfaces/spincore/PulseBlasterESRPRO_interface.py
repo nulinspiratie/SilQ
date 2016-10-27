@@ -10,12 +10,12 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
-        self.output_channels = {
+        self._output_channels = {
             'ch{}'.format(k): Channel(instrument_name=self.name,
                                       name='ch{}'.format(k), id=k,
                                       output_TTL=(0, 3.3))
             for k in [1, 2, 3, 4]}
-        self.channels = {**self.output_channels}
+        self._channels = {**self._output_channels}
 
         self.pulse_implementations = [
             TriggerPulseImplementation(
