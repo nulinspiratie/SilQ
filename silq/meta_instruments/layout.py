@@ -50,9 +50,6 @@ class Layout(Instrument):
                            shapes=((),),
                            snapshot_value=False)
 
-        print('*** {}'.format(self.acquisition_interface))
-        print('*** {}'.format(self.acquisition_channels))
-
     @property
     def acquisition_interface(self):
         if self.acquisition_instrument() is not None:
@@ -79,12 +76,6 @@ class Layout(Instrument):
                 acquisition_channels[output_label] = \
                     connection.input['channel'].name
             except:
-                print('could not find connection for {}'.format(
-                    output_arg))
-                connections = self.get_connections(
-                    output_arg=output_arg,
-                    input_instrument=self.acquisition_instrument())
-                print(connections)
                 return None
         return acquisition_channels
 
