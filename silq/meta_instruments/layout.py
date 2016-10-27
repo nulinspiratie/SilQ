@@ -329,6 +329,7 @@ class Layout(Instrument):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.pulse_sequence('clear')
+            interface.input_pulse_sequence('clear')
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
