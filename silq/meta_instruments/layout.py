@@ -1,3 +1,4 @@
+from collections import OrderedDict as od
 import inspect
 
 from silq.instrument_interfaces import Channel
@@ -5,6 +6,7 @@ from silq.instrument_interfaces import Channel
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
+
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -35,11 +37,18 @@ class Layout(Instrument):
                            vals=vals.Enum(*self._interfaces.keys()))
         self.add_parameter('acquisition_outputs',
                            parameter_class=ManualParameter,
-                           initial_value=(['chip.output'] if 'chip' in
-                                          self._interfaces.keys() else []),
+                           initial_value=([('chip.output', 'output')]
+                                          if 'chip' in self._interfaces.keys()
+                                          else []),
                            vals=vals.Anything())
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
+
+        self.add_parameter(name="acquisition",
+                           names=['signal'],
+                           get_cmd=self._acquisition,
+                           shapes=((),),
+                           snapshot_value=False)
 
     @property
     def acquisition_interface(self):
@@ -47,6 +56,24 @@ class Layout(Instrument):
             return self._interfaces[self.acquisition_instrument()]
         else:
             return None
+
+    @property
+    def acquisition_channels(self):
+        """
+        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
+         The acquisition_label is the label associated with a certain
+         acquisition channel. This is settable via layout.acquisition_outputs
+         The acquisition_channel_name is the actual channel name of the
+         acquisition controller.
+        """
+        acquisition_connections = od((output_label,
+            self.get_connection(output_arg=output_arg,
+                                input_instrument=self.acquisition_instrument()))
+            for output_arg, output_label in self.acquisition_outputs().items())
+        acquisition_channels = od(
+            (output_label(), connection.input['channel'].name)
+            for output_label, connection in acquisition_connections.items())
+        return acquisition_channels
 
     def add_connection(self, output_arg, input_arg, **kwargs):
         output_instrument, output_channel_name = output_arg.split('.')
@@ -86,6 +113,27 @@ class Layout(Instrument):
         """
         return [connection for connection in self.connections
                 if connection.satisfies_conditions(**conditions)]
+
+    def get_connection(self, **conditions):
+        """
+        Returns connection that satisfy given kwargs.
+        If not exactly one was found, it raises an error.
+        Args:
+            output_interface: Connections must have output_interface
+            output_instrument: Connections must have output_instrument name
+            output_channel: Connections must have output_channel
+            input_interface: Connections must have input_interface
+            input_instrument: Connections must have input_instrument name
+            input_channel: Connections must have input_channel
+            trigger: Connection must be a triggering connection
+        Returns:
+            Connections that satisfy kwarg constraints
+        """
+        connections = self.get_connections(**conditions)
+        assert len(connections) == 1, "Found {} connections instead of one " \
+                                      "satisfying {}".format(len(connections),
+                                                             conditions)
+        return connections[0]
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
@@ -281,6 +329,14 @@ class Layout(Instrument):
             if interface.pulse_sequence():
                 interface.setup()
 
+        # Setup acquisition parameter metadata
+        # Set acquisition names and labels to equal output labels
+        # (these are the second tuple values in self.acquisition_outputs)
+        self.acquisition.names = self.acquisition_channels.keys()
+        self.acquisition.labels = self.acquisition.names
+        self.acquisition.units = self.acquisition_interface.acquisition.units
+        self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
+
     def start(self):
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
@@ -292,6 +348,16 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
 
+    def _acquisition(self):
+        channel_signals = self.acquisition_interface.acquisition()
+
+        # Sort signals according to the order in layout.acquisition_outputs
+        sorted_signals = [
+            channel_signals[self.acquisition_interface.acquisition.names
+                .index(ch_name+'_signal')]
+            for ch_label, ch_name in self.acquisition_channels.items()]
+
+        return sorted_signals
 
 class Connection:
     def __init__(self, default=False):
