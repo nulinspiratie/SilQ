@@ -11,8 +11,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self.output_channels = {
-            'ch{}'.format(k): Channel(self, name='ch{}'.format(k), id=k,
-                                      output_trigger=True)
+            'ch{}'.format(k): Channel(instrument_name=self.name,
+                                      name='ch{}'.format(k), id=k,
+                                      output_TTL=(0, 3.3))
             for k in [1, 2, 3, 4]}
         self.channels = {**self.output_channels}
 
@@ -130,8 +131,12 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
+    @property
+    def amplitude(self):
+        return self.connection.output['channel'].output_TTL[1]
+
     def implement(self):
-        output_channel_name = self.connection.output['channel']
+        output_channel_name = self.connection.output['channel'].name
         # Split channel number from string (e.g. "ch3" -> 3)
         output_channel = int(output_channel_name[2])
         channel_value = 2**(output_channel-1)
