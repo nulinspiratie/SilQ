@@ -160,17 +160,17 @@ class PulseMaster(Instrument):
         voltage_difference = pre_acquisition_voltage - start_acquisition_voltage
         assert abs(
             voltage_difference) > 0, "The start of acquisition must have a voltage difference from the previous stage"
-        trigger_slope = 'TRIG_SLOPE_NEGATIVE' if voltage_difference > 0 else 'TRIG_SLOPE_POSITIVE'
+        trigger_slope = 'negative' if voltage_difference > 0 else 'positive'
 
         # trigger level <128 is below 0V, >128 is above 0V
         channel_range = 4
         trigger_level = round(128 * (1 + (pre_acquisition_voltage - voltage_difference / 2) / channel_range))
 
-        self.ATS.config(trigger_source1='CHANNEL_C',
+        self.ATS.config(trigger_source1='C',
                         trigger_level1=trigger_level,
                         trigger_slope1=trigger_slope,
                         external_trigger_coupling='DC',
-                        trigger_operation='TRIG_ENGINE_OP_J',
+                        trigger_operation='J',
                         channel_range=channel_range,
                         sample_rate=self.digitizer_sample_rate(),
                         coupling='DC')
@@ -184,11 +184,13 @@ class PulseMaster(Instrument):
         buffer_timeout = 80000  # max(20000, 2.5*total_duration)
 
         self.ATS_controller.average_mode(average_mode)
-        self.ATS_controller.update_acquisitionkwargs(samples_per_record=samples_per_record,
-                                                      records_per_buffer=1,
-                                                      buffers_per_acquisition=self.samples(),
-                                                      buffer_timeout=buffer_timeout,
-                                                      channel_selection=self.acquisition_channels())
+        self.ATS_controller.update_acquisition_settings(
+            samples_per_record=samples_per_record,
+            records_per_buffer=1,
+            buffers_per_acquisition=self.samples(),
+            buffer_timeout=buffer_timeout,
+            channel_selection=self.acquisition_channels())
+        self.ATS_controller.setup()
 
     def setup(self, average_mode='none'):
         self.configure_pulseblaster()
