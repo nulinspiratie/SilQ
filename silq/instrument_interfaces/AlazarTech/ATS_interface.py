@@ -134,8 +134,7 @@ class ATSInterface(InstrumentInterface):
                 TriggerPulse(t_start=t_start_min,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
-                                 'trigger': True},
-                             acquire=True
+                                 'trigger': True}
                              )
         return [acquisition_trigger_pulse]
 
@@ -169,13 +168,13 @@ class ATSInterface(InstrumentInterface):
                 trigger_range = self.setting('channel_range' +
                                              self.trigger_channel())
 
-            acquisition_pulses = self._pulse_sequence.get_pulses(
+            trigger_pulses = self._pulse_sequence.get_pulses(
                 acquire=True, input_channel=self.trigger_channel())
-            if acquisition_pulses:
-                start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
+            if trigger_pulses:
+                trigger_pulse = min(trigger_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
-                    self._pulse_sequence.get_transition_voltages(
-                        pulse=start_pulse)
+                    self._input_pulse_sequence.get_transition_voltages(
+                        pulse=trigger_pulse)
                 assert post_voltage != pre_voltage, \
                     'Could not determine trigger voltage transition'
 
