@@ -62,15 +62,29 @@ if __name__ == "__main__":
             self.layout.acquisition_outputs([])
             self.layout.primary_instrument('pulseblaster')
             self.layout.acquisition_instrument('ATS')
+
+            print(self.layout.acquisition_instrument())
+
+            self.layout.add_connection(output_arg='pulseblaster.ch1',
+                                       input_arg='arbstudio.trig_in',
+                                       trigger=True)
+            self.layout.add_connection(output_arg='pulseblaster.ch2',
+                                       input_arg='ATS.trig_in',
+                                       trigger=True)
+
             c1 = self.layout.add_connection(output_arg='arbstudio.ch1',
                                             input_arg='chip.TGAC')
             c2 = self.layout.add_connection(output_arg='arbstudio.ch2',
                                             input_arg='chip.DF')
+            c3 = self.layout.add_connection(output_arg='arbstudio.ch3',
+                                            input_arg='ATS.chC')
 
             self.layout.combine_connections(c1, c2, default=True)
-            self.layout.add_connection(output_arg='pulseblaster.ch1',
-                                       input_arg='arbstudio.trig_in',
-                                       trigger=True)
+
+            self.layout.add_connection(output_arg='chip.output',
+                                       input_arg='ATS.chA')
+            self.layout.acquisition_outputs([('chip.output', 'output'),
+                                             ('arbstudio.ch3', 'pulses')])
 
             trigger_connections = self.layout.get_connections(
                 input_instrument='arbstudio', trigger=True)
@@ -85,7 +99,7 @@ if __name__ == "__main__":
             load_pulse = DCPulse(name='load', t_start=10, duration=10,
                                  amplitude=-1.5)
             read_pulse = DCPulse(name='read', t_start=20, duration=10,
-                                 amplitude=0)
+                                 amplitude=0, acquire=True)
             pulses = [empty_pulse, load_pulse, read_pulse]
             for pulse in pulses:
                 pulse_sequence.add(pulse)
@@ -93,6 +107,9 @@ if __name__ == "__main__":
             self.layout.target_pulse_sequence(pulse_sequence)
             self.layout.setup()
 
+            print(self.pulseblaster.instructions())
+            print(self.interfaces['pulseblaster'].pulse_sequence())
+            self.assertEqual(len(self.pulseblaster.instructions()), 7)
     test = TestLayout()
     test.setUp()
     test.test_multipulse()
