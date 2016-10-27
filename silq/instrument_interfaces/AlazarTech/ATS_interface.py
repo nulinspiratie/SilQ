@@ -14,6 +14,8 @@ class ATSInterface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[],
                  **kwargs):
         super().__init__(instrument_name, **kwargs)
+        # Override untargeted pulse adding (measurement pulses can be added)
+        self._pulse_sequence.allow_untargeted_pulses = True
 
         # Define channels
         self._acquisition_channels = {
@@ -41,8 +43,8 @@ class ATSInterface(InstrumentInterface):
         # Active acquisition controller is chosen during setup
         self.acquisition_controller = None
 
-        self.configuration_settings = {}
-        self.acquisition_settings = {}
+        self._configuration_settings = {}
+        self._acquisition_settings = {}
 
         # Obtain a list of all valid ATS configuration settings
         self._configuration_settings_names = sorted(list(
@@ -52,6 +54,11 @@ class ATSInterface(InstrumentInterface):
             inspect.signature(AlazarTech_ATS.acquire).parameters.keys()))
         self._settings_names = sorted(self._acquisition_settings_names +
                                       self._configuration_settings_names)
+
+        self.add_parameter(name='configuration_settings',
+                           get_cmd=lambda: self._configuration_settings)
+        self.add_parameter(name='acquisition_settings',
+                           get_cmd=lambda: self._acquisition_settings)
 
         # Names and shapes must have initial value, even through they will be
         # overwritten in set_acquisition_settings. If we don't do this, the
@@ -138,9 +145,12 @@ class ATSInterface(InstrumentInterface):
                              )
         return [acquisition_trigger_pulse]
 
-    def setup(self):
-        self.configuration_settings.clear()
-        self.acquisition_settings.clear()
+    def setup(self, samples=None, **kwargs):
+        self._configuration_settings.clear()
+        self._acquisition_settings.clear()
+
+        if samples is not None:
+            self.samples(samples)
 
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
@@ -206,7 +216,7 @@ class ATSInterface(InstrumentInterface):
 
         self.update_settings(channel_range=2,
                              coupling='DC')
-        self.instrument.config(**self.configuration_settings)
+        self.instrument.config(**self._configuration_settings)
 
     def setup_acquisition_controller(self):
         t_start = min(pulse.t_start for pulse in self._pulse_sequence)
@@ -233,7 +243,7 @@ class ATSInterface(InstrumentInterface):
 
         # Update settings in acquisition controller
         self.acquisition_controller.set_acquisition_settings(
-            **self.acquisition_settings)
+            **self._acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
         self.acquisition_controller.setup()
 
@@ -263,10 +273,10 @@ class ATSInterface(InstrumentInterface):
         """
         assert setting in self._settings_names, \
             "Kwarg {} is not a valid ATS acquisition setting".format(setting)
-        if setting in self.configuration_settings.keys():
-            return self.configuration_settings[setting]
-        elif setting in self.acquisition_settings.keys():
-            return self.acquisition_settings[setting]
+        if setting in self._configuration_settings.keys():
+            return self._configuration_settings[setting]
+        elif setting in self._acquisition_settings.keys():
+            return self._acquisition_settings[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
             return self.instrument.parameters[setting]()
@@ -286,7 +296,7 @@ class ATSInterface(InstrumentInterface):
         assert all([setting in self._configuration_settings_names
                     for setting in settings]), \
             "Settings are not all valid ATS configuration settings"
-        self.configuration_settings = settings
+        self._configuration_settings = settings
 
     def set_acquisition_settings(self, **settings):
         """
@@ -303,7 +313,7 @@ class ATSInterface(InstrumentInterface):
         assert all([setting in self._acquisition_settings_names
                     for setting in settings]), \
             "Settings are not all valid ATS acquisition settings"
-        self.acquisition_settings = settings
+        self._acquisition_settings = settings
 
     def update_settings(self, **settings):
         settings_valid = all(map(
@@ -314,8 +324,8 @@ class ATSInterface(InstrumentInterface):
 
         configuration_settings = {k: v for k, v in settings.items()
                                   if k in self._configuration_settings_names}
-        self.configuration_settings.update(**configuration_settings)
+        self._configuration_settings.update(**configuration_settings)
 
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
-        self.acquisition_settings.update(**acquisition_settings)
+        self._acquisition_settings.update(**acquisition_settings)
