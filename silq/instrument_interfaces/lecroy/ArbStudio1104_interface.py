@@ -125,7 +125,12 @@ class DCPulseImplementation(DCPulse, PulseImplementation):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, is_primary=is_primary, **kwargs)
 
-        if not is_primary:
+        # Check if there are already trigger pulses
+        trigger_pulses = interface._input_pulse_sequence().get_pulses(
+            t_start=pulse.t_start, trigger=True
+        )
+
+        if not is_primary and not trigger_pulses:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=interface.trigger_in_duration(),
