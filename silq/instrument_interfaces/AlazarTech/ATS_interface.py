@@ -16,21 +16,21 @@ class ATSInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         # Define channels
-        self.acquisition_channls = {'ch'+idx: Channel(self, name='ch'+idx,
+        self.acquisition_channls = {'ch'+idx: Channel(instrument_name=self.name,
+                                                      name='ch'+idx,
                                                       id=idx, input=True)
                                     for idx in ['A', 'B', 'C', 'D']}
-        self.trigger_in = Channel(self, name='trig_in',
+        self.trigger_in = Channel(instrument_name=self.name,
+                                  name='trig_in',
                                   input_trigger=True)
-        self.trigger_out = Channel(self, name='trig_out',
-                                   output_trigger=True)
-        self.aux_channels = {'aux'+idx: Channel(self, name='aux'+idx,
+        self.aux_channels = {'aux'+idx: Channel(instrument_name=self.name,
+                                                name='aux'+idx,
                                                 input_TTL=True,
-                                                output_TTL=True)
+                                                output_TTL=(0,5))
                              for idx in ['1', '2']}
         self.channels = {**self.acquisition_channls,
                          **self.aux_channels,
-                         'trig_in': self.trigger_in,
-                         'trig_out': self.trigger_out}
+                         'trig_in': self.trigger_in}
 
         # Organize acquisition controllers
         self.acquisition_controllers = {}
@@ -44,13 +44,13 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_settings = {}
 
         # Obtain a list of all valid ATS configuration settings
-        self._configuration_settings_names = list(
-            inspect.signature(AlazarTech_ATS.config).parameters.keys())
+        self._configuration_settings_names = sorted(list(
+            inspect.signature(AlazarTech_ATS.config).parameters.keys()))
         # Obtain a list of all valid ATS acquisition settings
-        self._acquisition_settings_names = list(
-            inspect.signature(AlazarTech_ATS.acquire).parameters.keys())
-        self._settings_names = self._acquisition_settings_names + \
-            self._configuration_settings_names
+        self._acquisition_settings_names = sorted(list(
+            inspect.signature(AlazarTech_ATS.acquire).parameters.keys()))
+        self._settings_names = sorted(self._acquisition_settings_names +
+                                      self._configuration_settings_names)
 
         # Names and shapes must have initial value, even through they will be
         # overwritten in set_acquisition_settings. If we don't do this, the
@@ -96,6 +96,7 @@ class ATSInterface(InstrumentInterface):
                            units='V',
                            parameter_class=ManualParameter,
                            vals=vals.Numbers())
+
 
     def add_acquisition_controller(self, acquisition_controller_name,
                                    cls_name=None):
@@ -167,12 +168,12 @@ class ATSInterface(InstrumentInterface):
 
             acquisition_pulses = self._pulse_sequence.get_pulses(
                 acquire=True, input_channel=self.trigger_channel())
-            print('All pulses: {}'.format(self._pulse_sequence))
-            print('acquire pulses: {}'.format(self._pulse_sequence.get_pulses(
-                acquire=True)))
-            print('channel pulses: {}'.format(self._pulse_sequence.get_pulses(
-                input_channel=self.trigger_channel())))
-            print('ATS acquisition pulses: {}'.format(acquisition_pulses))
+            # print('All pulses: {}'.format(self._pulse_sequence))
+            # print('acquire pulses: {}'.format(self._pulse_sequence.get_pulses(
+            #     acquire=True)))
+            # print('channel pulses: {}'.format(self._pulse_sequence.get_pulses(
+            #     input_channel=self.trigger_channel())))
+            # print('ATS acquisition pulses: {}'.format(acquisition_pulses))
             if acquisition_pulses:
                 start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
@@ -181,17 +182,18 @@ class ATSInterface(InstrumentInterface):
                 assert post_voltage != pre_voltage, \
                     'Could not determine trigger voltage transition'
 
-                trigger_slope = 'positive' if post_voltage > pre_voltage \
-                    else 'negative'
-                trigger_voltage = (pre_voltage + post_voltage) / 2
+                self.trigger_slope('positive' if post_voltage > pre_voltage
+                                   else 'negative')
+                self.trigger_threshold((pre_voltage + post_voltage) / 2)
                 # Trigger level is between 0 (-trigger_range)
                 # and 255 (+trigger_range)
-                trigger_level = int(128 + 127 * (trigger_voltage / trigger_range))
+                trigger_level = int(128 + 127 * (self.trigger_threshold() /
+                                                 trigger_range))
 
                 self.update_settings(trigger_operation='J',
-                                     trigger_enging1='J',
+                                     trigger_engine1='J',
                                      trigger_source1=self.trigger_channel(),
-                                     trigger_slope1=trigger_slope,
+                                     trigger_slope1=self.trigger_slope(),
                                      trigger_level1=trigger_level,
                                      external_trigger_coupling='DC',
                                      trigger_delay=0)
