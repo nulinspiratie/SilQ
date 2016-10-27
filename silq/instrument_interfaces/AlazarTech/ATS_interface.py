@@ -16,21 +16,22 @@ class ATSInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         # Define channels
-        self.acquisition_channls = {'ch'+idx: Channel(instrument_name=self.name,
-                                                      name='ch'+idx,
-                                                      id=idx, input=True)
-                                    for idx in ['A', 'B', 'C', 'D']}
-        self.trigger_in = Channel(instrument_name=self.name,
-                                  name='trig_in',
-                                  input_trigger=True)
-        self.aux_channels = {'aux'+idx: Channel(instrument_name=self.name,
-                                                name='aux'+idx,
-                                                input_TTL=True,
-                                                output_TTL=(0,5))
+        self._acquisition_channels = {
+            'ch'+idx: Channel(instrument_name=self.name,
+                               name='ch'+idx,
+                               id=idx, input=True)
+            for idx in ['A', 'B', 'C', 'D']}
+        self._trigger_in_channel = Channel(instrument_name=self.name,
+                                           name='trig_in',
+                                           input_trigger=True)
+        self._aux_channels = {'aux'+idx: Channel(instrument_name=self.name,
+                                                 name='aux'+idx,
+                                                 input_TTL=True,
+                                                 output_TTL=(0,5))
                              for idx in ['1', '2']}
-        self.channels = {**self.acquisition_channls,
-                         **self.aux_channels,
-                         'trig_in': self.trigger_in}
+        self._channels = {**self._acquisition_channels,
+                         **self._aux_channels,
+                         'trig_in': self._trigger_in_channel}
 
         # Organize acquisition controllers
         self.acquisition_controllers = {}
@@ -81,14 +82,14 @@ class ATSInterface(InstrumentInterface):
 
         self.add_parameter(name='acquisition_channels',
                            parameter_class=ManualParameter,
-                           initial_value={},
+                           initial_value=[],
                            vals=vals.Anything())
 
         self.add_parameter(name='trigger_channel',
                            parameter_class=ManualParameter,
                            initial_value='trig_in',
                            vals=vals.Enum('trig_in', 'disable',
-                                          *self.acquisition_channels().keys()))
+                                          *self._acquisition_channels.keys()))
         self.add_parameter(name='trigger_slope',
                            parameter_class=ManualParameter,
                            vals=vals.Enum('positive', 'negative'))
@@ -148,7 +149,7 @@ class ATSInterface(InstrumentInterface):
         # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
         channel_ids = ''.join(sorted(
-            [self.channels[ch].id for ch in self.acquisition_channels()]))
+            [self._channels[ch].id for ch in self.acquisition_channels()]))
         self.update_settings(channel_selection=channel_ids)
 
         # TODO Check/target pulse sequence and
