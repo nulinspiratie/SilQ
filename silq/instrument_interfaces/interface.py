@@ -10,10 +10,10 @@ class InstrumentInterface(Instrument):
         super().__init__(name=instrument_name + '_interface', **kwargs)
         self.instrument = self.find_instrument(name=instrument_name)
 
-        self.input_channels = {}
-        self.output_channels = {}
+        self._input_channels = {}
+        self._output_channels = {}
 
-        self.channels = {}
+        self._channels = {}
 
         self._pulse_sequence = PulseSequence()
         self.add_parameter('instrument_name',
@@ -40,7 +40,7 @@ class InstrumentInterface(Instrument):
             Channel whose name corresponds to channel_name
         """
 
-        return self.channels[channel_name]
+        return self._channels[channel_name]
 
     def get_pulse_implementation(self, pulse, is_primary=False):
         """

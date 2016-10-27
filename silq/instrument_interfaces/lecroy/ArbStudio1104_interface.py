@@ -8,21 +8,21 @@ class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
-        self.output_channels = {
+        self._output_channels = {
             'ch{}'.format(k): Channel(instrument_name=self.name,
                                       name='ch{}'.format(k), id=k,
                                       output=True) for k in [1, 2, 3, 4]}
-        self.trigger_in_channel = Channel(instrument_name=self.name,
+        self._trigger_in_channel = Channel(instrument_name=self.name,
                                           name='trig_in',
                                           input_trigger=True)
-        self.trigger_out_channel = Channel(instrument_name=self.name,
+        self._trigger_out_channel = Channel(instrument_name=self.name,
                                            name='trig_out',
                                            output_TTL=(0, 3.3))
         # TODO check Arbstudio output TTL high
 
-        self.channels = {**self.output_channels,
-                         'trig_in': self.trigger_in_channel,
-                         'trig_out': self.trigger_out_channel}
+        self._channels = {**self._output_channels,
+                         'trig_in': self._trigger_in_channel,
+                         'trig_out': self._trigger_out_channel}
 
         self.pulse_implementations = [
             # TODO implement SinePulse
@@ -81,7 +81,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             eval('self.instrument.{ch}_sequence({sequence})'.format(
                 ch=channel, sequence=self.sequences[channel]))
 
-        active_channels_id = [self.channels[channel].id
+        active_channels_id = [self._channels[channel].id
                               for channel in self.active_channels]
         self.instrument.load_waveforms(channels=active_channels_id)
         self.instrument.load_sequence(channels=active_channels_id)
