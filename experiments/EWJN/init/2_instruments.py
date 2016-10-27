@@ -8,11 +8,14 @@ from silq.meta_instruments.pulsemaster import PulseMaster as pulsemaster_driver
 from silq.parameters.general_parameters import ScaledParameter
 
 dll_path = os.path.join(os.getcwd(),'C:\lecroy_driver\\Library\\ArbStudioSDK.dll')
-arbstudio = arbstudio_driver.ArbStudio1104('ArbStudio', dll_path)
+arbstudio = arbstudio_driver.ArbStudio1104('ArbStudio', dll_path, server_name='')
 
-pulseblaster = pulseblaster_driver.PulseBlaster('PulseBlaster', api_path='spinapi.py')
+pulseblaster = pulseblaster_driver.PulseBlaster('PulseBlaster',
+                                                api_path='spinapi.py',
+                                                server_name='')
 
-SIM900 = SIM900_driver.SIM900('SIM900', 'GPIB0::4::INSTR')
+SIM900 = SIM900_driver.SIM900('SIM900', 'GPIB0::4::INSTR',
+                              server_name='')
 
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 DC_sources = [('TG',1,8,18), ('LB',2,4,8), ('RB',3,4,8), ('TGAC',4,5,4),
