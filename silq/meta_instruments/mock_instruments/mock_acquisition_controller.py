@@ -1,3 +1,4 @@
+import numpy as np
 from functools import partial
 
 from . import MockInstrument
@@ -32,27 +33,40 @@ class MockAcquisitionController(MockInstrument):
         self.add_parameter(name='acquisition',
                            names=['channel_signal'],
                            shapes=((),),
-                           get_cmd=lambda: self._acquisition_settings)
+                           get_cmd=lambda: self._acquisition)
 
     def setup(self):
-        channel_selection = self.get_acquisition_setting('channel_selection')
-        samples_per_record = self.get_acquisition_setting('samples_per_record')
-        records_per_buffer = self.get_acquisition_setting('records_per_buffer')
-        buffers_per_acquisition = self.get_acquisition_setting('buffers_per_acquisition')
-        self.acquisition.names = tuple(['Channel_{}_signal'.format(ch) for ch in
-                                        self.get_acquisition_setting('channel_selection')])
+        for attr in ['channel_selection', 'samples_per_record',
+                     'records_per_buffer', 'buffers_per_acquisition']:
+            setattr(self, attr, self.get_acquisition_setting(attr))
+        self.acquisition.names = tuple(['ch{}_signal'.format(ch) for ch in
+                                        self.channel_selection])
+        self.number_of_channels = len(self.channel_selection)
 
         self.acquisition.labels = self.acquisition.names
-        self.acquisition.units = ['V'*len(channel_selection)]
+        self.acquisition.units = ['V'] * self.number_of_channels
 
         if self.average_mode() == 'point':
-            self.acquisition.shapes = tuple([()]*len(channel_selection))
+            self.acquisition.shapes = tuple([()] * self.number_of_channels)
         elif self.average_mode() == 'trace':
-            shape = (samples_per_record,)
-            self.acquisition.shapes = tuple([shape] * len(channel_selection))
+            shape = (self.samples_per_record,)
+            self.acquisition.shapes = tuple([shape] * self.number_of_channels)
         else:
-            shape = (records_per_buffer * buffers_per_acquisition, samples_per_record)
-            self.acquisition.shapes = tuple([shape] * len(channel_selection))
+            shape = (self.records_per_buffer * self.buffers_per_acquisition,
+                     self.samples_per_record)
+            self.acquisition.shapes = tuple([shape] * self.number_of_channels)
+
+    def _acquisition(self):
+        if self.average_mode() == 'point':
+            return [k for k in self.number_of_channels]
+        elif self.average_mode() == 'trace':
+            return [k * np.ones(self.samples_per_record)
+                    for k in self.number_of_channels]
+        else:
+            return [k * np.ones((self.records_per_buffer *
+                                 self.buffers_per_acquisition,
+                                 self.samples_per_record))
+                    for k in self.number_of_channels]
 
     def _get_alazar(self):
         """
@@ -85,4 +99,3 @@ class MockAcquisitionController(MockInstrument):
 
     def update_acquisition_settings(self, **kwargs):
         self._acquisition_settings.update(**kwargs)
-
