@@ -30,6 +30,18 @@ class InstrumentInterface(Instrument):
     def __repr__(self):
         return '{} interface'.format(self.name)
 
+    def get_channel(self, channel_name):
+        """
+        Retrieve a channel
+        Args:
+            channel_name: name of channel
+
+        Returns:
+            Channel whose name corresponds to channel_name
+        """
+
+        return self.channels[channel_name]
+
     def get_pulse_implementation(self, pulse, is_primary=False):
         """
         Get a target implementation of a pulse if the instrument is capable
@@ -108,18 +120,15 @@ class InstrumentInterface(Instrument):
 
 
 class Channel:
-    def __init__(self, instrument, name, id=None, input=False, output=False,
-                 input_trigger=False, output_trigger=False,
-                 input_TTL=False, output_TTL=False):
-        self.instrument = instrument
+    def __init__(self, instrument_name, name, id=None, input=False,
+                 output=False,
+                 input_trigger=False, input_TTL=False, output_TTL=False):
+        self.instrument = instrument_name
         self.name = name
         self.id = id
         self.input = input
         self.output = output
-
         self.input_trigger = input_trigger
-        self.output_trigger = output_trigger
-
         self.input_TTL = input_TTL
         self.output_TTL = output_TTL
 
@@ -132,6 +141,8 @@ class Channel:
             output_str += ', output'
         if self.input_trigger:
             output_str += ', input_trigger'
-        if self.output_trigger:
-            output_str += ', output_trigger'
+        if self.input_TTL:
+            output_str += ', input_TTL'
+        if self.output_TTL is not None:
+            output_str += ', output_TTL: {}'.format(self.output_TTL)
         return output_str
