@@ -33,7 +33,7 @@ class MockAcquisitionController(MockInstrument):
         self.add_parameter(name='acquisition',
                            names=['channel_signal'],
                            shapes=((),),
-                           get_cmd=lambda: self._acquisition)
+                           get_cmd=self._acquisition)
 
     def setup(self):
         for attr in ['channel_selection', 'samples_per_record',
@@ -58,15 +58,15 @@ class MockAcquisitionController(MockInstrument):
 
     def _acquisition(self):
         if self.average_mode() == 'point':
-            return [k for k in self.number_of_channels]
+            return [k for k in range(self.number_of_channels)]
         elif self.average_mode() == 'trace':
             return [k * np.ones(self.samples_per_record)
-                    for k in self.number_of_channels]
+                    for k in range(self.number_of_channels)]
         else:
             return [k * np.ones((self.records_per_buffer *
                                  self.buffers_per_acquisition,
                                  self.samples_per_record))
-                    for k in self.number_of_channels]
+                    for k in range(self.number_of_channels)]
 
     def _get_alazar(self):
         """
@@ -92,7 +92,7 @@ class MockAcquisitionController(MockInstrument):
             return self._acquisition_settings[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
-            return self.alazar.parameters[setting].get_latest()
+            return self._alazar.parameters[setting].get_latest()
 
     def set_acquisition_settings(self, **settings):
         self._acquisition_settings = settings
