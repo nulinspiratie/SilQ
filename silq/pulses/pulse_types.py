@@ -19,7 +19,7 @@ class Pulse:
         if duration is not None:
             self.duration = duration
             self.t_stop = self.t_start + self.duration
-        elif self.t_stop is not None:
+        elif t_stop is not None:
             self.t_stop = t_stop
             self.duration = self.t_stop - self.t_start
         else:
