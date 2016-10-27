@@ -211,7 +211,7 @@ class ATSInterface(InstrumentInterface):
 
     def setup_acquisition_controller(self):
         t_start = min(pulse.t_start for pulse in self._pulse_sequence)
-        t_stop = min(pulse.t_start for pulse in self._pulse_sequence)
+        t_stop = max(pulse.t_stop for pulse in self._pulse_sequence)
         acquisition_duration = t_stop - t_start
 
         sample_rate = self.setting('sample_rate')
