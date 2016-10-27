@@ -51,6 +51,10 @@ class Layout(Instrument):
                            shapes=((),),
                            snapshot_value=False)
 
+        self.add_parameter(name='samples',
+                           parameter_class=ManualParameter,
+                           initial_value=1)
+
     @property
     def acquisition_interface(self):
         if self.acquisition_instrument() is not None:
@@ -278,9 +282,7 @@ class Layout(Instrument):
             connection_requirements['output_interface'] = \
                 self._get_pulse_interface(pulse)
 
-        print('all connections: {}'.format(self.connections))
         connections = self.get_connections(**connection_requirements, **kwargs)
-        print('has connections: {}'.format(connections))
         if len(connections) > 1:
             connections = [connection for connection in connections
                            if connection.default]
@@ -302,7 +304,7 @@ class Layout(Instrument):
         is_primary = self.primary_instrument() == interface.instrument_name()
 
         # In case a connection consists of multiple connections, create a
-        # separate pulse for each sub-connecion
+        # separate pulse for each sub-connection
         if isinstance(connection, CombinedConnection):
             connections = connection.connections
         else:
@@ -311,7 +313,10 @@ class Layout(Instrument):
         for connection in connections:
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary)
-            targeted_pulse.connection = connection
+
+            # Add connection to pulse, and add any pulse modifications
+            connection.target_pulse(targeted_pulse)
+
             interface.pulse_sequence(('add', targeted_pulse))
 
             # Also add pulse to input interface pulse sequence
@@ -323,7 +328,7 @@ class Layout(Instrument):
                 self.acquisition_interface.pulse_sequence(
                     ('add', targeted_pulse))
 
-            # Also target any pulses that are in additional_pulses, such as triggers
+            # Also target pulses that are in additional_pulses, such as triggers
             for additional_pulse in targeted_pulse.additional_pulses:
                 self._target_pulse(additional_pulse)
 
@@ -348,14 +353,17 @@ class Layout(Instrument):
 
             interface.pulse_sequence(('duration', pulse_sequence.duration))
 
-    def setup(self):
+    def setup(self, samples=None):
+        if samples is not None:
+            self.samples(samples)
+
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
                 [ch_name for _, ch_name in self.acquisition_channels.items()])
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence():
-                interface.setup()
+                interface.setup(samples=self.samples())
 
         # Setup acquisition parameter metadata
         # Set acquisition names and labels to equal output labels
@@ -391,12 +399,28 @@ class Layout(Instrument):
         return sorted_signals
 
 class Connection:
-    def __init__(self, default=False):
+    def __init__(self, default=False,
+                 pulse_modifiers=None):
         self.input = {}
         self.output = {}
 
+        self.pulse_modifiers = pulse_modifiers if pulse_modifiers is not None \
+                                               else {}
+
         # TODO make default dependent on implementation
         self.default = default
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def target_pulse(self, pulse):
+        pulse.connection = self
+
+        if 'amplitude_scale' in self.pulse_modifiers:
+            pulse.amplitude *= self.pulse_modifiers['amplitude_scale']
 
     def satisfies_conditions(self, input_arg=None, input_instrument=None,
                              input_channel=None, input_interface=None,
@@ -526,7 +550,7 @@ class SingleConnection(Connection):
 
 
 class CombinedConnection(Connection):
-    def __init__(self, connections, scaling_factors=None, **kwargs):
+    def __init__(self, connections, **kwargs):
         super().__init__(**kwargs)
         self.connections = connections
         self.output['instruments'] = list(set([connection.output['instrument']
@@ -544,16 +568,6 @@ class CombinedConnection(Connection):
             self.input['instrument'] = self.input['instruments'][0]
         self.input['channels'] = list(set([connection.input['channel']
                                       for connection in connections]))
-
-        if scaling_factors is None:
-            scaling_factors = {connection.input['channel']: 1
-                               for connection in connections}
-        elif type(scaling_factors) is list:
-            # Convert scaling factors to dictionary with channel keys
-            scaling_factors = {connection.input['channel']: scaling_factor
-                               for (connection, scaling_factor)
-                               in zip(connections, scaling_factors)}
-        self.scaling_factors = scaling_factors
 
     def __repr__(self):
         output = 'CombinedConnection\n'
