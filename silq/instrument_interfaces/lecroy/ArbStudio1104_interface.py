@@ -48,10 +48,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.active_channels = []
         for pulse in self.pulse_sequence():
             output = pulse.connection.output
-            if output.get('channel', None):
-                self.active_channels += [output['channel'].name]
-            elif output.get('channels', None):
-                self.active_channels += output['channels'].name
+            self.active_channels.append(output['channel'].name)
         self.active_channels = list(set(self.active_channels))
 
         # # Find sampling rates (these may be different for different channels)
