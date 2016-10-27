@@ -85,6 +85,10 @@ class ATSInterface(InstrumentInterface):
                            initial_value=[],
                            vals=vals.Anything())
 
+        self.add_parameter(name='samples',
+                           parameter_class=ManualParameter,
+                           initial_value=1)
+
         self.add_parameter(name='trigger_channel',
                            parameter_class=ManualParameter,
                            initial_value='trig_in',
@@ -146,17 +150,15 @@ class ATSInterface(InstrumentInterface):
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
 
-        # Set acquisition channels setting
-        # Channel_selection must be a sorted string of acquisition channel ids
-        channel_ids = ''.join(sorted(
-            [self._channels[ch].id for ch in self.acquisition_channels()]))
-        self.update_settings(channel_selection=channel_ids)
-
-        # TODO Check/target pulse sequence and
-
         self.setup_trigger()
         self.setup_ATS()
         self.setup_acquisition_controller()
+
+        # Update acquisition metadata
+        self.acquisition.names = self.acquisition_controller.acquisition.names
+        self.acquisition.labels = self.acquisition_controller.acquisition.labels
+        self.acquisition.units = self.acquisition_controller.acquisition.units
+        self.acquisition.shapes = self.acquisition_controller.acquisition.shapes
 
     def setup_trigger(self):
         if self.acquisition_mode() == 'trigger':
@@ -169,12 +171,6 @@ class ATSInterface(InstrumentInterface):
 
             acquisition_pulses = self._pulse_sequence.get_pulses(
                 acquire=True, input_channel=self.trigger_channel())
-            # print('All pulses: {}'.format(self._pulse_sequence))
-            # print('acquire pulses: {}'.format(self._pulse_sequence.get_pulses(
-            #     acquire=True)))
-            # print('channel pulses: {}'.format(self._pulse_sequence.get_pulses(
-            #     input_channel=self.trigger_channel())))
-            # print('ATS acquisition pulses: {}'.format(acquisition_pulses))
             if acquisition_pulses:
                 start_pulse = min(acquisition_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
@@ -208,9 +204,35 @@ class ATSInterface(InstrumentInterface):
 
     def setup_ATS(self):
         # Setup ATS configuration
+
+        self.update_settings(channel_range=2,
+                             coupling='DC')
         self.instrument.config(**self.configuration_settings)
 
     def setup_acquisition_controller(self):
+        t_start = min(pulse.t_start for pulse in self._pulse_sequence)
+        t_stop = min(pulse.t_start for pulse in self._pulse_sequence)
+        acquisition_duration = t_stop - t_start
+
+        sample_rate = self.setting('sample_rate')
+        samples_per_record = sample_rate * acquisition_duration * 1e-3
+        samples_per_record = int(16 * round(float(samples_per_record) / 16))
+        # TODO Allow variable records_per_buffer
+        records_per_buffer = 1
+        buffers_per_acquisition = self.samples()
+        self.update_settings(samples_per_record=samples_per_record,
+                             records_per_buffer=records_per_buffer,
+                             buffers_per_acquisition=buffers_per_acquisition)
+
+        self.update_settings(buffer_timeout=80000) # ms
+
+        # Set acquisition channels setting
+        # Channel_selection must be a sorted string of acquisition channel ids
+        channel_ids = ''.join(sorted(
+            [self._channels[ch].id for ch in self.acquisition_channels()]))
+        self.update_settings(channel_selection=channel_ids)
+
+        # Update settings in acquisition controller
         self.acquisition_controller.set_acquisition_settings(
             **self.acquisition_settings)
         self.acquisition_controller.average_mode(self.average_mode())
@@ -223,8 +245,7 @@ class ATSInterface(InstrumentInterface):
         pass
 
     def _acquisition(self):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
+        return self.acquisition_controller.acquisition()
 
     def setting(self, setting):
         """
@@ -245,11 +266,11 @@ class ATSInterface(InstrumentInterface):
             "Kwarg {} is not a valid ATS acquisition setting".format(setting)
         if setting in self.configuration_settings.keys():
             return self.configuration_settings[setting]
-        elif self.acquisition_settings.keys():
+        elif setting in self.acquisition_settings.keys():
             return self.acquisition_settings[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
-            return self.instrument.parameters[setting].get_latest()
+            return self.instrument.parameters[setting]()
 
     def set_configuration_settings(self, **settings):
         """
