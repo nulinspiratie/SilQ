@@ -338,6 +338,10 @@ class Layout(Instrument):
             interface.pulse_sequence(('duration', pulse_sequence.duration))
 
     def setup(self):
+        if self.acquisition_interface is not None:
+            self.acquisition_interface.acquisition_channels(
+                [ch_name for _, ch_name in self.acquisition_channels.items()])
+
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence():
                 interface.setup()
