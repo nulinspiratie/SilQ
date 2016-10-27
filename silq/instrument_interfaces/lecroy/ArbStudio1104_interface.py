@@ -93,22 +93,24 @@ class ArbStudio1104Interface(InstrumentInterface):
         return []
 
     def generate_waveforms(self):
-        # Set time t_pulse to zero, will increase as we iterate over pulses
-        t_pulse = 0
+        # Set time t_pulse to zero for each channel
+        # This will increase as we iterate over pulses, and is used to ensure
+        # that there are no times between pulses
+        t_pulse = {ch: 0 for ch in self.active_channels}
 
         self.waveforms = {ch: [] for ch in self.active_channels}
         for pulse in self.pulse_sequence():
-            assert pulse.t_start == t_pulse, \
-                "Pulse {}: pulses.t_start = {} does not match {}".format(
-                    pulse, pulse.t_start, t_pulse)
 
             channels_waveform = pulse.implement()
 
-            for ch in self.active_channels:
-                self.waveforms[ch].append(channels_waveform[ch])
+            for ch, waveform in channels_waveform.items():
+                assert pulse.t_start == t_pulse[ch], \
+                    "Pulse {}: pulses.t_start = {} does not match {}".format(
+                        pulse, pulse.t_start, t_pulse[ch])
 
-            # Increase t_pulse to match start of next pulses
-            t_pulse += pulse.duration
+                self.waveforms[ch].append(waveform)
+                # Increase t_pulse to match start of next pulses
+                t_pulse[ch] += pulse.duration
         return self.waveforms
 
     def generate_sequences(self):
@@ -126,7 +128,7 @@ class DCPulseImplementation(DCPulse, PulseImplementation):
             self, pulse, interface=interface, is_primary=is_primary, **kwargs)
 
         # Check if there are already trigger pulses
-        trigger_pulses = interface._input_pulse_sequence().get_pulses(
+        trigger_pulses = interface.input_pulse_sequence().get_pulses(
             t_start=pulse.t_start, trigger=True
         )
 
