@@ -172,7 +172,7 @@ class PulseSequence:
             #
             return False
         elif pulse1.connection is not None and pulse2.connection is not None \
-                and pulse1.connection['str'] != pulse2.connection['str']:
+                and pulse1.connection != pulse2.connection:
             # If the outputs are different, they don't overlap
             return False
         else:
