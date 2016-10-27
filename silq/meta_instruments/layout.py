@@ -302,9 +302,9 @@ class Layout(Instrument):
         # In case a connection consists of multiple connections, create a
         # separate pulse for each sub-connecion
         if isinstance(connection, CombinedConnection):
-            connections = connection.connectionss
+            connections = connection.connections
         else:
-            connections = connection
+            connections = [connection]
 
         for connection in connections:
             targeted_pulse = interface.get_pulse_implementation(
@@ -313,7 +313,7 @@ class Layout(Instrument):
             interface.pulse_sequence(('add', targeted_pulse))
 
             # Also add pulse to input interface pulse sequence
-            input_interface = self._interfaces(connection.input['instrument'])
+            input_interface = self._interfaces[connection.input['instrument']]
             input_interface.input_pulse_sequence(('add', targeted_pulse))
 
             # Add pulse to acquisition instrument if it must be acquired
