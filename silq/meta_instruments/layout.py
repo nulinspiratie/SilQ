@@ -343,7 +343,8 @@ class Layout(Instrument):
         # (these are the second tuple values in self.acquisition_outputs)
         if self.acquisition_interface is not None and \
                 self.acquisition_interface.pulse_sequence():
-            self.acquisition.names = list(self.acquisition_channels.keys())
+            self.acquisition.names = list(
+                'signal_' + ch for ch in self.acquisition_channels.keys())
             self.acquisition.labels = self.acquisition.names
             self.acquisition.units = self.acquisition_interface.acquisition.units
             self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
