@@ -168,8 +168,8 @@ class ATSInterface(InstrumentInterface):
                 trigger_range = self.setting('channel_range' +
                                              self.trigger_channel())
 
-            trigger_pulses = self._pulse_sequence.get_pulses(
-                acquire=True, input_channel=self.trigger_channel())
+            trigger_pulses = self._input_pulse_sequence.get_pulses(
+                input_channel=self.trigger_channel())
             if trigger_pulses:
                 trigger_pulse = min(trigger_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
