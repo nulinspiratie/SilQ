@@ -246,9 +246,6 @@ class Layout(Instrument):
         targeted_pulse = interface.get_pulse_implementation(
             pulse, is_primary=is_primary)
         targeted_pulse.connection = connection
-        print('targeted pulse: {} \nconnection: {}'.format(
-            targeted_pulse, targeted_pulse.connection
-        ))
         interface.pulse_sequence(('add', targeted_pulse))
 
         # Add pulse to acquisition instrument if it must be acquired
