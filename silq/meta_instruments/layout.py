@@ -68,9 +68,9 @@ class Layout(Instrument):
 
         acquisition_channels = od()
         for output_arg, output_label in self.acquisition_outputs():
-            pass
             # Use try/except in case not all connections exist
             try:
+                acquisition_instrument = self.acquisition_instrument()
                 connection = self.get_connection(
                     output_arg=output_arg,
                     input_instrument=self.acquisition_instrument())
@@ -278,7 +278,9 @@ class Layout(Instrument):
             connection_requirements['output_interface'] = \
                 self._get_pulse_interface(pulse)
 
+        print('all connections: {}'.format(self.connections))
         connections = self.get_connections(**connection_requirements, **kwargs)
+        print('has connections: {}'.format(connections))
         if len(connections) > 1:
             connections = [connection for connection in connections
                            if connection.default]
@@ -287,7 +289,7 @@ class Layout(Instrument):
             raise Exception(
                 'Instrument {} did not have suitable connection out of '
                 'connections {}. requirements: {}'.format(
-                    interface.instrument_name, connections,
+                    interface.instrument_name(), connections,
                     connection_requirements))
         else:
             return connections[0]
@@ -431,17 +433,20 @@ class Connection:
             input_channel = input_channel.name
 
         # Test conditions
-        if output_instrument is not None and \
-                    self.output['instrument'] != output_instrument:
+        if (output_instrument is not None) and \
+                (self.output['instrument'] != output_instrument):
             return False
-        elif output_channel is not None and \
-                        self.output['channel'].name != output_channel:
+        elif (output_channel is not None) and \
+                (('channel' not in self.output) or \
+                 (self.output['channel'].name != output_channel)):
             return False
-        elif input_instrument is not None and \
-                        self.input['instrument'] != input_instrument:
+        elif (input_instrument is not None) and \
+                (('instrument' not in self.input) or \
+                 (self.input['instrument'] != input_instrument)):
             return False
-        elif input_channel is not None and \
-                        self.input['channel'].name != input_channel:
+        elif (input_channel is not None) and \
+                (('channel' not in self.input) or \
+                 (self.input['channel'].name != input_channel)):
             return False
         else:
             return True
@@ -549,3 +554,31 @@ class CombinedConnection(Connection):
                                for (connection, scaling_factor)
                                in zip(connections, scaling_factors)}
         self.scaling_factors = scaling_factors
+
+    def __repr__(self):
+        output = 'CombinedConnection\n'
+        for connection in self.connections:
+            output += '\t' + repr(connection) + '\n'
+        return output
+
+    def satisfies_conditions(self, trigger=None, acquire=None, **kwargs):
+        """
+        Checks if this connection satisfies conditions
+        Args:
+            output_interface: Connection must have output_interface
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+            input_interface: Connection must have input_interface
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+        if not super().satisfies_conditions(**kwargs):
+            return False
+        elif trigger is not None:
+            return False
+        elif acquire is not None and self.acquire != acquire:
+            return False
+        else:
+            return True
