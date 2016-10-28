@@ -361,8 +361,6 @@ class Layout(Instrument):
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
-            interface.pulse_sequence(('duration', pulse_sequence.duration))
-
     def setup(self, samples=None, average_mode=None):
         if samples is not None:
             self.samples(samples)
