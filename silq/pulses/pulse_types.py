@@ -16,12 +16,10 @@ class Pulse:
         # TODO Allow t_start to not be given
         self.t_start = t_start
 
-        if duration is not None:
-            self.duration = duration
-            self.t_stop = self.t_start + self.duration
-        elif t_stop is not None:
+        if t_stop is not None:
             self.t_stop = t_stop
-            self.duration = self.t_stop - self.t_start
+        elif duration is not None:
+            self.t_stop = self.t_start + duration
         else:
             raise Exception("Must provide either t_stop or duration")
 
@@ -46,6 +44,14 @@ class Pulse:
     def __bool__(self):
         # Pulse is always equal to true
         return True
+
+    @property
+    def duration(self):
+        return self.t_stop - self.t_start
+
+    @duration.setter
+    def duration(self, duration):
+        self.t_stop = self.t_start + duration
 
     def _get_repr(self, properties_str):
         # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
