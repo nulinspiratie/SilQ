@@ -1,5 +1,5 @@
 # General functions
-def plot_traces(traces, traces_AWG=None, threshold_voltage=None):
+def plot_traces(traces, traces_AWG=None, threshold_voltage=None, plot1D=False):
     plt.figure()
     plt.pcolormesh(range(traces.shape[1]),
                    range(traces.shape[0] + 1), traces)
@@ -14,18 +14,19 @@ def plot_traces(traces, traces_AWG=None, threshold_voltage=None):
     plt.gca().invert_yaxis()
     plt.colorbar()
 
-    fig, axes = plt.subplots(len(traces), sharex=True)
-    for k, trace in enumerate(traces):
-        axes[k].plot(trace)
-        #         axes[k].plot(trace > 0.5)
-        if traces_AWG is not None:
-            trace_AWG = traces_AWG[k]
-            trace_AWG /= (np.max(trace_AWG) - np.min(trace_AWG))
-            trace_AWG -= np.min(trace_AWG)
-            axes[k].plot(trace_AWG)
-        if threshold_voltage is not None:
-            axes[k].plot([threshold_voltage] * len(trace), 'r')
-        axes[k].locator_params(nbins=2)
+    if plot1D:
+        fig, axes = plt.subplots(len(traces), sharex=True)
+        for k, trace in enumerate(traces):
+            axes[k].plot(trace)
+            #         axes[k].plot(trace > 0.5)
+            if traces_AWG is not None:
+                trace_AWG = traces_AWG[k]
+                trace_AWG /= (np.max(trace_AWG) - np.min(trace_AWG))
+                trace_AWG -= np.min(trace_AWG)
+                axes[k].plot(trace_AWG)
+            if threshold_voltage is not None:
+                axes[k].plot([threshold_voltage] * len(trace), 'r')
+            axes[k].locator_params(nbins=2)
 
 
 def try_close_instruments(

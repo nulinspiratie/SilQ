@@ -77,14 +77,21 @@ class ELR_Parameter(MeasurementParameter):
         load_pulse = DCPulse(name='load', amplitude=1.5,
                              duration=5, acquire=True)
         read_pulse = DCPulse(name='read', amplitude=0,
-                              duration=20, acquire=True)
+                              duration=50, acquire=True)
         final_pulse = DCPulse(name='final', amplitude=0,
                               duration=2)
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
-    def setup(self, samples=100, **kwargs):
+        self.t_start = None
+        self.t_read = None
+
+        self._meta_attrs.extend(['t_start', 't_read'])
+
+    def setup(self, samples=100, t_start=0.1, t_read=20, **kwargs):
         self.samples = samples
+        self.t_start = t_start
+        self.t_read = t_read
 
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
@@ -107,7 +114,10 @@ class ELR_Parameter(MeasurementParameter):
                                for ch_label, trace in self.traces.items()}
 
         fidelities = analysis.analyse_ELR(
-            trace_segments=self.trace_segments['output'])
+            trace_segments=self.trace_segments['output'],
+            sample_rate=self.layout.sample_rate(),
+            t_start=self.t_start,
+            t_read=self.t_read)
 
         # Store raw traces if raw_data_manager is provided
         if self.data_manager is not None:
@@ -147,9 +157,9 @@ class T1_Parameter(MeasurementParameter):
         self.pulse_sequence.add(pulses)
 
         self.threshold_voltage = None
-        self.start_point = None
+        self.t_start = None
 
-        self._meta_attrs.extend(['threshold_voltage', 'start_point'])
+        self._meta_attrs.extend(['threshold_voltage', 't_start'])
 
     def setup(self, samples=50, t_start = 0.1,
               threshold_voltage=None, **kwargs):
@@ -160,8 +170,7 @@ class T1_Parameter(MeasurementParameter):
 
         self.layout.setup(samples=self.samples, average_mode='none')
 
-        # Used to skip initial datapoints
-        self.start_point = round(t_start * 1e-3 * self.layout.sample_rate())
+        self.t_start = t_start
 
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names
@@ -172,7 +181,7 @@ class T1_Parameter(MeasurementParameter):
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=self.traces,
             threshold_voltage=self.threshold_voltage,
-            start_point=self.start_point)
+            t_start=round(self.t_start * 1e-3 * self.layout.sample_rate()))
 
         # Store raw traces if raw_data_manager is provided
         if self.data_manager is not None:
