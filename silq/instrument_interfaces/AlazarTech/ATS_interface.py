@@ -145,12 +145,14 @@ class ATSInterface(InstrumentInterface):
                              )
         return [acquisition_trigger_pulse]
 
-    def setup(self, samples=None, **kwargs):
+    def setup(self, samples=None, average_mode=None, **kwargs):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
         if samples is not None:
             self.samples(samples)
+        if average_mode is not None:
+            self.average_mode(average_mode)
 
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
