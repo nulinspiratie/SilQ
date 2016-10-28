@@ -41,7 +41,7 @@ pulseblaster = PulseBlasterESRPRO('pulseblaster',
                             server_name='')
 pulseblaster.core_clock(500)
 interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
-interfaces['pulseblaster'].ignore_first_trigger(True)
+# interfaces['pulseblaster'].ignore_first_trigger(True)
 
 ### Chip
 chip = Chip(name='chip', server_name='')

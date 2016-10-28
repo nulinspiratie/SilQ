@@ -61,7 +61,10 @@ class Pulse:
     @property
     def duration(self):
         if self._t_stop is not None:
-            return self._t_stop - self.t_start
+            if self.t_start is not None:
+                return self._t_stop - self.t_start
+            else:
+                return None
         else:
             return self._duration
 
@@ -73,8 +76,10 @@ class Pulse:
     def t_stop(self):
         if self._t_stop is not None:
             return self._t_stop
-        else:
+        elif self.t_start is not None:
             return self.t_start + self._duration
+        else:
+            return None
 
     @t_stop.setter
     def t_stop(self, t_stop):
@@ -99,7 +104,8 @@ class Pulse:
             pulse_type=self.__class__.__name__, properties=properties_str)
 
     def copy(self):
-        return copy.deepcopy(self)
+        pulse_copy = copy.deepcopy(self)
+        return pulse_copy
 
     def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
                              acquire=None, connection=None, amplitude=None):
