@@ -64,6 +64,38 @@ class MeasurementParameter(Parameter):
                               result=traces)
 
 
+class DC_Parameter(MeasurementParameter):
+
+    def __init__(self, layout, **kwargs):
+        super().__init__(name='DC_voltage',
+                         label='DC voltage',
+                         units='V',
+                         layout=layout,
+                         snapshot_value=False,
+                         **kwargs)
+
+        read_pulse = DCPulse(name='read', amplitude=0,
+                              duration=20, acquire=True)
+        final_pulse = DCPulse(name='final', amplitude=0,
+                              duration=1)
+        pulses = [read_pulse, final_pulse]
+        self.pulse_sequence.add(pulses)
+
+    def setup(self, duration=20):
+        # Stop instruments in case they were already running
+        self.layout.stop()
+
+        self.layout.target_pulse_sequence(self.pulse_sequence)
+
+        self.layout.setup(samples=1, average_mode='point')
+
+        self.layout.start()
+
+    def get(self):
+        signal = self.layout.do_acquisition(return_dict=True)
+        return signal['output']
+
+
 class ELR_Parameter(MeasurementParameter):
 
     def __init__(self, layout, **kwargs):
@@ -248,44 +280,6 @@ class T1_Parameter(MeasurementParameter):
 #         self.pulsemaster.stages(self.stages)
 #         self.pulsemaster.setup(average_mode='trace')
 #
-# class DC_Parameter(Parameter):
-#
-#     def __init__(self, pulsemaster, **kwargs):
-#         super().__init__(name='DC_voltage',
-#                          label='DC voltage',
-#                          units='V',
-#                          snapshot_value=False,
-#                          **kwargs)
-#
-#         self.pulsemaster = pulsemaster
-#
-#         self.stage_read = {'name': 'read', 'voltage': 0, 'duration': 20}
-#         self.stage_marker = {'name': 'marker', 'voltage': 1, 'duration': 0.001}
-#         self.stages = {'read': self.stage_read,
-#                        'marker': self.stage_marker}
-#
-#     def setup(self, duration=20):
-#         # Stop pulsemaster in case it was already running
-#         self.pulsemaster.stop()
-#
-#         self.pulsemaster.stages(self.stages)
-#         self.pulsemaster.sequence(['marker', 'read'])
-#         self.pulsemaster.acquisition_stages(['read'])
-#
-#         self.pulsemaster.samples(1)
-#         self.pulsemaster.arbstudio_channels([3])
-#         self.pulsemaster.acquisition_channels('A')
-#         self.pulsemaster.setup(average_mode='point')
-#
-#         # self.names = self.pulsemaster.acquisition.names
-#         # self.labels = self.pulsemaster.acquisition.labels
-#         # self.units = self.pulsemaster.acquisition.units
-#
-#         self.pulsemaster.start()
-#
-#     def get(self):
-#         DC_signal, = self.pulsemaster.bare_acquisition()
-#         return DC_signal
 #
 # class Up_Fidelity_Parameter(Parameter):
 #     def __init__(self, name, ATS_controller, analysis, **kwargs):
