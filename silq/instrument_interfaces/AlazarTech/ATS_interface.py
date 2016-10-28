@@ -149,17 +149,19 @@ class ATSInterface(InstrumentInterface):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
-        if samples is not None:
-            self.samples(samples)
-        if average_mode is not None:
-            self.average_mode(average_mode)
-
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
                 'Basic_AcquisitionController']
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
+
+        if samples is not None:
+            self.samples(samples)
+
+        if average_mode is not None:
+            self.average_mode(average_mode)
+            self.acquisition_controller.average_mode(average_mode)
 
         self.setup_trigger()
         self.setup_ATS()
@@ -227,7 +229,7 @@ class ATSInterface(InstrumentInterface):
 
         sample_rate = self.setting('sample_rate')
         samples_per_record = sample_rate * acquisition_duration * 1e-3
-        samples_per_record = int(16 * round(float(samples_per_record) / 16))
+        samples_per_record = int(16 * np.ceil(float(samples_per_record) / 16))
         # TODO Allow variable records_per_buffer
         records_per_buffer = 1
         buffers_per_acquisition = self.samples()
