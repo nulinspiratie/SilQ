@@ -14,6 +14,6 @@ ELR_parameter = measurement_parameters.ELR_Parameter(layout=layout)
 
 
 station = qc.Station(layout, arbstudio, pulseblaster, ATS, ATS_controller,
-                     SIM900,
-                     DF_DS, ELR_parameter, T1_parameter, DC_parameter,
-                     ELRLR_parameter, variable_read_parameter)
+                     SIM900)
+                     # DF_DS, ELR_parameter, T1_parameter, DC_parameter,
+                     # ELRLR_parameter, variable_read_parameter)
