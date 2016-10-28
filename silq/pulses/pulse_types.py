@@ -9,19 +9,19 @@ pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'connection',
                     'amplitude']
 
 class Pulse:
-    def __init__(self, name='', t_start=None, t_stop=None, duration=None,
+    def __init__(self, name='', t_start=None, previous_pulse=None,
+                 t_stop=None, duration=None,
                  acquire=False, connection=None, connection_requirements={}):
         self.name = name
 
-        # TODO Allow t_start to not be given
-        self.t_start = t_start
+        self._t_start = t_start
+        self._duration = duration
+        self._t_stop = t_stop
 
-        if t_stop is not None:
-            self.t_stop = t_stop
-        elif duration is not None:
-            self.t_stop = self.t_start + duration
-        else:
+        if duration is None and t_stop is None:
             raise Exception("Must provide either t_stop or duration")
+
+        self.previous_pulse = previous_pulse
 
         self.acquire = acquire
         self.connection = connection
@@ -46,12 +46,39 @@ class Pulse:
         return True
 
     @property
+    def t_start(self):
+        if self._t_start is not None:
+            return self._t_start
+        elif self.previous_pulse is not None:
+            return self.previous_pulse.t_stop
+        else:
+            return None
+
+    @t_start.setter
+    def t_start(self, t_start):
+        self._t_start = t_start
+
+    @property
     def duration(self):
-        return self.t_stop - self.t_start
+        if self._t_stop is not None:
+            return self._t_stop - self.t_start
+        else:
+            return self._duration
 
     @duration.setter
     def duration(self, duration):
-        self.t_stop = self.t_start + duration
+        self._duration = duration
+
+    @property
+    def t_stop(self):
+        if self._t_stop is not None:
+            return self._t_stop
+        else:
+            return self.t_start + self._duration
+
+    @t_stop.setter
+    def t_stop(self, t_stop):
+        self._t_stop = t_stop
 
     def _get_repr(self, properties_str):
         # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
