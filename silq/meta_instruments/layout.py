@@ -1,4 +1,5 @@
 import numpy as np
+from functools import partial
 from collections import OrderedDict as od
 import inspect
 
@@ -27,6 +28,8 @@ class Layout(Instrument):
 
         self.connections = []
 
+        self.add_parameter('instruments',
+                           get_cmd=lambda: list(self._interfaces.keys()))
         self.add_parameter('primary_instrument',
                            parameter_class=ManualParameter,
                            initial_value=None,
@@ -42,8 +45,6 @@ class Layout(Instrument):
                                           if 'chip' in self._interfaces.keys()
                                           else []),
                            vals=vals.Anything())
-        self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()))
 
         self.add_parameter(name="acquisition",
                            names=['signal'],
@@ -54,6 +55,11 @@ class Layout(Instrument):
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=1)
+        self.add_parameter(name="sample_rate",
+                           label='Sample Rate',
+                           unit='S/s',
+                           get_cmd=partial(self.acquisition_interface.setting,
+                                           'sample_rate'))
 
     @property
     def acquisition_interface(self):
@@ -353,7 +359,7 @@ class Layout(Instrument):
 
             interface.pulse_sequence(('duration', pulse_sequence.duration))
 
-    def setup(self, samples=None):
+    def setup(self, samples=None, average_mode=None):
         if samples is not None:
             self.samples(samples)
 
@@ -363,7 +369,8 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence():
-                interface.setup(samples=self.samples())
+                interface.setup(samples=self.samples(),
+                                average_mode=average_mode)
 
         # Setup acquisition parameter metadata
         # Set acquisition names and labels to equal output labels
