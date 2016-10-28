@@ -93,6 +93,20 @@ class PulseSequence:
             output += '\t' + pulse_repr + '\n'
         return output
 
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
+
+        Returns:
+            JSON dict
+        """
+        return {
+            'allow_untargeted_pulses': self.allow_untargeted_pulses,
+            'allow_targeted_pulses': self.allow_targeted_pulses,
+            'allow_pulse_overlap': self.allow_pulse_overlap,
+            'pulses': [pulse._JSONEncoder() for pulse in self.pulses]
+        }
+
     @property
     def duration(self):
         if self.pulses:

@@ -122,7 +122,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.waveforms
 
     def generate_sequences(self):
-        self.sequences = {ch: range(len(self.waveforms[ch]))
+        self.sequences = {ch: list(range(len(self.waveforms[ch])))
                           for ch in self.active_channels}
         return self.sequences
 
