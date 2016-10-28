@@ -57,9 +57,13 @@ class Layout(Instrument):
                            initial_value=1)
         self.add_parameter(name="sample_rate",
                            label='Sample Rate',
-                           unit='S/s',
-                           get_cmd=partial(self.acquisition_interface.setting,
-                                           'sample_rate'))
+                           units='S/s',
+                           get_cmd=lambda:
+                            (self.acquisition_interface.setting('sample_rate')
+                                    if self.acquisition_interface is not None
+                                    else None),
+                           snapshot_get=False,
+                           snapshot_value=False)
 
     @property
     def acquisition_interface(self):
