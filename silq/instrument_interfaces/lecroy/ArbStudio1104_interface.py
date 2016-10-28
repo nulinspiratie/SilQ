@@ -91,7 +91,14 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.stop()
 
     def get_final_additional_pulses(self):
-        return []
+        trigger_pulse = TriggerPulse(t_start=self._pulse_sequence.duration,
+                                     duration=self.trigger_in_duration(),
+                                     connection_requirements={
+                                        'input_instrument':
+                                            self.instrument_name(),
+                                         'trigger': True}
+                                     )
+        return [trigger_pulse]
 
     def generate_waveforms(self):
         # Set time t_pulse to zero for each channel
@@ -120,7 +127,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.sequences
 
 
-class DCPulseImplementation(DCPulse, PulseImplementation):
+class DCPulseImplementation(PulseImplementation, DCPulse):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
@@ -133,7 +140,8 @@ class DCPulseImplementation(DCPulse, PulseImplementation):
             t_start=pulse.t_start, trigger=True
         )
 
-        if not is_primary and not trigger_pulses:
+        if not is_primary and not trigger_pulses and \
+                not targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=interface.trigger_in_duration(),
