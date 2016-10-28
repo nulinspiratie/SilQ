@@ -9,10 +9,12 @@ from importlib import reload
 from time import sleep, time
 from matplotlib import pyplot as plt
 
-# SilQ imports
-from silq.parameters import measurement_parameters, general_parameters
 
 # Qcodes imports
 import qcodes as qc
 from qcodes import Instrument
 from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
+
+# SilQ imports
+from silq.parameters import measurement_parameters, general_parameters
+from silq.instrument_interfaces import get_instrument_interface
