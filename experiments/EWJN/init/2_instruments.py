@@ -1,14 +1,17 @@
 # Load instruments
 from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
-from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlaster
+from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
 from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
 from qcodes.instrument_drivers.AlazarTech.ATS9440 import ATS9440
 from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
     Basic_AcquisitionController
 
+from silq.meta_instruments.chip import Chip
 from silq.meta_instruments.layout import Layout
+# Import scaled parameter for SIM900
 from silq.parameters.general_parameters import ScaledParameter
 
+interfaces = {}
 
 ### SIM900
 SIM900 = SIM900('SIM900', 'GPIB0::4::INSTR',server_name='')
@@ -27,15 +30,22 @@ for ch_name, ch, ratio,max_voltage in DC_sources:
 
 ### ArbStudio
 dll_path = os.path.join(os.getcwd(),'C:\lecroy_driver\\Library\\ArbStudioSDK.dll')
-arbstudio = ArbStudio1104('ArbStudio',
+arbstudio = ArbStudio1104('arbstudio',
                           dll_path=dll_path,
                           server_name='')
-
+interfaces['arbstudio'] = get_instrument_interface(arbstudio)
 
 ### PulseBlaster
-pulseblaster = PulseBlaster('PulseBlaster',
+pulseblaster = PulseBlasterESRPRO('pulseblaster',
                             api_path='spinapi.py',
                             server_name='')
+pulseblaster.core_clock(500)
+interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
+interfaces['pulseblaster'].ignore_first_trigger(True)
+
+### Chip
+chip = Chip(name='chip', server_name='')
+interfaces['chip'] = get_instrument_interface(chip)
 
 
 ### ATS
@@ -43,13 +53,8 @@ ATS = ATS9440('ATS', server_name='Alazar_server')
 ATS_controller = Basic_AcquisitionController(name='ATS_controller',
                                              alazar_name='ATS',
                                              server_name='Alazar_server')
-
-
-### Interfaces
-pulse_instruments = [arbstudio, pulseblaster, ATS]
-interfaces = {instrument.name: get_instrument_interface(instrument)
-                                      for instrument in pulse_instruments}
-interfaces['ATS'].add_acquisition_controller(ATS_controller)
+interfaces['ATS'] = get_instrument_interface(ATS)
+interfaces['ATS'].add_acquisition_controller('ATS_controller')
 
 
 ### Layout and connectivity
@@ -64,7 +69,7 @@ layout.acquisition_instrument('ATS')
 layout.add_connection(output_arg='pulseblaster.ch1',
                       input_arg='arbstudio.trig_in',
                       trigger=True)
-layout.add_connection(output_arg='pulseblaster.ch2',
+layout.add_connection(output_arg='pulseblaster.ch4',
                       input_arg='ATS.trig_in',
                       trigger=True)
 

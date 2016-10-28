@@ -1,6 +1,6 @@
 dummy_param = ManualParameter(name='dummy', initial_value=42)
 DF_DS = general_parameters.CombinedParameter(parameters=[DF, DS])
-ELR_parameter = measurement_parameters.ELR_Parameter(pulsemaster=pulsemaster)
+ELR_parameter = measurement_parameters.ELR_Parameter(layout=layout)
 # T1_parameter = measurement_parameters.T1_Parameter(pulsemaster=pulsemaster)
 # DC_parameter = measurement_parameters.DC_Parameter(pulsemaster=pulsemaster)
 # ELRLR_parameter = measurement_parameters.ELRLR_Parameter(pulsemaster=pulsemaster)
