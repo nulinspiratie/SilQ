@@ -24,11 +24,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             )
         ]
 
-        self.add_parameter('ignore_first_trigger',
-                           parameter_class=ManualParameter,
-                           initial_value=False,
-                           vals=vals.Bool())
-
     def setup(self, **kwargs):
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
@@ -78,43 +73,29 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                                      wait_cycles)
                     t += wait_duration
 
-                # Ignore first trigger if parameter value is true.
-                # Some sequence modes require the first trigger to be ignored
-                if t_start_min == 0 and self.ignore_first_trigger():
-                    self.instrument.send_instruction(0, 'continue', 0,
-                                                     trigger_cycles)
-                else:
-                    total_channel_value = sum([pulse.implement()
-                                               for pulse in active_pulses])
-                    self.instrument.send_instruction(total_channel_value,
-                                                     'continue',
-                                                     0, trigger_cycles)
+                total_channel_value = sum([pulse.implement()
+                                           for pulse in active_pulses])
+                self.instrument.send_instruction(total_channel_value,
+                                                 'continue',
+                                                 0, trigger_cycles)
                 t += trigger_duration
             else:
                 # Add final instructions
 
                 # Wait until end of pulse sequence
                 wait_duration = self._pulse_sequence.duration - t
+                print(' self._pulse_sequence.duration {}'.format( self._pulse_sequence.duration))
+                print('wait_duration {}'.format(wait_duration))
                 if wait_duration:
                     wait_cycles = wait_duration * ms
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      wait_cycles)
                     t += wait_duration
 
-                # Check if a final trigger pulse is needed
-                active_pulses = [pulse for pulse in pulses
-                                 if pulse.t_start == 0]
-                if active_pulses and self.ignore_first_trigger():
-                    # If any pulses start at t=0 and the first trigger should be
-                    # ignored, a trigger is added at the end of programming.
-                    total_channel_value = sum([pulse.implement()
-                                               for pulse in active_pulses])
-                else:
-                    # Otherwise wait for the trigger duration
-                    total_channel_value = 0
+                total_channel_value = 0
                 self.instrument.send_instruction(total_channel_value,
                                                  'branch',
-                                                 1, trigger_cycles)
+                                                 0, trigger_cycles)
 
         self.instrument.stop_programming()
 
