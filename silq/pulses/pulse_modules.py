@@ -144,7 +144,16 @@ class PulseSequence:
                 raise SyntaxError(
                     'Not allowed to add targeted pulse {}'.format(pulse))
             else:
-                self.pulses.append(pulse)
+                pulse_copy = pulse.copy()
+                if pulse_copy.t_start is None:
+                    if self:
+                        # Add last pulse of this pulse_sequence to the pulse
+                        # the previous_pulse.t_stop will be used as t_start
+                        pulse_copy.previous_pulse = self[-1]
+                    else:
+                        # First pulse, therefore start at t=0
+                        pulse_copy.t_start = 0
+                self.pulses.append(pulse_copy)
 
         self.sort()
         self.duration = max([pulse.t_stop for pulse in self.pulses])
