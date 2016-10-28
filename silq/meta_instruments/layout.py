@@ -48,7 +48,7 @@ class Layout(Instrument):
 
         self.add_parameter(name="acquisition",
                            names=['signal'],
-                           get_cmd=self._acquisition,
+                           get_cmd=self.do_acquisition,
                            shapes=((),),
                            snapshot_value=False)
 
@@ -394,14 +394,20 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
 
-    def _acquisition(self):
+    def do_acquisition(self, return_dict=False):
         channel_signals = self.acquisition_interface.acquisition()
 
-        # Sort signals according to the order in layout.acquisition_outputs
-        sorted_signals = [
-            channel_signals[self.acquisition_interface.acquisition.names
-                .index(ch_name+'_signal')]
-            for ch_label, ch_name in self.acquisition_channels.items()]
+        if return_dict:
+            sorted_signals = od((ch_label,
+                channel_signals[self.acquisition_interface.acquisition.names
+                    .index(ch_name+'_signal')])
+                for ch_label, ch_name in self.acquisition_channels.items())
+        else:
+            # Sort signals according to the order in layout.acquisition_outputs
+            sorted_signals = [
+                channel_signals[self.acquisition_interface.acquisition.names
+                    .index(ch_name+'_signal')]
+                for ch_label, ch_name in self.acquisition_channels.items()]
 
         return sorted_signals
 
