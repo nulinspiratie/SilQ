@@ -235,7 +235,8 @@ class ATSInterface(InstrumentInterface):
                              records_per_buffer=records_per_buffer,
                              buffers_per_acquisition=buffers_per_acquisition)
 
-        self.update_settings(buffer_timeout=80000) # ms
+        buffer_timeout = max(20000, 3.1*self._pulse_sequence.duration)
+        self.update_settings(buffer_timeout=buffer_timeout) # ms
 
         # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
