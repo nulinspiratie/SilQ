@@ -70,7 +70,13 @@ class PulseSequence:
         self.connection_conditions = connection_conditions
         self.pulse_conditions = pulse_conditions
     def __getitem__(self, index):
-        return self.pulses[index]
+        if isinstance(index, int):
+            return self.pulses[index]
+        elif isinstance(index, str):
+            pulses = [p for p in self.pulses if p.name == index]
+            assert len(pulses) == 1, \
+                "Found more than one pulse with name {}".format(index)
+            return pulses[0]
 
     def __len__(self):
         return len(self.pulses)
