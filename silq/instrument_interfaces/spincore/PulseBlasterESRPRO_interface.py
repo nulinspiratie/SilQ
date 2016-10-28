@@ -11,9 +11,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
+            # Measured output TTL is half of 3.3V
             'ch{}'.format(k): Channel(instrument_name=self.name,
                                       name='ch{}'.format(k), id=k,
-                                      output_TTL=(0, 3.3))
+                                      output_TTL=(0, 3.3/2))
             for k in [1, 2, 3, 4]}
         self._channels = {**self._output_channels}
 
@@ -118,10 +119,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.stop_programming()
 
     def start(self):
-        pass
+        self.instrument.start()
 
     def stop(self):
-        pass
+        self.instrument.stop()
 
     def get_final_additional_pulses(self):
         return []

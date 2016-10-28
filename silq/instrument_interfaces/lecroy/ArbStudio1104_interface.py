@@ -46,10 +46,13 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO implement setup for modes other than stepped
         # Transform into set to ensure that elements are unique
         self.active_channels = []
+
         for pulse in self.pulse_sequence():
             output = pulse.connection.output
             self.active_channels.append(output['channel'].name)
         self.active_channels = list(set(self.active_channels))
+        self.active_channels_id = [self._channels[channel].id
+                                   for channel in self.active_channels]
 
         # # Find sampling rates (these may be different for different channels)
         # sampling_rates = [self.instrument.sampling_rate /
@@ -78,16 +81,14 @@ class ArbStudio1104Interface(InstrumentInterface):
             eval('self.instrument.{ch}_sequence({sequence})'.format(
                 ch=channel, sequence=self.sequences[channel]))
 
-        active_channels_id = [self._channels[channel].id
-                              for channel in self.active_channels]
-        self.instrument.load_waveforms(channels=active_channels_id)
-        self.instrument.load_sequence(channels=active_channels_id)
+        self.instrument.load_waveforms(channels=self.active_channels_id)
+        self.instrument.load_sequence(channels=self.active_channels_id)
 
     def start(self):
-        pass
+        self.instrument.run(channels=self.active_channels_id)
 
     def stop(self):
-        pass
+        self.instrument.stop()
 
     def get_final_additional_pulses(self):
         return []
