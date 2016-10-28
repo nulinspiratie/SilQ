@@ -45,6 +45,20 @@ class Pulse:
         # Pulse is always equal to true
         return True
 
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
+
+        Returns:
+            JSON dict
+        """
+        return_dict = {}
+        for attr, val in vars(self).items():
+            if not attr == 'previous_pulse':
+                return_dict[attr] = val
+        return return_dict
+
+
     @property
     def t_start(self):
         if self._t_start is not None:
