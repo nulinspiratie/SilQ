@@ -59,8 +59,7 @@ class PulseSequence:
             allow_pulse_overlap:
         """
         self.pulses = []
-        self.duration = 0
-        self.allow_untargeted_pulses = allow_pulse_overlap
+        self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
 
@@ -93,6 +92,13 @@ class PulseSequence:
             pulse_repr = '\t'.join(pulse_repr.splitlines(True))
             output += '\t' + pulse_repr + '\n'
         return output
+
+    @property
+    def duration(self):
+        if self.pulses:
+            return max(pulse.t_stop for pulse in self.pulses)
+        else:
+            return 0
 
     def replace(self, pulse_sequence):
         """
@@ -156,20 +162,15 @@ class PulseSequence:
                 self.pulses.append(pulse_copy)
 
         self.sort()
-        self.duration = max([pulse.t_stop for pulse in self.pulses])
 
     def sort(self):
         t_start_list = np.array([pulse.t_start for pulse in self.pulses])
         idx_sorted = np.argsort(t_start_list)
         self.pulses = [self.pulses[idx] for idx in idx_sorted]
-
-        # Update duration of PulseSequence
-        # self.duration = max([pulse.t_stop for pulse in self.pulses])
         return self.pulses
 
     def clear(self):
         self.pulses = []
-        self.duration = 0
 
     def pulses_overlap(self, pulse1, pulse2):
         """
@@ -300,7 +301,6 @@ class PulseImplementation:
         '''
         # First create a copy of this pulse implementation
         targeted_pulse = self.copy()
-
         # Copy over all attributes from the pulse
         for attr, val in vars(pulse).items():
             setattr(targeted_pulse, attr, copy.deepcopy(val))
