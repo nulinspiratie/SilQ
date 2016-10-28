@@ -75,11 +75,11 @@ class ELR_Parameter(MeasurementParameter):
         empty_pulse = DCPulse(name='empty', amplitude=-1.5,
                               t_start=0,duration=5, acquire=True)
         load_pulse = DCPulse(name='load', amplitude=1.5,
-                              t_start=5,duration=5, acquire=True)
+                             duration=5, acquire=True)
         read_pulse = DCPulse(name='read', amplitude=0,
-                              t_start=10,duration=20, acquire=True)
+                              duration=20, acquire=True)
         final_pulse = DCPulse(name='final', amplitude=0,
-                              t_start=30,duration=2)
+                              duration=2)
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
