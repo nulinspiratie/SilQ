@@ -188,6 +188,53 @@ class SinePulse(Pulse):
         return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
                                                     self.phase/360))
 
+
+class SinePulse(Pulse):
+    def __init__(self, frequency, amplitude, phase=0, **kwargs):
+        super().__init__(**kwargs)
+
+        self.frequency = frequency
+        self.amplitude = amplitude
+        self.phase = phase
+
+    def __repr__(self):
+        properties_str = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
+            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        assert self.t_start <= t <= self.t_stop, \
+            "voltage at {} us is not in the time range {} us - {} us of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
+                                                    self.phase/360))
+
+
+class FrequencyRampPulse(Pulse):
+    def __init__(self, frequency_start, frequency_stop,
+                 frequency_final, amplitude, **kwargs):
+        super().__init__(**kwargs)
+
+        self.frequency_start = frequency_start
+        self.frequency_stop = frequency_stop
+        assert frequency_final in ['start', 'stop'], \
+            "frequency_final must be either 'start' or 'stop'"
+        self.amplitude = amplitude
+
+    def __repr__(self):
+        properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, A={}, ' \
+                         't_start={}, t_stop={}'.format(
+            self.frequency_start/1e6, self.frequency_stop/1e6, self.amplitude,
+            self.t_start, self.t_stop)
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        raise NotImplementedError("Voltage not yet implemented")
+
+
 class DCPulse(Pulse):
     def __init__(self, amplitude, **kwargs):
         super().__init__(**kwargs)
@@ -207,12 +254,59 @@ class DCPulse(Pulse):
 
         return self.amplitude
 
+class DCRampPulse(Pulse):
+    def __init__(self, amplitude_start, amplitude_stop,
+                 **kwargs):
+        super().__init__(**kwargs)
+
+        self.amplitude_start = amplitude_start
+        self.amplitude_stop = amplitude_stop
+
+
+    def __repr__(self):
+        properties_str = 'A={}, t_start={}, t_stop={}'.format(
+            self.amplitude, self.t_start, self.t_stop)
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        assert self.t_start <= t <= self.t_stop, \
+            "voltage at {} us is not in the time range {} us - {} us of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        slope = (self.amplitude_stop - self.amplitude_start) / self.duration
+        offset = self.amplitude_start - slope * self.t_start
+
+        return offset + slope * t
+
 
 class TriggerPulse(Pulse):
     duration = .0001 # ms
 
     def __init__(self, duration=duration, **kwargs):
+        self.duration = duration
         super().__init__(duration=duration, **kwargs)
+
+    def __repr__(self):
+        properties_str = 't_start={}, duration={}'.format(
+            self.t_start, self.duration)
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        assert self.t_start <= t <= self.t_stop, \
+            "voltage at {} us is not in the time range {} us - {} us of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        # Amplitude can only be provided in an implementation.
+        # This is dependent on input/output channel properties.
+        return self.amplitude
+
+
+class MarkerPulse(Pulse):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
