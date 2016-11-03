@@ -15,7 +15,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
         if len(peaks_idx) == 2:
             break
         elif len(peaks_idx) == 1:
-            print('One peak found instead of two, lowering threshold')
+            # print('One peak found instead of two, lowering threshold')
             threshold_peak /= 1.5
         elif len(peaks_idx) > 2:
             print('Found {} peaks instead of two, increasing threshold'.format(len(peaks_idx)))
@@ -68,7 +68,7 @@ def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
         low, high, threshold_voltage = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        print('Could not find two peaks for empty and load state')
+        # print('Could not find two peaks for empty and load state')
         success = np.array([False] * len(traces))
     elif state == 'low':
         success = [np.mean(trace[idx_list]) < threshold_voltage
@@ -106,7 +106,7 @@ def analyse_read(traces, start_idx=0, threshold_voltage=None, plot=False,
         low, high, threshold_voltage = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        print('Could not find two peaks for empty and load state')
+        # print('Could not find two peaks for empty and load state')
         # Return the full trace length as mean if return_mean=True
         return 0, 0, traces.shape[1] if return_fidelity else []
 
@@ -142,7 +142,7 @@ def analyse_load(traces, plot=False, return_idx=False):
     low, high, threshold_voltage = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        print('Could not find two peaks for empty and load state')
+        # print('Could not find two peaks for empty and load state')
         if return_idx:
             return 0, []
         else:
@@ -173,7 +173,7 @@ def analyse_empty(traces, plot=False, return_idx=False):
     low, high, threshold_voltage = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        print('Could not find two peaks for empty and load state')
+        # print('Could not find two peaks for empty and load state')
         if return_idx:
             return 0, []
         else:
@@ -211,7 +211,6 @@ def analyse_ELR(trace_segments, sample_rate, t_start=0, t_read=20, plot=False):
     if threshold_voltage is None:
         return (fidelity_empty, fidelity_load, 0, 0, 0, 0)
     else:
-        print('threshold_voltage: {}'.format(threshold_voltage))
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
