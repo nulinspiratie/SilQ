@@ -35,6 +35,8 @@ dll_path = os.path.join(os.getcwd(),'C:\lecroy_driver\\Library\\ArbStudioSDK.dll
 arbstudio = ArbStudio1104('arbstudio',
                           dll_path=dll_path,
                           server_name='')
+for ch in ['ch1', 'ch2', 'ch3', 'ch4']:
+    arbstudio.parameters[ch + '_sampling_rate_prescaler'](250)
 interfaces['arbstudio'] = get_instrument_interface(arbstudio)
 
 ### PulseBlaster
