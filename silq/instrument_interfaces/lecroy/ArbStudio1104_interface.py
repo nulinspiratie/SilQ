@@ -93,14 +93,22 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.stop()
 
     def get_final_additional_pulses(self):
-        trigger_pulse = TriggerPulse(t_start=self._pulse_sequence.duration,
-                                     duration=self.trigger_in_duration()*1e-3,
-                                     connection_requirements={
-                                        'input_instrument':
-                                            self.instrument_name(),
-                                         'trigger': True}
-                                     )
-        return [trigger_pulse]
+        # Check if there are already trigger pulses
+        trigger_pulses = self.input_pulse_sequence().get_pulses(
+            t_start=self._pulse_sequence.duration, trigger=True
+        )
+        if trigger_pulses:
+            return []
+        else:
+            trigger_pulse = TriggerPulse(
+                t_start=self._pulse_sequence.duration,
+                duration=self.trigger_in_duration()*1e-3,
+                connection_requirements={
+                   'input_instrument':
+                       self.instrument_name(),
+                    'trigger': True}
+                )
+            return [trigger_pulse]
 
     def generate_waveforms(self):
 
