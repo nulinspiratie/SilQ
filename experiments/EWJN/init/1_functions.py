@@ -49,3 +49,20 @@ def try_close_instruments(
 def print_voltages(SIM900):
     for channel, name in SIM900.channels().items():
         print('{}({})'.format(name, SIM900.parameters[name]()))
+
+
+def ramp_to_voltages(target_voltages, SIM900=None, channels=None):
+    if channels is None:
+        channels = [SIM900.parameters[ch_name] for ch_name in
+                    SIM900.channels().values()]
+
+    if isinstance(target_voltages, int):
+        target_voltages = {channel.name: target_voltages for channel in
+                           channels}
+
+    initial_voltages = {channel.name: channel() for channel in channels}
+    for ratio in np.linspace(0, 1, 11):
+        for channel in channels:
+            voltage = (1 - ratio) * initial_voltages[channel.name] + \
+                      ratio * target_voltages[channel.name]
+            channel(voltage)

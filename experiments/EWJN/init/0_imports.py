@@ -14,8 +14,6 @@ from matplotlib import pyplot as plt
 import qcodes as qc
 from qcodes import Instrument
 from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
-qc.config['core']['legacy_mp'] = True
-qc.loops.USE_MP = True
 
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters
