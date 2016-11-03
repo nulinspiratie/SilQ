@@ -18,3 +18,4 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, StandardPara
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters
 from silq.instrument_interfaces import get_instrument_interface
+from silq.pulses import *
