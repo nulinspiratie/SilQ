@@ -164,3 +164,6 @@ class Channel:
             return self.__dict__ == other.__dict__
         else:
             return False
+
+    def __hash__(self):
+        return id(self)
