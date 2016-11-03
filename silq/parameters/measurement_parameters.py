@@ -232,54 +232,67 @@ class T1_Parameter(MeasurementParameter):
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
         self.layout.setup(samples=self.samples, average_mode='none')
-#
-# class VariableRead_Parameter(Parameter):
-#
-#     def __init__(self, pulsemaster, **kwargs):
-#         super().__init__(name='variable_read_voltage',
-#                          label='Variable read voltage',
-#                          units='V',
-#                          snapshot_value=False,
-#                          **kwargs)
-#         self.pulsemaster = pulsemaster
-#
-#         self.read_voltage = 0
-#
-#         self.stage_empty = {'name': 'empty', 'voltage': -1.5, 'duration': 5}
-#         self.stage_load = {'name': 'load', 'voltage': 1.5, 'duration': 5}
-#         self.stage_read = {'name': 'read', 'voltage': self.read_voltage, 'duration': 20}
-#
-#         self.stages = {stage['name']: stage for stage in
-#                        [self.stage_empty, self.stage_load, self.stage_read]}
-#
-#         self._meta_attrs.extend(['stages'])
-#
-#     def setup(self, samples=50):
-#
-#         self.pulsemaster.stages(self.stages)
-#         self.pulsemaster.sequence(['load', 'read', 'empty'])
-#         self.pulsemaster.acquisition_stages(['load','read', 'empty'])
-#
-#         self.pulsemaster.samples(samples)
-#         self.pulsemaster.arbstudio_channels([1,2,3])
-#         self.pulsemaster.acquisition_channels('AC')
-#         self.pulsemaster.setup(average_mode='trace')
-#
-#         self.names = self.pulsemaster.acquisition.names
-#         self.labels = self.pulsemaster.acquisition.labels
-#         self.shapes = self.pulsemaster.acquisition.shapes
-#
-#     def get(self):
-#         traces, traces_AWG = self.pulsemaster.acquisition()
-#         return traces, traces_AWG
-#
-#     def set(self, read_voltage):
-#         self.read_voltage = read_voltage
-#         # Change read stage voltage
-#         self.stage_read['voltage'] = self.read_voltage
-#         self.pulsemaster.stages(self.stages)
-#         self.pulsemaster.setup(average_mode='trace')
-#
+
+
+class VariableRead_Parameter(Parameter):
+
+    def __init__(self, layout, **kwargs):
+        super().__init__(name='variable_read_voltage',
+                         label='Variable read voltage',
+                         layout=layout,
+                         snapshot_value=False,
+                         **kwargs)
+        empty_pulse = DCPulse(name='empty', amplitude=-1.5,
+                              t_start=0, duration=5, acquire=True)
+        load_pulse = DCPulse(name='load', amplitude=1.5,
+                             duration=5, acquire=True)
+        read_pulse = DCPulse(name='read', amplitude=0,
+                             duration=read_voltage, acquire=True)
+        final_pulse = DCPulse(name='final', amplitude=0,
+                              duration=2)
+
+        pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
+        self.pulse_sequence.add(pulses)
+
+
+    def setup(self, samples=50, **kwargs):
+        self.samples = samples
+
+        # Stop instruments in case they were already running
+        self.layout.stop()
+        self.layout.target_pulse_sequence(self.pulse_sequence)
+
+        self.layout.setup(samples=self.samples, average_mode='none')
+        self.layout.start()
+        # Setup parameter metadata
+        # self.names = ['fidelity_empty', 'fidelity_load', 'fidelity_read',
+        #               'up_proportion', 'dark_counts', 'contrast']
+        # self.labels = self.names
+        # self.shapes = ((), (), (), (), (), ())
+
+        super().setup(**kwargs)
+
+    def get(self):
+        self.layout.start()
+        self.traces = self.layout.do_acquisition(return_dict=True)
+        self.layout.stop()
+
+        self.trace_segments = {ch_label: self.segment_trace(trace)
+                           for ch_label, trace in self.traces.items()}
+
+        # Store raw traces if raw_data_manager is provided
+        if self.data_manager is not None:
+            self.store_traces(self.traces['output'])
+
+
+        return tuple(self.traces.values())
+
+
+    def set(self, read_voltage):
+        read_pulse = DCPulse(name='read', amplitude=0,
+                             duration=read_voltage, acquire=True)
+        self.stage_read['voltage'] = self.read_voltage
+
 #
 # class Up_Fidelity_Parameter(Parameter):
 #     def __init__(self, name, ATS_controller, analysis, **kwargs):
