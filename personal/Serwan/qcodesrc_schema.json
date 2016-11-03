@@ -1,0 +1,68 @@
+{
+    "description": "schema for a qcodes config file",
+    "properties": {
+        "user": {
+            "description": "controls user settings of qcodes",
+            "properties": {},
+            "type": "object"
+        },
+        "gui": {
+            "description": "controls gui of qcodes",
+            "properties": {
+                "notebook": {
+                    "description": "Use notebook frontend",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "plotlib": {
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ],
+                    "description": "Plotting library",
+                    "default": "matplotlib",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "required": [
+                "notebook",
+                "plotlib"
+            ]
+        },
+        "core": {
+            "description": "controls core settings of qcodes",
+            "properties": {
+                "legacy_mp": {
+                    "description": "control legacy buggy multiprocess",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "loglevel": {
+                    "enum": [
+                        "CRITICAL",
+                        "ERROR",
+                        "WARNING",
+                        "INFO",
+                        "DEBUG"
+                    ],
+                    "description": "control logging  level",
+                    "default": "DEBUG",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "required": [
+                "legacy_mp",
+                "loglevel"
+            ]
+        }
+    },
+    "type": "object",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "required": [
+        "gui",
+        "core",
+        "user"
+    ]
+}
