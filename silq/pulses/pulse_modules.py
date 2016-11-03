@@ -210,7 +210,6 @@ class PulseSequence:
 
     def get_pulses(self, **conditions):
         pulses = self.pulses
-
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions}
@@ -230,6 +229,7 @@ class PulseSequence:
 
     def get_pulse(self, **conditions):
         pulses = self.get_pulses(**conditions)
+
         if not pulses:
             return None
         elif len(pulses) == 1:
@@ -263,10 +263,9 @@ class PulseSequence:
         #  will be the last pulse in the sequence
         pre_pulse = self.get_pulse(connection=connection,
                                    t_stop=(self.duration if t == 0 else t))
-
         if pre_pulse is not None:
             pre_voltage = pre_pulse.get_voltage(self.duration if t == 0 else t)
-        elif connection.output['channel'].output_TTL is not None:
+        elif connection.output['channel'].output_TTL:
             # Choose pre voltage as low from TTL
             pre_voltage = connection.output['channel'].output_TTL[0]
         else:
