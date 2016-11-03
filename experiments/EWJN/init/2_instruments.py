@@ -4,7 +4,7 @@ from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterES
 from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
 from qcodes.instrument_drivers.AlazarTech.ATS9440 import ATS9440
 from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
-    Basic_AcquisitionController
+    Triggered_AcquisitionController, Continuous_AcquisitionController
 from qcodes.instrument_drivers.agilent.E8267D import Keysight_E8267D
 
 
@@ -54,11 +54,17 @@ interfaces['chip'] = get_instrument_interface(chip)
 
 ### ATS
 ATS = ATS9440('ATS', server_name='Alazar_server')
-ATS_controller = Basic_AcquisitionController(name='ATS_controller',
-                                             alazar_name='ATS',
-                                             server_name='Alazar_server')
+triggered_controller = Triggered_AcquisitionController(
+    name='triggered_controller',
+    alazar_name='ATS',
+    server_name='Alazar_server')
+continuous_controller = Continuous_AcquisitionController(
+    name='continuous_controller',
+    alazar_name='ATS',
+    server_name='Alazar_server')
 interfaces['ATS'] = get_instrument_interface(ATS)
-interfaces['ATS'].add_acquisition_controller('ATS_controller')
+interfaces['ATS'].add_acquisition_controller('triggered_controller')
+interfaces['ATS'].add_acquisition_controller('continuous_controller')
 
 ### MW source
 mw_source=Keysight_E8267D('mw_source','TCPIP0::192.168.0.5::inst0::INSTR',server_name='')
