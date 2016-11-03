@@ -1,6 +1,8 @@
+import numpy as np
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
-from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
+from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, PulseImplementation
 
 from qcodes.instrument.parameter import ManualParameter
 
@@ -174,6 +176,60 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             raise Exception("No implementation for connection {}".format(
                 self.connection))
 
+
+class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+
+    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
+
+        # Check if there are already trigger pulses
+        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+            t_start=pulse.t_start, trigger=True
+        )
+
+        if not is_primary and not trigger_pulses and \
+                not targeted_pulse.t_start == 0:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=interface.trigger_in_duration()*1e-3,
+                             connection_requirements={
+                                 'input_instrument':
+                                     interface.instrument_name(),
+                                 'trigger': True}
+                             )
+            )
+        return targeted_pulse
+
+    def implement(self):
+        """
+        Implements the DC pulses for the ArbStudio for SingleConnection and
+        CombinedConnection. For a CombinedConnection, it weighs the DC pulses
+        amplitude by the corresponding channel scaling factor (default 1).
+        Args:
+
+        Returns:
+            {output_channel: pulses arr} dictionary for each output channel
+        """
+        sampling_rate = 250e6
+        # TODO Take sampling rate prescaler into account
+        t_list = np.arange(self.t_start, self.t_stop, 1/sampling_rate)
+        output = {}
+
+        if isinstance(self.connection, SingleConnection):
+            channel = self.connection.output['channel']
+            signal = self.get_voltage(t_list)
+            output[channel.name] = signal
+        elif isinstance(self.connection, CombinedConnection):
+            for channel in self.connection.output['channels']:
+                signal = self.get_voltage(t_list)
+                output[channel.name] = signal
+        else:
+            raise Exception("No implementation for connection {}".format(
+                self.connection))
+        return output
 
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
