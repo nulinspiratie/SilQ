@@ -151,10 +151,7 @@ class ATSInterface(InstrumentInterface):
 
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller = self.acquisition_controllers[
-                'Triggered_AcquisitionController']
-        elif self.acquisition_mode() == 'continuous':
-            self.acquisition_controller = self.acquisition_controllers[
-                'Continuous_AcquisitionController']
+                'Basic_AcquisitionController']
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
