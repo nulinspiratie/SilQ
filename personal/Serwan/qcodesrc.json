@@ -1,0 +1,11 @@
+{
+    "user": {},
+    "gui": {
+        "notebook": true,
+        "plotlib": "matplotlib"
+    },
+    "core": {
+        "legacy_mp": true,
+        "loglevel": "DEBUG"
+    }
+}

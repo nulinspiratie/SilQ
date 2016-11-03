@@ -1,23 +1,23 @@
 
 if __name__ == "__main__":
     import silq
-
     silq.initialize("EWJN")
 
-    gate1 = TGAC
-    gate2 = DF_DS
+    from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
+        Continuous_AcquisitionController
 
-    gate1_vals = list(np.linspace(0.24, 0.26, 4))
-    gate2_vals = list(np.linspace(0.45, 0.5, 15))
+    continuous_controller = Continuous_AcquisitionController(
+        name='continuous_controller',
+        alazar_name='ATS',
+        server_name='Alazar_server')
 
-    DC_parameter.setup()
-    data = qc.Loop(gate1[gate1_vals]
-                   ).loop(gate2[gate2_vals]
-                          ).each(TG, DC_parameter
-                                 ).then(qc.Task(layout.stop)
-                                        ).run(
-        name='DC_{}_vs_{}_scan'.format(gate1.name, gate2.name),
-        progress_interval=True)
+    continuous_controller.average_mode('none')
+    continuous_controller.samples_per_trace(1024 * 8)
+    continuous_controller.traces_per_acquisition(1)
+    continuous_controller.update_acquisition_settings(mode='CS',
+                                                      samples_per_record=1024,
+                                                      buffer_timeout=5000,
+                                                      allocated_buffers=100)
+    continuous_controller.setup()
 
-    plot = qc.MatPlot()
-    plot.add(data.DC_voltage)
+    continuous_controller.acquisition()
