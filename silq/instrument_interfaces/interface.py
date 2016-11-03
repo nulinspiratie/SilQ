@@ -157,3 +157,10 @@ class Channel:
         if self.output_TTL is not None:
             output_str += ', output_TTL: {}'.format(self.output_TTL)
         return output_str
+
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False

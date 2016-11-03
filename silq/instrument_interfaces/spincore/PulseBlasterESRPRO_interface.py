@@ -1,7 +1,7 @@
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
-from silq.pulses import DCPulse, TriggerPulse, PulseImplementation
+from silq.pulses import DCPulse, TriggerPulse, MarkerPulse, PulseImplementation
 
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
@@ -42,44 +42,32 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         pulses = self._pulse_sequence.pulses
 
         if pulses:
-            # Determine trigger cycles
-            trigger_duration = pulses[0].duration
-            assert all([pulse.duration == trigger_duration
-                        for pulse in pulses]), \
-                "Cannot handle different pulse trigger durations yet." \
-                "Durations: {}".format([pulse.duration for pulse in pulses])
-            trigger_cycles = round(trigger_duration * ms)
-
+            # Iteratively increase time
             t = 0
-            # Iteratively remove pulses from remaining_pulses as they are
-            # programmed
-            remaining_pulses = pulses
-            while remaining_pulses:
-                # Determine start of next pulse(s)
-                t_start_list = [pulse.t_start for pulse in remaining_pulses]
-                t_start_min = min(t_start_list)
-
+            t_start_list = [pulse.t_start for pulse in pulses]
+            t_stop_list = [pulse.t_stop for pulse in pulses]
+            t_list = t_start_list + t_stop_list
+            t_stop_max = max(t_stop_list)
+            while t < t_stop_max:
                 # Segment remaining pulses into next pulses and others
-                active_pulses = [pulse for pulse in remaining_pulses
-                                 if pulse.t_start == t_start_min]
-                remaining_pulses = [pulse for pulse in remaining_pulses
-                                        if pulse.t_start != t_start_min]
+                active_pulses = [pulse for pulse in pulses
+                                 if pulse.t_start <= t < pulse.t_stop]
+                if not active_pulses:
+                    total_channel_value = 0
+                else:
+                    total_channel_value = sum([pulse.implement()
+                                               for pulse in active_pulses])
 
-                # Send wait instruction until next trigger
-                wait_duration = t_start_min - t
-                if wait_duration > 0:
-                    wait_cycles = wait_duration * ms
+                # find time of next event
+                t_next = min(t_val for t_val in t_list if t_val > t)
 
-                    self.instrument.send_instruction(0, 'continue', 0,
-                                                     wait_cycles)
-                    t += wait_duration
+                # Send wait instruction until next event
+                wait_duration = t_next - t
+                wait_cycles = wait_duration * ms
 
-                total_channel_value = sum([pulse.implement()
-                                           for pulse in active_pulses])
                 self.instrument.send_instruction(total_channel_value,
-                                                 'continue',
-                                                 0, trigger_cycles)
-                t += trigger_duration
+                                                 'continue', 0, wait_cycles)
+                t += wait_duration
             else:
                 # Add final instructions
 
@@ -93,8 +81,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
                 total_channel_value = 0
                 self.instrument.send_instruction(total_channel_value,
-                                                 'branch',
-                                                 0, trigger_cycles)
+                                                 'branch', 0, 50)
 
         self.instrument.stop_programming()
 
@@ -111,6 +98,21 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+
+    @property
+    def amplitude(self):
+        return self.connection.output['channel'].output_TTL[1]
+
+    def implement(self):
+        output_channel_name = self.connection.output['channel'].name
+        # Split channel number from string (e.g. "ch3" -> 3)
+        output_channel = int(output_channel_name[2])
+        channel_value = 2**(output_channel-1)
+        return channel_value
+
+class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
 
     @property
     def amplitude(self):
