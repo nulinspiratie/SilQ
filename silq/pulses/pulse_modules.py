@@ -50,7 +50,7 @@ class PulseRequirement():
 
 
 class PulseSequence:
-    def __init__(self, allow_untargeted_pulses=True,
+    def __init__(self, pulses=[], allow_untargeted_pulses=True,
                  allow_targeted_pulses=True, allow_pulse_overlap=True):
         """
         A PulseSequence object is a container for pulses.
@@ -58,7 +58,6 @@ class PulseSequence:
         Args:
             allow_pulse_overlap:
         """
-        self.pulses = []
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
@@ -68,6 +67,11 @@ class PulseSequence:
         from silq.pulses import pulse_conditions
         self.connection_conditions = connection_conditions
         self.pulse_conditions = pulse_conditions
+
+        self.pulses = []
+        if pulses:
+            self.add(pulses)
+
     def __getitem__(self, index):
         if isinstance(index, int):
             return self.pulses[index]
