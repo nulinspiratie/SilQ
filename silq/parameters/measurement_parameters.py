@@ -209,7 +209,12 @@ class T1_Parameter(MeasurementParameter):
         self.shapes = ((), ())
 
     def get(self):
-        self.traces = self.pulsemaster.acquisition()
+        self.layout.start()
+        self.traces = self.layout.do_acquisition(return_dict=True)
+        self.layout.stop()
+
+        self.trace_segments = {ch_label: self.segment_trace(trace)
+                               for ch_label, trace in self.traces.items()}
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=self.traces,
             threshold_voltage=self.threshold_voltage,
@@ -234,7 +239,7 @@ class T1_Parameter(MeasurementParameter):
         self.layout.setup(samples=self.samples, average_mode='none')
 
 
-class VariableRead_Parameter(Parameter):
+class VariableRead_Parameter(MeasurementParameter):
 
     def __init__(self, layout, **kwargs):
         super().__init__(name='variable_read_voltage',
@@ -247,7 +252,7 @@ class VariableRead_Parameter(Parameter):
         load_pulse = DCPulse(name='load', amplitude=1.5,
                              duration=5, acquire=True)
         read_pulse = DCPulse(name='read', amplitude=0,
-                             duration=read_voltage, acquire=True)
+                             duration=20, acquire=True)
         final_pulse = DCPulse(name='final', amplitude=0,
                               duration=2)
 
@@ -258,40 +263,40 @@ class VariableRead_Parameter(Parameter):
     def setup(self, samples=50, **kwargs):
         self.samples = samples
 
-        # Stop instruments in case they were already running
-        self.layout.stop()
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
-        self.layout.setup(samples=self.samples, average_mode='none')
-        self.layout.start()
+        self.layout.setup(samples=self.samples, average_mode='trace')
+
         # Setup parameter metadata
-        # self.names = ['fidelity_empty', 'fidelity_load', 'fidelity_read',
-        #               'up_proportion', 'dark_counts', 'contrast']
-        # self.labels = self.names
-        # self.shapes = ((), (), (), (), (), ())
+        self.names = self.layout.acquisition.names
+        self.labels = self.layout.acquisition.labels
+        self.shapes = self.layout.acquisition.shapes
 
         super().setup(**kwargs)
 
     def get(self):
         self.layout.start()
-        self.traces = self.layout.do_acquisition(return_dict=True)
+        return self.layout.acquisition()
         self.layout.stop()
-
-        self.trace_segments = {ch_label: self.segment_trace(trace)
-                           for ch_label, trace in self.traces.items()}
-
-        # Store raw traces if raw_data_manager is provided
-        if self.data_manager is not None:
-            self.store_traces(self.traces['output'])
-
-
-        return tuple(self.traces.values())
-
+        # self.traces = self.layout.do_acquisition(return_dict=True)
+        # self.layout.stop()
+        #
+        # # Store raw traces if raw_data_manager is provided
+        # if self.data_manager is not None:
+        #     self.store_traces(self.traces['output'])
+        #
+        # return list(self.traces.values())
 
     def set(self, read_voltage):
-        read_pulse = DCPulse(name='read', amplitude=0,
-                             duration=read_voltage, acquire=True)
-        self.stage_read['voltage'] = self.read_voltage
+        self.read_voltage=read_voltage
+
+        # Change read stage voltage.
+        self.pulse_sequence['read'].voltage = self.read_voltage
+
+        self.layout.target_pulse_sequence(self.pulse_sequence)
+        
+        self.layout.stop()
+        self.layout.setup(samples=self.samples, average_mode='trace')
 
 #
 # class Up_Fidelity_Parameter(Parameter):
