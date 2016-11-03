@@ -34,6 +34,11 @@ class ArbStudio1104Interface(InstrumentInterface):
             DCPulseImplementation(
                 pulse_requirements=[('amplitude', {'min': -2.5, 'max': 2.5})]
             ),
+            DCRampPulseImplementation(
+                pulse_requirements=[('amplitude_start', {'min': -2.5, 'max': 2.5}),
+                                    ('amplitude_stop',
+                                     {'min': -2.5, 'max': 2.5})]
+            ),
             TriggerPulseImplementation(
                 pulse_requirements=[]
             )
@@ -65,23 +70,18 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.generate_waveforms()
         self.generate_sequences()
 
-        for channel in self.active_channels:
+        for ch in self.active_channels:
 
-            eval("self.instrument.{ch}_trigger_source('fp_trigger_in')".format(
-                ch=channel))
-            eval("self.instrument.{ch}_trigger_mode('stepped')".format(
-                ch=channel))
-            eval('self.instrument.{ch}_clear_waveforms()'.format(
-                ch=channel))
+            self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
+            self.instrument.parameters[ch + '_trigger_mode']('stepped')
+            self.instrument.functions[ch + '_clear_waveforms']()
 
             # Add waveforms to channel
-            for waveform in self.waveforms[channel]:
-                eval('self.instrument.{ch}_add_waveform({waveform})'.format(
-                    ch=channel, waveform=waveform))
+            for waveform in self.waveforms[ch]:
+                self.instrument.functions[ch + '_add_waveform'](waveform)
 
             # Add sequence to channel
-            eval('self.instrument.{ch}_sequence({sequence})'.format(
-                ch=channel, sequence=self.sequences[channel]))
+            self.instrument.parameters[ch + '_sequence'](self.sequences[ch])
 
         self.instrument.load_waveforms(channels=self.active_channels_id)
         self.instrument.load_sequence(channels=self.active_channels_id)
@@ -103,6 +103,12 @@ class ArbStudio1104Interface(InstrumentInterface):
         return [trigger_pulse]
 
     def generate_waveforms(self):
+
+        # Determine sampling rates
+        sampling_rates = {ch:
+            250e6 / self.instrument.parameters[ch+'_sampling_rate_prescaler']()
+                          for ch in self.active_channels}
+
         # Set time t_pulse to zero for each channel
         # This will increase as we iterate over pulses, and is used to ensure
         # that there are no times between pulses
@@ -111,7 +117,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.waveforms = {ch: [] for ch in self.active_channels}
         for pulse in self.pulse_sequence():
 
-            channels_waveform = pulse.implement()
+            channels_waveform = pulse.implement(sampling_rates=sampling_rates)
 
             for ch, waveform in channels_waveform.items():
                 assert pulse.t_start == t_pulse[ch], \
@@ -155,7 +161,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             )
         return targeted_pulse
 
-    def implement(self):
+    def implement(self, **kwargs):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
@@ -179,7 +185,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
 class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
     def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(
@@ -203,7 +209,7 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             )
         return targeted_pulse
 
-    def implement(self):
+    def implement(self, sampling_rates, **kwargs):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
@@ -213,18 +219,26 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
         Returns:
             {output_channel: pulses arr} dictionary for each output channel
         """
-        sampling_rate = 250e6
         # TODO Take sampling rate prescaler into account
-        t_list = np.arange(self.t_start, self.t_stop, 1/sampling_rate)
         output = {}
+
+        t_list = {ch: np.arange(self.t_start, self.t_stop,
+                                1 / sampling_rates[ch] * 1e3)
+                  for ch in
+                  sampling_rates}
+
+        # All waveforms must have an even number of points
+        for ch in t_list:
+            if len(t_list[ch]) % 2:
+                t_list[ch] = t_list[ch][:-1]
 
         if isinstance(self.connection, SingleConnection):
             channel = self.connection.output['channel']
-            signal = self.get_voltage(t_list)
+            signal = self.get_voltage(t_list[ch])
             output[channel.name] = signal
         elif isinstance(self.connection, CombinedConnection):
             for channel in self.connection.output['channels']:
-                signal = self.get_voltage(t_list)
+                signal = self.get_voltage(t_list[ch])
                 output[channel.name] = signal
         else:
             raise Exception("No implementation for connection {}".format(
