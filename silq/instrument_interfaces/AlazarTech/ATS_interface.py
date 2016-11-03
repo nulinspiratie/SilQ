@@ -179,8 +179,10 @@ class ATSInterface(InstrumentInterface):
                 self.update_settings(external_trigger_range=5)
                 trigger_range = 5
             else:
-                trigger_range = self.setting('channel_range' +
-                                             self.trigger_channel())
+                trigger_channel = self._acquisition_channels[
+                    self.trigger_channel()]
+                trigger_id = trigger_channel.id
+                trigger_range = self.setting('channel_range' + trigger_id)
 
             trigger_pulses = self._input_pulse_sequence.get_pulses(
                 input_channel=self.trigger_channel())
