@@ -209,7 +209,7 @@ class DCPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .1 # us
+    duration = .0001 # ms
 
     def __init__(self, duration=duration, **kwargs):
         super().__init__(duration=duration, **kwargs)

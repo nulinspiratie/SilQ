@@ -48,7 +48,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                         for pulse in pulses]), \
                 "Cannot handle different pulse trigger durations yet." \
                 "Durations: {}".format([pulse.duration for pulse in pulses])
-            trigger_cycles = round(trigger_duration * us)
+            trigger_cycles = round(trigger_duration * ms)
 
             t = 0
             # Iteratively remove pulses from remaining_pulses as they are
@@ -69,6 +69,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 wait_duration = t_start_min - t
                 if wait_duration > 0:
                     wait_cycles = wait_duration * ms
+
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      wait_cycles)
                     t += wait_duration
