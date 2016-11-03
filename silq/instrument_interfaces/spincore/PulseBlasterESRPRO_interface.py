@@ -21,6 +21,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.pulse_implementations = [
             TriggerPulseImplementation(
                 pulse_requirements=[]
+            ),
+            MarkerPulseImplementation(
+                pulse_requirements=[]
             )
         ]
 
@@ -63,7 +66,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
                 # Send wait instruction until next event
                 wait_duration = t_next - t
-                wait_cycles = wait_duration * ms
+                wait_cycles = round(wait_duration * ms)
 
                 self.instrument.send_instruction(total_channel_value,
                                                  'continue', 0, wait_cycles)
@@ -74,7 +77,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Wait until end of pulse sequence
                 wait_duration = self._pulse_sequence.duration - t
                 if wait_duration:
-                    wait_cycles = wait_duration * ms
+                    wait_cycles = round(wait_duration * ms)
                     self.instrument.send_instruction(0, 'continue', 0,
                                                      wait_cycles)
                     t += wait_duration
