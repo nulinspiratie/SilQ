@@ -5,6 +5,7 @@ from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
 from qcodes.instrument_drivers.AlazarTech.ATS9440 import ATS9440
 from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
     Basic_AcquisitionController
+from qcodes.instrument_drivers.agilent.E8267D import Keysight_E8267D
 
 
 from silq.meta_instruments.chip import Chip
@@ -56,6 +57,9 @@ ATS_controller = Basic_AcquisitionController(name='ATS_controller',
                                              server_name='Alazar_server')
 interfaces['ATS'] = get_instrument_interface(ATS)
 interfaces['ATS'].add_acquisition_controller('ATS_controller')
+
+### MW source
+mw_source=Keysight_E8267D('mw_source','TCPIP0::192.168.0.5::inst0::INSTR',server_name='')
 
 
 ### Layout and connectivity
