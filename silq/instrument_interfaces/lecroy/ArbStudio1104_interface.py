@@ -92,7 +92,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def get_final_additional_pulses(self):
         trigger_pulse = TriggerPulse(t_start=self._pulse_sequence.duration,
-                                     duration=self.trigger_in_duration(),
+                                     duration=self.trigger_in_duration()*1e-3,
                                      connection_requirements={
                                         'input_instrument':
                                             self.instrument_name(),
@@ -144,7 +144,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 not targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
-                             duration=interface.trigger_in_duration(),
+                             duration=interface.trigger_in_duration()*1e-3,
                              connection_requirements={
                                  'input_instrument':
                                      interface.instrument_name(),
@@ -185,7 +185,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         if not is_primary:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
-                             duration=interface.trigger_in_duration(),
+                             duration=interface.trigger_in_duration()*1e-3,
                              connection_requirements={
                                  'input_instrument':
                                      interface.instrument_name(),
