@@ -264,13 +264,13 @@ class DCRampPulse(Pulse):
 
 
     def __repr__(self):
-        properties_str = 'A={}, t_start={}, t_stop={}'.format(
-            self.amplitude, self.t_start, self.t_stop)
+        properties_str = 'A_start={}, A_stop={}, t_start={}, t_stop={}'.format(
+            self.amplitude_start, self.amplitude_stop, self.t_start, self.t_stop)
 
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
             "voltage at {} us is not in the time range {} us - {} us of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
