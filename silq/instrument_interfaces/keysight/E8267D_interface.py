@@ -35,7 +35,7 @@ class E8267DInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
             ),
-            FrequencyRampPulse(
+            FrequencyRampPulseImplementation(
                 pulse_requirements=[
                     ('frequency_start', {'min': 250e3, 'max': 44e9}),
                     ('frequency_stop', {'min': 250e3, 'max': 44e9})]
@@ -48,7 +48,7 @@ class E8267DInterface(InstrumentInterface):
         self.add_parameter('modulation_channel',
                            parameter_class=ManualParameter,
                            initial_value='ext1',
-                           vals=vals.Enum(*self._input_channels.values()))
+                           vals=vals.Enum(*self._input_channels))
 
     def setup(self):
         pass
@@ -108,21 +108,15 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
             amplitude_start + amplitude_slope * \
             (targeted_pulse.frequency_final - targeted_pulse.frequency_start)
 
+
         # Add an envelope pulse with some padding on both sides.
-        targeted_pulse.additional_pulses.append(
+        targeted_pulse.additional_pulses.extend((
             MarkerPulse(t_start=pulse.t_start - interface.envelope_padding(),
                         t_stop=pulse.t_stop + interface.envelope_padding(),
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'}
                         ),
-            DCPulse(t_start=pulse.t_start - interface.envelope_padding(),
-                    t_stop=pulse.t_start,
-                    amplitude=amplitude_start,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': interface.modulation_channel()}
-                    ),
             DCRampPulse(t_start=pulse.t_start,
                         t_stop=pulse.t_stop,
                         amplitude_start=amplitude_start,
@@ -130,15 +124,25 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
                             'input_channel': interface.modulation_channel()}
+                        )
+        ))
+        if interface.envelope_padding() > 0:
+            targeted_pulse.additional_pulses.append((
+                DCPulse(t_start=pulse.t_start - interface.envelope_padding(),
+                        t_stop=pulse.t_start,
+                        amplitude=amplitude_start,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
                         ),
-            DCPulse(t_start=pulse.t_stop,
-                    t_stop=pulse.t_stop + interface.envelope_padding(),
-                    amplitude=amplitude_final,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': interface.modulation_channel()}
-                    )
-        )
+                DCPulse(t_start=pulse.t_stop,
+                        t_stop=pulse.t_stop + interface.envelope_padding(),
+                        amplitude=amplitude_final,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
+                        )
+            ))
 
         return targeted_pulse
 
