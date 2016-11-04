@@ -18,7 +18,7 @@ def get_instrument_interface(instrument):
         'Chip': ChipInterface,
         'ATS9440': ATSInterface,
         'MockATS': ATSInterface,
-        'E8267D': E8267DInterface
+        'Keysight_E8267D': E8267DInterface
     }
 
     instrument_class = get_instrument_class(instrument)
