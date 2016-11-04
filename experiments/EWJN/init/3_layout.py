@@ -1,3 +1,5 @@
+from silq.meta_instruments.layout import Layout
+
 ### Layout and connectivity
 layout = Layout(name='layout',
                 instrument_interfaces=list(interfaces.values()),
