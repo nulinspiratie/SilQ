@@ -431,6 +431,21 @@ class Connection:
         else:
             return False
 
+    def __ne__(self, other):
+        """Define a non-equality test"""
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        # Define custom hash, used for creating a set of unique elements
+        dict_items = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, dict):
+                # Dicts cannot be hashed, and must be converted
+                v = tuple(sorted(v.items()))
+            dict_items[k] = v
+        return hash(tuple(sorted(dict_items)))
+
+
     def target_pulse(self, pulse):
         pulse.connection = self
 

@@ -49,28 +49,23 @@ class ArbStudio1104Interface(InstrumentInterface):
                            units='us',
                            initial_value=0.1)
 
+        self.add_parameter('active_channels',
+                           get_cmd=self._get_active_channels)
+
+    def _get_active_channels(self):
+        active_channels = [pulse.connection.output['channel'].name
+                           for pulse in self.pulse_sequence()]
+        # Transform into set to ensure that elements are unique
+        active_channels = list(set(active_channels))
+        return active_channels
+
     def setup(self, **kwargs):
         # TODO implement setup for modes other than stepped
-        # Transform into set to ensure that elements are unique
-        self.active_channels = []
-
-        for pulse in self.pulse_sequence():
-            output = pulse.connection.output
-            self.active_channels.append(output['channel'].name)
-        self.active_channels = list(set(self.active_channels))
-        self.active_channels_id = [self._channels[channel].id
-                                   for channel in self.active_channels]
-
-        # # Find sampling rates (these may be different for different channels)
-        # sampling_rates = [self.instrument.sampling_rate /
-        #                   eval("self.instrument.ch{}_sampling_rate_prescaler()"
-        #                        "".format(ch)) for ch in self.active_channels]
-
         # Generate waveforms and sequences
         self.generate_waveforms()
         self.generate_sequences()
 
-        for ch in self.active_channels:
+        for ch in self.active_channels():
 
             self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
             self.instrument.parameters[ch + '_trigger_mode']('stepped')
@@ -83,46 +78,86 @@ class ArbStudio1104Interface(InstrumentInterface):
             # Add sequence to channel
             self.instrument.parameters[ch + '_sequence'](self.sequences[ch])
 
-        self.instrument.load_waveforms(channels=self.active_channels_id)
-        self.instrument.load_sequence(channels=self.active_channels_id)
+        active_channels_id = [self._channels[channel].id
+                              for channel in self.active_channels()]
+        self.instrument.load_waveforms(channels=active_channels_id)
+        self.instrument.load_sequence(channels=active_channels_id)
 
     def start(self):
-        self.instrument.run(channels=self.active_channels_id)
+        self.instrument.run(channels=[self._channels[channel].id
+                                      for channel in self.active_channels()])
 
     def stop(self):
         self.instrument.stop()
 
     def get_final_additional_pulses(self):
-        # Check if there are already trigger pulses
-        trigger_pulses = self.input_pulse_sequence().get_pulses(
-            t_start=self._pulse_sequence.duration, trigger=True
-        )
-        if trigger_pulses:
-            return []
-        else:
-            trigger_pulse = TriggerPulse(
-                t_start=self._pulse_sequence.duration,
-                duration=self.trigger_in_duration()*1e-3,
-                connection_requirements={
-                   'input_instrument':
-                       self.instrument_name(),
-                    'trigger': True}
-                )
-            return [trigger_pulse]
+        final_pulses = []
+
+        # Loop over channels ensuring that all channels are programmed for each
+        # trigger segment
+        t = 0
+        while t < self._pulse_sequence.duration:
+            # Determine next moment in time
+            t_next = min(t_val for t_val in self._pulse_sequence.t_list
+                         if t_val > t)
+            for channel in self.active_channels():
+                # Check if there is a pulse that is active between t and t_next
+                active_pulse = self._pulse_sequence.get_pulse(
+                    t_start=('<=', t), t_stop=('>=', t_next),
+                    output_channel=channel)
+
+                if active_pulse is None:
+                    # Add DC pulse at amplitude zero
+                    dc_pulse = self.get_pulse_implementation(
+                        DCPulse(t_start=t, t_stop=t_next, amplitude=0))
+                    connection = self._pulse_sequence.get_connection(
+                        output_channel=channel)
+                    dc_pulse.connection = connection
+                    self._pulse_sequence.add(dc_pulse)
+
+                    # Check if trigger pulse is necessary. Only the case when
+                    #  no trigger pulse already exists at the same time,
+                    # when t > 0 (first trigger occurs at the end)
+                    trigger_pulse = self.get_trigger_pulse(t)
+                    if trigger_pulse not in self._input_pulse_sequence \
+                            and t > 0 and trigger_pulse not in final_pulses:
+                        final_pulses.append(trigger_pulse)
+
+            t = t_next
+
+        # Add a trigger pulse at the end if it does not yet exist
+        trigger_pulse = self.get_trigger_pulse(self._pulse_sequence.duration)
+        if trigger_pulse not in self._input_pulse_sequence \
+                and trigger_pulse not in final_pulses:
+            final_pulses.append(trigger_pulse)
+
+        return final_pulses
+
+    def get_trigger_pulse(self, t):
+        trigger_pulse = TriggerPulse(
+            t_start=t,
+            duration=self.trigger_in_duration()*1e-3,
+            connection_requirements={
+               'input_instrument':
+                   self.instrument_name(),
+                'trigger': True}
+            )
+        return trigger_pulse
+
 
     def generate_waveforms(self):
 
         # Determine sampling rates
         sampling_rates = {ch:
             250e6 / self.instrument.parameters[ch+'_sampling_rate_prescaler']()
-                          for ch in self.active_channels}
+                          for ch in self.active_channels()}
 
         # Set time t_pulse to zero for each channel
         # This will increase as we iterate over pulses, and is used to ensure
         # that there are no times between pulses
-        t_pulse = {ch: 0 for ch in self.active_channels}
+        t_pulse = {ch: 0 for ch in self.active_channels()}
 
-        self.waveforms = {ch: [] for ch in self.active_channels}
+        self.waveforms = {ch: [] for ch in self.active_channels()}
         for pulse in self.pulse_sequence():
 
             channels_waveform = pulse.implement(sampling_rates=sampling_rates)
@@ -139,7 +174,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def generate_sequences(self):
         self.sequences = {ch: list(range(len(self.waveforms[ch])))
-                          for ch in self.active_channels}
+                          for ch in self.active_channels()}
         return self.sequences
 
 
