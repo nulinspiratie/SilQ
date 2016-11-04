@@ -85,9 +85,10 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         raise NotImplementedError('Sine pulse not yet implemented')
 
 
-class FrequencyRampPulseImplementation(SinePulseImplementation):
+class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
     def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=FrequencyRampPulse,
+                                     **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(
@@ -98,8 +99,14 @@ class FrequencyRampPulseImplementation(SinePulseImplementation):
         else:
             amplitude_start, amplitude_stop = 1, -1
 
-        amplitude_final = amplitude_start if \
-            targeted_pulse.frequency_final == 'start' else amplitude_stop
+        # Determine the corresponding final amplitude from final frequency
+        # Amplitude slope is dA/df
+        amplitude_slope = \
+            (amplitude_stop - amplitude_start) / \
+            (targeted_pulse.frequency_stop - targeted_pulse.frequency_start)
+        amplitude_final = \
+            amplitude_start + amplitude_slope * \
+            (targeted_pulse.frequency_final - targeted_pulse.frequency_start)
 
         # Add an envelope pulse with some padding on both sides.
         targeted_pulse.additional_pulses.append(
