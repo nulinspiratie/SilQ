@@ -118,6 +118,17 @@ class PulseSequence:
         else:
             return 0
 
+    @property
+    def t_start_list(self):
+        return [pulse.t_start for pulse in self.pulses]
+
+    @property
+    def t_stop_list(self):
+        return [pulse.t_stop for pulse in self.pulses]
+    @property
+    def t_list(self):
+        return list(set(self.t_start_list + self.t_stop_list))
+
     def replace(self, pulse_sequence):
         """
         Replace all attributes of this pulse_sequence with another one
@@ -182,8 +193,7 @@ class PulseSequence:
         self.sort()
 
     def sort(self):
-        t_start_list = np.array([pulse.t_start for pulse in self.pulses])
-        idx_sorted = np.argsort(t_start_list)
+        idx_sorted = np.argsort(np.array(self.t_start_list))
         self.pulses = [self.pulses[idx] for idx in idx_sorted]
         return self.pulses
 
@@ -241,6 +251,14 @@ class PulseSequence:
         else:
             raise RuntimeError('Found more than one pulse satisfiying '
                                'conditions {}'.format(conditions))
+
+    def get_connection(self, **conditions):
+
+        pulses = self.get_pulses(**conditions)
+        connections = [pulse.connection for pulse in pulses]
+        assert len(set(connections)) == 1, "Found {} connections instead of " \
+                                           "one".format(len(set(connections)))
+        return connections[0]
 
     def get_transition_voltages(self, pulse=None, connection=None, t=None):
         """
