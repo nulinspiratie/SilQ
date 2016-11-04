@@ -41,6 +41,10 @@ class Pulse:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __hash__(self):
+        # Define custom hash, used for creating a set of unique elements
+        return hash(tuple(sorted(self.__dict__.items())))
+
     def __bool__(self):
         # Pulse is always equal to true
         return True

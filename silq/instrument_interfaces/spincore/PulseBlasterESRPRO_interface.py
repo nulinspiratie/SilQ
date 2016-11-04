@@ -42,27 +42,23 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.select_board(0)
         self.instrument.start_programming()
 
-        pulses = self._pulse_sequence.pulses
-
-        if pulses:
+        if self._pulse_sequence:
             # Iteratively increase time
             t = 0
-            t_start_list = [pulse.t_start for pulse in pulses]
-            t_stop_list = [pulse.t_stop for pulse in pulses]
-            t_list = t_start_list + t_stop_list
-            t_stop_max = max(t_stop_list)
+            t_stop_max = max(self._pulse_sequence.t_stop_list)
             while t < t_stop_max:
                 # Segment remaining pulses into next pulses and others
-                active_pulses = [pulse for pulse in pulses
+                active_pulses = [pulse for pulse in self._pulse_sequence
                                  if pulse.t_start <= t < pulse.t_stop]
                 if not active_pulses:
                     total_channel_value = 0
                 else:
-                    total_channel_value = sum([pulse.implement()
-                                               for pulse in active_pulses])
+                    total_channel_value = sum(
+                        [pulse.implement() for pulse in active_pulses])
 
                 # find time of next event
-                t_next = min(t_val for t_val in t_list if t_val > t)
+                t_next = min(t_val for t_val in self._pulse_sequence.t_list
+                             if t_val > t)
 
                 # Send wait instruction until next event
                 wait_duration = t_next - t
