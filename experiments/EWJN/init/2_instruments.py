@@ -67,3 +67,4 @@ interfaces['ATS'].add_acquisition_controller('continuous_controller')
 keysight = Keysight_E8267D('keysight','TCPIP0::192.168.0.5::inst0::INSTR',
                            server_name='')
 interfaces['keysight'] = get_instrument_interface(keysight)
+interfaces['keysight'].modulation_channel('ext2')
