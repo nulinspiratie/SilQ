@@ -1,16 +1,12 @@
 # Load instruments
-from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
-from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
-from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
 from qcodes.instrument_drivers.AlazarTech.ATS9440 import ATS9440
 from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
     Triggered_AcquisitionController, Continuous_AcquisitionController
-from qcodes.instrument_drivers.agilent.E8267D import Keysight_E8267D
-
-
+from qcodes.instrument_drivers.keysight.E8267D import Keysight_E8267D
+from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
+from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
+from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
 from silq.meta_instruments.chip import Chip
-from silq.meta_instruments.layout import Layout
-# Import scaled parameter for SIM900
 from silq.parameters.general_parameters import ScaledParameter
 
 interfaces = {}
@@ -66,5 +62,8 @@ interfaces['ATS'] = get_instrument_interface(ATS)
 interfaces['ATS'].add_acquisition_controller('triggered_controller')
 interfaces['ATS'].add_acquisition_controller('continuous_controller')
 
+
 ### MW source
-mw_source=Keysight_E8267D('mw_source','TCPIP0::192.168.0.5::inst0::INSTR',server_name='')
+keysight = Keysight_E8267D('mw_source','TCPIP0::192.168.0.5::inst0::INSTR',
+                            server_name='')
+interfaces['keysight'] = get_instrument_interface(keysight)

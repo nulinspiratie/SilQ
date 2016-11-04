@@ -16,7 +16,7 @@ turnon_param = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = general_parameters.CombinedParameter(parameters=[TGAC, DF, DS])
 LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
 
-station = qc.Station(layout, arbstudio, pulseblaster, ATS, ATS_controller,
-                     SIM900, ELR_parameter, DC_parameter)
-                     # DF_DS, ELR_parameter, T1_parameter, DC_parameter,
-                     # ELRLR_parameter, variable_read_parameter)
+station = qc.Station(SIM900, layout, arbstudio, pulseblaster,
+                     ATS, triggered_controller, continuous_controller,
+                     ELR_parameter, DC_parameter, T1_parameter,
+                     variable_read_parameter)
