@@ -219,8 +219,7 @@ class FrequencyRampPulse(Pulse):
 
         self.frequency_start = frequency_start
         self.frequency_stop = frequency_stop
-        assert frequency_final in ['start', 'stop'], \
-            "frequency_final must be either 'start' or 'stop'"
+        self.frequency_final = frequency_final
         self.amplitude = amplitude
 
     def __repr__(self):
@@ -232,7 +231,12 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        raise NotImplementedError("Voltage not yet implemented")
+        if t == self.t_start:
+            return self.amplitude_start
+        elif t == self.t_stop:
+            return self.amplitude_final
+        else:
+            raise NotImplementedError("Voltage not yet implemented")
 
 
 class DCPulse(Pulse):
