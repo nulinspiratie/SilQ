@@ -3,7 +3,7 @@ from silq.meta_instruments.layout import Layout
 ### Layout and connectivity
 layout = Layout(name='layout',
                 instrument_interfaces=list(interfaces.values()),
-                server_name='layout_server')
+                server_name='layout_server' if USE_MP else None)
 
 layout.primary_instrument('pulseblaster')
 layout.acquisition_instrument('ATS')
@@ -30,12 +30,11 @@ cArb3 = layout.add_connection(output_arg='arbstudio.ch3',
                               input_arg='ATS.chC',
                               pulse_modifiers={'amplitude_scale': 1})
 layout.combine_connections(cArb1, cArb2, cArb3, default=True)
-cArb4 = layout.add_connection(output_arg='arbstudio.ch3',
+cArb4 = layout.add_connection(output_arg='arbstudio.ch4',
                               input_arg='keysight.ext2')
 
 cESR = layout.add_connection(output_arg='keysight.RF_out',
-                             input_arg='chip.ESR',
-                             pulse_modifiers={'amplitude_scale': 1})
+                             input_arg='chip.ESR')
 # Chip output connection
 layout.add_connection(output_arg='chip.output',
                       input_arg='ATS.chA')
