@@ -5,7 +5,7 @@ from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data import hdf5_format
 h5fmt = hdf5_format.HDF5Format()
 
-from silq.pulses import PulseSequence, DCPulse
+from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse
 from silq.analysis import analysis
 from silq.tools import data_tools
 
@@ -92,7 +92,8 @@ class DC_Parameter(MeasurementParameter):
         self.layout.start()
 
     def get(self):
-        signal = self.layout.do_acquisition(return_dict=True)
+        signal = self.layout.do_acquisition(start=False, stop=False,
+                                            return_dict=True)
         return signal['output']
 
 
@@ -115,15 +116,19 @@ class ELR_Parameter(MeasurementParameter):
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
-        self.t_start = None
-        self.t_read = None
+        self.samples = 100
+        self.t_skip = 0.1
+        self.t_read = 20
 
-        self._meta_attrs.extend(['t_start', 't_read'])
+        self._meta_attrs.extend(['t_skip', 't_read'])
 
-    def setup(self, samples=100, t_start=0.1, t_read=20, **kwargs):
-        self.samples = samples
-        self.t_start = t_start
-        self.t_read = t_read
+    def setup(self, samples=None, t_skip=None, t_read=None, **kwargs):
+        if samples:
+            self.samples = samples
+        if t_skip:
+            self.t_skip = t_skip
+        if t_read:
+            self.t_read = t_read
 
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
@@ -138,9 +143,7 @@ class ELR_Parameter(MeasurementParameter):
         super().setup(**kwargs)
 
     def get(self):
-        self.layout.start()
         self.traces = self.layout.do_acquisition(return_dict=True)
-        self.layout.stop()
 
         self.trace_segments = {ch_label: self.segment_trace(trace)
                                for ch_label, trace in self.traces.items()}
@@ -148,7 +151,7 @@ class ELR_Parameter(MeasurementParameter):
         fidelities = analysis.analyse_ELR(
             trace_segments=self.trace_segments['output'],
             sample_rate=self.layout.sample_rate(),
-            t_start=self.t_start,
+            t_skip=self.t_skip,
             t_read=self.t_read)
 
         # Store raw traces if raw_data_manager is provided
@@ -164,6 +167,35 @@ class ELR_Parameter(MeasurementParameter):
             return fidelities + tuple(self.traces.values())
         else:
             return fidelities
+
+
+class AdiabaticSweep_Parameter(ELR_Parameter):
+    def __init__(self, layout, **kwargs):
+        super().__init__(layout=layout, **kwargs)
+        self.name = 'adiabatic_sweep'
+        self.label = 'Adiabatic sweep'
+
+        frequency_center = 20e9  # Hz
+        frequency_deviation = 10e6  # Hz
+        power = 10  # dBm
+
+        ESR_pulse = FrequencyRampPulse(name='adiabatic_sweep', power=power,
+                                       t_start=9, duration=0.2,
+                                       frequency_center=frequency_center,
+                                       frequency_deviation=frequency_deviation
+                                       )
+
+        self.pulse_sequence.add(ESR_pulse)
+
+    def set(self, frequency_center):
+        # Change center frequency
+        self.pulse_sequence['adiabatic_sweep'].frequency_center = \
+            frequency_center
+        #TODO smarter solution for final frequency
+        self.pulse_sequence['adiabatic_sweep'].frequency_final = \
+            self.pulse_sequence['adiabatic_sweep'].frequency_start
+
+        self.setup()
 
 
 class T1_Parameter(MeasurementParameter):
@@ -188,37 +220,39 @@ class T1_Parameter(MeasurementParameter):
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
+        self.samples=50
         self.threshold_voltage = None
-        self.t_start = None
+        self.t_skip = 0.1
 
-        self._meta_attrs.extend(['threshold_voltage', 't_start'])
+        self._meta_attrs.extend(['threshold_voltage', 't_skip'])
 
-    def setup(self, samples=50, t_start = 0.1,
-              threshold_voltage=None, **kwargs):
-        self.samples = samples
+    def setup(self, samples=None, t_skip=None, threshold_voltage=None, 
+              **kwargs):
+        if samples:
+            self.samples = samples
+        if t_skip:
+            self.t_skip = t_skip
         self.threshold_voltage = threshold_voltage
 
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
         self.layout.setup(samples=self.samples, average_mode='none')
 
-        self.t_start = t_start
-
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names
         self.shapes = ((), ())
 
+        super().setup(**kwargs)
+        
     def get(self):
-        self.layout.start()
         self.traces = self.layout.do_acquisition(return_dict=True)
-        self.layout.stop()
 
         self.trace_segments = {ch_label: self.segment_trace(trace)
                                for ch_label, trace in self.traces.items()}
         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
             traces=self.traces,
             threshold_voltage=self.threshold_voltage,
-            t_start=round(self.t_start * 1e-3 * self.layout.sample_rate()))
+            start_idx=round(self.t_skip * 1e-3 * self.layout.sample_rate()))
 
         # Store raw traces if raw_data_manager is provided
         if self.data_manager is not None:
@@ -240,7 +274,6 @@ class T1_Parameter(MeasurementParameter):
 
 
 class VariableRead_Parameter(MeasurementParameter):
-
     def __init__(self, layout, **kwargs):
         super().__init__(name='variable_read_voltage',
                          label='Variable read voltage',
@@ -255,13 +288,15 @@ class VariableRead_Parameter(MeasurementParameter):
                              duration=20, acquire=True)
         final_pulse = DCPulse(name='final', amplitude=0,
                               duration=2)
+        
+        self.samples = 50
 
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
-
-    def setup(self, samples=50, **kwargs):
-        self.samples = samples
+    def setup(self, samples=None, **kwargs):
+        if samples:
+            self.samples = samples
 
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
@@ -275,39 +310,12 @@ class VariableRead_Parameter(MeasurementParameter):
         super().setup(**kwargs)
 
     def get(self):
-        self.layout.start()
-        return self.layout.acquisition()
-        self.layout.stop()
-        # self.traces = self.layout.do_acquisition(return_dict=True)
-        # self.layout.stop()
-        #
-        # # Store raw traces if raw_data_manager is provided
-        # if self.data_manager is not None:
-        #     self.store_traces(self.traces['output'])
-        #
-        # return list(self.traces.values())
+        self.traces = self.layout.acquisition()
+        return self.traces
 
     def set(self, read_voltage):
-        self.read_voltage=read_voltage
-
         # Change read stage voltage.
+        self.read_voltage = read_voltage
         self.pulse_sequence['read'].voltage = self.read_voltage
 
-        self.layout.target_pulse_sequence(self.pulse_sequence)
-        
-        self.layout.stop()
-        self.layout.setup(samples=self.samples, average_mode='trace')
-
-#
-# class Up_Fidelity_Parameter(Parameter):
-#     def __init__(self, name, ATS_controller, analysis, **kwargs):
-#         super().__init__(name,
-#                          snapshot_value=False,
-#                          **kwargs)
-#         self.ATS_controller = ATS_controller
-#         self.analysis = analysis
-#         self.traces = None
-#
-#     def get(self):
-#         self.traces, self.traces_AWG = self.ATS_controller.acquisition()
-#         return self.analysis.find_up_proportion(self.traces)
+        self.setup()
