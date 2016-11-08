@@ -199,8 +199,8 @@ def analyse_empty(traces, plot=False, return_idx=False):
     else:
         return sum(idx_end_empty) / sum(idx_begin_load)
 
-def analyse_ELR(trace_segments, sample_rate, t_start=0, t_read=20, plot=False):
-    start_idx = round(t_start * 1e-3 * sample_rate)
+def analyse_ELR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
+    start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
