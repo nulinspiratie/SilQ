@@ -396,8 +396,12 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
 
-    def do_acquisition(self, return_dict=False):
+    def do_acquisition(self, start=True, stop=True, return_dict=False):
+        if start:
+            self.start()
         channel_signals = self.acquisition_interface.acquisition()
+        if stop:
+            self.stop()
 
         if return_dict:
             sorted_signals = od((ch_label,
