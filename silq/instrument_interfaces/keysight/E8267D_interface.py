@@ -43,6 +43,7 @@ class E8267DInterface(InstrumentInterface):
         ]
 
         self.add_parameter('envelope_padding',
+                           units='ms',
                            parameter_class=ManualParameter,
                            initial_value=0)
         self.add_parameter('modulation_channel',
@@ -53,14 +54,40 @@ class E8267DInterface(InstrumentInterface):
     def get_final_additional_pulses(self):
         return []
 
-    def setup(self):
-        pass
+    def setup(self, **kwargs):
+        self.instrument.RF_output('off')
+
+        self.instrument.phase_modulation('off')
+
+        frequencies = [pulse.implement()['frequency']
+                       for pulse in self._pulse_sequence]
+        deviations = [pulse.implement()['deviation']
+                      for pulse in self._pulse_sequence]
+        powers = [pulse.power for pulse in self._pulse_sequence]
+        assert len(set(frequencies)) == 1, "Cannot handle multiple frequencies"
+        assert len(set(deviations)) == 1, "Cannot handle multiple deviations"
+        assert len(set(powers)) == 1, "Cannot handle multiple pulse powers"
+
+        frequency = frequencies[0]
+        deviation = deviations[0]
+        power = powers[0]
+        self.instrument.frequency(frequency)
+        self.instrument.frequency_deviation(deviation)
+        self.instrument.power(power)
+
+        self.instrument.pulse_modulation('on')
+        self.instrument.pulse_modulation_source('ext')
+
+        self.instrument.frequency_modulation('on')
+
+        self.instrument.frequency_modulation_source(self.modulation_channel())
+        self.instrument.output_modulation('on')
 
     def start(self):
-        self.instrument.status('on')
+        self.instrument.RF_output('on')
 
     def stop(self):
-        self.instrument.status('off')
+        self.instrument.RF_output('off')
 
 
 
@@ -97,6 +124,8 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
+        assert targeted_pulse.power is not None, "Pulse must have power defined"
+
         if pulse.frequency_start < pulse.frequency_stop:
             amplitude_start, amplitude_stop = -1, 1
         else:
@@ -130,7 +159,7 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
                         )
         ))
         if interface.envelope_padding() > 0:
-            targeted_pulse.additional_pulses.append((
+            targeted_pulse.additional_pulses.extend((
                 DCPulse(t_start=pulse.t_start - interface.envelope_padding(),
                         t_stop=pulse.t_start,
                         amplitude=amplitude_start,
