@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from .pulse_modules import PulseImplementation
 
 from silq.tools.general_tools import get_truth
 
@@ -31,12 +32,75 @@ class Pulse:
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
+            for attr in vars(self):
+                if attr in exclude_attrs:
+                    continue
+                elif not hasattr(other_pulse, attr) \
+                        or getattr(self, attr) != getattr(other_pulse, attr):
+                    return False
+            else:
+                return True
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
+        """
+        Overwrite comparison with other (self == other).
+        We want the comparison to return True if other is a pulse with the
+        same attributes. This can be complicated since pulses can also be
+        targeted, resulting in a pulse implementation. We therefore have to
+        use a separate comparison when either is a Pulse implementation
+        Args:
+            other:
+
+        Returns:
+
+        """
+        exclude_attrs = ['connection', 'connection_requirements']
+        if isinstance(self, PulseImplementation):
+            if isinstance(other, PulseImplementation):
+                # Both pulses are pulse implementations
+                # Check if their pulse classes are the same
+                if self.pulse_class != other.pulse_class:
+                    return False
+                # All attributes must match
+                return self._matches_attrs(other)
+            else:
+                # Only self is a pulse implementation
+                if not isinstance(other, self.pulse_class):
+                    return False
+
+                # self is a pulse implementation, and so it must match all
+                # the attributes of other. The other way around does not
+                # necessarily hold, since a pulse implementation has more attrs
+                if not other._matches_attrs(self, exclude_attrs=exclude_attrs):
+                    return False
+                else:
+                    # Check if self.connections satisfies the connection
+                    # requirements of other
+                    return self.connection.satisfies_conditions(
+                        **other.connection_requirements)
+        elif isinstance(other, PulseImplementation):
+            # Only other is a pulse implementation
+            if not isinstance(self, other.pulse_class):
+                return False
+
+            # other is a pulse implementation, and so it must match all
+            # the attributes of self. The other way around does not
+            # necessarily hold, since a pulse implementation has more attrs
+            if not self._matches_attrs(other, exclude_attrs=exclude_attrs):
+                return False
+            else:
+                # Check if other.connections satisfies the connection
+                # requirements of self
+                return other.connection.satisfies_conditions(
+                    **self.connection_requirements)
         else:
-            return False
+            # Neither self nor other is a pulse implementation
+            if not isinstance(other, self.__class__):
+                return False
+            # All attributes must match
+            return self._matches_attrs(other)
+
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -217,14 +281,48 @@ class SinePulse(Pulse):
 
 
 class FrequencyRampPulse(Pulse):
-    def __init__(self, frequency_start, frequency_stop,
-                 frequency_final, amplitude, **kwargs):
+    def __init__(self, frequency_start=None, frequency_stop=None,
+                 frequency_center=None, frequency_deviation=None,
+                 frequency_final=None, amplitude=None, power=None, **kwargs):
         super().__init__(**kwargs)
 
-        self.frequency_start = frequency_start
-        self.frequency_stop = frequency_stop
-        self.frequency_final = frequency_final
+        if frequency_start is not None and frequency_stop is not None:
+            self.frequency_start = frequency_start
+            self.frequency_stop = frequency_stop
+        elif frequency_center is not None and frequency_deviation is not None:
+            self.frequency_start = frequency_center - frequency_deviation / 2
+            self.frequency_stop = frequency_center + frequency_deviation / 2
+        else:
+            raise SyntaxError("Must provide either f_start & f_stop or "
+                              "f_center and f_deviation")
+
+        if frequency_final is not None:
+            self.frequency_final = frequency_final
+        else:
+            self.frequency_final = frequency_stop
+
         self.amplitude = amplitude
+        self.power = power
+
+    @property
+    def frequency_center(self):
+        return (self.frequency_start + self.frequency_stop) / 2
+
+    @frequency_center.setter
+    def frequency_center(self, frequency_center):
+        frequency_deviation = self.frequency_deviation
+        self.frequency_start = frequency_center - frequency_deviation / 2
+        self.frequency_stop = frequency_center + frequency_deviation / 2
+
+    @property
+    def frequency_deviation(self):
+        return abs(self.frequency_start - self.frequency_stop)
+
+    @frequency_deviation.setter
+    def frequency_deviation(self, frequency_deviation):
+        frequency_center = self.frequency_center
+        self.frequency_start = frequency_center - frequency_deviation / 2
+        self.frequency_stop = frequency_center + frequency_deviation / 2
 
     def __repr__(self):
         properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, A={}, ' \
@@ -234,13 +332,13 @@ class FrequencyRampPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
-        if t == self.t_start:
-            return self.amplitude_start
-        elif t == self.t_stop:
-            return self.amplitude_final
-        else:
-            raise NotImplementedError("Voltage not yet implemented")
+    # def get_voltage(self, t):
+    #     if t == self.t_start:
+    #         return self.amplitude_start
+    #     elif t == self.t_stop:
+    #         return self.amplitude_final
+    #     else:
+    #         raise NotImplementedError("Voltage not yet implemented")
 
 
 class DCPulse(Pulse):
