@@ -15,6 +15,8 @@ cPB1 = layout.add_connection(output_arg='pulseblaster.ch1',
 cPB2 = layout.add_connection(output_arg='pulseblaster.ch2',
                              input_arg='keysight.trig_in',
                              trigger=True)
+cPB3 = layout.add_connection(output_arg='pulseblaster.ch3',
+                             input_arg='ATS.chB')
 cPB4 = layout.add_connection(output_arg='pulseblaster.ch4',
                              input_arg='ATS.trig_in',
                              trigger=True)

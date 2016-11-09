@@ -48,6 +48,10 @@ class ArbStudio1104Interface(InstrumentInterface):
                            parameter_class=ManualParameter,
                            units='us',
                            initial_value=0.1)
+        self.add_parameter('final_delay',
+                           parameter_class=ManualParameter,
+                           units='us',
+                           initial_value=10)
 
         self.add_parameter('active_channels',
                            get_cmd=self._get_active_channels)
@@ -91,6 +95,10 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def get_final_additional_pulses(self):
         final_pulses = []
+
+        # Return empty list if no pulses are in the pulse sequence
+        if not self._pulse_sequence:
+            return final_pulses
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
@@ -281,6 +289,9 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, is_primary=is_primary, **kwargs)
 
+        # Set final delay from interface parameter
+        targeted_pulse.final_delay = interface.final_delay()
+
         # Check if there are already trigger pulses
         trigger_pulses = interface.input_pulse_sequence().get_pulses(
             t_start=pulse.t_start, trigger=True
@@ -299,8 +310,7 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             )
         return targeted_pulse
 
-    def implement(self, sampling_rates, input_pulse_sequence,
-                  t_final_delay=0.001, **kwargs):
+    def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
@@ -325,7 +335,8 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             "Cannot implement DC ramp pulse if the arbstudio receives " \
             "intermediary triggers"
 
-        t_list = {ch: np.arange(self.t_start, self.t_stop - t_final_delay,
+        t_list = {ch: np.arange(self.t_start, self.t_stop -
+                                self.final_delay * 1e-3,
                                 1 / sampling_rates[ch] * 1e3)
                   for ch in
                   sampling_rates}

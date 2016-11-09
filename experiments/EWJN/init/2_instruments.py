@@ -72,3 +72,5 @@ keysight = Keysight_E8267D('keysight','TCPIP0::192.168.0.5::inst0::INSTR',
                            server_name='' if USE_MP else None)
 interfaces['keysight'] = get_instrument_interface(keysight)
 interfaces['keysight'].modulation_channel('ext2')
+interfaces['keysight'].envelope_padding(0.2)
+keysight.power(10)
