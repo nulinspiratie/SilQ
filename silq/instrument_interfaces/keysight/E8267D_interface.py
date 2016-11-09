@@ -143,8 +143,8 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
 
         # Add an envelope pulse with some padding on both sides.
         targeted_pulse.additional_pulses.extend((
-            MarkerPulse(t_start=pulse.t_start - interface.envelope_padding(),
-                        t_stop=pulse.t_stop + interface.envelope_padding(),
+            MarkerPulse(t_start=pulse.t_start - interface.envelope_padding()/2,
+                        t_stop=pulse.t_stop + interface.envelope_padding()/2,
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'}
