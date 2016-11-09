@@ -431,14 +431,12 @@ class MarkerPulse(Pulse):
 
 
 class MeasurementPulse(Pulse):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
             self.t_start, self.duration)
-
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
