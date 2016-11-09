@@ -120,6 +120,8 @@ class ELR_Parameter(MeasurementParameter):
         self.t_skip = 0.1
         self.t_read = 20
 
+        self.analysis = analysis.analyse_ELR
+
         self._meta_attrs.extend(['t_skip', 't_read'])
 
     def setup(self, samples=None, t_skip=None, t_read=None, **kwargs):
@@ -148,7 +150,7 @@ class ELR_Parameter(MeasurementParameter):
         self.trace_segments = {ch_label: self.segment_trace(trace)
                                for ch_label, trace in self.traces.items()}
 
-        fidelities = analysis.analyse_ELR(
+        fidelities = self.analysis(
             trace_segments=self.trace_segments['output'],
             sample_rate=self.layout.sample_rate(),
             t_skip=self.t_skip,
@@ -173,27 +175,40 @@ class AdiabaticSweep_Parameter(ELR_Parameter):
     def __init__(self, layout, **kwargs):
         super().__init__(layout=layout, **kwargs)
         self.name = 'adiabatic_sweep'
-        self.label = 'Adiabatic sweep'
+        self.label = 'Adiabatic sweep center frequency'
 
         frequency_center = 20e9  # Hz
         frequency_deviation = 10e6  # Hz
         power = 10  # dBm
 
+        self.pulse_sequence.clear()
+        load_pulse = DCPulse(name='load', amplitude=1.5,
+                             duration=10, acquire=True)
+        read_pulse = DCPulse(name='read', amplitude=0,
+                              duration=50, acquire=True)
+        final_pulse = DCPulse(name='final', amplitude=0,
+                              duration=2)
         ESR_pulse = FrequencyRampPulse(name='adiabatic_sweep', power=power,
                                        t_start=9, duration=0.2,
                                        frequency_center=frequency_center,
                                        frequency_deviation=frequency_deviation
                                        )
+        pulses = [load_pulse, read_pulse, final_pulse,ESR_pulse]
+        self.pulse_sequence.add(pulses)
 
-        self.pulse_sequence.add(ESR_pulse)
+        self.analysis = analysis.analyse_LR
+
+    def setup(self, **kwargs):
+        super().setup(**kwargs)
+        self.names = ['fidelity_load', 'fidelity_read',
+                      'up_proportion', 'dark_counts', 'contrast']
+        self.labels = self.names
+        self.shapes = ((), (), (), (), ())
 
     def set(self, frequency_center):
         # Change center frequency
         self.pulse_sequence['adiabatic_sweep'].frequency_center = \
             frequency_center
-        #TODO smarter solution for final frequency
-        self.pulse_sequence['adiabatic_sweep'].frequency_final = \
-            self.pulse_sequence['adiabatic_sweep'].frequency_start
 
         self.setup()
 
