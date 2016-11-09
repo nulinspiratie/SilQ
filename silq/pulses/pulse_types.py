@@ -182,8 +182,9 @@ class Pulse:
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
                 properties_str  += '\n\t{}'.format(pulse_repr)
 
-        return '{pulse_type}({properties})'.format(
-            pulse_type=self.__class__.__name__, properties=properties_str)
+        return '{pulse_type}({name}, {properties})'.format(
+            pulse_type=self.__class__.__name__,
+            name=self.name, properties=properties_str)
 
     def copy(self):
         pulse_copy = copy.deepcopy(self)
@@ -283,7 +284,7 @@ class SinePulse(Pulse):
 class FrequencyRampPulse(Pulse):
     def __init__(self, frequency_start=None, frequency_stop=None,
                  frequency_center=None, frequency_deviation=None,
-                 frequency_final=None, amplitude=None, power=None, **kwargs):
+                 frequency_final='stop', amplitude=None, power=None, **kwargs):
         super().__init__(**kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
@@ -296,10 +297,7 @@ class FrequencyRampPulse(Pulse):
             raise SyntaxError("Must provide either f_start & f_stop or "
                               "f_center and f_deviation")
 
-        if frequency_final is not None:
-            self.frequency_final = frequency_final
-        else:
-            self.frequency_final = frequency_stop
+        self._frequency_final = frequency_final
 
         self.amplitude = amplitude
         self.power = power
@@ -323,6 +321,19 @@ class FrequencyRampPulse(Pulse):
         frequency_center = self.frequency_center
         self.frequency_start = frequency_center - frequency_deviation / 2
         self.frequency_stop = frequency_center + frequency_deviation / 2
+
+    @property
+    def frequency_final(self):
+        if self._frequency_final == 'start':
+            return self.frequency_start
+        elif self._frequency_final == 'stop':
+            return self.frequency_stop
+        else:
+            return self._frequency_final
+
+    @frequency_final.setter
+    def frequency_final(self, frequency_final):
+        self._frequency_final = frequency_final
 
     def __repr__(self):
         properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, A={}, ' \
@@ -367,7 +378,6 @@ class DCRampPulse(Pulse):
 
         self.amplitude_start = amplitude_start
         self.amplitude_stop = amplitude_stop
-
 
     def __repr__(self):
         properties_str = 'A_start={}, A_stop={}, t_start={}, t_stop={}'.format(
