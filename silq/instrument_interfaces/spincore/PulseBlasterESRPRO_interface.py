@@ -27,7 +27,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             )
         ]
 
-    def setup(self, **kwargs):
+    def setup(self, final_instruction='loop', **kwargs):
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
         # Factor of 2 needed because apparently the core clock is not the same
@@ -78,9 +78,17 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                                      wait_cycles)
                     t += wait_duration
 
-                total_channel_value = 0
-                self.instrument.send_instruction(total_channel_value,
-                                                 'branch', 0, 50)
+                if final_instruction == 'loop':
+                    total_channel_value = 0
+                    self.instrument.send_instruction(total_channel_value,
+                                                     'branch', 0, 50)
+                elif final_instruction == 'stop':
+                    self.instrument.send_instruction(0,'stop', 0, 50)
+                elif final_instruction == 'wait':
+                    self.instrument.send_instruction(0,'wait', 0, 50)
+                else:
+                    raise SyntaxError("Do not understand final instruction "
+                                      "{}".format(final_instruction))
 
         self.instrument.stop_programming()
 
