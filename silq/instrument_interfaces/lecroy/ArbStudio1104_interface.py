@@ -299,7 +299,8 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             )
         return targeted_pulse
 
-    def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
+    def implement(self, sampling_rates, input_pulse_sequence,
+                  t_final_delay=0.001, **kwargs):
         """
         Implements the DC pulses for the ArbStudio for SingleConnection and
         CombinedConnection. For a CombinedConnection, it weighs the DC pulses
@@ -324,7 +325,7 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             "Cannot implement DC ramp pulse if the arbstudio receives " \
             "intermediary triggers"
 
-        t_list = {ch: np.arange(self.t_start, self.t_stop,
+        t_list = {ch: np.arange(self.t_start, self.t_stop - t_final_delay,
                                 1 / sampling_rates[ch] * 1e3)
                   for ch in
                   sampling_rates}

@@ -225,6 +225,31 @@ def analyse_ELR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     return (fidelity_empty, fidelity_load, fidelity_read,
             up_proportion, dark_counts, contrast)
 
+def analyse_LR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
+    start_idx = round(t_skip * 1e-3 * sample_rate)
+    read_pts = round(t_read * 1e-3 * sample_rate)
+
+    fidelity_load = analyse_load(trace_segments['load'], plot=plot)
+
+    _,_,threshold_voltage = find_high_low(trace_segments['read'], plot=plot)
+
+    if threshold_voltage is None:
+        return (fidelity_load, 0, 0, 0, 0)
+    else:
+        read_segment1 = trace_segments['read'][:,:read_pts]
+        read_segment2 = trace_segments['read'][:,-read_pts:]
+
+        up_proportion, _, fidelity_read = \
+            analyse_read(read_segment1, start_idx=start_idx,
+                         threshold_voltage=threshold_voltage)
+        dark_counts, _, _ = analyse_read(read_segment2,
+                                         start_idx=start_idx,
+                                         threshold_voltage=threshold_voltage)
+        contrast = up_proportion - dark_counts
+
+    return (fidelity_load, fidelity_read,
+            up_proportion, dark_counts, contrast)
+
 def analyse_ELRLR(trace_segments, start_idx=0, plot=False):
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
     fidelity_load = analyse_load(trace_segments['load1'], plot=plot)
