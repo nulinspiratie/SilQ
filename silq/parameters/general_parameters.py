@@ -83,7 +83,6 @@ class StoreParameter(Parameter):
         self.data_manager = data_manager
         self.setup(formatter=formatter)
 
-
     def setup(self, formatter=None):
         data_array_set = DataArray(name='set_vals',
                                    shape=(self.shape[0],),
@@ -121,3 +120,25 @@ class StoreParameter(Parameter):
         self.data_manager.write('store_data', loop_indices, ids_values)
         self.data_manager.write('finalize_data')
         return result
+
+
+class AttributeParameter(Parameter):
+    def __init__(self, object, attribute, **kwargs):
+        """
+        Creates a parameter that can set/get an attribute from an object
+        Args:
+            object: object whose attribute to set/get
+            attribute: attribute to set/get
+            **kwargs: Other parameter kwargs
+        """
+        name = kwargs.pop('name', attribute)
+        super().__init__(name=name, **kwargs)
+
+        self.object = object
+        self.attribute = attribute
+
+    def set(self, value):
+        setattr(self.object, self.attribute, value)
+
+    def get(self):
+        return getattr(self.object, self.attribute)
