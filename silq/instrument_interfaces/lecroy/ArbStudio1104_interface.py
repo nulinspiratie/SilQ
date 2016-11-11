@@ -214,7 +214,6 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.waveforms
 
 
-
 class DCPulseImplementation(PulseImplementation, DCPulse):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
@@ -280,6 +279,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                      for ch in channels}
 
         return waveforms, sequences
+
 
 class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
     def __init__(self, **kwargs):
@@ -356,7 +356,9 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
         sequences = {ch: np.zeros(1, dtype=int) for ch in channels}
         return waveforms, sequences
 
+
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
+    # TODO add implement method
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
