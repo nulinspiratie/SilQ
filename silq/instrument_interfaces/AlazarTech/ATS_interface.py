@@ -7,7 +7,8 @@ from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.tools import get_instrument_class
-from silq.pulses import MeasurementPulse, TriggerPulse, PulseImplementation
+from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
+    PulseImplementation
 
 
 class ATSInterface(InstrumentInterface):
@@ -130,6 +131,9 @@ class ATSInterface(InstrumentInterface):
             acquisition_controller_name)
         if cls_name is None:
             cls_name = get_instrument_class(acquisition_controller)
+        # Remove _AcquisitionController from cls_name
+        cls_name = cls_name.replace('_AcquisitionController', '')
+
         self.acquisition_controllers[cls_name] = acquisition_controller
 
     def get_final_additional_pulses(self):
@@ -150,14 +154,21 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_settings.clear()
 
         if self.acquisition_mode() == 'trigger':
-            self.acquisition_controller = self.acquisition_controllers[
-                'Triggered_AcquisitionController']
+            acquisition_controller_name = 'Triggered'
         elif self.acquisition_mode() == 'continuous':
-            self.acquisition_controller = self.acquisition_controllers[
-                'Continuous_AcquisitionController']
+            if self._pulse_sequence.get_pulse(
+                    pulse_class=SteeredInitialization) is not None:
+                # Use steered initialization
+                acquisition_controller_name = 'SteeredInitialization'
+            else:
+                acquisition_controller_name = 'Continuous'
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
+
+        self.acquisition_controller = \
+            self.acquisition_controllers[acquisition_controller_name]
+
 
         if samples is not None:
             self.samples(samples)
@@ -339,3 +350,22 @@ class ATSInterface(InstrumentInterface):
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
         self._acquisition_settings.update(**acquisition_settings)
+
+
+class SteeredInitializationImplementation(SteeredInitialization,
+                                          PulseImplementation):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=SteeredInitialization,
+                                     **kwargs)
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, **kwargs)
+        return targeted_pulse
+
+    def implement(self, interface):
+        interface.acquisition_controller.t_max_wait(self.t_max_wait)
+        interface.acquisition_controller.t_no_blip(self.t_no_blip)
+
+        # TODO add
+        pass
