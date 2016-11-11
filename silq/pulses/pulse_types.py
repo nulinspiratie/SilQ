@@ -235,6 +235,19 @@ class Pulse:
             'This method should be implemented in a subclass')
 
 
+class SteeredInitialization(Pulse):
+    def __init__(self, t_no_blip, t_max_wait=300, **kwargs):
+        super().__init__(t_start=0, duration=0, **kwargs)
+
+        self.t_no_blip = t_no_blip
+        self.t_max_wait = t_max_wait
+
+    def __repr__(self):
+        properties_str = 't_no_blip={} ms, t_max_wait={}'.format(
+            self.t_no_blip, self.t_max_wait)
+        return super()._get_repr(properties_str)
+
+
 class SinePulse(Pulse):
     def __init__(self, frequency, amplitude, phase=0, **kwargs):
         super().__init__(**kwargs)
@@ -370,6 +383,7 @@ class DCPulse(Pulse):
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         return self.amplitude
+
 
 class DCRampPulse(Pulse):
     def __init__(self, amplitude_start, amplitude_stop,
