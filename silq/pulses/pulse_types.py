@@ -190,7 +190,8 @@ class Pulse:
         pulse_copy = copy.deepcopy(self)
         return pulse_copy
 
-    def satisfies_conditions(self, t_start=None, t_stop=None, duration=None,
+    def satisfies_conditions(self, pulse_class=None,
+                             t_start=None, t_stop=None, duration=None,
                              acquire=None, connection=None, amplitude=None):
         """
         Checks if pulse satisfies certain conditions.
@@ -208,6 +209,8 @@ class Pulse:
         Returns:
             Bool depending on if all conditions are satisfied.
         """
+        if pulse_class is not None and not isinstance(self, pulse_class):
+            return False
 
         for property in pulse_conditions:
 
