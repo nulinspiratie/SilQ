@@ -226,7 +226,7 @@ class PulseSequence:
         pulses = self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
-                            if k in self.pulse_conditions}
+                            if k in self.pulse_conditions + ['pulse_class']}
         pulses = [pulse for pulse in pulses
                   if pulse.satisfies_conditions(**pulse_conditions)]
 
