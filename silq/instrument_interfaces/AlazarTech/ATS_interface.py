@@ -149,26 +149,27 @@ class ATSInterface(InstrumentInterface):
                              )
         return [acquisition_trigger_pulse]
 
-    def setup(self, samples=None, average_mode=None, **kwargs):
+    def setup(self, samples=None, average_mode=None, connections=None,
+              readout_threshold_voltage=None,
+              **kwargs):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
         if self.acquisition_mode() == 'trigger':
-            acquisition_controller_name = 'Triggered'
+            self.acquisition_controller_name = 'Triggered'
         elif self.acquisition_mode() == 'continuous':
             if self._pulse_sequence.get_pulse(
                     pulse_class=SteeredInitialization) is not None:
                 # Use steered initialization
-                acquisition_controller_name = 'SteeredInitialization'
+                self.acquisition_controller_name = 'SteeredInitialization'
             else:
-                acquisition_controller_name = 'Continuous'
+                self.acquisition_controller_name = 'Continuous'
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()))
 
         self.acquisition_controller = \
-            self.acquisition_controllers[acquisition_controller_name]
-
+            self.acquisition_controllers[self.acquisition_controller_name]
 
         if samples is not None:
             self.samples(samples)
@@ -179,7 +180,9 @@ class ATSInterface(InstrumentInterface):
 
         self.setup_trigger()
         self.setup_ATS()
-        self.setup_acquisition_controller()
+        self.setup_acquisition_controller(
+            connections=connections,
+            readout_threshold_voltage=readout_threshold_voltage)
 
         # Update acquisition metadata
         self.acquisition.names = self.acquisition_controller.acquisition.names
@@ -238,23 +241,51 @@ class ATSInterface(InstrumentInterface):
                              coupling='DC')
         self.instrument.config(**self._configuration_settings)
 
-    def setup_acquisition_controller(self):
-        t_start = min(pulse.t_start for pulse in self._pulse_sequence)
-        t_stop = max(pulse.t_stop for pulse in self._pulse_sequence)
+    def setup_acquisition_controller(self, connections=None,
+                                     readout_threshold_voltage=None):
+        # Get duration of acquisition. Use flag acquire=True because
+        # otherwise initialization Pulses would be taken into account as well
+        t_start = min(pulse.t_start for pulse in
+                      self._pulse_sequence.get_pulses(acquire=True))
+        t_stop = max(pulse.t_stop for pulse in
+                     self._pulse_sequence.get_pulses(acquire=True))
         acquisition_duration = t_stop - t_start
 
         sample_rate = self.setting('sample_rate')
-        samples_per_record = sample_rate * acquisition_duration * 1e-3
-        samples_per_record = int(16 * np.ceil(float(samples_per_record) / 16))
-        # TODO Allow variable records_per_buffer
-        records_per_buffer = 1
-        buffers_per_acquisition = self.samples()
-        self.update_settings(samples_per_record=samples_per_record,
-                             records_per_buffer=records_per_buffer,
-                             buffers_per_acquisition=buffers_per_acquisition)
+        samples_per_trace = sample_rate * acquisition_duration * 1e-3
+        # samples_per_record must be a multiple of 16
+        samples_per_trace = int(16 * np.ceil(float(samples_per_trace) / 16))
+        if self.acquisition_controller_name == 'Triggered':
+            # TODO Allow variable records_per_buffer
+            records_per_buffer = 1
+            buffers_per_acquisition = self.samples()
+            self.update_settings(samples_per_record=samples_per_trace,
+                                 records_per_buffer=records_per_buffer,
+                                 buffers_per_acquisition=buffers_per_acquisition)
 
-        buffer_timeout = max(20000, 3.1*self._pulse_sequence.duration)
-        self.update_settings(buffer_timeout=buffer_timeout) # ms
+            buffer_timeout = max(20000, 3.1*self._pulse_sequence.duration)
+            self.update_settings(buffer_timeout=buffer_timeout) # ms
+
+        elif self.acquisition_controller_name == 'Continuous':
+            # records_per_buffer and buffers_per_acquisition are fixed
+            self._acquisition_settings.pop('records_per_buffer', None)
+            self._acquisition_settings.pop('buffers_per_acquisition', None)
+            
+            self.acquisition_controller.samples_per_trace(samples_per_trace)
+
+
+        elif self.acquisition_controller_name == 'SteeredInitialization':
+            initialization = self._pulse_sequence.get_pulse(initialize=True)
+            samples_per_buffer = sample_rate * initialization.t_buffer * 1e-3
+            # samples_per_record must be a multiple of 16
+            samples_per_buffer = int(16 * np.ceil(float(samples_per_buffer) / 16))
+            self.update_settings()
+            initialization.implement(
+                interface=self, connections=connections,
+                readout_threshold_voltage=readout_threshold_voltage)
+        else:
+            raise Exception("Cannot setup {} acquisition controller".format(
+                self.acquisition_controller_name))
 
         # Set acquisition channels setting
         # Channel_selection must be a sorted string of acquisition channel ids
@@ -363,9 +394,36 @@ class SteeredInitializationImplementation(SteeredInitialization,
             self, pulse, interface=interface, **kwargs)
         return targeted_pulse
 
-    def implement(self, interface):
-        interface.acquisition_controller.t_max_wait(self.t_max_wait)
-        interface.acquisition_controller.t_no_blip(self.t_no_blip)
+    def implement(self, interface, connections, readout_threshold_voltage):
+        acquisition_controller = interface.acquisition_controller
+        acquisition_controller.t_max_wait(self.t_max_wait)
+        acquisition_controller.t_no_blip(self.t_no_blip)
 
-        # TODO add
-        pass
+        readout_connection = [
+            connection for connection in connections if
+            connection.satisfies_conditions(output_arg='chip.output')]
+        assert len(readout_connection) == 1, \
+            "No unique readout connection: {}".format(readout_connection)
+        readout_connection = readout_connection[0]
+        readout_channel_id = readout_connection.input['channel'].id
+
+
+        trigger_connection = [
+            connection for connection in connections if
+            connection.satisfies_conditions(output_arg='chip.output',
+                                            input_channel=['chA', 'chB',
+                                                           'chC', 'chD'],
+                                            trigger=True)]
+        assert len(trigger_connection) == 1, \
+            "No unique triggerconnection: {}".format(trigger_connection)
+        trigger_connection = trigger_connection[0]
+        trigger_channel_id = trigger_connection.input['channel'].id
+        TTL_voltages = trigger_connection.output['channel'].output_TTL
+        trigger_threshold_voltage = (TTL_voltages[0] + TTL_voltages[1]) / 2
+
+        acquisition_controller.readout_channel(readout_channel_id)
+        acquisition_controller.trigger_channel(trigger_channel_id)
+        acquisition_controller.trigger_threshold_voltage(trigger_threshold_voltage)
+        acquisition_controller.readout_threshold_voltage(readout_threshold_voltage)
+
+

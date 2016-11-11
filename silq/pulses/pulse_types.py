@@ -6,13 +6,14 @@ from silq.tools.general_tools import get_truth
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'connection',
-                    'amplitude']
+pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
+                    'connection', 'amplitude']
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
                  t_stop=None, duration=None,
-                 acquire=False, connection=None, connection_requirements={}):
+                 acquire=False, initialize=False,
+                 connection=None, connection_requirements={}):
         self.name = name
 
         self._t_start = t_start
@@ -25,6 +26,7 @@ class Pulse:
         self.previous_pulse = previous_pulse
 
         self.acquire = acquire
+        self.initialize = initialize
         self.connection = connection
 
         # List of potential connection requirements.
@@ -192,7 +194,8 @@ class Pulse:
 
     def satisfies_conditions(self, pulse_class=None,
                              t_start=None, t_stop=None, duration=None,
-                             acquire=None, connection=None, amplitude=None):
+                             acquire=None, initialize=None, connection=None,
+                             amplitude=None):
         """
         Checks if pulse satisfies certain conditions.
         Each kwarg is a condition, and can be a value (equality testing) or it
@@ -239,15 +242,16 @@ class Pulse:
 
 
 class SteeredInitialization(Pulse):
-    def __init__(self, t_no_blip, t_max_wait=300, **kwargs):
-        super().__init__(t_start=0, duration=0, **kwargs)
+    def __init__(self, t_no_blip, t_max_wait=300, t_buffer=0.4, **kwargs):
+        super().__init__(t_start=0, duration=0, initialize=True, **kwargs)
 
         self.t_no_blip = t_no_blip
         self.t_max_wait = t_max_wait
+        self.t_buffer = t_buffer
 
     def __repr__(self):
-        properties_str = 't_no_blip={} ms, t_max_wait={}'.format(
-            self.t_no_blip, self.t_max_wait)
+        properties_str = 't_no_blip={} ms, t_max_wait={}, t_buffer={}'.format(
+            self.t_no_blip, self.t_max_wait, self.t_buffer)
         return super()._get_repr(properties_str)
 
 
