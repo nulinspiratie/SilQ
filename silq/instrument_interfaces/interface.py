@@ -53,7 +53,8 @@ class InstrumentInterface(Instrument):
 
         return self._channels[channel_name]
 
-    def get_pulse_implementation(self, pulse, is_primary=False):
+    def get_pulse_implementation(self, pulse, connections=None,
+                                 is_primary=False):
         """
         Get a target implementation of a pulse if the instrument is capable
         of implementing the pulse. Whether or not it is capable depends on if
@@ -67,8 +68,8 @@ class InstrumentInterface(Instrument):
         """
         for pulse_implementation in self.pulse_implementations:
             if pulse_implementation.satisfies_requirements(pulse):
-                return pulse_implementation.target_pulse(pulse, self,
-                                                         is_primary=is_primary)
+                return pulse_implementation.target_pulse(
+                    pulse, self, connections=connections, is_primary=is_primary)
         else:
             return None
 
