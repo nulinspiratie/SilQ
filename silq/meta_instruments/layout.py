@@ -474,7 +474,9 @@ class Connection:
                              output_channel=None, output_interface=None,
                              **kwargs):
         """
-        Checks if this connection satisfies conditions
+        Checks if this connection satisfies conditions. Note that all
+        instrument/channel args can also be lists of elements. If so,
+        condition is satisfied if connection property is in list
         Args:
             output_arg: Connection must have output 'instrument.channel'
             output_interface: Connection must have output_interface
@@ -497,26 +499,39 @@ class Connection:
         if input_interface is not None:
             input_instrument = input_interface.instrument_name()
 
-        if isinstance(output_channel, Channel):
-            output_channel = output_channel.name
-        if isinstance(input_channel, Channel):
-            input_channel = input_channel.name
+        # Change instruments and channels into lists
+        if not (output_instrument is None or type(output_instrument) is list):
+            output_instrument = [output_instrument]
+        if not (input_instrument is None or type(input_instrument) is list):
+            input_instrument = [input_instrument]
+        if not (output_channel is None or type(output_channel) is list):
+            output_channel = [output_channel]
+        if not (input_channel is None or type(input_channel) is list):
+            input_channel = [input_channel]
+
+        # If channel is an object, convert to its name
+        if output_channel is not None:
+            output_channel = [ch.name if isinstance(ch, Channel) else ch
+                              for ch in output_channel]
+        if input_channel is not None:
+            input_channel = [ch.name if isinstance(ch, Channel) else ch
+                              for ch in input_channel]
 
         # Test conditions
         if (output_instrument is not None) and \
-                (self.output['instrument'] != output_instrument):
+                (self.output['instrument'] not in output_instrument):
             return False
         elif (output_channel is not None) and \
-                (('channel' not in self.output) or \
-                 (self.output['channel'].name != output_channel)):
+                (('channel' not in self.output) or
+                 (self.output['channel'].name not in output_channel)):
             return False
         elif (input_instrument is not None) and \
-                (('instrument' not in self.input) or \
-                 (self.input['instrument'] != input_instrument)):
+                (('instrument' not in self.input) or
+                 (self.input['instrument'] not in input_instrument)):
             return False
         elif (input_channel is not None) and \
-                (('channel' not in self.input) or \
-                 (self.input['channel'].name != input_channel)):
+                (('channel' not in self.input) or
+                 (self.input['channel'].name not in input_channel)):
             return False
         else:
             return True
