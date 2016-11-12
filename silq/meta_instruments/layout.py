@@ -116,10 +116,14 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def get_connections(self, **conditions):
+    def get_connections(self, connection=None, **conditions):
         """
         Returns all connections that satisfy given kwargs
         Args:
+            connection: Specific connection to be checked. If the connection
+                is in layout.connections, it returns a list with the connection.
+                Can be useful when pulse.connection_requirements needs a
+                specific connection
             output_interface: Connections must have output_interface
             output_instrument: Connections must have output_instrument name
             output_channel: Connections must have output_channel
@@ -130,8 +134,16 @@ class Layout(Instrument):
         Returns:
             Connections that satisfy kwarg constraints
         """
-        return [connection for connection in self.connections
-                if connection.satisfies_conditions(**conditions)]
+        if connection is not None:
+            # Check if connection is in connections.
+            if connection in self.connections:
+                return [connection]
+            else:
+                raise RuntimeError("Connection {} not found int "
+                                   "connections".format(connection))
+        else:
+            return [connection for connection in self.connections
+                    if connection.satisfies_conditions(**conditions)]
 
     def get_connection(self, **conditions):
         """
@@ -229,7 +241,7 @@ class Layout(Instrument):
             is_primary = self.primary_instrument() == \
                          interface.instrument_name()
             pulse_implementation = interface.get_pulse_implementation(
-                pulse, is_primary=is_primary)
+                pulse, connections=self.connections, is_primary=is_primary)
 
             # Skip to next interface if there is no pulse implementation
             if pulse_implementation is None:
