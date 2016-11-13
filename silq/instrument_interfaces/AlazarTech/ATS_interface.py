@@ -88,6 +88,7 @@ class ATSInterface(InstrumentInterface):
                            initial_value='trace',
                            vals=vals.Enum('none', 'trace', 'point'))
 
+        # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
                            parameter_class=ManualParameter,
                            initial_value=[],
@@ -172,6 +173,7 @@ class ATSInterface(InstrumentInterface):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
+        # Determine the acquisition controller to use
         if self.acquisition_mode() == 'trigger':
             self.acquisition_controller_name = 'Triggered'
         elif self.acquisition_mode() == 'continuous':
@@ -310,6 +312,10 @@ class ATSInterface(InstrumentInterface):
             initialization.implement(
                 interface=self,
                 readout_threshold_voltage=readout_threshold_voltage)
+            for channel in [initialization.trigger_channel,
+                            initialization.readout_channel]:
+                assert channel.name in self.acquisition_channels(), \
+                    "Channel {} must be in acquisition channels".format(channel)
 
             self.acquisition_controller.samples_per_trace(samples_per_trace)
             self.acquisition_controller.traces_per_acquisition(self.samples())
@@ -449,15 +455,15 @@ class SteeredInitializationImplementation(SteeredInitialization,
         acquisition_controller.t_no_blip(self.t_no_blip)
 
         # Setup readout channel and threshold voltage
-        readout_channel_id = self.readout_connection.input['channel'].id
-        acquisition_controller.readout_channel(readout_channel_id)
+        self.readout_channel = self.readout_connection.input['channel']
+        acquisition_controller.readout_channel(self.readout_channel.id)
         acquisition_controller.readout_threshold_voltage(
             readout_threshold_voltage)
 
         # Setup trigger channel and threshold voltage
-        trigger_channel_id = self.trigger_connection.input['channel'].id
+        self.trigger_channel = self.trigger_connection.input['channel']
         TTL_voltages = self.trigger_connection.output['channel'].output_TTL
         trigger_threshold_voltage = (TTL_voltages[0] + TTL_voltages[1]) / 2
-        acquisition_controller.trigger_channel(trigger_channel_id)
+        acquisition_controller.trigger_channel(self.trigger_channel.id)
         acquisition_controller.trigger_threshold_voltage(
             trigger_threshold_voltage)
