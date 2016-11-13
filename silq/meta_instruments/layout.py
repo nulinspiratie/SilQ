@@ -361,8 +361,7 @@ class Layout(Instrument):
     def target_pulse_sequence(self, pulse_sequence):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
-            interface.pulse_sequence('clear')
-            interface.input_pulse_sequence('clear')
+            interface.initialize()
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -409,7 +408,10 @@ class Layout(Instrument):
                     # Instrument Flag exists, and values match
                     pass
 
-    def setup(self, samples=None, average_mode=None):
+    def setup(self, samples=None, average_mode=None, **kwargs):
+        # Ensure all instruments are stopped
+        self.stop()
+
         # Initialize with empty flags, used for instructions between interfaces
         self.flags = {instrument: {} for instrument in self.instruments()}
 
@@ -428,7 +430,7 @@ class Layout(Instrument):
 
                 flags = interface.setup(samples=self.samples(),
                                         average_mode=average_mode,
-                                        **setup_flags)
+                                        **setup_flags, **kwargs)
                 if flags:
                     self.update_flags(flags)
 
