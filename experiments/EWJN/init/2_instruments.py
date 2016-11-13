@@ -62,9 +62,14 @@ continuous_controller = Continuous_AcquisitionController(
     name='continuous_controller',
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
+steered_controller = Continuous_AcquisitionController(
+    name='steered_initialization_controller',
+    alazar_name='ATS',
+    server_name='Alazar_server' if USE_MP else None)
 interfaces['ATS'] = get_instrument_interface(ATS)
 interfaces['ATS'].add_acquisition_controller('triggered_controller')
 interfaces['ATS'].add_acquisition_controller('continuous_controller')
+interfaces['ATS'].add_acquisition_controller('steered_initialization_controller')
 
 
 ### MW source

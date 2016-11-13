@@ -16,7 +16,8 @@ cPB2 = layout.add_connection(output_arg='pulseblaster.ch2',
                              input_arg='keysight.trig_in',
                              trigger=True)
 cPB3 = layout.add_connection(output_arg='pulseblaster.ch3',
-                             input_arg='ATS.chB')
+                             input_arg='ATS.chB',
+                             trigger=True)
 cPB4 = layout.add_connection(output_arg='pulseblaster.ch4',
                              input_arg='ATS.trig_in',
                              trigger=True)
@@ -40,6 +41,12 @@ cESR = layout.add_connection(output_arg='keysight.RF_out',
 # Chip output connection
 layout.add_connection(output_arg='chip.output',
                       input_arg='ATS.chA')
+
+# ATS software connection
+layout.add_connection(output_arg='ATS.software_trig_out',
+                      input_arg='pulseblaster.software_trig_in',
+                      software=True, trigger=True)
+
 
 # Specify acquisition channels
 layout.acquisition_outputs([('chip.output', 'output'),
