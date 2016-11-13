@@ -84,7 +84,6 @@ class Layout(Instrument):
         for output_arg, output_label in self.acquisition_outputs():
             # Use try/except in case not all connections exist
             try:
-                acquisition_instrument = self.acquisition_instrument()
                 connection = self.get_connection(
                     output_arg=output_arg,
                     input_instrument=self.acquisition_instrument())
