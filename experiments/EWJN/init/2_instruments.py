@@ -1,7 +1,8 @@
 # Load instruments
 from qcodes.instrument_drivers.AlazarTech.ATS9440 import ATS9440
 from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
-    Triggered_AcquisitionController, Continuous_AcquisitionController
+    Triggered_AcquisitionController, Continuous_AcquisitionController, \
+    SteeredInitialization_AcquisitionController
 from qcodes.instrument_drivers.keysight.E8267D import Keysight_E8267D
 from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
 from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
@@ -62,14 +63,19 @@ continuous_controller = Continuous_AcquisitionController(
     name='continuous_controller',
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
-steered_controller = Continuous_AcquisitionController(
+steered_controller = SteeredInitialization_AcquisitionController(
     name='steered_initialization_controller',
+    target_instrument=pulseblaster,
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
+steered_controller.silent(False)
+steered_controller.record_initialization_traces(True)
+
 interfaces['ATS'] = get_instrument_interface(ATS)
 interfaces['ATS'].add_acquisition_controller('triggered_controller')
 interfaces['ATS'].add_acquisition_controller('continuous_controller')
 interfaces['ATS'].add_acquisition_controller('steered_initialization_controller')
+interfaces['ATS'].default_acquisition_controller('Triggered')
 
 
 ### MW source

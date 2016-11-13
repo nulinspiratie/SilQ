@@ -20,7 +20,8 @@ cPB3 = layout.add_connection(output_arg='pulseblaster.ch3',
                              trigger=True)
 cPB4 = layout.add_connection(output_arg='pulseblaster.ch4',
                              input_arg='ATS.trig_in',
-                             trigger=True)
+                             trigger=True,
+                             default=True)
 
 # Arbstudio output connections
 cArb1 = layout.add_connection(output_arg='arbstudio.ch1',
@@ -50,4 +51,5 @@ layout.add_connection(output_arg='ATS.software_trig_out',
 
 # Specify acquisition channels
 layout.acquisition_outputs([('chip.output', 'output'),
-                            ('arbstudio.ch3', 'pulses')])
+                            ('arbstudio.ch3', 'pulses'),
+                            ('pulseblaster.ch3', 'trigger')])
