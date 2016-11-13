@@ -118,6 +118,15 @@ class InstrumentInterface(Instrument):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
+    def initialize(self):
+        """
+        This method gets called at the start of targeting a pulse sequence
+        Returns:
+            None
+        """
+        self.pulse_sequence('clear')
+        self.input_pulse_sequence('clear')
+
     def setup(self):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
