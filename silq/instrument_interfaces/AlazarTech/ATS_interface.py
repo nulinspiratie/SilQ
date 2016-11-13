@@ -138,6 +138,7 @@ class ATSInterface(InstrumentInterface):
 
     def get_final_additional_pulses(self):
         if not self._pulse_sequence.get_pulses(acquire=True):
+            # No pulses need to be acquired
             return []
         elif self.trigger_mode() == 'trigger':
             # Add a single trigger pulse when starting acquisition
@@ -208,6 +209,12 @@ class ATSInterface(InstrumentInterface):
         self.acquisition.units = self.acquisition_controller.acquisition.units
         self.acquisition.shapes = self.acquisition_controller.acquisition.shapes
 
+        if self.acquisition_controller_name == 'SteeredInitialization':
+            # Add instruction for target instrument setup and to skip start
+            target_instrument = self.acquisition_controller.target_instrument()
+            return {target_instrument: {'skip_start': True,
+                                        'setup': {'final_instruction': 'stop'}}}
+
     def setup_trigger(self):
         if self.acquisition_mode() == 'trigger':
             if self.trigger_channel() == 'trig_in':
@@ -247,6 +254,9 @@ class ATSInterface(InstrumentInterface):
             else:
                 print('Cannot setup ATS trigger because there are no '
                       'acquisition pulses')
+        elif self.acquisition_mode() == 'continuous':
+            # No triggering necessary
+            pass
         else:
             raise Exception('Acquisition mode {} not implemented'.format(
                 self.acquisition_mode()
@@ -309,6 +319,7 @@ class ATSInterface(InstrumentInterface):
             self.update_settings(samples_per_record=samples_per_buffer,
                                  allocated_buffers=allocated_buffers)
 
+            # Setup acquisition controller settings through initialization pulse
             initialization.implement(
                 interface=self,
                 readout_threshold_voltage=readout_threshold_voltage)
@@ -462,7 +473,7 @@ class SteeredInitializationImplementation(SteeredInitialization,
 
         # Setup trigger channel and threshold voltage
         self.trigger_channel = self.trigger_connection.input['channel']
-        TTL_voltages = self.trigger_connection.output['channel'].output_TTL
+        TTL_voltages = self.trigger_channel.output_TTL
         trigger_threshold_voltage = (TTL_voltages[0] + TTL_voltages[1]) / 2
         acquisition_controller.trigger_channel(self.trigger_channel.id)
         acquisition_controller.trigger_threshold_voltage(
