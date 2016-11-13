@@ -585,7 +585,7 @@ class Connection:
 class SingleConnection(Connection):
     def __init__(self, output_instrument, output_channel,
                  input_instrument, input_channel,
-                 trigger=False, acquire=False, **kwargs):
+                 trigger=False, acquire=False, software=False, **kwargs):
         """
         Class representing a connection between instrument channels.
 
@@ -598,6 +598,7 @@ class SingleConnection(Connection):
             trigger (bool): Sets the output channel to trigger the input
                 instrument
             acquire (bool): Sets if this connection is used for acquisition
+            software (bool): Sets if this connection is a software connection
             default (bool): Sets if this connection is the default for pulses
         """
         # TODO add optionality of having multiple channels connected.
@@ -618,6 +619,7 @@ class SingleConnection(Connection):
         # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
+        self.software = software
 
     def __repr__(self):
         output_str = "Connection{{{}.{}->{}.{}}}(".format(
@@ -629,10 +631,13 @@ class SingleConnection(Connection):
             output_str += ', default'
         if self.acquire:
             output_str += ', acquire'
+        if self.software:
+            output_str += ', software'
         output_str += ')'
         return output_str
 
-    def satisfies_conditions(self, trigger=None, acquire=None, **kwargs):
+    def satisfies_conditions(self, trigger=None, acquire=None, software=None,
+                             **kwargs):
         """
         Checks if this connection satisfies conditions
         Args:
@@ -650,6 +655,8 @@ class SingleConnection(Connection):
         elif trigger is not None and self.trigger != trigger:
             return False
         elif acquire is not None and self.acquire != acquire:
+            return False
+        elif software is not None and self.software != software:
             return False
         else:
             return True

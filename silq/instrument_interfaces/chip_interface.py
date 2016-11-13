@@ -8,11 +8,11 @@ class ChipInterface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
-            'output': Channel(instrument_name=self.name,
+            'output': Channel(instrument_name=self.instrument_name(),
                               name='output',
                               output=True)}
         self._input_channels = {
-            channel_name: Channel(instrument_name=self.name,
+            channel_name: Channel(instrument_name=self.instrument_name(),
                                   name=channel_name,
                                   input=True)
                                for channel_name in ['TGAC', 'DF', 'ESR']}
