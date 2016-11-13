@@ -176,6 +176,11 @@ class Layout(Instrument):
         Returns:
             Hierarchically sorted list of interfaces
         """
+
+        # Set acquisition interface as first interface
+        if not sorted_interfaces:
+            sorted_interfaces = [self.acquisition_interface]
+
         # Find all interfaces that have not been sorted yet
         remaining_interfaces = {
             instrument: interface
@@ -333,7 +338,7 @@ class Layout(Instrument):
 
         for connection in connections:
             targeted_pulse = interface.get_pulse_implementation(
-                pulse, is_primary=is_primary)
+                pulse, is_primary=is_primary, connections=self.connections)
 
             # Add connection to pulse, and add any pulse modifications
             connection.target_pulse(targeted_pulse)

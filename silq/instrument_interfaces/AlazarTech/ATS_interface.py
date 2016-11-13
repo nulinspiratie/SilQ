@@ -36,8 +36,7 @@ class ATSInterface(InstrumentInterface):
             'trig_in':  Channel(instrument_name=self.instrument_name(),
                                 name='trig_in', input_trigger=True),
             'software_trig_out': Channel(instrument_name=self.instrument_name(),
-                                         name='software_trig_out',
-                                         output_trigger=True)}
+                                         name='software_trig_out')}
 
         self.pulse_implementations = [
             SteeredInitializationImplementation(
@@ -149,7 +148,7 @@ class ATSInterface(InstrumentInterface):
         if not self._pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
-        elif self.trigger_mode() == 'trigger':
+        elif self.acquisition_mode() == 'trigger':
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self._pulse_sequence.get_pulses(acquire=True))
@@ -158,7 +157,7 @@ class ATSInterface(InstrumentInterface):
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True})
-        elif self.trigger_mode() == 'continuous':
+        elif self.acquisition_mode() == 'continuous':
             # TODO add possibility of continuous acquisition having correct
             # timing even if it should acquire for the entire duration of the
             #  pulse sequence.
@@ -166,15 +165,14 @@ class ATSInterface(InstrumentInterface):
                           self._pulse_sequence.get_pulses(acquire=True))
             t_stop = max(pulse.t_stop for pulse in
                          self._pulse_sequence.get_pulses(acquire=True))
-            if t_start != 0 or t_stop != self._pulse_sequence.duration:
-                # Add a marker high for readout stage
-                # Get steered initialization pulse
-                initialization = self._pulse_sequence.get_pulse(initialize=True)
+            # Add a marker high for readout stage
+            # Get steered initialization pulse
+            initialization = self._pulse_sequence.get_pulse(initialize=True)
 
-                acquisition_pulse = MarkerPulse(
-                    t_start=t_start, t_stop=t_stop,
-                    connection_requirements={
-                        'connection': initialization.trigger_connection})
+            acquisition_pulse = MarkerPulse(
+                t_start=t_start, t_stop=t_stop,
+                connection_requirements={
+                    'connection': initialization.trigger_connection})
         return [acquisition_pulse]
 
     def setup(self, samples=None, average_mode=None, connections=None,
@@ -467,6 +465,9 @@ class SteeredInitializationImplementation(SteeredInitialization,
         assert len(trigger_connection) == 1, \
             "No unique triggerconnection: {}".format(trigger_connection)
         targeted_pulse.trigger_connection = trigger_connection[0]
+
+        # Force ATS acquisition mode to be continuous
+        interface.acquisition_mode('continuous')
         return targeted_pulse
 
     def implement(self, interface, readout_threshold_voltage):
