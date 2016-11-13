@@ -117,7 +117,8 @@ class ATSInterface(InstrumentInterface):
 
     @property
     def _acquisition_controller(self):
-        return self.acquisition_controllers[self.acquisition_controller()]
+        return self.acquisition_controllers.get(
+            self.acquisition_controller(), None)
 
     def add_acquisition_controller(self, acquisition_controller_name,
                                    cls_name=None):
@@ -281,13 +282,13 @@ class ATSInterface(InstrumentInterface):
 
         sample_rate = self.setting('sample_rate')
         samples_per_trace = sample_rate * acquisition_duration * 1e-3
-        # samples_per_record must be a multiple of 16
-        samples_per_trace = int(16 * np.ceil(float(samples_per_trace) / 16))
         if self.acquisition_controller() == 'Triggered':
+            # samples_per_record must be a multiple of 16
+            samples_per_record = int(16 * np.ceil(float(samples_per_trace) / 16))
             # TODO Allow variable records_per_buffer
             records_per_buffer = 1
             buffers_per_acquisition = self.samples()
-            self.update_settings(samples_per_record=samples_per_trace,
+            self.update_settings(samples_per_record=samples_per_record,
                                  records_per_buffer=records_per_buffer,
                                  buffers_per_acquisition=buffers_per_acquisition)
         elif self.acquisition_controller() == 'Continuous':
@@ -299,6 +300,8 @@ class ATSInterface(InstrumentInterface):
             allocated_buffers = 20
             self.update_settings(allocated_buffers=allocated_buffers)
 
+            # samples_per_trace must be a multiple of samples_per_record
+            samples_per_trace = int(16 * np.ceil(float(samples_per_trace) / 16))
             self._acquisition_controller.samples_per_trace(samples_per_trace)
             self._acquisition_controller.traces_per_acquisition(self.samples())
         elif self.acquisition_controller() == 'SteeredInitialization':
@@ -327,6 +330,9 @@ class ATSInterface(InstrumentInterface):
                 assert channel.name in self.acquisition_channels(), \
                     "Channel {} must be in acquisition channels".format(channel)
 
+            # samples_per_trace must be a multiple of samples_per_buffer
+            samples_per_trace = int(samples_per_buffer * np.ceil(
+                float(samples_per_trace) / samples_per_buffer))
             self._acquisition_controller.samples_per_trace(samples_per_trace)
             self._acquisition_controller.traces_per_acquisition(self.samples())
         else:
