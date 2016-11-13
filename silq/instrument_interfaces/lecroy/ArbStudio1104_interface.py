@@ -11,20 +11,18 @@ class ArbStudio1104Interface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
-            'ch{}'.format(k): Channel(instrument_name=self.name,
-                                      name='ch{}'.format(k), id=k,
-                                      output=True) for k in [1, 2, 3, 4]}
-        self._trigger_in_channel = Channel(instrument_name=self.name,
-                                          name='trig_in',
-                                          input_trigger=True)
-        self._trigger_out_channel = Channel(instrument_name=self.name,
-                                           name='trig_out',
-                                           output_TTL=(0, 3.3))
-        # TODO check Arbstudio output TTL high
+            'ch{}'.format(k):
+                Channel(instrument_name=self.instrument_name(),
+                        name='ch{}'.format(k), id=k,
+                        output=True) for k in [1, 2, 3, 4]}
 
-        self._channels = {**self._output_channels,
-                         'trig_in': self._trigger_in_channel,
-                         'trig_out': self._trigger_out_channel}
+        self._channels = {
+            **self._output_channels,
+            'trig_in': Channel(instrument_name=self.instrument_name(),
+                               name='trig_in', input_trigger=True),
+            'trig_out': Channel(instrument_name=self.instrument_name(),
+                                name='trig_out', output_TTL=(0, 3.3))}
+        # TODO check Arbstudio output TTL high
 
         self.pulse_implementations = [
             # TODO implement SinePulse

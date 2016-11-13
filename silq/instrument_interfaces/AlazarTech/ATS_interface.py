@@ -20,21 +20,30 @@ class ATSInterface(InstrumentInterface):
 
         # Define channels
         self._acquisition_channels = {
-            'ch'+idx: Channel(instrument_name=self.name,
+            'ch'+idx: Channel(instrument_name=self.instrument_name(),
                                name='ch'+idx,
                                id=idx, input=True)
             for idx in ['A', 'B', 'C', 'D']}
-        self._trigger_in_channel = Channel(instrument_name=self.name,
-                                           name='trig_in',
-                                           input_trigger=True)
-        self._aux_channels = {'aux'+idx: Channel(instrument_name=self.name,
-                                                 name='aux'+idx,
-                                                 input_TTL=True,
-                                                 output_TTL=(0,5))
+        self._aux_channels = {'aux'+idx: Channel(
+            instrument_name=self.instrument_name(),
+            name='aux'+idx,
+            input_TTL=True,
+            output_TTL=(0,5))
                              for idx in ['1', '2']}
-        self._channels = {**self._acquisition_channels,
-                         **self._aux_channels,
-                         'trig_in': self._trigger_in_channel}
+        self._channels = {
+            **self._acquisition_channels,
+            **self._aux_channels,
+            'trig_in':  Channel(instrument_name=self.instrument_name(),
+                                name='trig_in', input_trigger=True),
+            'software_trig_out': Channel(instrument_name=self.instrument_name(),
+                                         name='software_trig_out',
+                                         output_trigger=True)}
+
+        self.pulse_implementations = [
+            SteeredInitializationImplementation(
+                pulse_requirements=[]
+            )
+        ]
 
         # Organize acquisition controllers
         self.acquisition_controllers = {}
@@ -213,7 +222,7 @@ class ATSInterface(InstrumentInterface):
             # Add instruction for target instrument setup and to skip start
             target_instrument = self.acquisition_controller.target_instrument()
             return {target_instrument: {'skip_start': True,
-                                        'setup': {'final_instruction': 'stop'}}}
+                                        'setup': {'final_instruction': 'wait'}}}
 
     def setup_trigger(self):
         if self.acquisition_mode() == 'trigger':

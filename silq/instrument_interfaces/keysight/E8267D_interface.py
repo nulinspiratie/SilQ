@@ -12,22 +12,22 @@ class E8267DInterface(InstrumentInterface):
 
         # Initialize channels
         self._input_channels = {
-            'ext1': Channel(instrument_name=self.name,
+            'ext1': Channel(instrument_name=self.instrument_name(),
                             name='ext1', input=True),
-            'ext2': Channel(instrument_name=self.name,
+            'ext2': Channel(instrument_name=self.instrument_name(),
                             name='ext2', input=True)
         }
         self._output_channels = {
-            'RF_out': Channel(instrument_name=self.name,
+            'RF_out': Channel(instrument_name=self.instrument_name(),
                               name='RF_out', output=True),
         }
 
         self._channels = {
             **self._input_channels,
             **self._output_channels,
-            'trig_in': Channel(instrument_name=self.name,
+            'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in', input=True),
-            'pattern_trig_in': Channel(instrument_name=self.name,
+            'pattern_trig_in': Channel(instrument_name=self.instrument_name(),
                                        name='pattern_trig_in', input=True)
         }
 
