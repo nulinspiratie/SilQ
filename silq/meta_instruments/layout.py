@@ -372,7 +372,42 @@ class Layout(Instrument):
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
+    def update_flags(self, new_flags):
+        """
+        Updates existing flags with new flags. Flags are instructions sent
+        to interfaces, usually from other interfaces to modify the usual
+        operations. Examples are skip_start, setup kwargs, etc.
+        Args:
+            new_flags: {instrument: {flag: val}} dict
+
+        Returns:
+            None
+        """
+        for instrument, new_instrument_flags in new_flags.items():
+            instrument_flags = self.flags[instrument]
+            for flag, val in new_instrument_flags.items():
+                if flag not in instrument_flags:
+                    # New instrument flag is not yet in existing flags,
+                    # add it to the existing flags
+                    instrument_flags[flag] = val
+                elif type(val) is dict:
+                    # New instrument flag is already in existing flags,
+                    # but the value is a dict. Update existing flag dict with
+                    #  new dict
+                    instrument_flags[flag].update(val)
+                elif not instrument_flags[flag] == val:
+                    raise RuntimeError(
+                        "Instrument {} flag {} already exists, but val {} does "
+                        "not match existing val {}".format(
+                            instrument, val, instrument_flags[flag]))
+                else:
+                    # Instrument Flag exists, and values match
+                    pass
+
     def setup(self, samples=None, average_mode=None):
+        # Initialize with empty flags, used for instructions between interfaces
+        self.flags = {instrument: {} for instrument in self.instruments()}
+
         if samples is not None:
             self.samples(samples)
 
@@ -382,8 +417,15 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence():
-                interface.setup(samples=self.samples(),
-                                average_mode=average_mode)
+                # Get existing setup flags (if any)
+                instrument_flags = self.flags[interface.instrument_name()]
+                setup_flags = instrument_flags.get('setup', {})
+
+                flags = interface.setup(samples=self.samples(),
+                                        average_mode=average_mode,
+                                        **setup_flags)
+                if flags:
+                    self.update_flags(flags)
 
         # Setup acquisition parameter metadata
         # Set acquisition names and labels to equal output labels
@@ -399,6 +441,10 @@ class Layout(Instrument):
     def start(self):
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
+                continue
+            elif self.flags[interface.instrument_name()].get('skip_start',
+                                                             False):
+                # Interface has a flag to skip start
                 continue
             else:
                 interface.start()
