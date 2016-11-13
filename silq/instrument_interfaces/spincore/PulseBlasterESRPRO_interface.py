@@ -12,11 +12,15 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         self._output_channels = {
             # Measured output TTL is half of 3.3V
-            'ch{}'.format(k): Channel(instrument_name=self.name,
+            'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
                                       name='ch{}'.format(k), id=k,
                                       output_TTL=(0, 3.3/2))
             for k in [1, 2, 3, 4]}
-        self._channels = {**self._output_channels}
+        self._channels = {
+            **self._output_channels,
+            'software_trig_in': Channel(instrument_name=self.instrument_name(),
+                                        name='software_trig_in',
+                                        input_trigger=True)}
 
         self.pulse_implementations = [
             TriggerPulseImplementation(
