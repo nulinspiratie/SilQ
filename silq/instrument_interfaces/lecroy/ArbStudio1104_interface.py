@@ -91,7 +91,7 @@ class ArbStudio1104Interface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self):
+    def get_final_additional_pulses(self, **kwargs):
         final_pulses = []
 
         # Return empty list if no pulses are in the pulse sequence

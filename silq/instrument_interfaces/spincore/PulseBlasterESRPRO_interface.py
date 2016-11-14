@@ -1,7 +1,8 @@
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
-from silq.pulses import DCPulse, TriggerPulse, MarkerPulse, PulseImplementation
+from silq.pulses import DCPulse, TriggerPulse, MarkerPulse, TriggerWaitPulse, \
+    PulseImplementation
 
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
@@ -51,6 +52,15 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t = 0
             t_stop_max = max(self._pulse_sequence.t_stop_list)
             while t < t_stop_max:
+                # Check for input pulses, such as waiting for software trigger
+                # TODO check for better way to check active input pulses
+                active_input_pulses = [pulse for pulse
+                                       in self._input_pulse_sequence
+                                       if pulse.t_start == t]
+                for input_pulse in active_input_pulses:
+                    if isinstance(input_pulse,TriggerWaitPulse):
+                        self.instrument.send_instruction(0,'wait', 0, 50)
+
                 # Segment remaining pulses into next pulses and others
                 active_pulses = [pulse for pulse in self._pulse_sequence
                                  if pulse.t_start <= t < pulse.t_stop]
@@ -67,7 +77,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Send wait instruction until next event
                 wait_duration = t_next - t
                 wait_cycles = round(wait_duration * ms)
-
+                print('total_channel_value: {}'.format(total_channel_value))
                 self.instrument.send_instruction(total_channel_value,
                                                  'continue', 0, wait_cycles)
                 t += wait_duration
@@ -82,17 +92,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                                      wait_cycles)
                     t += wait_duration
 
-                if final_instruction == 'loop':
-                    total_channel_value = 0
-                    self.instrument.send_instruction(total_channel_value,
-                                                     'branch', 0, 50)
-                elif final_instruction == 'stop':
-                    self.instrument.send_instruction(0,'stop', 0, 50)
-                elif final_instruction == 'wait':
-                    self.instrument.send_instruction(0,'wait', 0, 50)
-                else:
-                    raise SyntaxError("Do not understand final instruction "
-                                      "{}".format(final_instruction))
+                self.instrument.send_instruction(0, 'branch', 0, 50)
 
         self.instrument.stop_programming()
 
@@ -102,7 +102,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self):
+    def get_final_additional_pulses(self, **kwargs):
         return []
 
 

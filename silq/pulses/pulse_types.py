@@ -103,7 +103,6 @@ class Pulse:
             # All attributes must match
             return self._matches_attrs(other)
 
-
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -127,7 +126,6 @@ class Pulse:
             if not attr == 'previous_pulse':
                 return_dict[attr] = val
         return return_dict
-
 
     @property
     def t_start(self):
@@ -459,6 +457,18 @@ class MarkerPulse(Pulse):
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
         return self.amplitude
+
+
+class TriggerWaitPulse(Pulse):
+
+    def __init__(self, t_start, **kwargs):
+        super().__init__(t_start=t_start, duration=0, **kwargs)
+
+    def __repr__(self):
+        properties_str = 't_start={}'.format(
+            self.t_start, self.duration)
+
+        return super()._get_repr(properties_str)
 
 
 class MeasurementPulse(Pulse):
