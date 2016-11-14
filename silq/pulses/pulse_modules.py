@@ -87,6 +87,14 @@ class PulseSequence:
     def __bool__(self):
         return len(self.pulses) > 0
 
+    def __contains__(self, item):
+        if isinstance(item, str):
+            pulses = [pulse for pulse in self.pulses if pulse.name == item]
+            return len(pulses) > 0
+        else:
+            return item in self.pulses
+
+
     def __repr__(self):
         output = 'PulseSequence with {} pulses, duration: {}\n'.format(
             len(self.pulses), self.duration)
@@ -189,6 +197,36 @@ class PulseSequence:
                         # First pulse, therefore start at t=0
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
+
+        self.sort()
+
+    def remove(self, pulses):
+        """
+        Adds pulse(s) to the PulseSequence.
+        Pulses can be a list of pulses or a single pulse.
+        It performs the following additional checks before adding a pulse
+        - If the pulse overlaps with other pulses and
+            PulseSequence.allow_pulses_overlap is False, it raises a SyntaxError
+        - If the pulses are untargeted and PulseSequence.allow_untargeted_pulses
+            is False, it raises a SyntaxError
+        - If the pulses are targeted and PulseSequence.allow_targeted_pulses
+            is False, it raises a SyntaxError
+        Args:
+            pulses: pulse or list of pulses to add
+
+        Returns:
+            None
+        """
+        if not isinstance(pulses, list):
+            pulses = [pulses]
+
+        for pulse in pulses:
+            if isinstance(pulse, str):
+                pulses_name = [p for p in self.pulses if p.name==pulse]
+                assert len(pulses_name) == 1, 'No unique pulse named {}, found {} ' \
+                                        'pulses'.format(pulse, len(pulses_name))
+                pulse = pulses_name[0]
+            self.pulses.remove(pulse)
 
         self.sort()
 
