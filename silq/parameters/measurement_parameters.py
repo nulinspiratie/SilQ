@@ -5,7 +5,8 @@ from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data import hdf5_format
 h5fmt = hdf5_format.HDF5Format()
 
-from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse
+from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
+    SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
 
@@ -49,8 +50,11 @@ class MeasurementParameter(Parameter):
             idx += self.pts[pulse.name]
         return trace_segments
 
-    def store_traces(self, traces):
+    def store_traces(self, traces, name=None):
         # Store raw traces if raw_data_manager is provided
+        if name is None:
+            name = self.name
+
         # Pause until data_manager is done measuring
         while self.data_manager.ask('get_measuring'):
             sleep(0.01)
@@ -182,21 +186,39 @@ class AdiabaticSweep_Parameter(ELR_Parameter):
         power = 10  # dBm
 
         self.pulse_sequence.clear()
-        load_pulse = DCPulse(name='load', amplitude=1.5,
+        self._load_pulse = DCPulse(name='load', amplitude=1.5,
                              duration=10, acquire=True)
-        read_pulse = DCPulse(name='read', amplitude=0,
+        self._read_pulse = DCPulse(name='read', amplitude=0,
                               duration=50, acquire=True)
-        final_pulse = DCPulse(name='final', amplitude=0,
+        self._final_pulse = DCPulse(name='final', amplitude=0,
                               duration=2)
-        ESR_pulse = FrequencyRampPulse(name='adiabatic_sweep', power=power,
-                                       t_start=9, duration=0.2,
-                                       frequency_center=frequency_center,
-                                       frequency_deviation=frequency_deviation
-                                       )
-        pulses = [load_pulse, read_pulse, final_pulse,ESR_pulse]
+        self._ESR_pulse = FrequencyRampPulse(
+            name='adiabatic_sweep',
+            power=power,
+            t_start=9, duration=0.2,
+            frequency_center=frequency_center,
+            frequency_deviation=frequency_deviation)
+        self._steered_initialization = SteeredInitialization(
+            name='steered_initialization',
+            t_no_blip=30, t_max_wait=200, t_buffer=20)
+        pulses = [self._load_pulse, self._read_pulse, self._final_pulse,
+                  self._ESR_pulse, self._steered_initialization]
         self.pulse_sequence.add(pulses)
 
         self.analysis = analysis.analyse_LR
+
+    @property
+    def steered_initialization(self):
+        return 'steered_initialization' in self.pulse_sequence
+
+    @steered_initialization.setter
+    def steered_initialization(self, use_steered_initialization):
+        if use_steered_initialization and \
+                'steered_initialization' not in self.pulse_sequence:
+            self.pulse_sequence.add(self.steered_initialization)
+        elif not use_steered_initialization and \
+                'steered_in itialization' in self.pulse_sequence:
+            self.pulse_sequence.remove('steered_initialization')
 
     def setup(self, **kwargs):
         super().setup(**kwargs)
