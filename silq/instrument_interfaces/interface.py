@@ -114,7 +114,7 @@ class InstrumentInterface(Instrument):
             raise Exception(
                 'Pulse sequence command {} not understood'.format(val))
 
-    def get_final_additional_pulses(self):
+    def get_final_additional_pulses(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 

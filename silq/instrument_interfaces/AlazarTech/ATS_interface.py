@@ -9,7 +9,7 @@ from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.tools import get_instrument_class
 from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
-    MarkerPulse, PulseImplementation
+    MarkerPulse, TriggerWaitPulse, PulseImplementation
 
 
 class ATSInterface(InstrumentInterface):
@@ -41,6 +41,9 @@ class ATSInterface(InstrumentInterface):
 
         self.pulse_implementations = [
             SteeredInitializationImplementation(
+                pulse_requirements=[]
+            ),
+            TriggerWaitPulseImplementation(
                 pulse_requirements=[]
             )
         ]
@@ -151,7 +154,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_final_additional_pulses(self):
+    def get_final_additional_pulses(self, pulse_sequence):
         if not self._pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -164,6 +167,7 @@ class ATSInterface(InstrumentInterface):
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True})
+            return [acquisition_pulse]
         elif self.acquisition_controller() == 'Continuous':
             raise NotImplementedError("Continuous mode not implemented")
         elif self.acquisition_controller() == 'SteeredInitialization':
@@ -182,7 +186,12 @@ class ATSInterface(InstrumentInterface):
                 t_start=t_start, t_stop=t_stop,
                 connection_requirements={
                     'connection': initialization.trigger_connection})
-        return [acquisition_pulse]
+            trigger_wait_pulse = TriggerWaitPulse(
+                t_start=pulse_sequence.duration,
+                connection_requirements={
+                    'output_arg': 'ATS.software_trig_out'})
+
+            return [acquisition_pulse, trigger_wait_pulse]
 
     def initialize(self):
         """
@@ -219,8 +228,7 @@ class ATSInterface(InstrumentInterface):
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
             target_instrument = self._acquisition_controller.target_instrument()
-            return {target_instrument: {'skip_start': True,
-                                        'setup': {'final_instruction': 'wait'}}}
+            return {target_instrument: {'skip_start': True}}
 
     def setup_trigger(self):
         if self.acquisition_controller() == 'Triggered':
@@ -313,7 +321,7 @@ class ATSInterface(InstrumentInterface):
             initialization = self._pulse_sequence.get_pulse(initialize=True)
 
             # TODO better way to decide on allocated buffers
-            allocated_buffers = 20
+            allocated_buffers = 100
 
             samples_per_buffer = sample_rate * initialization.t_buffer * 1e-3
             # samples_per_record must be a multiple of 16
@@ -492,3 +500,22 @@ class SteeredInitializationImplementation(SteeredInitialization,
         acquisition_controller.trigger_channel(self.trigger_channel.id)
         acquisition_controller.trigger_threshold_voltage(
             trigger_threshold_voltage)
+
+
+class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=TriggerWaitPulse,
+                                     **kwargs)
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, **kwargs)
+
+        # Verify that acquisition controller is SteeredInitialization
+        if not interface.acquisition_controller() == 'SteeredInitialization':
+            raise RuntimeError('ATS interface acquisition controller is not '
+                               'SteeredInitialization')
+        return targeted_pulse
+
+        def implement(self, interface, **kwargs):
+            pass

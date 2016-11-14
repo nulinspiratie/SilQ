@@ -14,14 +14,15 @@ interfaces = {}
 
 
 ### SIM900
-SIM900 = SIM900('SIM900', 'GPIB0::4::INSTR',server_name='')
+SIM900 = SIM900('SIM900', 'GPIB0::4::INSTR',server_name='' if USE_MP else None)
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 DC_sources = [('TG',1,8,18), ('LB',2,4,8), ('RB',3,4,8), ('TGAC',4,5,4),
          ('SRC',5,1,1), ('DS',7,4,3.2), ('DF',6,4,3.2)]
 SIM900_scaled_parameters = []
 for ch_name, ch, ratio,max_voltage in DC_sources:
     SIM900.define_slot(channel=ch, name=ch_name+'_raw', max_voltage=max_voltage)
-    SIM900.update()
+    if USE_MP:
+        SIM900.update()
     param_raw = SIM900.parameters[ch_name+'_raw']
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name, ratio=ratio)
     SIM900_scaled_parameters.append(param)
@@ -54,21 +55,18 @@ interfaces['chip'] = get_instrument_interface(chip)
 
 
 ### ATS
-from qcodes.instrument.server import InstrumentServerManager
-InstrumentServerManager('Alazar_server', {'target_instrument':pulseblaster})
-print('1')
+if USE_MP:
+    from qcodes.instrument.server import InstrumentServerManager
+    InstrumentServerManager('Alazar_server', {'target_instrument':pulseblaster})
 ATS = ATS9440('ATS', server_name='Alazar_server' if USE_MP else None)
-print('2')
 triggered_controller = Triggered_AcquisitionController(
     name='triggered_controller',
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
-print('3')
 continuous_controller = Continuous_AcquisitionController(
     name='continuous_controller',
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
-print('4')
 steered_controller = SteeredInitialization_AcquisitionController(
     name='steered_initialization_controller',
     target_instrument=pulseblaster,
@@ -76,14 +74,12 @@ steered_controller = SteeredInitialization_AcquisitionController(
     server_name='Alazar_server' if USE_MP else None)
 steered_controller.silent(False)
 steered_controller.record_initialization_traces(True)
-print('5')
 
 interfaces['ATS'] = get_instrument_interface(ATS)
 interfaces['ATS'].add_acquisition_controller('triggered_controller')
 interfaces['ATS'].add_acquisition_controller('continuous_controller')
 interfaces['ATS'].add_acquisition_controller('steered_initialization_controller')
 interfaces['ATS'].default_acquisition_controller('Triggered')
-print('6')
 
 
 ### MW source
