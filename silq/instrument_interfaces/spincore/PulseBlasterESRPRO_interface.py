@@ -77,7 +77,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Send wait instruction until next event
                 wait_duration = t_next - t
                 wait_cycles = round(wait_duration * ms)
-                print('total_channel_value: {}'.format(total_channel_value))
                 self.instrument.send_instruction(total_channel_value,
                                                  'continue', 0, wait_cycles)
                 t += wait_duration

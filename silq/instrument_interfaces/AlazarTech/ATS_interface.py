@@ -321,7 +321,7 @@ class ATSInterface(InstrumentInterface):
             initialization = self._pulse_sequence.get_pulse(initialize=True)
 
             # TODO better way to decide on allocated buffers
-            allocated_buffers = 100
+            allocated_buffers = 20
 
             samples_per_buffer = sample_rate * initialization.t_buffer * 1e-3
             # samples_per_record must be a multiple of 16
