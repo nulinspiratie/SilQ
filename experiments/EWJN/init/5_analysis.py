@@ -136,7 +136,7 @@ class T1_Measurement:
 
         ax.set_xscale("log")
         ax.set_xlim([0.9 * self.T1_wait_times[0], 1.1 * self.T1_wait_times[-1]])
-        ax.set_ylim([0, 0.55])
+        ax.set_ylim([0, 1])
 
         ax.set_xlabel('Wait time (ms)')
         ax.set_ylabel('Up population')
