@@ -256,6 +256,8 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.plunge_duration=5
 
             self.pulse_sequence.clear()
+            #empty_pulse = DCPulse(name='empty', amplitude=-1.5,
+                                  t_start=0, duration=5, acquire=True)
             self._adiabatic_plunge_pulse = DCPulse(name='adiabatic_plunge',
                                                    amplitude=1.5,
                                        duration=2, acquire=True)
@@ -278,6 +280,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             pulses = [self._steered_initialization,
                       self._adiabatic_plunge_pulse,
                       self._ESR_pulse,
+                      #empty_pulse,
                       self._plunge_pulse,
                       self._read_pulse,
                       self._final_pulse]
