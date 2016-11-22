@@ -363,7 +363,8 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_controller.set_acquisition_settings(
             **self._acquisition_settings)
         self._acquisition_controller.average_mode(self.average_mode())
-        self._acquisition_controller.setup()
+        self._acquisition_controller.setup(
+            readout_threshold_voltage=readout_threshold_voltage)
 
     def start(self):
         pass
