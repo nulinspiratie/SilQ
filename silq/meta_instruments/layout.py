@@ -483,6 +483,7 @@ class Layout(Instrument):
 
         return sorted_signals
 
+
 class Connection:
     def __init__(self, default=False,
                  pulse_modifiers=None):
