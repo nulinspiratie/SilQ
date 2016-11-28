@@ -352,10 +352,11 @@ class ATSInterface(InstrumentInterface):
         channel_ids = ''.join(sorted(
             [self._channels[ch].id for ch in self.acquisition_channels()]))
         if len(channel_ids) == 3:
-            logging.warning("ATS cannot be configured with three acquisition "
-                            "channels {}, setting to ABCD".format(channel_ids))
+            # TODO add 'silent' mode
+            # logging.warning("ATS cannot be configured with three acquisition "
+            #                 "channels {}, setting to ABCD".format(channel_ids))
             channel_ids = 'ABCD'
-        buffer_timeout = max(20000, 3.1 * self._pulse_sequence.duration)
+        buffer_timeout = int(max(20000, 3.1 * self._pulse_sequence.duration))
         self.update_settings(channel_selection=channel_ids,
                              buffer_timeout=buffer_timeout)  # ms
 
