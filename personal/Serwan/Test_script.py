@@ -6,25 +6,47 @@ if __name__ == "__main__":
 
     silq.initialize("EWJN")
 
-    ELR_parameter.setup(samples=50)
-    ELR_parameter()
-    traces_read = ELR_parameter.trace_segments['output']['read']
-    _, _, threshold_voltage = analysis.find_high_low(traces_read, plot=True)
+    frequency_center = 25.175e9
 
-    steered_initialization = SteeredInitialization(
-        name='steered_initialization',
-        t_no_blip=20, t_max_wait=500, t_buffer=40)
-    load_pulse = DCPulse(name='load', amplitude=1.5,
-                         duration=5, acquire=True)
-    read_pulse = DCPulse(name='read', amplitude=0,
-                         duration=50, acquire=True)
-    final_pulse = DCPulse(name='final', amplitude=0,
-                          duration=2)
-    pulses = [steered_initialization, load_pulse, read_pulse, final_pulse]
-    pulse_sequence = PulseSequence(pulses=pulses)
+    EPR_parameter.setup(samples=50)
+    EPR_parameter()
+    traces_read = EPR_parameter.trace_segments['output']['read']
+    _, _, threshold_voltage = analysis.find_high_low(traces_read)
+    assert threshold_voltage is not None, "Couldn't find accurate threshold"
+    print('Threshold voltage found at {:.2f} V'.format(threshold_voltage))
 
-    layout.target_pulse_sequence(pulse_sequence)
 
-    layout.setup(samples=10,
-                 readout_threshold_voltage=threshold_voltage)
-    result = layout.do_acquisition(return_dict=True)
+    T1_parameter.pulse_sequence['steered_initialization'].enabled = False
+
+    T1_parameter.pulse_sequence['plunge'].amplitude = 1.8
+
+    T1_parameter.pulse_sequence['adiabatic_sweep'].enabled = True
+    T1_parameter.pulse_sequence[
+        'adiabatic_sweep'].frequency_center = frequency_center
+    T1_parameter.pulse_sequence['adiabatic_sweep'].frequency_deviation = 10e6
+    T1_parameter.pulse_sequence['adiabatic_sweep'].t_start = 1
+    T1_parameter.pulse_sequence['adiabatic_sweep'].duration = 0.2
+
+    T1_parameter.pulse_sequence['read'].duration = 20
+
+    T1_parameter.setup(threshold_voltage, samples=3)
+    T1_parameter(10)
+    T1_parameter.print_results = True
+
+    up_proportion, number_traces_loaded = T1_parameter()
+    print('\n\n*** Starting summary')
+    from pympler import tracker
+    memory_tracker = tracker.SummaryTracker()
+
+    up_proportion, number_traces_loaded = T1_parameter()
+    print('\n\n*** Printing diff')
+    memory_tracker.print_diff()
+
+
+    T1_parameter.setup(threshold_voltage, samples=1000)
+    T1_parameter(10)
+    T1_parameter.print_results = True
+
+    up_proportion, number_traces_loaded = T1_parameter()
+    print('\n\n*** Printing diff')
+    memory_tracker.print_diff()
