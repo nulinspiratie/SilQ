@@ -10,6 +10,7 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
 from silq.analysis import analysis
 from silq.tools import data_tools
 
+
 class MeasurementParameter(Parameter):
     def __init__(self, layout, formatter=h5fmt, **kwargs):
         super().__init__(**kwargs)
@@ -18,22 +19,22 @@ class MeasurementParameter(Parameter):
 
         self.formatter = formatter
 
-        self.print_flag = False
+        self.print_results = False
         self.return_traces = None
         self.data_manager = None
 
         self._meta_attrs.extend(['pulse_sequence'])
 
     def setup(self, return_traces=False, data_manager=None, formatter=None,
-              print_flag=False, **kwargs):
+              print_results=False, **kwargs):
         self.return_traces = return_traces
         self.data_manager = data_manager
-        self.print_flag = print_flag
+        self.print_results = print_results
         if formatter is not None:
             self.formatter = formatter
 
         sample_rate = self.layout.sample_rate()
-        self.pts = {pulse.name: round(pulse.duration/ 1e3 * sample_rate)
+        self.pts = {pulse.name: int(round(pulse.duration/ 1e3 * sample_rate))
                     for pulse in self.pulse_sequence}
 
         if self.return_traces:
@@ -101,32 +102,32 @@ class DC_Parameter(MeasurementParameter):
         return signal['output']
 
 
-class ELR_Parameter(MeasurementParameter):
+class EPR_Parameter(MeasurementParameter):
 
     def __init__(self, layout, **kwargs):
-        super().__init__(name='ELR',
-                         label='Empty Load Read',
+        super().__init__(name='EPR',
+                         label='Empty Plunge Read',
                          layout=layout,
                          snapshot_value=False,
                          **kwargs)
 
         empty_pulse = DCPulse(name='empty', amplitude=-1.5,
                               t_start=0,duration=5, acquire=True)
-        load_pulse = DCPulse(name='load', amplitude=1.5,
-                             duration=5, acquire=True)
+        plunge_pulse = DCPulse(name='plunge', amplitude=1.5,
+                               duration=5, acquire=True)
         read_pulse = DCPulse(name='read', amplitude=0,
                               duration=50, acquire=True)
         final_pulse = DCPulse(name='final', amplitude=0,
                               duration=2)
-        pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
-        self.pulse_sequence.add(pulses)
+
+        self.pulse_sequence.add(
+            [empty_pulse, plunge_pulse, read_pulse, final_pulse])
 
         self.samples = 100
         self.t_skip = 0.1
         self.t_read = 20
 
-
-        self.analysis = analysis.analyse_ELR
+        self.analysis = analysis.analyse_EPR
 
         self._meta_attrs.extend(['t_skip', 't_read'])
 
@@ -169,7 +170,7 @@ class ELR_Parameter(MeasurementParameter):
             self.store_traces(self.traces['output'])
 
         # Print results
-        if self.print_flag:
+        if self.print_results:
             for name, fidelity in zip(self.names, fidelities):
                 print('{}: {:.3f}'.format(name, fidelity))
 
@@ -179,7 +180,7 @@ class ELR_Parameter(MeasurementParameter):
             return fidelities
 
 
-class AdiabaticSweep_Parameter(ELR_Parameter):
+class AdiabaticSweep_Parameter(EPR_Parameter):
     def __init__(self, layout, **kwargs):
         super().__init__(layout=layout, **kwargs)
         self.name = 'adiabatic_sweep'
@@ -189,46 +190,25 @@ class AdiabaticSweep_Parameter(ELR_Parameter):
         frequency_deviation = 10e6  # Hz
         power = 10  # dBm
 
-        self.readout_threshold_voltage=0.4
-
-        self.pulse_sequence.clear()
-        self._load_pulse = DCPulse(name='load', amplitude=1.5,
-                             duration=10, acquire=True)
-        self._read_pulse = DCPulse(name='read', amplitude=0,
-                              duration=50, acquire=True)
-        self._final_pulse = DCPulse(name='final', amplitude=0,
-                              duration=2)
-        self._ESR_pulse = FrequencyRampPulse(
+        ESR_pulse = FrequencyRampPulse(
             name='adiabatic_sweep',
             power=power,
             t_start=9, duration=0.2,
             frequency_center=frequency_center,
             frequency_deviation=frequency_deviation)
-        self._steered_initialization = SteeredInitialization(
+        steered_initialization = SteeredInitialization(
             name='steered_initialization',
             t_no_blip=30, t_max_wait=200, t_buffer=20)
-        pulses = [self._load_pulse, self._read_pulse, self._final_pulse,
-                  self._ESR_pulse, self._steered_initialization]
-        self.pulse_sequence.add(pulses)
 
-        self.analysis = analysis.analyse_LR
+        self.pulse_sequence.add([ESR_pulse, steered_initialization])
+        self.pulse_sequence['empty'].enabled = False
 
-    @property
-    def steered_initialization(self):
-        return 'steered_initialization' in self.pulse_sequence
+        self.analysis = analysis.analyse_PR
 
-    @steered_initialization.setter
-    def steered_initialization(self, use_steered_initialization):
-        if use_steered_initialization and \
-                'steered_initialization' not in self.pulse_sequence:
-            self.pulse_sequence.add(self.steered_initialization)
-        elif not use_steered_initialization and \
-                'steered_initialization' in self.pulse_sequence:
-            self.pulse_sequence.remove('steered_initialization')
-
-    def setup(self, readout_threshold_voltage, **kwargs):
-        self.readout_threshold_voltage = readout_threshold_voltage
-        super().setup(readout_threshold_voltage=readout_threshold_voltage,
+    def setup(self, readout_threshold_voltage=None, **kwargs):
+        if readout_threshold_voltage is not None:
+            self.readout_threshold_voltage = readout_threshold_voltage
+        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
                       **kwargs)
         self.names = ['fidelity_load', 'fidelity_read',
                       'up_proportion', 'dark_counts', 'contrast']
@@ -240,7 +220,8 @@ class AdiabaticSweep_Parameter(ELR_Parameter):
         self.pulse_sequence['adiabatic_sweep'].frequency_center = \
             frequency_center
 
-        self.setup(readout_threshold_voltage=self.readout_threshold_voltage)
+        self.setup()
+
 
 class T1_Parameter(AdiabaticSweep_Parameter):
 
@@ -249,54 +230,22 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.name = 'T1_wait_time'
             self.label = 'T1_wait_time'
 
-            frequency_center = 20e9  # Hz
-            frequency_deviation = 10e6  # Hz
-            power = 10  # dBm
-
-            self.plunge_duration=5
-
-            self.pulse_sequence.clear()
-            #empty_pulse = DCPulse(name='empty', amplitude=-1.5,
-                                  t_start=0, duration=5, acquire=True)
-            self._adiabatic_plunge_pulse = DCPulse(name='adiabatic_plunge',
-                                                   amplitude=1.5,
-                                       duration=2, acquire=True)
-            self._read_pulse = DCPulse(name='read', amplitude=0,
-                                       duration=50, acquire=True)
-            self._final_pulse = DCPulse(name='final', amplitude=0,
-                                        duration=2)
-            self._plunge_pulse = DCPulse(name='plunge', amplitude=1.5,
-                                      duration=self.plunge_duration,
-                                      acquire=False)
-            self._ESR_pulse = FrequencyRampPulse(
-                name='adiabatic_sweep',
-                power=power,
-                t_start=9, duration=0.2,
-                frequency_center=frequency_center,
-                frequency_deviation=frequency_deviation)
-            self._steered_initialization = SteeredInitialization(
-                name='steered_initialization',
-                t_no_blip=30, t_max_wait=200, t_buffer=20)
-            pulses = [self._steered_initialization,
-                      self._adiabatic_plunge_pulse,
-                      self._ESR_pulse,
-                      #empty_pulse,
-                      self._plunge_pulse,
-                      self._read_pulse,
-                      self._final_pulse]
-
-            self.pulse_sequence.add(pulses)
-
             self.analysis = analysis.analyse_read
 
-    def setup(self, readout_threshold_voltage, **kwargs):
-            self.readout_threshold_voltage = readout_threshold_voltage
-            super().setup(readout_threshold_voltage=readout_threshold_voltage,
-                          **kwargs)
-            self.names = ['up_proportion', 'num_traces_loaded']
-            self.labels = self.names
-            self.shapes = ((), ())
+    @property
+    def plunge_duration(self):
+        return self.pulse_sequence['plunge'].duration
 
+    def setup(self, readout_threshold_voltage=None, **kwargs):
+        if readout_threshold_voltage is not None:
+            self.readout_threshold_voltage = readout_threshold_voltage
+
+        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
+                      **kwargs)
+
+        self.names = ['up_proportion', 'num_traces_loaded']
+        self.labels = self.names
+        self.shapes = ((), ())
 
     def get(self):
         self.traces = self.layout.do_acquisition(return_dict=True)
@@ -309,12 +258,12 @@ class T1_Parameter(AdiabaticSweep_Parameter):
                 threshold_voltage=self.readout_threshold_voltage,
                 start_idx=round(self.t_skip * 1e-3 * self.layout.sample_rate()))
 
-            # Store raw traces if raw_data_manager is provided
+        # Store raw traces if raw_data_manager is provided
         if self.data_manager is not None:
             self.store_traces(self.traces['output'])
 
         # Print results
-        if self.print_flag:
+        if self.print_results:
             print('up_proportion: {:.3f}'.format(up_proportion))
 
         if self.return_traces:
@@ -323,89 +272,10 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         else:
             return up_proportion, num_traces_loaded
 
-
     def set(self, plunge_duration):
-            self.plunge_duration=plunge_duration
-            self.pulse_sequence['plunge'].duration=self.plunge_duration
+            self.pulse_sequence['plunge'].duration = plunge_duration
 
-            self.setup(
-                self.readout_threshold_voltage,
-                print_flag=self.print_flag)
-
-
-# class T1_Parameter(MeasurementParameter):
-#
-#     def __init__(self, layout, **kwargs):
-#         super().__init__(name='T1_wait_time',
-#                          label='T1 wait time',
-#                          layout=layout,
-#                          snapshot_value=False,
-#                          **kwargs)
-#         self.tau = 5
-#
-#         # Setup pulses
-#         empty_pulse = DCPulse(name='empty', amplitude=-1.5,
-#                               t_start=0,duration=5, acquire=True)
-#         load_pulse = DCPulse(name='load', amplitude=1.5,
-#                               t_start=5,duration=5, acquire=True)
-#         read_pulse = DCPulse(name='read', amplitude=0,
-#                               t_start=10,duration=20, acquire=True)
-#         final_pulse = DCPulse(name='final', amplitude=0,
-#                               t_start=30,duration=2)
-#         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
-#         self.pulse_sequence.add(pulses)
-#
-#         self.samples=50
-#         self.threshold_voltage = None
-#         self.t_skip = 0.1
-#
-#         self._meta_attrs.extend(['threshold_voltage', 't_skip'])
-#
-#     def setup(self, samples=None, t_skip=None, threshold_voltage=None,
-#               **kwargs):
-#         if samples:
-#             self.samples = samples
-#         if t_skip:
-#             self.t_skip = t_skip
-#         self.threshold_voltage = threshold_voltage
-#
-#         self.layout.target_pulse_sequence(self.pulse_sequence)
-#
-#         self.layout.setup(samples=self.samples, average_mode='none')
-#
-#         self.names = ['up_proportion', 'num_traces_loaded']
-#         self.labels = self.names
-#         self.shapes = ((), ())
-#
-#         super().setup(**kwargs)
-#
-#     def get(self):
-#         self.traces = self.layout.do_acquisition(return_dict=True)
-#
-#         self.trace_segments = {ch_label: self.segment_trace(trace)
-#                                for ch_label, trace in self.traces.items()}
-#         up_proportion, num_traces_loaded, _ = analysis.analyse_read(
-#             traces=self.traces,
-#             threshold_voltage=self.threshold_voltage,
-#             start_idx=round(self.t_skip * 1e-3 * self.layout.sample_rate()))
-#
-#         # Store raw traces if raw_data_manager is provided
-#         if self.data_manager is not None:
-#             self.store_traces(self.traces['output'])
-#
-#         if self.return_traces:
-#             return up_proportion, num_traces_loaded, tuple(self.traces.values())
-#         else:
-#             return up_proportion, num_traces_loaded
-#
-#     def set(self, tau):
-#         self.tau = tau
-#         # Change load stage duration.
-#         self.pulse_sequence['load'].duration = self.tau
-#
-#         self.layout.target_pulse_sequence(self.pulse_sequence)
-#
-#         self.layout.setup(samples=self.samples, average_mode='none')
+            self.setup()
 
 
 class VariableRead_Parameter(MeasurementParameter):
