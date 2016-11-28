@@ -72,7 +72,6 @@ steered_controller = SteeredInitialization_AcquisitionController(
     target_instrument=pulseblaster,
     alazar_name='ATS',
     server_name='Alazar_server' if USE_MP else None)
-steered_controller.silent(False)
 steered_controller.record_initialization_traces(True)
 
 interfaces['ATS'] = get_instrument_interface(ATS)
