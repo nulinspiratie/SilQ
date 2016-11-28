@@ -7,13 +7,14 @@ from silq.tools.general_tools import get_truth
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
 pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
-                    'connection', 'amplitude']
+                    'connection', 'amplitude', 'enabled']
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
                  t_stop=None, duration=None,
                  acquire=False, initialize=False,
-                 connection=None, connection_requirements={}):
+                 connection=None, enabled=True,
+                 connection_requirements={}):
         self.name = name
 
         self._t_start = t_start
@@ -27,6 +28,7 @@ class Pulse:
 
         self.acquire = acquire
         self.initialize = initialize
+        self.enabled = enabled
         self.connection = connection
 
         # List of potential connection requirements.
@@ -193,7 +195,7 @@ class Pulse:
     def satisfies_conditions(self, pulse_class=None,
                              t_start=None, t_stop=None, duration=None,
                              acquire=None, initialize=None, connection=None,
-                             amplitude=None):
+                             amplitude=None, enabled=None):
         """
         Checks if pulse satisfies certain conditions.
         Each kwarg is a condition, and can be a value (equality testing) or it

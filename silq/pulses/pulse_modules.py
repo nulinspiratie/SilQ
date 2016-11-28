@@ -74,7 +74,7 @@ class PulseSequence:
 
     def __getitem__(self, index):
         if isinstance(index, int):
-            return self.pulses[index]
+            return self.enabled_pulses[index]
         elif isinstance(index, str):
             pulses = [p for p in self.pulses if p.name == index]
             assert len(pulses) == 1, \
@@ -82,10 +82,10 @@ class PulseSequence:
             return pulses[0]
 
     def __len__(self):
-        return len(self.pulses)
+        return len(self.enabled_pulses)
 
     def __bool__(self):
-        return len(self.pulses) > 0
+        return len(self.enabled_pulses) > 0
 
     def __contains__(self, item):
         if isinstance(item, str):
@@ -94,15 +94,22 @@ class PulseSequence:
         else:
             return item in self.pulses
 
-
     def __repr__(self):
         output = 'PulseSequence with {} pulses, duration: {}\n'.format(
             len(self.pulses), self.duration)
-        for pulse in self.pulses:
+        for pulse in self.enabled_pulses:
             pulse_repr = repr(pulse)
             # Add a tab to each line
             pulse_repr = '\t'.join(pulse_repr.splitlines(True))
             output += '\t' + pulse_repr + '\n'
+
+        if self.disabled_pulses:
+            output += '\t\n\tDisabled pulses:\n'
+            for pulse in self.disabled_pulses:
+                pulse_repr = repr(pulse)
+                # Add a tab to each line
+                pulse_repr = '\t'.join(pulse_repr.splitlines(True))
+                output += '\t' + pulse_repr + '\n'
         return output
 
     def _JSONEncoder(self):
@@ -120,19 +127,28 @@ class PulseSequence:
         }
 
     @property
+    def enabled_pulses(self):
+        return [pulse for pulse in self.pulses if pulse.enabled]
+
+    @property
+    def disabled_pulses(self):
+        return [pulse for pulse in self.pulses if not pulse.enabled]
+
+    @property
     def duration(self):
-        if self.pulses:
-            return max(pulse.t_stop for pulse in self.pulses)
+        if self.enabled_pulses:
+            return max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
             return 0
 
     @property
     def t_start_list(self):
-        return [pulse.t_start for pulse in self.pulses]
+        return [pulse.t_start for pulse in self.enabled_pulses]
 
     @property
     def t_stop_list(self):
-        return [pulse.t_stop for pulse in self.pulses]
+        return [pulse.t_stop for pulse in self.enabled_pulses]
+
     @property
     def t_list(self):
         return list(set(self.t_start_list + self.t_stop_list))
@@ -172,11 +188,12 @@ class PulseSequence:
 
         for pulse in pulses:
             if not self.allow_pulse_overlap and \
-                    any(self.pulses_overlap(pulse, p) for p in self.pulses):
+                    any(self.pulses_overlap(pulse, p)
+                        for p in self.enabled_pulses):
                 raise SyntaxError(
                     'Cannot add pulse because it overlaps.\n'
                     'Pulse 1: {}\n\nPulse2: {}'.format(
-                        pulse, [p for p in self.pulses
+                        pulse, [p for p in self.enabled_pulsespulses
                                 if self.pulses_overlap(pulse, p)]))
             elif not isinstance(pulse, PulseImplementation) and \
                     not self.allow_untargeted_pulses:
@@ -260,13 +277,14 @@ class PulseSequence:
         else:
             return True
 
-    def get_pulses(self, **conditions):
+    def get_pulses(self, enabled=True, **conditions):
         pulses = self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions + ['pulse_class']}
         pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(**pulse_conditions)]
+                  if pulse.satisfies_conditions(
+                    enabled=enabled, **pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
