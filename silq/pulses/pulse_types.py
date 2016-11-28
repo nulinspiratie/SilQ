@@ -11,7 +11,7 @@ pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
-                 t_stop=None, duration=None,
+                 t_stop=None, delay=0, duration=None,
                  acquire=False, initialize=False,
                  connection=None, enabled=True,
                  connection_requirements={}):
@@ -24,7 +24,8 @@ class Pulse:
         if duration is None and t_stop is None:
             raise Exception("Must provide either t_stop or duration")
 
-        self.previous_pulse = previous_pulse
+        self._previous_pulse = previous_pulse
+        self.delay = delay
 
         self.acquire = acquire
         self.initialize = initialize
@@ -134,9 +135,9 @@ class Pulse:
         if self._t_start is not None:
             return self._t_start
         elif self.previous_pulse is not None:
-            return self.previous_pulse.t_stop
+            return self.previous_pulse.t_stop + self.delay
         else:
-            return None
+            return 0
 
     @t_start.setter
     def t_start(self, t_start):
@@ -168,6 +169,19 @@ class Pulse:
     @t_stop.setter
     def t_stop(self, t_stop):
         self._t_stop = t_stop
+
+    @property
+    def previous_pulse(self):
+        if self._previous_pulse is None:
+            return None
+        elif self._previous_pulse.enabled:
+            return self._previous_pulse
+        else:
+            return self._previous_pulse.previous_pulse
+
+    @previous_pulse.setter
+    def previous_pulse(self, previous_pulse):
+        self._previous_pulse = previous_pulse
 
     def _get_repr(self, properties_str):
         # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
