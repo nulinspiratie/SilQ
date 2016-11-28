@@ -199,12 +199,12 @@ def analyse_empty(traces, plot=False, return_idx=False):
     else:
         return sum(idx_end_empty) / sum(idx_begin_load)
 
-def analyse_ELR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
+def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
-    fidelity_load = analyse_load(trace_segments['load'], plot=plot)
+    fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
 
     _,_,threshold_voltage = find_high_low(trace_segments['read'], plot=plot)
 
@@ -225,11 +225,11 @@ def analyse_ELR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     return (fidelity_empty, fidelity_load, fidelity_read,
             up_proportion, dark_counts, contrast)
 
-def analyse_LR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
+def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    fidelity_load = analyse_load(trace_segments['load'], plot=plot)
+    fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
 
     _,_,threshold_voltage = find_high_low(trace_segments['read'], plot=plot)
 
@@ -249,23 +249,3 @@ def analyse_LR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
 
     return (fidelity_load, fidelity_read,
             up_proportion, dark_counts, contrast)
-
-def analyse_ELRLR(trace_segments, start_idx=0, plot=False):
-    fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
-    fidelity_load = analyse_load(trace_segments['load1'], plot=plot)
-
-    _,_,threshold_voltage = find_high_low(trace_segments['read1'], plot=plot)
-
-    if threshold_voltage is None:
-        up_proportion, fidelity_read, dark_counts, difference_up_dark = [0, 0, 0, 0]
-    else:
-        up_proportion, _, fidelity_read = \
-            analyse_read(trace_segments['read1'], start_idx=start_idx,
-                         threshold_voltage=threshold_voltage)
-        dark_counts, _, _ = analyse_read(trace_segments['read2'],
-                                         start_idx=start_idx,
-                                         threshold_voltage=threshold_voltage)
-        difference_up_dark = up_proportion - dark_counts
-
-    return (fidelity_empty, fidelity_load, fidelity_read,
-            up_proportion, dark_counts, difference_up_dark)
