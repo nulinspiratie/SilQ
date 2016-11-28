@@ -245,6 +245,9 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.name = 'T1_wait_time'
             self.label = 'T1_wait_time'
 
+            self.pulse_sequence['empty'].acquire = False
+            self.pulse_sequence['plunge'].acquire = False
+
             self.analysis = analysis.analyse_read
 
     @property
