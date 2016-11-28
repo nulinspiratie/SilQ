@@ -27,6 +27,21 @@ class MeasurementParameter(Parameter):
 
     def setup(self, return_traces=False, data_manager=None, formatter=None,
               print_results=False, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter.
+        Note that for return_traces and print_results, the default behaviour
+        is False, and so if a Parameter performs a set operation which also
+        performs a setup routine, these will have to be manually overridden.
+        Args:
+            return_traces:
+            data_manager:
+            formatter:
+            print_results:
+            **kwargs:
+
+        Returns:
+
+        """
         self.return_traces = return_traces
         self.data_manager = data_manager
         self.print_results = print_results
@@ -192,8 +207,8 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         ESR_pulse = FrequencyRampPulse(
             name='adiabatic_sweep',
-            power=power,
-            t_start=9, duration=0.2,
+            power=power, duration=0.2,
+            previous_pulse=self.pulse_sequence['plunge'], delay=4,
             frequency_center=frequency_center,
             frequency_deviation=frequency_deviation)
         steered_initialization = SteeredInitialization(

@@ -193,7 +193,7 @@ class PulseSequence:
                 raise SyntaxError(
                     'Cannot add pulse because it overlaps.\n'
                     'Pulse 1: {}\n\nPulse2: {}'.format(
-                        pulse, [p for p in self.enabled_pulsespulses
+                        pulse, [p for p in self.enabled_pulses
                                 if self.pulses_overlap(pulse, p)]))
             elif not isinstance(pulse, PulseImplementation) and \
                     not self.allow_untargeted_pulses:
@@ -205,14 +205,12 @@ class PulseSequence:
                     'Not allowed to add targeted pulse {}'.format(pulse))
             else:
                 pulse_copy = pulse.copy()
-                if pulse_copy.t_start is None:
-                    if self:
+                if pulse_copy._t_start is None and pulse_copy._previous_pulse \
+                        is None:
+                    if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
                         # the previous_pulse.t_stop will be used as t_start
                         pulse_copy.previous_pulse = self[-1]
-                    else:
-                        # First pulse, therefore start at t=0
-                        pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
 
         self.sort()
