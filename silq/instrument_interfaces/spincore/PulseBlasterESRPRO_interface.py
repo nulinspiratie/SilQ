@@ -79,7 +79,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 wait_cycles = round(wait_duration * ms)
                 self.instrument.send_instruction(total_channel_value,
                                                  'continue', 0, wait_cycles)
-                t += wait_duration
+                t = t_next
             else:
                 # Add final instructions
 
