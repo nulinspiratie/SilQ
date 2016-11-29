@@ -61,6 +61,8 @@ class MeasurementParameter(Parameter):
         trace_segments = {}
         idx = 0
         for pulse in self.pulse_sequence:
+            if not pulse.acquire:
+                continue
             trace_segments[pulse.name] = \
                 trace[:, idx:idx + self.pts[pulse.name]]
             idx += self.pts[pulse.name]
