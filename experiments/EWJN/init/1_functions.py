@@ -1,18 +1,25 @@
 # General functions
-def plot_traces(traces, traces_AWG=None, threshold_voltage=None, plot1D=False):
-    plt.figure()
-    plt.pcolormesh(range(traces.shape[1]),
-                   range(traces.shape[0] + 1), traces)
+def plot_traces(traces, ax=None, traces_AWG=None, threshold_voltage=None,
+                plot1D=False):
+    if ax is None:
+        plt.figure()
+        ax = plt.gca()
+    else:
+        plt.sca(ax)
+
+    cax = ax.pcolormesh(range(traces.shape[1]),
+                        range(traces.shape[0] + 1), traces)
     if traces_AWG is not None:
         trace_AWG = traces_AWG[:1]
         trace_AWG /= (np.max(trace_AWG) - np.min(trace_AWG))
         trace_AWG -= np.min(trace_AWG)
-        plt.pcolormesh(range(traces.shape[1]),
-                       np.array([0, 1]) + traces.shape[0], trace_AWG)
-    plt.xlim([0, traces.shape[1]])
-    plt.ylim([0, traces.shape[0] + 1])
-    plt.gca().invert_yaxis()
-    plt.colorbar()
+        ax.pcolormesh(range(traces.shape[1]),
+                      np.array([0, 1]) + traces.shape[0], trace_AWG)
+    ax.set_xlim([0, traces.shape[1]])
+    ax.set_ylim([0, traces.shape[0] + 1])
+    ax.invert_yaxis()
+
+    plt.colorbar(cax)
 
     if plot1D:
         fig, axes = plt.subplots(len(traces), sharex=True)
