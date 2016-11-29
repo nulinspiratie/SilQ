@@ -1,3 +1,5 @@
+import numpy as np
+
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
@@ -77,8 +79,20 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Send wait instruction until next event
                 wait_duration = t_next - t
                 wait_cycles = round(wait_duration * ms)
-                self.instrument.send_instruction(total_channel_value,
-                                                 'continue', 0, wait_cycles)
+                # Either send continue commandm or long_delay command if the
+                # wait duration is too long
+                if wait_cycles < 1e9:
+                    self.instrument.send_instruction(
+                        total_channel_value, 'continue', 0, wait_cycles)
+                else:
+                    self.instrument.send_instruction(
+                        total_channel_value, 'continue', 0, 100)
+                    duration = round(wait_cycles - 100)
+                    divisor = int(np.ceil(duration / 1e9))
+                    delay = int(duration / divisor)
+                    self.instrument.send_instruction(
+                        total_channel_value, 'long_delay', divisor, delay)
+
                 t = t_next
             else:
                 # Add final instructions
@@ -87,9 +101,19 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 wait_duration = self._pulse_sequence.duration - t
                 if wait_duration:
                     wait_cycles = round(wait_duration * ms)
-                    self.instrument.send_instruction(0, 'continue', 0,
-                                                     wait_cycles)
-                    t += wait_duration
+                    if wait_cycles < 1e9:
+                        self.instrument.send_instruction(
+                            0, 'continue', 0, wait_cycles)
+                    else:
+                        self.instrument.send_instruction(
+                            0, 'continue', 0, 100)
+                        duration = round(wait_cycles - 100)
+                        divisor = int(np.ceil(duration / 1e9))
+                        delay = int(duration / divisor)
+                        self.instrument.send_instruction(
+                            0, 'long_delay', divisor, delay)
+
+                    t += self._pulse_sequence.duration
 
                 self.instrument.send_instruction(0, 'branch', 0, 50)
 
