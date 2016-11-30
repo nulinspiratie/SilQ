@@ -101,14 +101,11 @@ class TestMeasurementParameter(MeasurementParameter):
     def __init__(self, **kwargs):
         super().__init__(layout=None,
                          name='test_measure',
+                         shape=(4,3),
                          **kwargs)
 
     def get(self):
-        print(self.data_manager)
-        return 0
-
-    def set(self, data_manager):
-        self.data_manager=data_manager
+        return np.random.randint(0,10, self.shape)
 
 
 class DC_Parameter(MeasurementParameter):
