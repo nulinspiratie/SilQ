@@ -321,7 +321,7 @@ class ATSInterface(InstrumentInterface):
             initialization = self._pulse_sequence.get_pulse(initialize=True)
 
             # TODO better way to decide on allocated buffers
-            allocated_buffers = 20
+            allocated_buffers = 80
 
             samples_per_buffer = sample_rate * initialization.t_buffer * 1e-3
             # samples_per_record must be a multiple of 16
@@ -375,6 +375,16 @@ class ATSInterface(InstrumentInterface):
 
     def _acquisition(self):
         return self._acquisition_controller.acquisition()
+
+    def get_traces(self, mode='acquisition'):
+        if mode == 'acquisition':
+            return self._acquisition_controller.traces()
+        elif mode == 'initialization':
+            return self._acquisition_controller.initialization_traces()
+        if mode == 'post_initialization':
+            return self._acquisition_controller.post_initialization_traces()
+        else:
+            raise ValueError('Mode {} not understood'.format(mode))
 
     def setting(self, setting):
         """
