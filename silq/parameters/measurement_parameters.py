@@ -137,7 +137,7 @@ class DC_Parameter(MeasurementParameter):
     def get(self):
         signal = self.layout.do_acquisition(start=False, stop=False,
                                             return_dict=True)
-        return signal['output']
+        return signal['acquisition_traces']['output']
 
 
 class EPR_Parameter(MeasurementParameter):
@@ -345,7 +345,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
 
         # Analysis
         up_proportion, num_traces_loaded, _ = self.analysis(
-            traces=self.trace_segments['read'],
+            traces=self.trace_segments['output']['read'],
             **self.analysis_settings)
         self.fidelities = (up_proportion, num_traces_loaded)
 
@@ -376,54 +376,16 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.setup()
 
 
-class dark_counts_parameter(AdiabaticSweep_Parameter):
+class dark_counts_parameter(T1_Parameter):
 
     def __init__(self, layout, **kwargs):
             super().__init__(layout=layout, **kwargs)
             self.name = 'base_dark_counts'
             self.label = 'base_dark_counts'
 
-            self.pulse_sequence['empty'].acquire = False
-            self.pulse_sequence['plunge'].acquire = False
-
-            self.analysis = analysis.analyse_read
-
-    def setup(self, readout_threshold_voltage=None, **kwargs):
-        if readout_threshold_voltage is not None:
-            self.readout_threshold_voltage = readout_threshold_voltage
-
-        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      **kwargs)
-
-        self.names = ['up_proportion', 'num_traces_loaded']
-        self.labels = self.names
-        self.shapes = ((), ())
-
-    def get(self):
-        self.traces = self.layout.do_acquisition(return_dict=True)
-
-        self.trace_segments = {ch_label: self.segment_trace(trace)
-                                   for ch_label, trace in self.traces.items()}
-        output_trace=self.trace_segments['output']
-        up_proportion, num_traces_loaded, _ = self.analysis(
-                traces=output_trace['read'],
-                threshold_voltage=self.readout_threshold_voltage,
-                start_idx=round(self.t_skip * 1e-3 * self.layout.sample_rate()))
-
-        # Store raw traces if raw_data_manager is provided
-        if self.data_manager is not None:
-            self.store_traces(self.traces['output'])
-
-        # Print results
-        if self.print_results:
-            print('up_proportion: {:.3f}'.format(up_proportion))
-
-        if self.return_traces:
-            return up_proportion, num_traces_loaded, tuple(
-                self.traces.values())
-        else:
-            return up_proportion, num_traces_loaded
-
+            self.pulse_sequence['empty'].enabled = False
+            self.pulse_sequence['plunge'].enabled = False
+            self.pulse_sequence['adiabatic_sweep'].enabled = False
 
 
 class VariableRead_Parameter(MeasurementParameter):
