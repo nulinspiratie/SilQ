@@ -340,6 +340,9 @@ class Layout(Instrument):
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary, connections=self.connections)
 
+            # Force t_start to have a fixed value
+            targeted_pulse.t_start = targeted_pulse.t_start
+
             # Add connection to pulse, and add any pulse modifications
             connection.target_pulse(targeted_pulse)
 
@@ -462,7 +465,8 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
 
-    def do_acquisition(self, start=True, stop=True, return_dict=False):
+    def do_acquisition(self, start=True, stop=True, return_dict=False,
+                       return_initialization_traces=False):
         if start:
             self.start()
         channel_signals = self.acquisition_interface.acquisition()
@@ -470,18 +474,29 @@ class Layout(Instrument):
             self.stop()
 
         if return_dict:
-            sorted_signals = od((ch_label,
+            data = {}
+            # Change dictionary keys from channels to connection outputs
+            data['acquisition_traces'] = od((ch_label,
                 channel_signals[self.acquisition_interface.acquisition.names
                     .index(ch_name+'_signal')])
                 for ch_label, ch_name in self.acquisition_channels.items())
+
+            if return_initialization_traces:
+                data['initialization_traces'] = \
+                    self.acquisition_interface.get_traces('initialization')
+
+                data['post_initialization_traces'] = od((ch_label,
+                    self.acquisition_interface.get_traces('post_initialization')
+                        [ch_name])
+                for ch_label, ch_name in self.acquisition_channels.items())
         else:
             # Sort signals according to the order in layout.acquisition_outputs
-            sorted_signals = [
+            data = [
                 channel_signals[self.acquisition_interface.acquisition.names
                     .index(ch_name+'_signal')]
                 for ch_label, ch_name in self.acquisition_channels.items()]
 
-        return sorted_signals
+        return data
 
 
 class Connection:
