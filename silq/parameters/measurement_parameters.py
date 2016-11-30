@@ -26,6 +26,11 @@ class MeasurementParameter(Parameter):
         self.print_results = False
         self.return_traces = None
 
+        # Change attribute data_manager from class attribute to instance
+        # attribute. This is necessary to ensure that the data_manager is
+        # passed along when the parameter is spawned from a new process
+        self.data_manager = self.data_manager
+
         self._meta_attrs.extend(['pulse_sequence'])
 
     def setup(self, return_traces=False, save_traces=False, formatter=None,
@@ -92,6 +97,20 @@ class MeasurementParameter(Parameter):
                                   result=traces)
 
 
+class TestMeasurementParameter(MeasurementParameter):
+    def __init__(self, **kwargs):
+        super().__init__(layout=None,
+                         name='test_measure',
+                         **kwargs)
+
+    def get(self):
+        print(self.data_manager)
+        return 0
+
+    def set(self, data_manager):
+        self.data_manager=data_manager
+
+
 class DC_Parameter(MeasurementParameter):
 
     def __init__(self, layout, **kwargs):
@@ -153,8 +172,7 @@ class EPR_Parameter(MeasurementParameter):
 
         self._meta_attrs.extend(['t_skip', 't_read'])
 
-    def setup(self, samples=None, t_skip=None, t_read=None,
-              data_manager=None, **kwargs):
+    def setup(self, samples=None, t_skip=None, t_read=None, **kwargs):
         if samples is not None:
             self.samples = samples
         if t_skip is not None:
@@ -245,8 +263,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         self.analysis = analysis.analyse_PR
 
-    def setup(self, readout_threshold_voltage=None,
-              data_manager=None, **kwargs):
+    def setup(self, readout_threshold_voltage=None, **kwargs):
         if readout_threshold_voltage is not None:
             self.readout_threshold_voltage = readout_threshold_voltage
 
@@ -311,8 +328,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
     def plunge_duration(self):
         return self.pulse_sequence['plunge'].duration
 
-    def setup(self, readout_threshold_voltage=None,
-              data_manager=None, **kwargs):
+    def setup(self, readout_threshold_voltage=None, **kwargs):
         if readout_threshold_voltage is not None:
             self.readout_threshold_voltage = readout_threshold_voltage
 
