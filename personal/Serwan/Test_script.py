@@ -11,42 +11,43 @@ if __name__ == "__main__":
     EPR_parameter.setup(samples=50)
     EPR_parameter()
     traces_read = EPR_parameter.trace_segments['output']['read']
-    _, _, threshold_voltage = analysis.find_high_low(traces_read)
-    assert threshold_voltage is not None, "Couldn't find accurate threshold"
-    print('Threshold voltage found at {:.2f} V'.format(threshold_voltage))
+    _, _, readout_threshold_voltage = analysis.find_high_low(traces_read)
+    assert readout_threshold_voltage is not None, "Couldn't find accurate threshold"
+    print(
+        'Threshold voltage found at {:.2f} V'.format(readout_threshold_voltage))
 
 
-    T1_parameter.pulse_sequence['steered_initialization'].enabled = False
 
-    T1_parameter.pulse_sequence['plunge'].amplitude = 1.8
+    adiabatic_sweep_parameter.pulse_sequence['empty'].enabled = False
 
-    T1_parameter.pulse_sequence['adiabatic_sweep'].enabled = True
-    T1_parameter.pulse_sequence[
-        'adiabatic_sweep'].frequency_center = frequency_center
-    T1_parameter.pulse_sequence['adiabatic_sweep'].frequency_deviation = 10e6
-    T1_parameter.pulse_sequence['adiabatic_sweep'].t_start = 1
-    T1_parameter.pulse_sequence['adiabatic_sweep'].duration = 0.2
+    adiabatic_sweep_parameter.pulse_sequence['plunge'].amplitude = 1.8
+    adiabatic_sweep_parameter.pulse_sequence['plunge'].duration = 5
 
-    T1_parameter.pulse_sequence['read'].duration = 20
+    adiabatic_sweep_parameter.pulse_sequence['steered_initialization'].enabled = True
+    adiabatic_sweep_parameter.pulse_sequence['steered_initialization'].t_buffer = 30
+    adiabatic_sweep_parameter.pulse_sequence['steered_initialization'].t_no_blip = 90
+    adiabatic_sweep_parameter.pulse_sequence['steered_initialization'].t_max_wait = 400
 
-    T1_parameter.setup(threshold_voltage, samples=3)
-    T1_parameter(10)
-    T1_parameter.print_results = True
+    adiabatic_sweep_parameter.pulse_sequence['adiabatic_sweep'].frequency_deviation=10e6
+    adiabatic_sweep_parameter.pulse_sequence['adiabatic_sweep'].duration = 0.2
+    adiabatic_sweep_parameter.pulse_sequence['adiabatic_sweep'].enabled = True
+    adiabatic_sweep_parameter.pulse_sequence['adiabatic_sweep'].t_start = 4
 
-    up_proportion, number_traces_loaded = T1_parameter()
-    print('\n\n*** Starting summary')
-    from pympler import tracker
-    memory_tracker = tracker.SummaryTracker()
+    adiabatic_sweep_parameter.pulse_sequence['read'].duration=120
 
-    up_proportion, number_traces_loaded = T1_parameter()
-    print('\n\n*** Printing diff')
-    memory_tracker.print_diff()
+    adiabatic_sweep_parameter.setup(readout_threshold_voltage=readout_threshold_voltage)
+    adiabatic_sweep_parameter(frequency_center)
+    adiabatic_sweep_parameter.pulse_sequence
 
+    TGAC_vals = list(np.linspace(0.33, 0.35, 8))
+    DF_DS_vals = list(np.linspace(0.476, 0.485, 8))
 
-    T1_parameter.setup(threshold_voltage, samples=1000)
-    T1_parameter(10)
-    T1_parameter.print_results = True
-
-    up_proportion, number_traces_loaded = T1_parameter()
-    print('\n\n*** Printing diff')
-    memory_tracker.print_diff()
+    adiabatic_sweep_parameter.setup(samples=15,
+                                    readout_threshold_voltage=readout_threshold_voltage,
+                                    save_traces=True,
+                                    data_manager=data_manager_raw)
+    data = qc.Loop(TGAC[TGAC_vals]
+                   ).loop(DF_DS[DF_DS_vals]
+                          ).each(adiabatic_sweep_parameter
+                                 ).run(name='adiabatic_calibration',
+                                       progress_interval=True, background=False)
