@@ -1,6 +1,9 @@
 from time import sleep
+import numpy as np
+
 
 import qcodes as qc
+from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data import hdf5_format
 h5fmt = hdf5_format.HDF5Format()
@@ -12,6 +15,7 @@ from silq.tools import data_tools
 
 
 class MeasurementParameter(Parameter):
+    data_manager = None
     def __init__(self, layout, formatter=h5fmt, **kwargs):
         super().__init__(**kwargs)
         self.layout = layout
@@ -21,12 +25,11 @@ class MeasurementParameter(Parameter):
 
         self.print_results = False
         self.return_traces = None
-        self.data_manager = None
 
         self._meta_attrs.extend(['pulse_sequence'])
 
-    def setup(self, return_traces=False, data_manager=None, formatter=None,
-              print_results=False, **kwargs):
+    def setup(self, return_traces=False, save_traces=False, formatter=None,
+              print_results=False, data_manager=None, **kwargs):
         """
         Sets up the meta properties of a measurement parameter.
         Note that for return_traces and print_results, the default behaviour
@@ -43,8 +46,10 @@ class MeasurementParameter(Parameter):
 
         """
         self.return_traces = return_traces
-        self.data_manager = data_manager
+        self.save_traces = save_traces
         self.print_results = print_results
+        self.data_manager = data_manager
+
         if formatter is not None:
             self.formatter = formatter
 
@@ -68,7 +73,7 @@ class MeasurementParameter(Parameter):
             idx += self.pts[pulse.name]
         return trace_segments
 
-    def store_traces(self, traces, name=None):
+    def store_traces(self, traces_dict, name=None):
         # Store raw traces if raw_data_manager is provided
         if name is None:
             name = self.name
@@ -77,13 +82,14 @@ class MeasurementParameter(Parameter):
         while self.data_manager.ask('get_measuring'):
             sleep(0.01)
 
-        self.data_set = data_tools.create_raw_data_set(
-            name=self.name,
-            data_manager=self.data_manager,
-            shape=traces.shape,
-            formatter=self.formatter)
-        data_tools.store_data(data_manager=self.data_manager,
-                              result=traces)
+        for traces_name, traces in traces_dict.items():
+            self.data_set = data_tools.create_raw_data_set(
+                name=traces_name,
+                data_manager=self.data_manager,
+                shape=traces.shape,
+                formatter=self.formatter)
+            data_tools.store_data(data_manager=self.data_manager,
+                                  result=traces)
 
 
 class DC_Parameter(MeasurementParameter):
@@ -106,7 +112,6 @@ class DC_Parameter(MeasurementParameter):
     def setup(self, duration=20):
         # Stop instruments in case they were already running
         self.layout.stop()
-
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
         self.layout.setup(samples=1, average_mode='point')
@@ -150,16 +155,20 @@ class EPR_Parameter(MeasurementParameter):
 
     def setup(self, samples=None, t_skip=None, t_read=None,
               data_manager=None, **kwargs):
-        if samples:
+        if samples is not None:
             self.samples = samples
-        if t_skip:
+        if t_skip is not None:
             self.t_skip = t_skip
-        if t_read:
+        if t_read is not None:
             self.t_read = t_read
 
         self.layout.target_pulse_sequence(self.pulse_sequence)
 
         self.layout.setup(samples=self.samples, average_mode='none', **kwargs)
+
+        self.analysis_settings = {'sample_rate': self.layout.sample_rate(),
+                                  't_skip': self.t_skip,
+                                  't_read': self.t_read}
 
         # Setup parameter metadata
         self.names = ['fidelity_empty', 'fidelity_load', 'fidelity_read',
@@ -169,32 +178,46 @@ class EPR_Parameter(MeasurementParameter):
 
         super().setup(data_manager=data_manager, **kwargs)
 
+    def acquire(self):
+        if 'steered_initialization' in self.pulse_sequence and \
+                self.pulse_sequence['steered_initialization'].enabled:
+            return_initialization_traces = True
+        else:
+            return_initialization_traces = False
+
+        self.data = self.layout.do_acquisition(
+            return_dict=True,
+            return_initialization_traces=return_initialization_traces)
+
+        self.trace_segments = {
+            ch_label: self.segment_trace(trace)
+            for ch_label, trace in self.data['acquisition_traces'].items()}
+
+    def print_fidelities(self):
+        for name, fidelity in zip(self.names, self.fidelities):
+            print('{}: {:.3f}'.format(name, fidelity))
+
     def get(self):
+        self.acquire()
 
-        self.traces = self.layout.do_acquisition(return_dict=True)
-
-        self.trace_segments = {ch_label: self.segment_trace(trace)
-                               for ch_label, trace in self.traces.items()}
-
-        fidelities = self.analysis(
+        self.fidelities = self.analysis(
             trace_segments=self.trace_segments['output'],
-            sample_rate=self.layout.sample_rate(),
-            t_skip=self.t_skip,
-            t_read=self.t_read)
+            **self.analysis_settings)
 
-        # Store raw traces if raw_data_manager is provided
-        if self.data_manager is not None:
-            self.store_traces(self.traces['output'])
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {'acquisition_traces':
+                                self.data['acquisition_traces']['output']}
+            self.store_traces(saved_traces)
 
         # Print results
         if self.print_results:
-            for name, fidelity in zip(self.names, fidelities):
-                print('{}: {:.3f}'.format(name, fidelity))
+            self.print_fidelities()
 
         if self.return_traces:
-            return fidelities + tuple(self.traces.values())
+            return self.fidelities + tuple(self.traces.values())
         else:
-            return fidelities
+            return self.fidelities
 
 
 class AdiabaticSweep_Parameter(EPR_Parameter):
@@ -222,15 +245,47 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         self.analysis = analysis.analyse_PR
 
-    def setup(self, readout_threshold_voltage=None, **kwargs):
+    def setup(self, readout_threshold_voltage=None,
+              data_manager=None, **kwargs):
         if readout_threshold_voltage is not None:
             self.readout_threshold_voltage = readout_threshold_voltage
+
         super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      **kwargs)
+                      data_manager=data_manager, **kwargs)
+
         self.names = ['fidelity_load', 'fidelity_read',
                       'up_proportion', 'dark_counts', 'contrast']
         self.labels = self.names
         self.shapes = ((), (), (), (), ())
+
+    def get(self):
+        self.acquire()
+
+        self.fidelities = self.analysis(
+            trace_segments=self.trace_segments['output'],
+            **self.analysis_settings)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {'acquisition_traces':
+                                self.data['acquisition_traces']['output']}
+            if 'initialization_traces' in self.data:
+                saved_traces['initialization'] = \
+                    self.data['initialization_traces']
+            if 'post_initialization_traces' in self.data:
+                saved_traces['post_initialization'] = \
+                    np.array(
+                        list(self.data['post_initialization_traces'].values()))
+            self.store_traces(saved_traces)
+
+        # Print results
+        if self.print_results:
+            self.print_fidelities()
+
+        if self.return_traces:
+            return self.fidelities + tuple(self.traces.values())
+        else:
+            return self.fidelities
 
     def set(self, frequency_center):
         # Change center frequency
@@ -255,6 +310,70 @@ class T1_Parameter(AdiabaticSweep_Parameter):
     @property
     def plunge_duration(self):
         return self.pulse_sequence['plunge'].duration
+
+    def setup(self, readout_threshold_voltage=None,
+              data_manager=None, **kwargs):
+        if readout_threshold_voltage is not None:
+            self.readout_threshold_voltage = readout_threshold_voltage
+
+        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
+                      data_manager=data_manager, **kwargs)
+
+        self.analysis_settings = {
+            'threshold_voltage': self.readout_threshold_voltage,
+            'start_idx': round(self.t_skip * 1e-3 * self.layout.sample_rate())}
+
+        self.names = ['up_proportion', 'num_traces_loaded']
+        self.labels = self.names
+        self.shapes = ((), ())
+
+    def get(self):
+        self.acquire()
+
+        # Analysis
+        up_proportion, num_traces_loaded, _ = self.analysis(
+            traces=self.trace_segments['read'],
+            **self.analysis_settings)
+        self.fidelities = (up_proportion, num_traces_loaded)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {'acquisition_traces':
+                                self.data['acquisition_traces']['output']}
+            if 'initialization_traces' in self.data:
+                saved_traces['initialization'] = \
+                    self.data['initialization_traces']
+            if 'post_initialization_traces' in self.data:
+                saved_traces['post_initialization'] = \
+                    self.data['post_initialization_traces']
+            self.store_traces(saved_traces)
+
+        # Print results
+        if self.print_results:
+            self.print_fidelities()
+
+        if self.return_traces:
+            return self.fidelities + tuple(self.traces.values())
+        else:
+            return self.fidelities
+
+    def set(self, plunge_duration):
+            self.pulse_sequence['plunge'].duration = plunge_duration
+
+            self.setup()
+
+
+class dark_counts_parameter(AdiabaticSweep_Parameter):
+
+    def __init__(self, layout, **kwargs):
+            super().__init__(layout=layout, **kwargs)
+            self.name = 'base_dark_counts'
+            self.label = 'base_dark_counts'
+
+            self.pulse_sequence['empty'].acquire = False
+            self.pulse_sequence['plunge'].acquire = False
+
+            self.analysis = analysis.analyse_read
 
     def setup(self, readout_threshold_voltage=None, **kwargs):
         if readout_threshold_voltage is not None:
@@ -292,10 +411,6 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         else:
             return up_proportion, num_traces_loaded
 
-    def set(self, plunge_duration):
-            self.pulse_sequence['plunge'].duration = plunge_duration
-
-            self.setup()
 
 
 class VariableRead_Parameter(MeasurementParameter):
