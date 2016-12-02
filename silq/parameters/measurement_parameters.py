@@ -34,7 +34,7 @@ class MeasurementParameter(Parameter):
         self._meta_attrs.extend(['pulse_sequence'])
 
     def setup(self, return_traces=False, save_traces=False, formatter=None,
-              print_results=False, data_manager=None, **kwargs):
+              print_results=False, **kwargs):
         """
         Sets up the meta properties of a measurement parameter.
         Note that for return_traces and print_results, the default behaviour
@@ -42,7 +42,6 @@ class MeasurementParameter(Parameter):
         performs a setup routine, these will have to be manually overridden.
         Args:
             return_traces:
-            data_manager:
             formatter:
             print_results:
             **kwargs:
@@ -53,7 +52,6 @@ class MeasurementParameter(Parameter):
         self.return_traces = return_traces
         self.save_traces = save_traces
         self.print_results = print_results
-        self.data_manager = data_manager
 
         if formatter is not None:
             self.formatter = formatter
@@ -79,7 +77,7 @@ class MeasurementParameter(Parameter):
         return trace_segments
 
     def store_traces(self, traces_dict, name=None):
-        # Store raw traces if raw_data_manager is provided
+        # Store raw traces
         if name is None:
             name = self.name
 
@@ -191,7 +189,7 @@ class EPR_Parameter(MeasurementParameter):
         self.labels = self.names
         self.shapes = ((), (), (), (), (), ())
 
-        super().setup(data_manager=data_manager, **kwargs)
+        super().setup(**kwargs)
 
     def acquire(self):
         if 'steered_initialization' in self.pulse_sequence and \
@@ -265,7 +263,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
             self.readout_threshold_voltage = readout_threshold_voltage
 
         super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      data_manager=data_manager, **kwargs)
+                      **kwargs)
 
         self.names = ['fidelity_load', 'fidelity_read',
                       'up_proportion', 'dark_counts', 'contrast']
@@ -330,7 +328,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.readout_threshold_voltage = readout_threshold_voltage
 
         super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      data_manager=data_manager, **kwargs)
+                      **kwargs)
 
         self.analysis_settings = {
             'threshold_voltage': self.readout_threshold_voltage,
