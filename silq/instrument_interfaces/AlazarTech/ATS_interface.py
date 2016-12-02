@@ -296,9 +296,16 @@ class ATSInterface(InstrumentInterface):
             # TODO Allow variable records_per_buffer
             records_per_buffer = 1
             buffers_per_acquisition = self.samples()
+
+            if buffers_per_acquisition > 1:
+                allocated_buffers = 2
+            else:
+                allocated_buffers = 1
+
             self.update_settings(samples_per_record=samples_per_record,
                                  records_per_buffer=records_per_buffer,
-                                 buffers_per_acquisition=buffers_per_acquisition)
+                                 buffers_per_acquisition=buffers_per_acquisition,
+                                 allocated_buffers=allocated_buffers)
         elif self.acquisition_controller() == 'Continuous':
             # records_per_buffer and buffers_per_acquisition are fixed
             self._acquisition_settings.pop('records_per_buffer', None)
