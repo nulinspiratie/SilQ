@@ -287,9 +287,8 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
                 saved_traces['initialization'] = \
                     self.data['initialization_traces']
             if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization'] = \
-                    np.array(
-                        list(self.data['post_initialization_traces'].values()))
+                saved_traces['post_initialization_output'] = \
+                    self.data['post_initialization_traces']['output']
             self.store_traces(saved_traces)
 
         # Print results
@@ -357,8 +356,8 @@ class T1_Parameter(AdiabaticSweep_Parameter):
                 saved_traces['initialization'] = \
                     self.data['initialization_traces']
             if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization'] = \
-                    self.data['post_initialization_traces']
+                saved_traces['post_initialization_output'] = \
+                    self.data['post_initialization_traces']['output']
             self.store_traces(saved_traces)
 
         # Print results
