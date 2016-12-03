@@ -15,3 +15,5 @@ data_manager = qc.data.manager.get_data_manager()
 data_manager_raw = DataManager(server_name='Raw_DataServer')
 data_manager_raw.base_location = DataSet.default_io.base_location
 qc.data.manager.DataManager.default = data_manager
+
+measurement_parameters.MeasurementParameter.data_manager = data_manager_raw

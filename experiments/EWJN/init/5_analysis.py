@@ -1,12 +1,14 @@
 from silq.analysis import analysis, fit_toolbox
 
 class T1_Dataset:
-    def __init__(self, location, T1_wait_time=None, skip=[]):
+    def __init__(self, location, T1_label=None, T1_wait_time=None, skip=[]):
         self.location = location
         self.skip = skip
 
         self.dataset = qc.load_data(self.location)
-        if 'up_proportion_3_0_0' in self.dataset.arrays.keys():
+        if T1_label is not None:
+            self.T1_label = T1_label
+        elif 'up_proportion_3_0_0' in self.dataset.arrays.keys():
             self.T1_label = 'up_proportion_3_0_0'
         else:
             self.T1_label = 'up_proportion'
@@ -56,14 +58,16 @@ class T1_Dataset:
 
 
 class T1_Measurement:
-    def __init__(self, location, B0, skip=[]):
+    def __init__(self, location, B0, T1_label=None, skip=[]):
         self.B0 = B0
         self.datasets = []
         self.add_data(location=location,
-                      skip=skip)
+                      skip=skip,
+                      T1_label=T1_label)
 
-    def add_data(self, location, T1_wait_time=None, skip=[]):
+    def add_data(self, location, T1_label=None, T1_wait_time=None, skip=[]):
         self.datasets.append(T1_Dataset(location=location,
+                                        T1_label=T1_label,
                                         T1_wait_time=T1_wait_time,
                                         skip=skip))
 
