@@ -24,8 +24,6 @@ from qcodes.data.manager import DataManager, DataServer
 from qcodes.data.data_set import new_data, DataMode
 from qcodes.data.data_array import DataArray
 
-qc.show_subprocess_widget()
-
 # Data handling
 qc.data.data_set.DataSet.default_io.base_location = r"C:\Users\serwa_000\Documents\data"
 loc_provider = qc.data.location.FormatLocation(fmt='{date}/#{counter}_{name}_{time}')
