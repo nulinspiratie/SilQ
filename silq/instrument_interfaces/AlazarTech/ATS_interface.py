@@ -300,7 +300,8 @@ class ATSInterface(InstrumentInterface):
             if buffers_per_acquisition > 1:
                 allocated_buffers = 2
             else:
-                allocated_buffers = 1
+                # TODO figure out why 1 buffer does not work
+                allocated_buffers = 2
 
             self.update_settings(samples_per_record=samples_per_record,
                                  records_per_buffer=records_per_buffer,

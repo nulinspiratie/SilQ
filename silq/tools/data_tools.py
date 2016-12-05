@@ -16,7 +16,7 @@ def get_latest_data_folder():
     return data_folder
 
 
-def create_raw_data_set(name, data_manager, shape,
+def create_raw_data_set(name, data_manager, shape, subfolder=None,
                         folder_name=None, location=None, formatter=None):
     if folder_name is None:
         folder_name = name
@@ -40,9 +40,15 @@ def create_raw_data_set(name, data_manager, shape,
 
     if location is None:
         data_folder = get_latest_data_folder()
-        location = qc.data.location.FormatLocation(
-            fmt='{data_folder}/{name}/#{{counter}}'.format(
-                data_folder=data_folder, name=folder_name))
+        if subfolder is None:
+            location = qc.data.location.FormatLocation(
+                fmt='{data_folder}/{name}/#{{counter}}'.format(
+                    data_folder=data_folder, name=folder_name))
+        else:
+            location = qc.data.location.FormatLocation(
+                fmt='{data_folder}/{subfolder}/{name}/#{{counter}}'.format(
+                    data_folder=data_folder,
+                    subfolder=subfolder, name=folder_name))
 
     data_set = new_data(
         location=location,
