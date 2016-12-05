@@ -7,7 +7,9 @@ from numpy import array, nan
 from functools import partial
 from importlib import reload
 from time import sleep, time
+from winsound import Beep
 from matplotlib import pyplot as plt
+import pyperclip
 
 
 # Qcodes imports
