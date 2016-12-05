@@ -76,7 +76,7 @@ class MeasurementParameter(Parameter):
             idx += self.pts[pulse.name]
         return trace_segments
 
-    def store_traces(self, traces_dict, name=None):
+    def store_traces(self, traces_dict, name=None, subfolder=None):
         # Store raw traces
         if name is None:
             name = self.name
@@ -90,7 +90,8 @@ class MeasurementParameter(Parameter):
                 name=traces_name,
                 data_manager=self.data_manager,
                 shape=traces.shape,
-                formatter=self.formatter)
+                formatter=self.formatter,
+                subfolder=subfolder)
             data_tools.store_data(data_manager=self.data_manager,
                                   result=traces)
 
@@ -146,6 +147,8 @@ class EPR_Parameter(MeasurementParameter):
                          layout=layout,
                          snapshot_value=False,
                          **kwargs)
+
+        self.subfolder = 'EPR'
 
         empty_pulse = DCPulse(name='empty', amplitude=-1.5,
                               t_start=0,duration=5, acquire=True)
@@ -221,7 +224,7 @@ class EPR_Parameter(MeasurementParameter):
         if self.save_traces:
             saved_traces = {'acquisition_traces':
                                 self.data['acquisition_traces']['output']}
-            self.store_traces(saved_traces)
+            self.store_traces(saved_traces, subfolder=self.subfolder)
 
         # Print results
         if self.print_results:
@@ -238,6 +241,8 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         super().__init__(layout=layout, **kwargs)
         self.name = 'adiabatic_sweep'
         self.label = 'Adiabatic sweep center frequency'
+
+        self.subfolder = 'adiabatic'
 
         frequency_center = 20e9  # Hz
         frequency_deviation = 10e6  # Hz
@@ -287,7 +292,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
             if 'post_initialization_traces' in self.data:
                 saved_traces['post_initialization_output'] = \
                     self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces)
+            self.store_traces(saved_traces, subfolder=self.subfolder)
 
         # Print results
         if self.print_results:
@@ -313,6 +318,8 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.name = 'T1_wait_time'
             self.label = 'T1_wait_time'
 
+            self.subfolder = 'T1'
+
             self.pulse_sequence['empty'].acquire = False
             self.pulse_sequence['plunge'].acquire = False
 
@@ -337,6 +344,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         self.labels = self.names
         self.shapes = ((), ())
 
+
     def get(self):
         self.acquire()
 
@@ -356,7 +364,9 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             if 'post_initialization_traces' in self.data:
                 saved_traces['post_initialization_output'] = \
                     self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces)
+            self.store_traces(saved_traces,
+                              name=self.plunge_duration,
+                              subfolder=self.subfolder)
 
         # Print results
         if self.print_results:
@@ -369,16 +379,19 @@ class T1_Parameter(AdiabaticSweep_Parameter):
 
     def set(self, plunge_duration):
             self.pulse_sequence['plunge'].duration = plunge_duration
+            self.subfolder = 'T1_{}'.format(int(self.plunge_duration))
 
-            self.setup()
+            self.setup(save_traces=self.save_traces)
 
 
 class dark_counts_parameter(T1_Parameter):
 
     def __init__(self, layout, **kwargs):
             super().__init__(layout=layout, **kwargs)
-            self.name = 'base_dark_counts'
-            self.label = 'base_dark_counts'
+            self.name = 'dark_counts'
+            self.label = 'Dark counts'
+
+            self.subfolder = 'dark_counts'
 
             self.pulse_sequence['empty'].enabled = False
             self.pulse_sequence['plunge'].enabled = False
