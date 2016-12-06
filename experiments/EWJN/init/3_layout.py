@@ -30,10 +30,10 @@ cArb1 = layout.add_connection(output_arg='arbstudio.ch1',
 cArb2 = layout.add_connection(output_arg='arbstudio.ch2',
                               input_arg='chip.DF',
                               pulse_modifiers={'amplitude_scale': -1.5})
+layout.combine_connections(cArb1, cArb2, default=True)
+
 cArb3 = layout.add_connection(output_arg='arbstudio.ch3',
-                              input_arg='ATS.chC',
-                              pulse_modifiers={'amplitude_scale': 1})
-layout.combine_connections(cArb1, cArb2, cArb3, default=True)
+                              input_arg='keysight.I')
 cArb4 = layout.add_connection(output_arg='arbstudio.ch4',
                               input_arg='keysight.ext2')
 
