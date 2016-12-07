@@ -51,5 +51,4 @@ layout.add_connection(output_arg='ATS.software_trig_out',
 
 # Specify acquisition channels
 layout.acquisition_outputs([('chip.output', 'output'),
-                            ('arbstudio.ch3', 'pulses'),
                             ('pulseblaster.ch3', 'trigger')])
