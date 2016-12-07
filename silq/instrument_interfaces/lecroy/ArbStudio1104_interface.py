@@ -70,8 +70,14 @@ class ArbStudio1104Interface(InstrumentInterface):
         for ch in self.active_channels():
 
             self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
-            self.instrument.parameters[ch + '_trigger_mode']('stepped')
             self.instrument.functions[ch + '_clear_waveforms']()
+
+            if self.pulse_sequence().get_pulses(output_channel=ch,
+                                                pulse_class=SinePulse):
+                # TODO better check for when to use burst or stepped mode
+                self.instrument.parameters[ch + '_trigger_mode']('burst')
+            else:
+                self.instrument.parameters[ch + '_trigger_mode']('stepped')
 
             # Add waveforms to channel
             for waveform in self.waveforms[ch]:
