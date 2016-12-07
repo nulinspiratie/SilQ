@@ -284,34 +284,11 @@ class SinePulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} us is not in the time range {} ms - {} ms of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
-                                                    self.phase/360))
-
-
-class SinePulse(Pulse):
-    def __init__(self, frequency, amplitude, phase=0, **kwargs):
-        super().__init__(**kwargs)
-
-        self.frequency = frequency
-        self.amplitude = amplitude
-        self.phase = phase
-
-    def __repr__(self):
-        properties_str = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
-
-        return super()._get_repr(properties_str)
-
-    def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
-
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
+        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
                                                     self.phase/360))
 
 
