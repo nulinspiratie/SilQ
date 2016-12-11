@@ -16,7 +16,7 @@ interfaces = {}
 ### SIM900
 SIM900 = SIM900('SIM900', 'GPIB0::4::INSTR',server_name='' if USE_MP else None)
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
-DC_sources = [('TG',1,8,18), ('LB',2,4,8), ('RB',3,4,8), ('TGAC',4,5,4),
+DC_sources = [('TG',1,8,18), ('LB',2,4,8), ('RB',3,4,8), ('TGAC',8,5,4),
          ('SRC',5,1,1), ('DS',7,4,3.2), ('DF',6,4,3.2)]
 SIM900_scaled_parameters = []
 for ch_name, ch, ratio,max_voltage in DC_sources:

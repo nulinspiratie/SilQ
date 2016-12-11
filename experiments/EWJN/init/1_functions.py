@@ -1,3 +1,5 @@
+from silq.functions.general_functions import partial_from_attr
+
 # General functions
 def plot_traces(traces, ax=None, traces_AWG=None, threshold_voltage=None,
                 plot1D=False):
@@ -53,10 +55,12 @@ def try_close_instruments(
             pass
 
 
-def print_voltages(SIM900):
-    for channel, name in SIM900.channels().items():
-        print('{}({})'.format(name, SIM900.parameters[name]()))
+def get_voltages(SIM900):
+    voltages = {}
 
+    for channel, name in SIM900.channels().items():
+        voltages[name] = SIM900.parameters[name]()
+    return voltages
 
 def ramp_to_voltages(target_voltages, SIM900=None, channels=None):
     if channels is None:
