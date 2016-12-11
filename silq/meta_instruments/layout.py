@@ -365,6 +365,9 @@ class Layout(Instrument):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.initialize()
+            interface.pulse_sequence(('duration', pulse_sequence.duration))
+            interface.input_pulse_sequence(('duration',
+                                            pulse_sequence.duration))
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -380,6 +383,7 @@ class Layout(Instrument):
             )
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
+
 
     def update_flags(self, new_flags):
         """
@@ -458,8 +462,10 @@ class Layout(Instrument):
                                                              False):
                 # Interface has a flag to skip start
                 continue
-            else:
+            elif interface.pulse_sequence():
                 interface.start()
+            else:
+                pass
 
     def stop(self):
         for interface in self._get_interfaces_hierarchical():
