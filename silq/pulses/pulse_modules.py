@@ -68,6 +68,8 @@ class PulseSequence:
         self.connection_conditions = connection_conditions
         self.pulse_conditions = pulse_conditions
 
+        self._duration = None
+
         self.pulses = []
         if pulses:
             self.add(pulses)
@@ -136,10 +138,15 @@ class PulseSequence:
 
     @property
     def duration(self):
-        if self.enabled_pulses:
+        if self._duration is not None:
+            return self._duration
+        elif self.enabled_pulses:
             return max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
             return 0
+    @duration.setter
+    def duration(self, duration):
+        self._duration = duration
 
     @property
     def t_start_list(self):
