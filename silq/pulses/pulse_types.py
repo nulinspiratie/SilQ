@@ -284,41 +284,19 @@ class SinePulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} us is not in the time range {} ms - {} ms of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
-                                                    self.phase/360))
-
-
-class SinePulse(Pulse):
-    def __init__(self, frequency, amplitude, phase=0, **kwargs):
-        super().__init__(**kwargs)
-
-        self.frequency = frequency
-        self.amplitude = amplitude
-        self.phase = phase
-
-    def __repr__(self):
-        properties_str = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
-
-        return super()._get_repr(properties_str)
-
-    def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
-
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t +
+        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
                                                     self.phase/360))
 
 
 class FrequencyRampPulse(Pulse):
     def __init__(self, frequency_start=None, frequency_stop=None,
                  frequency_center=None, frequency_deviation=None,
-                 frequency_final='stop', amplitude=None, power=None, **kwargs):
+                 frequency_final='stop', amplitude=None, power=None,
+                 frequency_sideband=None, **kwargs):
         super().__init__(**kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
@@ -332,6 +310,7 @@ class FrequencyRampPulse(Pulse):
                               "f_center and f_deviation")
 
         self._frequency_final = frequency_final
+        self.frequency_sideband = frequency_sideband
 
         self.amplitude = amplitude
         self.power = power
@@ -370,20 +349,16 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
 
     def __repr__(self):
-        properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, A={}, ' \
+        properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, power={}, ' \
                          't_start={}, t_stop={}'.format(
-            self.frequency_start/1e6, self.frequency_stop/1e6, self.amplitude,
+            self.frequency_start/1e6, self.frequency_stop/1e6, self.power,
             self.t_start, self.t_stop)
 
-        return super()._get_repr(properties_str)
+        if self.frequency_sideband is not None:
+            properties_str += ', f_sb={}'.format(
+                self.frequency_sideband)
 
-    # def get_voltage(self, t):
-    #     if t == self.t_start:
-    #         return self.amplitude_start
-    #     elif t == self.t_stop:
-    #         return self.amplitude_final
-    #     else:
-    #         raise NotImplementedError("Voltage not yet implemented")
+        return super()._get_repr(properties_str)
 
 
 class DCPulse(Pulse):
