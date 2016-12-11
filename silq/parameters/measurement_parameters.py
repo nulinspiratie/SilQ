@@ -1,6 +1,6 @@
 from time import sleep
 import numpy as np
-
+from collections import OrderedDict
 
 import qcodes as qc
 from qcodes import config
@@ -152,7 +152,7 @@ class EPR_Parameter(MeasurementParameter):
 
         empty_pulse = DCPulse(name='empty', amplitude=-1.5,
                               t_start=0,duration=5, acquire=True)
-        plunge_pulse = DCPulse(name='plunge', amplitude=1.5,
+        plunge_pulse = DCPulse(name='plunge', amplitude=1.8,
                                duration=5, acquire=True)
         read_pulse = DCPulse(name='read', amplitude=0,
                               duration=50, acquire=True)
@@ -261,6 +261,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         self.pulse_sequence.add([ESR_pulse, steered_initialization])
         self.pulse_sequence['empty'].enabled = False
 
+        self.frequency_center = None
         self.analysis = analysis.analyse_PR
 
     def setup(self, readout_threshold_voltage=None, **kwargs):
@@ -298,17 +299,81 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         if self.print_results:
             self.print_fidelities()
 
-        if self.return_traces:
-            return self.fidelities + tuple(self.traces.values())
-        else:
-            return self.fidelities
+        return self.fidelities
 
     def set(self, frequency_center):
         # Change center frequency
         self.pulse_sequence['adiabatic_sweep'].frequency_center = \
             frequency_center
-
+        self.frequency_center = frequency_center
         self.setup()
+
+
+class FindESR_Parameter(AdiabaticSweep_Parameter):
+    def __init__(self, layout, **kwargs):
+        super().__init__(layout=layout, **kwargs)
+        self.name = 'find_ESR_frequency'
+        self.label = 'Find ESR frequency adiabatic'
+
+        self.subfolder = 'find_ESR'
+
+        self.frequencies_ESR = OrderedDict([('low', None), ('high', None)])
+        self.frequency_ESR = None
+
+        self._meta_attrs.extend(['ESR_frequencies', 'ESR_frequency'])
+
+    def setup(self, **kwargs):
+        super().setup(**kwargs)
+
+
+        self.names = ['dark_counts_up', 'contrast_up',
+                      'dark_counts_down', 'contrast_down',
+                      'ESR_frequency']
+        self.labels = self.names
+        self.shapes = ((), (), (), (), ())
+
+    def get(self):
+        self.fidelities = []
+
+        # Perform measurement for both adiabatic frequencies
+        for spin_state, frequency in self.frequencies_ESR.items():
+            # Set adiabatic sweep frequency
+            self(frequency)
+            self.acquire()
+
+            fidelities = self.analysis(
+                trace_segments=self.trace_segments['output'],
+                **self.analysis_settings)
+            # Only add dark counts and contrast
+            self.fidelities += [fidelities[3], fidelities[4]]
+
+            # Store raw traces if self.save_traces is True
+            if self.save_traces:
+                saved_traces = {'acquisition_traces':
+                                    self.data['acquisition_traces']['output']}
+                if 'initialization_traces' in self.data:
+                    saved_traces['initialization'] = \
+                        self.data['initialization_traces']
+                if 'post_initialization_traces' in self.data:
+                    saved_traces['post_initialization_output'] = \
+                        self.data['post_initialization_traces']['output']
+                self.store_traces(saved_traces, subfolder='{}_{}'.format(
+                    self.subfolder, spin_state))
+
+        if self.fidelities[1] > fidelities[3]:
+            # Nucleus is in the up state
+            self.frequency_ESR = self.frequencies_ESR['up']
+            self.fidelities += [self.frequency_ESR]
+        else:
+            # Nucleus is in the down state
+            self.frequency_ESR = self.frequencies_ESR['down']
+            self.fidelities += [self.frequency_ESR]
+
+        # Print results
+        if self.print_results:
+            self.print_fidelities()
+
+        return self.fidelities
 
 
 class T1_Parameter(AdiabaticSweep_Parameter):
@@ -343,7 +408,6 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         self.names = ['up_proportion', 'num_traces_loaded']
         self.labels = self.names
         self.shapes = ((), ())
-
 
     def get(self):
         self.acquire()
