@@ -1,8 +1,10 @@
 import numpy as np
+import logging
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
-from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, PulseImplementation
+from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
+    PulseImplementation
 
 from qcodes.instrument.parameter import ManualParameter
 
@@ -25,10 +27,9 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO check Arbstudio output TTL high
 
         self.pulse_implementations = [
-            # TODO implement SinePulse
-            # SinePulse(
-            #     pulse_requirements=('frequency', {'min':1e6, 'max':50e6})
-            # ),
+            SinePulseImplementation(
+                pulse_requirements=[('frequency', {'min':1e6, 'max':125e6})]
+            ),
             DCPulseImplementation(
                 pulse_requirements=[('amplitude', {'min': -2.5, 'max': 2.5})]
             ),
@@ -69,8 +70,14 @@ class ArbStudio1104Interface(InstrumentInterface):
         for ch in self.active_channels():
 
             self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
-            self.instrument.parameters[ch + '_trigger_mode']('stepped')
             self.instrument.functions[ch + '_clear_waveforms']()
+
+            if self.pulse_sequence().get_pulses(output_channel=ch,
+                                                pulse_class=SinePulse):
+                # TODO better check for when to use burst or stepped mode
+                self.instrument.parameters[ch + '_trigger_mode']('burst')
+            else:
+                self.instrument.parameters[ch + '_trigger_mode']('stepped')
 
             # Add waveforms to channel
             for waveform in self.waveforms[ch]:
@@ -212,6 +219,93 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.waveforms
 
 
+class SinePulseImplementation(PulseImplementation, SinePulse):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+
+    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, is_primary=is_primary, **kwargs)
+
+        # Set final delay from interface parameter
+        targeted_pulse.final_delay = interface.final_delay()
+
+        # Check if there are already trigger pulses
+        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+            t_start=pulse.t_start, trigger=True
+        )
+
+        if not (is_primary or trigger_pulses or targeted_pulse.t_start == 0):
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=targeted_pulse.t_start,
+                             duration=interface.trigger_in_duration()*1e-3,
+                             connection_requirements={
+                                 'input_instrument':
+                                     interface.instrument_name(),
+                                 'trigger': True}
+                             )
+            )
+        return targeted_pulse
+
+    def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
+        """
+        Implements the sine pulse for the ArbStudio for SingleConnection.
+        Args:
+
+        Returns:
+            waveforms: {output_channel: waveforms} dictionary for each output
+                channel, where each element in waveforms is a list
+                containing the voltage levels of the waveform
+            waveforms: {output_channel: sequence} dictionary for each
+            output channel, where each element in sequence indicates the
+            waveform that must be played after the trigger
+        """
+        # Find all trigger pulses occuring within this pulse
+        trigger_pulses = input_pulse_sequence.get_pulses(
+            t_start=('>', self.t_start),
+            t_stop=('<', self.t_stop),
+            trigger=True)
+        assert len(trigger_pulses) == 0, \
+            "Cannot implement sine pulse if the arbstudio receives " \
+            "intermediary triggers"
+
+        if isinstance(self.connection, SingleConnection):
+            channels = [self.connection.output['channel'].name]
+        else:
+            raise Exception("No implementation for connection {}".format(
+                self.connection))
+
+        assert self.frequency < min(sampling_rates[ch] for ch in channels )/2, \
+            'Sine frequency is higher than the Nyquist limit ' \
+            'for channels {}'.format(channels)
+
+        waveforms, sequences = {}, {}
+
+        # If the sampling rate is too high, the waveform for the full
+        # duration requires too many points. We therefore find a duration
+        # that does not create too many points, and generate the waveform.
+        # TODO implement full waveform if sampling rate is not too high
+        self.waveform_duration = 1 # us
+        assert self.waveform_duration * 1e-6 * self.frequency > 10, \
+            "sine pulse frequency {} too low, increase waveform " \
+            "duration".format(self.frequency)
+        assert self.waveform_duration * 1e-3 < self.duration, \
+            "Waveform duration too long"
+
+        for ch in channels:
+            # TODO choose number of points to minimize the phase accumulation
+            # Start t_list from t_start to ensure phase is taken into account
+            t_list = np.arange(self.t_start,
+                               self.t_start + self.waveform_duration * 1e-3,
+                               1 / sampling_rates[ch] * 1e3) # ms
+            if len(t_list) % 2:
+                t_list = t_list[:-1]
+
+            waveforms[ch] = [self.get_voltage(t_list)]
+            sequences[ch] = np.zeros(1, dtype=int)
+
+        return waveforms, sequences
+
 class DCPulseImplementation(PulseImplementation, DCPulse):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
@@ -225,8 +319,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             t_start=pulse.t_start, trigger=True
         )
 
-        if not is_primary and not trigger_pulses and \
-                not targeted_pulse.t_start == 0:
+        if not (is_primary or trigger_pulses or targeted_pulse.t_start == 0):
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=interface.trigger_in_duration()*1e-3,
@@ -295,8 +388,7 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
             t_start=pulse.t_start, trigger=True
         )
 
-        if not is_primary and not trigger_pulses and \
-                not targeted_pulse.t_start == 0:
+        if not (is_primary or trigger_pulses or targeted_pulse.t_start == 0):
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=interface.trigger_in_duration()*1e-3,

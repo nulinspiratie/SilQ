@@ -15,7 +15,11 @@ class E8267DInterface(InstrumentInterface):
             'ext1': Channel(instrument_name=self.instrument_name(),
                             name='ext1', input=True),
             'ext2': Channel(instrument_name=self.instrument_name(),
-                            name='ext2', input=True)
+                            name='ext2', input=True),
+            'I': Channel(instrument_name=self.instrument_name(),
+                            name='I', input=True),
+            'Q': Channel(instrument_name=self.instrument_name(),
+                            name='Q', input=True)
         }
         self._output_channels = {
             'RF_out': Channel(instrument_name=self.instrument_name(),
@@ -149,6 +153,7 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'}
                         ),
+            # Add a ramping DC pulse for frequency modulation
             DCRampPulse(t_start=pulse.t_start,
                         t_stop=pulse.t_stop,
                         amplitude_start=amplitude_start,
@@ -158,7 +163,9 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
                             'input_channel': interface.modulation_channel()}
                         )
         ))
+
         if interface.envelope_padding() > 0:
+            # Add padding DC pulses at start and end
             targeted_pulse.additional_pulses.extend((
                 DCPulse(t_start=pulse.t_start - interface.envelope_padding(),
                         t_stop=pulse.t_start,
@@ -175,6 +182,18 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
                             'input_channel': interface.modulation_channel()}
                         )
             ))
+
+        if targeted_pulse.frequency_sideband is not None:
+            targeted_pulse.additional_pulses.append(
+                SinePulse(t_start=targeted_pulse.t_start,
+                          t_stop=targeted_pulse.t_stop,
+                          amplitude=1,
+                          frequency=targeted_pulse.frequency_sideband,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': ['I', 'Q']
+                          })
+            )
 
         return targeted_pulse
 

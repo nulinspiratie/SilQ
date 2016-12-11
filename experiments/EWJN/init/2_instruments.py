@@ -36,9 +36,12 @@ dll_path = os.path.join(os.getcwd(),'C:\lecroy_driver\\Library\\ArbStudioSDK.dll
 arbstudio = ArbStudio1104('arbstudio',
                           dll_path=dll_path,
                           server_name='' if USE_MP else None)
-for ch in ['ch1', 'ch2', 'ch3', 'ch4']:
+for ch in ['ch1', 'ch2', 'ch4']:
     arbstudio.parameters[ch + '_sampling_rate_prescaler'](250)
+# ch3 is used for sideband modulation
+arbstudio.ch3_sampling_rate_prescaler(1)
 interfaces['arbstudio'] = get_instrument_interface(arbstudio)
+arbstudio_interface = interfaces['arbstudio']
 
 
 ### PulseBlaster
@@ -47,11 +50,12 @@ pulseblaster = PulseBlasterESRPRO('pulseblaster',
                             server_name='' if USE_MP else None)
 pulseblaster.core_clock(500)
 interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
-
+pulseblaster_interface = interfaces['pulseblaster']
 
 ### Chip
 chip = Chip(name='chip', server_name='' if USE_MP else None)
 interfaces['chip'] = get_instrument_interface(chip)
+chip_interface = interfaces['chip']
 
 
 ### ATS
@@ -79,12 +83,14 @@ interfaces['ATS'].add_acquisition_controller('triggered_controller')
 interfaces['ATS'].add_acquisition_controller('continuous_controller')
 interfaces['ATS'].add_acquisition_controller('steered_initialization_controller')
 interfaces['ATS'].default_acquisition_controller('Triggered')
+ATS_interface = interfaces['ATS']
 
 
 ### MW source
 keysight = Keysight_E8267D('keysight','TCPIP0::192.168.0.5::inst0::INSTR',
                            server_name='' if USE_MP else None)
 interfaces['keysight'] = get_instrument_interface(keysight)
+keysight_interface = interfaces['keysight']
 interfaces['keysight'].modulation_channel('ext2')
 interfaces['keysight'].envelope_padding(0.2)
 keysight.power(10)
