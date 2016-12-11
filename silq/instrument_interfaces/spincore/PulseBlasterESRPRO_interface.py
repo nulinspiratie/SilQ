@@ -98,7 +98,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Add final instructions
 
                 # Wait until end of pulse sequence
-                wait_duration = self._pulse_sequence.duration - t
+                wait_duration = max(self._pulse_sequence.duration - t, 0)
                 if wait_duration:
                     wait_cycles = round(wait_duration * ms)
                     if wait_cycles < 1e9:
