@@ -21,6 +21,7 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, StandardPara
 from silq.parameters import measurement_parameters, general_parameters
 from silq.instrument_interfaces import get_instrument_interface
 from silq.pulses import *
+from silq.functions.general_functions import printattr
 
 if not 'USE_MP' in globals():
     USE_MP = True
