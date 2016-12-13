@@ -2,12 +2,16 @@ import numpy as np
 import copy
 from .pulse_modules import PulseImplementation
 
+from qcodes import config
+
 from silq.tools.general_tools import get_truth
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
 pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
                     'connection', 'amplitude', 'enabled']
+
+pulse_config = config['user']['pulses']
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
@@ -16,15 +20,15 @@ class Pulse:
                  connection=None, enabled=True,
                  connection_requirements={}):
         self.name = name
+        self._previous_pulse = previous_pulse
 
         self._t_start = t_start
         self._duration = duration
         self._t_stop = t_stop
 
-        if duration is None and t_stop is None:
+        if self.duration is None and self.t_stop is None:
             raise Exception("Must provide either t_stop or duration")
 
-        self._previous_pulse = previous_pulse
         self.delay = delay
 
         self.acquire = acquire
@@ -117,6 +121,16 @@ class Pulse:
         # Pulse is always equal to true
         return True
 
+    def __getattribute__(self, item):
+        value = object.__getattribute__(self, item)
+        if value is None:
+            # Check if pulse attribute is in pulse_config
+            if self.name in pulse_config:
+                if item in pulse_config[self.name]:
+                    value = pulse_config[self.name][item]
+
+        return value
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -161,8 +175,8 @@ class Pulse:
     def t_stop(self):
         if self._t_stop is not None:
             return self._t_stop
-        elif self.t_start is not None:
-            return self.t_start + self._duration
+        elif self.t_start is not None and self.duration is not None:
+            return self.t_start + self.duration
         else:
             return None
 
@@ -362,10 +376,13 @@ class FrequencyRampPulse(Pulse):
 
 
 class DCPulse(Pulse):
-    def __init__(self, amplitude, **kwargs):
+    def __init__(self, amplitude=None, **kwargs):
         super().__init__(**kwargs)
 
         self.amplitude = amplitude
+        if self.amplitude is None:
+            raise AttributeError("'{}' object has no attribute "
+                                 "'amplitude'".format(self.__class__.__name__))
 
     def __repr__(self):
         properties_str = 'A={}, t_start={}, t_stop={}'.format(
