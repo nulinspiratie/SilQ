@@ -9,8 +9,7 @@ from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
 
 class CombinedParameter(Parameter):
-    def __init__(self, parameters, ratios=None,
-                 name=None, label=None, units=None, **kwargs):
+    def __init__(self, parameters, name=None, label=None, units=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
         if label is None:
@@ -20,16 +19,15 @@ class CombinedParameter(Parameter):
         super().__init__(name, label=label, units=units, **kwargs)
         self.parameters = parameters
 
-        if ratios is None:
-            ratios = [1 for parameter in parameters]
-        self.ratios = ratios
-
     def get(self):
-        return self.parameters[0]() / self.ratios[0]
+        value = self.parameters[0]()
+        self._save_val(value)
+        return value
 
-    def set(self, val):
-        for parameter, ratio in zip(self.parameters, self.ratios):
-            parameter(val * ratio)
+    def set(self, value):
+        self._save_val(value)
+        for parameter in self.parameters:
+            parameter(value)
             sleep(0.005)
 
 class ScaledParameter(Parameter):
@@ -143,6 +141,9 @@ class AttributeParameter(Parameter):
 
     def set(self, value):
         setattr(self.object, self.attribute, value)
+        self._save_val(value)
 
     def get(self):
-        return getattr(self.object, self.attribute)
+        value =  getattr(self.object, self.attribute)
+        self._save_val(value)
+        return value
