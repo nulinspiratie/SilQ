@@ -114,6 +114,39 @@ class PulseSequence:
                 output += '\t' + pulse_repr + '\n'
         return output
 
+
+    def __eq__(self, other):
+        """
+        Overwrite comparison with other (self == other).
+        We want the comparison to return True if other is a pulse with the
+        same attributes. This can be complicated since pulses can also be
+        targeted, resulting in a pulse implementation. We therefore have to
+        use a separate comparison when either is a Pulse implementation
+        Args:
+            other:
+
+        Returns:
+
+        """
+        if not isinstance(other, PulseSequence):
+            return False
+        # All attributes must match
+        return self._matches_attrs(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
+            for attr in vars(self):
+                if attr in exclude_attrs:
+                    continue
+                elif not hasattr(other_pulse_sequence, attr) \
+                        or getattr(self, attr) != \
+                                getattr(other_pulse_sequence, attr):
+                    return False
+            else:
+                return True
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
