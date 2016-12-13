@@ -14,8 +14,12 @@ import pyperclip
 
 # Qcodes imports
 import qcodes as qc
-from qcodes import Instrument
+from qcodes import Instrument, config
 from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
+
+if 'pulses' not in config['user']:
+    config.add('pulses', {})
+pulse_config = config['user']['pulses']
 
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters

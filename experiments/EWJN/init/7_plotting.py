@@ -52,7 +52,6 @@ class CalibrationPlot:
         if event_label == 'gates_to_clipboard':
             self.fig.canvas.mpl_connect('button_press_event',
                                         self.gates_to_clipboard)
-        elif event_label == ''
         else:
             raise SyntaxError(
                 'event label {} not understood'.format(event_label))
