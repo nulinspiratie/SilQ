@@ -96,17 +96,6 @@ class MeasurementParameter(Parameter):
                                   result=traces)
 
 
-class TestMeasurementParameter(MeasurementParameter):
-    def __init__(self, **kwargs):
-        super().__init__(layout=None,
-                         name='test_measure',
-                         shape=(4,3),
-                         **kwargs)
-
-    def get(self):
-        return np.random.randint(0,10, self.shape)
-
-
 class DC_Parameter(MeasurementParameter):
 
     def __init__(self, layout, **kwargs):
@@ -261,8 +250,17 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         self.pulse_sequence.add([ESR_pulse, steered_initialization])
         self.pulse_sequence['empty'].enabled = False
 
-        self.frequency_center = None
+        # self.frequency_center = None
         self.analysis = analysis.analyse_PR
+
+    @property
+    def frequency_center(self):
+        return self.pulse_sequence['adiabatic_sweep'].frequency_center
+
+    @frequency_center.setter
+    def frequency_center(self, frequency_center):
+        self.pulse_sequence['adiabatic_sweep'].frequency_center = \
+            frequency_center
 
     def setup(self, readout_threshold_voltage=None, **kwargs):
         if readout_threshold_voltage is not None:
@@ -303,8 +301,8 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
     def set(self, frequency_center):
         # Change center frequency
-        self.pulse_sequence['adiabatic_sweep'].frequency_center = \
-            frequency_center
+        # self.pulse_sequence['adiabatic_sweep'].frequency_center = \
+        #     frequency_center
         self.frequency_center = frequency_center
         self.setup()
 
@@ -317,7 +315,7 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
 
         self.subfolder = 'find_ESR'
 
-        self.frequencies_ESR = OrderedDict([('low', None), ('high', None)])
+        self.frequencies_ESR = None
         self.frequency_ESR = None
 
         self._meta_attrs.extend(['ESR_frequencies', 'ESR_frequency'])
@@ -336,7 +334,9 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
         self.fidelities = []
 
         # Perform measurement for both adiabatic frequencies
-        for spin_state, frequency in self.frequencies_ESR.items():
+        for spin_state in ['up', 'down']:
+            frequency = self.frequencies_ESR[spin_state]
+
             # Set adiabatic sweep frequency
             self(frequency)
             self.acquire()
@@ -360,14 +360,13 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
                 self.store_traces(saved_traces, subfolder='{}_{}'.format(
                     self.subfolder, spin_state))
 
-        if self.fidelities[1] > fidelities[3]:
+        if self.fidelities[1] > self.fidelities[3]:
             # Nucleus is in the up state
             self.frequency_ESR = self.frequencies_ESR['up']
-            self.fidelities += [self.frequency_ESR]
         else:
             # Nucleus is in the down state
             self.frequency_ESR = self.frequencies_ESR['down']
-            self.fidelities += [self.frequency_ESR]
+        self.fidelities += [self.frequency_ESR]
 
         # Print results
         if self.print_results:
