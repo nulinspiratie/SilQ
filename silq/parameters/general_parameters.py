@@ -48,10 +48,14 @@ class ScaledParameter(Parameter):
         self._meta_attrs.extend(['ratio'])
 
     def get(self):
-        return self.parameter() / self.ratio
+        value = self.parameter() / self.ratio
+        self._save_val(value)
+        return value
 
     def set(self, val):
-        self.parameter(val * self.ratio)
+        value = val * self.ratio
+        self._save_val(value)
+        self.parameter(value)
 
 class TestStoreParameter(Parameter):
     def __init__(self, data_manager, shape=(100,2), formatter=None, **kwargs):
