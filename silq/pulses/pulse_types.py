@@ -11,7 +11,7 @@ from silq.tools.general_tools import get_truth
 pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
                     'connection', 'amplitude', 'enabled']
 
-pulse_config = config['user']['pulses']
+pulse_config = config['user'].get('pulses')
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
