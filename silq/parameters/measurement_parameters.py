@@ -1,6 +1,7 @@
 from time import sleep
 import numpy as np
 from collections import OrderedDict
+import logging
 
 import qcodes as qc
 from qcodes import config
@@ -510,91 +511,192 @@ class VariableRead_Parameter(MeasurementParameter):
         self.setup()
 
 
-class Measure1D_Parameter(Parameter):
-    def __init__(self, name, set_parameter, measure_parameter,
-                 **kwargs):
+class Loop_Parameter(Parameter):
+    def __init__(self, name, measure_parameter, **kwargs):
         super().__init__(name, **kwargs)
-        self.set_parameter = set_parameter
-        self.set_parameter_name = set_parameter.name
         self.measure_parameter = measure_parameter
-        self.measure_parameter_name = measure_parameter.name
-        self.set_vals = None
 
-        self._meta_attrs.extend(['measure_parameter_name', 'set_vals'])
+        self.loc_provider = qc.data.location.FormatLocation(
+            fmt='#{counter}_{name}_{time}')
+        self._meta_attrs.extend(['measure_parameter_name'])
+
+    @property
+    def measure_parameter_name(self):
+        return self.measure_parameter.name
+
+    @property
+    def disk_io(self):
+        return io.DiskIO(data_tools.get_latest_data_folder())
+
+
+class Loop0D_Parameter(Loop_Parameter):
+    def __init__(self, name, measure_parameter, **kwargs):
+        super().__init__(name, measure_parameter=measure_parameter, **kwargs)
+
+    def get(self):
+
+        self.measurement = qc.Measure(self.measure_parameter)
+        self.data = self.measurement.run(
+            name='{}_{}'.format(self.name, self.measure_parameter_name),
+            data_manager=False,
+            io=self.disk_io, location=self.loc_provider)
+        return self.data
+
+class Loop1D_Parameter(Loop_Parameter):
+    def __init__(self, name, set_parameter, measure_parameter, set_vals=None,
+                 **kwargs):
+        super().__init__(name, measure_parameter=measure_parameter, **kwargs)
+        self.set_parameter = set_parameter
+        self.set_vals = set_vals
+
+        self._meta_attrs.extend(['set_parameter_name', 'set_vals'])
+
+    @property
+    def set_parameter_name(self):
+        return self.set_parameter.name
 
     def get(self):
         # Set data saving parameters
-        disk_io = io.DiskIO(data_tools.get_latest_data_folder())
-        loc_provider = qc.data.location.FormatLocation(
-            fmt='#{counter}_{name}_{time}')
-
-        self.loop = qc.Loop(self.set_parameter[self.set_vals]
-                            ).each(self.measure_parameter)
-        self.data = self.loop.run(
-            name='1D_scan_{}_{}'.format(self.set_parameter_name,
-                                        self.measure_parameter_name),
+        self.measurement = qc.Loop(self.set_parameter[self.set_vals]
+                                  ).each(self.measure_parameter)
+        self.data = self.measurement.run(
+            name='{}_{}_{}'.format(self.name, self.set_parameter_name,
+                                   self.measure_parameter_name),
             background=False, data_manager=False,
-            io=disk_io, location=loc_provider)
+            io=self.disk_io, location=self.loc_provider)
         return self.data
 
     def set(self, val):
         self.set_vals = val
 
 
-# class AutoCalibration_Parameter(Parameter):
-#     def __init__(self, name, set_parameters, measure_parameter,
-#                  calibration_operations, key, constraints, **kwargs):
-#         super().__init__(name, **kwargs)
-#
-#         self.key = key
-#         self.constraints = constraints
-#         self.calibration_operations = calibration_operations
-#
-#         self.set_parameters = {p.name: p for p in set_parameters}
-#         self.measure_parameter = measure_parameter
-#         self.measure_parameter_name = measure_parameter.name
-#
-#
-#         self.cal1D_parameter = Measure1D_Parameter(
-#             name='calibration_1D_{}_{}'.format(self.set_parameter_name,
-#                                                self.measure_parameter_name),
-#             measure_parameter=measure_parameter)
-#
-#         # TODO update
-#         self._meta_attrs.extend(['set_parameter_name', 'measure_parameter_name',
-#                                  'key', 'update', 'span', 'set_points'
-#                                  'set_vals_1D', 'measure_vals_1D'])
-#
-#     def satisfies_condition(self, test_vals, target_val, relation):
-#         return general_tools.get_truth(test_vals, target_val, relation)
-#
-#     def satisfies_conditions(self):
-#
-#     def get(self):
-#         self.measure_parameter.setup()
-#
-#         for calibration_operation in self.calibration_operations:
-#             if calibration_operation['mode'] == 'measure':
-#                 vals = self.measure_parameter()
-#
-#         self.center_val = self.set_parameter()
-#         self.set_vals_1D = list(np.linspace(self.center_val - self.span / 2,
-#                                             self.center_val + self.span / 2,
-#                                             self.set_points))
-#
-#         self.data_1D = self.cal1D_parameter()
-#         self.measure_vals_1D = getattr(self.data_1D, self.key)
-#         best_val_idx = np.argmax(self.measure_vals_1D)
-#         best_val = self.set_vals_1D[best_val_idx]
-#
-#             if self.update:
-#                 self.set_parameter(best_val)
-#
-#             self._save_val(best_val)
-#             return best_val
-#
-#         elif self.ndims == 2:
-#             raise NotImplementedError("Two parameters not implemented")
-#         else:
-#             raise ValueError("set_parameters must be one or two")
+class AutoCalibration_Parameter(Parameter):
+    def __init__(self, name, set_parameters, measure_parameter,
+                 calibration_operations, key, conditions=None, **kwargs):
+        """
 
+        Args:
+            name:
+            set_parameters:
+            measure_parameter:
+            calibration_operations:
+            key:
+            conditions: Must be of one of the following forms
+                {'mode': 'measure'}
+                {'mode': '1D_scan', 'span', 'set_points', 'set_parameter',
+                 'center_val'(optional)
+            **kwargs:
+        """
+        super().__init__(name, **kwargs)
+
+        self.key = key
+        self.conditions = conditions
+        self.calibration_operations = calibration_operations
+
+        self.set_parameters = {p.name: p for p in set_parameters}
+        self.measure_parameter = measure_parameter
+
+        self.names = ['success, optimal_set_val']
+        self.labels = self.names
+        self._meta_attrs.extend(['measure_parameter_name', 'conditions',
+                                 'calibration_operations', 'key',
+                                 'set_vals_1D', 'measure_vals_1D'])
+
+    @property
+    def measure_parameter_name(self):
+        return self.measure_parameter.name
+
+    def satisfies_conditions(self, dataset, dims):
+        # Start of with all set points satisfying conditions
+        satisfied_final_arr = np.ones(dims)
+        if self.conditions is None:
+            return satisfied_final_arr
+        for (attribute, target_val, relation) in self.conditions:
+            test_vals = getattr(dataset, attribute).ndarray
+            # Determine which elements satisfy condition
+            satisfied_arr = general_tools.get_truth(test_vals, target_val,
+                                                    relation)
+
+            # Update satisfied elements with the ones satisfying current
+            # condition
+            satisfied_final_arr = np.logical_and(satisfied_final_arr,
+                                                 satisfied_arr)
+        return satisfied_final_arr
+
+    def optimal_set_val(self, dataset, satisfied_set_vals=None):
+        measurement_vals = getattr(dataset, self.key)
+
+        set_vals_1D = np.ravel(self.set_vals)
+        measurement_vals_1D = np.ravel(measurement_vals)
+
+        if satisfied_set_vals is not None:
+            # Filter 1D arrays by those satisfying conditions
+            satisfied_set_vals_1D = np.ravel(satisfied_set_vals)
+            satisfied_idx = np.nonzero(satisfied_set_vals)[0]
+
+            set_vals_1D = np.take(set_vals_1D, satisfied_idx)
+            measurement_vals_1D = np.take(measurement_vals_1D, satisfied_idx)
+
+        max_idx = np.argmax(measurement_vals_1D)
+        return set_vals_1D[max_idx]
+
+    def get(self):
+        self.loop_parameters = []
+        self.datasets = []
+
+        if hasattr(self.measure_parameter, 'setup'):
+            self.measure_parameter.setup()
+
+        for calibration_operation in self.calibration_operations:
+            if calibration_operation['mode'] == 'measure':
+                dims = (1)
+                self.set_vals = [None]
+                loop_parameter = Loop0D_Parameter(
+                    name='calibration_0D',
+                    measure_parameter=self.measure_parameter)
+
+            elif calibration_operation['mode'] == '1D_scan':
+                # Setup set vals
+                set_parameter_name = calibration_operation['set_parameter']
+                set_parameter = self.set_parameters[set_parameter_name]
+
+                center_val = calibration_operation.get(
+                    'center_val', set_parameter())
+                span = calibration_operation['span']
+                set_points = calibration_operation['set_points']
+                self.set_vals = list(np.linspace(center_val - span / 2,
+                                                 center_val + span / 2,
+                                                 set_points))
+                dims = (set_points)
+                # Extract set_parameter
+                loop_parameter = Loop1D_Parameter(
+                    name='calibration_1D',
+                    set_parameter=set_parameter,
+                    measure_parameter=self.measure_parameter,
+                    set_vals=self.set_vals)
+            else:
+                raise ValueError("Calibration mode not implemented")
+
+            self.loop_parameters.append(loop_parameter)
+            dataset = loop_parameter()
+            self.datasets.append(dataset)
+
+            satisfied_set_vals = self.satisfies_conditions(dataset, dims)
+            if np.any(satisfied_set_vals):
+                optimal_set_val = self.optimal_set_val(dataset,
+                                                       satisfied_set_vals)
+                success = 1
+                break
+        else:
+            logging.warning('Could not find calibration point satisfying '
+                            'conditions. Choosing best alternative')
+            optimal_set_val = self.optimal_set_val(dataset)
+            success = 0
+
+
+        if optimal_set_val is not None:
+            set_parameter(optimal_set_val)
+            # TODO implement for 2D
+            return 1, optimal_set_val
+        else:
+            return 1, 0
