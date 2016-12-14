@@ -79,7 +79,7 @@ class MeasurementParameter(Parameter):
 
         return None
 
-    def setup(self, save_traces=False, formatter=None, print_results=False,
+    def setup(self, save_traces=None, formatter=None, print_results=None,
               **kwargs):
         """
         Sets up the meta properties of a measurement parameter.
@@ -192,7 +192,7 @@ class EPR_Parameter(MeasurementParameter):
         self.analysis = analysis.analyse_EPR
 
         # Setup parameter metadata
-        self.names = ['contrast', 'dark_counts', 'SNR',
+        self.names = ['contrast', 'dark_counts', 'voltage_difference',
                       'fidelity_empty', 'fidelity_load']
         self.labels = self.names
         self.shapes = ((), (), (), (), ())
@@ -282,7 +282,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         self.analysis = analysis.analyse_PR
 
-        self.names = ['contrast', 'dark_counts', 'SNR']
+        self.names = ['contrast', 'dark_counts', 'voltage_difference']
         self.labels = self.names
         self.shapes = ((), (), ())
 
@@ -403,6 +403,8 @@ class T1_Parameter(AdiabaticSweep_Parameter):
 
         self.analysis = analysis.analyse_read
 
+        self.readout_threshold_voltage = None
+
         self.names = ['up_proportion', 'num_traces']
         self.labels = self.names
         self.shapes = ((), ())
@@ -422,7 +424,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         self.acquire()
 
         # Analysis
-        up_proportion, num_traces_loaded, _ = self.analysis(
+        up_proportion, num_traces_loaded = self.analysis(
             traces=self.trace_segments['output']['read'],
             **self.analysis_settings)
         self.fidelities = (up_proportion, num_traces_loaded)
@@ -451,7 +453,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
             self.pulse_sequence['plunge'].duration = plunge_duration
             self.subfolder = 'T1_{}'.format(int(self.plunge_duration))
 
-            self.setup(save_traces=self.save_traces)
+            self.setup()
 
 
 class dark_counts_parameter(T1_Parameter):
@@ -463,7 +465,7 @@ class dark_counts_parameter(T1_Parameter):
 
             self.subfolder = 'dark_counts'
 
-            self.pulse_sequence['adiabatic'].enabled = False
+            self.pulse_sequence.remove('adiabatic')
             self.pulse_sequence['steered_initialization'].enabled = True
 
 
@@ -596,7 +598,7 @@ class AutoCalibration_Parameter(Parameter):
         self.set_parameters = {p.name: p for p in set_parameters}
         self.measure_parameter = measure_parameter
 
-        self.names = ['success, optimal_set_val']
+        self.names = ['success', 'optimal_set_val']
         self.labels = self.names
         self._meta_attrs.extend(['measure_parameter_name', 'conditions',
                                  'calibration_operations', 'key',
