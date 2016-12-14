@@ -1,0 +1,68 @@
+{
+    "properties": {
+        "gui": {
+            "required": [
+                "notebook",
+                "plotlib"
+            ],
+            "type": "object",
+            "properties": {
+                "plotlib": {
+                    "default": "matplotlib",
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ],
+                    "type": "string",
+                    "description": "Plotting library"
+                },
+                "notebook": {
+                    "default": true,
+                    "type": "boolean",
+                    "description": "Use notebook frontend"
+                }
+            },
+            "description": "controls gui of qcodes"
+        },
+        "user": {
+            "type": "object",
+            "properties": {},
+            "description": "controls user settings of qcodes"
+        },
+        "core": {
+            "required": [
+                "legacy_mp",
+                "loglevel"
+            ],
+            "type": "object",
+            "properties": {
+                "legacy_mp": {
+                    "default": false,
+                    "type": "boolean",
+                    "description": "control legacy buggy multiprocess"
+                },
+                "loglevel": {
+                    "default": "DEBUG",
+                    "enum": [
+                        "CRITICAL",
+                        "ERROR",
+                        "WARNING",
+                        "INFO",
+                        "DEBUG"
+                    ],
+                    "type": "string",
+                    "description": "control logging  level"
+                }
+            },
+            "description": "controls core settings of qcodes"
+        }
+    },
+    "required": [
+        "gui",
+        "core",
+        "user"
+    ],
+    "type": "object",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "schema for a qcodes config file"
+}

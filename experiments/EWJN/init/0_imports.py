@@ -17,9 +17,16 @@ import qcodes as qc
 from qcodes import Instrument, config
 from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
 
+
+# Qcodes config
 if 'pulses' not in config['user']:
     config.add('pulses', {})
 pulse_config = config['user']['pulses']
+
+if 'properties' not in config['user']:
+    config.add('properties', {})
+properties_config = config['user']['properties']
+
 
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters
