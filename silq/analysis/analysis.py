@@ -48,7 +48,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
             plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
 
-    return low, high, threshold_voltage
+    return low, high, threshold_voltage, SNR
 
 def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
                  start_point=0, plot=False):
@@ -65,7 +65,7 @@ def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
 
     # Determine threshold voltage if not provided
     if threshold_voltage is None:
-        low, high, threshold_voltage = find_high_low(traces, plot=plot)
+        low, high, threshold_voltage, SNR = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
@@ -84,7 +84,7 @@ def find_up_proportion(traces, threshold_voltage=None, return_mean=True,
     # trace has to contain read stage only
     # TODO Change start point to start time (sampling rate independent)
     if threshold_voltage is None:
-        _, _, threshold_voltage = find_high_low(traces, plot=plot)
+        _, _, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         traces_up_electron = [False] * len(traces)
@@ -101,45 +101,38 @@ def find_up_proportion(traces, threshold_voltage=None, return_mean=True,
         return traces_up_electron
 
 def analyse_read(traces, start_idx=0, threshold_voltage=None, plot=False,
-                 return_fidelity=True):
+                 filter_loaded=True):
     if threshold_voltage is None:
-        low, high, threshold_voltage = find_high_low(traces, plot=plot)
+        low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
         # Return the full trace length as mean if return_mean=True
-        return 0, 0, traces.shape[1] if return_fidelity else []
+        return 0, 0
 
-    # Filter out the traces that start off loaded
-    idx_begin_loaded = edge_voltage(traces, edge='begin', state='low',
-                                    start_point=start_idx,
-                                    threshold_voltage=threshold_voltage)
-    traces_loaded = traces[idx_begin_loaded]
-    num_traces_loaded = sum(idx_begin_loaded)
+    if filter_loaded:
+        # Filter out the traces that start off loaded
+        idx_begin_loaded = edge_voltage(traces, edge='begin', state='low',
+                                        start_point=start_idx,
+                                        threshold_voltage=threshold_voltage)
+        traces = traces[idx_begin_loaded]
+        num_traces = sum(idx_begin_loaded)
+    else:
+        num_traces = len(traces)
 
-    if not any(idx_begin_loaded):
+    if not num_traces:
         print('None of the load traces start with a loaded state')
-        return (float('nan'), num_traces_loaded,
-               traces.shape[1] if return_fidelity else [])
+        return (float('nan'), num_traces)
 
-    up_proportion = find_up_proportion(traces_loaded,
+    up_proportion = find_up_proportion(traces,
                                        start_point=start_idx,
                                        threshold_voltage=threshold_voltage)
 
-    # Filter out the traces that at some point have conductance
-    # Assume that if there is current, the electron must have been up
-    final_conductance_idx_list = [(k,max(np.where(trace > threshold_voltage)[0]))
-                                  for k, trace in enumerate(traces_loaded)
-                                  if np.max(trace) > threshold_voltage]
-    if return_fidelity:
-        return (up_proportion, num_traces_loaded,
-                1 - np.mean(final_conductance_idx_list)/ traces.shape[1])
-    else:
-        return (up_proportion, num_traces_loaded, final_conductance_idx_list)
+    return (up_proportion, num_traces)
 
 def analyse_load(traces, plot=False, return_idx=False):
     idx_list = np.arange(len(traces))
-    low, high, threshold_voltage = find_high_low(traces, plot=plot)
+    low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
@@ -170,7 +163,7 @@ def analyse_load(traces, plot=False, return_idx=False):
 
 def analyse_empty(traces, plot=False, return_idx=False):
     idx_list = np.arange(len(traces))
-    low, high, threshold_voltage = find_high_low(traces, plot=plot)
+    low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
@@ -206,7 +199,8 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
     fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
 
-    _,_,threshold_voltage = find_high_low(trace_segments['read'], plot=plot)
+    _,_,threshold_voltage, SNR = find_high_low(trace_segments['read'],
+                                               plot=plot)
 
     if threshold_voltage is None:
         return (fidelity_empty, fidelity_load, 0, 0, 0, 0)
@@ -214,38 +208,35 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        up_proportion, _, fidelity_read = \
-            analyse_read(read_segment1, start_idx=start_idx,
-                         threshold_voltage=threshold_voltage)
-        dark_counts, _, _ = analyse_read(read_segment2,
-                                         start_idx=start_idx,
-                                         threshold_voltage=threshold_voltage)
+        up_proportion, _ = analyse_read(read_segment1, start_idx=start_idx,
+                                        threshold_voltage=threshold_voltage,
+                                        filter_loaded=False)
+        dark_counts, _ = analyse_read(read_segment2, start_idx=start_idx,
+                                      threshold_voltage=threshold_voltage,
+                                      filter_loaded=False)
         contrast = up_proportion - dark_counts
 
-    return (fidelity_empty, fidelity_load, fidelity_read,
-            up_proportion, dark_counts, contrast)
+    return (contrast, dark_counts, SNR, fidelity_empty, fidelity_load)
 
 def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
-
-    _,_,threshold_voltage = find_high_low(trace_segments['read'], plot=plot)
+    _,_,threshold_voltage, SNR = find_high_low(trace_segments['read'],
+                                               plot=plot)
 
     if threshold_voltage is None:
-        return (fidelity_load, 0, 0, 0, 0)
+        return (0, 0, 0, 0)
     else:
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        up_proportion, _, fidelity_read = \
-            analyse_read(read_segment1, start_idx=start_idx,
-                         threshold_voltage=threshold_voltage)
-        dark_counts, _, _ = analyse_read(read_segment2,
-                                         start_idx=start_idx,
-                                         threshold_voltage=threshold_voltage)
+        up_proportion, _ = analyse_read(read_segment1, start_idx=start_idx,
+                                        threshold_voltage=threshold_voltage,
+                                        filter_loaded=False)
+        dark_counts, _ = analyse_read(read_segment2, start_idx=start_idx,
+                                      threshold_voltage=threshold_voltage,
+                                      filter_loaded=False)
         contrast = up_proportion - dark_counts
 
-    return (fidelity_load, fidelity_read,
-            up_proportion, dark_counts, contrast)
+    return (contrast, dark_counts, SNR)
