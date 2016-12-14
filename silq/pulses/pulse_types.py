@@ -329,7 +329,7 @@ class SteeredInitialization(Pulse):
 
     def __repr__(self):
         properties_str = \
-            't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th'.format(
+            't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th={}'.format(
                 self.t_no_blip, self.t_max_wait, self.t_buffer,
                 self.readout_threshold_voltage)
         return super()._get_repr(properties_str)
