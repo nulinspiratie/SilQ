@@ -286,8 +286,7 @@ class PulseSequence:
         self.sort()
 
     def sort(self):
-        idx_sorted = np.argsort(np.array(self.t_start_list))
-        self.pulses = [self.pulses[idx] for idx in idx_sorted]
+        self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
         return self.pulses
 
     def clear(self):

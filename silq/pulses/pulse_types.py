@@ -11,25 +11,29 @@ from silq.tools.general_tools import get_truth
 pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
                     'connection', 'amplitude', 'enabled']
 
-pulse_config = config['user'].get('pulses')
+pulse_config = config['user'].get('pulses', {})
+properties_config = config['user'].get('properties', {})
 
 class Pulse:
     def __init__(self, name='', t_start=None, previous_pulse=None,
-                 t_stop=None, delay=0, duration=None,
-                 acquire=False, initialize=False,
-                 connection=None, enabled=True,
+                 t_stop=None, delay_start=None, delay_stop=None,
+                 duration=None, acquire=False, initialize=False,
+                 connection=None, enabled=True, mode=None,
                  connection_requirements={}):
+        self.mode = mode
+        self.mode_str = '_{}'.format(mode) if mode is not None else ''
+
         self.name = name
         self._previous_pulse = previous_pulse
 
         self._t_start = t_start
         self._duration = duration
         self._t_stop = t_stop
+        self.delay_start = delay_start
+        self.delay_stop = delay_stop
 
         if self.duration is None and self.t_stop is None:
             raise Exception("Must provide either t_stop or duration")
-
-        self.delay = delay
 
         self.acquire = acquire
         self.initialize = initialize
@@ -122,13 +126,20 @@ class Pulse:
         return True
 
     def __getattribute__(self, item):
-        value = object.__getattribute__(self, item)
-        if value is None:
-            # Check if pulse attribute is in pulse_config
-            if self.name in pulse_config:
-                if item in pulse_config[self.name]:
-                    value = pulse_config[self.name][item]
+        """
+        Used when requesting an attribute. If the attribute is explicitly set to
+        None, it will check the config if the item exists.
+        Args:
+            item: Attribute to be retrieved
 
+        Returns:
+
+        """
+        value = object.__getattribute__(self, item)
+        if value is not None:
+            return value
+
+        value = self._attribute_from_config(item)
         return value
 
     def _JSONEncoder(self):
@@ -144,14 +155,50 @@ class Pulse:
                 return_dict[attr] = val
         return return_dict
 
+    def _attribute_from_config(self, item):
+        """
+        Check if attribute exists somewhere in the config
+        First, if pulse_config contains a key matching the pulse name,
+        it will check for the attribute.
+        If no success, it will check properties config if a key matches the item
+        with self.mode appended. This is only checked if the pulse has a mode.
+        Finally, it will check if properties_config contains the item
+        """
+        # Check if pulse attribute is in pulse_config
+        if self.name in pulse_config:
+            if item in pulse_config[self.name]:
+                return pulse_config[self.name][item]
+
+        # check if {item}_{self.mode} is in properties_config
+        # if mode is None, mode_str='', in which case it checks for {item}
+        item_mode = '{}{}'.format(item, self.mode_str)
+        if item_mode in properties_config:
+            return properties_config[item_mode]
+
+        # Check if item is in properties config
+        if item in properties_config:
+            return properties_config[item]
+
+        return None
+
     @property
     def t_start(self):
         if self._t_start is not None:
             return self._t_start
         elif self.previous_pulse is not None:
-            return self.previous_pulse.t_stop + self.delay
+            if self.delay_start is not None:
+                return self.previous_pulse.t_start + self.delay_start
+            elif self.delay_stop is not None:
+                return self.previous_pulse.t_stop + self.delay_stop
+            else:
+                return self.previous_pulse.t_stop
         else:
-            return 0
+            # Check if item exists in config
+            value = self._attribute_from_config('t_start')
+            if value is not None:
+                return value
+            else:
+                return 0
 
     @t_start.setter
     def t_start(self, t_start):
@@ -270,21 +317,25 @@ class Pulse:
 
 
 class SteeredInitialization(Pulse):
-    def __init__(self, t_no_blip, t_max_wait=300, t_buffer=0.4, **kwargs):
+    def __init__(self, t_no_blip=None, t_max_wait=None, t_buffer=None,
+                 readout_threshold_voltage=None, **kwargs):
         super().__init__(t_start=0, duration=0, initialize=True, **kwargs)
 
         self.t_no_blip = t_no_blip
         self.t_max_wait = t_max_wait
         self.t_buffer = t_buffer
+        self.readout_threshold_voltage = readout_threshold_voltage
 
     def __repr__(self):
-        properties_str = 't_no_blip={} ms, t_max_wait={}, t_buffer={}'.format(
-            self.t_no_blip, self.t_max_wait, self.t_buffer)
+        properties_str = \
+            't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th'.format(
+                self.t_no_blip, self.t_max_wait, self.t_buffer,
+                self.readout_threshold_voltage)
         return super()._get_repr(properties_str)
 
 
 class SinePulse(Pulse):
-    def __init__(self, frequency, amplitude, phase=0, **kwargs):
+    def __init__(self, frequency=None, amplitude=None, phase=None, **kwargs):
         super().__init__(**kwargs)
 
         self.frequency = frequency
@@ -308,18 +359,22 @@ class SinePulse(Pulse):
 
 class FrequencyRampPulse(Pulse):
     def __init__(self, frequency_start=None, frequency_stop=None,
-                 frequency_center=None, frequency_deviation=None,
+                 frequency=None, frequency_deviation=None,
                  frequency_final='stop', amplitude=None, power=None,
                  frequency_sideband=None, **kwargs):
         super().__init__(**kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
-            self.frequency_start = frequency_start
-            self.frequency_stop = frequency_stop
-        elif frequency_center is not None and frequency_deviation is not None:
-            self.frequency_start = frequency_center - frequency_deviation / 2
-            self.frequency_stop = frequency_center + frequency_deviation / 2
+            self.frequency = (frequency_start + frequency_stop) / 2
+            self.frequency_deviation = (frequency_stop - frequency_start)
+        elif frequency is not None and frequency_deviation is not None:
+            self.frequency = frequency
+            self.frequency_deviation = frequency_deviation
         else:
+            self.frequency = None
+            self.frequency_deviation = None
+
+        if self.frequency is None or self.frequency_deviation is None:
             raise SyntaxError("Must provide either f_start & f_stop or "
                               "f_center and f_deviation")
 
@@ -330,24 +385,24 @@ class FrequencyRampPulse(Pulse):
         self.power = power
 
     @property
-    def frequency_center(self):
-        return (self.frequency_start + self.frequency_stop) / 2
+    def frequency_start(self):
+        return self.frequency - self.frequency_deviation
 
-    @frequency_center.setter
-    def frequency_center(self, frequency_center):
-        frequency_deviation = self.frequency_deviation
-        self.frequency_start = frequency_center - frequency_deviation / 2
-        self.frequency_stop = frequency_center + frequency_deviation / 2
+    @frequency_start.setter
+    def frequency_start(self, frequency_start):
+        frequency_stop = self.frequency_stop
+        self.frequency = (frequency_start + frequency_stop) / 2
+        self.frequency_deviation = (frequency_stop - frequency_start) / 2
 
     @property
-    def frequency_deviation(self):
-        return abs(self.frequency_start - self.frequency_stop)
+    def frequency_stop(self):
+        return self.frequency + self.frequency_deviation
 
-    @frequency_deviation.setter
-    def frequency_deviation(self, frequency_deviation):
-        frequency_center = self.frequency_center
-        self.frequency_start = frequency_center - frequency_deviation / 2
-        self.frequency_stop = frequency_center + frequency_deviation / 2
+    @frequency_stop.setter
+    def frequency_stop(self, frequency_stop):
+        frequency_start = self.frequency_start
+        self.frequency = (frequency_start + frequency_stop) / 2
+        self.frequency_deviation = (frequency_stop - frequency_start) / 2
 
     @property
     def frequency_final(self):
@@ -363,10 +418,10 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
 
     def __repr__(self):
-        properties_str = 'f_start={:.2f} MHz, f_stop={:.2f}, power={}, ' \
+        properties_str = 'f_center={:.2f} MHz, f_dev={:.2f}, power={}, ' \
                          't_start={}, t_stop={}'.format(
-            self.frequency_start/1e6, self.frequency_stop/1e6, self.power,
-            self.t_start, self.t_stop)
+            self.frequency/1e6, self.frequency_deviation/1e6,
+            self.power, self.t_start, self.t_stop)
 
         if self.frequency_sideband is not None:
             properties_str += ', f_sb={}'.format(
