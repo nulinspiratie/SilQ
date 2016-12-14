@@ -1,6 +1,9 @@
 import qcodes as qc
 from qcodes.instrument.parameter import Parameter
+from qcodes import config
+from qcodes.data.io import DiskIO
 
+from silq.tools.data_tools import get_latest_data_folder
 
 class TestValParameter(Parameter):
     def __init__(self, name, **kwargs):
@@ -28,6 +31,19 @@ class TestLoopParameter(Parameter):
         super().__init__(name, **kwargs)
 
     def get(self):
-        qc.Loop(self.param[0:5:1], delay=0.5).each(self.param).run(
-            name='inner_loop', background=False, data_manager=False)
+        if 'data_folder' in config['user']:
+            print('data folder: {}'.format(config['user']['data_folder']))
+        print('latest folder: {}'.format(get_latest_data_folder()))
         return self.param()
+
+
+class SetParameter(Parameter):
+    def __init__(self, name, param, **kwargs):
+        super().__init__(name, **kwargs)
+        self.param = param
+
+    def get(self):
+        return self.param()
+
+    def set(self, val):
+        self.param(val)
