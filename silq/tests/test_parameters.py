@@ -47,3 +47,13 @@ class SetParameter(Parameter):
 
     def set(self, val):
         self.param(val)
+
+
+class TestMeasureParameter(Parameter):
+    def __init__(self, name, target_param, target_val, **kwargs):
+        super().__init__(name, **kwargs)
+        self.target_param = target_param
+        self.target_val = target_val
+
+    def get(self):
+        return - abs(self.target_param() - self.target_val)
