@@ -5,7 +5,7 @@ from collections import OrderedDict
 import qcodes as qc
 from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data import hdf5_format
+from qcodes.data import hdf5_format, io
 h5fmt = hdf5_format.HDF5Format()
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
@@ -14,6 +14,7 @@ from silq.analysis import analysis
 from silq.tools import data_tools
 
 properties_config = config['user'].get('properties', {})
+
 
 class MeasurementParameter(Parameter):
     data_manager = None
@@ -507,3 +508,56 @@ class VariableRead_Parameter(MeasurementParameter):
         self.pulse_sequence['read'].voltage = self.read_voltage
 
         self.setup()
+
+
+class AutoCalibration_Parameter(Parameter):
+    def __init__(self, name, measure_parameter, set_parameters, spans, key,
+                 set_points=5, update=True, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.measure_parameter = measure_parameter
+        self.key = key
+        self.update = update
+
+        if type(set_parameters) is not list:
+            self.ndims = 1
+            self.set_parameter = set_parameters
+            self.span = spans
+            self.set_points = set_points
+        else:
+            self.ndims = len(set_parameters)
+            self.set_parameters = set_parameters
+            self.spans = spans
+            self.set_points = set_points
+
+    def get(self):
+        # Set data saving parameters
+        disk_io = io.DiskIO(data_tools.get_latest_data_folder())
+        loc_provider = qc.data.location.FormatLocation(
+            fmt='#{counter}_{name}_{time}')
+
+        if self.ndims == 1:
+            center_val = self.set_parameter()
+            set_vals = list(np.linspace(center_val - self.span / 2,
+                                        center_val + self.span / 2,
+                                        self.set_points))
+            self.data = qc.Loop(self.set_parameter[set_vals]
+                                ).each(self.measure_parameter
+                                       ).run(
+                name='calibration_{}'.format(self.measure_parameter.name),
+                background=False, data_manager=False,
+                io=disk_io, location=loc_provider)
+            measure_vals = getattr(self.data, self.key)
+            best_val_idx = np.argmax(measure_vals)
+            best_val = set_vals[best_val_idx]
+
+            if self.update:
+                self.set_parameter(best_val)
+
+            return best_val
+
+        elif self.ndims == 2:
+            raise NotImplementedError("Two parameters not implemented")
+        else:
+            raise ValueError("set_parameters must be one or two")
+
