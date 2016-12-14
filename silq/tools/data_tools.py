@@ -2,12 +2,16 @@ import os
 import numpy as np
 
 import qcodes as qc
+from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data.data_set import new_data, DataMode, DataSet
 from qcodes.data.data_array import DataArray
 
 def get_latest_data_folder():
-    base_location = DataSet.default_io.base_location
+    if 'data_folder' in config['user']:
+        base_location = config['user']['data_folder']
+    else:
+        base_location = DataSet.default_io.base_location
     date = os.listdir(base_location)[-1]
     dir_date = os.path.join(base_location, date)
     folders_date = os.listdir(dir_date)
