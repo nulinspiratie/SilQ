@@ -13,6 +13,7 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
 from silq.analysis import analysis
 from silq.tools import data_tools
 
+properties_config = config['user'].get('properties', {})
 
 class MeasurementParameter(Parameter):
     data_manager = None
@@ -40,6 +41,42 @@ class MeasurementParameter(Parameter):
     def __repr__(self):
         return '{} measurement parameter\n{}'.format(self.name,
                                                      self.pulse_sequence)
+
+    def __getattribute__(self, item):
+        """
+        Used when requesting an attribute. If the attribute is explicitly set to
+        None, it will check the config if the item exists.
+        Args:
+            item: Attribute to be retrieved
+
+        Returns:
+
+        """
+        value = object.__getattribute__(self, item)
+        if value is not None:
+            return value
+
+        value = self._attribute_from_config(item)
+        return value
+
+    def _attribute_from_config(self, item):
+        """
+        Check if attribute exists somewhere in the config
+        It first ill check properties config if a key matches the item
+        with self.mode appended. This is only checked if the param has a mode.
+        Finally, it will check if properties_config contains the item
+        """
+        # check if {item}_{self.mode} is in properties_config
+        # if mode is None, mode_str='', in which case it checks for {item}
+        item_mode = '{}{}'.format(item, self.mode_str)
+        if item_mode in properties_config:
+            return properties_config[item_mode]
+
+        # Check if item is in properties config
+        if item in properties_config:
+            return properties_config[item]
+
+        return None
 
     def setup(self, return_traces=False, save_traces=False, formatter=None,
               print_results=False, **kwargs):
@@ -243,7 +280,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         ESR_pulse = FrequencyRampPulse(
             name='adiabatic' + self.mode_str, ** self.pulse_kwargs)
         steered_initialization = SteeredInitialization(
-            name='steered_initialization', **self.pulse_kwargs)
+            name='steered_initialization', enabled=False, **self.pulse_kwargs)
 
         self.pulse_sequence['empty'].enabled = False
         self.pulse_sequence.add([ESR_pulse, steered_initialization])
@@ -255,13 +292,12 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         self.analysis = analysis.analyse_PR
 
     @property
-    def frequency_center(self):
-        return self.pulse_sequence['adiabatic'].frequency_center
+    def frequency(self):
+        return self.pulse_sequence['adiabatic' + self.mode_str].frequency
 
-    @frequency_center.setter
-    def frequency_center(self, frequency_center):
-        self.pulse_sequence['adiabatic'].frequency_center = \
-            frequency_center
+    @frequency.setter
+    def frequency(self, frequency):
+        self.pulse_sequence['adiabatic' + self.mode_str].frequency = frequency
 
     def setup(self, **kwargs):
 
@@ -297,11 +333,9 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         return self.fidelities
 
-    def set(self, frequency_center):
+    def set(self, frequency):
         # Change center frequency
-        # self.pulse_sequence['adiabatic].frequency_center = \
-        #     frequency_center
-        self.frequency_center = frequency_center
+        self.frequency = frequency
         self.setup()
 
 
@@ -451,9 +485,8 @@ class dark_counts_parameter(T1_Parameter):
 
             self.subfolder = 'dark_counts'
 
-            self.pulse_sequence['empty'].enabled = False
-            self.pulse_sequence['plunge'].enabled = False
             self.pulse_sequence['adiabatic'].enabled = False
+            self.pulse_sequence['steered_initialization'].enabled = True
 
 
 class VariableRead_Parameter(MeasurementParameter):
