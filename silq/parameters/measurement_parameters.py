@@ -16,8 +16,12 @@ from silq.tools import data_tools
 
 class MeasurementParameter(Parameter):
     data_manager = None
-    def __init__(self, layout, formatter=h5fmt, **kwargs):
+    def __init__(self, layout, formatter=h5fmt, mode=None, **kwargs):
         super().__init__(**kwargs)
+        self.mode = mode
+        self.mode_str = '' if mode is None else '_' + mode
+        self.pulse_kwargs = {'mode': self.mode}
+
         self.layout = layout
         self.pulse_sequence = PulseSequence()
 
@@ -32,6 +36,10 @@ class MeasurementParameter(Parameter):
         self.data_manager = self.data_manager
 
         self._meta_attrs.extend(['pulse_sequence'])
+
+    def __repr__(self):
+        return '{} measurement parameter\n{}'.format(self.name,
+                                                     self.pulse_sequence)
 
     def setup(self, return_traces=False, save_traces=False, formatter=None,
               print_results=False, **kwargs):
@@ -106,10 +114,8 @@ class DC_Parameter(MeasurementParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        read_pulse = DCPulse(name='read', amplitude=0,
-                              duration=20, acquire=True)
-        final_pulse = DCPulse(name='final', amplitude=0,
-                              duration=1)
+        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
+        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
         pulses = [read_pulse, final_pulse]
         self.pulse_sequence.add(pulses)
 
@@ -139,14 +145,11 @@ class EPR_Parameter(MeasurementParameter):
 
         self.subfolder = 'EPR'
 
-        empty_pulse = DCPulse(name='empty', amplitude=-1.5,
-                              t_start=0,duration=5, acquire=True)
-        plunge_pulse = DCPulse(name='plunge', amplitude=1.8,
-                               duration=5, acquire=True)
-        read_pulse = DCPulse(name='read', amplitude=0,
-                              duration=50, acquire=True)
-        final_pulse = DCPulse(name='final', amplitude=0,
-                              duration=2)
+        empty_pulse = DCPulse(name='empty', t_start=0, acquire=True,
+                              **self.pulse_kwargs)
+        plunge_pulse = DCPulse(name='plunge', acquire=True, **self.pulse_kwargs)
+        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
+        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
 
         self.pulse_sequence.add(
             [empty_pulse, plunge_pulse, read_pulse, final_pulse])
@@ -227,47 +230,42 @@ class EPR_Parameter(MeasurementParameter):
 
 class AdiabaticSweep_Parameter(EPR_Parameter):
     def __init__(self, layout, **kwargs):
+        """
+        Parameter used to perform an adiabatic sweep
+        """
         super().__init__(layout=layout, **kwargs)
-        self.name = 'adiabatic_sweep'
-        self.label = 'Adiabatic sweep center frequency'
 
-        self.subfolder = 'adiabatic'
+        self.name = 'adiabatic_sweep' + self.mode_str
+        self.label = 'Adiabatic {} sweep center frequency'.format(self.mode)
 
-        frequency_center = 20e9  # Hz
-        frequency_deviation = 10e6  # Hz
-        power = 10  # dBm
+        self.subfolder = 'adiabatic' + self.mode_str
 
         ESR_pulse = FrequencyRampPulse(
-            name='adiabatic_sweep',
-            power=power, duration=0.2,
-            previous_pulse=self.pulse_sequence['plunge'], delay=4,
-            frequency_center=frequency_center,
-            frequency_deviation=frequency_deviation)
+            name='adiabatic' + self.mode_str, ** self.pulse_kwargs)
         steered_initialization = SteeredInitialization(
-            name='steered_initialization',
-            t_no_blip=30, t_max_wait=200, t_buffer=20)
+            name='steered_initialization', **self.pulse_kwargs)
 
-        self.pulse_sequence.add([ESR_pulse, steered_initialization])
         self.pulse_sequence['empty'].enabled = False
+        self.pulse_sequence.add([ESR_pulse, steered_initialization])
+        # Disable previous pulse for adiabatic pulse, since it would
+        # otherwise be after 'final' pulse
+        self.pulse_sequence['adiabatic' + self.mode_str].previous_pulse = None
+        self.pulse_sequence.sort()
 
-        # self.frequency_center = None
         self.analysis = analysis.analyse_PR
 
     @property
     def frequency_center(self):
-        return self.pulse_sequence['adiabatic_sweep'].frequency_center
+        return self.pulse_sequence['adiabatic'].frequency_center
 
     @frequency_center.setter
     def frequency_center(self, frequency_center):
-        self.pulse_sequence['adiabatic_sweep'].frequency_center = \
+        self.pulse_sequence['adiabatic'].frequency_center = \
             frequency_center
 
-    def setup(self, readout_threshold_voltage=None, **kwargs):
-        if readout_threshold_voltage is not None:
-            self.readout_threshold_voltage = readout_threshold_voltage
+    def setup(self, **kwargs):
 
-        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      **kwargs)
+        super().setup(**kwargs)
 
         self.names = ['fidelity_load', 'fidelity_read',
                       'up_proportion', 'dark_counts', 'contrast']
@@ -301,7 +299,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
     def set(self, frequency_center):
         # Change center frequency
-        # self.pulse_sequence['adiabatic_sweep'].frequency_center = \
+        # self.pulse_sequence['adiabatic].frequency_center = \
         #     frequency_center
         self.frequency_center = frequency_center
         self.setup()
@@ -393,12 +391,9 @@ class T1_Parameter(AdiabaticSweep_Parameter):
     def plunge_duration(self):
         return self.pulse_sequence['plunge'].duration
 
-    def setup(self, readout_threshold_voltage=None, **kwargs):
-        if readout_threshold_voltage is not None:
-            self.readout_threshold_voltage = readout_threshold_voltage
+    def setup(self, **kwargs):
 
-        super().setup(readout_threshold_voltage=self.readout_threshold_voltage,
-                      **kwargs)
+        super().setup(**kwargs)
 
         self.analysis_settings = {
             'threshold_voltage': self.readout_threshold_voltage,
@@ -458,7 +453,7 @@ class dark_counts_parameter(T1_Parameter):
 
             self.pulse_sequence['empty'].enabled = False
             self.pulse_sequence['plunge'].enabled = False
-            self.pulse_sequence['adiabatic_sweep'].enabled = False
+            self.pulse_sequence['adiabatic'].enabled = False
 
 
 class VariableRead_Parameter(MeasurementParameter):
@@ -468,14 +463,10 @@ class VariableRead_Parameter(MeasurementParameter):
                          layout=layout,
                          snapshot_value=False,
                          **kwargs)
-        empty_pulse = DCPulse(name='empty', amplitude=-1.5,
-                              t_start=0, duration=5, acquire=True)
-        load_pulse = DCPulse(name='load', amplitude=1.5,
-                             duration=5, acquire=True)
-        read_pulse = DCPulse(name='read', amplitude=0,
-                             duration=20, acquire=True)
-        final_pulse = DCPulse(name='final', amplitude=0,
-                              duration=2)
+        empty_pulse = DCPulse(name='empty', acquire=True, **self.pulse_kwargs)
+        load_pulse = DCPulse(name='plunge', acquire=True, **self.pulse_kwargs)
+        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
+        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
         
         self.samples = 50
 
