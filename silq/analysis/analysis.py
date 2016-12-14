@@ -35,7 +35,8 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
     for signal in [low, high]:
         signal['mean'] = np.mean(signal['traces'])
         signal['std'] = np.std(signal['traces'])
-    SNR = (high['mean'] - low['mean']) / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
+    voltage_difference = (high['mean'] - low['mean'])
+    SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
     if SNR < 3:
         'Signal to noise ratio {} is too low'.format(SNR)
         threshold_voltage = None
@@ -48,7 +49,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
             plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
 
-    return low, high, threshold_voltage, SNR
+    return low, high, threshold_voltage, voltage_difference
 
 def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
                  start_point=0, plot=False):
@@ -65,7 +66,8 @@ def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
 
     # Determine threshold voltage if not provided
     if threshold_voltage is None:
-        low, high, threshold_voltage, SNR = find_high_low(traces, plot=plot)
+        low, high, threshold_voltage, voltage_difference = \
+            find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
@@ -199,8 +201,8 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
     fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
 
-    _,_,threshold_voltage, SNR = find_high_low(trace_segments['read'],
-                                               plot=plot)
+    _,_,threshold_voltage, voltage_difference = \
+        find_high_low(trace_segments['read'], plot=plot)
 
     if threshold_voltage is None:
         return (fidelity_empty, fidelity_load, 0, 0, 0, 0)
@@ -216,14 +218,15 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
                                       filter_loaded=False)
         contrast = up_proportion - dark_counts
 
-    return (contrast, dark_counts, SNR, fidelity_empty, fidelity_load)
+    return (contrast, dark_counts, voltage_difference, fidelity_empty,
+            fidelity_load)
 
 def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    _,_,threshold_voltage, SNR = find_high_low(trace_segments['read'],
-                                               plot=plot)
+    _,_,threshold_voltage, voltage_difference = \
+        find_high_low(trace_segments['read'], plot=plot)
 
     if threshold_voltage is None:
         return (0, 0, 0, 0)
@@ -239,4 +242,4 @@ def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
                                       filter_loaded=False)
         contrast = up_proportion - dark_counts
 
-    return (contrast, dark_counts, SNR)
+    return (contrast, dark_counts, voltage_difference)
