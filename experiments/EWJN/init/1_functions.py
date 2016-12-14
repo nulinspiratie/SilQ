@@ -1,4 +1,4 @@
-from silq.functions.general_functions import partial_from_attr
+from silq.tools.general_tools import partial_from_attr
 
 # General functions
 def plot_traces(traces, ax=None, traces_AWG=None, threshold_voltage=None,
