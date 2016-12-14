@@ -1,4 +1,5 @@
 {
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "required": [
         "gui",
@@ -6,40 +7,7 @@
         "user"
     ],
     "properties": {
-        "core": {
-            "type": "object",
-            "required": [
-                "legacy_mp",
-                "loglevel"
-            ],
-            "properties": {
-                "legacy_mp": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "control legacy buggy multiprocess"
-                },
-                "loglevel": {
-                    "type": "string",
-                    "enum": [
-                        "CRITICAL",
-                        "ERROR",
-                        "WARNING",
-                        "INFO",
-                        "DEBUG"
-                    ],
-                    "default": "DEBUG",
-                    "description": "control logging  level"
-                }
-            },
-            "description": "controls core settings of qcodes"
-        },
-        "user": {
-            "type": "object",
-            "properties": {},
-            "description": "controls user settings of qcodes"
-        },
         "gui": {
-            "type": "object",
             "required": [
                 "notebook",
                 "plotlib"
@@ -47,11 +15,11 @@
             "properties": {
                 "plotlib": {
                     "type": "string",
+                    "default": "matplotlib",
                     "enum": [
                         "QT",
                         "matplotlib"
                     ],
-                    "default": "matplotlib",
                     "description": "Plotting library"
                 },
                 "notebook": {
@@ -60,9 +28,41 @@
                     "description": "Use notebook frontend"
                 }
             },
+            "type": "object",
             "description": "controls gui of qcodes"
+        },
+        "core": {
+            "required": [
+                "legacy_mp",
+                "loglevel"
+            ],
+            "properties": {
+                "loglevel": {
+                    "type": "string",
+                    "default": "DEBUG",
+                    "enum": [
+                        "CRITICAL",
+                        "ERROR",
+                        "WARNING",
+                        "INFO",
+                        "DEBUG"
+                    ],
+                    "description": "control logging  level"
+                },
+                "legacy_mp": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "control legacy buggy multiprocess"
+                }
+            },
+            "type": "object",
+            "description": "controls core settings of qcodes"
+        },
+        "user": {
+            "properties": {},
+            "type": "object",
+            "description": "controls user settings of qcodes"
         }
     },
-    "description": "schema for a qcodes config file",
-    "$schema": "http://json-schema.org/draft-04/schema#"
+    "description": "schema for a qcodes config file"
 }
