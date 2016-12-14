@@ -1,5 +1,6 @@
 from IPython.display import display_javascript
 
+
 def cell_create_below_execute(text):
     """
     Creates a cell below the current one in a notebook, adds text and executes
