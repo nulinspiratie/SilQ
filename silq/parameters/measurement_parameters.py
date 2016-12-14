@@ -29,7 +29,6 @@ class MeasurementParameter(Parameter):
         self.formatter = formatter
 
         self.print_results = False
-        self.return_traces = None
 
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
@@ -78,15 +77,14 @@ class MeasurementParameter(Parameter):
 
         return None
 
-    def setup(self, return_traces=False, save_traces=False, formatter=None,
-              print_results=False, **kwargs):
+    def setup(self, save_traces=False, formatter=None, print_results=False,
+              **kwargs):
         """
         Sets up the meta properties of a measurement parameter.
-        Note that for return_traces and print_results, the default behaviour
+        Note that for save and print_results, the default behaviour
         is False, and so if a Parameter performs a set operation which also
         performs a setup routine, these will have to be manually overridden.
         Args:
-            return_traces:
             formatter:
             print_results:
             **kwargs:
@@ -94,7 +92,6 @@ class MeasurementParameter(Parameter):
         Returns:
 
         """
-        self.return_traces = return_traces
         self.save_traces = save_traces
         self.print_results = print_results
 
@@ -104,11 +101,6 @@ class MeasurementParameter(Parameter):
         sample_rate = self.layout.sample_rate()
         self.pts = {pulse.name: int(round(pulse.duration/ 1e3 * sample_rate))
                     for pulse in self.pulse_sequence}
-
-        if self.return_traces:
-            self.names += self.layout.acquisition.names
-            self.labels += self.layout.acquisition.labels
-            self.shapes += self.layout.acquisition.shapes
 
     def segment_trace(self, trace):
         trace_segments = {}
@@ -197,6 +189,12 @@ class EPR_Parameter(MeasurementParameter):
 
         self.analysis = analysis.analyse_EPR
 
+        # Setup parameter metadata
+        self.names = ['contrast', 'dark_counts', 'SNR',
+                      'fidelity_empty', 'fidelity_load']
+        self.labels = self.names
+        self.shapes = ((), (), (), (), ())
+
         self._meta_attrs.extend(['t_skip', 't_read'])
 
     def setup(self, samples=None, t_skip=None, t_read=None, **kwargs):
@@ -214,12 +212,6 @@ class EPR_Parameter(MeasurementParameter):
         self.analysis_settings = {'sample_rate': self.layout.sample_rate(),
                                   't_skip': self.t_skip,
                                   't_read': self.t_read}
-
-        # Setup parameter metadata
-        self.names = ['fidelity_empty', 'fidelity_load', 'fidelity_read',
-                      'up_proportion', 'dark_counts', 'contrast']
-        self.labels = self.names
-        self.shapes = ((), (), (), (), (), ())
 
         super().setup(**kwargs)
 
@@ -259,10 +251,7 @@ class EPR_Parameter(MeasurementParameter):
         if self.print_results:
             self.print_fidelities()
 
-        if self.return_traces:
-            return self.fidelities + tuple(self.traces.values())
-        else:
-            return self.fidelities
+        return self.fidelities
 
 
 class AdiabaticSweep_Parameter(EPR_Parameter):
@@ -291,6 +280,10 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         self.analysis = analysis.analyse_PR
 
+        self.names = ['contrast', 'dark_counts', 'SNR']
+        self.labels = self.names
+        self.shapes = ((), (), ())
+
     @property
     def frequency(self):
         return self.pulse_sequence['adiabatic' + self.mode_str].frequency
@@ -298,15 +291,6 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
     @frequency.setter
     def frequency(self, frequency):
         self.pulse_sequence['adiabatic' + self.mode_str].frequency = frequency
-
-    def setup(self, **kwargs):
-
-        super().setup(**kwargs)
-
-        self.names = ['fidelity_load', 'fidelity_read',
-                      'up_proportion', 'dark_counts', 'contrast']
-        self.labels = self.names
-        self.shapes = ((), (), (), (), ())
 
     def get(self):
         self.acquire()
@@ -350,17 +334,13 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
         self.frequencies_ESR = None
         self.frequency_ESR = None
 
-        self._meta_attrs.extend(['ESR_frequencies', 'ESR_frequency'])
-
-    def setup(self, **kwargs):
-        super().setup(**kwargs)
-
-
-        self.names = ['dark_counts_up', 'contrast_up',
-                      'dark_counts_down', 'contrast_down',
+        self.names = ['contrast_up', 'dark_counts_up',
+                      'contrast_down', 'dark_counts_down',
                       'ESR_frequency']
         self.labels = self.names
         self.shapes = ((), (), (), (), ())
+
+        self._meta_attrs.extend(['ESR_frequencies', 'ESR_frequency'])
 
     def get(self):
         self.fidelities = []
@@ -377,7 +357,7 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
                 trace_segments=self.trace_segments['output'],
                 **self.analysis_settings)
             # Only add dark counts and contrast
-            self.fidelities += [fidelities[3], fidelities[4]]
+            self.fidelities += [fidelities[0], fidelities[1]]
 
             # Store raw traces if self.save_traces is True
             if self.save_traces:
@@ -394,11 +374,11 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
 
         if self.fidelities[1] > self.fidelities[3]:
             # Nucleus is in the up state
-            self.frequency_ESR = self.frequencies_ESR['up']
+            frequency_ESR = self.frequencies_ESR['up']
         else:
             # Nucleus is in the down state
-            self.frequency_ESR = self.frequencies_ESR['down']
-        self.fidelities += [self.frequency_ESR]
+            frequency_ESR = self.frequencies_ESR['down']
+        self.fidelities += [frequency_ESR]
 
         # Print results
         if self.print_results:
@@ -410,32 +390,31 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
 class T1_Parameter(AdiabaticSweep_Parameter):
 
     def __init__(self, layout, **kwargs):
-            super().__init__(layout=layout, **kwargs)
-            self.name = 'T1_wait_time'
-            self.label = 'T1_wait_time'
+        super().__init__(layout=layout, **kwargs)
+        self.name = 'T1_wait_time'
+        self.label = 'T1_wait_time'
 
-            self.subfolder = 'T1'
+        self.subfolder = 'T1'
 
-            self.pulse_sequence['empty'].acquire = False
-            self.pulse_sequence['plunge'].acquire = False
+        self.pulse_sequence['empty'].acquire = False
+        self.pulse_sequence['plunge'].acquire = False
 
-            self.analysis = analysis.analyse_read
+        self.analysis = analysis.analyse_read
+
+        self.names = ['up_proportion', 'num_traces']
+        self.labels = self.names
+        self.shapes = ((), ())
 
     @property
     def plunge_duration(self):
         return self.pulse_sequence['plunge'].duration
 
     def setup(self, **kwargs):
-
         super().setup(**kwargs)
 
         self.analysis_settings = {
             'threshold_voltage': self.readout_threshold_voltage,
             'start_idx': round(self.t_skip * 1e-3 * self.layout.sample_rate())}
-
-        self.names = ['up_proportion', 'num_traces_loaded']
-        self.labels = self.names
-        self.shapes = ((), ())
 
     def get(self):
         self.acquire()
@@ -464,10 +443,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         if self.print_results:
             self.print_fidelities()
 
-        if self.return_traces:
-            return self.fidelities + tuple(self.traces.values())
-        else:
-            return self.fidelities
+        return self.fidelities
 
     def set(self, plunge_duration):
             self.pulse_sequence['plunge'].duration = plunge_duration

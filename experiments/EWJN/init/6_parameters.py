@@ -10,7 +10,8 @@ adiabatic_NMR_parameter = measurement_parameters.AdiabaticSweep_Parameter(
     layout=layout, mode='ESR')
 find_ESR_parameter = measurement_parameters.FindESR_Parameter(layout=layout,
                                                               mode='ESR')
-dark_counts_parameter = measurement_parameters.dark_counts_parameter(layout=layout)
+dark_counts_parameter = measurement_parameters.dark_counts_parameter(
+    layout=layout)
 
 turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = general_parameters.CombinedParameter(parameters=[TGAC, DF, DS])
