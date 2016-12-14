@@ -32,9 +32,6 @@ class Pulse:
         self.delay_start = delay_start
         self.delay_stop = delay_stop
 
-        if self.duration is None and self.t_stop is None:
-            raise Exception("Must provide either t_stop or duration")
-
         self.acquire = acquire
         self.initialize = initialize
         self.enabled = enabled
@@ -168,6 +165,10 @@ class Pulse:
         if self.name in pulse_config:
             if item in pulse_config[self.name]:
                 return pulse_config[self.name][item]
+
+        if self.name + self.mode_str in pulse_config:
+            if item in pulse_config[self.name + self.mode_str]:
+                return pulse_config[self.name + self.mode_str][item]
 
         # check if {item}_{self.mode} is in properties_config
         # if mode is None, mode_str='', in which case it checks for {item}
@@ -373,10 +374,6 @@ class FrequencyRampPulse(Pulse):
         else:
             self.frequency = None
             self.frequency_deviation = None
-
-        if self.frequency is None or self.frequency_deviation is None:
-            raise SyntaxError("Must provide either f_start & f_stop or "
-                              "f_center and f_deviation")
 
         self._frequency_final = frequency_final
         self.frequency_sideband = frequency_sideband
