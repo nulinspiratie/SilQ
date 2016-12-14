@@ -1,53 +1,57 @@
 {
-    "gui": {
-        "plotlib": "matplotlib",
-        "notebook": true
+    "core": {
+        "legacy_mp": true,
+        "loglevel": "DEBUG"
     },
     "user": {
         "pulses": {
+            "final": {
+                "amplitude": 0,
+                "duration": 2
+            },
+            "adiabatic_ESR": {
+                "t_start": 3,
+                "frequency_deviation": 1000000.0,
+                "power": 0,
+                "duration": 0.15
+            },
             "adiabatic_NMR": {
                 "t_start": 3,
+                "frequency_deviation": 100000.0,
                 "power": 0,
-                "duration": 0.5,
-                "frequency_deviation": 100000.0
-            },
-            "empty": {
-                "amplitude": -1.5,
-                "duration": 5
+                "duration": 0.5
             },
             "read": {
                 "amplitude": 0,
                 "duration": 40
             },
-            "steered_initialization": {
-                "t_no_blip": 120,
-                "t_buffer": 30,
-                "t_max_wait": 400,
-                "enabled": false
-            },
-            "adiabatic_ESR": {
-                "t_start": 3,
-                "power": 0,
-                "duration": 0.15,
-                "frequency_deviation": 1000000.0
-            },
             "plunge": {
                 "amplitude": 1.8,
                 "duration": 5
             },
-            "final": {
-                "amplitude": 0,
-                "duration": 2
+            "empty": {
+                "amplitude": -1.5,
+                "duration": 5
+            },
+            "steered_initialization": {
+                "t_no_blip": 120,
+                "enabled": false,
+                "t_buffer": 30,
+                "t_max_wait": 400
             }
         },
         "properties": {
             "frequency_NMR": 66500000.0,
             "frequency_ESR": 27951000000.0,
-            "readout_threshold_voltage": 0.4
+            "frequencies_ESR": {
+                "down": 27951000000.0,
+                "up": 27852500000.0
+            },
+            "readout_threshold_voltage": 0.38969726562500007
         }
     },
-    "core": {
-        "legacy_mp": true,
-        "loglevel": "DEBUG"
+    "gui": {
+        "plotlib": "matplotlib",
+        "notebook": true
     }
 }

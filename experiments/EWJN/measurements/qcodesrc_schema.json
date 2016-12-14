@@ -1,48 +1,25 @@
 {
+    "type": "object",
+    "required": [
+        "gui",
+        "core",
+        "user"
+    ],
     "properties": {
-        "gui": {
-            "required": [
-                "notebook",
-                "plotlib"
-            ],
-            "type": "object",
-            "properties": {
-                "plotlib": {
-                    "default": "matplotlib",
-                    "enum": [
-                        "QT",
-                        "matplotlib"
-                    ],
-                    "type": "string",
-                    "description": "Plotting library"
-                },
-                "notebook": {
-                    "default": true,
-                    "type": "boolean",
-                    "description": "Use notebook frontend"
-                }
-            },
-            "description": "controls gui of qcodes"
-        },
-        "user": {
-            "type": "object",
-            "properties": {},
-            "description": "controls user settings of qcodes"
-        },
         "core": {
+            "type": "object",
             "required": [
                 "legacy_mp",
                 "loglevel"
             ],
-            "type": "object",
             "properties": {
                 "legacy_mp": {
-                    "default": false,
                     "type": "boolean",
+                    "default": false,
                     "description": "control legacy buggy multiprocess"
                 },
                 "loglevel": {
-                    "default": "DEBUG",
+                    "type": "string",
                     "enum": [
                         "CRITICAL",
                         "ERROR",
@@ -50,19 +27,42 @@
                         "INFO",
                         "DEBUG"
                     ],
-                    "type": "string",
+                    "default": "DEBUG",
                     "description": "control logging  level"
                 }
             },
             "description": "controls core settings of qcodes"
+        },
+        "user": {
+            "type": "object",
+            "properties": {},
+            "description": "controls user settings of qcodes"
+        },
+        "gui": {
+            "type": "object",
+            "required": [
+                "notebook",
+                "plotlib"
+            ],
+            "properties": {
+                "plotlib": {
+                    "type": "string",
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ],
+                    "default": "matplotlib",
+                    "description": "Plotting library"
+                },
+                "notebook": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use notebook frontend"
+                }
+            },
+            "description": "controls gui of qcodes"
         }
     },
-    "required": [
-        "gui",
-        "core",
-        "user"
-    ],
-    "type": "object",
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "description": "schema for a qcodes config file"
+    "description": "schema for a qcodes config file",
+    "$schema": "http://json-schema.org/draft-04/schema#"
 }
