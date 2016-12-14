@@ -11,7 +11,7 @@ h5fmt = hdf5_format.HDF5Format()
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
-from silq.tools import data_tools
+from silq.tools import data_tools, general_tools
 
 properties_config = config['user'].get('properties', {})
 
@@ -510,25 +510,17 @@ class VariableRead_Parameter(MeasurementParameter):
         self.setup()
 
 
-class AutoCalibration_Parameter(Parameter):
-    def __init__(self, name, measure_parameter, set_parameters, spans, key,
-                 set_points=5, update=True, **kwargs):
+class Measure1D_Parameter(Parameter):
+    def __init__(self, name, set_parameter, measure_parameter,
+                 **kwargs):
         super().__init__(name, **kwargs)
-
+        self.set_parameter = set_parameter
+        self.set_parameter_name = set_parameter.name
         self.measure_parameter = measure_parameter
-        self.key = key
-        self.update = update
+        self.measure_parameter_name = measure_parameter.name
+        self.set_vals = None
 
-        if type(set_parameters) is not list:
-            self.ndims = 1
-            self.set_parameter = set_parameters
-            self.span = spans
-            self.set_points = set_points
-        else:
-            self.ndims = len(set_parameters)
-            self.set_parameters = set_parameters
-            self.spans = spans
-            self.set_points = set_points
+        self._meta_attrs.extend(['measure_parameter_name', 'set_vals'])
 
     def get(self):
         # Set data saving parameters
@@ -536,28 +528,73 @@ class AutoCalibration_Parameter(Parameter):
         loc_provider = qc.data.location.FormatLocation(
             fmt='#{counter}_{name}_{time}')
 
-        if self.ndims == 1:
-            center_val = self.set_parameter()
-            set_vals = list(np.linspace(center_val - self.span / 2,
-                                        center_val + self.span / 2,
-                                        self.set_points))
-            self.data = qc.Loop(self.set_parameter[set_vals]
-                                ).each(self.measure_parameter
-                                       ).run(
-                name='calibration_{}'.format(self.measure_parameter.name),
-                background=False, data_manager=False,
-                io=disk_io, location=loc_provider)
-            measure_vals = getattr(self.data, self.key)
-            best_val_idx = np.argmax(measure_vals)
-            best_val = set_vals[best_val_idx]
+        self.loop = qc.Loop(self.set_parameter[self.set_vals]
+                            ).each(self.measure_parameter)
+        self.data = self.loop.run(
+            name='1D_scan_{}_{}'.format(self.set_parameter_name,
+                                        self.measure_parameter_name),
+            background=False, data_manager=False,
+            io=disk_io, location=loc_provider)
+        return self.data
 
-            if self.update:
-                self.set_parameter(best_val)
+    def set(self, val):
+        self.set_vals = val
 
-            return best_val
 
-        elif self.ndims == 2:
-            raise NotImplementedError("Two parameters not implemented")
-        else:
-            raise ValueError("set_parameters must be one or two")
+# class AutoCalibration_Parameter(Parameter):
+#     def __init__(self, name, set_parameters, measure_parameter,
+#                  calibration_operations, key, constraints, **kwargs):
+#         super().__init__(name, **kwargs)
+#
+#         self.key = key
+#         self.constraints = constraints
+#         self.calibration_operations = calibration_operations
+#
+#         self.set_parameters = {p.name: p for p in set_parameters}
+#         self.measure_parameter = measure_parameter
+#         self.measure_parameter_name = measure_parameter.name
+#
+#
+#         self.cal1D_parameter = Measure1D_Parameter(
+#             name='calibration_1D_{}_{}'.format(self.set_parameter_name,
+#                                                self.measure_parameter_name),
+#             measure_parameter=measure_parameter)
+#
+#         # TODO update
+#         self._meta_attrs.extend(['set_parameter_name', 'measure_parameter_name',
+#                                  'key', 'update', 'span', 'set_points'
+#                                  'set_vals_1D', 'measure_vals_1D'])
+#
+#     def satisfies_condition(self, test_vals, target_val, relation):
+#         return general_tools.get_truth(test_vals, target_val, relation)
+#
+#     def satisfies_conditions(self):
+#
+#     def get(self):
+#         self.measure_parameter.setup()
+#
+#         for calibration_operation in self.calibration_operations:
+#             if calibration_operation['mode'] == 'measure':
+#                 vals = self.measure_parameter()
+#
+#         self.center_val = self.set_parameter()
+#         self.set_vals_1D = list(np.linspace(self.center_val - self.span / 2,
+#                                             self.center_val + self.span / 2,
+#                                             self.set_points))
+#
+#         self.data_1D = self.cal1D_parameter()
+#         self.measure_vals_1D = getattr(self.data_1D, self.key)
+#         best_val_idx = np.argmax(self.measure_vals_1D)
+#         best_val = self.set_vals_1D[best_val_idx]
+#
+#             if self.update:
+#                 self.set_parameter(best_val)
+#
+#             self._save_val(best_val)
+#             return best_val
+#
+#         elif self.ndims == 2:
+#             raise NotImplementedError("Two parameters not implemented")
+#         else:
+#             raise ValueError("set_parameters must be one or two")
 
