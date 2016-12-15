@@ -56,6 +56,8 @@ setup(name='silq',
           'IPython>=4.0',
           'ipywidgets>=4.1',
           'h5py>=2.6',
+          'pyperclip>=1.5',
+          'ipympl>=0.0.2',
       ],
       extras_require=extras_require,
       zip_safe=False)
