@@ -31,6 +31,7 @@ properties_config = config['user']['properties']
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters
 from silq.instrument_interfaces import get_instrument_interface
+from silq.tools.general_tools import partial_from_attr, print_attr
 from silq.pulses import *
 
 if not 'USE_MP' in globals():

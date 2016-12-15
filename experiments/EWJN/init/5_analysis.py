@@ -136,7 +136,7 @@ class T1_Measurement:
             cap.set_markeredgewidth(3)
 
         # Plot fit curve
-        plt.plot(self.T1_wait_times, self.fit_result.best_fit, 'r-')
+        ax.plot(self.T1_wait_times, self.fit_result.best_fit, 'r-')
 
         ax.set_xscale("log")
         ax.set_xlim([0.9 * self.T1_wait_times[0], 1.1 * self.T1_wait_times[-1]])

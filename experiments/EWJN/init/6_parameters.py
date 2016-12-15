@@ -8,8 +8,8 @@ adiabatic_ESR_parameter = measurement_parameters.AdiabaticSweep_Parameter(
     layout=layout, mode='ESR')
 adiabatic_NMR_parameter = measurement_parameters.AdiabaticSweep_Parameter(
     layout=layout, mode='ESR')
-find_ESR_parameter = measurement_parameters.FindESR_Parameter(layout=layout,
-                                                              mode='ESR')
+select_ESR_parameter = measurement_parameters.SelectFrequency_Parameter(
+    layout=layout, mode='ESR')
 dark_counts_parameter = measurement_parameters.dark_counts_parameter(
     layout=layout)
 
@@ -22,6 +22,6 @@ station = qc.Station(
     SIM900, arbstudio, pulseblaster, ATS, triggered_controller,
     continuous_controller, keysight, layout,
     DC_parameter, EPR_parameter, T1_parameter, variable_read_parameter,
-    adiabatic_ESR_parameter, adiabatic_NMR_parameter, find_ESR_parameter,
+    adiabatic_ESR_parameter, adiabatic_NMR_parameter, select_ESR_parameter,
     dark_counts_parameter,
     *SIM900_scaled_parameters)
