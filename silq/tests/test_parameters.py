@@ -49,6 +49,32 @@ class SetParameter(Parameter):
         self.param(val)
 
 
+class ConfigParameter(Parameter):
+    def __init__(self, name, key, **kwargs):
+        super().__init__(name, **kwargs)
+
+        if type(key) is str:
+            self.config = config['user']
+            self.key = key
+        else:
+            self.keys = key
+            self.key = key[-1]
+
+    def get_config(self):
+        c = config['user']
+        if hasattr(self, 'keys'):
+            for key in self.keys[:-1]:
+                c = c[key]
+
+        return c
+
+    def get(self):
+        return self.get_config()[self.key]
+
+    def set(self, val):
+        self.get_config()[self.key] = val
+
+
 class TestMeasureParameter(Parameter):
     def __init__(self, name, target_param, target_val, **kwargs):
         super().__init__(name, **kwargs)

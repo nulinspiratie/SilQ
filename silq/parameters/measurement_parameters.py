@@ -30,7 +30,8 @@ class MeasurementParameter(Parameter):
 
         self.formatter = formatter
 
-        self.print_results = False
+        self.silent = True
+        self.save_traces = False
 
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
@@ -79,23 +80,21 @@ class MeasurementParameter(Parameter):
 
         return None
 
-    def setup(self, save_traces=None, formatter=None, print_results=None,
+    def setup(self, save_traces=None, formatter=None, silent=None,
               **kwargs):
         """
         Sets up the meta properties of a measurement parameter.
-        Note that for save and print_results, the default behaviour
-        is False, and so if a Parameter performs a set operation which also
-        performs a setup routine, these will have to be manually overridden.
         Args:
             formatter:
-            print_results:
             **kwargs:
 
         Returns:
 
         """
-        self.save_traces = save_traces
-        self.print_results = print_results
+        if save_traces is not None:
+            self.save_traces = save_traces
+        if silent is not None:
+            self.silent = silent
 
         if formatter is not None:
             self.formatter = formatter
@@ -239,9 +238,10 @@ class EPR_Parameter(MeasurementParameter):
     def get(self):
         self.acquire()
 
-        self.fidelities = self.analysis(
+        fidelities = self.analysis(
             trace_segments=self.trace_segments['output'],
             **self.analysis_settings)
+        self.fidelities = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -250,7 +250,7 @@ class EPR_Parameter(MeasurementParameter):
             self.store_traces(saved_traces, subfolder=self.subfolder)
 
         # Print results
-        if self.print_results:
+        if not self.silent:
             self.print_fidelities()
 
         return self.fidelities
@@ -268,13 +268,13 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
 
         self.subfolder = 'adiabatic' + self.mode_str
 
-        ESR_pulse = FrequencyRampPulse(
+        adiabatic_pulse = FrequencyRampPulse(
             name='adiabatic' + self.mode_str, ** self.pulse_kwargs)
         steered_initialization = SteeredInitialization(
             name='steered_initialization', enabled=False, **self.pulse_kwargs)
 
         self.pulse_sequence['empty'].enabled = False
-        self.pulse_sequence.add([ESR_pulse, steered_initialization])
+        self.pulse_sequence.add([adiabatic_pulse, steered_initialization])
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
         self.pulse_sequence['adiabatic' + self.mode_str].previous_pulse = None
@@ -297,9 +297,10 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
     def get(self):
         self.acquire()
 
-        self.fidelities = self.analysis(
+        fidelities = self.analysis(
             trace_segments=self.trace_segments['output'],
             **self.analysis_settings)
+        self.fidelities = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -314,7 +315,7 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
             self.store_traces(saved_traces, subfolder=self.subfolder)
 
         # Print results
-        if self.print_results:
+        if not self.silent:
             self.print_fidelities()
 
         return self.fidelities
@@ -325,31 +326,44 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         self.setup()
 
 
-class FindESR_Parameter(AdiabaticSweep_Parameter):
-    def __init__(self, layout, **kwargs):
+class SelectFrequency_Parameter(AdiabaticSweep_Parameter):
+    def __init__(self, layout, threshold=0.5, **kwargs):
         super().__init__(layout=layout, **kwargs)
-        self.name = 'find_ESR_frequency'
-        self.label = 'Find ESR frequency adiabatic'
+        self.name = 'select_frequency' + self.mode_str
+        self.label = 'Select frequency{} adiabatic'.format(self.mode_str)
 
-        self.subfolder = 'find_ESR'
+        self.subfolder = 'select_frequency' + self.mode_str
 
-        self.frequencies_ESR = None
-        self.frequency_ESR = None
+        self.frequencies = None
+        self.frequency = None
+
+        self.update = True
+        self.threshold = threshold
 
         self.names = ['contrast_up', 'dark_counts_up',
                       'contrast_down', 'dark_counts_down',
-                      'ESR_frequency']
+                      'frequency' + self.mode_str]
         self.labels = self.names
         self.shapes = ((), (), (), (), ())
 
-        self._meta_attrs.extend(['ESR_frequencies', 'ESR_frequency'])
+        self._meta_attrs.extend(['frequencies' + self.mode_str,
+                                 'frequency' + self.mode_str])
+
+    def setup(self, update=None, threshold=None, **kwargs):
+        super().setup(**kwargs)
+
+        if update is not None:
+            self.update = update
+
+        if threshold is not None:
+            self.threshold = threshold
 
     def get(self):
         self.fidelities = []
-
+        self.contrasts = []
         # Perform measurement for both adiabatic frequencies
         for spin_state in ['up', 'down']:
-            frequency = self.frequencies_ESR[spin_state]
+            frequency = self.frequencies[spin_state]
 
             # Set adiabatic sweep frequency
             self(frequency)
@@ -359,7 +373,9 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
                 trace_segments=self.trace_segments['output'],
                 **self.analysis_settings)
             # Only add dark counts and contrast
-            self.fidelities += [fidelities[0], fidelities[1]]
+            self.fidelities += [fidelities['contrast'],
+                                fidelities['dark_counts']]
+            self.contrasts += [fidelities['contrast']]
 
             # Store raw traces if self.save_traces is True
             if self.save_traces:
@@ -374,17 +390,23 @@ class FindESR_Parameter(AdiabaticSweep_Parameter):
                 self.store_traces(saved_traces, subfolder='{}_{}'.format(
                     self.subfolder, spin_state))
 
-        if self.fidelities[1] > self.fidelities[3]:
+        if self.contrasts[0] > self.contrasts[1]:
             # Nucleus is in the up state
-            frequency_ESR = self.frequencies_ESR['up']
+            frequency = self.frequencies['up']
         else:
             # Nucleus is in the down state
-            frequency_ESR = self.frequencies_ESR['down']
-        self.fidelities += [frequency_ESR]
+            frequency = self.frequencies['down']
+        self.fidelities += [frequency]
 
         # Print results
-        if self.print_results:
+        if not self.silent:
             self.print_fidelities()
+
+        if self.update and max(self.contrasts) > self.threshold:
+            properties_config['frequency' + self.mode_str] = frequency
+        elif not self.silent:
+            logging.warning("Could not find frequency with high enough "
+                            "contrast")
 
         return self.fidelities
 
@@ -424,10 +446,9 @@ class T1_Parameter(AdiabaticSweep_Parameter):
         self.acquire()
 
         # Analysis
-        up_proportion, num_traces_loaded = self.analysis(
-            traces=self.trace_segments['output']['read'],
-            **self.analysis_settings)
-        self.fidelities = (up_proportion, num_traces_loaded)
+        fidelities = self.analysis(traces=self.trace_segments['output']['read'],
+                                   **self.analysis_settings)
+        self.fidelities = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -444,7 +465,7 @@ class T1_Parameter(AdiabaticSweep_Parameter):
                               subfolder=self.subfolder)
 
         # Print results
-        if self.print_results:
+        if not self.silent:
             self.print_fidelities()
 
         return self.fidelities
@@ -598,7 +619,7 @@ class AutoCalibration_Parameter(Parameter):
         self.set_parameters = {p.name: p for p in set_parameters}
         self.measure_parameter = measure_parameter
 
-        self.names = ['success', 'optimal_set_val']
+        self.names = ['success', 'optimal_set_val', self.key]
         self.labels = self.names
         self._meta_attrs.extend(['measure_parameter_name', 'conditions',
                                  'calibration_operations', 'key',
@@ -625,7 +646,7 @@ class AutoCalibration_Parameter(Parameter):
                                                  satisfied_arr)
         return satisfied_final_arr
 
-    def optimal_set_val(self, dataset, satisfied_set_vals=None):
+    def optimal_val(self, dataset, satisfied_set_vals=None):
         measurement_vals = getattr(dataset, self.key)
 
         set_vals_1D = np.ravel(self.set_vals)
@@ -640,7 +661,7 @@ class AutoCalibration_Parameter(Parameter):
             measurement_vals_1D = np.take(measurement_vals_1D, satisfied_idx)
 
         max_idx = np.argmax(measurement_vals_1D)
-        return set_vals_1D[max_idx]
+        return set_vals_1D[max_idx], measurement_vals_1D[max_idx]
 
     def get(self):
         self.loop_parameters = []
@@ -649,7 +670,7 @@ class AutoCalibration_Parameter(Parameter):
         if hasattr(self.measure_parameter, 'setup'):
             self.measure_parameter.setup()
 
-        for calibration_operation in self.calibration_operations:
+        for k, calibration_operation in enumerate(self.calibration_operations):
             if calibration_operation['mode'] == 'measure':
                 dims = (1)
                 self.set_vals = [None]
@@ -685,20 +706,20 @@ class AutoCalibration_Parameter(Parameter):
 
             satisfied_set_vals = self.satisfies_conditions(dataset, dims)
             if np.any(satisfied_set_vals):
-                optimal_set_val = self.optimal_set_val(dataset,
-                                                       satisfied_set_vals)
-                success = 1
+                optimal_set_val, optimal_get_val = self.optimal_val(
+                    dataset, satisfied_set_vals)
+                cal_success = k
                 break
         else:
             logging.warning('Could not find calibration point satisfying '
                             'conditions. Choosing best alternative')
-            optimal_set_val = self.optimal_set_val(dataset)
-            success = 0
+            optimal_set_val, optimal_get_val = self.optimal_val(dataset)
+            cal_success = -1
 
 
         if optimal_set_val is not None:
             set_parameter(optimal_set_val)
             # TODO implement for 2D
-            return 1, optimal_set_val
+            return cal_success, optimal_set_val, optimal_get_val
         else:
-            return 1, 0
+            return cal_success, 1, optimal_get_val
