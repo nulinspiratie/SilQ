@@ -1,5 +1,69 @@
+import numpy as np
+import logging
+
+from qcodes.instrument.parameter import Parameter
+from qcodes import config
+
+from silq.tools import data_tools, general_tools
+
+from .acquisition_parameters import Adiabatic_Parameter
+
+properties_config = config['user'].get('properties', {})
 
 
+class MeasurementParameter(Parameter):
+    def __init__(self, mode=None, **kwargs):
+        super().__init__(**kwargs)
+        self.mode = mode
+        self.mode_str = '' if mode is None else '_{}'.format(mode)
+
+        self.silent = True
+
+    def __repr__(self):
+        return '{} measurement parameter'.format(self.name)
+
+    def __getattribute__(self, item):
+        """
+        Used when requesting an attribute. If the attribute is explicitly set to
+        None, it will check the config if the item exists.
+        Args:
+            item: Attribute to be retrieved
+
+        Returns:
+
+        """
+        value = object.__getattribute__(self, item)
+        if value is not None:
+            return value
+
+        value = self._attribute_from_config(item)
+        return value
+
+    def _attribute_from_config(self, item):
+        """
+        Check if attribute exists somewhere in the config
+        It first ill check properties config if a key matches the item
+        with self.mode appended. This is only checked if the param has a mode.
+        Finally, it will check if properties_config contains the item
+        """
+        # check if {item}_{self.mode} is in properties_config
+        # if mode is None, mode_str='', in which case it checks for {item}
+        item_mode = '{}{}'.format(item, self.mode_str)
+        if item_mode in properties_config:
+            return properties_config[item_mode]
+
+        # Check if item is in properties config
+        if item in properties_config:
+            return properties_config[item]
+
+        return None
+
+    def print_results(self):
+        if self.names is not None:
+            for name, result in zip(self.names, self.results):
+                print('{}: {:.3f}'.format(name, result))
+        else:
+            print('{}: {:.3f}'.format(self.name, self.results))
 
 
 class SelectFrequency_Parameter(MeasurementParameter):
@@ -48,20 +112,6 @@ class SelectFrequency_Parameter(MeasurementParameter):
             # Only add dark counts and contrast
             self.results.append(fidelities[self.discriminant_idx])
 
-            # Store raw traces if self.save_traces is True
-            if self.save_traces:
-                saved_traces = {
-                    'acquisition_traces': self.data['acquisition_traces'][
-                        'output']}
-                if 'initialization_traces' in self.data:
-                    saved_traces['initialization'] = \
-                        self.data['initialization_traces']
-                if 'post_initialization_traces' in self.data:
-                    saved_traces['post_initialization_output'] = \
-                        self.data['post_initialization_traces']['output']
-                self.store_traces(saved_traces, subfolder='{}_{}'.format(
-                    self.subfolder, spin_state))
-
         optimal_idx = np.argmax(self.results)
         optimal_spin_state = self.spin_states[optimal_idx]
 
@@ -82,9 +132,10 @@ class SelectFrequency_Parameter(MeasurementParameter):
 
 
 
-class AutoCalibration_Parameter(Parameter):
+class AutoCalibration_Parameter(MeasurementParameter):
     def __init__(self, name, set_parameters, measure_parameter,
-                 calibration_operations, key, conditions=None, **kwargs):
+                 calibration_operations, discriminant, conditions=None,
+                 **kwargs):
         """
 
         Args:
@@ -92,7 +143,7 @@ class AutoCalibration_Parameter(Parameter):
             set_parameters:
             measure_parameter:
             calibration_operations:
-            key:
+            discriminant:
             conditions: Must be of one of the following forms
                 {'mode': 'measure'}
                 {'mode': '1D_scan', 'span', 'set_points', 'set_parameter',
@@ -101,17 +152,17 @@ class AutoCalibration_Parameter(Parameter):
         """
         super().__init__(name, **kwargs)
 
-        self.key = key
+        self.discriminant = discriminant
         self.conditions = conditions
         self.calibration_operations = calibration_operations
 
         self.set_parameters = {p.name: p for p in set_parameters}
         self.measure_parameter = measure_parameter
 
-        self.names = ['success', 'optimal_set_val', self.key]
+        self.names = ['success', 'optimal_set_val', self.discriminant]
         self.labels = self.names
         self._meta_attrs.extend(['measure_parameter_name', 'conditions',
-                                 'calibration_operations', 'key',
+                                 'calibration_operations', 'discriminant',
                                  'set_vals_1D', 'measure_vals_1D'])
 
     @property

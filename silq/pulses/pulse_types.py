@@ -21,7 +21,6 @@ class Pulse:
                  connection=None, enabled=True, mode=None,
                  connection_requirements={}):
         self.mode = mode
-        self.mode_str = '_{}'.format(mode) if mode is not None else ''
 
         self.name = name
         self._previous_pulse = previous_pulse
@@ -161,20 +160,17 @@ class Pulse:
         with self.mode appended. This is only checked if the pulse has a mode.
         Finally, it will check if properties_config contains the item
         """
-        # Check if pulse attribute is in pulse_config
-        if self.name in pulse_config:
-            if item in pulse_config[self.name]:
-                return pulse_config[self.name][item]
+        if item in pulse_config.get(self.name + self.mode_str, {}):
+            return pulse_config[self.name + self.mode_str][item]
 
-        if self.name + self.mode_str in pulse_config:
-            if item in pulse_config[self.name + self.mode_str]:
-                return pulse_config[self.name + self.mode_str][item]
+        # Check if pulse attribute is in pulse_config
+        if item in pulse_config.get(self.name, {}):
+            return pulse_config[self.name][item]
 
         # check if {item}_{self.mode} is in properties_config
         # if mode is None, mode_str='', in which case it checks for {item}
-        item_mode = '{}{}'.format(item, self.mode_str)
-        if item_mode in properties_config:
-            return properties_config[item_mode]
+        if (item + self.mode_str) in properties_config:
+            return properties_config[item + self.mode_str]
 
         # Check if item is in properties config
         if item in properties_config:
@@ -245,10 +241,14 @@ class Pulse:
     def previous_pulse(self, previous_pulse):
         self._previous_pulse = previous_pulse
 
-    def _get_repr(self, properties_str):
-        # properties_str = ', '.join(['{}: {}'.format(prop, getattr(self, prop))
-        #                            for prop in properties])
+    @property
+    def mode_str(self):
+        return '' if self.mode is None else '_{}'.format(self.mode)
 
+    def _get_repr(self, properties_str):
+        pulse_name = self.name
+        if self.mode is not None:
+            pulse_name += ' ({})'.format(self.mode)
         if self.connection:
             properties_str += '\n\tconnection: {}'.format(self.connection)
         if self.connection_requirements:
@@ -262,7 +262,7 @@ class Pulse:
 
         return '{pulse_type}({name}, {properties})'.format(
             pulse_type=self.__class__.__name__,
-            name=self.name, properties=properties_str)
+            name=pulse_name, properties=properties_str)
 
     def copy(self):
         pulse_copy = copy.deepcopy(self)

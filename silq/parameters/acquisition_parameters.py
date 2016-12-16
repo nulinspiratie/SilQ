@@ -9,7 +9,7 @@ from qcodes.data import hdf5_format, io
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
-from silq.tools import data_tools, general_tools
+from silq.tools import data_tools
 
 h5fmt = hdf5_format.HDF5Format()
 properties_config = config['user'].get('properties', {})
@@ -426,15 +426,11 @@ class VariableRead_Parameter(AcquisitionParameter):
                          label='Variable read voltage',
                          snapshot_value=False,
                          **kwargs)
-        empty_pulse = DCPulse(name='empty', acquire=True, **self.pulse_kwargs)
-        load_pulse = DCPulse(name='plunge', acquire=True, **self.pulse_kwargs)
-        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
-        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
-
-        self.samples = 50
-
-        pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
-        self.pulse_sequence.add(pulses)
+        self.pulse_sequence.add([
+            DCPulse(name='empty', acquire=True),
+            DCPulse(name='plunge', acquire=True),
+            DCPulse(name='read', acquire=True),
+            DCPulse(name='final')])
 
     def setup(self, samples=None, **kwargs):
         if samples:
