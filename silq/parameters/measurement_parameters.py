@@ -1,37 +1,44 @@
 from time import sleep
 import numpy as np
-from collections import OrderedDict
 import logging
 
-import qcodes as qc
 from qcodes import config
-from qcodes.instrument.parameter import Parameter, ManualParameter
+from qcodes.instrument.parameter import Parameter
 from qcodes.data import hdf5_format, io
-h5fmt = hdf5_format.HDF5Format()
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools, general_tools
 
+h5fmt = hdf5_format.HDF5Format()
 properties_config = config['user'].get('properties', {})
 
 
 class MeasurementParameter(Parameter):
     data_manager = None
-    def __init__(self, layout, formatter=h5fmt, mode=None, **kwargs):
+    layout = None
+    formatter = h5fmt
+
+    def __init__(self, mode=None, average_mode='none', **kwargs):
         super().__init__(**kwargs)
         self.mode = mode
-        self.mode_str = '' if mode is None else '_' + mode
+        self.mode_str = '' if mode is None else '_{}'.format(mode)
+        # TODO add mode to name
         self.pulse_kwargs = {'mode': self.mode}
 
-        self.layout = layout
         self.pulse_sequence = PulseSequence()
-
-        self.formatter = formatter
-
         self.silent = True
+        self.average_mode = average_mode
         self.save_traces = False
+
+        self.samples = None
+        self.t_read = None
+        self.t_skip = None
+        self.trace_segments = None
+        self.data = None
+        self.data_set = None
+        self.results = None
 
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
@@ -61,6 +68,21 @@ class MeasurementParameter(Parameter):
         value = self._attribute_from_config(item)
         return value
 
+    @property
+    def sample_rate(self):
+        """ Acquisition sample rate """
+        return self.layout.sample_rate()
+
+    @property
+    def pulse_pts(self):
+        """ Number of points in the trace of each pulse"""
+        return {pulse.name: int(round(pulse.duration / 1e3 * self.sample_rate))
+                for pulse in self.pulse_sequence}
+
+    @property
+    def start_idx(self):
+        return round(self.t_skip * 1e-3 * self.sample_rate)
+
     def _attribute_from_config(self, item):
         """
         Check if attribute exists somewhere in the config
@@ -80,28 +102,15 @@ class MeasurementParameter(Parameter):
 
         return None
 
-    def setup(self, save_traces=None, formatter=None, silent=None,
-              **kwargs):
+    def update_settings(self, **kwargs):
         """
-        Sets up the meta properties of a measurement parameter.
-        Args:
-            formatter:
-            **kwargs:
-
-        Returns:
-
+        Sets up the meta properties of a measurement parameter
         """
-        if save_traces is not None:
-            self.save_traces = save_traces
-        if silent is not None:
-            self.silent = silent
-
-        if formatter is not None:
-            self.formatter = formatter
-
-        sample_rate = self.layout.sample_rate()
-        self.pts = {pulse.name: int(round(pulse.duration/ 1e3 * sample_rate))
-                    for pulse in self.pulse_sequence}
+        for item, value in kwargs:
+            if hasattr(self, item):
+                setattr(self, item, value)
+            else:
+                raise ValueError('Setting {} not found'.format(item))
 
     def segment_trace(self, trace):
         trace_segments = {}
@@ -110,15 +119,12 @@ class MeasurementParameter(Parameter):
             if not pulse.acquire:
                 continue
             trace_segments[pulse.name] = \
-                trace[:, idx:idx + self.pts[pulse.name]]
-            idx += self.pts[pulse.name]
+                trace[:, idx:idx + self.pulse_pts[pulse.name]]
+            idx += self.pulse_pts[pulse.name]
         return trace_segments
 
-    def store_traces(self, traces_dict, name=None, subfolder=None):
+    def store_traces(self, traces_dict, subfolder=None):
         # Store raw traces
-        if name is None:
-            name = self.name
-
         # Pause until data_manager is done measuring
         while self.data_manager.ask('get_measuring'):
             sleep(0.01)
@@ -133,179 +139,141 @@ class MeasurementParameter(Parameter):
             data_tools.store_data(data_manager=self.data_manager,
                                   result=traces)
 
+    def print_results(self):
+        if self.names is not None:
+            for name, result in zip(self.names, self.results):
+                print('{}: {:.3f}'.format(name, result))
+        else:
+            print('{}: {:.3f}'.format(self.name, self.results))
+
+    def setup(self, **kwargs):
+        self.layout.stop()
+        self.layout.target_pulse_sequence(self.pulse_sequence)
+        self.layout.setup(samples=self.samples, average_mode=self.average_mode,
+                          **kwargs)
+
+    def acquire(self, segment_traces=True, **kwargs):
+        # Perform acquisition
+        self.data = self.layout.do_acquisition(return_dict=True,
+                                               **kwargs)
+        if segment_traces:
+            self.trace_segments = {
+                ch_label: self.segment_trace(trace)
+                for ch_label, trace in self.data['acquisition_traces'].items()}
+
 
 class DC_Parameter(MeasurementParameter):
-
-    def __init__(self, layout, **kwargs):
+    # TODO implement continuous acquisition
+    def __init__(self, **kwargs):
         super().__init__(name='DC_voltage',
                          label='DC voltage',
                          units='V',
-                         layout=layout,
+                         average_mode='point',
                          snapshot_value=False,
                          **kwargs)
 
-        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
-        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
-        pulses = [read_pulse, final_pulse]
-        self.pulse_sequence.add(pulses)
+        self.samples = 1
 
-    def setup(self, duration=20):
-        # Stop instruments in case they were already running
-        self.layout.stop()
-        self.layout.target_pulse_sequence(self.pulse_sequence)
+        self.pulse_sequence.add([
+            DCPulse(name='read', acquire=True, **self.pulse_kwargs),
+            DCPulse(name='final', **self.pulse_kwargs)])
 
-        self.layout.setup(samples=1, average_mode='point')
-
-        self.layout.start()
+    def acquire(self, **kwargs):
+        # Do not segment traces since we only receive a single value
+        super().acquire(segment_traces=False)
 
     def get(self):
-        signal = self.layout.do_acquisition(start=False, stop=False,
-                                            return_dict=True)
-        return signal['acquisition_traces']['output']
+        self.acquire()
+        return self.data['acquisition_traces']['output']
 
 
 class EPR_Parameter(MeasurementParameter):
-
-    def __init__(self, layout, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(name='EPR',
                          label='Empty Plunge Read',
-                         layout=layout,
                          snapshot_value=False,
+                         names=['contrast', 'dark_counts', 'voltage_difference',
+                                'fidelity_empty', 'fidelity_load'],
                          **kwargs)
 
-        self.subfolder = 'EPR'
-
-        empty_pulse = DCPulse(name='empty', t_start=0, acquire=True,
-                              **self.pulse_kwargs)
-        plunge_pulse = DCPulse(name='plunge', acquire=True, **self.pulse_kwargs)
-        read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
-        final_pulse = DCPulse(name='final', **self.pulse_kwargs)
-
-        self.pulse_sequence.add(
-            [empty_pulse, plunge_pulse, read_pulse, final_pulse])
-
-        self.samples = 100
-        self.t_skip = 0.1
-        self.t_read = 20
+        self.pulse_sequence.add([
+            DCPulse('empty', acquire=True, **self.pulse_kwargs),
+            DCPulse('plunge', acquire=True, **self.pulse_kwargs),
+            DCPulse('read', acquire=True, **self.pulse_kwargs),
+            DCPulse('final', **self.pulse_kwargs)])
 
         self.analysis = analysis.analyse_EPR
-
-        # Setup parameter metadata
-        self.names = ['contrast', 'dark_counts', 'voltage_difference',
-                      'fidelity_empty', 'fidelity_load']
-        self.labels = self.names
-        self.shapes = ((), (), (), (), ())
-
-        self._meta_attrs.extend(['t_skip', 't_read'])
-
-    def setup(self, samples=None, t_skip=None, t_read=None, **kwargs):
-        if samples is not None:
-            self.samples = samples
-        if t_skip is not None:
-            self.t_skip = t_skip
-        if t_read is not None:
-            self.t_read = t_read
-
-        self.layout.target_pulse_sequence(self.pulse_sequence)
-
-        self.layout.setup(samples=self.samples, average_mode='none', **kwargs)
-
-        self.analysis_settings = {'sample_rate': self.layout.sample_rate(),
-                                  't_skip': self.t_skip,
-                                  't_read': self.t_read}
-
-        super().setup(**kwargs)
-
-    def acquire(self):
-        if 'steered_initialization' in self.pulse_sequence and \
-                self.pulse_sequence['steered_initialization'].enabled:
-            return_initialization_traces = True
-        else:
-            return_initialization_traces = False
-
-        self.data = self.layout.do_acquisition(
-            return_dict=True,
-            return_initialization_traces=return_initialization_traces)
-
-        self.trace_segments = {
-            ch_label: self.segment_trace(trace)
-            for ch_label, trace in self.data['acquisition_traces'].items()}
-
-    def print_fidelities(self):
-        for name, fidelity in zip(self.names, self.fidelities):
-            print('{}: {:.3f}'.format(name, fidelity))
 
     def get(self):
         self.acquire()
 
-        fidelities = self.analysis(
-            trace_segments=self.trace_segments['output'],
-            **self.analysis_settings)
-        self.fidelities = [fidelities[name] for name in self.names]
+        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
+                                   sample_rate=self.sample_rate,
+                                   t_skip=self.t_skip, t_read=self.t_read)
+        self.results = [fidelities[name] for name in self.names]
 
-        # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {'acquisition_traces':
-                                self.data['acquisition_traces']['output']}
-            self.store_traces(saved_traces, subfolder=self.subfolder)
+            saved_traces = {
+                'acquisition_traces': self.data['acquisition_traces']['output']}
+            self.store_traces(saved_traces)
 
-        # Print results
         if not self.silent:
-            self.print_fidelities()
+            self.print_results()
 
-        return self.fidelities
+        return self.results
 
 
-class AdiabaticSweep_Parameter(EPR_Parameter):
-    def __init__(self, layout, **kwargs):
+class Adiabatic_Parameter(MeasurementParameter):
+    def __init__(self, **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
-        super().__init__(layout=layout, **kwargs)
+        super().__init__(name='adiabatic',
+                         label='Adiabatic',
+                         snapshot_value=False,
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference'],
+                         **kwargs)
 
-        self.name = 'adiabatic_sweep' + self.mode_str
-        self.label = 'Adiabatic {} sweep center frequency'.format(self.mode)
+        self.pulse_sequence.add([
+            SteeredInitialization('steered_initialization',
+                                  enabled=False, **self.pulse_kwargs),
+            DCPulse('plunge', acquire=True, **self.pulse_kwargs),
+            DCPulse('read', acquire=True, **self.pulse_kwargs),
+            DCPulse('final', **self.pulse_kwargs),
+            FrequencyRampPulse('adiabatic', **self.pulse_kwargs)])
 
-        self.subfolder = 'adiabatic' + self.mode_str
-
-        adiabatic_pulse = FrequencyRampPulse(
-            name='adiabatic' + self.mode_str, ** self.pulse_kwargs)
-        steered_initialization = SteeredInitialization(
-            name='steered_initialization', enabled=False, **self.pulse_kwargs)
-
-        self.pulse_sequence['empty'].enabled = False
-        self.pulse_sequence.add([adiabatic_pulse, steered_initialization])
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
-        self.pulse_sequence['adiabatic' + self.mode_str].previous_pulse = None
+        self.pulse_sequence['adiabatic'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
 
-        self.names = ['contrast', 'dark_counts', 'voltage_difference']
-        self.labels = self.names
-        self.shapes = ((), (), ())
-
     @property
     def frequency(self):
-        return self.pulse_sequence['adiabatic' + self.mode_str].frequency
+        return self.pulse_sequence['adiabatic'].frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        self.pulse_sequence['adiabatic' + self.mode_str].frequency = frequency
+        self.pulse_sequence['adiabatic'].frequency = frequency
+
+    def acquire(self, **kwargs):
+        super().acquire(return_initialization_traces=self.pulse_sequence[
+            'steered_initialization'].enabled, **kwargs)
 
     def get(self):
         self.acquire()
 
-        fidelities = self.analysis(
-            trace_segments=self.trace_segments['output'],
-            **self.analysis_settings)
-        self.fidelities = [fidelities[name] for name in self.names]
+        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
+                                   sample_rate=self.sample_rate,
+                                   t_skip=self.t_skip, t_read=self.t_read)
+        self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {'acquisition_traces':
-                                self.data['acquisition_traces']['output']}
+            saved_traces = {
+                'acquisition_traces': self.data['acquisition_traces']['output']}
             if 'initialization_traces' in self.data:
                 saved_traces['initialization'] = \
                     self.data['initialization_traces']
@@ -314,11 +282,10 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
                     self.data['post_initialization_traces']['output']
             self.store_traces(saved_traces, subfolder=self.subfolder)
 
-        # Print results
         if not self.silent:
-            self.print_fidelities()
+            self.print_results()
 
-        return self.fidelities
+        return self.results
 
     def set(self, frequency):
         # Change center frequency
@@ -326,61 +293,57 @@ class AdiabaticSweep_Parameter(EPR_Parameter):
         self.setup()
 
 
-class SelectFrequency_Parameter(AdiabaticSweep_Parameter):
-    def __init__(self, layout, threshold=0.5, **kwargs):
-        super().__init__(layout=layout, **kwargs)
-        self.name = 'select_frequency' + self.mode_str
-        self.label = 'Select frequency{} adiabatic'.format(self.mode_str)
-
-        self.subfolder = 'select_frequency' + self.mode_str
-
+class SelectFrequency_Parameter(MeasurementParameter):
+    def __init__(self, threshold=0.5, discriminant='contrast', **kwargs):
         self.frequencies = None
         self.frequency = None
 
-        self.update = True
+        names = [discriminant + spin_state for spin_state in self.spin_states]
+        if 'mode' in kwargs:
+            names.append('frequency_{}'.format(kwargs['mode']))
+        else:
+            names.append('frequency')
+
+        super().__init__(name='select_frequency',
+                         label='Select frequency',
+                         snapshot_value=False,
+                         names=names,
+                         **kwargs)
+
+        self.update_frequency = True
         self.threshold = threshold
+        self.discriminant = discriminant
 
-        self.names = ['contrast_up', 'dark_counts_up',
-                      'contrast_down', 'dark_counts_down',
-                      'frequency' + self.mode_str]
-        self.labels = self.names
-        self.shapes = ((), (), (), (), ())
+        self.measure_parameter = Adiabatic_Parameter(**kwargs)
 
-        self._meta_attrs.extend(['frequencies' + self.mode_str,
-                                 'frequency' + self.mode_str])
+        self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
+                                 'threshold', 'discriminant'])
 
-    def setup(self, update=None, threshold=None, **kwargs):
-        super().setup(**kwargs)
+    @property
+    def spin_states(self):
+        spin_states_unsorted = self.frequencies.values()
+        return sorted(spin_states_unsorted)
 
-        if update is not None:
-            self.update = update
-
-        if threshold is not None:
-            self.threshold = threshold
+    @property
+    def discriminant_idx(self):
+        return self.measure_parameter.names.index(self.discriminant)
 
     def get(self):
-        self.fidelities = []
-        self.contrasts = []
-        # Perform measurement for both adiabatic frequencies
-        for spin_state in ['up', 'down']:
-            frequency = self.frequencies[spin_state]
+        self.results = []
+        # Perform measurement for all frequencies
+        for spin_state in self.spin_states:
+            # Set adiabatic frequency
+            self.measure_parameter(self.frequencies[spin_state])
+            fidelities = self.measure_parameter()
 
-            # Set adiabatic sweep frequency
-            self(frequency)
-            self.acquire()
-
-            fidelities = self.analysis(
-                trace_segments=self.trace_segments['output'],
-                **self.analysis_settings)
             # Only add dark counts and contrast
-            self.fidelities += [fidelities['contrast'],
-                                fidelities['dark_counts']]
-            self.contrasts += [fidelities['contrast']]
+            self.results.append(fidelities[self.discriminant_idx])
 
             # Store raw traces if self.save_traces is True
             if self.save_traces:
-                saved_traces = {'acquisition_traces':
-                                    self.data['acquisition_traces']['output']}
+                saved_traces = {
+                    'acquisition_traces': self.data['acquisition_traces'][
+                        'output']}
                 if 'initialization_traces' in self.data:
                     saved_traces['initialization'] = \
                         self.data['initialization_traces']
@@ -390,65 +353,67 @@ class SelectFrequency_Parameter(AdiabaticSweep_Parameter):
                 self.store_traces(saved_traces, subfolder='{}_{}'.format(
                     self.subfolder, spin_state))
 
-        if self.contrasts[0] > self.contrasts[1]:
-            # Nucleus is in the up state
-            frequency = self.frequencies['up']
-        else:
-            # Nucleus is in the down state
-            frequency = self.frequencies['down']
-        self.fidelities += [frequency]
+        optimal_idx = np.argmax(self.results)
+        optimal_spin_state = self.spin_states[optimal_idx]
+
+        frequency = self.frequencies[optimal_spin_state]
+        self.results += [frequency]
 
         # Print results
         if not self.silent:
-            self.print_fidelities()
+            self.print_results()
 
-        if self.update and max(self.contrasts) > self.threshold:
+        if self.update_frequency and max(self.results) > self.threshold:
             properties_config['frequency' + self.mode_str] = frequency
         elif not self.silent:
             logging.warning("Could not find frequency with high enough "
                             "contrast")
 
-        return self.fidelities
+        return self.results
 
 
-class T1_Parameter(AdiabaticSweep_Parameter):
-
-    def __init__(self, layout, **kwargs):
-        super().__init__(layout=layout, **kwargs)
-        self.name = 'T1_wait_time'
-        self.label = 'T1_wait_time'
-
-        self.subfolder = 'T1'
-
-        self.pulse_sequence['empty'].acquire = False
-        self.pulse_sequence['plunge'].acquire = False
+class T1_Parameter(MeasurementParameter):
+    def __init__(self, **kwargs):
+        super().__init__(name='T1_wait_time',
+                         label='T1 wait time',
+                         snapshot_value=False,
+                         names=['T1_up_proportion', 'T1_num_traces'],
+                         **kwargs)
+        self.pulse_sequence.add([
+            SteeredInitialization('steered_initialization',
+                                  enabled=False, **self.pulse_kwargs),
+            DCPulse('plunge', **self.pulse_kwargs),
+            DCPulse('read', acquire=True, **self.pulse_kwargs),
+            DCPulse('final', **self.pulse_kwargs),
+            FrequencyRampPulse('adiabatic', **self.pulse_kwargs)])
+        # Disable previous pulse for adiabatic pulse, since it would
+        # otherwise be after 'final' pulse
+        self.pulse_sequence['adiabatic'].previous_pulse = None
+        self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_read
 
         self.readout_threshold_voltage = None
 
-        self.names = ['up_proportion', 'num_traces']
-        self.labels = self.names
-        self.shapes = ((), ())
+        self._meta_attrs.append('readout_threshold_voltage')
 
     @property
-    def plunge_duration(self):
+    def wait_time(self):
         return self.pulse_sequence['plunge'].duration
 
-    def setup(self, **kwargs):
-        super().setup(**kwargs)
-
-        self.analysis_settings = {
-            'threshold_voltage': self.readout_threshold_voltage,
-            'start_idx': round(self.t_skip * 1e-3 * self.layout.sample_rate())}
+    def acquire(self, **kwargs):
+        super().acquire(return_initialization_traces=self.pulse_sequence[
+            'steered_initialization'].enabled, **kwargs)
 
     def get(self):
         self.acquire()
 
         # Analysis
         fidelities = self.analysis(traces=self.trace_segments['output']['read'],
-                                   **self.analysis_settings)
-        self.fidelities = [fidelities[name] for name in self.names]
+                                   threshold_voltage=
+                                   self.readout_threshold_voltage,
+                                   start_idx=self.start_idx)
+        self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -464,44 +429,84 @@ class T1_Parameter(AdiabaticSweep_Parameter):
                               name=self.plunge_duration,
                               subfolder=self.subfolder)
 
-        # Print results
         if not self.silent:
-            self.print_fidelities()
+            self.print_results()
 
-        return self.fidelities
+        return self.results
 
-    def set(self, plunge_duration):
-            self.pulse_sequence['plunge'].duration = plunge_duration
-            self.subfolder = 'T1_{}'.format(int(self.plunge_duration))
-
-            self.setup()
+    def set(self, wait_time):
+        self.pulse_sequence['plunge'].duration = wait_time
+        self.setup()
 
 
-class dark_counts_parameter(T1_Parameter):
+class DarkCounts_Parameter(MeasurementParameter):
+    def __init__(self, **kwargs):
+        """
+        Parameter used to perform an adiabatic sweep
+        """
+        super().__init__(name='dark_counts',
+                         label='Dark counts',
+                         snapshot_value=False,
+                         **kwargs)
 
-    def __init__(self, layout, **kwargs):
-            super().__init__(layout=layout, **kwargs)
-            self.name = 'dark_counts'
-            self.label = 'Dark counts'
+        self.pulse_sequence.add([
+            SteeredInitialization('steered_initialization',
+                                  enabled=True, **self.pulse_kwargs),
+            DCPulse('read', acquire=True, **self.pulse_kwargs)])
 
-            self.subfolder = 'dark_counts'
+        self.analysis = analysis.analyse_read
 
-            self.pulse_sequence.remove('adiabatic')
-            self.pulse_sequence['steered_initialization'].enabled = True
+        self.readout_threshold_voltage = None
+
+        self._meta_attrs.append('readout_threshold_voltage')
+
+    def acquire(self, **kwargs):
+        super().acquire(return_initialization_traces=self.pulse_sequence[
+            'steered_initialization'].enabled, **kwargs)
+
+    def get(self):
+        self.acquire()
+
+        fidelities = self.analysis(traces=self.trace_segments['output']['read'],
+                                   threshold_voltage=
+                                   self.readout_threshold_voltage,
+                                   start_idx=self.start_idx)
+        self.results = fidelities['up_proportion']
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {'acquisition_traces':
+                                self.data['acquisition_traces']['output']}
+            if 'initialization_traces' in self.data:
+                saved_traces['initialization'] = \
+                    self.data['initialization_traces']
+            if 'post_initialization_traces' in self.data:
+                saved_traces['post_initialization_output'] = \
+                    self.data['post_initialization_traces']['output']
+            self.store_traces(saved_traces, subfolder=self.subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return self.results
+
+    def set(self, frequency):
+        # Change center frequency
+        self.frequency = frequency
+        self.setup()
 
 
 class VariableRead_Parameter(MeasurementParameter):
-    def __init__(self, layout, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(name='variable_read_voltage',
                          label='Variable read voltage',
-                         layout=layout,
                          snapshot_value=False,
                          **kwargs)
         empty_pulse = DCPulse(name='empty', acquire=True, **self.pulse_kwargs)
         load_pulse = DCPulse(name='plunge', acquire=True, **self.pulse_kwargs)
         read_pulse = DCPulse(name='read', acquire=True, **self.pulse_kwargs)
         final_pulse = DCPulse(name='final', **self.pulse_kwargs)
-        
+
         self.samples = 50
 
         pulses = [empty_pulse, load_pulse, read_pulse, final_pulse]
@@ -532,65 +537,6 @@ class VariableRead_Parameter(MeasurementParameter):
         self.pulse_sequence['read'].voltage = self.read_voltage
 
         self.setup()
-
-
-class Loop_Parameter(Parameter):
-    def __init__(self, name, measure_parameter, **kwargs):
-        super().__init__(name, **kwargs)
-        self.measure_parameter = measure_parameter
-
-        self.loc_provider = qc.data.location.FormatLocation(
-            fmt='#{counter}_{name}_{time}')
-        self._meta_attrs.extend(['measure_parameter_name'])
-
-    @property
-    def measure_parameter_name(self):
-        return self.measure_parameter.name
-
-    @property
-    def disk_io(self):
-        return io.DiskIO(data_tools.get_latest_data_folder())
-
-
-class Loop0D_Parameter(Loop_Parameter):
-    def __init__(self, name, measure_parameter, **kwargs):
-        super().__init__(name, measure_parameter=measure_parameter, **kwargs)
-
-    def get(self):
-
-        self.measurement = qc.Measure(self.measure_parameter)
-        self.data = self.measurement.run(
-            name='{}_{}'.format(self.name, self.measure_parameter_name),
-            data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
-        return self.data
-
-class Loop1D_Parameter(Loop_Parameter):
-    def __init__(self, name, set_parameter, measure_parameter, set_vals=None,
-                 **kwargs):
-        super().__init__(name, measure_parameter=measure_parameter, **kwargs)
-        self.set_parameter = set_parameter
-        self.set_vals = set_vals
-
-        self._meta_attrs.extend(['set_parameter_name', 'set_vals'])
-
-    @property
-    def set_parameter_name(self):
-        return self.set_parameter.name
-
-    def get(self):
-        # Set data saving parameters
-        self.measurement = qc.Loop(self.set_parameter[self.set_vals]
-                                  ).each(self.measure_parameter)
-        self.data = self.measurement.run(
-            name='{}_{}_{}'.format(self.name, self.set_parameter_name,
-                                   self.measure_parameter_name),
-            background=False, data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
-        return self.data
-
-    def set(self, val):
-        self.set_vals = val
 
 
 class AutoCalibration_Parameter(Parameter):
@@ -715,7 +661,6 @@ class AutoCalibration_Parameter(Parameter):
                             'conditions. Choosing best alternative')
             optimal_set_val, optimal_get_val = self.optimal_val(dataset)
             cal_success = -1
-
 
         if optimal_set_val is not None:
             set_parameter(optimal_set_val)
