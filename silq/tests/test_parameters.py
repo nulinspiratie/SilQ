@@ -83,3 +83,29 @@ class TestMeasureParameter(Parameter):
 
     def get(self):
         return - abs(self.target_param() - self.target_val)
+
+
+class TestStoreParameter(Parameter):
+    def __init__(self, data_manager, shape=(100,2), formatter=None, **kwargs):
+        self.data_manager = data_manager
+        self.formatter=formatter
+        super().__init__(shape=shape, **kwargs)
+
+    def get(self):
+        result = np.random.randint(1,100,self.shape)
+
+        t0 = time()
+        while self.data_manager.ask('get_measuring'):
+            print('pausing')
+            sleep(2)
+
+        self.data_set = data_tools.create_raw_data_set(
+            name=self.name,
+            data_manager=self.data_manager,
+            shape=self.shape,
+            formatter=self.formatter)
+        data_tools.store_data(data_manager=self.data_manager,
+                              result=result)
+        print('time taken: {:.2f}'.format(time() - t0))
+        return result
+
