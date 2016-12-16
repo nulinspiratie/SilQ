@@ -21,11 +21,13 @@ class AcquisitionParameter(Parameter):
     formatter = h5fmt
 
     def __init__(self, mode=None, average_mode='none', **kwargs):
-        super().__init__(**kwargs)
         self.mode = mode
-        self.mode_str = '' if mode is None else '_{}'.format(mode)
-        # TODO add mode to name
-        self.pulse_kwargs = {'mode': self.mode}
+
+        if self.mode is not None:
+            # Add mode to parameter name and label
+            kwargs['name'] += self.mode_str
+            kwargs['label'] += ' {}'.format(self.mode)
+        super().__init__(**kwargs)
 
         self.pulse_sequence = PulseSequence()
         self.silent = True
@@ -48,8 +50,7 @@ class AcquisitionParameter(Parameter):
         self._meta_attrs.extend(['pulse_sequence'])
 
     def __repr__(self):
-        return '{} measurement parameter\n{}'.format(self.name,
-                                                     self.pulse_sequence)
+        return '{} acquisition parameter'.format(self.name)
 
     def __getattribute__(self, item):
         """
@@ -82,6 +83,10 @@ class AcquisitionParameter(Parameter):
     @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
+
+    @property
+    def mode_str(self):
+        return '' if self.mode is None else '_{}'.format(self.mode)
 
     def _attribute_from_config(self, item):
         """
@@ -175,8 +180,8 @@ class DC_Parameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add([
-            DCPulse(name='read', acquire=True, **self.pulse_kwargs),
-            DCPulse(name='final', **self.pulse_kwargs)])
+            DCPulse(name='read', acquire=True),
+            DCPulse(name='final')])
 
     def acquire(self, **kwargs):
         # Do not segment traces since we only receive a single value
@@ -197,10 +202,10 @@ class EPR_Parameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add([
-            DCPulse('empty', acquire=True, **self.pulse_kwargs),
-            DCPulse('plunge', acquire=True, **self.pulse_kwargs),
-            DCPulse('read', acquire=True, **self.pulse_kwargs),
-            DCPulse('final', **self.pulse_kwargs)])
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read', acquire=True, mode='long'),
+            DCPulse('final')])
 
         self.analysis = analysis.analyse_EPR
 
@@ -236,12 +241,11 @@ class Adiabatic_Parameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add([
-            SteeredInitialization('steered_initialization',
-                                  enabled=False, **self.pulse_kwargs),
-            DCPulse('plunge', acquire=True, **self.pulse_kwargs),
-            DCPulse('read', acquire=True, **self.pulse_kwargs),
-            DCPulse('final', **self.pulse_kwargs),
-            FrequencyRampPulse('adiabatic', **self.pulse_kwargs)])
+            SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read', acquire=True, mode='long'),
+            DCPulse('final'),
+            FrequencyRampPulse('adiabatic', mode=self.mode)])
 
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
@@ -301,12 +305,11 @@ class T1_Parameter(AcquisitionParameter):
                          names=['T1_up_proportion', 'T1_num_traces'],
                          **kwargs)
         self.pulse_sequence.add([
-            SteeredInitialization('steered_initialization',
-                                  enabled=False, **self.pulse_kwargs),
-            DCPulse('plunge', **self.pulse_kwargs),
-            DCPulse('read', acquire=True, **self.pulse_kwargs),
-            DCPulse('final', **self.pulse_kwargs),
-            FrequencyRampPulse('adiabatic', **self.pulse_kwargs)])
+            SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('final'),
+            FrequencyRampPulse('adiabatic', mode=self.mode)])
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
         self.pulse_sequence['adiabatic'].previous_pulse = None
@@ -371,9 +374,9 @@ class DarkCounts_Parameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add([
-            SteeredInitialization('steered_initialization',
-                                  enabled=True, **self.pulse_kwargs),
-            DCPulse('read', acquire=True, **self.pulse_kwargs)])
+            SteeredInitialization('steered_initialization', enabled=True,
+                                  mode='long'),
+            DCPulse('read', acquire=True)])
 
         self.analysis = analysis.analyse_read
 
