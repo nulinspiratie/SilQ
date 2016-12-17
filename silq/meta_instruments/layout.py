@@ -65,6 +65,11 @@ class Layout(Instrument):
                            snapshot_get=False,
                            snapshot_value=False)
 
+        self.add_parameter(name='active',
+                           parameter_class=ManualParameter,
+                           initial_value=False,
+                           vals=vals.Bool())
+
     @property
     def acquisition_interface(self):
         if self.acquisition_instrument() is not None:
@@ -362,6 +367,9 @@ class Layout(Instrument):
                 self._target_pulse(additional_pulse)
 
     def target_pulse_sequence(self, pulse_sequence):
+        if self.active():
+            self.stop()
+
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.initialize()
@@ -418,8 +426,9 @@ class Layout(Instrument):
                     pass
 
     def setup(self, samples=None, average_mode=None, **kwargs):
-        # Ensure all instruments are stopped
-        self.stop()
+
+        if self.active():
+            self.stop()
 
         # Initialize with empty flags, used for instructions between interfaces
         self.flags = {instrument: {} for instrument in self.instruments()}
@@ -466,10 +475,12 @@ class Layout(Instrument):
                 interface.start()
             else:
                 pass
+        self.active(True)
 
     def stop(self):
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
+        self.active(False)
 
     def do_acquisition(self, start=True, stop=True, return_dict=False,
                        return_initialization_traces=False):
