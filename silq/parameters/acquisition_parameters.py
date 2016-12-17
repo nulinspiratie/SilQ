@@ -2,7 +2,6 @@ from time import sleep
 import numpy as np
 import logging
 
-from qcodes import config
 from qcodes.instrument.parameter import Parameter
 from qcodes.data import hdf5_format, io
 
@@ -10,12 +9,12 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
+from .general_parameters import ConfigParameter
 
 h5fmt = hdf5_format.HDF5Format()
-properties_config = config['user'].get('properties', {})
 
 
-class AcquisitionParameter(Parameter):
+class AcquisitionParameter(ConfigParameter):
     data_manager = None
     layout = None
     formatter = h5fmt
@@ -52,23 +51,6 @@ class AcquisitionParameter(Parameter):
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
 
-    def __getattribute__(self, item):
-        """
-        Used when requesting an attribute. If the attribute is explicitly set to
-        None, it will check the config if the item exists.
-        Args:
-            item: Attribute to be retrieved
-
-        Returns:
-
-        """
-        value = object.__getattribute__(self, item)
-        if value is not None:
-            return value
-
-        value = self._attribute_from_config(item)
-        return value
-
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
@@ -83,29 +65,6 @@ class AcquisitionParameter(Parameter):
     @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
-
-    @property
-    def mode_str(self):
-        return '' if self.mode is None else '_{}'.format(self.mode)
-
-    def _attribute_from_config(self, item):
-        """
-        Check if attribute exists somewhere in the config
-        It first ill check properties config if a key matches the item
-        with self.mode appended. This is only checked if the param has a mode.
-        Finally, it will check if properties_config contains the item
-        """
-        # check if {item}_{self.mode} is in properties_config
-        # if mode is None, mode_str='', in which case it checks for {item}
-        item_mode = '{}{}'.format(item, self.mode_str)
-        if item_mode in properties_config:
-            return properties_config[item_mode]
-
-        # Check if item is in properties config
-        if item in properties_config:
-            return properties_config[item]
-
-        return None
 
     def update_settings(self, **kwargs):
         """
@@ -167,7 +126,7 @@ class AcquisitionParameter(Parameter):
                 for ch_label, trace in self.data['acquisition_traces'].items()}
 
 
-class DC_Parameter(AcquisitionParameter):
+class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, **kwargs):
         super().__init__(name='DC_voltage',
@@ -192,7 +151,7 @@ class DC_Parameter(AcquisitionParameter):
         return self.data['acquisition_traces']['output']
 
 
-class EPR_Parameter(AcquisitionParameter):
+class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR',
                          label='Empty Plunge Read',
@@ -228,7 +187,7 @@ class EPR_Parameter(AcquisitionParameter):
         return self.results
 
 
-class Adiabatic_Parameter(AcquisitionParameter):
+class AdiabaticParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         """
         Parameter used to perform an adiabatic sweep
@@ -297,7 +256,7 @@ class Adiabatic_Parameter(AcquisitionParameter):
         self.setup()
 
 
-class T1_Parameter(AcquisitionParameter):
+class T1Parameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='T1_wait_time',
                          label='T1 wait time',
@@ -363,7 +322,7 @@ class T1_Parameter(AcquisitionParameter):
         self.setup()
 
 
-class DarkCounts_Parameter(AcquisitionParameter):
+class DarkCountsParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         """
         Parameter used to perform an adiabatic sweep
@@ -420,7 +379,7 @@ class DarkCounts_Parameter(AcquisitionParameter):
         self.setup()
 
 
-class VariableRead_Parameter(AcquisitionParameter):
+class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='variable_read_voltage',
                          label='Variable read voltage',
