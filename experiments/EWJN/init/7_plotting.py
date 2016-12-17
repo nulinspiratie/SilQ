@@ -1,3 +1,7 @@
+from matplotlib import rcParams
+rcParams['figure.max_open_warning'] = 80
+
+
 if hasattr(qc, 'MatPlot'):
     qc.MatPlot.plot_2D_kwargs = {'cmap': 'inferno'}
 

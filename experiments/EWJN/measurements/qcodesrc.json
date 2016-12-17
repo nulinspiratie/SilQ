@@ -1,11 +1,58 @@
 {
-    "user": {},
     "core": {
-        "loglevel": "DEBUG",
-        "legacy_mp": true
+        "legacy_mp": true,
+        "loglevel": "DEBUG"
     },
     "gui": {
         "plotlib": "matplotlib",
         "notebook": true
+    },
+    "user": {
+        "data_folder": "E:\\EWJN\\data",
+        "properties": {
+            "readout_threshold_voltage": 0.38969726562500007,
+            "frequencies_ESR": {
+                "up": 27852500000.0,
+                "down": 27951000000.0
+            },
+            "frequency_NMR": 66500000.0,
+            "frequency_ESR": 27951000000.0
+        },
+        "pulses": {
+            "steered_initialization": {
+                "t_buffer": 30,
+                "enabled": false,
+                "t_no_blip": 120,
+                "t_max_wait": 400
+            },
+            "final": {
+                "amplitude": 0,
+                "duration": 2
+            },
+            "plunge": {
+                "amplitude": 2,
+                "duration": 5
+            },
+            "empty": {
+                "amplitude": -1.5,
+                "duration": 5
+            },
+            "read": {
+                "amplitude": 0,
+                "duration": 40
+            },
+            "adiabatic_ESR": {
+                "duration": 0.15,
+                "power": 0,
+                "frequency_deviation": 1000000.0,
+                "t_start": 3
+            },
+            "adiabatic_NMR": {
+                "duration": 0.5,
+                "power": 0,
+                "frequency_deviation": 100000.0,
+                "t_start": 3
+            }
+        }
     }
 }
