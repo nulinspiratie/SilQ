@@ -1,43 +1,50 @@
 import numpy as np
 import logging
 
+import qcodes as qc
 from qcodes.instrument.parameter import Parameter
+from qcodes.data import hdf5_format, io
 from qcodes import config
 
 from silq.tools import data_tools, general_tools
-
-from .acquisition_parameters import Adiabatic_Parameter
+from .general_parameters import ConfigParameter
 
 properties_config = config['user'].get('properties', {})
 
 
-class MeasurementParameter(Parameter):
-    def __init__(self, mode=None, **kwargs):
-        super().__init__(**kwargs)
+class MeasurementParameter(ConfigParameter):
+    def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
         self.mode = mode
-        self.mode_str = '' if mode is None else '_{}'.format(mode)
+
+        if self.mode is not None:
+            # Add mode to parameter name and label
+            kwargs['name'] += self.mode_str
+            kwargs['label'] += ' {}'.format(self.mode)
+
+        super().__init__(name, snapshot_value=False,**kwargs)
+
+        self.acquisition_parameter = acquisition_parameter
 
         self.silent = True
+
+        self.loc_provider = qc.data.location.FormatLocation(
+            fmt='#{counter}_{name}_{time}')
+        self._meta_attrs.extend(['acquisition_parameter_name'])
 
     def __repr__(self):
         return '{} measurement parameter'.format(self.name)
 
-    def __getattribute__(self, item):
-        """
-        Used when requesting an attribute. If the attribute is explicitly set to
-        None, it will check the config if the item exists.
-        Args:
-            item: Attribute to be retrieved
+    @property
+    def acquisition_parameter_name(self):
+        return self.acquisition_parameter.name
 
-        Returns:
+    @property
+    def disk_io(self):
+        return io.DiskIO(data_tools.get_latest_data_folder())
 
-        """
-        value = object.__getattribute__(self, item)
-        if value is not None:
-            return value
-
-        value = self._attribute_from_config(item)
-        return value
+    @property
+    def mode_str(self):
+        return '' if self.mode is None else '_{}'.format(self.mode)
 
     def _attribute_from_config(self, item):
         """
@@ -66,12 +73,95 @@ class MeasurementParameter(Parameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
 
-class SelectFrequency_Parameter(MeasurementParameter):
-    def __init__(self, threshold=0.5, discriminant='contrast', **kwargs):
-        self.frequencies = None
+class Loop0DParameter(MeasurementParameter):
+    def __init__(self, name, acquisition_parameter=None, **kwargs):
+        super().__init__(name, acquisition_parameter=acquisition_parameter,
+                         **kwargs)
+
+    def get(self):
+        self.measurement = qc.Measure(self.acquisition_parameter)
+        self.data = self.measurement.run(
+            name='{}_{}'.format(self.name, self.acquisition_parameter_name),
+            data_manager=False,
+            io=self.disk_io, location=self.loc_provider)
+        return self.data
+
+
+class Loop1DParameter(MeasurementParameter):
+    def __init__(self, name, set_parameter=None, acquisition_parameter=None,
+                 set_vals=None, **kwargs):
+        super().__init__(name, acquisition_parameter=acquisition_parameter,
+                         **kwargs)
+        self.set_parameter = set_parameter
+        self.set_vals = set_vals
+
+        self._meta_attrs.extend(['set_parameter_name'])
+
+    @property
+    def set_parameter_name(self):
+        return self.set_parameter.name
+
+    def get(self):
+        # Set data saving parameters
+        self.measurement = qc.Loop(
+            self.set_parameter[self.set_vals]).each(
+                self.acquisition_parameter)
+        self.data = self.measurement.run(
+            name='{}_{}_{}'.format(self.name, self.set_parameter_name,
+                                   self.acquisition_parameter_name),
+            background=False, data_manager=False,
+            io=self.disk_io, location=self.loc_provider)
+        return self.data
+
+    def set(self, val):
+        self.set_vals = val
+
+
+class Loop2DParameter(MeasurementParameter):
+    def __init__(self, name, set_parameters=None, acquisition_parameter=None,
+                 set_vals=None, **kwargs):
+        super().__init__(name, acquisition_parameter=acquisition_parameter,
+                         **kwargs)
+        self.set_parameters = set_parameters
+        self.set_vals = set_vals
+
+        self._meta_attrs.extend(['set_parameters_names'])
+
+    @property
+    def set_parameters_names(self):
+        return [set_parameter.name for set_parameter in self.set_parameters]
+
+    def get(self):
+        # Set data saving parameters
+        self.measurement = qc.Loop(
+            self.set_parameters[0][self.set_vals[0]]).loop(
+                self.set_parameters[1][self.set_vals[1]]).each(
+                    self.acquisition_parameter)
+
+        self.data = self.measurement.run(
+            name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
+                                      self.set_parameters[1].name,
+                                      self.acquisition_parameter_name),
+            background=False, data_manager=False,
+            io=self.disk_io, location=self.loc_provider)
+        return self.data
+
+    def set(self, val):
+        self.set_vals = val
+
+
+class SelectFrequencyParameter(MeasurementParameter):
+    def __init__(self, threshold=0.5,
+                 discriminant=None,
+                 frequencies=None,
+                 acquisition_parameter=None, update_frequency=True, **kwargs):
+        self.frequencies = frequencies
         self.frequency = None
 
-        names = [discriminant + spin_state for spin_state in self.spin_states]
+        self.discriminant = discriminant
+
+        names = [self.discriminant + spin_state
+                 for spin_state in self.spin_states]
         if 'mode' in kwargs:
             names.append('frequency_{}'.format(kwargs['mode']))
         else:
@@ -79,18 +169,15 @@ class SelectFrequency_Parameter(MeasurementParameter):
 
         super().__init__(name='select_frequency',
                          label='Select frequency',
-                         snapshot_value=False,
                          names=names,
+                         acquisition_parameter=acquisition_parameter,
                          **kwargs)
 
-        self.update_frequency = True
+        self.update_frequency = update_frequency
         self.threshold = threshold
-        self.discriminant = discriminant
-
-        self.measure_parameter = Adiabatic_Parameter(**kwargs)
 
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
-                                 'threshold', 'discriminant'])
+                                 'spin_states', 'threshold', 'discriminant'])
 
     @property
     def spin_states(self):
@@ -99,17 +186,17 @@ class SelectFrequency_Parameter(MeasurementParameter):
 
     @property
     def discriminant_idx(self):
-        return self.measure_parameter.names.index(self.discriminant)
+        return self.acquisition_parameter.names.index(self.discriminant)
 
     def get(self):
         self.results = []
         # Perform measurement for all frequencies
         for spin_state in self.spin_states:
             # Set adiabatic frequency
-            self.measure_parameter(self.frequencies[spin_state])
-            fidelities = self.measure_parameter()
+            self.acquisition_parameter(self.frequencies[spin_state])
+            fidelities = self.acquisition_parameter()
 
-            # Only add dark counts and contrast
+            # Only add discriminant
             self.results.append(fidelities[self.discriminant_idx])
 
         optimal_idx = np.argmax(self.results)
@@ -131,18 +218,16 @@ class SelectFrequency_Parameter(MeasurementParameter):
         return self.results
 
 
-
-class AutoCalibration_Parameter(MeasurementParameter):
-    def __init__(self, name, set_parameters, measure_parameter,
-                 calibration_operations, discriminant, conditions=None,
-                 **kwargs):
+class CalibrationParameter(MeasurementParameter):
+    def __init__(self, name, operations, discriminant=None, set_parameters=None,
+                 acquisition_parameter=None, conditions=None, **kwargs):
         """
 
         Args:
             name:
             set_parameters:
-            measure_parameter:
-            calibration_operations:
+            acquisition_parameter:
+            operations:
             discriminant:
             conditions: Must be of one of the following forms
                 {'mode': 'measure'}
@@ -150,24 +235,20 @@ class AutoCalibration_Parameter(MeasurementParameter):
                  'center_val'(optional)
             **kwargs:
         """
-        super().__init__(name, **kwargs)
 
         self.discriminant = discriminant
         self.conditions = conditions
-        self.calibration_operations = calibration_operations
+        self.operations = operations
+
+        names = ['success', 'optimal_set_vals', self.discriminant]
+        super().__init__(name, acquisition_parameter=acquisition_parameter,
+                         names=names, **kwargs)
 
         self.set_parameters = {p.name: p for p in set_parameters}
-        self.measure_parameter = measure_parameter
 
-        self.names = ['success', 'optimal_set_val', self.discriminant]
-        self.labels = self.names
-        self._meta_attrs.extend(['measure_parameter_name', 'conditions',
-                                 'calibration_operations', 'discriminant',
+        self._meta_attrs.extend(['acquisition_parameter_name', 'conditions',
+                                 'operations', 'discriminant',
                                  'set_vals_1D', 'measure_vals_1D'])
-
-    @property
-    def measure_parameter_name(self):
-        return self.measure_parameter.name
 
     def satisfies_conditions(self, dataset, dims):
         # Start of with all set points satisfying conditions
@@ -203,44 +284,56 @@ class AutoCalibration_Parameter(MeasurementParameter):
         max_idx = np.argmax(measurement_vals_1D)
         return set_vals_1D[max_idx], measurement_vals_1D[max_idx]
 
+    def get_0D_loop(self, operation):
+        self.set_vals = [None]
+        loop_parameter = Loop0DParameter(
+            name='calibration_0D',
+            mode=self.mode,
+            acquisition_parameter=self.acquisition_parameter)
+        dims = (1)
+        return loop_parameter, dims
+
+    def get_1D_loop(self, operation):
+        # Setup set vals
+        set_parameter = self.set_parameters[operation['set_parameter']]
+
+        # If no center_val provided, use current set_parameter val
+        center_val = operation.get('center_val', set_parameter())
+        span = operation['span']
+        set_points = operation['set_points']
+        self.set_vals = list(np.linspace(center_val - span / 2,
+                                         center_val + span / 2,
+                                         set_points))
+        # Extract set_parameter
+        loop_parameter = Loop1DParameter(
+            name='calibration_1D',
+            mode=self.mode,
+            set_parameter=set_parameter,
+            acquisition_parameter=self.acquisition_parameter,
+            set_vals=self.set_vals)
+        dims = (set_points)
+        return loop_parameter, dims
+
     def get(self):
         self.loop_parameters = []
         self.datasets = []
 
-        if hasattr(self.measure_parameter, 'setup'):
-            self.measure_parameter.setup()
+        if hasattr(self.acquisition_parameter, 'setup'):
+            self.acquisition_parameter.setup()
 
-        for k, calibration_operation in enumerate(self.calibration_operations):
-            if calibration_operation['mode'] == 'measure':
-                dims = (1)
-                self.set_vals = [None]
-                loop_parameter = Loop0D_Parameter(
-                    name='calibration_0D',
-                    measure_parameter=self.measure_parameter)
-
-            elif calibration_operation['mode'] == '1D_scan':
-                # Setup set vals
-                set_parameter_name = calibration_operation['set_parameter']
-                set_parameter = self.set_parameters[set_parameter_name]
-
-                center_val = calibration_operation.get(
-                    'center_val', set_parameter())
-                span = calibration_operation['span']
-                set_points = calibration_operation['set_points']
-                self.set_vals = list(np.linspace(center_val - span / 2,
-                                                 center_val + span / 2,
-                                                 set_points))
-                dims = (set_points)
-                # Extract set_parameter
-                loop_parameter = Loop1D_Parameter(
-                    name='calibration_1D',
-                    set_parameter=set_parameter,
-                    measure_parameter=self.measure_parameter,
-                    set_vals=self.set_vals)
+        for k, operation in enumerate(self.operations):
+            if operation['mode'] == 'measure':
+                loop_parameter, dims = self.get_0D_loop(operation)
+            elif operation['mode'] == '1D_scan':
+                loop_parameter, dims = self.get_1D_loop(operation)
+            elif operation['mode'] == '2D_scan':
+                loop_parameter, dims = self.get_1D_loop(operation)
             else:
-                raise ValueError("Calibration mode not implemented")
+                raise ValueError("Calibration mode {} not "
+                                 "implemented".format(operation['mode']))
 
             self.loop_parameters.append(loop_parameter)
+
             dataset = loop_parameter()
             self.datasets.append(dataset)
 

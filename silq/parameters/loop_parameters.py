@@ -46,6 +46,7 @@ class Loop0D_Parameter(Loop_Parameter):
             io=self.disk_io, location=self.loc_provider)
         return self.data
 
+
 class Loop1D_Parameter(Loop_Parameter):
     def __init__(self, name, set_parameter, measure_parameter, set_vals=None,
                  **kwargs):
@@ -66,6 +67,38 @@ class Loop1D_Parameter(Loop_Parameter):
         self.data = self.measurement.run(
             name='{}_{}_{}'.format(self.name, self.set_parameter_name,
                                    self.measure_parameter_name),
+            background=False, data_manager=False,
+            io=self.disk_io, location=self.loc_provider)
+        return self.data
+
+    def set(self, val):
+        self.set_vals = val
+
+
+class Loop2D_Parameter(Loop_Parameter):
+    def __init__(self, name, set_parameters, measure_parameter, set_vals=None,
+                 **kwargs):
+        super().__init__(name, measure_parameter=measure_parameter, **kwargs)
+        self.set_parameters = set_parameters
+        self.set_vals = set_vals
+
+        self._meta_attrs.extend(['set_parameters_names', 'set_vals'])
+
+    @property
+    def set_parameters_names(self):
+        return [set_parameter.name for set_parameter in self.set_parameters]
+
+    def get(self):
+        # Set data saving parameters
+        self.measurement = qc.Loop(
+            self.set_parameters[0][self.set_vals[0]]).loop(
+            self.set_parameters[1][self.set_vals[1]]).each(
+            self.measure_parameter)
+
+        self.data = self.measurement.run(
+            name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
+                                      self.set_parameters[1].name,
+                                      self.measure_parameter_name),
             background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider)
         return self.data
