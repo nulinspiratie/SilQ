@@ -3,10 +3,14 @@ from time import time, sleep
 import numpy as np
 
 import qcodes as qc
+from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data.data_set import new_data, DataMode
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
+
+properties_config = config['user'].get('properties', {})
+
 
 class CombinedParameter(Parameter):
     def __init__(self, parameters, name=None, label=None, units=None, **kwargs):
@@ -29,6 +33,7 @@ class CombinedParameter(Parameter):
         for parameter in self.parameters:
             parameter(value)
             sleep(0.005)
+
 
 class ScaledParameter(Parameter):
     def __init__(self, parameter, ratio=1,
@@ -124,3 +129,44 @@ class AttributeParameter(Parameter):
         value =  getattr(self.object, self.attribute)
         self._save_val(value)
         return value
+
+
+class ConfigParameter(Parameter):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __getattribute__(self, item):
+        """
+        Used when requesting an attribute. If the attribute is explicitly set to
+        None, it will check the config if the item exists.
+        Args:
+            item: Attribute to be retrieved
+
+        Returns:
+
+        """
+        value = object.__getattribute__(self, item)
+        if value is not None:
+            return value
+
+        value = self._attribute_from_config(item)
+        return value
+
+    def _attribute_from_config(self, item):
+        """
+        Check if attribute exists somewhere in the config
+        It first ill check properties config if a key matches the item
+        with self.mode appended. This is only checked if the param has a mode.
+        Finally, it will check if properties_config contains the item
+        """
+        # check if {item}_{self.mode} is in properties_config
+        # if mode is None, mode_str='', in which case it checks for {item}
+        item_mode = '{}{}'.format(item, self.mode_str)
+        if item_mode in properties_config:
+            return properties_config[item_mode]
+
+        # Check if item is in properties config
+        if item in properties_config:
+            return properties_config[item]
+
+        return None
