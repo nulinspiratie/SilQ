@@ -203,7 +203,6 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller(self.default_acquisition_controller())
 
     def setup(self, samples=None, average_mode=None, connections=None,
-              readout_threshold_voltage=None,
               **kwargs):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
@@ -217,8 +216,7 @@ class ATSInterface(InstrumentInterface):
 
         self.setup_trigger()
         self.setup_ATS()
-        self.setup_acquisition_controller(
-            readout_threshold_voltage=readout_threshold_voltage)
+        self.setup_acquisition_controller()
 
         # Update acquisition metadata
         for attr in ['names', 'labels', 'units', 'shapes']:
@@ -279,7 +277,7 @@ class ATSInterface(InstrumentInterface):
                              coupling='DC')
         self.instrument.config(**self._configuration_settings)
 
-    def setup_acquisition_controller(self, readout_threshold_voltage=None):
+    def setup_acquisition_controller(self):
         # Get duration of acquisition. Use flag acquire=True because
         # otherwise initialization Pulses would be taken into account as well
         t_start = min(pulse.t_start for pulse in
@@ -337,9 +335,7 @@ class ATSInterface(InstrumentInterface):
                                  allocated_buffers=allocated_buffers)
 
             # Setup acquisition controller settings through initialization pulse
-            initialization.implement(
-                interface=self,
-                readout_threshold_voltage=readout_threshold_voltage)
+            initialization.implement(interface=self)
             for channel in [initialization.trigger_channel,
                             initialization.readout_channel]:
                 assert channel.name in self.acquisition_channels(), \
@@ -371,8 +367,7 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_controller.set_acquisition_settings(
             **self._acquisition_settings)
         self._acquisition_controller.average_mode(self.average_mode())
-        self._acquisition_controller.setup(
-            readout_threshold_voltage=readout_threshold_voltage)
+        self._acquisition_controller.setup()
 
     def start(self):
         pass
@@ -499,7 +494,7 @@ class SteeredInitializationImplementation(SteeredInitialization,
         interface.acquisition_controller('SteeredInitialization')
         return targeted_pulse
 
-    def implement(self, interface, readout_threshold_voltage):
+    def implement(self, interface):
         acquisition_controller = interface._acquisition_controller
         acquisition_controller.t_max_wait(self.t_max_wait)
         acquisition_controller.t_no_blip(self.t_no_blip)
@@ -508,7 +503,7 @@ class SteeredInitializationImplementation(SteeredInitialization,
         self.readout_channel = self.readout_connection.input['channel']
         acquisition_controller.readout_channel(self.readout_channel.id)
         acquisition_controller.readout_threshold_voltage(
-            readout_threshold_voltage)
+            self.readout_threshold_voltage)
 
         # Setup trigger channel and threshold voltage
         self.trigger_output_channel = self.trigger_connection.output['channel']

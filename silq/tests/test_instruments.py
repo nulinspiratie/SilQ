@@ -24,6 +24,9 @@ class TestInstrument(Instrument):
         self.add_parameter(name='x_val',
                            get_cmd=lambda: self.x,
                            vals=vals.Anything())
+        self.add_parameter(name='pulse',
+                           parameter_class=ManualParameter,
+                           vals=vals.Anything())
 
         self.add_parameter(name='pulse_sequence',
                            parameter_class=ManualParameter,
