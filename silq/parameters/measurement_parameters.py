@@ -2,7 +2,6 @@ import numpy as np
 import logging
 
 import qcodes as qc
-from qcodes.instrument.parameter import Parameter
 from qcodes.data import hdf5_format, io
 from qcodes import config
 
@@ -72,17 +71,12 @@ class MeasurementParameter(SettingsParameter):
         elif hasattr(self, 'results'):
             print('{}: {:.3f}'.format(self.name, self.results))
 
-    def post_acquisition(self):
-        if not self.silent:
-            self.print_results()
-
-        self._single_settings.clear()
-
 
 class Loop0DParameter(MeasurementParameter):
     def __init__(self, name, acquisition_parameter=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          **kwargs)
+        self.data = None
 
     def get(self):
         self.measurement = qc.Measure(self.acquisition_parameter)
@@ -91,7 +85,8 @@ class Loop0DParameter(MeasurementParameter):
             data_manager=False,
             io=self.disk_io, location=self.loc_provider)
 
-        self.post_acquisition()
+        if not self.silent:
+            self.print_results()
 
         self._single_settings.clear()
         return self.data
@@ -104,6 +99,8 @@ class Loop1DParameter(MeasurementParameter):
                          **kwargs)
         self.set_parameter = set_parameter
         self.set_vals = set_vals
+
+        self.data = None
 
         self._meta_attrs.extend(['set_parameter_name'])
 
@@ -122,7 +119,8 @@ class Loop1DParameter(MeasurementParameter):
             background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider)
 
-        self.post_acquisition()
+        if not self.silent:
+            self.print_results()
 
         self._single_settings.clear()
         return self.data
@@ -138,6 +136,8 @@ class Loop2DParameter(MeasurementParameter):
                          **kwargs)
         self.set_parameters = set_parameters
         self.set_vals = set_vals
+
+        self.data = None
 
         self._meta_attrs.extend(['set_parameters_names'])
 
@@ -159,7 +159,8 @@ class Loop2DParameter(MeasurementParameter):
             background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider)
 
-        self.post_acquisition()
+        if not self.silent:
+            self.print_results()
 
         self._single_settings.clear()
         return self.data
@@ -223,15 +224,15 @@ class SelectFrequencyParameter(MeasurementParameter):
         frequency = self.frequencies[optimal_spin_state]
         self.results += [frequency]
 
-        # Print results
-        if not self.silent:
-            self.print_results()
-
         if self.update_frequency and max(self.results) > self.threshold:
             properties_config['frequency' + self.mode_str] = frequency
         elif not self.silent:
             logging.warning("Could not find frequency with high enough "
                             "contrast")
+
+        # Print results
+        if not self.silent:
+            self.print_results()
 
         self._single_settings.clear()
         return self.results
