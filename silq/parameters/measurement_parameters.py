@@ -7,12 +7,12 @@ from qcodes.data import hdf5_format, io
 from qcodes import config
 
 from silq.tools import data_tools, general_tools
-from .general_parameters import ConfigParameter
+from .general_parameters import SettingsParameter
 
 properties_config = config['user'].get('properties', {})
 
 
-class MeasurementParameter(ConfigParameter):
+class MeasurementParameter(SettingsParameter):
     def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
         self.mode = mode
 
@@ -66,11 +66,17 @@ class MeasurementParameter(ConfigParameter):
         return None
 
     def print_results(self):
-        if self.names is not None:
+        if getattr(self, 'name', None) is not None:
             for name, result in zip(self.names, self.results):
                 print('{}: {:.3f}'.format(name, result))
-        else:
+        elif hasattr(self, 'results'):
             print('{}: {:.3f}'.format(self.name, self.results))
+
+    def post_acquisition(self):
+        if not self.silent:
+            self.print_results()
+
+        self._single_settings.clear()
 
 
 class Loop0DParameter(MeasurementParameter):
@@ -84,6 +90,10 @@ class Loop0DParameter(MeasurementParameter):
             name='{}_{}'.format(self.name, self.acquisition_parameter_name),
             data_manager=False,
             io=self.disk_io, location=self.loc_provider)
+
+        self.post_acquisition()
+
+        self._single_settings.clear()
         return self.data
 
 
@@ -111,6 +121,10 @@ class Loop1DParameter(MeasurementParameter):
                                    self.acquisition_parameter_name),
             background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider)
+
+        self.post_acquisition()
+
+        self._single_settings.clear()
         return self.data
 
     def set(self, val):
@@ -144,6 +158,10 @@ class Loop2DParameter(MeasurementParameter):
                                       self.acquisition_parameter_name),
             background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider)
+
+        self.post_acquisition()
+
+        self._single_settings.clear()
         return self.data
 
     def set(self, val):
@@ -215,6 +233,7 @@ class SelectFrequencyParameter(MeasurementParameter):
             logging.warning("Could not find frequency with high enough "
                             "contrast")
 
+        self._single_settings.clear()
         return self.results
 
 
@@ -321,6 +340,9 @@ class CalibrationParameter(MeasurementParameter):
         if hasattr(self.acquisition_parameter, 'setup'):
             self.acquisition_parameter.setup()
 
+        self.success = False
+        self.finished = False
+
         for k, operation in enumerate(self.operations):
             if operation['mode'] == 'measure':
                 loop_parameter, dims = self.get_0D_loop(operation)
@@ -352,6 +374,8 @@ class CalibrationParameter(MeasurementParameter):
         if optimal_set_val is not None:
             set_parameter(optimal_set_val)
             # TODO implement for 2D
-            return cal_success, optimal_set_val, optimal_get_val
         else:
-            return cal_success, 1, optimal_get_val
+            optimal_set_val = set_parameter()
+
+        self._single_settings.clear()
+        return cal_success, optimal_set_val, optimal_get_val
