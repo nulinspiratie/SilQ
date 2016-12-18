@@ -9,12 +9,12 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
-from .general_parameters import ConfigParameter
+from .general_parameters import SettingsParameter
 
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(ConfigParameter):
+class AcquisitionParameter(SettingsParameter):
     data_manager = None
     layout = None
     formatter = h5fmt
@@ -65,16 +65,6 @@ class AcquisitionParameter(ConfigParameter):
     @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
-
-    def update_settings(self, **kwargs):
-        """
-        Sets up the meta properties of a measurement parameter
-        """
-        for item, value in kwargs:
-            if hasattr(self, item):
-                setattr(self, item, value)
-            else:
-                raise ValueError('Setting {} not found'.format(item))
 
     def segment_trace(self, trace):
         trace_segments = {}
@@ -148,6 +138,7 @@ class DCParameter(AcquisitionParameter):
 
     def get(self):
         self.acquire()
+        self._single_settings.clear()
         return self.data['acquisition_traces']['output']
 
 
@@ -184,6 +175,7 @@ class EPRParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
+        self._single_settings.clear()
         return self.results
 
 
@@ -248,6 +240,7 @@ class AdiabaticParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
+        self._single_settings.clear()
         return self.results
 
     def set(self, frequency):
@@ -315,6 +308,7 @@ class T1Parameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
+        self._single_settings.clear()
         return self.results
 
     def set(self, wait_time):
@@ -371,6 +365,7 @@ class DarkCountsParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
+        self._single_settings.clear()
         return self.results
 
     def set(self, frequency):
