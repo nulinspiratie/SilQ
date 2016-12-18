@@ -131,26 +131,38 @@ class AttributeParameter(Parameter):
         return value
 
 
-class ConfigParameter(Parameter):
+class SettingsParameter(Parameter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self._temporary_settings = {}
+        self._single_settings = {}
+
     def __getattribute__(self, item):
         """
-        Used when requesting an attribute. If the attribute is explicitly set to
-        None, it will check the config if the item exists.
+        Called when requesting an attribute.
+        The attribute is successively searched in the following places:
+        1. single_settings
+        2. temporary_settings
+        3. self.{attr}
+        4. If self.{attr} is explicitly None, it will check properties_config
         Args:
             item: Attribute to be retrieved
 
         Returns:
 
         """
-        value = object.__getattribute__(self, item)
-        if value is not None:
-            return value
+        if item in self._single_settings:
+            return self._single_settings[item]
+        elif item in self._temporary_settings:
+            return self._temporary_settings[item]
+        else:
+            value = object.__getattribute__(self, item)
+            if value is not None:
+                return value
 
-        value = self._attribute_from_config(item)
-        return value
+            value = self._attribute_from_config(item)
+            return value
 
     def _attribute_from_config(self, item):
         """
@@ -170,3 +182,48 @@ class ConfigParameter(Parameter):
             return properties_config[item]
 
         return None
+
+    def settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        for item, value in kwargs:
+            if hasattr(self, item):
+                setattr(self, item, value)
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def temporary_settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        if not kwargs:
+            return self._temporary_settings
+
+        self._temporary_settings.clear()
+        for item, value in kwargs:
+            if hasattr(self, item):
+                self._temporary_settings[item] = value
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def single_settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        if not kwargs:
+            return self._single_settings
+
+        self._single_settings.clear()
+        for item, value in kwargs:
+            if hasattr(self, item):
+                self._single_settings[item] = value
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def clear_settings(self):
+        """
+        Clears temporary and single settings
+        """
+        self._temporary_settings.clear()
+        self._single_settings.clear()
