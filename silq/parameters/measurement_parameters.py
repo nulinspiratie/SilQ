@@ -177,7 +177,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         self.discriminant = discriminant
 
         self.mode = kwargs.get('mode', None)
-        names = [self.discriminant + spin_state
+        names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
         if self.mode is not None:
             names.append('frequency_{}'.format(self.mode))
