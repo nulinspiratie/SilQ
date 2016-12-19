@@ -1,27 +1,27 @@
+acquisition_parameters.AcquisitionParameter.layout = layout
+
 dummy_parameter = ManualParameter(name='dummy', initial_value=42)
 DF_DS = general_parameters.CombinedParameter(parameters=[DF, DS])
-DC_parameter = measurement_parameters.DC_Parameter(layout=layout)
-EPR_parameter = measurement_parameters.EPR_Parameter(layout=layout)
-T1_parameter = measurement_parameters.T1_Parameter(layout=layout, mode='ESR')
-variable_read_parameter = measurement_parameters.VariableRead_Parameter(layout=layout)
-adiabatic_ESR_parameter = measurement_parameters.AdiabaticSweep_Parameter(
-    layout=layout, mode='ESR')
-adiabatic_NMR_parameter = measurement_parameters.AdiabaticSweep_Parameter(
-    layout=layout, mode='ESR')
-select_ESR_parameter = measurement_parameters.SelectFrequency_Parameter(
-    layout=layout, mode='ESR')
-dark_counts_parameter = measurement_parameters.dark_counts_parameter(
-    layout=layout)
-
 turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = general_parameters.CombinedParameter(parameters=[TGAC, DF, DS])
 LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
+
+DC_parameter = acquisition_parameters.DCParameter()
+EPR_parameter = acquisition_parameters.EPRParameter()
+T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
+# variable_read = acquisition_parameters.VariableRead_Parameter(layout=layout)
+adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
+adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
+select_ESR_parameter = measurement_parameters.SelectFrequencyParameter(
+    mode='ESR', discriminant='contrast')
+dark_counts_parameter = acquisition_parameters.DarkCountsParameter()
+
 
 # Add all our instruments and parameters for logging
 station = qc.Station(
     SIM900, arbstudio, pulseblaster, ATS, triggered_controller,
     continuous_controller, keysight, layout,
-    DC_parameter, EPR_parameter, T1_parameter, variable_read_parameter,
-    adiabatic_ESR_parameter, adiabatic_NMR_parameter, select_ESR_parameter,
-    dark_counts_parameter,
+    DC_parameter, EPR_parameter, T1_parameter,adiabatic_ESR_parameter,
+    adiabatic_NMR_parameter, select_ESR_parameter, dark_counts_parameter,
+    DF_DS,
     *SIM900_scaled_parameters)

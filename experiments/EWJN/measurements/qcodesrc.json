@@ -4,55 +4,58 @@
         "loglevel": "DEBUG"
     },
     "gui": {
-        "plotlib": "matplotlib",
-        "notebook": true
+        "notebook": true,
+        "plotlib": "matplotlib"
     },
     "user": {
-        "data_folder": "E:\\EWJN\\data",
+        "pulses": {
+            "read": {
+                "duration": 40,
+                "amplitude": 0
+            },
+            "empty": {
+                "duration": 5,
+                "amplitude": -1.5
+            },
+            "adiabatic_ESR": {
+                "duration": 0.15,
+                "frequency_deviation": 1000000.0,
+                "power": 0,
+                "t_start": 3
+            },
+            "steered_initialization": {
+                "t_no_blip": 120,
+                "t_buffer": 30,
+                "enabled": false,
+                "t_max_wait": 400
+            },
+            "adiabatic_NMR": {
+                "duration": 0.5,
+                "frequency_deviation": 100000.0,
+                "power": 0,
+                "t_start": 3
+            },
+            "plunge": {
+                "duration": 5,
+                "amplitude": 2
+            },
+            "final": {
+                "duration": 2,
+                "amplitude": 0
+            }
+        },
         "properties": {
-            "readout_threshold_voltage": 0.38969726562500007,
+            "samples": 100,
+            "frequency_ESR": 27951000000.0,
+            "t_read": 20,
             "frequencies_ESR": {
                 "up": 27852500000.0,
                 "down": 27951000000.0
             },
-            "frequency_NMR": 66500000.0,
-            "frequency_ESR": 27951000000.0
+            "readout_threshold_voltage": 0.38969726562500007,
+            "t_skip": 0.1,
+            "frequency_NMR": 66500000.0
         },
-        "pulses": {
-            "steered_initialization": {
-                "t_buffer": 30,
-                "enabled": false,
-                "t_no_blip": 120,
-                "t_max_wait": 400
-            },
-            "final": {
-                "amplitude": 0,
-                "duration": 2
-            },
-            "plunge": {
-                "amplitude": 2,
-                "duration": 5
-            },
-            "empty": {
-                "amplitude": -1.5,
-                "duration": 5
-            },
-            "read": {
-                "amplitude": 0,
-                "duration": 40
-            },
-            "adiabatic_ESR": {
-                "duration": 0.15,
-                "power": 0,
-                "frequency_deviation": 1000000.0,
-                "t_start": 3
-            },
-            "adiabatic_NMR": {
-                "duration": 0.5,
-                "power": 0,
-                "frequency_deviation": 100000.0,
-                "t_start": 3
-            }
-        }
+        "data_folder": "E:\\EWJN\\data"
     }
 }

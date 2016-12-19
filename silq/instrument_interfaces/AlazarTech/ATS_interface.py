@@ -7,7 +7,7 @@ from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.tools import get_instrument_class
+from silq.tools.instrument_tools import get_instrument_class
 from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
     MarkerPulse, TriggerWaitPulse, PulseImplementation
 
