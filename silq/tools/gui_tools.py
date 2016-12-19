@@ -23,12 +23,12 @@ class PipeServer(BaseServer):
         sys.exit(app.exec_())
 
 
-class GUIServer(BaseServer, QtGui.QMainWindow):
+class GUIClass(QtGui.QMainWindow):
     def __init__(self, query_queue, response_queue):
-        QtGui.QMainWindow.__init__(self)
-        BaseServer.__init__(self, query_queue, response_queue)
+        super().__init__()
 
         self.initUI()
+        EventLoopServer
         self.run_event_loop()
 
     def initUI(self):
@@ -58,7 +58,7 @@ class GUIServer(BaseServer, QtGui.QMainWindow):
         self.text_box.append(text)
 
 
-class EventLoopThread(QThread):
+class EventLoopServer(QThread, BaseServer):
 
     def __init__(self, query_queue, response_queue):
         QThread.__init__(self)
