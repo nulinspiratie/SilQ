@@ -1,27 +1,25 @@
 {
-    "core": {
-        "legacy_mp": true,
-        "loglevel": "DEBUG"
-    },
     "gui": {
         "notebook": true,
         "plotlib": "matplotlib"
     },
+    "core": {
+        "legacy_mp": true,
+        "loglevel": "DEBUG"
+    },
     "user": {
         "pulses": {
+            "final": {
+                "amplitude": 0,
+                "duration": 2
+            },
             "read": {
-                "duration": 40,
-                "amplitude": 0
+                "amplitude": 0,
+                "duration": 40
             },
             "empty": {
-                "duration": 5,
-                "amplitude": -1.5
-            },
-            "adiabatic_ESR": {
-                "duration": 0.15,
-                "frequency_deviation": 1000000.0,
-                "power": 0,
-                "t_start": 3
+                "amplitude": -1.5,
+                "duration": 5
             },
             "steered_initialization": {
                 "t_no_blip": 120,
@@ -29,33 +27,35 @@
                 "enabled": false,
                 "t_max_wait": 400
             },
-            "adiabatic_NMR": {
-                "duration": 0.5,
-                "frequency_deviation": 100000.0,
+            "adiabatic_ESR": {
                 "power": 0,
-                "t_start": 3
+                "t_start": 3,
+                "frequency_deviation": 1000000.0,
+                "duration": 0.15
             },
             "plunge": {
-                "duration": 5,
-                "amplitude": 2
+                "amplitude": 2,
+                "duration": 5
             },
-            "final": {
-                "duration": 2,
-                "amplitude": 0
+            "adiabatic_NMR": {
+                "power": 0,
+                "t_start": 3,
+                "frequency_deviation": 100000.0,
+                "duration": 0.5
             }
         },
+        "data_folder": "E:\\EWJN\\data",
         "properties": {
-            "samples": 100,
-            "frequency_ESR": 27951000000.0,
             "t_read": 20,
-            "frequencies_ESR": {
-                "up": 27852500000.0,
-                "down": 27951000000.0
-            },
-            "readout_threshold_voltage": 0.38969726562500007,
+            "readout_threshold_voltage": 0.3333333333333333,
+            "frequency_ESR": 27951000000.0,
             "t_skip": 0.1,
-            "frequency_NMR": 66500000.0
-        },
-        "data_folder": "E:\\EWJN\\data"
+            "frequency_NMR": 66500000.0,
+            "samples": 100,
+            "frequencies_ESR": {
+                "down": 27951000000.0,
+                "up": 27852500000.0
+            }
+        }
     }
 }

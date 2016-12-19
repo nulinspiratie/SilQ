@@ -13,6 +13,7 @@ T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
 adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 select_ESR_parameter = measurement_parameters.SelectFrequencyParameter(
+    acquisition_parameter=adiabatic_ESR_parameter,
     mode='ESR', discriminant='contrast')
 dark_counts_parameter = acquisition_parameters.DarkCountsParameter()
 
