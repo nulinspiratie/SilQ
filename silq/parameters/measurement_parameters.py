@@ -4,23 +4,22 @@ import logging
 import qcodes as qc
 from qcodes.data import hdf5_format, io
 from qcodes import config
+from qcodes.instrument.parameter import Parameter
 
 from silq.tools import data_tools, general_tools
-from .general_parameters import SettingsParameter
+from silq.tools.general_tools import SettingsClass
 
 properties_config = config['user'].get('properties', {})
 
 
-class MeasurementParameter(SettingsParameter):
+class MeasurementParameter(SettingsClass, Parameter):
     def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
-        self.mode = mode
+        SettingsClass.__init__(self)
+        Parameter.__init__(self, name, snapshot_value=False, **kwargs)
 
         if self.mode is not None:
             # Add mode to parameter name and label
-            kwargs['name'] += self.mode_str
-            kwargs['label'] += ' {}'.format(self.mode)
-
-        super().__init__(name, snapshot_value=False,**kwargs)
+            self.name += self.mode_str
 
         self.acquisition_parameter = acquisition_parameter
 
@@ -40,10 +39,6 @@ class MeasurementParameter(SettingsParameter):
     @property
     def disk_io(self):
         return io.DiskIO(data_tools.get_latest_data_folder())
-
-    @property
-    def mode_str(self):
-        return '' if self.mode is None else '_{}'.format(self.mode)
 
     def _attribute_from_config(self, item):
         """
@@ -174,15 +169,18 @@ class SelectFrequencyParameter(MeasurementParameter):
                  discriminant=None,
                  frequencies=None,
                  acquisition_parameter=None, update_frequency=True, **kwargs):
+        SettingsClass.__init__(self)
+
         self.frequencies = frequencies
         self.frequency = None
 
         self.discriminant = discriminant
 
-        names = [self.discriminant + spin_state
+        self.mode = kwargs.get('mode', None)
+        names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
-        if 'mode' in kwargs:
-            names.append('frequency_{}'.format(kwargs['mode']))
+        if self.mode is not None:
+            names.append('frequency_{}'.format(self.mode))
         else:
             names.append('frequency')
 
@@ -200,7 +198,7 @@ class SelectFrequencyParameter(MeasurementParameter):
 
     @property
     def spin_states(self):
-        spin_states_unsorted = self.frequencies.values()
+        spin_states_unsorted = self.frequencies.keys()
         return sorted(spin_states_unsorted)
 
     @property
@@ -255,6 +253,7 @@ class CalibrationParameter(MeasurementParameter):
                  'center_val'(optional)
             **kwargs:
         """
+        SettingsClass.__init__(self)
 
         self.discriminant = discriminant
         self.conditions = conditions
