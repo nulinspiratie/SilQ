@@ -1,5 +1,5 @@
 from .interface import InstrumentInterface, Channel
-from silq.tools import get_instrument_class
+from silq.tools.instrument_tools import get_instrument_class
 
 
 def get_instrument_interface(instrument):

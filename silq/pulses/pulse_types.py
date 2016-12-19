@@ -4,7 +4,7 @@ from .pulse_modules import PulseImplementation
 
 from qcodes import config
 
-from silq.tools.general_tools import get_truth
+from silq.tools.general_tools import get_truth, SettingsClass
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -14,8 +14,8 @@ pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
 pulse_config = config['user'].get('pulses', {})
 properties_config = config['user'].get('properties', {})
 
-class Pulse:
-    def __init__(self, name='', t_start=None, previous_pulse=None,
+class Pulse(SettingsClass):
+    def __init__(self, name=None, t_start=None, previous_pulse=None,
                  t_stop=None, delay_start=None, delay_stop=None,
                  duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, mode=None,
@@ -134,9 +134,12 @@ class Pulse:
         value = object.__getattribute__(self, item)
         if value is not None:
             return value
-
-        value = self._attribute_from_config(item)
-        return value
+        # Cannot obtain mode or mode_str, since they are called in
+        # _attribute_from_config
+        elif item not in ['mode', 'mode_str', 'name']:
+            # Retrieve value from config
+            value = self._attribute_from_config(item)
+            return value
 
     def _JSONEncoder(self):
         """
@@ -160,7 +163,8 @@ class Pulse:
         with self.mode appended. This is only checked if the pulse has a mode.
         Finally, it will check if properties_config contains the item
         """
-        if item in pulse_config.get(self.name + self.mode_str, {}):
+        if self.name is not None and \
+                        item in pulse_config.get(self.name + self.mode_str, {}):
             return pulse_config[self.name + self.mode_str][item]
 
         # Check if pulse attribute is in pulse_config
@@ -318,9 +322,11 @@ class Pulse:
 
 
 class SteeredInitialization(Pulse):
-    def __init__(self, t_no_blip=None, t_max_wait=None, t_buffer=None,
+    def __init__(self, name=None, t_no_blip=None, t_max_wait=None,
+                 t_buffer=None,
                  readout_threshold_voltage=None, **kwargs):
-        super().__init__(t_start=0, duration=0, initialize=True, **kwargs)
+        super().__init__(name=name, t_start=0, duration=0, initialize=True,
+                         **kwargs)
 
         self.t_no_blip = t_no_blip
         self.t_max_wait = t_max_wait
@@ -336,8 +342,9 @@ class SteeredInitialization(Pulse):
 
 
 class SinePulse(Pulse):
-    def __init__(self, frequency=None, amplitude=None, phase=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name=None, frequency=None, amplitude=None, phase=None,
+                 **kwargs):
+        super().__init__(name=name, **kwargs)
 
         self.frequency = frequency
         self.amplitude = amplitude
@@ -359,11 +366,11 @@ class SinePulse(Pulse):
 
 
 class FrequencyRampPulse(Pulse):
-    def __init__(self, frequency_start=None, frequency_stop=None,
+    def __init__(self, name=None, frequency_start=None, frequency_stop=None,
                  frequency=None, frequency_deviation=None,
                  frequency_final='stop', amplitude=None, power=None,
                  frequency_sideband=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(name=name, **kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
             self.frequency = (frequency_start + frequency_stop) / 2
@@ -428,8 +435,8 @@ class FrequencyRampPulse(Pulse):
 
 
 class DCPulse(Pulse):
-    def __init__(self, amplitude=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name=None, amplitude=None, **kwargs):
+        super().__init__(name=name, **kwargs)
 
         self.amplitude = amplitude
         if self.amplitude is None:
@@ -451,9 +458,9 @@ class DCPulse(Pulse):
 
 
 class DCRampPulse(Pulse):
-    def __init__(self, amplitude_start, amplitude_stop,
+    def __init__(self, name=None, amplitude_start=None, amplitude_stop=None,
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(name=name, **kwargs)
 
         self.amplitude_start = amplitude_start
         self.amplitude_stop = amplitude_stop
@@ -478,9 +485,9 @@ class DCRampPulse(Pulse):
 class TriggerPulse(Pulse):
     duration = .0001 # ms
 
-    def __init__(self, duration=duration, **kwargs):
+    def __init__(self, name=None, duration=duration, **kwargs):
         self.duration = duration
-        super().__init__(duration=duration, **kwargs)
+        super().__init__(name=name, duration=duration, **kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
@@ -500,8 +507,8 @@ class TriggerPulse(Pulse):
 
 class MarkerPulse(Pulse):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
@@ -521,8 +528,8 @@ class MarkerPulse(Pulse):
 
 class TriggerWaitPulse(Pulse):
 
-    def __init__(self, t_start, **kwargs):
-        super().__init__(t_start=t_start, duration=0, **kwargs)
+    def __init__(self, name=None, t_start=None, **kwargs):
+        super().__init__(name=name, t_start=t_start, duration=0, **kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}'.format(
@@ -532,8 +539,8 @@ class TriggerWaitPulse(Pulse):
 
 
 class MeasurementPulse(Pulse):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     def __repr__(self):
         properties_str = 't_start={}, duration={}'.format(
