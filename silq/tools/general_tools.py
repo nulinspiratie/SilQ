@@ -1,7 +1,9 @@
 import sys
 import operator
 from functools import partial
+from qcodes import config
 
+properties_config = config['user'].get('properties', {})
 
 def execfile(filename, globals=None, locals=None):
     if globals is None:
@@ -60,3 +62,108 @@ def partial_from_attr(func, obj, attr):
 
 def print_attr(obj, attr):
     print('{}.{} = {}'.format(obj.__class__.__name__, attr, getattr(obj, attr)))
+
+
+class SettingsClass:
+    def __init__(self, **kwargs):
+        self._temporary_settings = {}
+        self._single_settings = {}
+
+    def __getattribute__(self, item):
+        """
+        Called when requesting an attribute.
+        The attribute is successively searched in the following places:
+        1. single_settings
+        2. temporary_settings
+        3. self.{attr}
+        4. If self.{attr} is explicitly None, it will check properties_config
+
+        Some attributes (such as 'mode') are not allowed
+        Args:
+            item: Attribute to be retrieved
+
+        Returns:
+
+        """
+        if item in ['_temporary_settings', '_single_settings',
+                    '_attribute_from_config', 'mode', 'mode_str']:
+            return object.__getattribute__(self, item)
+        elif item in self._single_settings:
+            return self._single_settings[item]
+        elif item in self._temporary_settings:
+            return self._temporary_settings[item]
+        else:
+            value = object.__getattribute__(self, item)
+            if value is not None:
+                return value
+
+            value = self._attribute_from_config(item)
+            return value
+
+    @property
+    def mode_str(self):
+        return '' if self.mode is None else '_{}'.format(self.mode)
+
+    def _attribute_from_config(self, item):
+        """
+        Check if attribute exists somewhere in the config
+        It first ill check properties config if a key matches the item
+        with self.mode appended. This is only checked if the param has a mode.
+        Finally, it will check if properties_config contains the item
+        """
+        # check if {item}_{self.mode} is in properties_config
+        # if mode is None, mode_str='', in which case it checks for {item}
+        item_mode = '{}{}'.format(item, self.mode_str)
+        if item_mode in properties_config:
+            return properties_config[item_mode]
+
+        # Check if item is in properties config
+        if item in properties_config:
+            return properties_config[item]
+
+        return None
+
+    def settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        for item, value in kwargs.items():
+            if hasattr(self, item):
+                setattr(self, item, value)
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def temporary_settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        if not kwargs:
+            return self._temporary_settings
+
+        self._temporary_settings.clear()
+        for item, value in kwargs.items():
+            if hasattr(self, item):
+                self._temporary_settings[item] = value
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def single_settings(self, **kwargs):
+        """
+        Sets up the meta properties of a measurement parameter
+        """
+        if not kwargs:
+            return self._single_settings
+
+        self._single_settings.clear()
+        for item, value in kwargs.items():
+            if hasattr(self, item):
+                self._single_settings[item] = value
+            else:
+                raise ValueError('Setting {} not found'.format(item))
+
+    def clear_settings(self):
+        """
+        Clears temporary and single settings
+        """
+        self._temporary_settings.clear()
+        self._single_settings.clear()

@@ -9,24 +9,26 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
-from .general_parameters import SettingsParameter
+from silq.tools.general_tools import SettingsClass
+
 
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(SettingsParameter):
+class AcquisitionParameter(SettingsClass, Parameter):
     data_manager = None
     layout = None
     formatter = h5fmt
 
     def __init__(self, mode=None, average_mode='none', **kwargs):
+        SettingsClass.__init__(self)
         self.mode = mode
 
         if self.mode is not None:
             # Add mode to parameter name and label
             kwargs['name'] += self.mode_str
             kwargs['label'] += ' {}'.format(self.mode)
-        super().__init__(**kwargs)
+        Parameter.__init__(self, **kwargs)
 
         self.pulse_sequence = PulseSequence()
         self.silent = True
@@ -44,6 +46,7 @@ class AcquisitionParameter(SettingsParameter):
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
         # passed along when the parameter is spawned from a new process
+        self.layout = self.layout
         self.data_manager = self.data_manager
 
         self._meta_attrs.extend(['pulse_sequence'])
@@ -103,7 +106,9 @@ class AcquisitionParameter(SettingsParameter):
     def setup(self, **kwargs):
         self.layout.stop()
         self.layout.target_pulse_sequence(self.pulse_sequence)
-        self.layout.setup(samples=self.samples, average_mode=self.average_mode,
+        samples = kwargs.pop('samples', self.samples)
+        self.layout.setup(samples=samples,
+                          average_mode=self.average_mode,
                           **kwargs)
 
     def acquire(self, segment_traces=True, **kwargs):
