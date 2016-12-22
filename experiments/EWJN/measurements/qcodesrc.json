@@ -1,95 +1,85 @@
 {
-    "core": {
-        "legacy_mp": true,
-        "loglevel": "DEBUG"
-    },
     "gui": {
         "notebook": true,
         "plotlib": "matplotlib"
     },
+    "core": {
+        "loglevel": "DEBUG",
+        "legacy_mp": true
+    },
     "user": {
         "properties": {
             "frequency_NMR": 66500000.0,
+            "readout_threshold_voltage": 0.3333333333333333,
             "frequencies_ESR": {
                 "down": 27951000000.0,
                 "up": 27852500000.0
             },
-            "t_skip": 0.07,
-            "samples": 100,
-            "t_read": 20,
             "set_parameters": {
                 "2D": [
                     "TGAC",
                     "DF_DS"
                 ],
                 "DF_DS": {
-                    "spans": [
-                        0.002,
-                        0.005,
-                        0.01,
-                        0.02,
-                        0.04,
-                        0.1,
-                        0.2
+                    "steps": [
+                        0.00025,
+                        0.5
                     ]
                 },
                 "TGAC": {
-                    "spans": [
-                        0.004,
-                        0.01,
-                        0.02,
-                        0.04,
-                        0.1,
-                        0.2,
-                        0.4
+                    "steps": [
+                        0.0005,
+                        1
                     ]
                 }
             },
-            "readout_threshold_voltage": 0.3333333333333333,
-            "frequency_ESR": 27951000000.0
+            "t_read": 20,
+            "t_skip": 0.07,
+            "frequency_ESR": 27951000000.0,
+            "samples": 100
         },
         "data_folder": "E:\\EWJN\\data",
         "pulses": {
+            "adiabatic_ESR": {
+                "power": 0,
+                "duration": 0.15,
+                "frequency_deviation": 1000000.0,
+                "t_start": 3
+            },
+            "empty": {
+                "duration": 5,
+                "amplitude": -1.5
+            },
+            "read": {
+                "duration": 40,
+                "amplitude": 0
+            },
+            "steered_initialization": {
+                "t_max_wait": 400,
+                "enabled": false,
+                "t_no_blip": 120,
+                "t_buffer": 30
+            },
+            "adiabatic_NMR": {
+                "power": 0,
+                "duration": 0.5,
+                "frequency_deviation": 100000.0,
+                "t_start": 3
+            },
+            "plunge": {
+                "duration": 5,
+                "amplitude": 2
+            },
+            "steered_initialization_long": {
+                "t_max_wait": 1000,
+                "t_no_blip": 200
+            },
             "read_long": {
                 "duration": 120
             },
-            "steered_initialization": {
-                "enabled": false,
-                "t_max_wait": 400,
-                "t_buffer": 30,
-                "t_no_blip": 120
-            },
-            "empty": {
-                "amplitude": -1.5,
-                "duration": 5
-            },
             "final": {
-                "amplitude": 0,
-                "duration": 2
-            },
-            "plunge": {
-                "amplitude": 2,
-                "duration": 5
-            },
-            "adiabatic_NMR": {
-                "t_start": 3,
-                "power": 0,
-                "frequency_deviation": 100000.0,
-                "duration": 0.5
-            },
-            "adiabatic_ESR": {
-                "t_start": 3,
-                "power": 0,
-                "frequency_deviation": 1000000.0,
-                "duration": 0.15
-            },
-            "steered_initialization_long": {
-                "t_no_blip": 200,
-                "t_max_wait": 1000
-            },
-            "read": {
-                "amplitude": 0,
-                "duration": 40
+                "duration": 2,
+                "amplitude": 0
             }
         }
     }

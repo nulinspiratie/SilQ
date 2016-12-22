@@ -1,32 +1,5 @@
 {
     "properties": {
-        "core": {
-            "properties": {
-                "legacy_mp": {
-                    "default": false,
-                    "type": "boolean",
-                    "description": "control legacy buggy multiprocess"
-                },
-                "loglevel": {
-                    "default": "DEBUG",
-                    "type": "string",
-                    "enum": [
-                        "CRITICAL",
-                        "ERROR",
-                        "WARNING",
-                        "INFO",
-                        "DEBUG"
-                    ],
-                    "description": "control logging  level"
-                }
-            },
-            "required": [
-                "legacy_mp",
-                "loglevel"
-            ],
-            "type": "object",
-            "description": "controls core settings of qcodes"
-        },
         "gui": {
             "properties": {
                 "notebook": {
@@ -51,18 +24,45 @@
             "type": "object",
             "description": "controls gui of qcodes"
         },
+        "core": {
+            "properties": {
+                "loglevel": {
+                    "default": "DEBUG",
+                    "type": "string",
+                    "enum": [
+                        "CRITICAL",
+                        "ERROR",
+                        "WARNING",
+                        "INFO",
+                        "DEBUG"
+                    ],
+                    "description": "control logging  level"
+                },
+                "legacy_mp": {
+                    "default": false,
+                    "type": "boolean",
+                    "description": "control legacy buggy multiprocess"
+                }
+            },
+            "required": [
+                "legacy_mp",
+                "loglevel"
+            ],
+            "type": "object",
+            "description": "controls core settings of qcodes"
+        },
         "user": {
             "properties": {},
             "type": "object",
             "description": "controls user settings of qcodes"
         }
     },
-    "$schema": "http://json-schema.org/draft-04/schema#",
     "required": [
         "gui",
         "core",
         "user"
     ],
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "description": "schema for a qcodes config file"
 }

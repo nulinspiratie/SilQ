@@ -8,6 +8,7 @@ from functools import partial
 from importlib import reload
 from time import sleep, time
 from winsound import Beep
+import ipympl
 from matplotlib import pyplot as plt
 import pyperclip
 from multiprocessing import active_children
@@ -21,7 +22,8 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, StandardPara
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters, acquisition_parameters
 from silq.instrument_interfaces import get_instrument_interface
-from silq.tools.general_tools import partial_from_attr, print_attr
+from silq.tools.general_tools import partial_from_attr, print_attr, terminate_servers
+from silq.tools.parameter_tools import create_set_vals
 from silq.pulses import *
 
 if not 'USE_MP' in globals():
