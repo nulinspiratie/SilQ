@@ -292,6 +292,12 @@ class PulseSequence:
     def clear(self):
         self.pulses = []
 
+    def copy(self):
+        pulse_sequence_copy = copy.deepcopy(self)
+        pulse_sequence_copy.pulses = [pulse.copy(fix_vars=True)
+                                      for pulse in pulse_sequence_copy.pulses]
+        return pulse_sequence_copy
+
     def pulses_overlap(self, pulse1, pulse2):
         """
         Tests if pulse1 and pulse2 overlap in time and connection.

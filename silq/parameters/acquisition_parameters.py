@@ -29,6 +29,7 @@ class AcquisitionParameter(SettingsClass, Parameter):
             kwargs['name'] += self.mode_str
             kwargs['label'] += ' {}'.format(self.mode)
         Parameter.__init__(self, **kwargs)
+        self.label = kwargs['label']
 
         self.pulse_sequence = PulseSequence()
         self.silent = True
@@ -49,7 +50,7 @@ class AcquisitionParameter(SettingsClass, Parameter):
         self.layout = self.layout
         self.data_manager = self.data_manager
 
-        self._meta_attrs.extend(['pulse_sequence'])
+        self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
 
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
@@ -104,11 +105,12 @@ class AcquisitionParameter(SettingsClass, Parameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
     def setup(self, **kwargs):
-        self.layout.stop()
         self.layout.target_pulse_sequence(self.pulse_sequence)
+
         samples = kwargs.pop('samples', self.samples)
+        average_mode = kwargs.pop('average_mode', self.average_mode)
         self.layout.setup(samples=samples,
-                          average_mode=self.average_mode,
+                          average_mode=average_mode,
                           **kwargs)
 
     def acquire(self, segment_traces=True, **kwargs):
@@ -137,11 +139,17 @@ class DCParameter(AcquisitionParameter):
             DCPulse(name='read', acquire=True),
             DCPulse(name='final')])
 
+    def setup(self, **kwargs):
+        super().setup(**kwargs)
+        self.layout.start()
+
     def acquire(self, **kwargs):
         # Do not segment traces since we only receive a single value
-        super().acquire(segment_traces=False)
+        super().acquire(start=False, stop=False, segment_traces=False)
 
     def get(self):
+        # Note that this function does not have a setup, and so the setup
+        # must be done once beforehand.
         self.acquire()
         self._single_settings.clear()
         return self.data['acquisition_traces']['output']
@@ -165,6 +173,8 @@ class EPRParameter(AcquisitionParameter):
         self.analysis = analysis.analyse_EPR
 
     def get(self):
+        self.setup()
+
         self.acquire()
 
         fidelities = self.analysis(trace_segments=self.trace_segments['output'],
@@ -223,6 +233,8 @@ class AdiabaticParameter(AcquisitionParameter):
             'steered_initialization'].enabled, **kwargs)
 
     def get(self):
+        self.setup()
+
         self.acquire()
 
         fidelities = self.analysis(trace_segments=self.trace_segments['output'],
@@ -259,7 +271,7 @@ class T1Parameter(AcquisitionParameter):
         super().__init__(name='T1_wait_time',
                          label='T1 wait time',
                          snapshot_value=False,
-                         names=['T1_up_proportion', 'T1_num_traces'],
+                         names=['up_proportion', 'num_traces'],
                          **kwargs)
         self.pulse_sequence.add([
             SteeredInitialization('steered_initialization', enabled=False),
@@ -287,6 +299,8 @@ class T1Parameter(AcquisitionParameter):
             'steered_initialization'].enabled, **kwargs)
 
     def get(self):
+        self.setup()
+
         self.acquire()
 
         # Analysis
@@ -347,6 +361,8 @@ class DarkCountsParameter(AcquisitionParameter):
             'steered_initialization'].enabled, **kwargs)
 
     def get(self):
+        self.setup()
+
         self.acquire()
 
         fidelities = self.analysis(traces=self.trace_segments['output']['read'],

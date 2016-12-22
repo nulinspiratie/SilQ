@@ -42,14 +42,17 @@ class Pulse(SettingsClass):
         self.connection_requirements = connection_requirements
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
-            for attr in vars(self):
-                if attr in exclude_attrs:
-                    continue
-                elif not hasattr(other_pulse, attr) \
-                        or getattr(self, attr) != getattr(other_pulse, attr):
-                    return False
-            else:
-                return True
+        # Add attrs that have a corresponding dependent property
+        exclude_attrs += ['_t_start', '_t_stop', '_duration']
+
+        for attr in list(vars(self)) + ['t_start', 't_stop']:
+            if attr in exclude_attrs:
+                continue
+            elif not hasattr(other_pulse, attr) \
+                    or getattr(self, attr) != getattr(other_pulse, attr):
+                return False
+        else:
+            return True
 
     def __eq__(self, other):
         """
@@ -268,8 +271,24 @@ class Pulse(SettingsClass):
             pulse_type=self.__class__.__name__,
             name=pulse_name, properties=properties_str)
 
-    def copy(self):
+    def copy(self, fix_vars=False):
+        """
+        Creates a copy of a pulse.
+        Args:
+            fix_vars: If set to True, all of its vars are explicitly copied,
+            ensuring that they are no longer linked to the settings
+
+        Returns:
+            Copy of pulse
+        """
         pulse_copy = copy.deepcopy(self)
+        if fix_vars:
+            for var in vars(pulse_copy):
+                setattr(pulse_copy, var, getattr(pulse_copy, var))
+
+            # Also set dependent properties
+            for var in ['t_start', 't_stop', 'previous_pulse']:
+                setattr(pulse_copy, var, getattr(pulse_copy, var))
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None,
