@@ -1,3 +1,4 @@
+from qcodes.plots.qcmatplotlib import MatPlot
 from matplotlib import rcParams
 rcParams['figure.max_open_warning'] = 80
 
@@ -5,6 +6,10 @@ rcParams['figure.max_open_warning'] = 80
 if hasattr(qc, 'MatPlot'):
     qc.MatPlot.plot_2D_kwargs = {'cmap': 'inferno'}
 
+
+class Plot2D(MatPlot):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class CalibrationPlot:
     def __init__(self, dataset, figsize=None, interval=5, nticks=6,

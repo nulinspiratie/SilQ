@@ -1,6 +1,5 @@
 import numpy as np
 import peakutils
-from matplotlib import pyplot as plt
 
 from qcodes import Instrument
 import qcodes.instrument.parameter as parameter
@@ -44,6 +43,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
 
     # Plotting
     if plot:
+        from matplotlib import pyplot as plt
         plt.figure()
         for k, signal in enumerate([low, high]):
             sub_hist, sub_bin_edges = np.histogram(np.ravel(signal['traces']), bins=10)
@@ -55,7 +55,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             'threshold_voltage': threshold_voltage,
             'voltage_difference': voltage_difference}
 
-def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
+def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
                  start_point=0):
     assert edge in ['begin', 'end'], \
         'Edge {} must be either "begin" or "end"'.format(edge)
@@ -117,25 +117,30 @@ def analyse_read(traces, start_idx=0, threshold_voltage=None,
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
         # Return the full trace length as mean if return_mean=True
-        return {'up_proportion': 0, 'num_traces': 0}
+        return {'up_proportion': 0, 'num_traces': 0,
+                'idx': np.ones(len(traces), dtype=bool)}
 
     if filter_loaded:
         # Filter out the traces that start off loaded
-        idx_begin_loaded = edge_voltage(traces, edge='begin', state='low',
+        idx = edge_voltage(traces, edge='begin', state='low',
                                         start_point=start_idx,
                                         threshold_voltage=threshold_voltage)
-        traces = traces[idx_begin_loaded]
+        traces = traces[idx]
+    else:
+        idx = np.ones(len(traces), dtype=bool)
 
     if not len(traces):
         print('None of the load traces start with a loaded state')
-        return {'up_proportion': 0, 'num_traces': 0}
+        return {'up_proportion': 0, 'num_traces': 0,
+                'idx': idx}
 
     up_proportion = find_up_proportion(traces,
                                        start_point=start_idx,
                                        threshold_voltage=threshold_voltage)
 
     return {'up_proportion': up_proportion,
-            'num_traces': len(traces)}
+            'num_traces': len(traces),
+            'idx': idx}
 
 def analyse_load(traces, filter_empty=True):
     threshold_voltage = find_high_low(traces)['threshold_voltage']
@@ -185,7 +190,8 @@ def analyse_empty(traces, filter_loaded=True):
             'num_traces': len(traces)}
 
 
-def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20):
+def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
+                min_trace_perc=0.5):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
@@ -206,13 +212,19 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20):
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        up_proportion = analyse_read(read_segment1, start_idx=start_idx,
-                                     threshold_voltage=threshold_voltage,
-                                     filter_loaded=False)['up_proportion']
+        results1 = analyse_read(read_segment1, start_idx=start_idx,
+                                threshold_voltage=threshold_voltage,
+                                filter_loaded=True)
+        up_proportion = results1['up_proportion']
         dark_counts = analyse_read(read_segment2, start_idx=start_idx,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
-        contrast = up_proportion - dark_counts
+
+        if sum(results1['idx']) < min_trace_perc:
+            # Not enough traces start loaded
+            contrast = 0
+        else:
+            contrast = up_proportion - dark_counts
 
     return {'contrast': contrast,
             'dark_counts': dark_counts,
@@ -220,7 +232,8 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20):
             'fidelity_empty': fidelity_empty,
             'fidelity_load': fidelity_load}
 
-def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20):
+def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20,
+               min_trace_perc=0.5):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
@@ -236,13 +249,20 @@ def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20):
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        up_proportion = analyse_read(read_segment1, start_idx=start_idx,
+        results1 = analyse_read(read_segment1, start_idx=start_idx,
                                      threshold_voltage=threshold_voltage,
-                                     filter_loaded=False)['up_proportion']
+                                     filter_loaded=True)
+        up_proportion = results1['up_proportion']
+
         dark_counts = analyse_read(read_segment2, start_idx=start_idx,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
-        contrast = up_proportion - dark_counts
+
+        if sum(results1['idx']) < min_trace_perc:
+            # Not enough traces start loaded
+            contrast = 0
+        else:
+            contrast = up_proportion - dark_counts
 
     return {'contrast': contrast,
             'dark_counts': dark_counts,

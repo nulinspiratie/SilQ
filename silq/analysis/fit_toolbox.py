@@ -1,57 +1,36 @@
 import numpy as np
 from lmfit import Parameters, report_fit, Model
 
-class Fit():
+class Fit(Model):
     def __init__(self):
-        self.model = Model(self.fit_function)
-
-    def fit_function(self, ydata, xvals):
-        pass
-
-    def find_initial_parameters(self):
-        pass
-
-    def perform_fit (self):
-        pass
+        super().__init__(self.fit_function)
+        self.parameters = self.make_params()
 
     def find_nearest_index(self, array, value):
-        idx = np.abs(array - value).argmin()
-        return array[idx]
+        return np.abs(array - value).argmin()
 
     def find_nearest_value(self, array, value):
         return array[self.find_nearest_index(array, value)]
 
 class ExponentialFit(Fit):
-    def __init__(self):
+    def __init__(self, sweep_vals, data):
         super().__init__()
+        self.sweep_vals = sweep_vals
+        self.data = data
 
     @staticmethod
     def fit_function(t,  tau, amplitude, offset):
         return amplitude * np.exp(-t/tau) + offset
 
-    def find_initial_parameters(self, xvals, ydata, initial_parameters):
-        super().__init__()
+    def find_initial_parameters(self):
+        # Tau is approximated as first value reaching 1/e of original value
+        decay_idx = self.find_nearest_index(self.data, self.data[0] / np.exp(1))
+        self.parameters['tau'].value = self.sweep_vals[decay_idx]
 
-        if initial_parameters is None:
-            initial_parameters={}
+        # Amplitude is approximately difference between max and min
+        self.parameters['amplitude'].value = max(self.data) - min(self.data)
 
-        parameters=Parameters()
-        if not 'tau' in initial_parameters:
-            initial_parameters['tau'] = -(xvals[1] - xvals[np.where(
-                self.find_nearest_index(ydata, ydata[0] / np.exp(1)) == ydata)[0][0]])
-        if not 'amplitude' in initial_parameters:
-            initial_parameters['amplitude'] = ydata[1]
-        if not 'offset' in initial_parameters:
-            initial_parameters['offset'] = ydata[-1]
+        # Offset is approximated by minimum value
+        self.parameters['offset'].value = min(self.data)
 
-        for key in initial_parameters:
-            parameters.add(key, initial_parameters[key])
-
-        return parameters
-
-    def perform_fit(self, xvals, ydata, initial_parameters=None, weights=None, options=None):
-        super().__init__()
-
-        parameters=self.find_initial_parameters(xvals, ydata, initial_parameters)
-
-        return self.model.fit(ydata, t=xvals, params=parameters, weights=weights)
+        return self.parameters
