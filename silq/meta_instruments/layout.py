@@ -4,6 +4,7 @@ from collections import OrderedDict as od
 import inspect
 
 from silq.instrument_interfaces import Channel
+from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
@@ -64,11 +65,17 @@ class Layout(Instrument):
                                     else None),
                            snapshot_get=False,
                            snapshot_value=False)
+        self.add_parameter(name='pulse_sequence',
+                           get_cmd=self._get_pulse_sequence,
+                           set_cmd=self._set_pulse_sequence,
+                           vals=vals.Anything())
 
         self.add_parameter(name='active',
                            parameter_class=ManualParameter,
                            initial_value=False,
                            vals=vals.Bool())
+
+        self._pulse_sequence = PulseSequence
 
     @property
     def acquisition_interface(self):
@@ -97,6 +104,12 @@ class Layout(Instrument):
             except:
                 return None
         return acquisition_channels
+
+    def _get_pulse_sequence(self):
+        return self._pulse_sequence.copy()
+
+    def _set_pulse_sequence(self, pulse_sequence):
+        self._pulse_sequence = pulse_sequence
 
     def add_connection(self, output_arg, input_arg, **kwargs):
         output_instrument, output_channel_name = output_arg.split('.')
@@ -392,6 +405,7 @@ class Layout(Instrument):
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
+        self.pulse_sequence(pulse_sequence)
 
     def update_flags(self, new_flags):
         """
