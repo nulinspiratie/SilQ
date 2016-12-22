@@ -9,6 +9,8 @@ from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass
+from silq.measurements.measurement_types import Loop0DMeasurement, \
+    Loop1DMeasurement, Loop2DMeasurement
 
 properties_config = config['user'].get('properties', {})
 
@@ -18,13 +20,14 @@ class MeasurementParameter(SettingsClass, Parameter):
         SettingsClass.__init__(self)
         Parameter.__init__(self, name, snapshot_value=False, **kwargs)
 
+        self.mode = mode
         if self.mode is not None:
             # Add mode to parameter name and label
             self.name += self.mode_str
 
         self.acquisition_parameter = acquisition_parameter
 
-        self.silent = True
+        self.measurement = None
 
         self.loc_provider = qc.data.location.FormatLocation(
             fmt='#{counter}_{name}_{time}')
@@ -37,33 +40,6 @@ class MeasurementParameter(SettingsClass, Parameter):
     def acquisition_parameter_name(self):
         return self.acquisition_parameter.name
 
-    @property
-    def disk_io(self):
-        return io.DiskIO(data_tools.get_latest_data_folder())
-
-    def _attribute_from_config(self, item):
-        """
-        Check if attribute exists somewhere in the config
-        It first ill check properties config if a key matches the item
-        with self.mode appended. This is only checked if the param has a mode.
-        Finally, it will check if properties_config contains the item
-        """
-        # check if {item}_{self.mode} is in properties_config
-        # if mode is None, mode_str='', in which case it checks for {item}
-        item_mode = '{}{}'.format(item, self.mode_str)
-        if item_mode in properties_config:
-            value = properties_config[item_mode]
-        elif item in properties_config:
-            # Check if item is in properties config
-            value = properties_config[item]
-        else:
-            value = None
-
-        if type(value) is DotDict:
-            value = dict(value)
-
-        return value
-
     def print_results(self):
         if getattr(self, 'name', None) is not None:
             for name, result in zip(self.names, self.results):
@@ -71,105 +47,7 @@ class MeasurementParameter(SettingsClass, Parameter):
         elif hasattr(self, 'results'):
             print('{}: {:.3f}'.format(self.name, self.results))
 
-
-class Loop0DParameter(MeasurementParameter):
-    def __init__(self, name, acquisition_parameter=None, **kwargs):
-        super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         **kwargs)
-        self.data = None
-
-    def get(self):
-        self.measurement = qc.Measure(self.acquisition_parameter)
-        self.data = self.measurement.run(
-            name='{}_{}'.format(self.name, self.acquisition_parameter_name),
-            data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
-
-        if not self.silent:
-            self.print_results()
-
-        self._single_settings.clear()
-        return self.data
-
-
-class Loop1DParameter(MeasurementParameter):
-    def __init__(self, name, set_parameter=None, acquisition_parameter=None,
-                 set_vals=None, **kwargs):
-        super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         **kwargs)
-        self.set_parameter = set_parameter
-        self.set_vals = set_vals
-
-        self.data = None
-
-        self._meta_attrs.extend(['set_parameter_name'])
-
-    @property
-    def set_parameter_name(self):
-        return self.set_parameter.name
-
-    def get(self):
-        # Set data saving parameters
-        self.measurement = qc.Loop(
-            self.set_parameter[self.set_vals]).each(
-                self.acquisition_parameter)
-        self.data = self.measurement.run(
-            name='{}_{}_{}'.format(self.name, self.set_parameter_name,
-                                   self.acquisition_parameter_name),
-            background=False, data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
-
-        if not self.silent:
-            self.print_results()
-
-        self._single_settings.clear()
-        return self.data
-
-    def set(self, val):
-        self.set_vals = val
-
-
-class Loop2DParameter(MeasurementParameter):
-    def __init__(self, name, set_parameters=None, acquisition_parameter=None,
-                 set_vals=None, **kwargs):
-        super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         **kwargs)
-        self.set_parameters = set_parameters
-        self.set_vals = set_vals
-
-        self.data = None
-
-        self._meta_attrs.extend(['set_parameters_names'])
-
-    @property
-    def set_parameters_names(self):
-        return [set_parameter.name for set_parameter in self.set_parameters]
-
-    def get(self):
-        # Set data saving parameters
-        self.measurement = qc.Loop(
-            self.set_parameters[0][self.set_vals[0]]).loop(
-                self.set_parameters[1][self.set_vals[1]]).each(
-                    self.acquisition_parameter)
-
-        self.data = self.measurement.run(
-            name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
-                                      self.set_parameters[1].name,
-                                      self.acquisition_parameter_name),
-            background=False, data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
-
-        if not self.silent:
-            self.print_results()
-
-        self._single_settings.clear()
-        return self.data
-
-    def set(self, val):
-        self.set_vals = val
-
-
-class SelectFrequencyParameter(MeasurementParameter):
+class SelectFrequencyParameter(SettingsClass, Parameter):
     def __init__(self, threshold=0.5,
                  discriminant=None,
                  frequencies=None,
@@ -192,8 +70,9 @@ class SelectFrequencyParameter(MeasurementParameter):
         super().__init__(name='select_frequency',
                          label='Select frequency',
                          names=names,
-                         acquisition_parameter=acquisition_parameter,
                          **kwargs)
+
+        self.acquisition_parameter = acquisition_parameter
 
         self.update_frequency = update_frequency
         self.threshold = threshold
@@ -213,26 +92,30 @@ class SelectFrequencyParameter(MeasurementParameter):
         return self.acquisition_parameter.names.index(self.discriminant)
 
     def get(self):
-        self.results = []
+        # Initialize frequency to the current frequency
+        frequency = self.acquisition_parameter.frequency
         self.acquisition_parameter.temporary_settings(samples=self.samples)
-        # Perform measurement for all frequencies
-        for spin_state in self.spin_states:
-            # Set adiabatic frequency
-            self.acquisition_parameter(self.frequencies[spin_state])
-            fidelities = self.acquisition_parameter()
 
-            # Only add discriminant
-            self.results.append(fidelities[self.discriminant_idx])
+        frequencies = [self.frequencies[spin_state]
+                       for spin_state in self.spin_states]
+        self.conditions = [(self.discriminant, '>', self.threshold)]
 
-        optimal_idx = np.argmax(self.results)
-        optimal_spin_state = self.spin_states[optimal_idx]
+        # Create Measurement object and perform measurement
+        self.measurement = Loop1DMeasurement(
+            name=self.name, acquisition_parameter=self.acquisition_parameter,
+            set_parameter=self.acquisition_parameter,
+            conditions=self.conditions)
+        self.measurement(frequencies)
+        data = self.measurement()
 
-        frequency = self.frequencies[optimal_spin_state]
+        self.results = getattr(data, self.discriminant)
 
-        if self.update_frequency and max(self.results) > self.threshold:
-            properties_config['frequency' + self.mode_str] = frequency
+        # Determine optimal frequency and update if needed
+        if self.measurement.satisfies_conditions:
+            frequency = self.measurement.optimal_set_vals[0]
+            if self.update_frequency:
+                properties_config['frequency' + self.mode_str] = frequency
         else:
-            frequency = self.acquisition_parameter.frequency
             if not self.silent:
                 logging.warning("Could not find frequency with high enough "
                                 "contrast")
@@ -249,7 +132,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         return self.results
 
 
-class CalibrationParameter(MeasurementParameter):
+class CalibrationParameter(SettingsClass, Parameter):
     def __init__(self, name, operations, discriminant=None, set_parameters=None,
                  acquisition_parameter=None, conditions=None, **kwargs):
         """

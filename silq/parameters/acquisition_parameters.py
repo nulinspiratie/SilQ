@@ -61,7 +61,7 @@ class AcquisitionParameter(SettingsClass, Parameter):
         return self.layout.sample_rate()
 
     @property
-    def pulse_pts(self):
+    def _pulse_pts(self):
         """ Number of points in the trace of each pulse"""
         return {pulse.name: int(round(pulse.duration / 1e3 * self.sample_rate))
                 for pulse in self.pulse_sequence}
@@ -77,8 +77,8 @@ class AcquisitionParameter(SettingsClass, Parameter):
             if not pulse.acquire:
                 continue
             trace_segments[pulse.name] = \
-                trace[:, idx:idx + self.pulse_pts[pulse.name]]
-            idx += self.pulse_pts[pulse.name]
+                trace[:, idx:idx + self._pulse_pts[pulse.name]]
+            idx += self._pulse_pts[pulse.name]
         return trace_segments
 
     def store_traces(self, traces_dict, subfolder=None):

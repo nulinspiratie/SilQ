@@ -4,6 +4,7 @@ from functools import partial
 from multiprocessing import active_children
 
 from qcodes import config
+from qcodes.config.config import DotDict
 
 properties_config = config['user'].get('properties', {})
 
@@ -70,7 +71,8 @@ class SettingsClass:
     def __init__(self, **kwargs):
         self._temporary_settings = {}
         self._single_settings = {}
-        self.mode = None
+        if not hasattr(self, 'mode'):
+            self.mode = None
 
     def __getattribute__(self, item):
         """
@@ -119,13 +121,17 @@ class SettingsClass:
         # if mode is None, mode_str='', in which case it checks for {item}
         item_mode = '{}{}'.format(item, self.mode_str)
         if item_mode in properties_config:
-            return properties_config[item_mode]
+            value = properties_config[item_mode]
+        elif item in properties_config:
+            # Check if item is in properties config
+            value = properties_config[item]
+        else:
+            value = None
 
-        # Check if item is in properties config
-        if item in properties_config:
-            return properties_config[item]
+        if type(value) is DotDict:
+            value = dict(value)
 
-        return None
+        return value
 
     def settings(self, **kwargs):
         """
