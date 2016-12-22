@@ -5,6 +5,7 @@ import qcodes as qc
 from qcodes.data import hdf5_format, io
 from qcodes import config
 from qcodes.instrument.parameter import Parameter
+from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass
@@ -51,13 +52,17 @@ class MeasurementParameter(SettingsClass, Parameter):
         # if mode is None, mode_str='', in which case it checks for {item}
         item_mode = '{}{}'.format(item, self.mode_str)
         if item_mode in properties_config:
-            return properties_config[item_mode]
+            value = properties_config[item_mode]
+        elif item in properties_config:
+            # Check if item is in properties config
+            value = properties_config[item]
+        else:
+            value = None
 
-        # Check if item is in properties config
-        if item in properties_config:
-            return properties_config[item]
+        if type(value) is DotDict:
+            value = dict(value)
 
-        return None
+        return value
 
     def print_results(self):
         if getattr(self, 'name', None) is not None:
@@ -193,6 +198,8 @@ class SelectFrequencyParameter(MeasurementParameter):
         self.update_frequency = update_frequency
         self.threshold = threshold
 
+        self.samples = None
+
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
                                  'spin_states', 'threshold', 'discriminant'])
 
@@ -207,6 +214,7 @@ class SelectFrequencyParameter(MeasurementParameter):
 
     def get(self):
         self.results = []
+        self.acquisition_parameter.temporary_settings(samples=self.samples)
         # Perform measurement for all frequencies
         for spin_state in self.spin_states:
             # Set adiabatic frequency
@@ -220,13 +228,18 @@ class SelectFrequencyParameter(MeasurementParameter):
         optimal_spin_state = self.spin_states[optimal_idx]
 
         frequency = self.frequencies[optimal_spin_state]
-        self.results += [frequency]
 
         if self.update_frequency and max(self.results) > self.threshold:
             properties_config['frequency' + self.mode_str] = frequency
-        elif not self.silent:
-            logging.warning("Could not find frequency with high enough "
-                            "contrast")
+        else:
+            frequency = self.acquisition_parameter.frequency
+            if not self.silent:
+                logging.warning("Could not find frequency with high enough "
+                                "contrast")
+
+        self.results += [frequency]
+
+        self.acquisition_parameter.clear_settings()
 
         # Print results
         if not self.silent:
