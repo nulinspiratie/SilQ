@@ -1,6 +1,8 @@
 import sys
 import operator
 from functools import partial
+from multiprocessing import active_children
+
 from qcodes import config
 
 properties_config = config['user'].get('properties', {})
@@ -169,3 +171,8 @@ class SettingsClass:
         """
         self._temporary_settings.clear()
         self._single_settings.clear()
+
+
+def terminate_servers():
+    for server in active_children():
+        server.terminate()
