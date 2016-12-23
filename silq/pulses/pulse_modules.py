@@ -114,7 +114,6 @@ class PulseSequence:
                 output += '\t' + pulse_repr + '\n'
         return output
 
-
     def __eq__(self, other):
         """
         Overwrite comparison with other (self == other).
