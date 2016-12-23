@@ -1,0 +1,68 @@
+{
+    "type": "object",
+    "required": [
+        "gui",
+        "core",
+        "user"
+    ],
+    "description": "schema for a qcodes config file",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "properties": {
+        "user": {
+            "type": "object",
+            "description": "controls user settings of qcodes",
+            "properties": {}
+        },
+        "gui": {
+            "type": "object",
+            "required": [
+                "notebook",
+                "plotlib"
+            ],
+            "description": "controls gui of qcodes",
+            "properties": {
+                "plotlib": {
+                    "type": "string",
+                    "default": "matplotlib",
+                    "description": "Plotting library",
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ]
+                },
+                "notebook": {
+                    "type": "boolean",
+                    "description": "Use notebook frontend",
+                    "default": true
+                }
+            }
+        },
+        "core": {
+            "type": "object",
+            "required": [
+                "legacy_mp",
+                "loglevel"
+            ],
+            "description": "controls core settings of qcodes",
+            "properties": {
+                "loglevel": {
+                    "type": "string",
+                    "enum": [
+                        "CRITICAL",
+                        "ERROR",
+                        "WARNING",
+                        "INFO",
+                        "DEBUG"
+                    ],
+                    "description": "control logging  level",
+                    "default": "DEBUG"
+                },
+                "legacy_mp": {
+                    "type": "boolean",
+                    "description": "control legacy buggy multiprocess",
+                    "default": false
+                }
+            }
+        }
+    }
+}

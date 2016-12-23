@@ -30,6 +30,8 @@ silq/meta_instruments/__init__.py
 silq/meta_instruments/chip.py
 silq/meta_instruments/hack_instrument.py
 silq/meta_instruments/layout.py
+silq/meta_instruments/lockin.py
+silq/meta_instruments/simrack.py
 silq/meta_instruments/voltage_control.py
 silq/meta_instruments/mock_instruments/__init__.py
 silq/meta_instruments/mock_instruments/mock_ATS.py
@@ -46,6 +48,7 @@ silq/pulses/__init__.py
 silq/pulses/pulse_modules.py
 silq/pulses/pulse_types.py
 silq/tests/__init__.py
+silq/tests/test_gui.py
 silq/tests/test_instruments.py
 silq/tests/test_parameters.py
 silq/tools/__init__.py
