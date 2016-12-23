@@ -179,6 +179,14 @@ class SettingsClass:
         self._single_settings.clear()
 
 
+def clear_single_settings(f):
+    def clear_single_settings_decorator(self):
+        output = f(self)
+        self._single_settings.clear()
+        return output
+    return clear_single_settings_decorator
+
+
 def terminate_servers():
     for server in active_children():
         server.terminate()

@@ -8,7 +8,7 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
-from silq.tools.general_tools import SettingsClass
+from silq.tools.general_tools import SettingsClass, clear_single_settings
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement
 
@@ -41,7 +41,7 @@ class MeasurementParameter(SettingsClass, Parameter):
         return self.acquisition_parameter.name
 
     def print_results(self):
-        if getattr(self, 'name', None) is not None:
+        if getattr(self, 'names', None) is not None:
             for name, result in zip(self.names, self.results):
                 print('{}: {:.3f}'.format(name, result))
         elif hasattr(self, 'results'):
@@ -91,6 +91,7 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
     def discriminant_idx(self):
         return self.acquisition_parameter.names.index(self.discriminant)
 
+    @clear_single_settings
     def get(self):
         # Initialize frequency to the current frequency
         frequency = self.acquisition_parameter.frequency
@@ -106,11 +107,11 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
             set_parameter=self.acquisition_parameter,
             conditions=self.conditions)
         self.measurement(frequencies)
-        data = self.measurement()
+        self.measurement()
 
-        self.results = getattr(data, self.discriminant)
+        self.results = getattr(self.measurement.dataset, self.discriminant)
 
-        # Determine optimal frequency and update if needed
+        # Determine optimal frequency and update config entry if needed
         if self.measurement.satisfies_conditions:
             frequency = self.measurement.optimal_set_vals[0]
             if self.update_frequency:
@@ -128,13 +129,12 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
         if not self.silent:
             self.print_results()
 
-        self._single_settings.clear()
         return self.results
 
 
 class CalibrationParameter(SettingsClass, Parameter):
-    def __init__(self, name, operations, discriminant=None, set_parameters=None,
-                 acquisition_parameter=None, conditions=None, **kwargs):
+    def __init__(self, name, measurement_sequence, set_parameters=None,
+                 acquisition_parameter=None, **kwargs):
         """
 
         Args:
@@ -151,127 +151,33 @@ class CalibrationParameter(SettingsClass, Parameter):
         """
         SettingsClass.__init__(self)
 
-        self.discriminant = discriminant
-        self.conditions = conditions
-        self.operations = operations
+        self.measurement_sequence = measurement_sequence
 
-        names = ['success', 'optimal_set_vals', self.discriminant]
+        names = ['success_dx', 'optimal_set_vals', self.discriminant]
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          names=names, **kwargs)
 
-        self.set_parameters = {p.name: p for p in set_parameters}
+        # Get a dict of set_parameters, either from kwarg set_parameters,
+        # or if this is equal to None, it is retrieved from config
+        self.set_parameters = set_parameters
+        station = qc.station.Station.default
+        # Convert parameters that are given as strings to the actual objects
+        self.set_parameters = [parameter if type(parameter) != str
+                               else getattr(station, parameter)
+                               for parameter in self.set_parameters]
 
-        self._meta_attrs.extend(['acquisition_parameter_name', 'conditions',
-                                 'operations', 'discriminant',
-                                 'set_vals_1D', 'measure_vals_1D'])
+        self._meta_attrs.extend(['conditions', 'measurement_sequence',
+                                 'discriminant'])
 
-    def satisfies_conditions(self, dataset, dims):
-        # Start of with all set points satisfying conditions
-        satisfied_final_arr = np.ones(dims)
-        if self.conditions is None:
-            return satisfied_final_arr
-        for (attribute, target_val, relation) in self.conditions:
-            test_vals = getattr(dataset, attribute).ndarray
-            # Determine which elements satisfy condition
-            satisfied_arr = general_tools.get_truth(test_vals, target_val,
-                                                    relation)
-
-            # Update satisfied elements with the ones satisfying current
-            # condition
-            satisfied_final_arr = np.logical_and(satisfied_final_arr,
-                                                 satisfied_arr)
-        return satisfied_final_arr
-
-    def optimal_val(self, dataset, satisfied_set_vals=None):
-        measurement_vals = getattr(dataset, self.key)
-
-        set_vals_1D = np.ravel(self.set_vals)
-        measurement_vals_1D = np.ravel(measurement_vals)
-
-        if satisfied_set_vals is not None:
-            # Filter 1D arrays by those satisfying conditions
-            satisfied_set_vals_1D = np.ravel(satisfied_set_vals)
-            satisfied_idx = np.nonzero(satisfied_set_vals)[0]
-
-            set_vals_1D = np.take(set_vals_1D, satisfied_idx)
-            measurement_vals_1D = np.take(measurement_vals_1D, satisfied_idx)
-
-        max_idx = np.argmax(measurement_vals_1D)
-        return set_vals_1D[max_idx], measurement_vals_1D[max_idx]
-
-    def get_0D_loop(self, operation):
-        self.set_vals = [None]
-        loop_parameter = Loop0DParameter(
-            name='calibration_0D',
-            mode=self.mode,
-            acquisition_parameter=self.acquisition_parameter)
-        dims = (1)
-        return loop_parameter, dims
-
-    def get_1D_loop(self, operation):
-        # Setup set vals
-        set_parameter = self.set_parameters[operation['set_parameter']]
-
-        # If no center_val provided, use current set_parameter val
-        center_val = operation.get('center_val', set_parameter())
-        span = operation['span']
-        set_points = operation['set_points']
-        self.set_vals = list(np.linspace(center_val - span / 2,
-                                         center_val + span / 2,
-                                         set_points))
-        # Extract set_parameter
-        loop_parameter = Loop1DParameter(
-            name='calibration_1D',
-            mode=self.mode,
-            set_parameter=set_parameter,
-            acquisition_parameter=self.acquisition_parameter,
-            set_vals=self.set_vals)
-        dims = (set_points)
-        return loop_parameter, dims
-
+    @clear_single_settings
     def get(self):
-        self.loop_parameters = []
-        self.datasets = []
+        self.measurement_sequence()
 
-        if hasattr(self.acquisition_parameter, 'setup'):
-            self.acquisition_parameter.setup()
+        optimal_set_vals = self.measurement_sequence.optimal_set_vals
+        optimal_set_vals = [optimal_set_vals.get(parameter.name, parameter())
+                            for parameter in self.set_parameters]
 
-        self.success = False
-        self.finished = False
+        success_idx = self.measurement_sequence.success_idx
+        optimal_val = self.measurement_sequence.optimal_val
 
-        for k, operation in enumerate(self.operations):
-            if operation['mode'] == 'measure':
-                loop_parameter, dims = self.get_0D_loop(operation)
-            elif operation['mode'] == '1D_scan':
-                loop_parameter, dims = self.get_1D_loop(operation)
-            elif operation['mode'] == '2D_scan':
-                loop_parameter, dims = self.get_1D_loop(operation)
-            else:
-                raise ValueError("Calibration mode {} not "
-                                 "implemented".format(operation['mode']))
-
-            self.loop_parameters.append(loop_parameter)
-
-            dataset = loop_parameter()
-            self.datasets.append(dataset)
-
-            satisfied_set_vals = self.satisfies_conditions(dataset, dims)
-            if np.any(satisfied_set_vals):
-                optimal_set_val, optimal_get_val = self.optimal_val(
-                    dataset, satisfied_set_vals)
-                cal_success = k
-                break
-        else:
-            logging.warning('Could not find calibration point satisfying '
-                            'conditions. Choosing best alternative')
-            optimal_set_val, optimal_get_val = self.optimal_val(dataset)
-            cal_success = -1
-
-        if optimal_set_val is not None:
-            set_parameter(optimal_set_val)
-            # TODO implement for 2D
-        else:
-            optimal_set_val = set_parameter()
-
-        self._single_settings.clear()
-        return cal_success, optimal_set_val, optimal_get_val
+        return success_idx, optimal_set_vals, optimal_val
