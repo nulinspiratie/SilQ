@@ -34,3 +34,6 @@ class TestInstrument(Instrument):
 
     def set_x(self, val):
         self.x = val
+
+    def print(self):
+        print('printing from test instrument')
