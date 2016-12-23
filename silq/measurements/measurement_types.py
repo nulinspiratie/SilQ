@@ -3,7 +3,8 @@ import numpy as np
 import qcodes as qc
 from qcodes.data import hdf5_format, io
 
-from silq.tools import data_tools, general_tools
+from silq.tools import data_tools
+from silq.tools.parameter_tools import create_set_vals
 from silq.tools.general_tools import SettingsClass, get_truth, \
     clear_single_settings, JSONEncoder
 
@@ -127,7 +128,7 @@ class Measurement(SettingsClass):
         self.steps = steps
         self.points = points
         self.set_parameters = set_parameters
-        self.set_vals = set_vals
+        self._set_vals = set_vals
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
         self.satisfied_arr = None
@@ -173,6 +174,15 @@ class Measurement(SettingsClass):
     @property
     def disk_io(self):
         return io.DiskIO(data_tools.get_latest_data_folder())
+
+    @property
+    def set_vals(self):
+        if self._set_vals is not None:
+            return self._set_vals
+        elif self.points is not None:
+            return create_set_vals(set_parameters=self.set_parameters,
+                                   steps=self.steps, points=self.points,
+                                   silent=True)
 
     def check_condition_sets(self, *condition_sets):
         condition_sets = condition_sets + self.condition_sets
