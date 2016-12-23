@@ -5,6 +5,7 @@ from multiprocessing import active_children
 
 from qcodes import config
 from qcodes.config.config import DotDict
+from qcodes.instrument.parameter import Parameter
 
 properties_config = config['user'].get('properties', {})
 
@@ -190,3 +191,32 @@ def clear_single_settings(f):
 def terminate_servers():
     for server in active_children():
         server.terminate()
+
+def JSONListEncoder(l):
+    return_l = []
+    for element in l:
+        if hasattr(element, '_JSONEncoder'):
+            return_l.append(element._JSONEncoder())
+        elif isinstance(element, (list, tuple)):
+            return_l.append(JSONListEncoder(element))
+        else:
+            return_l.append(repr(element))
+    return return_l
+
+def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
+    return_dict = {}
+    for attr, val in vars(obj).items():
+        if attr in ignore_attrs:
+            continue
+        if hasattr(val, '_JSONEncoder'):
+            val = val._JSONEncoder()
+        elif isinstance(val, (list, tuple)):
+            val = JSONListEncoder(val)
+
+        if isinstance(val, Parameter):
+            return_dict[attr] = val.name
+        elif val not in ignore_vals:
+            return_dict[attr] = val
+
+    return_dict['class'] = obj.__class__.__name__
+    return return_dict
