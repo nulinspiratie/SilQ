@@ -4,7 +4,7 @@ import numpy as np
 properties_config = qc.config['user'].get('properties', {})
 
 
-def create_set_vals(mode, steps=None, step_vals=None, points=9,
+def create_set_vals(num_parameters=None, steps=None, step_vals=None, points=9,
                     set_parameters=None, silent=False):
     def calculate_step(min_step, max_step, percentage, round_vals=True):
         val = min_step * (max_step / min_step) ** (percentage / 100)
@@ -15,7 +15,7 @@ def create_set_vals(mode, steps=None, step_vals=None, points=9,
 
         return val
 
-    def determine_step(k, set_parameter):
+    def determine_step(set_parameter, k=None):
         if steps is not None:
             if hasattr(steps, "__iter__"):
                 step_percentage = steps[k]
@@ -31,27 +31,42 @@ def create_set_vals(mode, steps=None, step_vals=None, points=9,
                 step = step_vals
         return step
 
+    def create_vals(set_parameter, k=None):
+        if hasattr(points, "__iter__"):
+            pts = points[k]
+        else:
+            pts = [points] * len(set_parameters)
+
+        step = determine_step(set_parameter, k)
+        center_val = set_parameter()
+        min_val = center_val - step * (pts - 1) / 2
+        max_val = center_val + step * (pts - 1) / 2
+        vals = list(np.linspace(min_val, max_val, pts))
+
+        if not silent:
+            print('{param}[{min_val}:{max_val}:{step}]'.format(
+                param=set_parameter, min_val=min_val, max_val=max_val,
+                step=step))
+
+        return vals
+
     if set_parameters is None:
         station = qc.station.Station.default
-        set_parameters_names = properties_config['set_parameters'][mode]
+        set_parameters_names = \
+            properties_config['set_parameters'][num_parameters]
         set_parameters = [getattr(station, name) for name in
                           set_parameters_names]
+    else:
+        num_parameters = len(set_parameters)
 
     set_vals = []
-    if mode == '2D':
-        if not hasattr(points, "__iter__"):
-            points = [points] * len(set_parameters)
+    if num_parameters == 0:
+        pass
+    elif num_parameters == 1:
+        vals = create_vals(set_parameters[0])
+        set_vals = [set_parameters[0][vals]]
+    elif num_parameters == 2:
         for k, set_parameter in enumerate(set_parameters):
-            step = determine_step(k, set_parameter)
-            center_val = set_parameter()
-            min_val = center_val - step * (points[k] - 1) / 2
-            max_val = center_val + step * (points[k] - 1) / 2
-            vals = list(np.linspace(min_val, max_val, points[k]))
+            vals = create_vals(set_parameter, k)
             set_vals.append(set_parameter[vals])
-
-            if not silent:
-                print('{param}[{min_val}:{max_val}:{step}]'.format(
-                    param=set_parameter, min_val=min_val, max_val=max_val,
-                    step=step))
     return set_vals
-
