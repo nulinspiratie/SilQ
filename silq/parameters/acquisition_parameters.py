@@ -9,7 +9,7 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
-from silq.tools.general_tools import SettingsClass
+from silq.tools.general_tools import SettingsClass, clear_single_settings
 
 
 h5fmt = hdf5_format.HDF5Format()
@@ -147,11 +147,11 @@ class DCParameter(AcquisitionParameter):
         # Do not segment traces since we only receive a single value
         super().acquire(start=False, stop=False, segment_traces=False)
 
+    @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        self._single_settings.clear()
         return self.data['acquisition_traces']['output']
 
 
@@ -172,6 +172,7 @@ class EPRParameter(AcquisitionParameter):
 
         self.analysis = analysis.analyse_EPR
 
+    @clear_single_settings
     def get(self):
         self.setup()
 
@@ -190,7 +191,6 @@ class EPRParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        self._single_settings.clear()
         return self.results
 
 
@@ -232,6 +232,7 @@ class AdiabaticParameter(AcquisitionParameter):
         super().acquire(return_initialization_traces=self.pulse_sequence[
             'steered_initialization'].enabled, **kwargs)
 
+    @clear_single_settings
     def get(self):
         self.setup()
 
@@ -257,7 +258,6 @@ class AdiabaticParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        self._single_settings.clear()
         return self.results
 
     def set(self, frequency):
@@ -298,6 +298,7 @@ class T1Parameter(AcquisitionParameter):
         super().acquire(return_initialization_traces=self.pulse_sequence[
             'steered_initialization'].enabled, **kwargs)
 
+    @clear_single_settings
     def get(self):
         self.setup()
 
@@ -327,7 +328,6 @@ class T1Parameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        self._single_settings.clear()
         return self.results
 
     def set(self, wait_time):
@@ -360,6 +360,7 @@ class DarkCountsParameter(AcquisitionParameter):
         super().acquire(return_initialization_traces=self.pulse_sequence[
             'steered_initialization'].enabled, **kwargs)
 
+    @clear_single_settings
     def get(self):
         self.setup()
 
@@ -386,7 +387,6 @@ class DarkCountsParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        self._single_settings.clear()
         return self.results
 
     def set(self, frequency):
