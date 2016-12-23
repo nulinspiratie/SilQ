@@ -1,25 +1,20 @@
 {
     "gui": {
-        "notebook": true,
-        "plotlib": "matplotlib"
+        "plotlib": "matplotlib",
+        "notebook": true
     },
     "core": {
-        "loglevel": "DEBUG",
-        "legacy_mp": true
+        "legacy_mp": true,
+        "loglevel": "DEBUG"
     },
     "user": {
         "properties": {
-            "frequency_NMR": 66500000.0,
-            "readout_threshold_voltage": 0.3333333333333333,
             "frequencies_ESR": {
                 "down": 27951000000.0,
                 "up": 27852500000.0
             },
+            "frequency_ESR": 27951000000.0,
             "set_parameters": {
-                "2D": [
-                    "TGAC",
-                    "DF_DS"
-                ],
                 "DF_DS": {
                     "steps": [
                         0.00025,
@@ -31,56 +26,61 @@
                         0.0005,
                         1
                     ]
-                }
+                },
+                "2D": [
+                    "TGAC",
+                    "DF_DS"
+                ]
             },
+            "samples": 100,
             "t_read": 20,
+            "frequency_NMR": 66500000.0,
             "t_skip": 0.07,
-            "frequency_ESR": 27951000000.0,
-            "samples": 100
+            "readout_threshold_voltage": 0.3333333333333333
         },
-        "data_folder": "E:\\EWJN\\data",
         "pulses": {
-            "adiabatic_ESR": {
+            "read_long": {
+                "duration": 120
+            },
+            "steered_initialization": {
+                "enabled": false,
+                "t_max_wait": 400,
+                "t_no_blip": 120,
+                "t_buffer": 30
+            },
+            "adiabatic_NMR": {
+                "duration": 0.5,
+                "t_start": 3,
                 "power": 0,
-                "duration": 0.15,
-                "frequency_deviation": 1000000.0,
-                "t_start": 3
+                "frequency_deviation": 100000.0
+            },
+            "final": {
+                "duration": 2,
+                "amplitude": 0
             },
             "empty": {
                 "duration": 5,
                 "amplitude": -1.5
             },
             "read": {
-                "duration": 40,
+                "duration": 20,
                 "amplitude": 0
             },
-            "steered_initialization": {
-                "t_max_wait": 400,
-                "enabled": false,
-                "t_no_blip": 120,
-                "t_buffer": 30
-            },
-            "adiabatic_NMR": {
+            "adiabatic_ESR": {
+                "duration": 0.15,
+                "t_start": 3,
                 "power": 0,
-                "duration": 0.5,
-                "frequency_deviation": 100000.0,
-                "t_start": 3
-            },
-            "plunge": {
-                "duration": 5,
-                "amplitude": 2
+                "frequency_deviation": 1000000.0
             },
             "steered_initialization_long": {
                 "t_max_wait": 1000,
                 "t_no_blip": 200
             },
-            "read_long": {
-                "duration": 120
-            },
-            "final": {
-                "duration": 2,
-                "amplitude": 0
+            "plunge": {
+                "duration": 5,
+                "amplitude": 2
             }
-        }
+        },
+        "data_folder": "E:\\EWJN\\data"
     }
 }

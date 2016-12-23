@@ -119,6 +119,8 @@ class CalibrationPlot(MatPlot):
     def get_action(self, key=None):
         if key is None:
             key = self.last_key
+            if key is None:
+                return None
 
         # Ignore shift
         key = key.lower()
