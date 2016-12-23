@@ -1,12 +1,15 @@
+from qcodes import config
 
+from silq.measurements.measurement_types import *
+from silq.tools.general_tools import JSONEncoder
+measurement_config = config['user'].get('measurement', {})
 
 
 class MeasurementSequence:
-    def __init__(self, name=None, condition_set=None):
-        self.measurements = []
+    def __init__(self, name=None, measurements=None, condition_sets=None):
+        self.measurements = [] if measurements is None else measurements
         self.name = name
-        self.condition_set = condition_set
-        self.condition_sets = [] if condition_set is None else [condition_set]
+        self.condition_sets = [] if condition_sets is None else condition_sets
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -40,12 +43,44 @@ class MeasurementSequence:
         self.results = [result for result in self]
         result = self.results[-1]
         if result['action'] is None:
-            # TODO better wa to discern success from fail
+            # TODO better way to discern success from fail
             result['action'] = 'success' if result['is_satisfied'] else 'fail'
         elif result['action'][:4] == 'next':
             result['action'] = result['action'][5:]
 
+        #TODO correct return
         return result
+
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
+
+        Returns:
+            JSON dict
+        """
+        return JSONEncoder(self, ignore_vals=[None, {}, []])
+
+    @classmethod
+    def load_from_dict(cls, load_dict):
+        obj = cls()
+        for attr, val in load_dict.items():
+            if attr == '__class__':
+                continue
+            elif attr in ['condition_sets', 'measurements']:
+                setattr(obj, attr, [])
+                obj_attr = getattr(obj, attr)
+                for elem_dict in val:
+                    # Load condition class from globals
+                    cls = globals()[elem_dict['__class__']]
+                    obj_attr.append(cls.load_from_dict(elem_dict))
+            else:
+                setattr(obj, attr, val)
+        return obj
+
+    def save_to_config(self, name=None):
+        if name is None:
+            name = self.name
+        measurement_config[name] = self._JSONEncoder()
 
     @property
     def next_measurement(self):

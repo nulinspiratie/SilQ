@@ -10,7 +10,8 @@ from qcodes.config.config import DotDict
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings
 from silq.measurements.measurement_types import Loop0DMeasurement, \
-    Loop1DMeasurement, Loop2DMeasurement
+    Loop1DMeasurement, Loop2DMeasurement, ConditionSet
+from silq.measurements.measurement_modules import MeasurementSequence
 
 properties_config = config['user'].get('properties', {})
 
@@ -19,6 +20,8 @@ class MeasurementParameter(SettingsClass, Parameter):
     def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
         SettingsClass.__init__(self)
         Parameter.__init__(self, name, snapshot_value=False, **kwargs)
+
+        self.measurement_sequence = MeasurementSequence()
 
         self.mode = mode
         if self.mode is not None:
@@ -46,6 +49,7 @@ class MeasurementParameter(SettingsClass, Parameter):
                 print('{}: {:.3f}'.format(name, result))
         elif hasattr(self, 'results'):
             print('{}: {:.3f}'.format(self.name, self.results))
+
 
 class SelectFrequencyParameter(SettingsClass, Parameter):
     def __init__(self, threshold=0.5,
@@ -78,6 +82,8 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
         self.threshold = threshold
 
         self.samples = None
+
+
 
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
                                  'spin_states', 'threshold', 'discriminant'])
