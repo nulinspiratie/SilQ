@@ -1,29 +1,23 @@
 
 
 if __name__ == "__main__":
-    USE_MP = True
+    USE_MP = False
     import silq
 
-    silq.initialize("EWJN", mode='analysis')
-    qc.config['core']['legacy_mp'] = True
+    silq.initialize("EWJN")
 
-    # Data handling
-    qc.data.data_set.DataSet.default_io.base_location = r'C:\Users\serwa_000\Documents\data'
-    loc_provider = qc.data.location.FormatLocation(
-        fmt='{date}/#{counter}_{name}_{time}')
-    qc.data.data_set.DataSet.location_provider = loc_provider
 
-    station = qc.station.Station()
-    from qcodes.tests.instrument_mocks import MockParabola
+    # Calculate T1 durations
+    T1_wait_times = list(np.logspace(1, 3, num=10, base=10))
 
-    mock_parabola = MockParabola(name='MockParabola', server_name='')
+    # Shuffle times
+    # np.random.shuffle(T1_wait_times)
+    print('Shuffled T1 wait times: {}'.format(T1_wait_times))
 
-    measurement_parameters.MeasurementParameter.data_manager = data_manager_raw
+    # Single T1 sweep
 
-    measurement_param = measurement_parameters.TestMeasurementParameter()
-    # measurement_param.data_manager = data_manager_raw
-
-    loop = qc.Loop(mock_parabola.x[-100:100:20]).each(
-        measurement_param,
-        mock_parabola.skewed_parabola)
-    data = loop.run(name='MockParabola_run', formatter=h5fmt, background=False)
+    T1_parameter.label = 'T1_wait_time'
+    data = qc.Loop(
+        T1_parameter[T1_wait_times]).each(
+        T1_parameter).run(name='T1_single_sweep', background=False)
+    sleep(1000)
