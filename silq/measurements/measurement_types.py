@@ -5,15 +5,31 @@ from qcodes.data import hdf5_format, io
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, get_truth, \
-    clear_single_settings
+    clear_single_settings, JSONEncoder
 
 
 class Condition:
-    pass
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
 
+        Returns:
+            JSON dict
+        """
+        return JSONEncoder(self)
+
+    @classmethod
+    def load_from_dict(cls, load_dict):
+        obj = cls()
+        for attr, val in load_dict.items():
+            if attr == '__class__':
+                continue
+            setattr(obj, attr, val)
+        return obj
 
 class TruthCondition(Condition):
-    def __init__(self, attribute, relation, target_val, **kwargs):
+    def __init__(self, attribute=None, relation=None, target_val=None,
+                 **kwargs):
         super().__init__(**kwargs)
         self.attribute = attribute
         self.relation = relation
@@ -36,11 +52,38 @@ class ConditionSet:
         for condition in conditions:
             self.add_condition(condition)
 
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
+
+        Returns:
+            JSON dict
+        """
+        return JSONEncoder(self, ignore_attrs=['loc_provider'])
+
+    @classmethod
+    def load_from_dict(cls, load_dict):
+        obj = cls()
+        for attr, val in load_dict.items():
+            if attr == '__class__':
+                continue
+            elif attr == 'conditions':
+                obj.conditions = []
+                for condition in val:
+                    # Load condition class from globals
+                    cls = globals()[condition['__class__']]
+                    obj.conditions.append(cls.load_from_dict(condition))
+            else:
+                setattr(obj, attr, val)
+        return obj
+
     def add_condition(self, condition):
         if isinstance(condition, Condition):
             self.conditions.append(condition)
-        elif hasattr(condition, '__len__') and len(condition) == 3:
+        elif isinstance(condition, (list, tuple)) and len(condition) == 3:
             self.conditions.append(TruthCondition(*condition))
+        else:
+            raise Exception('Could not decode condition {}'.format(condition))
 
     def check_satisfied(self, dataset):
         """
@@ -72,17 +115,20 @@ class ConditionSet:
 
 
 class Measurement(SettingsClass):
-    def __init__(self, name, condition_set=None, acquisition_parameter=None,
-                 set_parameters=None, set_vals=None, discriminant=None):
+    def __init__(self, name=None, condition_sets=None,
+                 acquisition_parameter=None,
+                 set_parameters=None, set_vals=None,
+                 steps=None, points=None, discriminant=None):
         SettingsClass.__init__(self)
 
         self.name = name
         self.acquisition_parameter = acquisition_parameter
         self.discriminant = discriminant
+        self.steps = steps
+        self.points = points
         self.set_parameters = set_parameters
         self.set_vals = set_vals
-        self.condition_set = condition_set
-        self.condition_sets = [] if condition_set is None else [condition_set]
+        self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
         self.satisfied_arr = None
 
@@ -97,6 +143,32 @@ class Measurement(SettingsClass):
             return self.get()
         else:
             self.set(*args)
+
+    def _JSONEncoder(self):
+        """
+        Converts to JSON encoder for saving metadata
+
+        Returns:
+            JSON dict
+        """
+        return JSONEncoder(self, ignore_attrs=['loc_provider'],
+                           ignore_vals=[None, {}, []])
+
+    @classmethod
+    def load_from_dict(cls, load_dict):
+        obj = cls()
+        for attr, val in load_dict.items():
+            if attr == '__class__':
+                continue
+            elif attr == 'condition_sets':
+                obj.condition_sets = []
+                for condition_set in val:
+                    # Load condition class from globals
+                    cls = globals()[condition_set['__class__']]
+                    obj.conditions.append(cls.load_from_dict(condition_set))
+            else:
+                setattr(obj, attr, val)
+        return obj
 
     @property
     def disk_io(self):
@@ -132,7 +204,7 @@ class Measurement(SettingsClass):
 
 
 class Loop0DMeasurement(Measurement):
-    def __init__(self, name, acquisition_parameter=None, **kwargs):
+    def __init__(self, name=None, acquisition_parameter=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          **kwargs)
 
@@ -166,11 +238,11 @@ class Loop0DMeasurement(Measurement):
 
 
 class Loop1DMeasurement(Measurement):
-    def __init__(self, name, set_parameter=None, acquisition_parameter=None,
-                 set_vals=None, **kwargs):
+    def __init__(self, name=None, set_parameter=None, acquisition_parameter=None,
+                 set_vals=None, steps=None, points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=set_vals,
-                         **kwargs)
+                         steps=steps, points=points, **kwargs)
         self.set_parameter = set_parameter
 
     def set_vals_from_idx(self, idx):
@@ -208,11 +280,11 @@ class Loop1DMeasurement(Measurement):
 
 
 class Loop2DMeasurement(Measurement):
-    def __init__(self, name, set_parameters=None, acquisition_parameter=None,
-                 set_vals=None, **kwargs):
+    def __init__(self, name=None, set_parameters=None, acquisition_parameter=None,
+                 set_vals=None, steps=None, points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=set_parameters, set_vals=set_vals,
-                         **kwargs)
+                         steps=steps, points=points, **kwargs)
 
     def set_vals_from_idx(self, idx):
         """
