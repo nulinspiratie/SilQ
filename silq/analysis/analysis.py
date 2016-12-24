@@ -1,5 +1,6 @@
 import numpy as np
 import peakutils
+# from matplotlib import pyplot as plt
 
 from qcodes import Instrument
 import qcodes.instrument.parameter as parameter
@@ -21,8 +22,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             threshold_peak *= 1.5
         else:
             print('No peaks found')
-            return {'low': None, 'high': None, 'threshold_voltage': None,
-                    'voltage_difference': None}
+            return None, None, None
 
     # Find threshold, mean low, and mean high voltages
     threshold_idx = int(round(np.mean(peaks_idx)))
@@ -37,8 +37,8 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
         signal['std'] = np.std(signal['traces'])
     voltage_difference = (high['mean'] - low['mean'])
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
-    if SNR < 2:
-        # print('Signal to noise ratio {} is too low'.format(SNR))
+    if SNR < 3:
+        'Signal to noise ratio {} is too low'.format(SNR)
         threshold_voltage = None
 
     # Plotting
@@ -50,17 +50,12 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
             plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
 
-    return {'low': low,
-            'high': high,
-            'threshold_voltage': threshold_voltage,
-            'voltage_difference': voltage_difference}
+    return low, high, threshold_voltage, voltage_difference
 
-def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
-                 start_point=0):
-    assert edge in ['begin', 'end'], \
-        'Edge {} must be either "begin" or "end"'.format(edge)
-    assert state in ['low', 'high'], \
-        'State {} must be either "low" or "high"'.format(state)
+def edge_voltage(traces, edge, state, threshold_voltage=None, points=6,
+                 start_point=0, plot=False):
+    assert edge in ['begin', 'end'], 'Edge {} must be either "begin" or "end"'.format(edge)
+    assert state in ['low', 'high'], 'State {} must be either "low" or "high"'.format(state)
 
     if edge == 'begin':
         if start_point > 0:
@@ -72,7 +67,8 @@ def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
 
     # Determine threshold voltage if not provided
     if threshold_voltage is None:
-        threshold_voltage = find_high_low(traces)['threshold_voltage']
+        low, high, threshold_voltage, voltage_difference = \
+            find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
@@ -86,184 +82,169 @@ def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
     return np.array(success)
 
 def find_up_proportion(traces, threshold_voltage=None, return_mean=True,
-                       start_point=0, filter_window=0):
+                       start_point=0, filter_window=0,
+                       plot=False):
     # trace has to contain read stage only
     # TODO Change start point to start time (sampling rate independent)
     if threshold_voltage is None:
-        threshold_voltage = find_high_low(traces)['threshold_voltage']
+        _, _, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        return 0
+        traces_up_electron = [False] * len(traces)
+    else:
+        if filter_window > 0:
+            traces = [np.convolve(trace, np.ones(filter_window) / filter_window, mode='valid') for trace in traces]
 
-    if filter_window > 0:
-        traces = [np.convolve(trace, np.ones(filter_window) / filter_window,
-                              mode='valid')
-                  for trace in traces]
-
-    # Filter out the traces that contain one or more peaks
-    traces_up_electron = [np.any(trace[start_point:] > threshold_voltage)
-                          for trace in traces]
+        # Filter out the traces that contain one or more peaks
+        traces_up_electron = [np.any(trace[start_point:] > threshold_voltage) for trace in traces]
 
     if return_mean:
         return sum(traces_up_electron) / len(traces)
     else:
         return traces_up_electron
 
-def analyse_read(traces, start_idx=0, threshold_voltage=None,
+def analyse_read(traces, start_idx=0, threshold_voltage=None, plot=False,
                  filter_loaded=True):
     if threshold_voltage is None:
-        threshold_voltage = find_high_low(traces)['threshold_voltage']
+        low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
         # Return the full trace length as mean if return_mean=True
-        return {'up_proportion': 0, 'num_traces': 0,
-                'idx': np.ones(len(traces), dtype=bool)}
+        return 0, 0
 
     if filter_loaded:
         # Filter out the traces that start off loaded
-        idx = edge_voltage(traces, edge='begin', state='low',
+        idx_begin_loaded = edge_voltage(traces, edge='begin', state='low',
                                         start_point=start_idx,
                                         threshold_voltage=threshold_voltage)
-        traces = traces[idx]
+        traces = traces[idx_begin_loaded]
+        num_traces = sum(idx_begin_loaded)
     else:
-        idx = np.ones(len(traces), dtype=bool)
+        num_traces = len(traces)
 
-    if not len(traces):
+    if not num_traces:
         print('None of the load traces start with a loaded state')
-        return {'up_proportion': 0, 'num_traces': 0,
-                'idx': idx}
+        return (float('nan'), num_traces)
 
     up_proportion = find_up_proportion(traces,
                                        start_point=start_idx,
                                        threshold_voltage=threshold_voltage)
 
-    return {'up_proportion': up_proportion,
-            'num_traces': len(traces),
-            'idx': idx}
+    return (up_proportion, num_traces)
 
-def analyse_load(traces, filter_empty=True):
-    threshold_voltage = find_high_low(traces)['threshold_voltage']
+def analyse_load(traces, plot=False, return_idx=False):
+    idx_list = np.arange(len(traces))
+    low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
-        return {'up_proportion': 0, 'num_traces': 0}
+        if return_idx:
+            return 0, []
+        else:
+            return 0
 
-    if filter_empty:
-        # Filter data that starts at high conductance (no electron)
-        idx_begin_empty = edge_voltage(traces, edge='begin', state='high',
-                                       threshold_voltage=threshold_voltage)
-        traces = traces[idx_begin_empty]
+    # Filter data that starts at high conductance (no electron)
+    idx_begin_empty = edge_voltage(traces, edge='begin', state='high',
+                                        threshold_voltage=threshold_voltage)
+    traces_begin_empty = traces[idx_begin_empty]
+    idx_list = idx_list[idx_begin_empty]
 
+    if not len(idx_begin_empty):
+        print('None of the load traces start with an empty state')
+        return 0 if not return_idx else 0, []
 
-    if not len(traces):
-        # print('None of the load traces start with an empty state')
-        return {'up_proportion': 0, 'num_traces': 0}
+    idx_end_load = edge_voltage(traces_begin_empty, edge='end', state='low',
+                                     threshold_voltage=threshold_voltage)
 
-    idx_end_load = edge_voltage(traces, edge='end', state='low',
-                                threshold_voltage=threshold_voltage)
+    idx_list = idx_list[idx_end_load] if len(idx_end_load) else []
 
-    return {'up_proportion': sum(idx_end_load) / len(traces),
-            'num_traces': len(traces)}
+    if return_idx:
+        return sum(idx_end_load) / sum(idx_begin_empty), idx_list
+    else:
+        return sum(idx_end_load) / sum(idx_begin_empty)
 
-
-def analyse_empty(traces, filter_loaded=True):
-    threshold_voltage = find_high_low(traces)['threshold_voltage']
+def analyse_empty(traces, plot=False, return_idx=False):
+    idx_list = np.arange(len(traces))
+    low, high, threshold_voltage, _ = find_high_low(traces, plot=plot)
 
     if threshold_voltage is None:
-        return {'up_proportion': 0, 'num_traces': 0}
+        # print('Could not find two peaks for empty and load state')
+        if return_idx:
+            return 0, []
+        else:
+            return 0
 
-    if filter_loaded:
-        # Filter data that starts at high conductance (no electron)
-        idx_begin_load = edge_voltage(traces, edge='begin', state='low',
+    # Filter data that starts at high conductance (no electron)
+    idx_begin_load = edge_voltage(traces, edge='begin', state='low',
+                                  threshold_voltage=threshold_voltage)
+    traces_begin_load = traces[idx_begin_load]
+    idx_list = idx_list[idx_begin_load]
+
+    if not len(idx_begin_load):
+        print('None of the empty traces start with a loaded state')
+        return 0
+
+    idx_end_empty = edge_voltage(traces_begin_load, edge='end', state='high',
                                       threshold_voltage=threshold_voltage)
-        traces = traces[idx_begin_load]
 
-    if not len(traces):
-        # print('None of the empty traces start with a loaded state')
-        return {'up_proportion': 0, 'num_traces': 0}
+    idx_list = idx_list[idx_end_empty] if len(idx_end_empty) else []
 
-    idx_end_empty = edge_voltage(traces, edge='end', state='high',
-                                 threshold_voltage=threshold_voltage)
+    if return_idx:
+        return sum(idx_end_empty) / sum(idx_begin_load), idx_list
+    else:
+        return sum(idx_end_empty) / sum(idx_begin_load)
 
-    return {'up_proportion': sum(idx_end_empty) / len(traces),
-            'num_traces': len(traces)}
-
-
-def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
-                min_trace_perc=0.5):
+def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    fidelity_empty = analyse_empty(trace_segments['empty'])['up_proportion']
-    fidelity_load = analyse_load(trace_segments['plunge'])['up_proportion']
+    fidelity_empty = analyse_empty(trace_segments['empty'], plot=plot)
+    fidelity_load = analyse_load(trace_segments['plunge'], plot=plot)
 
-    read_high_low = find_high_low(trace_segments['read'])
-    threshold_voltage = read_high_low['threshold_voltage']
-    voltage_difference = read_high_low['voltage_difference']
+    _,_,threshold_voltage, voltage_difference = \
+        find_high_low(trace_segments['read'], plot=plot)
 
     if threshold_voltage is None:
-        return {'contrast': 0,
-                'dark_counts': 0,
-                'voltage_difference': 0,
-                'fidelity_empty': fidelity_empty,
-                'fidelity_load': fidelity_load}
+        return (fidelity_empty, fidelity_load, 0, 0, 0, 0)
     else:
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        results1 = analyse_read(read_segment1, start_idx=start_idx,
-                                threshold_voltage=threshold_voltage,
-                                filter_loaded=True)
-        up_proportion = results1['up_proportion']
-        dark_counts = analyse_read(read_segment2, start_idx=start_idx,
-                                   threshold_voltage=threshold_voltage,
-                                   filter_loaded=False)['up_proportion']
+        up_proportion, _ = analyse_read(read_segment1, start_idx=start_idx,
+                                        threshold_voltage=threshold_voltage,
+                                        filter_loaded=False)
+        dark_counts, _ = analyse_read(read_segment2, start_idx=start_idx,
+                                      threshold_voltage=threshold_voltage,
+                                      filter_loaded=False)
+        contrast = up_proportion - dark_counts
 
-        if sum(results1['idx']) < min_trace_perc:
-            # Not enough traces start loaded
-            contrast = 0
-        else:
-            contrast = up_proportion - dark_counts
-
-    return {'contrast': contrast,
-            'dark_counts': dark_counts,
+    return {'contrast': contrast, 'dark_counts': dark_counts,
             'voltage_difference': voltage_difference,
             'fidelity_empty': fidelity_empty,
             'fidelity_load': fidelity_load}
 
-def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20,
-               min_trace_perc=0.5):
+def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20, plot=False):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    read_high_low = find_high_low(trace_segments['read'])
-    threshold_voltage = read_high_low['threshold_voltage']
-    voltage_difference = read_high_low['voltage_difference']
+    _,_,threshold_voltage, voltage_difference = \
+        find_high_low(trace_segments['read'], plot=plot)
 
     if threshold_voltage is None:
-        return {'contrast': 0,
-                'dark_counts': 0,
-                'voltage_difference': 0}
+        return {'contrast': 0, 'dark_counts': 0,
+            'voltage_difference': 0}
     else:
         read_segment1 = trace_segments['read'][:,:read_pts]
         read_segment2 = trace_segments['read'][:,-read_pts:]
 
-        results1 = analyse_read(read_segment1, start_idx=start_idx,
-                                     threshold_voltage=threshold_voltage,
-                                     filter_loaded=True)
-        up_proportion = results1['up_proportion']
+        up_proportion, _ = analyse_read(read_segment1, start_idx=start_idx,
+                                        threshold_voltage=threshold_voltage,
+                                        filter_loaded=False)
+        dark_counts, _ = analyse_read(read_segment2, start_idx=start_idx,
+                                      threshold_voltage=threshold_voltage,
+                                      filter_loaded=False)
+        contrast = up_proportion - dark_counts
 
-        dark_counts = analyse_read(read_segment2, start_idx=start_idx,
-                                   threshold_voltage=threshold_voltage,
-                                   filter_loaded=False)['up_proportion']
-
-        if sum(results1['idx']) < min_trace_perc:
-            # Not enough traces start loaded
-            contrast = 0
-        else:
-            contrast = up_proportion - dark_counts
-
-    return {'contrast': contrast,
-            'dark_counts': dark_counts,
+    return {'contrast': contrast, 'dark_counts': dark_counts,
             'voltage_difference': voltage_difference}
