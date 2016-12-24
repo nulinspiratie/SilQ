@@ -12,9 +12,9 @@ T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
 # variable_read = acquisition_parameters.VariableRead_Parameter(layout=layout)
 adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
-select_ESR_parameter = measurement_parameters.SelectFrequencyParameter(
-    acquisition_parameter=adiabatic_ESR_parameter,
-    mode='ESR', discriminant='contrast')
+# select_ESR_parameter = measurement_parameters.SelectFrequencyParameter(
+#     acquisition_parameter=adiabatic_ESR_parameter,
+#     mode='ESR', discriminant='contrast')
 dark_counts_parameter = acquisition_parameters.DarkCountsParameter()
 
 
@@ -23,6 +23,6 @@ station = qc.Station(
     SIM900, arbstudio, pulseblaster, ATS, triggered_controller,
     continuous_controller, keysight, layout,
     DC_parameter, EPR_parameter, T1_parameter,adiabatic_ESR_parameter,
-    adiabatic_NMR_parameter, select_ESR_parameter, dark_counts_parameter,
+    adiabatic_NMR_parameter, dark_counts_parameter,
     DF_DS,
     *SIM900_scaled_parameters)

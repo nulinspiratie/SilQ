@@ -35,7 +35,7 @@ def create_set_vals(num_parameters=None, steps=None, step_vals=None, points=9,
         if hasattr(points, "__iter__"):
             pts = points[k]
         else:
-            pts = [points] * len(set_parameters)
+            pts = points
 
         step = determine_step(set_parameter, k)
         center_val = set_parameter()
@@ -53,7 +53,7 @@ def create_set_vals(num_parameters=None, steps=None, step_vals=None, points=9,
     if set_parameters is None:
         station = qc.station.Station.default
         set_parameters_names = \
-            properties_config['set_parameters'][num_parameters]
+            properties_config['set_parameters'][str(num_parameters)]
         set_parameters = [getattr(station, name) for name in
                           set_parameters_names]
     else:

@@ -4,27 +4,27 @@
         "notebook": true
     },
     "core": {
-        "legacy_mp": true,
-        "loglevel": "DEBUG"
+        "loglevel": "DEBUG",
+        "legacy_mp": true
     },
     "user": {
         "properties": {
-            "frequencies_ESR": {
-                "down": 27951000000.0,
-                "up": 27852500000.0
-            },
-            "frequency_ESR": 27951000000.0,
+            "t_skip": 0.07,
             "set_parameters": {
-                "DF_DS": {
-                    "steps": [
-                        0.00025,
-                        0.5
-                    ]
-                },
+                "2": [
+                    "TGAC",
+                    "DF_DS"
+                ],
                 "TGAC": {
                     "steps": [
                         0.0005,
                         1
+                    ]
+                },
+                "DF_DS": {
+                    "steps": [
+                        0.00025,
+                        0.5
                     ]
                 },
                 "2D": [
@@ -32,39 +32,30 @@
                     "DF_DS"
                 ]
             },
+            "frequencies_ESR": {
+                "down": 27951000000.0,
+                "up": 27852500000.0
+            },
+            "frequency_ESR": 27951000000.0,
+            "readout_threshold_voltage": 0.3333333333333333,
             "samples": 100,
             "t_read": 20,
-            "frequency_NMR": 66500000.0,
-            "t_skip": 0.07,
-            "readout_threshold_voltage": 0.3333333333333333
+            "frequency_NMR": 66500000.0
         },
         "pulses": {
-            "read_long": {
-                "duration": 120
-            },
             "steered_initialization": {
                 "enabled": false,
-                "t_max_wait": 400,
+                "t_buffer": 30,
                 "t_no_blip": 120,
-                "t_buffer": 30
-            },
-            "adiabatic_NMR": {
-                "duration": 0.5,
-                "t_start": 3,
-                "power": 0,
-                "frequency_deviation": 100000.0
+                "t_max_wait": 400
             },
             "final": {
                 "duration": 2,
                 "amplitude": 0
             },
-            "empty": {
-                "duration": 5,
-                "amplitude": -1.5
-            },
-            "read": {
-                "duration": 20,
-                "amplitude": 0
+            "steered_initialization_long": {
+                "t_max_wait": 1000,
+                "t_no_blip": 200
             },
             "adiabatic_ESR": {
                 "duration": 0.15,
@@ -72,9 +63,22 @@
                 "power": 0,
                 "frequency_deviation": 1000000.0
             },
-            "steered_initialization_long": {
-                "t_max_wait": 1000,
-                "t_no_blip": 200
+            "adiabatic_NMR": {
+                "duration": 0.5,
+                "t_start": 3,
+                "power": 0,
+                "frequency_deviation": 100000.0
+            },
+            "read": {
+                "duration": 20,
+                "amplitude": 0
+            },
+            "read_long": {
+                "duration": 120
+            },
+            "empty": {
+                "duration": 5,
+                "amplitude": -1.5
             },
             "plunge": {
                 "duration": 5,

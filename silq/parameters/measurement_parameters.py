@@ -54,9 +54,10 @@ class MeasurementParameter(SettingsClass, Parameter):
 class SelectFrequencyParameter(SettingsClass, Parameter):
     def __init__(self, threshold=0.5,
                  discriminant=None,
-                 frequencies=None,
+                 frequencies=None, mode=None,
                  acquisition_parameter=None, update_frequency=True, **kwargs):
         SettingsClass.__init__(self)
+        self.mode = mode
 
         self.frequencies = frequencies
         self.frequency = None
@@ -71,7 +72,7 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
         else:
             names.append('frequency')
 
-        super().__init__(name='select_frequency',
+        Parameter.__init__(self, name='select_frequency',
                          label='Select frequency',
                          names=names,
                          **kwargs)
@@ -82,8 +83,6 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
         self.threshold = threshold
 
         self.samples = None
-
-
 
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
                                  'spin_states', 'threshold', 'discriminant'])
