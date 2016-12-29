@@ -10,6 +10,7 @@ from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
 
 properties_config = config['user'].get('properties', {})
+pulse_config = config['user'].get('pulses', {})
 
 
 class CombinedParameter(Parameter):
@@ -127,6 +128,30 @@ class AttributeParameter(Parameter):
 
     def get(self):
         value =  getattr(self.object, self.attribute)
+        self._save_val(value)
+        return value
+
+class ConfigPulseAttribute(Parameter):
+    def __init__(self, pulse_name, attribute, **kwargs):
+        """
+        Creates a parameter that can set/get an attribute from an object
+        Args:
+            pulse_name: name of pulse in config['pulses'] keys
+            attribute: attribute to set/get
+            **kwargs: Other parameter kwargs
+        """
+        name = kwargs.pop('name', '{}_{}'.format(pulse_name, attribute))
+        super().__init__(name=name, **kwargs)
+
+        self.pulse_name = pulse_name
+        self.attribute = attribute
+
+    def set(self, value):
+        pulse_config[self.pulse_name][self.attribute] = value
+        self._save_val(value)
+
+    def get(self):
+        value = pulse_config[self.pulse_name][self.attribute]
         self._save_val(value)
         return value
 
