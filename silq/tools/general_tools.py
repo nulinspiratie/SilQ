@@ -65,6 +65,8 @@ def partial_from_attr(func, obj, attr):
 
 
 def print_attr(obj, attr):
+    if not hasattr(obj, attr):
+        print('Could not find attribute {} of {}'.format(attr, obj))
     print('{}.{} = {}'.format(obj.__class__.__name__, attr, getattr(obj, attr)))
 
 
