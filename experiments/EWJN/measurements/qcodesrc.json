@@ -1,16 +1,26 @@
 {
-    "gui": {
-        "plotlib": "matplotlib",
-        "notebook": true
-    },
     "core": {
         "loglevel": "DEBUG",
         "legacy_mp": true
     },
+    "gui": {
+        "plotlib": "matplotlib",
+        "notebook": true
+    },
     "user": {
+        "data_folder": "E:\\EWJN\\data",
         "properties": {
-            "t_skip": 0.07,
+            "frequency_ESR": 27951000000.0,
+            "t_read": 20,
+            "frequencies_ESR": {
+                "up": 27852500000.0,
+                "down": 27951000000.0
+            },
             "set_parameters": {
+                "2D": [
+                    "TGAC",
+                    "DF_DS"
+                ],
                 "2": [
                     "TGAC",
                     "DF_DS"
@@ -26,65 +36,67 @@
                         0.00025,
                         0.5
                     ]
-                },
-                "2D": [
-                    "TGAC",
-                    "DF_DS"
-                ]
+                }
             },
-            "frequencies_ESR": {
-                "down": 27951000000.0,
-                "up": 27852500000.0
-            },
-            "frequency_ESR": 27951000000.0,
-            "readout_threshold_voltage": 0.3333333333333333,
             "samples": 100,
-            "t_read": 20,
+            "readout_threshold_voltage": 0.3333333333333333,
+            "t_skip": 0.07,
             "frequency_NMR": 66500000.0
+        },
+        "slack": {
+            "names": [
+                "serwan"
+            ],
+            "bot_name": "silq",
+            "token": "xoxb-120654724535-zLWd4VEP0JVJpCuWHz3xxEFR"
+        },
+        "matplotlib": {
+            "2D_settings": {
+                "cmap": "inferno"
+            }
         },
         "pulses": {
             "steered_initialization": {
-                "enabled": false,
-                "t_buffer": 30,
                 "t_no_blip": 120,
-                "t_max_wait": 400
+                "t_max_wait": 400,
+                "enabled": false,
+                "t_buffer": 30
+            },
+            "empty": {
+                "amplitude": -1.5,
+                "duration": 5
+            },
+            "plunge": {
+                "amplitude": 2,
+                "duration": 5
+            },
+            "adiabatic_NMR": {
+                "power": 0,
+                "frequency_deviation": 100000.0,
+                "duration": 0.5,
+                "t_start": 3
+            },
+            "read": {
+                "amplitude": 0,
+                "duration": 20
+            },
+            "read_long": {
+                "duration": 120
             },
             "final": {
-                "duration": 2,
-                "amplitude": 0
+                "amplitude": 0,
+                "duration": 2
             },
             "steered_initialization_long": {
                 "t_max_wait": 1000,
                 "t_no_blip": 200
             },
             "adiabatic_ESR": {
-                "duration": 0.15,
-                "t_start": 3,
                 "power": 0,
-                "frequency_deviation": 1000000.0
-            },
-            "adiabatic_NMR": {
-                "duration": 0.5,
-                "t_start": 3,
-                "power": 0,
-                "frequency_deviation": 100000.0
-            },
-            "read": {
-                "duration": 20,
-                "amplitude": 0
-            },
-            "read_long": {
-                "duration": 120
-            },
-            "empty": {
-                "duration": 5,
-                "amplitude": -1.5
-            },
-            "plunge": {
-                "duration": 5,
-                "amplitude": 2
+                "frequency_deviation": 500000.0,
+                "duration": 0.2,
+                "t_start": 3
             }
-        },
-        "data_folder": "E:\\EWJN\\data"
+        }
     }
 }
