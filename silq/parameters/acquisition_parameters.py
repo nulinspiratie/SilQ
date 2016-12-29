@@ -105,7 +105,11 @@ class AcquisitionParameter(SettingsClass, Parameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
     def setup(self, **kwargs):
-        self.layout.target_pulse_sequence(self.pulse_sequence)
+        # Create a hard copy of pulse sequence. This ensures that pulse
+        # attributes no longer depend on pulse_config, and can therefore be
+        # safely transferred to layout.
+        pulse_sequence = self.pulse_sequence.copy()
+        self.layout.target_pulse_sequence(pulse_sequence)
 
         samples = kwargs.pop('samples', self.samples)
         average_mode = kwargs.pop('average_mode', self.average_mode)
