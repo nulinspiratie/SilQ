@@ -84,9 +84,15 @@ class CalibrationPlot(MatPlot):
     measure_parameter = 'adiabatic_ESR'
     samples_measure =200
     samples_scan = 100
-    def __init__(self, dataset, figsize=(13, 4), interval=5, nticks=6,
+    def __init__(self, dataset, figsize=None, interval=5, nticks=6,
                  timeout=15, **kwargs):
-        super().__init__(subplots=(1, 3), figsize=figsize, interval=interval,
+
+        if 'voltage_difference' in dataset.arrays:
+            subplots = 3
+        else:
+            subplots = 2
+
+        super().__init__(subplots=subplots, figsize=figsize, interval=interval,
                          **kwargs)
         self.dataset = dataset
         self.timeout = timeout
@@ -161,12 +167,13 @@ class CalibrationPlot(MatPlot):
             action.button_press(event)
 
     def plot_data(self, nticks=6):
-        self.add(self.dataset.contrast, subplot=1, nticks=nticks)
-        self.add(self.dataset.dark_counts, subplot=2, nticks=nticks)
-        self.add(self.dataset.voltage_difference, subplot=3, nticks=nticks)
+        self.add(self.dataset.contrast, subplot=0, nticks=nticks)
+        self.add(self.dataset.dark_counts, subplot=1, nticks=nticks)
+        if 'voltage_difference' in self.dataset.arrays:
+            self.add(self.dataset.voltage_difference, subplot=2, nticks=nticks)
 
         # if hasattr(self.dataset, 'fidelity_empty'):
         #     self.plot.add(self.dataset.fidelity_load, subplot=3, nticks=nticks)
         #     self.plot.add(self.dataset.fidelity_empty, subplot=4, nticks=nticks)
 
-        self.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        self.tight_layout()

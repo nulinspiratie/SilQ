@@ -17,7 +17,7 @@ from multiprocessing import active_children
 import qcodes as qc
 from qcodes import Instrument, config
 from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
-
+from qcodes.widgets.slack import Slack
 
 # SilQ imports
 from silq.parameters import measurement_parameters, general_parameters, acquisition_parameters
