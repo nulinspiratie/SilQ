@@ -58,7 +58,7 @@ class ScaledParameter(Parameter):
 
     def set(self, val):
         value = val * self.ratio
-        self._save_val(value)
+        self._save_val(val)
         self.parameter(value)
 
 
