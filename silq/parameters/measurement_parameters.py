@@ -43,6 +43,29 @@ class MeasurementParameter(SettingsClass, Parameter):
     def acquisition_parameter_name(self):
         return self.acquisition_parameter.name
 
+    @property
+    def base_folder(self):
+        """
+        Obtain measurement base folder (if any).
+        Returns:
+            If in a measurement, the base folder is the relative path of the
+            data folder. Otherwise None
+        """
+        in_msmt = False
+
+        if config['core']['legacy_mp']:
+            # Multiprocessing is on, determining if in process 'Measurement'
+            import multiprocessing as mp
+            current_process = mp.process.current_process()
+            in_msmt = (current_process.name == 'Measurement')
+        else:
+            logging.warning('Cannot determine if in msmt if not in bg mode')
+
+        if in_msmt:
+            return data_tools.get_latest_data_folder()
+        else:
+            return None
+
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in zip(self.names, self.results):
@@ -51,37 +74,32 @@ class MeasurementParameter(SettingsClass, Parameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
 
-class SelectFrequencyParameter(SettingsClass, Parameter):
+class SelectFrequencyParameter(MeasurementParameter):
     def __init__(self, threshold=0.5,
                  discriminant=None,
                  frequencies=None, mode=None,
                  acquisition_parameter=None, update_frequency=True, **kwargs):
+        # Initialize SettingsClass first because its needed for
+        # self.spin_states, self.discriminant etc.
         SettingsClass.__init__(self)
         self.mode = mode
-
-        self.frequencies = frequencies
-        self.frequency = None
-
         self.discriminant = discriminant
 
-        self.mode = kwargs.get('mode', None)
         names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
-        if self.mode is not None:
-            names.append('frequency_{}'.format(self.mode))
-        else:
-            names.append('frequency')
+        names.append('frequency' + self.mode_str)
 
-        Parameter.__init__(self, name='select_frequency',
+        super().__init__(self, name='select_frequency',
                          label='Select frequency',
                          names=names,
                          **kwargs)
 
         self.acquisition_parameter = acquisition_parameter
-
         self.update_frequency = update_frequency
         self.threshold = threshold
+        self.frequencies = frequencies
 
+        self.frequency = None
         self.samples = None
 
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
@@ -98,26 +116,30 @@ class SelectFrequencyParameter(SettingsClass, Parameter):
 
     @clear_single_settings
     def get(self):
-        # Initialize frequency to the current frequency
+        # Initialize frequency to the current frequency (default in case none
+        #  of the measured frequencies satisfy conditions)
         frequency = self.acquisition_parameter.frequency
         self.acquisition_parameter.temporary_settings(samples=self.samples)
 
         frequencies = [self.frequencies[spin_state]
                        for spin_state in self.spin_states]
-        self.conditions = [(self.discriminant, '>', self.threshold)]
+        self.condition_sets = ConditionSet(
+            (self.discriminant, '>', self.threshold))
 
         # Create Measurement object and perform measurement
         self.measurement = Loop1DMeasurement(
             name=self.name, acquisition_parameter=self.acquisition_parameter,
             set_parameter=self.acquisition_parameter,
-            conditions=self.conditions)
+            base_folder=self.base_folder,
+            condition_sets=self.condition_sets)
         self.measurement(frequencies)
         self.measurement()
 
         self.results = getattr(self.measurement.dataset, self.discriminant)
 
         # Determine optimal frequency and update config entry if needed
-        if self.measurement.satisfies_conditions:
+        self.condition_result = self.measurement.check_condition_sets()
+        if self.condition_result['is_satsisfied']:
             frequency = self.measurement.optimal_set_vals[0]
             if self.update_frequency:
                 properties_config['frequency' + self.mode_str] = frequency
