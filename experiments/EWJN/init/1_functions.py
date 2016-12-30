@@ -84,11 +84,14 @@ def label(line, cell):
     code_labels[line] = cell
 
 
-def parameter_info(self, parameter_name, detailed=False):
+def parameter_info(self, *parameter_names, detailed=False):
     snapshot = self.snapshot()
-    param_info = snapshot['station']['parameters'][parameter_name]
-    if detailed:
-        return param_info
-    else:
-        return param_info['value']
+    param_info = {}
+    for parameter_name in parameter_names:
+        param_snapshot = snapshot['station']['parameters'][parameter_name]
+        if detailed:
+            param_info[parameter_name] = param_snapshot
+        else:
+            param_info[parameter_name] = param_snapshot['value']
+    return param_info
 DataSet.parameter_info = parameter_info
