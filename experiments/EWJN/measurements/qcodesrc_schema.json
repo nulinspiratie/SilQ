@@ -1,11 +1,46 @@
 {
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
+        "gui": {
+            "type": "object",
+            "properties": {
+                "plotlib": {
+                    "default": "matplotlib",
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ],
+                    "type": "string",
+                    "description": "Plotting library"
+                },
+                "notebook": {
+                    "default": true,
+                    "type": "boolean",
+                    "description": "Use notebook frontend"
+                }
+            },
+            "description": "controls gui of qcodes",
+            "required": [
+                "notebook",
+                "plotlib"
+            ]
+        },
+        "user": {
+            "type": "object",
+            "properties": {},
+            "description": "controls user settings of qcodes"
+        },
         "core": {
             "type": "object",
             "properties": {
+                "legacy_mp": {
+                    "default": false,
+                    "type": "boolean",
+                    "description": "control legacy buggy multiprocess"
+                },
                 "loglevel": {
-                    "type": "string",
+                    "default": "DEBUG",
                     "enum": [
                         "CRITICAL",
                         "ERROR",
@@ -13,56 +48,21 @@
                         "INFO",
                         "DEBUG"
                     ],
-                    "default": "DEBUG",
+                    "type": "string",
                     "description": "control logging  level"
-                },
-                "legacy_mp": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "control legacy buggy multiprocess"
                 }
             },
+            "description": "controls core settings of qcodes",
             "required": [
                 "legacy_mp",
                 "loglevel"
-            ],
-            "description": "controls core settings of qcodes"
-        },
-        "gui": {
-            "type": "object",
-            "properties": {
-                "plotlib": {
-                    "type": "string",
-                    "enum": [
-                        "QT",
-                        "matplotlib"
-                    ],
-                    "default": "matplotlib",
-                    "description": "Plotting library"
-                },
-                "notebook": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Use notebook frontend"
-                }
-            },
-            "required": [
-                "notebook",
-                "plotlib"
-            ],
-            "description": "controls gui of qcodes"
-        },
-        "user": {
-            "type": "object",
-            "properties": {},
-            "description": "controls user settings of qcodes"
+            ]
         }
     },
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "schema for a qcodes config file",
     "required": [
         "gui",
         "core",
         "user"
-    ],
-    "description": "schema for a qcodes config file"
+    ]
 }
