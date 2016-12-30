@@ -17,6 +17,8 @@ adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 #     mode='ESR', discriminant='contrast')
 dark_counts_parameter = acquisition_parameters.DarkCountsParameter()
 
+plunge_voltage_parameter = general_parameters.ConfigPulseAttribute(
+    pulse_name='plunge', attribute='amplitude')
 
 # Add all our instruments and parameters for logging
 station = qc.Station(
