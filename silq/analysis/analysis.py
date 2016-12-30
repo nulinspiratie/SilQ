@@ -130,7 +130,7 @@ def analyse_read(traces, start_idx=0, threshold_voltage=None,
         idx = np.ones(len(traces), dtype=bool)
 
     if not len(traces):
-        print('None of the load traces start with a loaded state')
+        # print('None of the load traces start with a loaded state')
         return {'up_proportion': 0, 'num_traces': 0,
                 'idx': idx}
 
