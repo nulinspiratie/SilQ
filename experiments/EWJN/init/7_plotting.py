@@ -39,10 +39,8 @@ class PlotAction:
     def button_press(self, event):
         if self.plot.copy:
             self.txt_to_clipboard(self.txt)
-        elif self.plot.execute:
-            cell_create_below_execute(self.txt)
         else:
-            cell_create_below_select(self.txt)
+            create_cell(self.txt, execute=self.plot.execute, location='below')
 
 
 class SetGates(PlotAction):

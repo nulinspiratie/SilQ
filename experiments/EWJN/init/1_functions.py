@@ -75,3 +75,20 @@ def ramp_to_voltages(target_voltages, SIM900=None, channels=None):
             voltage = (1 - ratio) * initial_voltages[channel.name] + \
                       ratio * target_voltages[channel.name]
             channel(voltage)
+
+
+@register_cell_magic
+def label(line, cell):
+    # Add cell magic %label {lbl}, that can be executed later on
+    global code_labels
+    code_labels[line] = cell
+
+
+def parameter_info(self, parameter_name, detailed=False):
+    snapshot = self.snapshot()
+    param_info = snapshot['station']['parameters'][parameter_name]
+    if detailed:
+        return param_info
+    else:
+        return param_info['value']
+DataSet.parameter_info = parameter_info

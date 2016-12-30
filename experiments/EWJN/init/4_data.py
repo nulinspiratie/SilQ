@@ -1,7 +1,4 @@
-from qcodes.data import hdf5_format
-from qcodes.data.data_set import DataSet, new_data, DataMode
-from qcodes.data.manager import DataManager, DataServer
-from qcodes.data.data_array import DataArray
+
 h5fmt = hdf5_format.HDF5Format()
 
 # Data handling
