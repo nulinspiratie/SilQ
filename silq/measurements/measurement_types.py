@@ -1,6 +1,8 @@
 import numpy as np
+import logging
 
 import qcodes as qc
+from qcodes import config
 from qcodes.data import hdf5_format, io
 
 from silq.tools import data_tools
@@ -95,16 +97,17 @@ class ConditionSet:
         Returns:
 
         """
-        # Determine dimensionality from discriminant array
-        dims = getattr(dataset, self.discriminant).ndarray.shape
+        # Determine dimensionality from attribute of first condition
+        attr = self.conditions[0].attribute
+        dims = getattr(dataset, attr).ndarray.shape
 
         # Start of with all set points satisfying conditions
         satisfied_arr = np.ones(dims)
 
         for condition in self.conditions:
-            satisfied_single_arr = condition.check_satisfied(dataset)
+            _, satisfied_single_arr = condition.check_satisfied(dataset)
             # Update satisfied elements with those satisfying current condition
-            satisfied_arr = np.logical_and(self.satisfied_arr,
+            satisfied_arr = np.logical_and(satisfied_arr,
                                            satisfied_single_arr)
 
         is_satisfied = np.any(satisfied_arr)
@@ -118,11 +121,13 @@ class ConditionSet:
 class Measurement(SettingsClass):
     def __init__(self, name=None, condition_sets=None,
                  acquisition_parameter=None,
+                 base_folder=None,
                  set_parameters=None, set_vals=None,
                  steps=None, points=None, discriminant=None):
         SettingsClass.__init__(self)
 
         self.name = name
+        self.base_folder = base_folder
         self.acquisition_parameter = acquisition_parameter
         self.discriminant = discriminant
         self.steps = steps
@@ -131,19 +136,17 @@ class Measurement(SettingsClass):
         self._set_vals = set_vals
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
-        self.satisfied_arr = None
+        self.conditions_result = None
 
-        self.loc_provider = qc.data.location.FormatLocation(
-            fmt='#{counter}_{name}_{time}')
 
     def __repr__(self):
         return '{} measurement'.format(self.name)
 
-    def __call__(self, *args):
-        if len(args) == 0:
+    def __call__(self, *args, **kwargs):
+        if len(args) == 0 and len(kwargs) == 0:
             return self.get()
         else:
-            self.set(*args)
+            self.set(*args, **kwargs)
 
     def _JSONEncoder(self):
         """
@@ -173,7 +176,15 @@ class Measurement(SettingsClass):
 
     @property
     def disk_io(self):
-        return io.DiskIO(data_tools.get_latest_data_folder())
+        return io.DiskIO(config['user']['data_folder'])
+
+    @property
+    def loc_provider(self):
+        if self.base_folder is None:
+            fmt = '{date}/#{counter}_{name}_{time}'
+        else:
+            fmt = self.base_folder + '/#{counter}_{name}_{time}'
+        return qc.data.location.FormatLocation(fmt=fmt)
 
     @property
     def set_vals(self):
@@ -185,16 +196,26 @@ class Measurement(SettingsClass):
                                    silent=True)
 
     def check_condition_sets(self, *condition_sets):
-        condition_sets = condition_sets + self.condition_sets
+        condition_sets = list(condition_sets) + self.condition_sets
+        if not condition_sets:
+            logging.warning('No condition sets provided')
+            return None
+
         for condition_set in condition_sets:
-            condition_result = condition_set.check_satisfied(self.dataset)
-            if condition_result['action'] is not None:
+            self.conditions_result = condition_set.check_satisfied(self.dataset)
+            if self.conditions_result['action'] is not None:
                 break
 
-        condition_result['measurement'] = self.name
-        return condition_result
+        self.conditions_result['measurement'] = self.name
+        return self.conditions_result
 
     def get_optimal_val(self, dataset, satisfied_arr=None):
+        if satisfied_arr is None:
+            if self.condition_sets is not None:
+                self.check_condition_sets()
+            if self.conditions_result is not None:
+                satisfied_arr = self.conditions_result['satisfied_arr']
+
         discriminant_vals = getattr(dataset, self.discriminant)
 
         # Convert arrays to 1D
@@ -207,8 +228,10 @@ class Measurement(SettingsClass):
 
             measurement_vals_1D = np.take(measurement_vals_1D, satisfied_idx)
 
+        # TODO more adaptive way of choosing best value
         max_idx = np.argmax(measurement_vals_1D)
         self.optimal_set_vals = self.set_vals_from_idx(max_idx)
+
         self.optimal_val = measurement_vals_1D[max_idx]
         return self.optimal_set_vals, self.optimal_val
 
@@ -249,10 +272,10 @@ class Loop0DMeasurement(Measurement):
 
 class Loop1DMeasurement(Measurement):
     def __init__(self, name=None, set_parameter=None, acquisition_parameter=None,
-                 set_vals=None, steps=None, points=None, **kwargs):
+                 set_vals=None, step=None, points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=set_vals,
-                         steps=steps, points=points, **kwargs)
+                         steps=step, points=points, **kwargs)
         self.set_parameter = set_parameter
 
     def set_vals_from_idx(self, idx):
@@ -275,7 +298,7 @@ class Loop1DMeasurement(Measurement):
         """
         # Set data saving parameters
         self.measurement = qc.Loop(
-            self.set_parameter[self.set_vals]).each(
+            self.set_vals[0]).each(
                 self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}_{}'.format(self.name, self.set_parameter.name,
@@ -285,8 +308,17 @@ class Loop1DMeasurement(Measurement):
 
         return self.dataset
 
-    def set(self, val):
-        self.set_vals = val
+    def set(self, set_vals=None, step=None, points=None):
+        if set_vals is not None:
+            self.steps = None
+            self.points = None
+            self._set_vals = [self.set_parameter[list(set_vals)]]
+        else:
+            self._set_vals = None
+            if step is not None:
+                self.steps = [step]
+            if points is not None:
+                self.points = points
 
 
 class Loop2DMeasurement(Measurement):
@@ -319,9 +351,9 @@ class Loop2DMeasurement(Measurement):
         """
         # Set data saving parameters
         self.measurement = qc.Loop(
-            self.set_parameters[0][self.set_vals[0]]).loop(
-            self.set_parameters[1][self.set_vals[1]]).each(
-            self.acquisition_parameter)
+            self.set_vals[0]).loop(
+                self.set_vals[1]).each(
+                    self.acquisition_parameter)
 
         self.dataset = self.measurement.run(
             name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
@@ -332,6 +364,15 @@ class Loop2DMeasurement(Measurement):
 
         return self.dataset
 
-    def set(self, val):
-        self.set_vals = val
-
+    def set(self, set_vals=None, steps=None, points=None):
+        if set_vals is not None:
+            self.steps = None
+            self.points = None
+            self._set_vals = [set_parameter[set_val] for set_parameter, set_val
+                              in zip(self.set_parameters, set_vals)]
+        else:
+            self._set_vals = None
+            if steps is not None:
+                self.steps = steps
+            if points is not None:
+                self.points = points
