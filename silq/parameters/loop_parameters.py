@@ -16,12 +16,11 @@ properties_config = config['user'].get('properties', {})
 
 
 class Loop_Parameter(Parameter):
-    def __init__(self, name, measure_parameter, **kwargs):
+    def __init__(self, name, measure_parameter, base_folder=None, **kwargs):
         super().__init__(name, **kwargs)
         self.measure_parameter = measure_parameter
+        self.base_folder = base_folder
 
-        self.loc_provider = qc.data.location.FormatLocation(
-            fmt='#{counter}_{name}_{time}')
         self._meta_attrs.extend(['measure_parameter_name'])
 
     @property
@@ -30,15 +29,22 @@ class Loop_Parameter(Parameter):
 
     @property
     def disk_io(self):
-        return io.DiskIO(data_tools.get_latest_data_folder())
+        return io.DiskIO(config['user']['data_folder'])
 
+    @property
+    def loc_provider(self):
+        if self.base_folder is None:
+            fmt = '{date}/#{counter}_{name}_{time}'
+        else:
+            fmt = self.base_folder + '/#{counter}_{name}_{time}'
+        print('fmt={}'.format(fmt))
+        return qc.data.location.FormatLocation(fmt=fmt)
 
 class Loop0D_Parameter(Loop_Parameter):
     def __init__(self, name, measure_parameter, **kwargs):
         super().__init__(name, measure_parameter=measure_parameter, **kwargs)
 
     def get(self):
-
         self.measurement = qc.Measure(self.measure_parameter)
         self.data = self.measurement.run(
             name='{}_{}'.format(self.name, self.measure_parameter_name),
