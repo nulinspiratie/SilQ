@@ -2,11 +2,13 @@ import sys
 import operator
 from functools import partial
 from multiprocessing import active_children
+import re
 
 from qcodes import config
 from qcodes.config.config import DotDict
 from qcodes.instrument.parameter import Parameter
 
+code_labels = {}
 properties_config = config['user'].get('properties', {})
 
 def execfile(filename, globals=None, locals=None):
@@ -222,3 +224,28 @@ def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
 
     return_dict['class'] = obj.__class__.__name__
     return return_dict
+
+
+def run_code(label, **kwargs):
+    """
+    Creates cell to run code from global variable code_labels
+    Code labels is a dictionary in which each key has a corresponding value
+    that is a string representation of executable code.
+    Note that the module variable code_labels must be set to equal the global
+    variable code_labels.
+    Args:
+        label: label referring to code in dict code_labels
+        **kwargs: Optional kwargs that are replaced in code
+            i.e. for a given kwarg {var}=5, a line matching:
+            "{var} = {val}" will be replaced to {var} = 5" (Note whitespaces)
+
+    Returns:
+        Creates cell at bottom of notebook and executes it
+    """
+    from silq.tools.notebook_tools import create_cell
+    code = code_labels[label]
+    for var, val in kwargs.items():
+        pattern = r'{} = .+'.format(var)
+        repl = r'{} = {}'.format(var, val)
+        code = re.sub(pattern, repl, code, count=1)
+    create_cell(code, 'bottom', execute=True)
