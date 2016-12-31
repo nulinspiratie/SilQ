@@ -159,6 +159,35 @@ class SelectFrequencyParameter(MeasurementParameter):
         return self.results
 
 
+class TrackPeakParameter(MeasurementParameter):
+    def __init__(self, set_parameter=None, acquisition_parameter=None,
+                 step_percentage=None, window=None, points=None,
+                 **kwargs):
+
+        names = ['optimal_set_vals', self.discriminant]
+        super().__init__(**kwargs)
+
+        self.set_parameter = set_parameter
+        self.acquisition_parameter = acquisition_parameter
+        self.step_percentage = step_percentage
+        self.window = window
+        self.points = points
+
+    @property
+    def set_vals(self):
+        current_val = self.set_parameter()
+        if self.step_percentage is not None:
+            set_vals = np.linspace
+
+    @property
+    def shapes(self):
+        pass
+
+    @clear_single_settings
+    def get(self):
+        pass
+
+
 class CalibrationParameter(SettingsClass, Parameter):
     def __init__(self, name, measurement_sequence, set_parameters=None,
                  acquisition_parameter=None, **kwargs):
