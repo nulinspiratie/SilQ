@@ -5,7 +5,7 @@ properties_config = qc.config['user'].get('properties', {})
 
 
 def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
-                    points=9, set_parameters=None, silent=False):
+                    points=9, window=None, set_parameters=None, silent=True):
     def calculate_step(min_step, max_step, percentage, round_vals=True):
         val = min_step * (max_step / min_step) ** (percentage / 100)
         if round_vals:
@@ -36,10 +36,16 @@ def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
             pts = points[k]
         else:
             pts = points
-        step = determine_step(set_parameter, k)
+
         center_val = set_parameter()
-        min_val = center_val - step * (pts - 1) / 2
-        max_val = center_val + step * (pts - 1) / 2
+        if steps is not None or step_percentages is not None:
+            pass
+            step = determine_step(set_parameter, k)
+            min_val = center_val - step * (pts - 1) / 2
+            max_val = center_val + step * (pts - 1) / 2
+        else:
+            min_val = center_val - window / 2
+            max_val = center_val + window / 2
         vals = list(np.linspace(min_val, max_val, pts))
 
         if not silent:
@@ -50,6 +56,7 @@ def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
         return vals
 
     if set_parameters is None:
+        # Get default parameters from station
         station = qc.station.Station.default
         set_parameters_names = \
             properties_config['set_parameters'][str(num_parameters)]
