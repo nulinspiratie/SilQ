@@ -57,7 +57,7 @@ setup(name='silq',
           'ipywidgets>=4.1',
           'h5py>=2.6',
           'pyperclip>=1.5',
-          'pythonnet>=2.1'
+          'pythonnet>=2.1', 'qcodes'
       ],
       extras_require=extras_require,
       zip_safe=False)

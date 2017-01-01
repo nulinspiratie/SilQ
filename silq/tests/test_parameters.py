@@ -1,3 +1,5 @@
+import numpy as np
+
 import qcodes as qc
 from qcodes.instrument.parameter import Parameter
 from qcodes import config
@@ -109,3 +111,17 @@ class TestStoreParameter(Parameter):
         print('time taken: {:.2f}'.format(time() - t0))
         return result
 
+
+class GaussianParameter(Parameter):
+    def __init__(self, name, x0=0, std=1, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.x0 = x0
+        self.std = std
+        self.x = 0
+
+    def get(self):
+        return np.exp(-(self.x - self.x0)**2 / self.std)
+
+    def set(self, val):
+        self.x = val
