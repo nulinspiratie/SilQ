@@ -30,8 +30,6 @@ class MeasurementParameter(SettingsClass, Parameter):
 
         self.acquisition_parameter = acquisition_parameter
 
-        self.measurement = None
-
         self.loc_provider = qc.data.location.FormatLocation(
             fmt='#{counter}_{name}_{time}')
         self._meta_attrs.extend(['acquisition_parameter_name'])
@@ -100,6 +98,7 @@ class SelectFrequencyParameter(MeasurementParameter):
 
         self.frequency = None
         self.samples = None
+        self.measurement = None
 
         self._meta_attrs.extend(['frequencies', 'frequency', 'update_frequency',
                                  'spin_states', 'threshold', 'discriminant'])
@@ -159,21 +158,24 @@ class SelectFrequencyParameter(MeasurementParameter):
 
 
 class TrackPeakParameter(MeasurementParameter):
-    def __init__(self, set_parameter=None, acquisition_parameter=None,
+    def __init__(self, name, set_parameter=None, acquisition_parameter=None,
                  step_percentage=None, peak_width=None, points=None,
                  discriminant=None, threshold=None, **kwargs):
-
+        SettingsClass.__init__(self)
+        self.set_parameter = set_parameter
+        self._discriminant = discriminant
         names = ['optimal_set_vals', self.set_parameter.name + '_set',
                  self.discriminant]
-        super().__init__(names=names, **kwargs)
+        super().__init__(name=name, names=names, **kwargs)
 
-        self.set_parameter = set_parameter
         self.acquisition_parameter = acquisition_parameter
         self.step_percentage = step_percentage
         self.peak_width = peak_width
         self.points = points
-        self.discrimiant = discriminant
         self.threshold = threshold
+
+        self.condition_sets = None
+        self.measurement = None
 
     @property
     def set_vals(self):
@@ -191,16 +193,28 @@ class TrackPeakParameter(MeasurementParameter):
 
     @property
     def shapes(self):
-        return [(), len(self.set_vals)]
+        return [(), (len(self.set_vals[0]), ), (len(self.set_vals[0]),)]
+
+    @property
+    def discriminant(self):
+        if self._discriminant is not None:
+            return self._discriminant
+        else:
+            return self.acquisition_parameter.name
+
+    @discriminant.setter
+    def discriminant(self, val):
+        self._discriminant = val
 
     @clear_single_settings
     def get(self):
         initial_value = self.set_parameter()
 
+        # Create measurement object
         if self.threshold is not None:
             # Set condition set
             self.condition_sets = ConditionSet(
-                (self.discrimiant, '>', self.threshold))
+                (self.discriminant, '>', self.threshold))
         self.measurement = Loop1DMeasurement(
             name=self.name, acquisition_parameter=self.acquisition_parameter,
             set_parameter=self.set_parameter,
@@ -208,13 +222,14 @@ class TrackPeakParameter(MeasurementParameter):
             condition_sets=self.condition_sets,
             discriminant=self.discriminant)
 
+        # Set values and perform measurement
         self.measurement(self.set_vals[0])
         # Obtain set vals as a list instead of a parameter iterable
         set_vals = self.set_vals[0][:]
-
         self.measurement()
-        trace = getattr(self.measurement, self.discrimiant)
+        trace = getattr(self.measurement.dataset, self.discriminant)
 
+        # Analyse results, update set_parameter
         optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
         self.optimal_set_val = optimal_set_vals[self.set_parameter.name]
         if np.isnan(self.optimal_val):
@@ -226,8 +241,10 @@ class TrackPeakParameter(MeasurementParameter):
 
         return [self.optimal_set_val, set_vals, trace]
 
+
 class CalibrationParameter(SettingsClass, Parameter):
-    def __init__(self, name, measurement_sequence, set_parameters=None,
+    def __init__(self, name, measurement_sequence=None,
+                 set_parameters=None,
                  acquisition_parameter=None, **kwargs):
         """
 
