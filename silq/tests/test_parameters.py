@@ -113,15 +113,13 @@ class TestStoreParameter(Parameter):
 
 
 class GaussianParameter(Parameter):
-    def __init__(self, name, x0=0, std=1, **kwargs):
+    def __init__(self, name, set_parameter, x0=0, std=1, **kwargs):
         super().__init__(name, **kwargs)
 
         self.x0 = x0
         self.std = std
-        self.x = 0
+        self.set_parameter = set_parameter
 
     def get(self):
-        return np.exp(-(self.x - self.x0)**2 / self.std)
-
-    def set(self, val):
-        self.x = val
+        set_val = self.set_parameter()
+        return np.exp(-(set_val - self.x0)**2 / self.std)
