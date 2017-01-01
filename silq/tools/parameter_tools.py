@@ -1,8 +1,7 @@
 import qcodes as qc
 import numpy as np
 
-properties_config = qc.config['user'].get('properties', {})
-
+parameter_config = qc.config['user']['properties'].get('parameters', {})
 
 def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
                     points=9, window=None, set_parameters=None, silent=True):
@@ -27,7 +26,7 @@ def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
             else:
                 step_percentage = step_percentages
             min_step, max_step = \
-            properties_config['set_parameters'][set_parameter.name]['steps']
+            parameter_config[set_parameter.name]['steps']
             step = calculate_step(min_step, max_step, step_percentage)
         return step
 
@@ -58,8 +57,7 @@ def create_set_vals(num_parameters=None, steps=None, step_percentages=None,
     if set_parameters is None:
         # Get default parameters from station
         station = qc.station.Station.default
-        set_parameters_names = \
-            properties_config['set_parameters'][str(num_parameters)]
+        set_parameters_names = parameter_config[str(num_parameters)]
         set_parameters = [getattr(station, name) for name in
                           set_parameters_names]
     else:

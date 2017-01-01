@@ -3,15 +3,17 @@ import logging
 
 import qcodes as qc
 from qcodes import config
-from qcodes.data import hdf5_format, io
+from qcodes.data import io
 
-from silq.tools import data_tools
 from silq.tools.parameter_tools import create_set_vals
 from silq.tools.general_tools import SettingsClass, get_truth, \
     clear_single_settings, JSONEncoder
 
 
 class Condition:
+    def __init__(self, **kwargs):
+        pass
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -29,6 +31,7 @@ class Condition:
                 continue
             setattr(obj, attr, val)
         return obj
+
 
 class TruthCondition(Condition):
     def __init__(self, attribute=None, relation=None, target_val=None,
@@ -55,6 +58,7 @@ class ConditionSet:
         for condition in conditions:
             self.add_condition(condition)
 
+    # noinspection PyPep8Naming
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -69,13 +73,15 @@ class ConditionSet:
         obj = cls()
         for attr, val in load_dict.items():
             if attr == '__class__':
+                # Ignore attr since it is used to determine class
                 continue
             elif attr == 'conditions':
                 obj.conditions = []
                 for condition in val:
                     # Load condition class from globals
-                    cls = globals()[condition['__class__']]
-                    obj.conditions.append(cls.load_from_dict(condition))
+                    condition_cls = globals()[condition['__class__']]
+                    obj.conditions.append(
+                        condition_cls.load_from_dict(condition))
             else:
                 setattr(obj, attr, val)
         return obj
@@ -92,10 +98,15 @@ class ConditionSet:
         """
         Checks if a dataset satisfies a set of conditions
         Args:
-            dataset:
+            dataset: Dataset to check against conditions
 
         Returns:
-
+            Dict containing
+            is_satisfied (bool): If the conditions are satisfied
+            action (string): Action to perform
+            satisfied_arr (bool arr): array where each element corresponds to a
+                combination of set vals, and whose value specifies if those
+                set_vals satisfies conditions
         """
         # Determine dimensionality from attribute of first condition
         attr = self.conditions[0].attribute
@@ -136,8 +147,8 @@ class Measurement(SettingsClass):
         self._set_vals = set_vals
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
-        self.conditions_result = None
-
+        self.condition_set_result = None
+        self.measurement = None
 
     def __repr__(self):
         return '{} measurement'.format(self.name)
@@ -168,8 +179,9 @@ class Measurement(SettingsClass):
                 obj.condition_sets = []
                 for condition_set in val:
                     # Load condition class from globals
-                    cls = globals()[condition_set['__class__']]
-                    obj.conditions.append(cls.load_from_dict(condition_set))
+                    condition_cls = globals()[condition_set['__class__']]
+                    obj.conditions.append(
+                        condition_cls.load_from_dict(condition_set))
             else:
                 setattr(obj, attr, val)
         return obj
@@ -195,6 +207,10 @@ class Measurement(SettingsClass):
                                    steps=self.steps, points=self.points,
                                    silent=True)
 
+    @set_vals.setter
+    def set_vals(self, set_vals):
+        self._set_vals = set_vals
+
     def check_condition_sets(self, *condition_sets):
         condition_sets = list(condition_sets) + self.condition_sets
         if not condition_sets:
@@ -202,37 +218,67 @@ class Measurement(SettingsClass):
             return None
 
         for condition_set in condition_sets:
-            self.conditions_result = condition_set.check_satisfied(self.dataset)
-            if self.conditions_result['action'] is not None:
+            self.condition_set_result = condition_set.check_satisfied(self.dataset)
+            if self.condition_set_result['action'] is not None:
                 break
 
-        self.conditions_result['measurement'] = self.name
-        return self.conditions_result
+        self.condition_set_result['measurement'] = self.name
+        return self.condition_set_result
 
-    def get_optimal_val(self, dataset, satisfied_arr=None):
-        if satisfied_arr is None:
+    def get_optimum(self, dataset=None, condition_set_result=None):
+        """
+        Get the optimal value from the possible set vals.
+        If satisfied_arr is not provided, it will first filter the set vals
+        such that only those that satisfied self.condition_sets are satisfied.
+
+        Args:
+            dataset (Optional): Dataset to test. Default is self.dataset
+            condition_set_result (Dict, Optional): result of checking dataset
+            against condition set(s). See ConditionSet.check_satisfied for
+            more info
+
+        Returns:
+            self.optimal_set_vals (dict): Optimal set val for each set parameter
+                The key is the name of the set parameter. Returns None if no
+                set vals satisfy condition_set.
+            self.optimal_val (val): Discriminant value at optimal set vals.
+                Returns None if no set vals satisfy condition_set
+        """
+        if dataset is None:
+            dataset = self.dataset
+
+        if condition_set_result is None:
+            # Condition sets have not been provided.
+            # If there are condition_sets, obtain satisfied_arr from them.
+            # Otherwise, satisfied_arr remains None
             if self.condition_sets is not None:
+                # need to test condition sets.
                 self.check_condition_sets()
-            if self.conditions_result is not None:
-                satisfied_arr = self.conditions_result['satisfied_arr']
+                condition_set_result = self.condition_set_result
+
 
         discriminant_vals = getattr(dataset, self.discriminant)
 
         # Convert arrays to 1D
         measurement_vals_1D = np.ravel(discriminant_vals)
 
-        if satisfied_arr is not None:
+        if condition_set_result is not None:
+            if not condition_set_result['is_satisfied']:
+                # No values satisfy condition sets
+                return self.set_vals_from_idx(-1), np.nan
+
             # Filter 1D arrays by those satisfying conditions
-            satisfied_arr_1D = np.ravel(satisfied_arr)
-            satisfied_idx = np.nonzero(satisfied_arr_1D)[0]
-
+            satisfied_arr_1D = np.ravel(condition_set_result['satisfied_arr'])
+            satisfied_idx, = np.nonzero(satisfied_arr_1D)
             measurement_vals_1D = np.take(measurement_vals_1D, satisfied_idx)
+            max_idx = satisfied_idx[np.argmax(measurement_vals_1D)]
+        else:
+            max_idx = np.argmax(measurement_vals_1D)
 
-        # TODO more adaptive way of choosing best value
-        max_idx = np.argmax(measurement_vals_1D)
+        # TODO more adaptive way of choosing best value, not always max val
+        self.optimal_val = np.max(measurement_vals_1D)
         self.optimal_set_vals = self.set_vals_from_idx(max_idx)
 
-        self.optimal_val = measurement_vals_1D[max_idx]
         return self.optimal_set_vals, self.optimal_val
 
 
@@ -271,8 +317,9 @@ class Loop0DMeasurement(Measurement):
 
 
 class Loop1DMeasurement(Measurement):
-    def __init__(self, name=None, set_parameter=None, acquisition_parameter=None,
-                 set_vals=None, step=None, points=None, **kwargs):
+    def __init__(self, name=None, set_parameter=None,
+                 acquisition_parameter=None, set_vals=None, step=None,
+                 points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=set_vals,
                          steps=step, points=points, **kwargs)
@@ -282,12 +329,15 @@ class Loop1DMeasurement(Measurement):
         """
         Return set vals that correspond to the acquisition idx.
         Args:
-            idx: Acquisition idx
+            idx: Acquisition idx. If equal to -1, returns nan for each element
 
         Returns:
             Dict of set vals (in this case contains one element)
         """
-        return {self.set_parameter.name: self.set_vals[idx]}
+        if idx == -1:
+            return {self.set_parameter.name: np.nan}
+        else:
+            return {self.set_parameter.name: self.set_vals[0][idx]}
 
     @clear_single_settings
     def get(self):
@@ -319,11 +369,13 @@ class Loop1DMeasurement(Measurement):
                 self.steps = [step]
             if points is not None:
                 self.points = points
+            self._set_vals = self.set_vals
 
 
 class Loop2DMeasurement(Measurement):
-    def __init__(self, name=None, set_parameters=None, acquisition_parameter=None,
-                 set_vals=None, steps=None, points=None, **kwargs):
+    def __init__(self, name=None, set_parameters=None,
+                 acquisition_parameter=None, set_vals=None, steps=None,
+                 points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=set_parameters, set_vals=set_vals,
                          steps=steps, points=points, **kwargs)
@@ -337,10 +389,13 @@ class Loop2DMeasurement(Measurement):
         Returns:
             Dict of set vals (in this case contains two elements)
         """
-        len_inner = len(self.set_vals[1])
-        idxs = (idx // len_inner, idx % len_inner)
-        return {self.set_parameters[0].name: self.set_vals[0][idxs[0]],
-                self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
+        if idx == -1:
+            return {p.name: np.nan for p in self.set_parameters[0]}
+        else:
+            len_inner = len(self.set_vals[1])
+            idxs = (idx // len_inner, idx % len_inner)
+            return {self.set_parameters[0].name: self.set_vals[0][idxs[0]],
+                    self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
 
     @clear_single_settings
     def get(self):

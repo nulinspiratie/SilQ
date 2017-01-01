@@ -9,19 +9,19 @@ from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings
+from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
 from silq.measurements.measurement_modules import MeasurementSequence
 
 properties_config = config['user'].get('properties', {})
+parameter_config = qc.config['user']['properties'].get('parameters', {})
 
 
 class MeasurementParameter(SettingsClass, Parameter):
     def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
         SettingsClass.__init__(self)
         Parameter.__init__(self, name, snapshot_value=False, **kwargs)
-
-        self.measurement_sequence = MeasurementSequence()
 
         self.mode = mode
         if self.mode is not None:
@@ -75,8 +75,7 @@ class MeasurementParameter(SettingsClass, Parameter):
 
 
 class SelectFrequencyParameter(MeasurementParameter):
-    def __init__(self, threshold=0.5,
-                 discriminant=None,
+    def __init__(self, threshold=0.5, discriminant=None,
                  frequencies=None, mode=None,
                  acquisition_parameter=None, update_frequency=True, **kwargs):
         # Initialize SettingsClass first because its needed for
@@ -161,32 +160,64 @@ class SelectFrequencyParameter(MeasurementParameter):
 
 class TrackPeakParameter(MeasurementParameter):
     def __init__(self, set_parameter=None, acquisition_parameter=None,
-                 step_percentage=None, window=None, points=None,
-                 **kwargs):
+                 step_percentage=None, peak_width=None, points=None,
+                 discriminant=None, threshold=None, **kwargs):
 
-        names = ['optimal_set_vals', self.discriminant]
-        super().__init__(**kwargs)
+        names = ['optimal_set_vals', self.set_parameter.name + '_set',
+                 self.discriminant]
+        super().__init__(names=names, **kwargs)
 
         self.set_parameter = set_parameter
         self.acquisition_parameter = acquisition_parameter
         self.step_percentage = step_percentage
-        self.window = window
+        self.peak_width = peak_width
         self.points = points
+        self.discrimiant = discriminant
+        self.threshold = threshold
 
     @property
     def set_vals(self):
-        current_val = self.set_parameter()
-        if self.step_percentage is not None:
-            set_vals = np.linspace
+        if self.peak_width is None and \
+                (self.points is None or self.step_percentage is None):
+            # Retrieve peak_width from parameter config only if above
+            # conditions are satisfied
+            self.peak_width = parameter_config[self.set_parameter]['peak_width']
+
+        return create_set_vals(num_parameters=1,
+                               step_percentages=self.step_percentage,
+                               points=self.points,
+                               window=self.peak_width,
+                               set_parameters=[self.set_parameter])
 
     @property
     def shapes(self):
-        pass
+        return [(), len(self.set_vals)]
 
     @clear_single_settings
     def get(self):
-        pass
+        if self.threshold is not None:
+            # Set condition set
+            self.condition_sets = ConditionSet(
+                (self.discrimiant, '>', self.threshold))
+        self.measurement = Loop1DMeasurement(
+            name=self.name, acquisition_parameter=self.acquisition_parameter,
+            set_parameter=self.set_parameter,
+            base_folder=self.base_folder,
+            condition_sets=self.condition_sets,
+            discriminant=self.discriminant)
 
+        self.measurement(self.set_vals[0])
+        # Obtain set vals as a list instead of a parameter iterable
+        set_vals = self.set_vals[0][:]
+
+        self.measurement()
+
+        self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
+        if self.optimal_set_vals is not None:
+            self.optimal_val
+        else:
+            pass
+        self.results = getattr(self.measurement.dataset, self.discriminant)
 
 class CalibrationParameter(SettingsClass, Parameter):
     def __init__(self, name, measurement_sequence, set_parameters=None,
