@@ -195,6 +195,8 @@ class TrackPeakParameter(MeasurementParameter):
 
     @clear_single_settings
     def get(self):
+        initial_value = self.set_parameter()
+
         if self.threshold is not None:
             # Set condition set
             self.condition_sets = ConditionSet(
@@ -211,13 +213,18 @@ class TrackPeakParameter(MeasurementParameter):
         set_vals = self.set_vals[0][:]
 
         self.measurement()
+        trace = getattr(self.measurement, self.discrimiant)
 
-        self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
-        if self.optimal_set_vals is not None:
-            self.optimal_val
+        optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
+        self.optimal_set_val = optimal_set_vals[self.set_parameter.name]
+        if np.isnan(self.optimal_val):
+            # Reset set_parameter to original value
+            self.set_parameter(initial_value)
         else:
-            pass
-        self.results = getattr(self.measurement.dataset, self.discriminant)
+            # Set set_parameter to optimal value
+            self.set_parameter(self.optimal_set_val)
+
+        return [self.optimal_set_val, set_vals, trace]
 
 class CalibrationParameter(SettingsClass, Parameter):
     def __init__(self, name, measurement_sequence, set_parameters=None,

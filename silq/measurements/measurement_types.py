@@ -297,7 +297,6 @@ class Loop0DMeasurement(Measurement):
         Returns:
             Dict of set vals
         """
-        assert idx == 0, "Optimal idx must be zero"
         return {}
 
     @clear_single_settings
