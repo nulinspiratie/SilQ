@@ -40,13 +40,21 @@ class MeasurementSequence:
         return result
 
     def __call__(self):
+        # Perform measurements iteratively, collecting their results
         self.results = [result for result in self]
+        # Choose last measurement result
         result = self.results[-1]
         if result['action'] is None:
             # TODO better way to discern success from fail
             result['action'] = 'success' if result['is_satisfied'] else 'fail'
         elif result['action'][:4] == 'next':
+            # Action is of form 'next_{cmd}, meaning that if there is a next
+            # measurement, it would have performed that measurement.
+            # However, since this is the last measurement, action should be cmd.
             result['action'] = result['action'][5:]
+
+        # Optimal vals
+        self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
 
         #TODO correct return
         return result
