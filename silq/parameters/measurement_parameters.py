@@ -16,18 +16,23 @@ from silq.measurements.measurement_modules import MeasurementSequence
 
 properties_config = config['user'].get('properties', {})
 parameter_config = qc.config['user']['properties'].get('parameters', {})
+measurement_config = qc.config['user'].get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, Parameter):
-    def __init__(self, name, acquisition_parameter=None, mode=None, **kwargs):
+    def __init__(self, name, acquisition_parameter=None, mode=None,
+                 discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
         Parameter.__init__(self, name, snapshot_value=False, **kwargs)
+
+        self.discriminant = discriminant
 
         self.mode = mode
         if self.mode is not None:
             # Add mode to parameter name and label
             self.name += self.mode_str
 
+        self.silent = silent
         self.acquisition_parameter = acquisition_parameter
 
         self.loc_provider = qc.data.location.FormatLocation(
@@ -64,6 +69,25 @@ class MeasurementParameter(SettingsClass, Parameter):
         else:
             return None
 
+    @property
+    def discriminant(self):
+        if self._discriminant is not None:
+            return self._discriminant
+        else:
+            return self.acquisition_parameter.name
+
+    @discriminant.setter
+    def discriminant(self, val):
+        self._discriminant = val
+
+
+    @property
+    def discriminant_idx(self):
+        if self.acquisition_parameter.name is not None:
+            return self.acquisition_parameter.names.index(self.discriminant)
+        else:
+            return None
+
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in zip(self.names, self.results):
@@ -80,7 +104,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         # self.spin_states, self.discriminant etc.
         SettingsClass.__init__(self)
         self.mode = mode
-        self.discriminant = discriminant
+        self._discriminant = discriminant
 
         names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
@@ -89,6 +113,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         super().__init__(self, name='select_frequency',
                          label='Select frequency',
                          names=names,
+                         discriminant=self.discriminant,
                          **kwargs)
 
         self.acquisition_parameter = acquisition_parameter
@@ -107,10 +132,6 @@ class SelectFrequencyParameter(MeasurementParameter):
     def spin_states(self):
         spin_states_unsorted = self.frequencies.keys()
         return sorted(spin_states_unsorted)
-
-    @property
-    def discriminant_idx(self):
-        return self.acquisition_parameter.names.index(self.discriminant)
 
     @clear_single_settings
     def get(self):
@@ -166,7 +187,8 @@ class TrackPeakParameter(MeasurementParameter):
         self._discriminant = discriminant
         names = ['optimal_set_vals', self.set_parameter.name + '_set',
                  self.discriminant]
-        super().__init__(name=name, names=names, **kwargs)
+        super().__init__(name=name, names=names, discriminant=self.discriminant,
+                         **kwargs)
 
         self.acquisition_parameter = acquisition_parameter
         self.step_percentage = step_percentage
@@ -195,57 +217,40 @@ class TrackPeakParameter(MeasurementParameter):
     def shapes(self):
         return [(), (len(self.set_vals[0]), ), (len(self.set_vals[0]),)]
 
-    @property
-    def discriminant(self):
-        if self._discriminant is not None:
-            return self._discriminant
-        else:
-            return self.acquisition_parameter.name
-
-    @discriminant.setter
-    def discriminant(self, val):
-        self._discriminant = val
-
     @clear_single_settings
     def get(self):
-        initial_value = self.set_parameter()
-
         # Create measurement object
         if self.threshold is not None:
             # Set condition set
-            self.condition_sets = ConditionSet(
-                (self.discriminant, '>', self.threshold))
+            self.condition_sets = \
+                [ConditionSet((self.discriminant, '>', self.threshold))]
+
         self.measurement = Loop1DMeasurement(
             name=self.name, acquisition_parameter=self.acquisition_parameter,
             set_parameter=self.set_parameter,
             base_folder=self.base_folder,
             condition_sets=self.condition_sets,
-            discriminant=self.discriminant)
+            discriminant=self.discriminant,
+            silent=self.silent, update=True)
 
-        # Set values and perform measurement
+        # Set loop values
         self.measurement(self.set_vals[0])
         # Obtain set vals as a list instead of a parameter iterable
         set_vals = self.set_vals[0][:]
         self.measurement()
+
         trace = getattr(self.measurement.dataset, self.discriminant)
 
-        # Analyse results, update set_parameter
-        optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
-        self.optimal_set_val = optimal_set_vals[self.set_parameter.name]
-        if np.isnan(self.optimal_val):
-            # Reset set_parameter to original value
-            self.set_parameter(initial_value)
-        else:
-            # Set set_parameter to optimal value
-            self.set_parameter(self.optimal_set_val)
-
-        return [self.optimal_set_val, set_vals, trace]
+        optimal_set_val = self.measurement.optimal_set_vals[
+            self.set_parameter.name]
+        self.result = [optimal_set_val, set_vals, trace]
+        return self.result
 
 
-class CalibrationParameter(SettingsClass, Parameter):
+class MeasurementSequenceParameter(SettingsClass, Parameter):
     def __init__(self, name, measurement_sequence=None,
-                 set_parameters=None,
-                 acquisition_parameter=None, **kwargs):
+                 set_parameters=None, acquisition_parameter=None,
+                 discriminant=None, **kwargs):
         """
 
         Args:
@@ -262,11 +267,17 @@ class CalibrationParameter(SettingsClass, Parameter):
         """
         SettingsClass.__init__(self)
 
-        self.measurement_sequence = measurement_sequence
+        self.discriminant = discriminant
 
-        names = ['success_dx', 'optimal_set_vals', self.discriminant]
+        names = [name + '_msmts', 'optimal_set_vals', self.discriminant]
         super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         names=names, **kwargs)
+                         names=names, discriminant=self.discriminant, **kwargs)
+
+        if isinstance(measurement_sequence, str):
+            # Load sequence from dict
+            load_dict = measurement_config[measurement_sequence]
+            measurement_sequence = MeasurementSequence.load_from_dict(load_dict)
+        self.measurement_sequence = measurement_sequence
 
         # Get a dict of set_parameters, either from kwarg set_parameters,
         # or if this is equal to None, it is retrieved from config
@@ -282,13 +293,16 @@ class CalibrationParameter(SettingsClass, Parameter):
 
     @clear_single_settings
     def get(self):
-        self.measurement_sequence()
+        result = self.measurement_sequence()
+        num_measurements = self.measurement_sequence.num_measurements
 
-        optimal_set_vals = self.measurement_sequence.optimal_set_vals
-        optimal_set_vals = [optimal_set_vals.get(parameter.name, parameter())
-                            for parameter in self.set_parameters]
+        if result['action'] == 'success':
+            # Retrieve dict of {param.name: val} of optimal set vals
+            optimal_set_vals = self.measurement_sequence.optimal_set_vals
+            # Convert dict to list of set vals
+            optimal_set_vals = [optimal_set_vals.get(p.name, p())
+                                for p in self.set_parameters]
 
-        success_idx = self.measurement_sequence.success_idx
         optimal_val = self.measurement_sequence.optimal_val
 
-        return success_idx, optimal_set_vals, optimal_val
+        return num_measurements, optimal_set_vals, optimal_val

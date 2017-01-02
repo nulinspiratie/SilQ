@@ -122,4 +122,17 @@ class GaussianParameter(Parameter):
 
     def get(self):
         set_val = self.set_parameter()
-        return np.exp(-(set_val - self.x0)**2 / self.std)
+        return np.exp(-(set_val - self.x0)**2 / self.std**2)
+
+class Gaussian2DParameter(Parameter):
+    def __init__(self, name, set_parameters, x0=(0, 0), std=1, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.x0 = x0
+        self.std = std
+        self.set_parameters = set_parameters
+
+    def get(self):
+        set_vals = [p() for p in self.set_parameters]
+        r = sum([(set_val - x0)**2 for set_val, x0 in zip(set_vals, self.x0)])
+        return np.exp(-r**2 / self.std**2)
