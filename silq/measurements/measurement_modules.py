@@ -6,10 +6,21 @@ measurement_config = config['user'].get('measurement', {})
 
 
 class MeasurementSequence:
-    def __init__(self, name=None, measurements=None, condition_sets=None):
+    def __init__(self, name=None, measurements=None, condition_sets=None,
+                 set_parameters=None, acquisition_parameter=None,
+                 silent=True):
+        self.set_parameters = set_parameters
+        self.acquisition_parameter = acquisition_parameter
+
         self.measurements = [] if measurements is None else measurements
+        for measurement in measurements:
+            if measurement.acquisition_parameter is None:
+                measurement.acquisition_parameter = acquisition_parameter
+
         self.name = name
         self.condition_sets = [] if condition_sets is None else condition_sets
+
+        self.silent = silent
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -21,23 +32,29 @@ class MeasurementSequence:
             return measurements[0]
 
     def __iter__(self):
-        self.measurement = self.measurements[0]
+        self.measurement = None
         self.num_measurements = 0
+        self.datasets = []
+        return self
 
     def __next__(self):
-        if self.measurement is None:
+        if self.next_measurement is None:
+            if not self.silent:
+                print('Finished measurements')
             raise StopIteration
+        else:
+            self.measurement = self.next_measurement
 
         self.num_measurements += 1
-        self.measurement()
-        result = self.measurement.check_condition_sets(*self.condition_sets)
+        if not self.silent:
+            print('Performing measurement {}'.format(self.measurement))
+        dataset = self.measurement()
+        self.datasets.append(dataset)
+        condition_set = self.measurement.check_condition_sets(
+            *self.condition_sets)
+        self.result = condition_set.result
 
-        if result['action'] is None or result['action'][:4] == 'next':
-            self.measurement = self.next_measurement
-        else:
-            self.measurement = None
-
-        return result
+        return self.result
 
     def __call__(self):
         # Perform measurements iteratively, collecting their results
@@ -83,6 +100,14 @@ class MeasurementSequence:
                     obj_attr.append(cls.load_from_dict(elem_dict))
             else:
                 setattr(obj, attr, val)
+
+        station = qc.station.Station.default
+        if isinstance(obj.acquisition_parameter, str):
+            obj.acquisition_parameter = getattr(station,
+                                                obj.acquisition_parameter)
+        obj.set_parameters = [parameter if type(parameter) != str
+                              else getattr(station, parameter)
+                              for parameter in obj.set_parameters]
         return obj
 
     def save_to_config(self, name=None):
@@ -95,10 +120,14 @@ class MeasurementSequence:
         """ Get measurement after self.measurement. In case there is no next
         measurement, returns None """
         if self.measurement is None:
-            return None
-        msmt_idx = self.measurements.index(self.measurement)
-        if msmt_idx + 1 == len(self.measurements):
-            # No next measurement
+            return self.measurements[0]
+        elif self.result['action'] is not None and \
+                        self.result['action'][:4] != 'next':
             return None
         else:
-            return self.measurements[msmt_idx + 1]
+            msmt_idx = self.measurements.index(self.measurement)
+            if msmt_idx + 1 == len(self.measurements):
+                # No next measurement
+                return None
+            else:
+                return self.measurements[msmt_idx + 1]

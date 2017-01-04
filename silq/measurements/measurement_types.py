@@ -48,6 +48,9 @@ class TruthCondition(Condition):
         is_satisfied = np.any(satisfied_arr)
         return is_satisfied, satisfied_arr
 
+    def __repr__(self):
+        return '({} {} {})'.format(self.attribute, self.relation,
+                                   self.target_val)
 
 class ConditionSet:
     def __init__(self, *conditions, on_success=None, on_fail=None,
@@ -86,6 +89,14 @@ class ConditionSet:
                         condition_cls.load_from_dict(condition))
             else:
                 setattr(obj, attr, val)
+
+        station = qc.station.Station.default
+        if isinstance(obj.acquisition_parameter, str):
+            obj.acquisition_parameter = getattr(station,
+                                                obj.acquisition_parameter)
+        obj.set_parameters = [parameter if type(parameter) != str
+                              else getattr(station, parameter)
+                              for parameter in obj.set_parameters]
         return obj
 
     def add_condition(self, condition):
@@ -136,19 +147,18 @@ class Measurement(SettingsClass):
     def __init__(self, name=None, condition_sets=None,
                  acquisition_parameter=None,
                  base_folder=None,
-                 set_parameters=None, set_vals=None,
-                 steps=None, points=None, discriminant=None,
-                 update=None, silent=True):
+                 set_parameters=None, set_vals=None, step=None, points=None,
+                 discriminant=None,update=None, silent=True):
         SettingsClass.__init__(self)
 
         self.name = name
         self.base_folder = base_folder
         self.acquisition_parameter = acquisition_parameter
         self.discriminant = discriminant
-        self.steps = steps
+        step = step
         self.points = points
         self.set_parameters = set_parameters
-        self._set_vals = set_vals
+        self.set_vals = set_vals
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
         self.condition_set = None
@@ -209,15 +219,27 @@ class Measurement(SettingsClass):
     def set_vals(self):
         if self._set_vals is None and self.points is not None:
             self._set_vals = create_set_vals(set_parameters=self.set_parameters,
-                                             steps=self.steps,
+                                             step=self.step,
                                              points=self.points,
                                              silent=True)
         return self._set_vals
 
-
     @set_vals.setter
     def set_vals(self, set_vals):
         self._set_vals = set_vals
+        if set_vals is not None:
+            self.set_parameters = [set_val.parameter for set_val in set_vals]
+
+    @property
+    def discriminant(self):
+        if self._discriminant is not None:
+            return self._discriminant
+        else:
+            return self.acquisition_parameter.name
+
+    @discriminant.setter
+    def discriminant(self, val):
+        self._discriminant = val
 
     def check_condition_sets(self, *condition_sets):
         condition_sets = list(condition_sets) + self.condition_sets
@@ -336,6 +358,9 @@ class Loop0DMeasurement(Measurement):
         Returns:
             Dataset
         """
+        for condition_set in self.condition_sets:
+            condition_set.result = None
+
         self.measurement = qc.Measure(self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
@@ -351,7 +376,7 @@ class Loop1DMeasurement(Measurement):
                  points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=set_vals,
-                         steps=step, points=points, **kwargs)
+                         step=step, points=points, **kwargs)
         self.set_parameter = set_parameter
 
     def set_vals_from_idx(self, idx):
@@ -396,19 +421,16 @@ class Loop1DMeasurement(Measurement):
         #  self.update
         self.update_set_parameters()
 
-
-
         return self.dataset
 
     def set(self, set_vals=None, step=None, points=None):
         if set_vals is not None:
-            self.steps = None
+            self.step = None
             self.points = None
             self._set_vals = [self.set_parameter[list(set_vals)]]
         else:
             self._set_vals = None
-            if step is not None:
-                self.steps = [step]
+            self.step = step
             if points is not None:
                 self.points = points
             self._set_vals = self.set_vals
@@ -416,11 +438,11 @@ class Loop1DMeasurement(Measurement):
 
 class Loop2DMeasurement(Measurement):
     def __init__(self, name=None, set_parameters=None,
-                 acquisition_parameter=None, set_vals=None, steps=None,
+                 acquisition_parameter=None, set_vals=None, step=None,
                  points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=set_parameters, set_vals=set_vals,
-                         steps=steps, points=points, **kwargs)
+                         step=step, points=points, **kwargs)
 
     def set_vals_from_idx(self, idx):
         """
@@ -446,6 +468,8 @@ class Loop2DMeasurement(Measurement):
         Returns:
             Dataset
         """
+        self.initial_set_vals = {p.name: p() for p in self.set_parameters}
+
         # Set data saving parameters
         self.measurement = qc.Loop(
             self.set_vals[0]).loop(
@@ -469,15 +493,15 @@ class Loop2DMeasurement(Measurement):
 
         return self.dataset
 
-    def set(self, set_vals=None, steps=None, points=None):
+    def set(self, set_vals=None, step=None, points=None):
         if set_vals is not None:
-            self.steps = None
+            self.step = None
             self.points = None
             self._set_vals = [set_parameter[set_val] for set_parameter, set_val
                               in zip(self.set_parameters, set_vals)]
         else:
             self._set_vals = None
-            if steps is not None:
-                self.steps = steps
+            if step is not None:
+                self.step = step
             if points is not None:
                 self.points = points
