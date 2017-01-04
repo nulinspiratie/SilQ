@@ -184,13 +184,13 @@ class TrackPeakParameter(MeasurementParameter):
                  discriminant=None, threshold=None, **kwargs):
         SettingsClass.__init__(self)
         self.set_parameter = set_parameter
+        self.acquisition_parameter = acquisition_parameter
         self._discriminant = discriminant
         names = ['optimal_set_vals', self.set_parameter.name + '_set',
                  self.discriminant]
         super().__init__(name=name, names=names, discriminant=self.discriminant,
-                         **kwargs)
+                         acquisition_parameter=acquisition_parameter, **kwargs)
 
-        self.acquisition_parameter = acquisition_parameter
         self.step_percentage = step_percentage
         self.peak_width = peak_width
         self.points = points
@@ -208,14 +208,14 @@ class TrackPeakParameter(MeasurementParameter):
             self.peak_width = parameter_config[self.set_parameter]['peak_width']
 
         return create_set_vals(num_parameters=1,
-                               step_percentages=self.step_percentage,
+                               step_percentage=self.step_percentage,
                                points=self.points,
                                window=self.peak_width,
-                               set_parameters=[self.set_parameter])
+                               set_parameters=self.set_parameter)
 
     @property
     def shapes(self):
-        return [(), (len(self.set_vals[0]), ), (len(self.set_vals[0]),)]
+        return [(), (len(self.set_vals), ), (len(self.set_vals),)]
 
     @clear_single_settings
     def get(self):
@@ -234,9 +234,9 @@ class TrackPeakParameter(MeasurementParameter):
             silent=self.silent, update=True)
 
         # Set loop values
-        self.measurement(self.set_vals[0])
+        self.measurement(self.set_vals)
         # Obtain set vals as a list instead of a parameter iterable
-        set_vals = self.set_vals[0][:]
+        set_vals = self.set_vals[:]
         self.measurement()
 
         trace = getattr(self.measurement.dataset, self.discriminant)
@@ -247,10 +247,9 @@ class TrackPeakParameter(MeasurementParameter):
         return self.result
 
 
-class MeasurementSequenceParameter(SettingsClass, Parameter):
+class MeasurementSequenceParameter(MeasurementParameter):
     def __init__(self, name, measurement_sequence=None,
-                 set_parameters=None, acquisition_parameter=None,
-                 discriminant=None, **kwargs):
+                 set_parameters=None, discriminant=None, **kwargs):
         """
 
         Args:
@@ -268,25 +267,20 @@ class MeasurementSequenceParameter(SettingsClass, Parameter):
         SettingsClass.__init__(self)
 
         self.discriminant = discriminant
-
-        names = [name + '_msmts', 'optimal_set_vals', self.discriminant]
-        super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         names=names, discriminant=self.discriminant, **kwargs)
+        self.set_parameters = set_parameters
 
         if isinstance(measurement_sequence, str):
             # Load sequence from dict
             load_dict = measurement_config[measurement_sequence]
             measurement_sequence = MeasurementSequence.load_from_dict(load_dict)
         self.measurement_sequence = measurement_sequence
+        self.acquisition_parameter = measurement_sequence.acquisition_parameter
 
-        # Get a dict of set_parameters, either from kwarg set_parameters,
-        # or if this is equal to None, it is retrieved from config
-        self.set_parameters = set_parameters
-        station = qc.station.Station.default
-        # Convert parameters that are given as strings to the actual objects
-        self.set_parameters = [parameter if type(parameter) != str
-                               else getattr(station, parameter)
-                               for parameter in self.set_parameters]
+        names = [name + '_msmts', 'optimal_set_vals', self.discriminant]
+        super().__init__(
+            name=name, names=names, discriminant=self.discriminant,
+            acquisition_parameter=self.acquisition_parameter, **kwargs)
+
 
         self._meta_attrs.extend(['conditions', 'measurement_sequence',
                                  'discriminant'])
@@ -302,6 +296,8 @@ class MeasurementSequenceParameter(SettingsClass, Parameter):
             # Convert dict to list of set vals
             optimal_set_vals = [optimal_set_vals.get(p.name, p())
                                 for p in self.set_parameters]
+        else:
+            optimal_set_vals = [p() for p in self.set_parameters]
 
         optimal_val = self.measurement_sequence.optimal_val
 
