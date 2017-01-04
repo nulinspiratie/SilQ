@@ -99,11 +99,18 @@ class T1_Analysis:
                                   '"{}", labels found: {}'.format(label, labels)
             return labels[0]
 
-    def analyse_data(self):
+    def analyse_data(self, T1_data=None, T1_wait_times=None):
         # Filter and sort data
-        self.T1_data = self.dataset.arrays[self.T1_label]
+        self.T1_data = T1_data
+        if T1_data is None:
+            self.T1_data = self.dataset.arrays[self.T1_label]
+
         self.filter_data()
-        self.T1_wait_times = getattr(self.dataset,  self.T1_wait_time_label)[0]
+
+        self.T1_wait_times = T1_wait_times
+        if T1_wait_times is None:
+            self.T1_wait_times = getattr(self.dataset,  self.T1_wait_time_label)[0]
+
         self.sort_data()
 
         # Find mean, std, and std of mean
