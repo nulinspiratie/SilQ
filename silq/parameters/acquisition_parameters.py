@@ -6,7 +6,7 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.data import hdf5_format, io
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
-    SteeredInitialization
+    SinePulse, SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings
@@ -70,14 +70,20 @@ class AcquisitionParameter(SettingsClass, Parameter):
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
 
-    def segment_trace(self, trace):
+    def segment_trace(self, trace, average_mode=None):
+        # TODO this function should likely go to Layout.
+        # Furthermore, average_mode should perhaps be done elsewhere
         trace_segments = {}
         idx = 0
         for pulse in self.pulse_sequence:
             if not pulse.acquire:
                 continue
-            trace_segments[pulse.name] = \
-                trace[:, idx:idx + self._pulse_pts[pulse.name]]
+            if average_mode == 'point':
+                trace_segments[pulse.name] = np.mean(
+                    trace[:, idx:idx + self._pulse_pts[pulse.name]])
+            else:
+                trace_segments[pulse.name] = \
+                    trace[:, idx:idx + self._pulse_pts[pulse.name]]
             idx += self._pulse_pts[pulse.name]
         return trace_segments
 
@@ -117,13 +123,13 @@ class AcquisitionParameter(SettingsClass, Parameter):
                           average_mode=average_mode,
                           **kwargs)
 
-    def acquire(self, segment_traces=True, **kwargs):
+    def acquire(self, segment_traces=True, average_mode=None, **kwargs):
         # Perform acquisition
         self.data = self.layout.do_acquisition(return_dict=True,
                                                **kwargs)
         if segment_traces:
             self.trace_segments = {
-                ch_label: self.segment_trace(trace)
+                ch_label: self.segment_trace(trace, average_mode=average_mode)
                 for ch_label, trace in self.data['acquisition_traces'].items()}
 
 
@@ -157,6 +163,62 @@ class DCParameter(AcquisitionParameter):
         # must be done once beforehand.
         self.acquire()
         return self.data['acquisition_traces']['output']
+
+
+class DCPulseSweepParameter(AcquisitionParameter):
+    def __init__(self, sweep_name=None, **kwargs):
+        super().__init__(name='DC_voltage',
+                         label='DC voltage',
+                         snapshot_value=False,
+                         shape=(1,),
+                         setpoint_names=[sweep_name],
+                         setpoint_labels=[sweep_name],
+                         **kwargs)
+
+        self.pulse_settings = {'duration': 20}
+
+        self.additional_pulses = []
+        self._sweep_voltages = []
+        self.sweep_pulse_names = []
+        self.sweep_name = sweep_name
+
+    @property
+    def sweep_voltages(self):
+        return self._sweep_voltages
+
+    @sweep_voltages.setter
+    def sweep_voltages(self, sweep_voltages):
+        self._sweep_voltages = sweep_voltages
+        self.pulse_sequence.clear()
+
+        self.pulse_sequence.add([
+            DCPulse('sweep_{:.3f}'.format(sweep_voltage),
+                    acquire=True,
+                    amplitude=sweep_voltage,
+                    t_start=k*self.pulse_settings['duration'],
+                    **self.pulse_settings)
+            for k, sweep_voltage in enumerate(sweep_voltages)])
+        self.sweep_pulse_names = ['sweep_{:.3f}'.format(sweep_voltage)
+                                  for sweep_voltage in sweep_voltages]
+
+        self.pulse_sequence.add(
+            DCPulse(name='final',
+                    connection_requirements=self.pulse_settings.get(
+                        'connection_requirements', {})))
+
+        self.pulse_sequence.add([pulse for pulse in self.additional_pulses])
+
+        # Update metadata
+        self.shape = tuple([len(sweep_voltages)])
+        self.setpoints = (tuple(sweep_voltages), )
+
+    @clear_single_settings
+    def get(self):
+        self.setup()
+        self.acquire(average_mode='point')
+        self.results = [self.trace_segments['output'][pulse_name]
+                        for pulse_name in self.sweep_pulse_names]
+        return self.results
 
 
 class EPRParameter(AcquisitionParameter):
@@ -267,6 +329,158 @@ class AdiabaticParameter(AcquisitionParameter):
     def set(self, frequency):
         # Change center frequency
         self.frequency = frequency
+        self.setup()
+
+
+class RabiParameter(AcquisitionParameter):
+    def __init__(self, **kwargs):
+        """
+        Parameter used to determine the Rabi frequency
+        """
+        super().__init__(name='rabi',
+                         label='rabi',
+                         snapshot_value=False,
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference'],
+                         **kwargs)
+
+        self.pulse_sequence.add([
+            SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read', acquire=True),
+            DCPulse('final'),
+            SinePulse('rabi', duration=0.1, mode=self.mode)])
+
+        # Disable previous pulse for sine pulse, since it would
+        # otherwise be after 'final' pulse
+        self.pulse_sequence['rabi'].previous_pulse = None
+        self.pulse_sequence.sort()
+
+        self.analysis = analysis.analyse_PR
+
+    @property
+    def frequency(self):
+        return self.pulse_sequence['rabi'].frequency
+
+    @frequency.setter
+    def frequency(self, frequency):
+        self.pulse_sequence['rabi'].frequency = frequency
+
+    def acquire(self, **kwargs):
+        super().acquire(return_initialization_traces=self.pulse_sequence[
+            'steered_initialization'].enabled, **kwargs)
+
+    @clear_single_settings
+    def get(self):
+        self.setup()
+
+        self.acquire()
+
+        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
+                                   sample_rate=self.sample_rate,
+                                   t_skip=self.t_skip, t_read=self.t_read)
+        self.results = [fidelities[name] for name in self.names]
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {
+                'acquisition_traces': self.data['acquisition_traces']['output']}
+            if 'initialization_traces' in self.data:
+                saved_traces['initialization'] = \
+                    self.data['initialization_traces']
+            if 'post_initialization_traces' in self.data:
+                saved_traces['post_initialization_output'] = \
+                    self.data['post_initialization_traces']['output']
+            self.store_traces(saved_traces, subfolder=self.subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return self.results
+
+    def set(self, frequency):
+        # Change center frequency
+        self.frequency = frequency
+        self.setup()
+
+
+class RabiDriveParameter(AcquisitionParameter):
+    def __init__(self, **kwargs):
+        """
+        Parameter used to drive Rabi oscillations
+        """
+        super().__init__(name='rabi_drive',
+                         label='rabi_drive',
+                         snapshot_value=False,
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference'],
+                         **kwargs)
+
+        self.pulse_sequence.add([
+            SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read', acquire=True),
+            DCPulse('final'),
+            SinePulse('rabi', duration=0.1, mode=self.mode)])
+
+        # Disable previous pulse for sine pulse, since it would
+        # otherwise be after 'final' pulse
+        self.pulse_sequence['rabi'].previous_pulse = None
+        self.pulse_sequence.sort()
+
+        self.analysis = analysis.analyse_PR
+
+    @property
+    def frequency(self):
+        return self.pulse_sequence['rabi'].frequency
+
+    @frequency.setter
+    def frequency(self, frequency):
+        self.pulse_sequence['rabi'].frequency = frequency
+
+    @property
+    def duration(self):
+        return self.pulse_sequence['rabi'].duration
+
+    @duration.setter
+    def duration(self, duration):
+        self.pulse_sequence['rabi'].duration = duration
+
+    def acquire(self, **kwargs):
+        super().acquire(return_initialization_traces=self.pulse_sequence[
+            'steered_initialization'].enabled, **kwargs)
+
+    @clear_single_settings
+    def get(self):
+        self.setup()
+
+        self.acquire()
+
+        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
+                                   sample_rate=self.sample_rate,
+                                   t_skip=self.t_skip, t_read=self.t_read)
+        self.results = [fidelities[name] for name in self.names]
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            saved_traces = {
+                'acquisition_traces': self.data['acquisition_traces']['output']}
+            if 'initialization_traces' in self.data:
+                saved_traces['initialization'] = \
+                    self.data['initialization_traces']
+            if 'post_initialization_traces' in self.data:
+                saved_traces['post_initialization_output'] = \
+                    self.data['post_initialization_traces']['output']
+            self.store_traces(saved_traces, subfolder=self.subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return self.results
+
+    def set(self, duration):
+        # Change drive duration
+        self.duration = duration
         self.setup()
 
 
