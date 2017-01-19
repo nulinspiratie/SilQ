@@ -361,17 +361,17 @@ class SteeredInitialization(Pulse):
 
 
 class SinePulse(Pulse):
-    def __init__(self, name=None, frequency=None, amplitude=None, phase=None,
-                 **kwargs):
+    def __init__(self, name=None, frequency=None, phase=None,
+                 power=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.frequency = frequency
-        self.amplitude = amplitude
         self.phase = phase
+        self.power = power
 
     def __repr__(self):
-        properties_str = 'f={:.2f} MHz, A={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.amplitude, self.t_start, self.t_stop)
+        properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
+            self.frequency/1e6, self.power, self.t_start, self.t_stop)
 
         return super()._get_repr(properties_str)
 
