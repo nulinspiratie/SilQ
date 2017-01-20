@@ -31,12 +31,10 @@ class ArbStudio1104Interface(InstrumentInterface):
                 pulse_requirements=[('frequency', {'min':1e6, 'max':125e6})]
             ),
             DCPulseImplementation(
-                pulse_requirements=[('amplitude', {'min': -6, 'max': 6})]
+                pulse_requirements=[]
             ),
             DCRampPulseImplementation(
-                pulse_requirements=[('amplitude_start', {'min': -6, 'max': 6}),
-                                    ('amplitude_stop',
-                                     {'min': -6, 'max': 6})]
+                pulse_requirements=[]
             ),
             TriggerPulseImplementation(
                 pulse_requirements=[]
