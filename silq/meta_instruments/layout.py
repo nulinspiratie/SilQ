@@ -6,7 +6,7 @@ import inspect
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
-from qcodes import Instrument
+from qcodes import Instrument, config
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
@@ -347,27 +347,22 @@ class Layout(Instrument):
 
         is_primary = self.primary_instrument() == interface.instrument_name()
 
-        # In case a connection consists of multiple connections, create a
-        # separate pulse for each sub-connection
-        if isinstance(connection, CombinedConnection):
-            connections = connection.connections
-        else:
-            connections = [connection]
+        pulses = connection.target_pulse(pulse)
+        if not isinstance(pulses, list):
+            pulses = [pulses]
 
-        for connection in connections:
+        for pulse in pulses:
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary, connections=self.connections)
 
             # Force t_start to have a fixed value
             targeted_pulse.t_start = targeted_pulse.t_start
 
-            # Add connection to pulse, and add any pulse modifications
-            connection.target_pulse(targeted_pulse)
-
             interface.pulse_sequence(('add', targeted_pulse))
 
             # Also add pulse to input interface pulse sequence
-            input_interface = self._interfaces[connection.input['instrument']]
+            input_interface = self._interfaces[
+                pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence(('add', targeted_pulse))
 
             # Add pulse to acquisition instrument if it must be acquired
@@ -531,13 +526,10 @@ class Layout(Instrument):
 
 
 class Connection:
-    def __init__(self, default=False,
-                 pulse_modifiers=None):
+    def __init__(self, default=False, scale=None):
         self.input = {}
         self.output = {}
-
-        self.pulse_modifiers = pulse_modifiers if pulse_modifiers is not None \
-                                               else {}
+        self.scale = scale
 
         # TODO make default dependent on implementation
         self.default = default
@@ -562,12 +554,8 @@ class Connection:
             dict_items[k] = v
         return hash(tuple(sorted(dict_items)))
 
-
     def target_pulse(self, pulse):
-        pulse.connection = self
-
-        if 'amplitude_scale' in self.pulse_modifiers:
-            pulse.amplitude *= self.pulse_modifiers['amplitude_scale']
+        raise NotImplementedError();
 
     def satisfies_conditions(self, input_arg=None, input_instrument=None,
                              input_channel=None, input_interface=None,
@@ -692,6 +680,16 @@ class SingleConnection(Connection):
         output_str += ')'
         return output_str
 
+    def target_pulse(self, pulse, apply_scale=True, copy_pulse=True):
+        if copy_pulse:
+            targeted_pulse = pulse.copy()
+        else:
+            targeted_pulse = pulse
+        targeted_pulse.connection = self
+        if apply_scale and self.scale is not None:
+            targeted_pulse.amplitude /= self.scale
+        return targeted_pulse
+
     def satisfies_conditions(self, trigger=None, acquire=None, software=None,
                              **kwargs):
         """
@@ -743,6 +741,22 @@ class CombinedConnection(Connection):
         for connection in self.connections:
             output += '\t' + repr(connection) + '\n'
         return output
+
+    def target_pulse(self, pulse):
+        pulses = []
+        for k, connection in enumerate(self.connections):
+            targeted_pulse = pulse.copy()
+            if isinstance(pulse.amplitude, tuple):
+                if k < len(pulse.amplitude):
+                    targeted_pulse.amplitude = pulse.amplitude[k]
+                else:
+                    targeted_pulse.amplitude = pulse.amplitude[0]
+            elif self.scale is not None:
+                targeted_pulse.amplitude /= self.scale[k]
+            targeted_pulse = connection.target_pulse(targeted_pulse,
+                                                     copy_pulse=False)
+            pulses.append(targeted_pulse)
+        return pulses
 
     def satisfies_conditions(self, trigger=None, acquire=None, **kwargs):
         """

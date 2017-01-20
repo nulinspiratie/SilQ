@@ -18,7 +18,7 @@
                 "duration": 120
             },
             "empty": {
-                "amplitude": -1.5,
+                "amplitude": -0.06,
                 "duration": 5
             },
             "steered_initialization": {
@@ -38,7 +38,7 @@
                 "duration": 20
             },
             "plunge": {
-                "amplitude": 2,
+                "amplitude": 0.08,
                 "duration": 5
             },
             "adiabatic_ESR": {
@@ -74,8 +74,8 @@
             "parameters": {
                 "TGAC": {
                     "steps": [
-                        0.0005,
-                        1
+                        0.00002,
+                        0.04
                     ]
                 },
                 "2D": [
@@ -88,8 +88,8 @@
                 ],
                 "DF_DS": {
                     "steps": [
-                        0.00025,
-                        0.5
+                        0.0000125,
+                        0.025
                     ]
                 }
             },

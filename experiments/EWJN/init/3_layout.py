@@ -25,15 +25,16 @@ cPB4 = layout.add_connection(output_arg='pulseblaster.ch4',
 
 # Arbstudio output connections
 cArb1 = layout.add_connection(output_arg='arbstudio.ch1',
-                              input_arg='chip.TGAC',
-                              pulse_modifiers={'amplitude_scale': 1})
+                              input_arg='chip.TGAC', scale=1/25)
 cArb2 = layout.add_connection(output_arg='arbstudio.ch2',
-                              input_arg='chip.DF',
-                              pulse_modifiers={'amplitude_scale': -1.5})
+                              input_arg='chip.DF', scale=1/20)
 cArb3 = layout.add_connection(output_arg='arbstudio.ch3',
                               input_arg='ATS.chC')
 
-layout.combine_connections(cArb1, cArb2, cArb3, default=True)
+# Without scales for single channels, the compensation factor for DF is -1.5
+# With scales this becomes -1.5 * 1/20 / 1/25 = -15/8
+layout.combine_connections(cArb1, cArb2, cArb3, default=True,
+                           scale=[1, -8/15, 1])
 
 # cArb3 = layout.add_connection(output_arg='arbstudio.ch3',
 #                               input_arg='keysight.I')
