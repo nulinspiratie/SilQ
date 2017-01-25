@@ -181,6 +181,7 @@ class DCPulseSweepParameter(AcquisitionParameter):
         self._sweep_voltages = []
         self.sweep_pulse_names = []
         self.sweep_name = sweep_name
+        self.samples = 1
 
     @property
     def sweep_voltages(self):
@@ -491,6 +492,7 @@ class T1Parameter(AcquisitionParameter):
                          snapshot_value=False,
                          names=['up_proportion', 'num_traces'],
                          **kwargs)
+
         self.pulse_sequence.add([
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge'),
