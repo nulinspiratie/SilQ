@@ -108,7 +108,7 @@ class StoreParameter(Parameter):
 
 
 class AttributeParameter(Parameter):
-    def __init__(self, object, attribute, **kwargs):
+    def __init__(self, object, attribute, scale=None, **kwargs):
         """
         Creates a parameter that can set/get an attribute from an object
         Args:
@@ -121,13 +121,18 @@ class AttributeParameter(Parameter):
 
         self.object = object
         self.attribute = attribute
+        self.scale = scale
 
     def set(self, value):
+        if self.scale is not None:
+            value = tuple(value / scale for scale in self.scale)
         setattr(self.object, self.attribute, value)
         self._save_val(value)
 
     def get(self):
         value =  getattr(self.object, self.attribute)
+        if self.scale is not None:
+            value = value[0] * self.scale[0]
         self._save_val(value)
         return value
 
