@@ -60,29 +60,29 @@ def get_voltages(SIM900):
         voltages[name] = SIM900.parameters[name]()
     return voltages
 
-# def ramp_to_voltages(target_voltages, channels=None, use_scaled=True):
-#     if use_scaled:
-#         global SIM900_scaled_parameters
-#         SIM900 = SIM900_scaled_parameters
-#     else:
-#         global SIM900
-#
-#     if isinstance(target_voltages, dict):
-#         channels = [SIM900.parameters[ch_name] for ch_name in
-#                     target_voltages]
-#     elif isinstance(target_voltages, int):
-#         if channels is None:
-#             channels = [SIM900.parameters[ch_name] for ch_name in
-#                         SIM900.channels().values()]
-#         target_voltages = {channel.name: target_voltages for channel in
-#                            channels}
-#
-#     initial_voltages = {channel.name: channel() for channel in channels}
-#     for ratio in np.linspace(0, 1, 11):
-#         for channel in channels:
-#             voltage = (1 - ratio) * initial_voltages[channel.name] + \
-#                       ratio * target_voltages[channel.name]
-#             channel(voltage)
+def ramp_to_voltages(target_voltages, channels=None, use_scaled=True):
+    if use_scaled:
+        global SIM900_scaled_parameters
+        parameters = {param.name: param for param in SIM900_scaled_parameters}
+    else:
+        global SIM900
+        parameters = {parameter_name: parameter
+                      for [parameter_name, parameter] in SIM900.parameters.items()
+                      if hasattr(parameter, 'channel')}
+
+    if isinstance(target_voltages, dict):
+        channels = target_voltages.keys()
+    elif isinstance(target_voltages, int):
+        if channels is None:
+            channels = parameters.keys()
+        target_voltages = {channel: target_voltages for channel in
+                           channels}
+    initial_voltages = {channel: parameters[channel]() for channel in channels}
+    for ratio in np.linspace(0, 1, 11):
+        for channel in channels:
+            voltage = (1 - ratio) * initial_voltages[channel] + \
+                      ratio * target_voltages[channel]
+            parameters[channel](voltage)
 
 
 @register_cell_magic
