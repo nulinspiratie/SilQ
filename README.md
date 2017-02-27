@@ -14,13 +14,14 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 ### Install SilQ+QCodes
 1.	Clone the repository [SilQ](https://github.com/nulinspiratie/SilQ) (includes QCodes) into your hard drive
     (e.g. User/Documents/PythonSoftware) using the installed Github desktop
-2.	SilQ: Open Command prompt (type cmd into start menu and right click to open as administrator)
-    1.	Navigate to SilQ folder on your computer (not SilQ/silq)
-    2.	Run “python setup.py develop”
-    3.	It will likely say that packages are missing (usually lmfit and peakutils).
-        Install these missing packages like instructed (conda (or pip) install lmfit and peakutils)
-3.	QCodes: Open command prompt, Navigate to the Qcodes folder on your computer (SilQ/Qcodes),
+2.	QCodes: Open command prompt, Navigate to the Qcodes folder on your computer (SilQ/Qcodes),
     run ‘python setup.py develop’ and install missing packages (usually coverage and pyqtgraph)
+3.	SilQ: Open Command prompt (type cmd into start menu and right click to open as administrator)
+    1.	Navigate to SilQ folder on your computer (not SilQ/silq)
+    2.  Run “pip install pythonnet”
+    3.	Run “python setup.py develop”
+    4.	It will likely say that packages are missing (usually lmfit and peakutils).
+        Install these missing packages like instructed (conda (or pip) install lmfit and peakutils)
 
 ## Using SilQ
 The measurement software SilQ and QCodes can be imported as a package, just like any other python packages.
