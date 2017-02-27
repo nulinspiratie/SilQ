@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from queue import Empty
 from traceback import format_exc
 import logging
+from winsound import Beep
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QThread
@@ -12,14 +13,14 @@ from qcodes.process.server import BaseServer
 
 
 
-class PipeServer(BaseServer):
+class GUIServer(BaseServer):
     def __init__(self, query_queue, response_queue, extras=None):
         super().__init__(query_queue, response_queue, extras)
 
         app = QtGui.QApplication(sys.argv)
         # ex = GUIServer(query_queue=query_queue,
         #                response_queue=response_queue)
-        ex = GUIServer(query_queue=query_queue, response_queue=response_queue)
+        ex = GUIClass(query_queue=query_queue, response_queue=response_queue)
         sys.exit(app.exec_())
 
 
@@ -28,8 +29,13 @@ class GUIClass(QtGui.QMainWindow):
         super().__init__()
 
         self.initUI()
-        EventLoopServer
-        self.run_event_loop()
+        event_server = EventLoopServer(query_queue=query_queue,
+                                       response_queue=response_queue,
+                                       gui=self)
+        event_server.start()
+        Beep(2000,2000)
+        print('started')
+
 
     def initUI(self):
         self.text_box = QtGui.QTextEdit()
@@ -53,49 +59,29 @@ class GUIClass(QtGui.QMainWindow):
         self.setWindowTitle('Main window')
         self.show()
 
-
-    def handle_append(self, text):
+    def handle_append_text(self, text):
         self.text_box.append(text)
+
+    def handle_print(self, text):
+        print(text)
 
 
 class EventLoopServer(QThread, BaseServer):
 
-    def __init__(self, query_queue, response_queue):
+    def __init__(self, query_queue, response_queue, gui, extras=None):
         QThread.__init__(self)
+        BaseServer.__init__(self, query_queue, response_queue, extras)
+
         self.query_queue = query_queue
         self.response_queue = response_queue
+
+        self.gui = gui
 
     def __del__(self):
         self.wait()
 
-    def run_event_loop(self):
-        self.running = True
-        next_store_ts = datetime.now()
-        next_monitor_ts = datetime.now()
-
-        while self.running:
-            read_timeout = self._storage_period / self.queries_per_store
-            try:
-                query = self._query_queue.get(timeout=read_timeout)
-                self.process_query(query)
-            except Empty:
-                pass
-
-            try:
-                now = datetime.now()
-
-                if self._measuring and now > next_store_ts:
-                    td = timedelta(seconds=self._storage_period)
-                    next_store_ts = now + td
-                    self._data.write()
-
-                if now > next_monitor_ts:
-                    td = timedelta(seconds=self._monitor_period)
-                    next_monitor_ts = now + td
-                    # TODO: update the monitor data storage
-
-            except:
-                logging.error(format_exc())
+    def __getattr__(self, attr):
+        return getattr(self.gui, attr)
 
     def run(self):
-        # your logic here
+        self.run_event_loop()
