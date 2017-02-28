@@ -6,7 +6,7 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 ## Installation
 
 ### Install Python
-1.	Download [Anaconda 64bit python 3.5](https://www.continuum.io/downloads)
+1.	Download [Anaconda 64bit python 3.6](https://www.continuum.io/downloads)
 2.	Install Anaconda (make sure to tick the options add to system path and register as python 3.5
 
 ### Install Github
