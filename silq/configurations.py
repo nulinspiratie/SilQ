@@ -21,5 +21,11 @@ _configurations = {
              'modes': {
                  'analysis': {'select': ['imports', 'functions', 'data',
                                          'analysis', 'plotting']}
+             }},
+    'Steffi': {'folder': r"personal\Steffi\init",
+             'macs': [140870679927045],
+             'modes': {
+                 'analysis': {'select': ['imports', 'functions', 'data',
+                                         'analysis', 'parameters', 'plotting']}
              }}
 }
