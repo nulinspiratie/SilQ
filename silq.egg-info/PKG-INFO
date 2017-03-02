@@ -14,21 +14,24 @@ Description: #SilQ
         ## Installation
         
         ### Install Python
-        1.	Download [Anaconda 64bit python 3.5](https://www.continuum.io/downloads)
+        1.	Download [Anaconda 64bit python 3.6](https://www.continuum.io/downloads)
         2.	Install Anaconda (make sure to tick the options add to system path and register as python 3.5
+        
         ### Install Github
-        1.	Download and install [Github Desktop]9https://desktop.github.com/) and create a [Github account](https://github.com/)
+        1.	Download and install [Github Desktop](https://desktop.github.com/) and create a [Github account](https://github.com/)
         2.	Give Serwan your account details to add you to the private git repository
+        
         ### Install SilQ+QCodes
         1.	Clone the repository [SilQ](https://github.com/nulinspiratie/SilQ) (includes QCodes) into your hard drive
             (e.g. User/Documents/PythonSoftware) using the installed Github desktop
-        2.	SilQ: Open Command prompt (type cmd into start menu and right click to open as administrator)
-            1.	Navigate to SilQ folder on your computer (not SilQ/silq)
-            2.	Run “python setup.py develop”
-            3.	It will likely say that packages are missing (usually lmfit and peakutils).
-                Install these missing packages like instructed (conda (or pip) install lmfit and peakutils)
-        3.	QCodes: Open command prompt, Navigate to the Qcodes folder on your computer (SilQ/Qcodes),
+        2.	QCodes: Open command prompt, Navigate to the Qcodes folder on your computer (SilQ/Qcodes),
             run ‘python setup.py develop’ and install missing packages (usually coverage and pyqtgraph)
+        3.	SilQ: Open Command prompt (type cmd into start menu and right click to open as administrator)
+            1.	Navigate to SilQ folder on your computer (not SilQ/silq)
+            2.  Run “pip install pythonnet”
+            3.	Run “python setup.py develop”
+            4.	It will likely say that packages are missing (usually lmfit and peakutils).
+                Install these missing packages like instructed (conda (or pip) install lmfit and peakutils)
         
         ## Using SilQ
         The measurement software SilQ and QCodes can be imported as a package, just like any other python packages.
@@ -55,6 +58,26 @@ Description: #SilQ
         
         ### Jupyter Notebook
         should be already installed alongside Anaconda Python
+        
+        
+        ## Creating initialization code
+        An experimental setup (or personal computer) often requires code that should be initialized at the start of your measurement session.
+        This includes loading often-used packages, initializing instruments, setting up the Layout, etc.
+        In SilQ this can be done by creating a list of initialization files that can easily be run.
+        If the initialization belongs to a measurement, the correct folder is `experiments\{experiment_name}\init`, while for personal initialization code the correct folder is `personal\{username}\{whatever_you_prefer}`.
+        It is recommended that you create separate files for distinct types of initialization code (e.g. package imports, instruments).
+        The files will be run in alphabetical order, so it is useful to add a numerical prefix to indicate the loading order.
+        
+        Furthermore, you should add a label to `silq\configurations.py`, with information on the location of the initialization folder.
+        You can also add additional `modes`, which can for instance ignore some of the files (useful when you want to operate in `analysis` mode, etc.).
+        Once the initialization code has been written and a label has been assigned, you can run the initialization code using:
+        
+        ```
+        import silq
+        silq.initialize({label}, mode={mode})
+        ```
+        where mode is optional.
+        
 Platform: UNKNOWN
 Classifier: Development Status :: 1 - Alpha
 Classifier: Intended Audience :: Science/Research

@@ -22,13 +22,13 @@ silq/instrument_interfaces/lecroy/ArbStudio1104_interface.py
 silq/instrument_interfaces/lecroy/__init__.py
 silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.py
 silq/instrument_interfaces/spincore/__init__.py
+silq/measurements/__init__.py
+silq/measurements/measurement_modules.py
+silq/measurements/measurement_types.py
 silq/meta_instruments/Lockin.py
-silq/meta_instruments/PulseMaster_old.py
-silq/meta_instruments/Pulsemaster.py
 silq/meta_instruments/Simrack.py
 silq/meta_instruments/__init__.py
 silq/meta_instruments/chip.py
-silq/meta_instruments/hack_instrument.py
 silq/meta_instruments/layout.py
 silq/meta_instruments/lockin.py
 silq/meta_instruments/simrack.py
@@ -42,7 +42,6 @@ silq/meta_instruments/mock_instruments/mock_pulseblaster.py
 silq/parameters/__init__.py
 silq/parameters/acquisition_parameters.py
 silq/parameters/general_parameters.py
-silq/parameters/loop_parameters.py
 silq/parameters/measurement_parameters.py
 silq/pulses/__init__.py
 silq/pulses/pulse_modules.py
@@ -55,5 +54,7 @@ silq/tools/__init__.py
 silq/tools/data_tools.py
 silq/tools/fit_toolbox.py
 silq/tools/general_tools.py
+silq/tools/gui_tools.py
 silq/tools/instrument_tools.py
 silq/tools/notebook_tools.py
+silq/tools/parameter_tools.py
