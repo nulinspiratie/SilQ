@@ -1,0 +1,20 @@
+{
+    "gui": {
+        "plotlib": "matplotlib",
+        "notebook": true
+    },
+    "user": {
+        "properties": {},
+        "matplot": {
+            "2D_settings": {
+                "cmap": "inferno"
+            }
+        },
+        "data_folder": "C:\\Users\\Steffi\\Documents\\data",
+        "pulses": {}
+    },
+    "core": {
+        "loglevel": "DEBUG",
+        "legacy_mp": true
+    }
+}
