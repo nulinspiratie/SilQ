@@ -369,6 +369,8 @@ class SinePulse(Pulse):
         self.phase = phase
         self.power = power
 
+        self.amplitude = power
+
     def __repr__(self):
         properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
             self.frequency/1e6, self.power, self.t_start, self.t_stop)
