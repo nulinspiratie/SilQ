@@ -72,7 +72,7 @@ where mode is optional.
 
 ## Adding new interfaces
 Adding a new instrument interface involves changing a handful of existing files and creating some necessary new files.
-This section gives a quick overview on how to add a new interface.
+This section gives a quick overview on how to add a new (empty) interface.
  
 ### Changing existing files
 #### `silq/instrument_interfaces/__init__.py`
