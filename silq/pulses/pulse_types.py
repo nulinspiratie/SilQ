@@ -471,11 +471,14 @@ class DCPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
             "voltage at {} us is not in the time range {} us - {} us of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude
+        if hasattr(t, '__len__'):
+            return [self.amplitude] * len(t)
+        else:
+            return self.amplitude
 
 
 class DCRampPulse(Pulse):
