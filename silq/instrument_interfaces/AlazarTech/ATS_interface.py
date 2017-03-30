@@ -4,7 +4,8 @@ import logging
 
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
-from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
+from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
+    ATSAcquisitionParameter
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.tools.instrument_tools import get_instrument_class
