@@ -145,6 +145,70 @@ class Pulse(SettingsClass):
             value = self._attribute_from_config(item)
             return value
 
+    def __add__(self, other):
+        """
+        This method is called when adding two pulse instances by performing `pulse1 + pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be added to self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '+')
+
+    def __radd__(self, other):
+        """
+        This method is called when reverse adding something to a pulse.
+        The reason this method is implemented is so that the user can sum over multiple pulses by performing:
+
+            combination_pulse = sum([pulse1, pulse2, pulse3])
+
+        The sum method actually tries calling 0.__add__(pulse1), which doesn't exist, so it is converted into
+        pulse1.__radd__(0).
+
+        Args:
+            other: an instance of unknown type that might be int(0)
+
+        Returns:
+            pulse (Pulse): Either self (if other is zero) or the sum of self and other.
+
+        """
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
+
+    def __sub__(self, other):
+        """
+        This method is called when subtracting two pulse instances by performing `pulse1 - pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be subtracted from self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '-')
+
+    def __mul__(self, other):
+        """
+        This method is called when multiplying two pulse instances by performing `pulse1 * pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be multiplied with self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '*')
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -587,8 +651,8 @@ class CombinationPulse(Pulse):
 
     Args:
         name (str): The name for this CombinationPulse.
-        pulse1 (pulse): The first pulse this combination is made up from.
-        pulse2 (pulse): The second pulse this combination is made up from.
+        pulse1 (Pulse): The first pulse this combination is made up from.
+        pulse2 (Pulse): The second pulse this combination is made up from.
         relation (str): The relation between pulse1 and pulse2. This must be one of the following:
             '+'     :   pulse1 + pulse2
             '-'     :   pulse1 - pulse2
