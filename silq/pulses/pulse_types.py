@@ -14,6 +14,7 @@ pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
 pulse_config = config['user'].get('pulses', {})
 properties_config = config['user'].get('properties', {})
 
+
 class Pulse(SettingsClass):
     def __init__(self, name=None, t_start=None, previous_pulse=None,
                  t_stop=None, delay_start=None, delay_stop=None,
@@ -265,7 +266,7 @@ class Pulse(SettingsClass):
             properties_str += '\n\tadditional_pulses:'
             for pulse in self.additional_pulses:
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
-                properties_str  += '\n\t{}'.format(pulse_repr)
+                properties_str += '\n\t{}'.format(pulse_repr)
 
         return '{pulse_type}({name}, {properties})'.format(
             pulse_type=self.__class__.__name__,
@@ -371,7 +372,7 @@ class SinePulse(Pulse):
 
     def __repr__(self):
         properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.power, self.t_start, self.t_stop)
+            self.frequency / 1e6, self.power, self.t_start, self.t_stop)
 
         return super()._get_repr(properties_str)
 
@@ -381,7 +382,7 @@ class SinePulse(Pulse):
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         return self.amplitude * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
-                                                    self.phase/360))
+                                                    self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
@@ -443,7 +444,7 @@ class FrequencyRampPulse(Pulse):
     def __repr__(self):
         properties_str = 'f_center={:.2f} MHz, f_dev={:.2f}, power={}, ' \
                          't_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.frequency_deviation/1e6,
+            self.frequency / 1e6, self.frequency_deviation / 1e6,
             self.power, self.t_start, self.t_stop)
 
         if self.frequency_sideband is not None:
@@ -502,7 +503,7 @@ class DCRampPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .0001 # ms
+    duration = .0001  # ms
 
     def __init__(self, name=None, duration=duration, **kwargs):
         self.duration = duration
@@ -525,7 +526,6 @@ class TriggerPulse(Pulse):
 
 
 class MarkerPulse(Pulse):
-
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -546,7 +546,6 @@ class MarkerPulse(Pulse):
 
 
 class TriggerWaitPulse(Pulse):
-
     def __init__(self, name=None, t_start=None, **kwargs):
         super().__init__(name=name, t_start=t_start, duration=0, **kwargs)
 
@@ -568,3 +567,77 @@ class MeasurementPulse(Pulse):
 
     def get_voltage(self, t):
         raise NotImplementedError('Measurement pulses do not have a voltage')
+
+
+class CombinationPulse(Pulse):
+    """
+    This class represents pulses that are combinations of multiple pulse types.
+
+    For example:
+        CombinationPulse = SinePulse + DCPulse
+        CombinationPulse = DCPulse * SinePulse
+
+    Just like any other pulse, a CombinationPulse has a name, t_start and t_stop. t_start and t_stop are calculated and
+    updated from the pulses that make up the combination.
+
+    A CombinationPulse is itself a child of the Pulse class, therefore a CombinationPulse can also be used in
+    consecutive combinations like:
+        CombinationPulse1 = SinePulse1 + DCPulse
+        CombinationPulse2 = SinePulse2 + CombinationPulse1
+
+    Args:
+        name (str): The name for this CombinationPulse.
+        pulse1 (pulse): The first pulse this combination is made up from.
+        pulse2 (pulse): The second pulse this combination is made up from.
+        relation (str): The relation between pulse1 and pulse2. This must be one of the following:
+            '+'     :   pulse1 + pulse2
+            '-'     :   pulse1 - pulse2
+            '*'     :   pulse1 * pulse2
+
+    """
+
+    def __init__(self, name=None, pulse1=None, pulse2=None, relation=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        self.pulse1 = pulse1
+        self.pulse2 = pulse2
+        self.relation = relation
+
+        assert isinstance(pulse1, Pulse), 'pulse1 needs to be a Pulse'
+        assert isinstance(pulse2, Pulse), 'pulse2 needs to be a Pulse'
+        assert relation in ['+', '-', '*'], 'relation has a non-supported value'
+
+    @property
+    def t_start(self):
+        return min(self.pulse1.t_start, self.pulse2.t_start, default=None)
+
+    @property
+    def t_stop(self):
+        return max(self.pulse1.t_start, self.pulse2.t_start, default=None)
+
+    def __repr__(self):
+        return 'CombinationPulse of: ({pulse1} {relation} {pulse2}) with\n' \
+                         '\t {pulse1} : {pulse1_repr}\n' \
+                         '\t {pulse2} : {pulse2_repr}'.format(pulse1=self.pulse1.name,
+                                                              relation=self.relation,
+                                                              pulse2=self.pulse2.name,
+                                                              pulse1_repr=repr(self.pulse1),
+                                                              pulse2_repr=repr(self.pulse2))
+
+    def get_voltage(self, t):
+        try:
+            voltage1 = self.pulse1.get_voltage(t)
+        except AssertionError:
+            voltage1 = 0
+
+        try:
+            voltage2 = self.pulse2.get_voltage(t)
+        except AssertionError:
+            voltage2 = 0
+
+        if self.relation == '+':
+            return voltage1 + voltage2
+        elif self.relation == '-':
+            return voltage1 - voltage2
+        elif self.relation == '*':
+            return voltage1 * voltage2
