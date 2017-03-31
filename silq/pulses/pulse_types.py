@@ -679,14 +679,37 @@ class CombinationPulse(Pulse):
     def t_stop(self):
         return max(self.pulse1.t_start, self.pulse2.t_start, default=None)
 
+    @property
+    def combination_string(self):
+        if isinstance(self.pulse1, CombinationPulse):
+            pulse1_string = self.pulse1.combination_string
+        else:
+            pulse1_string = self.pulse1.name
+        if isinstance(self.pulse2, CombinationPulse):
+            pulse2_string = self.pulse2.combination_string
+        else:
+            pulse2_string = self.pulse2.name
+        return '({pulse1} {relation} {pulse2})'.format(pulse1=pulse1_string,
+                                                       relation=self.relation,
+                                                       pulse2=pulse2_string)
+
+    @property
+    def pulse_details(self):
+        if isinstance(self.pulse1, CombinationPulse):
+            pulse1_details = self.pulse1.pulse_details
+        else:
+            pulse1_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse1.name,
+                                                                  pulse_repr=repr(self.pulse1))
+        if isinstance(self.pulse2, CombinationPulse):
+            pulse2_details = self.pulse2.pulse_details
+        else:
+            pulse2_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse2.name,
+                                                                  pulse_repr=repr(self.pulse2))
+        return pulse1_details + pulse2_details
+
     def __repr__(self):
-        return 'CombinationPulse of: ({pulse1} {relation} {pulse2}) with\n' \
-                         '\t {pulse1} : {pulse1_repr}\n' \
-                         '\t {pulse2} : {pulse2_repr}'.format(pulse1=self.pulse1.name,
-                                                              relation=self.relation,
-                                                              pulse2=self.pulse2.name,
-                                                              pulse1_repr=repr(self.pulse1),
-                                                              pulse2_repr=repr(self.pulse2))
+        return 'CombinationPulse of: {combination} with\n{details}'.format(combination=self.combination_string,
+                                                                           details=self.pulse_details)
 
     def get_voltage(self, t):
         try:
