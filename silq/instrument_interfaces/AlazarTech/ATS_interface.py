@@ -2,7 +2,7 @@ import numpy as np
 import inspect
 import logging
 
-from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
     ATSAcquisitionParameter
@@ -71,14 +71,9 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='acquisition_settings',
                            get_cmd=lambda: self._acquisition_settings)
 
-        # Names and shapes must have initial value, even through they will be
-        # overwritten in set_acquisition_settings. If we don't do this, the
-        # remoteInstrument will not recognize that it returns multiple values.
         self.add_parameter(name="acquisition",
-                           names=['channel_signal'],
-                           get_cmd=self._acquisition,
-                           shapes=((),),
-                           snapshot_value=False)
+                           parameter_class=ATSAcquisitionParameter,
+                           instrument=self._acquisition_controller)
 
         self.add_parameter(name='default_acquisition_controller',
                            parameter_class=ManualParameter,
@@ -115,7 +110,7 @@ class ATSInterface(InstrumentInterface):
                            parameter_class=ManualParameter,
                            vals=vals.Enum('positive', 'negative'))
         self.add_parameter(name='trigger_threshold',
-                           units='V',
+                           unit='V',
                            parameter_class=ManualParameter,
                            vals=vals.Numbers())
 
@@ -219,10 +214,8 @@ class ATSInterface(InstrumentInterface):
         self.setup_ATS()
         self.setup_acquisition_controller()
 
-        # Update acquisition metadata
-        for attr in ['names', 'labels', 'units', 'shapes']:
-            val = getattr(self._acquisition_controller.acquisition, attr)
-            setattr(self.acquisition, attr, val)
+        # Update acquisition controller in acquisition parameter
+        self.acquisition = self._acquisition_controller
 
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
