@@ -938,14 +938,14 @@ class LayoutAcquisitionParameter(MultiParameter):
     """
     Acquisition parameter for the Layout
     """
-    def __init___(self, name, layout, **kwargs):
-        self.layout = layout
+    def __init__(self, name, **kwargs):
+        self.layout = kwargs['instrument']
         super().__init__(name=name, names=self.names,
                          labels=self.labels,
                          units=self.units,
                          shapes=self.shapes,
                          snapshot_value=False,
-        **kwargs)
+                         **kwargs)
 
     @property
     def names(self):
@@ -966,7 +966,10 @@ class LayoutAcquisitionParameter(MultiParameter):
 
     @property
     def units(self):
-        return self.layout.acquisition_interface.acquisition.units
+        if self.layout.acquisition_interface is not None:
+            return self.layout.acquisition_interface.acquisition.units
+        else:
+            return [''] * len(self.names)
 
     @units.setter
     def units(self, units):
@@ -974,8 +977,14 @@ class LayoutAcquisitionParameter(MultiParameter):
 
     @property
     def shapes(self):
-        return self.layout.acquisition_interface.acquisition.units
+        if self.layout.acquisition_interface is not None:
+            return self.layout.acquisition_interface.acquisition.units
+        else:
+            return ((),) * len(self.names)
 
     @shapes.setter
     def shapes(self, shapes):
         pass
+
+    def get(self):
+        return self.acquisition_interface.acquisition()
