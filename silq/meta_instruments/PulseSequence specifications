@@ -22,16 +22,15 @@ Desired features
 That being said, it currently lacks some useful features, and
  is in need of an upgrade
 
-PulseSequence within another PulseSequence
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ability to add a PulseSequence as part of another PulseSequence allows a
+Nesting PulseSequence within another PulseSequence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ability to nesting a PulseSequence in another PulseSequence allows a
 natural way to break up a complex measurement into different layers.
-For example, the entire measurement could be a Measurement PulseSequence,
-which consists of three stages:
+For example, a PulseSequence could consists of three stages:
 
-- Initialization - Perform the necessary pulses to initialize the system
-- Manipulation - Manipulate the qubit through pulses
-- Read - Read out the state of the qubit
+#. Initialization - Perform the necessary pulses to initialize the system
+#. Manipulation - Manipulate the qubit through pulses
+#. Read - Read out the state of the qubit
 
 Each of these stages could be an independent PulseSequence, which are joined
 together in the larger PulseSequence. If you combine this with the idea of
@@ -42,8 +41,43 @@ called from all measurements.
 
 Issues
 ******
-One of the issues is that of targeting. 
+One of the main issues is that targeting of a PulseSequence currently
+targets individual pulses. Now instead a PulseSequence could consist of not
+only Pulses, but also PulseSequences.
 
+One solution is to roll-out the inner PulseSequences, effectively
+concatenating their pulses together into one long PulseSequence. This can
+become a problem when you combine it with logic operations, as these may
+point towards an entire PulseSequence instead of a single pulse.
+
+Another solution is to create an encompassing class, which itself
+contains PulseSequences. You can then make the distinction that
+PulseSequences have a fixed duration. Combining PulseSequences and
+performing logic operations, such as conditional operations, can only be
+implemented at the level of the encompassing class. However, this only shifts
+the problem, as you could also want to join such encompassing classes together.
+
+The actual problem may well be that the whole targeting process needs an
+upgrade.
+
+Implementation
+**************
+If we assume that targeting is taken care of, nesting PulseSequences should
+have the following features:
+
+- A name, which can be used to identify the PulseSequence when it is nested.
+- The duration, if it exists. This may not be the case if the PulseSequence
+  contains logic operations.
+- Add a nested PulseSequences, just as you would add a pulse.
+- **Optional** If a PulseSequence contains at least one PulseSequence, there
+  should always be an active PulseSequence. If a Pulse is then added, it is
+  automatically added to a PulseSequence. This way you ensure that a
+  PulseSequence contains either Pulses or PulseSequences, but never both. One
+  could even create a separate PulseSequence class for PulseSequences that
+  contains other PulseSequences, although I'm not sure if its necessary.
+- **Optional** Some sort of output data, which can be treated as input variables
+  for other PulseSequences. This is related to logic operations.
+- **Optional** Analysis within the PulseSequence. For instance, check for blips.
 
 Loop over pulses
 ~~~~~~~~~~~~~~~~
