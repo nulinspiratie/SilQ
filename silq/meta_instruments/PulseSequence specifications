@@ -1,0 +1,66 @@
+=============
+PulseSequence
+=============
+
+The PulseSequence is a class that encompasses Pulses, and is able to define a
+ measurement. Its current features are as follows:
+
+Current features
+================
+- Ability to add/remove/address pulses
+- Fixed total duration, determined from the pulses it contains
+- Handle enabling/disabling of inidividual pulses
+- Restrictions on adding (un)targeted pulses
+- Find pulse(s) based on certain pulse or connection properties
+- Find connection based on certain pulse or connection properties
+- Check if pulses overlap
+- Get transition voltage between two pulses (useful for triggering)
+
+
+Desired features
+================
+That being said, it currently lacks some useful features, and
+ is in need of an upgrade
+
+PulseSequence within another PulseSequence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ability to add a PulseSequence as part of another PulseSequence allows a
+natural way to break up a complex measurement into different layers.
+For example, the entire measurement could be a Measurement PulseSequence,
+which consists of three stages:
+
+- Initialization - Perform the necessary pulses to initialize the system
+- Manipulation - Manipulate the qubit through pulses
+- Read - Read out the state of the qubit
+
+Each of these stages could be an independent PulseSequence, which are joined
+together in the larger PulseSequence. If you combine this with the idea of
+registering a PulseSequence in the config, it becomes especially useful. For
+instance, the Read stage can be identical for different measurements, and so
+you only have to program the Read PulseSequence once, and it can then be
+called from all measurements.
+
+Issues
+******
+One of the issues is that of targeting. 
+
+
+Loop over pulses
+~~~~~~~~~~~~~~~~
+There are situations when you want to loop over a pulse, or perhaps even a
+PulseSequence. An example is the CPMG sequence, which consists of many
+identical pi pulses. Instead of having to add 8192 pi-pulses to a
+PulseSequence, which can significantly slow down the measurement, it is much
+easier to add a single pulse with a command to apply it a number of times.
+This idea could be extended to also iteratively modifying an attribute of the
+Pulse being looped.
+
+Look up PulseSequence from config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+asd
+
+Conditional pulses
+~~~~~~~~~~~~~~~~~~
+
+Add a label that defines PulseSequence properties
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
