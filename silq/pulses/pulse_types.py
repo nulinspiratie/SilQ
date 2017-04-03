@@ -445,7 +445,7 @@ class SinePulse(Pulse):
             "voltage at {} us is not in the time range {} ms - {} ms of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
+        return self.power * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
                                                     self.phase / 360))
 
 
@@ -534,11 +534,12 @@ class DCPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} us is not in the time range {} us - {} us of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude
+        voltage = np.zeros(t.shape[0]) + self.amplitude
+        return voltage
 
 
 class DCRampPulse(Pulse):
@@ -673,11 +674,11 @@ class CombinationPulse(Pulse):
 
     @property
     def t_start(self):
-        return min(self.pulse1.t_start, self.pulse2.t_start, default=None)
+        return min(self.pulse1.t_start, self.pulse2.t_start)
 
     @property
     def t_stop(self):
-        return max(self.pulse1.t_start, self.pulse2.t_start, default=None)
+        return max(self.pulse1.t_stop, self.pulse2.t_stop)
 
     @property
     def combination_string(self):
@@ -712,19 +713,27 @@ class CombinationPulse(Pulse):
                                                                            details=self.pulse_details)
 
     def get_voltage(self, t):
-        try:
-            voltage1 = self.pulse1.get_voltage(t)
-        except AssertionError:
-            voltage1 = 0
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} us is not in the time range {} us - {} us of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        try:
-            voltage2 = self.pulse2.get_voltage(t)
-        except AssertionError:
-            voltage2 = 0
+        result1 = np.zeros(t.shape[0])
+        result2 = np.zeros(t.shape[0])
+
+        # pulse1_t = t[self.pulse1.t_start <= t <= self.pulse1.t_stop]
+        pulse1_t = t[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)]
+        # pulse2_t = t[self.pulse2.t_start <= t <= self.pulse2.t_stop]
+        pulse2_t = t[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)]
+
+        voltage1 = self.pulse1.get_voltage(pulse1_t)
+        voltage2 = self.pulse2.get_voltage(pulse2_t)
+
+        result1[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)] = voltage1
+        result2[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)] = voltage2
 
         if self.relation == '+':
-            return voltage1 + voltage2
+            return result1 + result2
         elif self.relation == '-':
-            return voltage1 - voltage2
+            return result1 - result2
         elif self.relation == '*':
-            return voltage1 * voltage2
+            return result1 * result2
