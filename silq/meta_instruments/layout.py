@@ -7,7 +7,7 @@ from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument, config
-from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
 
 
@@ -59,17 +59,14 @@ class Layout(Instrument):
                            vals=vals.Anything())
 
         self.add_parameter(name="acquisition",
-                           names=['signal'],
-                           get_cmd=self.do_acquisition,
-                           shapes=((),),
-                           snapshot_value=False)
+                           parameter_class=LayoutAcquisitionParameter)
 
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=1)
         self.add_parameter(name="sample_rate",
                            label='Sample Rate',
-                           units='S/s',
+                           unit='S/s',
                            get_cmd=lambda:
                             (self.acquisition_interface.setting('sample_rate')
                                     if self.acquisition_interface is not None
@@ -548,17 +545,6 @@ class Layout(Instrument):
                 if flags:
                     self.update_flags(flags)
 
-        # Setup acquisition parameter metadata
-        # Set acquisition names and labels to equal output labels
-        # (these are the second tuple values in self.acquisition_outputs)
-        if self.acquisition_interface is not None and \
-                self.acquisition_interface.pulse_sequence():
-            self.acquisition.names = list(
-                'signal_' + ch for ch in self.acquisition_channels.keys())
-            self.acquisition.labels = self.acquisition.names
-            self.acquisition.units = self.acquisition_interface.acquisition.units
-            self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
-
     def start(self):
         """
         Starts all the instruments except the acquisition instrument
@@ -946,3 +932,50 @@ class CombinedConnection(Connection):
             return False
         else:
             return True
+
+
+class LayoutAcquisitionParameter(MultiParameter):
+    """
+    Acquisition parameter for the Layout
+    """
+    def __init___(self, name, layout, **kwargs):
+        self.layout = layout
+        super().__init__(name=name, names=self.names,
+                         labels=self.labels,
+                         units=self.units,
+                         shapes=self.shapes,
+                         snapshot_value=False,
+        **kwargs)
+
+    @property
+    def names(self):
+        return list('signal_' + ch for ch in
+                    self.layout.acquisition_channels.keys())
+
+    @names.setter
+    def names(self, names):
+        pass
+
+    @property
+    def labels(self):
+        return list('{} signal' + ch for ch in
+                    self.layout.acquisition_channels.keys())
+    @labels.setter
+    def labels(self, labels):
+        pass
+
+    @property
+    def units(self):
+        return self.layout.acquisition_interface.acquisition.units
+
+    @units.setter
+    def units(self, units):
+        pass
+
+    @property
+    def shapes(self):
+        return self.layout.acquisition_interface.acquisition.units
+
+    @shapes.setter
+    def shapes(self, shapes):
+        pass
