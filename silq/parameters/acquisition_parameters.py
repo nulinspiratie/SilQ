@@ -2,7 +2,7 @@ from time import sleep
 import numpy as np
 import logging
 
-from qcodes.instrument.parameter import Parameter
+from qcodes.instrument.parameter import MultiParameter
 from qcodes.data import hdf5_format, io
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
@@ -15,7 +15,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(SettingsClass, Parameter):
+class AcquisitionParameter(SettingsClass, MultiParameter):
     data_manager = None
     layout = None
     formatter = h5fmt
@@ -28,7 +28,7 @@ class AcquisitionParameter(SettingsClass, Parameter):
             # Add mode to parameter name and label
             kwargs['name'] += self.mode_str
             kwargs['label'] += ' {}'.format(self.mode)
-        Parameter.__init__(self, **kwargs)
+        MultiParameter.__init__(self, **kwargs)
         self.label = kwargs['label']
 
         self.pulse_sequence = PulseSequence()
