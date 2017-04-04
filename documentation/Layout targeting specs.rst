@@ -77,3 +77,54 @@ through its connections to extract the connection it should be targeted to.
 Having some sort of label/tag associated to a pulse
 This label can furthermore be used to extract other parameters, such as the
 ESR frequency etc.
+
+
+Targeting strategy
+******************
+When we assume that the PulseSequence will be upgraded according to the
+specifications laid out in PulseSequence specifications, a good strategy
+needs to be used to target a PulseSequence. The proposed strategy is as follows:
+
+The config maintains a list of `environments` (needs better word). Each
+environment has a name/label, and with it a list of associated connections.
+These connections are in a certain order, and can furthermore be linked to
+certain pulses (i.e. connection A is used for DC pulses with amplitude below
+1.2V). This environment furthermore can contain pulse-specific
+implementations, such as the duration and frequency of a pi-pulse. The idea
+is that the label of such an environment could be something like `qubit_1`,
+which then contains information about the connections used to send pulses to
+qubit 1, and also information on the pulses, such as the resonance frequency.
+
+At the first stage of targeting, the Layout will target the PulseSequence to
+connections. To this end, the PulseSequence is first copied, such that the
+original PulseSequence remains untargeted. Each pulse has an associated label,
+which is linked to an environment. This is used to find the associated
+connection by iterating through the environment connections until it finds
+the first one that can implement the given pulse. At the end of this stage,
+a copy of the original PulseSequence is generated where all pulses are
+targeted to connections. All pulse properties are now also hard properties of
+the pulse, i.e. they are no longer extracted from the config.
+
+Next, the pulses are distributed to the interfaces. Instead of looping
+through the pulses, interfaces are looped over. This looping should be done
+hierarchically (starting with instruments that are not triggering
+instruments, then their triggering instruments etc.). For each interface, a
+skeleton of the PulseSequence is created, and pulses whose connection
+includes the interface is added. The skeleton means everything excluding
+the actual pulses. this therefore includes the nested PulseSequence with
+relevant properties (such as duration), the analysis, the logic operations,
+etc. Transferring the skeleton allows the interfaces to verify if they can
+actually implement the PulseSequence.
+
+For each interface, additional pulses may be required, such as triggers. This
+is then returned to the original Layout as a secondary PulseSequence skeleton
+containing these additional pulses. When the Layout reaches interfaces that
+need to implement these additional pulses, it will add these pulses to the
+original PulseSequence skeleton.
+
+This strategy allows straightforward implementation the desired features
+mentioned above. First of all, nested PulseSequences are also passed along,
+as they are part of the PulseSequence skeleton. The same holds for logic
+operations and PulseSequences with repetitions, as these also belong to the
+skeleton. Furthermore, the `environment` facilitates directing similar pulses
+to different connections.
