@@ -634,6 +634,7 @@ class VariableReadParameter(AcquisitionParameter):
         super().__init__(name='variable_read_acquisition',
                          names=['read_voltage'],
                          labels='Dead voltage',
+                         average_mode='trace',
                          units=['V'],
                          snapshot_value=False,
                          **kwargs)
@@ -643,28 +644,19 @@ class VariableReadParameter(AcquisitionParameter):
             DCPulse(name='read', acquire=True),
             DCPulse(name='final')])
 
-    def setup(self, samples=None, **kwargs):
-        if samples:
-            self.samples = samples
-
-        self.layout.target_pulse_sequence(self.pulse_sequence)
-
-        self.layout.setup(samples=self.samples, average_mode='trace')
-
-        # Setup parameter metadata
-        self.names = self.layout.acquisition.names
-        self.labels = self.layout.acquisition.labels
-        self.shapes = self.layout.acquisition.shapes
-
-        super().setup(**kwargs)
+    @property
+    def shape(self):
+        return self.layout.acquisition.shapes[0]
 
     def get(self):
-        self.traces = self.layout.acquisition()
-        return self.traces
+        self.setup()
+
+        self.acquire(segment_traces=False)
+
+        return self.data['acquisition_traces']['output']
 
     def set(self, read_voltage):
         # Change read stage voltage.
         self.read_voltage = read_voltage
         self.pulse_sequence['read'].voltage = self.read_voltage
 
-        self.setup()
