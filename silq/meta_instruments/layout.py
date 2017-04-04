@@ -85,6 +85,7 @@ class Layout(Instrument):
 
         self._pulse_sequence = PulseSequence
 
+
     @property
     def acquisition_interface(self):
         """
@@ -104,7 +105,6 @@ class Layout(Instrument):
         #  acquisition channel. This is settable via layout.acquisition_outputs
         #  The acquisition_channel_name is the actual channel name of the
         #  acquisition controller.
-
         acquisition_channels = od()
         for output_arg, output_label in self.acquisition_outputs():
             # Use try/except in case not all connections exist
@@ -949,8 +949,11 @@ class LayoutAcquisitionParameter(MultiParameter):
 
     @property
     def names(self):
-        return list('signal_' + ch for ch in
-                    self.layout.acquisition_channels.keys())
+        if self.layout.acquisition_channels is None:
+            return ['']
+        else:
+            return list('signal_' + ch for ch in
+                        self.layout.acquisition_channels.keys())
 
     @names.setter
     def names(self, names):
@@ -958,8 +961,11 @@ class LayoutAcquisitionParameter(MultiParameter):
 
     @property
     def labels(self):
-        return list('{} signal' + ch for ch in
-                    self.layout.acquisition_channels.keys())
+        if self.layout.acquisition_channels is None:
+            return ['']
+        else:
+            return list('{} signal' + ch for ch in
+                        self.layout.acquisition_channels.keys())
     @labels.setter
     def labels(self, labels):
         pass

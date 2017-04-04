@@ -9,7 +9,7 @@ layout.primary_instrument('pulseblaster')
 layout.acquisition_instrument('ATS')
 
 # Pulseblaster output connections
-cPB4 = layout.add_connection(output_arg='pulseblaster.ch4',
+cPB4 = layout.add_connection(output_arg='pulseblaster.ch1',
                              input_arg='ATS.trig_in',
                              trigger=True)
 cPB2 = layout.add_connection(output_arg='pulseblaster.ch2',
