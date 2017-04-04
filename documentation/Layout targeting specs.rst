@@ -39,8 +39,41 @@ Once the Layout receives the PulseSequence, it will loop over the pulses.
 -. Any additional pulses are also targeted in the same way before looping to
    the next pulse.
 
-Issues with current targeting scheme
-************************************
+Desired features
+****************
 The current targeting scheme has worked for the relatively simple
 measurements we have performed so far in SilQ, but is not very practical for
-more complicated measurements
+more complicated measurements. This is especially the case when considering the
+upcoming improvements on the PulseSequence (see PulseSequence specifications).
+
+- Easily direct similar pulses to different connections
+- Targeting of logic operations
+- Dealing with nested PulseSequences
+- Handling PulseSequences which have repetitions
+
+
+Easily direct similar pulses to different connections
+-----------------------------------------------------
+Figuring out which pulse should go to which connection is currently done
+almost entirely autonomous. While this is in principle a good thing, it
+breaks down when
+
+- The pulse should go to a connection that is not default
+- When there are multiple possible connections, none of which are default
+- When there are multiple interfaces that can implement the given pulse
+
+This can be circumvented by giving kwargs to ``pulse.connection_requirements``
+that specify the connection it should go to, but this is awkward, and more
+importantly counters the whole idea of generalization that SilQ is meant to
+achieve. While the user should still be able to specify the connection in
+``pulse.connection_requirements``, there should be more convenient
+alternatives that keep the code general.
+
+As an example for when we would want to easily specify the connection a pulse
+should go to, we look at a multi-qubit system. In this case, pulses are
+usually directed to one qubit, each of which has its own associated connections.
+If you could therefore connect a pulse to a qubit, you would be able to go
+through its connections to extract the connection it should be targeted to.
+Having some sort of label/tag associated to a pulse
+This label can furthermore be used to extract other parameters, such as the
+ESR frequency etc.
