@@ -17,6 +17,7 @@ Current features
 - Find connection based on certain pulse or connection properties
 - Check if pulses overlap
 - Get transition voltage between two pulses (useful for triggering)
+- Initialization stage for PulseSequence (before t=0). To be replaced.
 
 
 Desired features
