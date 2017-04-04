@@ -72,8 +72,7 @@ class ATSInterface(InstrumentInterface):
                            get_cmd=lambda: self._acquisition_settings)
 
         self.add_parameter(name="acquisition",
-                           parameter_class=ATSAcquisitionParameter,
-                           instrument=self._acquisition_controller)
+                           parameter_class=ATSAcquisitionParameter)
 
         self.add_parameter(name='default_acquisition_controller',
                            parameter_class=ManualParameter,
@@ -215,7 +214,7 @@ class ATSInterface(InstrumentInterface):
         self.setup_acquisition_controller()
 
         # Update acquisition controller in acquisition parameter
-        self.acquisition = self._acquisition_controller
+        self.acquisition.acquisition_controller = self._acquisition_controller
 
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
