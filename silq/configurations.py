@@ -22,6 +22,12 @@ _configurations = {
                  'analysis': {'select': ['imports', 'functions', 'data',
                                          'analysis', 'plotting']}
              }},
+    'OF27': {'folder': r"experiments\OF27\init",
+             'macs': [],
+             'modes': {
+                 'analysis': {'select': ['imports', 'functions', 'data',
+                                         'analysis', 'plotting']}
+             }},
     'Steffi': {'folder': r"personal\Steffi\init",
              'macs': [140870679927045],
              'modes': {
