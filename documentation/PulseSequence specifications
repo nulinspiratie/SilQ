@@ -1,15 +1,17 @@
+.. role:: red
+
 =============
 PulseSequence
 =============
 
-The PulseSequence is a class that encompasses Pulses, and is able to define a
- measurement. Its current features are as follows:
+The PulseSequence is a class that combines Pulses, and is able to define a
+measurement. Its current features are as follows:
 
 Current features
 ================
 - Ability to add/remove/address pulses
 - Fixed total duration, determined from the pulses it contains
-- Handle enabling/disabling of inidividual pulses
+- Handle enabling/disabling of individual pulses
 - Restrictions on adding (un)targeted pulses
 - Find pulse(s) based on certain pulse or connection properties
 - Find connection based on certain pulse or connection properties
@@ -19,8 +21,11 @@ Current features
 
 Desired features
 ================
-That being said, it currently lacks some useful features, and
- is in need of an upgrade
+Although the PulseSequence suits our current needs for performing a measurement,
+it lacks some useful features, and is in need of an upgrade. The following
+sections highlight the features that are lacking, including a consideration
+of issues and implementation.
+
 
 Nesting PulseSequence within another PulseSequence
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,10 +70,14 @@ Implementation
 If we assume that targeting is taken care of, nesting PulseSequences should
 have the following features:
 
+- Adding a nested PulseSequences should happen the same as adding a pulse.
 - A name, which can be used to identify the PulseSequence when it is nested.
 - The duration, if it exists. This may not be the case if the PulseSequence
   contains logic operations.
-- Add a nested PulseSequences, just as you would add a pulse.
+- Each nested PulseSequence should start at ``t=0``. This would probably mean
+  that each interface would need to know about all the nested PulseSequences,
+  because if it would get a Pulse, it would need to know what PulseSequence
+  it belongs to.
 - **Optional** If a PulseSequence contains at least one PulseSequence, there
   should always be an active PulseSequence. If a Pulse is then added, it is
   automatically added to a PulseSequence. This way you ensure that a
@@ -78,6 +87,7 @@ have the following features:
 - **Optional** Some sort of output data, which can be treated as input variables
   for other PulseSequences. This is related to logic operations.
 - **Optional** Analysis within the PulseSequence. For instance, check for blips.
+
 
 Loop over pulses
 ~~~~~~~~~~~~~~~~
@@ -89,19 +99,23 @@ easier to add a single pulse with a command to apply it a number of times.
 This idea could be extended to also iteratively modifying an attribute of the
 Pulse being looped.
 
+Features
+********
+- Loop over a Pulse or a PulseSequence
+- The duration of the loop should take the repetitions into account.
+
 Issues
 ******
 - During targeting the loop should remain, i.e. the pulse should not be
   copied 8192 times.
-- The duration of the PulseSequence should take the repetitions into account.
 
 Implementation
 **************
-Perhaps the easiest way to implement this is to add a ``PulseSequence.repetitions``
-attribute, equal to 1 by default. When you then want to
-loop over one or more pulses, you wrap them in a PulseSequence and increase
-the repetitions. In this case it would be necessary to also somehow pass
-along the PulseSequence (which has information on ``repetitions``) during
+Perhaps the easiest way to implement this is to add a
+``PulseSequence.repetitions`` attribute, equal to 1 by default. When you then
+want to loop over one or more pulses, you wrap them in a PulseSequence and
+increase the repetitions. In this case it would be necessary to also somehow
+pass along the PulseSequence (which has information on ``repetitions``) during
 targeting.
 
 Another solution is to create logic that says: Go back to beginning of pulse
@@ -112,12 +126,96 @@ A third solution is to create a LoopPulse, which loops over a pulse. This
 also seems less elegant than the first solution, mainly because it becomes
 awkward to loop over a PulseSequence (a PulseSequence within a pulse?).
 
+
 Look up PulseSequence from config
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-asd
+Being able to efficiently store and load PulseSequences eases the reuse of
+PulseSequences for different measurements, and also for different sessions. A
+good option for this is in a config file.
 
-Conditional pulses
-~~~~~~~~~~~~~~~~~~
+Features
+********
+- Load and save PulseSequence to config,
+- Easy creation of stored PulseSequence (preferably by creating
+  PulseSequence with same name/label as the stored PulseSequence). Optionally
+  there could be a flag ``load_from_config``, which only loads if set to True.
+- Easy modification of stored PulseSequence. Preferably a file that can be
+  easily modified. This could either be a JSON dictionary, or something that
+  can be converted to/from a JSON dictionary.
+- PulseSequence properties from a config can be overridden when creating an
+  instance of the PulseSequence
+- When a property in the PulseSequence config is updated, it is immediately
+  reflected in the PulseSequence
+- The pulses in a PulseSequence can also be loaded from a Pulse config.
 
-Add a label that defines PulseSequence properties
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Issues
+******
+If a PulseSequence coincidentally has the same name as one in the config, it
+could automatically be loaded even though this is not wanted.
+
+Implementation
+**************
+QCoDeS has a config file, and it may be good enough for our purposes.
+However, modifying such a config is somewhat difficult, and so we might opt
+for a separate SilQ config. In this case, we need to ensure that it is also
+stored during each measurement.
+
+The name/label of a PulseSequence can be used to identify a PulseSequence in a
+config.
+
+
+Logic operations
+~~~~~~~~~~~~~~~~
+Advanced instruments, especially those containing an FPGA, can perform logic
+operations. As a primary example, either PulseSequence A or PulseSequence B
+is performed depending on the outcome of a measurement.
+
+An existing example is the steered initialization, which remains idle until
+no blips have been measured for a threshold duration. At the moment, this is
+programmed in a hacky way, by letting a PulseSequence have an initialization
+stage, after which the actual PulseSequence starts with ``t=0``. Ideally we
+would want this to be replaced by a separate nested PulseSequence which ends
+with a logic operation.
+
+
+Issues
+******
+There are quite a few issues with adding logic to PulseSequences. The main
+issue is probably how each of the interfaces will be informed about logic
+operations, and how they will deal with it. In fact, most instruments are not
+able to deal with general logic operations, but only in very specific cases.
+As an example we consider an AWG that outputs pulses sequentially after
+each trigger. It is not able to either output pulse A or pulse B depending on
+the outcome of a measurement. However, it will be able to wait with
+outputting a pulse until it receives a final trigger. The AWG can therefore
+implement a subset of all logic operations.
+
+Programming each interface how to discern if it can implement a PulseSequence
+containing logic operations can become quite complicated. You would want
+interfaces to raise errors if they cannot implement some sort of logic.
+However, this means that all relevant interfaces would need to know about the
+logic being used
+
+Possible types of logic
+-----------------------
+- If/elif/else statements. In each of these cases, it should be able to point
+  to a point in the PulseSequence, such as a different PulseSequence. It
+  could also be other commands, such as ``continue`` and ``stop``.
+- Perform analysis, such as check for blips. In this case, it would often
+  need to point at the acquisition of data from a previous pulse.
+- :red:`More types of logic?`
+
+Implementation
+**************
+- If there is logic within a PulseSequence, there may not be a well-defined
+  duration. For instance if an if statement can point to two different
+  PulseSequences. In this case, PulseSequence.duration should either raise an
+  error, or return None.
+- Logic should not be a child of the Pulse class, but rather a separate class.
+  Perhaps even another class for analysis?
+- Analysis could be used in interfaces similar to PulseImplementations. In
+  this case, instruments such as the Signadyne could have an
+  AnalysisImplementation for finding blips.
+- Implementing logic could be more tricky, as it clearly does not belong to a
+  single interface, but rather affects all interfaces that are involved in
+  the measurement.
