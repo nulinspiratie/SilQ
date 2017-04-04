@@ -81,13 +81,36 @@ have the following features:
 
 Loop over pulses
 ~~~~~~~~~~~~~~~~
-There are situations when you want to loop over a pulse, or perhaps even a
+There are situations where you want to loop over a pulse, or perhaps even over a
 PulseSequence. An example is the CPMG sequence, which consists of many
 identical pi pulses. Instead of having to add 8192 pi-pulses to a
 PulseSequence, which can significantly slow down the measurement, it is much
 easier to add a single pulse with a command to apply it a number of times.
 This idea could be extended to also iteratively modifying an attribute of the
 Pulse being looped.
+
+Issues
+******
+- During targeting the loop should remain, i.e. the pulse should not be
+  copied 8192 times.
+- The duration of the PulseSequence should take the repetitions into account.
+
+Implementation
+**************
+Perhaps the easiest way to implement this is to add a ``PulseSequence.repetitions``
+attribute, equal to 1 by default. When you then want to
+loop over one or more pulses, you wrap them in a PulseSequence and increase
+the repetitions. In this case it would be necessary to also somehow pass
+along the PulseSequence (which has information on ``repetitions``) during
+targeting.
+
+Another solution is to create logic that says: Go back to beginning of pulse
+8192 times. However, this feels less elegant than the previous solution, also
+since passing along logic can be complicated.
+
+A third solution is to create a LoopPulse, which loops over a pulse. This
+also seems less elegant than the first solution, mainly because it becomes
+awkward to loop over a PulseSequence (a PulseSequence within a pulse?).
 
 Look up PulseSequence from config
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
