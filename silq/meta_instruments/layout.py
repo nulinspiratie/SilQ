@@ -172,18 +172,26 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def load_connections(self):
+    def load_connections(self, filepath=None):
         """
         Load connections from qcodes.config.user.connections
         Returns:
             None
         """
         self.connections.clear()
-
-        from qcodes import config
-        connections = config.user.get('connections', None)
-        if connections is None:
-            raise RuntimeError('No connections found in config.user')
+        if filepath is not None:
+            import os, sys, json
+            if not os.path.isabs(filepath):
+                # relative path is wrt silq base directory
+                basedir = os.path.dirname(sys.modules['silq'].__path__[0])
+                filepath = os.path.join(basedir, filepath)
+            with open(filepath, "r") as fp:
+                connections = json.load(fp)
+        else:
+            from qcodes import config
+            connections = config.user.get('connections', None)
+            if connections is None:
+                raise RuntimeError('No connections found in config.user')
 
         for connection in connections:
             # Create a copy of connection, else it changes the config
@@ -197,7 +205,7 @@ class Layout(Instrument):
                 nested_connections = [self.get_connection(output_arg=output_arg)
                                       for output_arg in output_args]
                 # Remaining properties in connection dict are kwargs
-                self.combine_connections(nested_connections, **connection)
+                self.combine_connections(*nested_connections, **connection)
             else:
                 # Properties in connection dict are kwargs
                 self.add_connection(**connection)
