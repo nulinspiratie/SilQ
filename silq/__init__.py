@@ -2,8 +2,10 @@ import sys
 import os
 from .configurations import _configurations
 
-from qcodes import config
+import qcodes as qc
 
+# Dictionary of SilQ subconfigs
+config = {}
 
 def get_silq_folder():
     import silq
@@ -65,8 +67,8 @@ def initialize(name=None, mode=None, select=None, ignore=None,
     # Modify QCoDeS config (add subconfigs, and add custom config filepath)
     config_folder = os.path.join(folder, 'config')
     # Add config in ./config (if it exists)
-    config.custom_file_name = os.path.join(config_folder,
-                                           config.config_file_name)
+    qc.config.custom_file_name = os.path.join(config_folder,
+                                              qc.config.config_file_name)
 
     # Add subconfigs (other files in config). They go in config.user.{subconfig}
     config_filenames = os.listdir(config_folder)
@@ -74,10 +76,13 @@ def initialize(name=None, mode=None, select=None, ignore=None,
                       os.path.join(config_folder,filename)
                   for filename in config_filenames
                   if 'qcodesrc' not in filename}
-    config.subconfigs = subconfigs
+    qc.config.subconfigs = subconfigs
 
     # Update config to include custom filepath and subconfigs
-    config.current_config = config.update_config()
+    qc.config.current_config = qc.config.update_config()
+    # Add subconfigs to SilQ config
+    for subconfig_key in subconfigs:
+        config[subconfig_key] = qc.config.user[subconfig_key]
 
 
     # Run initialization files in ./init
