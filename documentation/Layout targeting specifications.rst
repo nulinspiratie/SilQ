@@ -87,20 +87,20 @@ needs to be used to target a PulseSequence. The proposed strategy is as follows:
 
 The config maintains a list of `environments` (needs better word). Each
 environment has a name/label, and with it a list of associated connections.
-These connections are in a certain order, and can furthermore be linked to
-certain pulses (i.e. connection A is used for DC pulses with amplitude below
-1.2V). This environment furthermore can contain pulse-specific
-implementations, such as the duration and frequency of a pi-pulse. The idea
-is that the label of such an environment could be something like `qubit_1`,
-which then contains information about the connections used to send pulses to
-qubit 1, and also information on the pulses, such as the resonance frequency.
+These connections each have a label within the environment, and can be linked to
+certain pulses (i.e. connection `qubit1.DC` corresponds to connection `DC` in
+environment `qubit1`). This environment furthermore can contain
+pulse-specific implementations, such as the duration and frequency of a
+pi-pulse. The idea is that the label of such an environment could be
+something like `qubit1`, which then contains information about the
+connections used to send pulses to qubit 1, and also information on the
+pulses, such as the resonance frequency.
 
 At the first stage of targeting, the Layout will target the PulseSequence to
 connections. To this end, the PulseSequence is first copied, such that the
-original PulseSequence remains untargeted. Each pulse has an associated label,
-which is linked to an environment. This is used to find the associated
-connection by iterating through the environment connections until it finds
-the first one that can implement the given pulse. At the end of this stage,
+original PulseSequence remains untargeted. Each pulse has an associated
+connection label, which is linked to a connection within an environment. This
+allows each pulse to be mapped to a unique connection. At the end of this stage,
 a copy of the original PulseSequence is generated where all pulses are
 targeted to connections. All pulse properties are now also hard properties of
 the pulse, i.e. they are no longer extracted from the config.
