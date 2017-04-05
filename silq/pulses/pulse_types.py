@@ -8,7 +8,7 @@ from silq.tools.general_tools import get_truth, SettingsClass
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
+pulse_conditions = ['t_start', 't', 't_stop', 'duration', 'acquire', 'initialize',
                     'connection', 'amplitude', 'enabled']
 
 pulse_config = config['user'].get('pulses', {})
@@ -292,7 +292,7 @@ class Pulse(SettingsClass):
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None,
-                             t_start=None, t_stop=None, duration=None,
+                             t_start=None, t=None, t_stop=None, duration=None,
                              acquire=None, initialize=None, connection=None,
                              amplitude=None, enabled=None):
         """
@@ -302,6 +302,7 @@ class Pulse(SettingsClass):
         Possible relations: '>', '<', '>=', '<=', '=='
         Args:
             t_start:
+            t:
             t_stop:
             duration:
             acquire:
@@ -313,6 +314,13 @@ class Pulse(SettingsClass):
         """
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
+
+        if t is not None:
+            assert (t_start is None and t_stop is None), \
+                "Cannot pass both t and either t_start or t_stop"
+            # If t is given, ensure that it is betwen t_start and t_stop
+            t_start = ('<=', t)
+            t_stop = ('>=', t)
 
         for property in pulse_conditions:
 
