@@ -172,6 +172,36 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
+    def load_connections(self):
+        """
+        Load connections from qcodes.config.user.connections
+        Returns:
+            None
+        """
+        self.connections.clear()
+
+        from qcodes import config
+        connections = config.user.get('connections', None)
+        if connections is None:
+            raise RuntimeError('No connections found in config.user')
+
+        for connection in connections:
+            # Create a copy of connection, else it changes the config
+            connection = connection.copy()
+            if 'combine' in connection:
+                # Create CombinedConnection. connection['combine'] consists of
+                # output args of the SingleConnections
+                output_args = connection.pop('combine')
+                # Must add actual Connection objects, so retrieving them from
+                #  Layout
+                nested_connections = [self.get_connection(output_arg=output_arg)
+                                      for output_arg in output_args]
+                # Remaining properties in connection dict are kwargs
+                self.combine_connections(nested_connections, **connection)
+            else:
+                # Properties in connection dict are kwargs
+                self.add_connection(**connection)
+
     def get_connections(self, connection=None, **conditions):
         """
         Returns all connections that satisfy given conditions
