@@ -3,6 +3,7 @@ from functools import partial
 from collections import OrderedDict as od
 import inspect
 
+import silq
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
@@ -180,11 +181,10 @@ class Layout(Instrument):
         """
         self.connections.clear()
         if filepath is not None:
-            import os, sys, json
+            import os, json
             if not os.path.isabs(filepath):
                 # relative path is wrt silq base directory
-                basedir = os.path.dirname(sys.modules['silq'].__path__[0])
-                filepath = os.path.join(basedir, filepath)
+                filepath = os.path.join(silq.get_SilQ_folder(), filepath)
             with open(filepath, "r") as fp:
                 connections = json.load(fp)
         else:
