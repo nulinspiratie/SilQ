@@ -14,14 +14,19 @@ pulse_config = config['user'].get('pulses', {})
 
 
 class CombinedParameter(Parameter):
-    def __init__(self, parameters, name=None, label=None, units=None, **kwargs):
+    """
+    Combines multiple parameters into a single parameter.
+    Setting this parameter sets all underlying parameters to this value
+    Getting this parameter gets the value of the first parameter
+    """
+    def __init__(self, parameters, name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
         if label is None:
-            label = ' and '.join([parameter.name for parameter in parameters])
-        if units is None:
-            units = parameters[0].units
-        super().__init__(name, label=label, units=units, **kwargs)
+            label = ' and '.join([parameter.label for parameter in parameters])
+        if unit is None:
+            unit = parameters[0].unit
+        super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameters = parameters
 
     def get(self):
@@ -37,15 +42,20 @@ class CombinedParameter(Parameter):
 
 
 class ScaledParameter(Parameter):
+    """
+    Creates a new parameter that scales a previous parameter by a ratio
+    Setting this parameter sets the underlying parameter multiplied by the ratio
+    Getting this parameter gets the underlying parameter divided by the ratio
+    """
     def __init__(self, parameter, ratio=1,
-                 name=None, label=None, units=None, **kwargs):
+                 name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = parameter.name
         if label is None:
-            label = parameter.name
-        if units is None:
-            units = parameter.units
-        super().__init__(name, label=label, units=units, **kwargs)
+            label = parameter.label
+        if unit is None:
+            unit = parameter.unit
+        super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameter = parameter
 
         self.ratio = ratio
@@ -63,6 +73,9 @@ class ScaledParameter(Parameter):
 
 
 class StoreParameter(Parameter):
+    """
+    Stores data in a separate file (not working anymore, needs upgrading)
+    """
     def __init__(self, shape, data_manager, formatter=None, **kwargs):
         super().__init__(name='random_parameter', shape=shape, **kwargs)
         self.data_manager = data_manager
