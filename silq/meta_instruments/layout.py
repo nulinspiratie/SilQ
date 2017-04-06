@@ -835,9 +835,9 @@ class SingleConnection(Connection):
 
         Args:
             output_instrument (str): Name of output instrument
-            output_channel (str): Name of output channel
+            output_channel (Channel): Output channel object
             input_instrument (str): Name of output instrument
-            input_channel (str): Name of output channel
+            input_channel (Channel): Input channel object
             trigger (bool): Sets the output channel to trigger the input
                 instrument
             acquire (bool): Sets if this connection is used for acquisition
