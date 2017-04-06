@@ -2,6 +2,11 @@ import sys
 import os
 from .configurations import _configurations
 
+import qcodes as qc
+
+# Dictionary of SilQ subconfigs
+config = {}
+
 def get_silq_folder():
     import silq
     return os.path.split(silq.__file__)[0]
@@ -56,13 +61,35 @@ def initialize(name=None, mode=None, select=None, ignore=None,
         ignore = _configurations[
             name]['modes'][mode].get('ignore', None)
 
-    SilQ_folder = get_SilQ_folder()
-    folder = os.path.join(SilQ_folder,
-                          _configurations[name]['folder'])
+    folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
 
-    filenames = os.listdir(folder)
 
-    for filename in filenames:
+    # Modify QCoDeS config (add subconfigs, and add custom config filepath)
+    config_folder = os.path.join(folder, 'config')
+    # Add config in ./config (if it exists)
+    qc.config.custom_file_name = os.path.join(config_folder,
+                                              qc.config.config_file_name)
+
+    # Add subconfigs (other files in config). They go in config.user.{subconfig}
+    config_filenames = os.listdir(config_folder)
+    subconfigs = {os.path.splittext(filename):
+                      os.path.join(config_folder,filename)
+                  for filename in config_filenames
+                  if 'qcodesrc' not in filename}
+    qc.config.subconfigs = subconfigs
+
+    # Update config to include custom filepath and subconfigs
+    qc.config.current_config = qc.config.update_config()
+    # Add subconfigs to SilQ config
+    for subconfig_key in subconfigs:
+        config[subconfig_key] = qc.config.user[subconfig_key]
+
+
+    # Run initialization files in ./init
+    init_folder = os.path.join(folder, 'init')
+    init_filenames = os.listdir(init_folder)
+
+    for filename in init_filenames:
         # Remove prefix
         name = filename.split('_', 1)[1]
         # Remove .py extension
@@ -73,7 +100,7 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             continue
         else:
             print('Initializing {}'.format(name))
-            filepath = os.path.join(folder, filename)
+            filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
                 exec(fh.read()+"\n", globals, locals)
     print("Initialization complete")
