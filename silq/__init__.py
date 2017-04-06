@@ -95,7 +95,7 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             continue
         else:
             print('Initializing {}'.format(name))
-            filepath = os.path.join(folder, filename)
+            filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
                 exec(fh.read()+"\n", globals, locals)
     print("Initialization complete")
