@@ -170,7 +170,7 @@ class DCParameter(AcquisitionParameter):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        return self.data['acquisition_traces']['output']
+        return [self.data['acquisition_traces']['output']]
 
 
 class DCPulseSweepParameter(AcquisitionParameter):
@@ -338,11 +338,6 @@ class AdiabaticParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
 
 class RabiParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
@@ -410,12 +405,6 @@ class RabiParameter(AcquisitionParameter):
             self.print_results()
 
         return self.results
-
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
 
 class RabiDriveParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
@@ -492,11 +481,6 @@ class RabiDriveParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, duration):
-        # Change drive duration
-        self.duration = duration
-        self.setup()
-
 
 class T1Parameter(AcquisitionParameter):
     def __init__(self, **kwargs):
@@ -563,10 +547,6 @@ class T1Parameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, wait_time):
-        self.pulse_sequence['plunge'].duration = wait_time
-        self.setup()
-
 
 class DarkCountsParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
@@ -623,12 +603,6 @@ class DarkCountsParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
-
 class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='variable_read_acquisition',
@@ -654,9 +628,3 @@ class VariableReadParameter(AcquisitionParameter):
         self.acquire(segment_traces=False)
 
         return self.data['acquisition_traces']['output']
-
-    def set(self, read_voltage):
-        # Change read stage voltage.
-        self.read_voltage = read_voltage
-        self.pulse_sequence['read'].voltage = self.read_voltage
-
