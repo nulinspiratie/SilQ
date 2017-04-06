@@ -233,8 +233,7 @@ class Layout(Instrument):
             if connection in self.connections:
                 return [connection]
             else:
-                raise RuntimeError("Connection {} not found int "
-                                   "connections".format(connection))
+                raise RuntimeError(f"{connection} not found in connections")
         else:
             return [connection for connection in self.connections
                     if connection.satisfies_conditions(**conditions)]
@@ -255,9 +254,8 @@ class Layout(Instrument):
             Connection that satisfies kwarg constraints
         """
         connections = self.get_connections(**conditions)
-        assert len(connections) == 1, "Found {} connections instead of one " \
-                                      "satisfying {}".format(len(connections),
-                                                             conditions)
+        assert len(connections) == 1, f"Found {len(connections)} connections " \
+                                      f"instead of one satisfying {conditions}"
         return connections[0]
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
@@ -711,32 +709,26 @@ class Connection:
     def target_pulse(self, pulse):
         raise NotImplementedError();
 
-    def satisfies_conditions(self, input_arg=None, input_instrument=None,
+    def satisfies_conditions(self, input_instrument=None,
                              input_channel=None, input_interface=None,
-                             output_arg=None, output_instrument=None,
-                             output_channel=None, output_interface=None,
+                             output_instrument=None, output_channel=None,
+                             output_interface=None,
                              **kwargs):
         """
         Checks if this connection satisfies conditions. Note that all
         instrument/channel args can also be lists of elements. If so,
         condition is satisfied if connection property is in list
         Args:
-            output_arg: Connection must have output 'instrument.channel'
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
-            input_arg: Connection must have input 'instrument.channel'
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
         Returns:
             Bool depending on if the connection satisfies conditions
         """
-        if output_arg is not None:
-            output_instrument, output_channel = output_arg.split('.')
-        if input_arg is not None:
-            input_instrument, input_channel = input_arg.split('.')
-
+        # Convert interfaces to their underlying instruments
         if output_interface is not None:
             output_instrument = output_interface.instrument_name()
         if input_interface is not None:
@@ -859,20 +851,39 @@ class SingleConnection(Connection):
             targeted_pulse.amplitude /= self.scale
         return targeted_pulse
 
-    def satisfies_conditions(self, trigger=None, acquire=None, software=None,
+    def satisfies_conditions(self, output_arg=None, input_arg=None,
+                             trigger=None, acquire=None, software=None,
                              **kwargs):
         """
-        Checks if this connection satisfies conditions
+        Checks if this connection satisfies conditions. Note that all
+        instrument/channel args can also be lists of elements. If so,
+        condition is satisfied if connection property is in list
         Args:
+            output_arg: Connection must have output 'instrument.channel'
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
+            input_arg: Connection must have input 'instrument.channel'
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
         Returns:
             Bool depending on if the connection satisfies conditions
         """
+        if output_arg is not None:
+            if not isinstance(output_arg, str):
+                # output_arg is of wrong type (probably CombinedConnection)
+                return False
+            if not self.output['str'] == output_arg:
+                return False
+
+        if input_arg is not None:
+            if not isinstance(input_arg, str):
+                # input_arg is of wrong type (probably CombinedConnection)
+                return False
+            if not self.input['str'] == input_arg:
+                return False
+
         if not super().satisfies_conditions(**kwargs):
             return False
         elif trigger is not None and self.trigger != trigger:
@@ -900,19 +911,26 @@ class CombinedConnection(Connection):
         """
         super().__init__(scale=scale, **kwargs)
         self.connections = connections
+
+        self.output['str'] = [connection.output['str']
+                              for connection in connections]
         self.output['instruments'] = list(set([connection.output['instrument']
                                           for connection in connections]))
-        if len(self.output['instruments']) == 1:
-            self.output['instrument'] = self.output['instruments'][0]
-        else:
-            raise Exception('Connections with multiple output instruments not'
-                            'yet supported')
+        assert len(self.output['instruments']) == 1, \
+            'Connections with multiple output instruments not yet supported'
+        self.output['instrument'] = self.output['instruments'][0]
+
         self.output['channels'] = list(set([connection.output['channel']
                                        for connection in connections]))
+
+
+        self.input['str'] = [connection.input['str']
+                             for connection in connections]
         self.input['instruments'] = list(set([connection.input['instrument']
                                          for connection in connections]))
-        if len(self.input['instruments']) == 1:
-            self.input['instrument'] = self.input['instruments'][0]
+        assert len(self.input['instruments']) == 1, \
+            'Connections with multiple input instruments not yet supported'
+        self.input['instrument'] = self.input['instruments'][0]
         self.input['channels'] = list(set([connection.input['channel']
                                       for connection in connections]))
 
@@ -949,10 +967,12 @@ class CombinedConnection(Connection):
             pulses.append(targeted_pulse)
         return pulses
 
-    def satisfies_conditions(self, trigger=None, acquire=None, **kwargs):
+    def satisfies_conditions(self, output_arg=None, input_arg=None,
+                             trigger=None, acquire=None, **kwargs):
         """
         Checks if this connection satisfies conditions
         Args:
+            output_arg: Underlying SingleConnections 
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
@@ -962,6 +982,30 @@ class CombinedConnection(Connection):
         Returns:
             Bool depending on if the connection satisfies conditions
         """
+
+        if output_arg is not None:
+            if not isinstance(output_arg, list):
+                # output_arg is not a list (probably str for SingleConnection)
+                return False
+            if not len(output_arg) == len(self.connections):
+                return False
+
+        if input_arg is not None:
+            if not isinstance(input_arg, list):
+                # input_arg is not a list (probably str for SingleConnection)
+                return False
+            if not len(input_arg) == len(self.connections):
+                return False
+
+        if output_arg is not None and input_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an output/input
+                # combination that satisfies conditions
+                if not any(connection.satisfies_conditions(output_arg=output,
+                                                           input_arg=input)
+                           for output, input in zip(output_arg, input_arg)):
+                    return False
+
         if not super().satisfies_conditions(**kwargs):
             return False
         elif trigger is not None:
