@@ -218,13 +218,32 @@ class Layout(Instrument):
                 is in layout.connections, it returns a list with the connection.
                 Can be useful when pulse.connection_requirements needs a
                 specific connection
-            output_interface: Connections must have output_interface
+            output_arg: string representation of output.
+                SingleConnection has form '{instrument}.{channel}'
+                CombinedConnection is list of SingleConnection output_args, 
+                    which must have equal number of elements as underlying 
+                    connections. Can be combined with input_arg, in which 
+                    case the first element of output_arg and input_arg are 
+                    assumed to belong to the same underlying connection.
+            output_interface: Connections must have output_interface object
             output_instrument: Connections must have output_instrument name
             output_channel: Connections must have output_channel
-            input_interface: Connections must have input_interface
+                (either Channel object, or channel name)
+            input_arg: string representation of input.
+                SingleConnection has form '{instrument}.{channel}'
+                CombinedConnection is list of SingleConnection output_args, 
+                    which must have equal number of elements as underlying 
+                    connections. Can be combined with output_arg, in which 
+                    case the first element of output_arg and input_arg are 
+                    assumed to belong to the same underlying connection.
+            input_interface: Connections must have input_interface object
             input_instrument: Connections must have input_instrument name
             input_channel: Connections must have input_channel
-            trigger: Connection must be a triggering connection
+                (either Channel object, or channel name)
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
+            software: Connection is not an actual hardware connection. Used 
+                when a software trigger needs to be sent
         Returns:
             Connections that satisfy kwarg constraints
         """
@@ -238,7 +257,8 @@ class Layout(Instrument):
             return [connection for connection in self.connections
                     if connection.satisfies_conditions(**conditions)]
 
-    def get_connection(self, **conditions):
+    def get_connection(self, environment=None,
+                       connection_label=None, **conditions):
         """
         Returns connection that satisfy given kwargs.
         If not exactly one was found, it raises an error.
@@ -253,10 +273,42 @@ class Layout(Instrument):
         Returns:
             Connection that satisfies kwarg constraints
         """
-        connections = self.get_connections(**conditions)
-        assert len(connections) == 1, f"Found {len(connections)} connections " \
-                                      f"instead of one satisfying {conditions}"
-        return connections[0]
+        if connection_label is not None:
+            if environment is None:
+                # Determine environment, either from connection label or
+                # default_environment
+                if '.' in connection_label:
+                    # connection label has form {environment}.{connection_label}
+                    environment, connection_label = connection_label.split('.')
+                else:
+                    # Use default environment defined in config
+                    assert 'default_environment' in config.user, \
+                        "No environment nor default environment provided"
+                    environment = config.user.default_environment
+
+            # Obtain list of connections from environment
+            environment_connections = config.user.environments[
+                environment].connections
+
+            # Find connection from environment connections
+            assert connection_label in environment_connections, \
+                f"Could not find connection {connection_label} in " \
+                f"environment {environment}"
+            connection_attrs = environment_connections[connection_label]
+
+            connection_output_str, connection_input_str = connection_attrs
+
+            connection = self.get_connection(output_arg=connection_output_str,
+                                             input_arg=connection_input_str)
+            return connection
+        else:
+            # Extract from conditions other than environment and
+            # connection_label
+            connections = self.get_connections(**conditions)
+            assert len(connections) == 1, \
+                f"Found {len(connections)} connections " \
+                f"instead of one satisfying {conditions}"
+            return connections[0]
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
@@ -721,10 +773,12 @@ class Connection:
         Args:
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel
+            output_channel: Connection must have output_channel 
+                (either Channel object, or channel name)
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
+                (either Channel object, or channel name)
         Returns:
             Bool depending on if the connection satisfies conditions
         """
@@ -859,14 +913,20 @@ class SingleConnection(Connection):
         instrument/channel args can also be lists of elements. If so,
         condition is satisfied if connection property is in list
         Args:
-            output_arg: Connection must have output 'instrument.channel'
-            output_interface: Connection must have output_interface
+            output_arg: Connection must have output '{instrument}.{channel}'
+            output_interface: Connection must have output_interface object
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
-            input_arg: Connection must have input 'instrument.channel'
-            input_interface: Connection must have input_interface
+                (either Channel object, or channel name)
+            input_arg: Connection must have input '{instrument}.{channel}'
+            input_interface: Connection must have input_interface object
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
+                (either Channel object, or channel name)
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
+            software: Connection is not an actual hardware connection. Used 
+                when a software trigger needs to be sent
         Returns:
             Bool depending on if the connection satisfies conditions
         """
@@ -972,13 +1032,28 @@ class CombinedConnection(Connection):
         """
         Checks if this connection satisfies conditions
         Args:
-            output_arg: Underlying SingleConnections 
+            output_arg: list of SingleConnection output_args, each of which 
+                has the form '{instrument}.{channel}. Must have equal number
+                of elements as underlying connections. Can be combined with 
+                input_arg, in which case the first element of output_arg and 
+                input_arg are assumed to belong to the same underlying 
+                connection.
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
+                (either Channel object, or channel name)
+            input_arg: list of SingleConnection input_args, each of which 
+                has the form '{instrument}.{channel}. Must have equal number
+                of elements as underlying connections. Can be combined with 
+                output_arg, in which case the first element of output_arg and 
+                input_arg are assumed to belong to the same underlying 
+                connection.
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
-            input_channel: Connection must have input_channel
+            input_channel: Connection must have input_channel.
+                (either Channel object, or channel name)
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
         Returns:
             Bool depending on if the connection satisfies conditions
         """
