@@ -21,7 +21,7 @@ import qcodes as qc
 from qcodes import Instrument, config, Loop
 from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
-from qcodes.widgets.slack import Slack
+# from qcodes.widgets.slack import Slack
 
 from qcodes.data import hdf5_format
 from qcodes.data.data_set import DataSet, new_data, DataMode
@@ -41,7 +41,7 @@ from silq.pulses import *
 np.set_printoptions(precision=3)
 
 if not 'USE_MP' in globals():
-    USE_MP = True
+    USE_MP = False
 
 if USE_MP:
     config['core']['legacy_mp'] = True

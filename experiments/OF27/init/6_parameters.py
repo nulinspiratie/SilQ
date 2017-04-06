@@ -2,14 +2,14 @@ acquisition_parameters.AcquisitionParameter.layout = layout
 
 dummy_parameter = ManualParameter(name='dummy', initial_value=42)
 DF_DS = general_parameters.CombinedParameter(parameters=[DF, DS])
-turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
-PL_DF_DS = general_parameters.CombinedParameter(parameters=[PL, DF, DS])
-LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
-
+# turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
+# PL_DF_DS = general_parameters.CombinedParameter(parameters=[PL, DF, DS])
+# LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
+#
 DC_parameter = acquisition_parameters.DCParameter()
-EPR_parameter = acquisition_parameters.EPRParameter()
-T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
-variable_read_parameter = acquisition_parameters.VariableReadParameter()
+# EPR_parameter = acquisition_parameters.EPRParameter()
+# T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
+# variable_read_parameter = acquisition_parameters.VariableReadParameter()
 # adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 # adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
 # rabi_ESR_parameter = acquisition_parameters.RabiParameter(mode='ESR')
