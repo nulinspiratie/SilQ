@@ -149,9 +149,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             if delay_cycles < 1e9:
                 inst = inst + (0, 'continue', 0, delay_cycles)
             else:
-               # self.instrument.send_instruction(
-               #     channel_mask, 'continue', 0, 100)
-                # TODO: is it important to have both the continue and long delay inst?
+                # TODO: check to see if a call to long_delay sets the channel registers
                 duration = round(delay_cycles - 100)
                 divisor = int(np.ceil(duration / 1e9))
                 delay = int(duration / divisor)
@@ -166,16 +164,13 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # Insert delay until end of pulse sequence
         # NOTE: This will disable all output channels and use default registers
         delay_duration = max(self._pulse_sequence.duration - t, 0)
-                     #  f0,p0,a0,en0,pr0, f1,p1,a1,en1,pr1
         inst_default = DEFAULT_CH_INST + DEFAULT_CH_INST
         if delay_duration:
             delay_cycles = round(delay_duration * ms)
             if delay_cycles < 1e9:
                 inst = inst_default + (0, 'continue', 0, delay_cycles)
             else:
-                #self.instrument.send_instruction(
-                #    0, 'continue', 0, 100)
-                # TODO: is it important to have both the continue and long delay inst?
+                # TODO: check to see if a call to long_delay sets the channel registers
                 duration = round(delay_cycles - 100)
                 divisor = int(np.ceil(duration / 1e9))
                 delay = int(duration / divisor)
@@ -215,9 +210,10 @@ class SinePulseImplementation(SinePulse, PulseImplementation):
             self._used_frequencies[output_channel_name][self.frequency],
             self._used_phases[output_channel_name][self.phase],
             self._used_amplitudes[output_channel_name][self.amplitude],
-            1,
+            1, # Enable channel
             RESET_PHASE)
         return inst_slice
+
 #TODO: implement a DC pulse implementation and trigger pulse implementation to
 #      be used in the instruction flags
 
