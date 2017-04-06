@@ -34,7 +34,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         self._used_frequencies = {}
         self._used_phases      = {}
         self._used_amplitudes  = {}
-        for ch in [1,2]:
+        for ch in sorted(self._output_channels.keys()):
             self._used_frequencies[ch] = {}
             self._used_phases[ch]      = {}
             self._used_amplitudes[ch]  = {}
@@ -78,10 +78,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         freq_i  = [0,0]
         phase_i = [0,0]
         amp_i   = [0,0]
-        # TODO: Check that using 'ch' as an int makes sense for get_pulses
-        for ch in [1,2]:
+
+        for ch in sorted(self._output_channels.keys()):
+            ch_num = ch[2:] # Get the numerical channel number
             for pulse in self._pulse_sequence.get_pulses(output_channel=ch):
-                n = ch -1 # NOTE: the driver starts counting from 0
+                n = ch_num -1 # NOTE: the driver starts counting from 0
                 if isinstance(pulse, SinePulse):
                     # TODO: Put error when max number of freqs exceeded
                     if pulse.frequency not in self._used_frequencies[ch] and \
@@ -136,8 +137,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             inst = ()
             # for each channel, search for active pulses and implement them
-            # TODO: THIS MUST BE SORTED!!
-            for ch in self._output_channels.keys():
+            for ch in sorted(self._output_channels.keys()):
                 pulse = self._pulse_sequence.get_pulse(enabled=True,
                                                        t=t,
                                                        output_channel=ch)
