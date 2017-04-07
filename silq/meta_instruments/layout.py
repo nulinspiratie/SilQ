@@ -3,11 +3,12 @@ from functools import partial
 from collections import OrderedDict as od
 import inspect
 
+import silq
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument, config
-from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
 
 
@@ -59,17 +60,14 @@ class Layout(Instrument):
                            vals=vals.Anything())
 
         self.add_parameter(name="acquisition",
-                           names=['signal'],
-                           get_cmd=self.do_acquisition,
-                           shapes=((),),
-                           snapshot_value=False)
+                           parameter_class=LayoutAcquisitionParameter)
 
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=1)
         self.add_parameter(name="sample_rate",
                            label='Sample Rate',
-                           units='S/s',
+                           unit='S/s',
                            get_cmd=lambda:
                             (self.acquisition_interface.setting('sample_rate')
                                     if self.acquisition_interface is not None
@@ -87,6 +85,7 @@ class Layout(Instrument):
                            vals=vals.Bool())
 
         self._pulse_sequence = PulseSequence
+
 
     @property
     def acquisition_interface(self):
@@ -107,7 +106,6 @@ class Layout(Instrument):
         #  acquisition channel. This is settable via layout.acquisition_outputs
         #  The acquisition_channel_name is the actual channel name of the
         #  acquisition controller.
-
         acquisition_channels = od()
         for output_arg, output_label in self.acquisition_outputs():
             # Use try/except in case not all connections exist
@@ -174,6 +172,43 @@ class Layout(Instrument):
         connection = CombinedConnection(connections=connections, **kwargs)
         self.connections += [connection]
         return connection
+
+    def load_connections(self, filepath=None):
+        """
+        Load connections from qcodes.config.user.connections
+        Returns:
+            None
+        """
+        self.connections.clear()
+        if filepath is not None:
+            import os, json
+            if not os.path.isabs(filepath):
+                # relative path is wrt silq base directory
+                filepath = os.path.join(silq.get_SilQ_folder(), filepath)
+            with open(filepath, "r") as fp:
+                connections = json.load(fp)
+        else:
+            from qcodes import config
+            connections = config.user.get('connections', None)
+            if connections is None:
+                raise RuntimeError('No connections found in config.user')
+
+        for connection in connections:
+            # Create a copy of connection, else it changes the config
+            connection = connection.copy()
+            if 'combine' in connection:
+                # Create CombinedConnection. connection['combine'] consists of
+                # output args of the SingleConnections
+                output_args = connection.pop('combine')
+                # Must add actual Connection objects, so retrieving them from
+                #  Layout
+                nested_connections = [self.get_connection(output_arg=output_arg)
+                                      for output_arg in output_args]
+                # Remaining properties in connection dict are kwargs
+                self.combine_connections(*nested_connections, **connection)
+            else:
+                # Properties in connection dict are kwargs
+                self.add_connection(**connection)
 
     def get_connections(self, connection=None, **conditions):
         """
@@ -547,17 +582,6 @@ class Layout(Instrument):
                                         **setup_flags, **kwargs)
                 if flags:
                     self.update_flags(flags)
-
-        # Setup acquisition parameter metadata
-        # Set acquisition names and labels to equal output labels
-        # (these are the second tuple values in self.acquisition_outputs)
-        if self.acquisition_interface is not None and \
-                self.acquisition_interface.pulse_sequence():
-            self.acquisition.names = list(
-                'signal_' + ch for ch in self.acquisition_channels.keys())
-            self.acquisition.labels = self.acquisition.names
-            self.acquisition.units = self.acquisition_interface.acquisition.units
-            self.acquisition.shapes = self.acquisition_interface.acquisition.shapes
 
     def start(self):
         """
@@ -946,3 +970,65 @@ class CombinedConnection(Connection):
             return False
         else:
             return True
+
+
+class LayoutAcquisitionParameter(MultiParameter):
+    """
+    Acquisition parameter for the Layout
+    """
+    def __init__(self, name, **kwargs):
+        self.layout = kwargs['instrument']
+        super().__init__(name=name, names=self.names,
+                         labels=self.labels,
+                         units=self.units,
+                         shapes=self.shapes,
+                         snapshot_value=False,
+                         **kwargs)
+
+    @property
+    def names(self):
+        if self.layout.acquisition_channels is None:
+            return ['']
+        else:
+            return list('signal_' + ch for ch in
+                        self.layout.acquisition_channels.keys())
+
+    @names.setter
+    def names(self, names):
+        pass
+
+    @property
+    def labels(self):
+        if self.layout.acquisition_channels is None:
+            return ['']
+        else:
+            return list('{} signal' + ch for ch in
+                        self.layout.acquisition_channels.keys())
+    @labels.setter
+    def labels(self, labels):
+        pass
+
+    @property
+    def units(self):
+        if self.layout.acquisition_interface is not None:
+            return self.layout.acquisition_interface.acquisition.units
+        else:
+            return [''] * len(self.names)
+
+    @units.setter
+    def units(self, units):
+        pass
+
+    @property
+    def shapes(self):
+        if self.layout.acquisition_interface is not None:
+            return self.layout.acquisition_interface.acquisition.units
+        else:
+            return ((),) * len(self.names)
+
+    @shapes.setter
+    def shapes(self, shapes):
+        pass
+
+    def get(self):
+        return self.acquisition_interface.acquisition()
