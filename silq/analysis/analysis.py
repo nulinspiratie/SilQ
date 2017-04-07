@@ -5,11 +5,11 @@ from qcodes import Instrument
 import qcodes.instrument.parameter as parameter
 from qcodes.utils import validators as vals
 
-def find_high_low(traces, plot=False, threshold_peak=0.02):
+def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8):
     hist, bin_edges = np.histogram(np.ravel(traces), bins=30)
 
     # Find two peaks
-    for k in range(4):
+    for k in range(attempts):
         peaks_idx = np.sort(peakutils.indexes(hist, thres=threshold_peak, min_dist=5))
         if len(peaks_idx) == 2:
             break
@@ -17,10 +17,10 @@ def find_high_low(traces, plot=False, threshold_peak=0.02):
             # print('One peak found instead of two, lowering threshold')
             threshold_peak /= 1.5
         elif len(peaks_idx) > 2:
-            print('Found {} peaks instead of two, increasing threshold'.format(len(peaks_idx)))
+            # print('Found {} peaks instead of two, increasing threshold'.format(len(peaks_idx)))
             threshold_peak *= 1.5
         else:
-            print('No peaks found')
+            # print('No peaks found')
             return {'low': None, 'high': None, 'threshold_voltage': None,
                     'voltage_difference': None}
 
@@ -197,6 +197,7 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
 
     fidelity_empty = analyse_empty(trace_segments['empty'])['up_proportion']
     fidelity_load = analyse_load(trace_segments['plunge'])['up_proportion']
+
 
     read_high_low = find_high_low(trace_segments['read'])
     threshold_voltage = read_high_low['threshold_voltage']

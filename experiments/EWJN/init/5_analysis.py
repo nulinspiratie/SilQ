@@ -63,10 +63,11 @@ class T1_Dataset:
 
 class T1_Analysis:
     def __init__(self, location, skip_rows=None, T1_label=None,
-                 T1_wait_time_label=None, analyse=True,     **kwargs):
+                 T1_wait_time_label=None, analyse=True, B0=None,    **kwargs):
         self.location = location
         self.dataset = qc.load_data(self.location)
 
+        self.B0 = B0
         self.skip_rows = skip_rows
         self.T1_label = self.get_label(T1_label, 'up_proportion')
         self.T1_wait_time_label = self.get_label(T1_wait_time_label,

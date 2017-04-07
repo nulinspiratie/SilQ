@@ -43,11 +43,11 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.add_parameter('trigger_in_duration',
                            parameter_class=ManualParameter,
-                           units='us',
+                           unit='us',
                            initial_value=0.1)
         self.add_parameter('final_delay',
                            parameter_class=ManualParameter,
-                           units='us',
+                           unit='us',
                            initial_value=10)
 
         self.add_parameter('active_channels',

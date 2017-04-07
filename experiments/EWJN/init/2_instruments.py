@@ -54,7 +54,8 @@ interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
 pulseblaster_interface = interfaces['pulseblaster']
 
 ### Chip
-chip = Chip(name='chip', server_name='' if USE_MP else None)
+chip = Chip(name='chip', channels=['TGAC', 'DF', 'ESR'],
+            server_name='' if USE_MP else None)
 interfaces['chip'] = get_instrument_interface(chip)
 chip_interface = interfaces['chip']
 
