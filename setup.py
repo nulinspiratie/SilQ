@@ -26,7 +26,11 @@ def readme():
 
 extras = {
     'Non-Linear Least-Squares Minimization and Curve-Fitting': ('lmfit', '0.9.5'),
-    'Peak finding': ('peakutils', '1.0.3')
+    'Peak finding': ('peakutils', '1.0.3'),
+    'PythonNet': ('pythonnet', '2.1'),
+    'slacker': ('slacker', '0.9.42'),
+    'ipympl': ('ipympl', '0.0.3')
+
 }
 extras_require = {k: '>='.join(v) for k, v in extras.items()}
 
@@ -57,7 +61,7 @@ setup(name='silq',
           'ipywidgets>=4.1',
           'h5py>=2.6',
           'pyperclip>=1.5',
-          'pythonnet>=2.1', 'qcodes'
+          'qcodes'
       ],
       extras_require=extras_require,
       zip_safe=False)

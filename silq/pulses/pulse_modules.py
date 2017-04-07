@@ -176,6 +176,7 @@ class PulseSequence:
             return max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
             return 0
+
     @duration.setter
     def duration(self, duration):
         self._duration = duration

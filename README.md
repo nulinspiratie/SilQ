@@ -14,6 +14,8 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 2.	Give Serwan your account details to add you to the private git repository
 
 ### Install SilQ+QCodes
+<span style="color:red">Ensure QCoDeS is not installed on your computer and
+follow below instructions in correct order</span>
 1.	Clone the repository [SilQ](https://github.com/nulinspiratie/SilQ) (includes QCodes) into your hard drive
     (e.g. User/Documents/PythonSoftware) using the installed Github desktop
 2.	QCodes: Open command prompt, Navigate to the Qcodes folder on your computer (SilQ/Qcodes),

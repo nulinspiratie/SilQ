@@ -47,7 +47,7 @@ class E8267DInterface(InstrumentInterface):
         ]
 
         self.add_parameter('envelope_padding',
-                           units='ms',
+                           unit='ms',
                            parameter_class=ManualParameter,
                            initial_value=0)
         self.add_parameter('modulation_channel',
