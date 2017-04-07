@@ -434,6 +434,8 @@ class SinePulse(Pulse):
         self.phase = phase
         self.power = power
 
+        self.amplitude = power
+
     def __repr__(self):
         properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
             self.frequency / 1e6, self.power, self.t_start, self.t_stop)
@@ -534,12 +536,14 @@ class DCPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
             "voltage at {} us is not in the time range {} us - {} us of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        voltage = np.zeros(t.shape[0]) + self.amplitude
-        return voltage
+        if hasattr(t, '__len__'):
+            return [self.amplitude] * len(t)
+        else:
+            return self.amplitude
 
 
 class DCRampPulse(Pulse):
