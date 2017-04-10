@@ -25,8 +25,8 @@ Once the Layout receives the PulseSequence, it will loop over the pulses.
    pulse abstract), and attaching itself to ``pulse.connection``. It can
    further perform operations, such as modifying ``pulse.amplitude`` by
    ``connection.scale``. If the connection is a CombinedConnection, this will
-    furthermore result in several pulses, targeted to each of the underlying
-    connections.
+   furthermore result in several pulses, targeted to each of the underlying
+   connections.
 #. Next the interface transforms the pulses into PulseImplementations that
    are specific to the interface. First, a PulseImplementation is created,
    after which properties from the pulse are copied over to the
@@ -34,8 +34,8 @@ Once the Layout receives the PulseSequence, it will loop over the pulses.
    additional pulses such as triggering. These pulses are then placed in
    ``PulseImplementation.additional_pulses``. The PulseImplementation has a
    method ``PulseImplementation.implement()``, which implements the pulse for
-    a specific interface. The PulseImplementation is then added to
-    ``interface.pulse_sequence``.
+   a specific interface. The PulseImplementation is then added to
+   ``interface.pulse_sequence``.
 #. Any additional pulses are also targeted in the same way before looping to
    the next pulse.
 
