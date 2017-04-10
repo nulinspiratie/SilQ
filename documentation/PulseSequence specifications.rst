@@ -1,8 +1,8 @@
 .. role:: red
 
-=============
-PulseSequence
-=============
+============================
+PulseSequence specifications
+============================
 
 The PulseSequence is a class that combines Pulses, and is able to define a
 measurement. Its current features are as follows:
