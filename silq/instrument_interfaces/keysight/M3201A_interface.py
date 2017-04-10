@@ -52,9 +52,10 @@ class M3201AInterface(InstrumentInterface):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.instrument.off()
 
-    def setup(self):
+    def setup(self, **kwargs):
         # TODO: figure out how/if we want to configure channel-specific sampling rates
         sampling_rates = {ch: 500e6 for ch in self.active_channels()}
+        # TODO: figure out how we want to configure error_threshold
         error_threshold = 1e-6
 
         # flush the onboard RAM and reset waveform counter
@@ -68,27 +69,50 @@ class M3201AInterface(InstrumentInterface):
         #   - queue waveforms
         #   - start awg channel
 
+        waveforms = dict()
+
         for pulse in self.pulse_sequence():
             channel_waveforms = pulse.implement(instrument=self.instrument,
                                                 sampling_rates=sampling_rates,
                                                 threshold=error_threshold)
 
             for ch in channel_waveforms:
-                waveform_array = channel_waveforms[ch]
-                ch_wf_counter = 1
-                for waveform in waveform_array:
-                    print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
-                                                                                            waveform_counter))
-                    if ch_wf_counter == 1:
-                        trigger_mode = 1  # software trigger for first wf
+                if ch in waveforms:
+                    waveforms[ch] += channel_waveforms[ch]
+                else:
+                    waveforms[ch] = channel_waveforms[ch]
+
+        # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
+        for ch in waveforms:
+            waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
+
+            for i, wf in enumerate(waveforms[ch]):
+                if i == 0:
+                    wf['delay'] = 0.0
+                else:
+                    delay = wf['t_stop'] - waveforms[ch][i-1]['t_stop']
+                    if delay < 0:
+                        raise Exception('Overlapping pulses are not allowed for {}. Adjust t_start and t_stop values '
+                                        'or consider using the CombinationPulse'.format(self))
                     else:
-                        trigger_mode = 0  # auto trigger for every wf that follows
-                    print('queueing waveform with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
-                          .format(waveform_counter, self._channels[ch].id, waveform['cycles'], waveform['delay'],
-                                  trigger_mode))
-                    waveform_counter += 1
-                    ch_wf_counter += 1
-                print('starting awg channel {}'.format(self._channels[ch].id))
+                        wf['delay'] = delay
+
+        for ch in waveforms:
+            waveform_array = waveforms[ch]
+            ch_wf_counter = 1
+            for waveform in waveform_array:
+                print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
+                                                                                        waveform_counter))
+                if ch_wf_counter == 1:
+                    trigger_mode = 1  # software trigger for first wf
+                else:
+                    trigger_mode = 0  # auto trigger for every wf that follows
+                print('queueing waveform with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
+                      .format(waveform_counter, self._channels[ch].id, waveform['cycles'], waveform['delay'],
+                              trigger_mode))
+                waveform_counter += 1
+                ch_wf_counter += 1
+            print('starting awg channel {}'.format(self._channels[ch].id))
         pass
 
     def start(self):
@@ -244,19 +268,25 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             waveform_1 = {}
             waveform_2 = {}
 
-            waveform_1_data = [self.get_voltage(t_list_1)]
-            waveform_2_data = [self.get_voltage(t_list_2)]
+            waveform_1_data = self.get_voltage(t_list_1)
 
             waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_1_data)
             waveform_1['cycles'] = waveform_1_cycles
-            waveform_1['delay'] = 0.0
+            waveform_1['t_start'] = self.t_start
+            waveform_1['t_stop'] = waveform_2_start
 
-            waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                         waveform_data_a=waveform_2_data)
-            waveform_2['cycles'] = 1
-            waveform_2['delay'] = 0.0
+            if len(t_list_2) == 0:
+                waveforms[ch] = [waveform_1]
+            else:
+                waveform_2_data = self.get_voltage(t_list_2)
 
-            waveforms[ch] = [waveform_1, waveform_2]
+                waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                             waveform_data_a=waveform_2_data)
+                waveform_2['cycles'] = 1
+                waveform_2['t_start'] = waveform_2_start
+                waveform_2['t_stop'] = waveform_2_stop
+
+                waveforms[ch] = [waveform_1, waveform_2]
 
         return waveforms
