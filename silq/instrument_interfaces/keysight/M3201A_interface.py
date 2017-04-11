@@ -3,6 +3,7 @@ import numpy as np
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse
 from silq.meta_instruments.layout import SingleConnection
+from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
 
 class M3201AInterface(InstrumentInterface):
@@ -48,6 +49,13 @@ class M3201AInterface(InstrumentInterface):
         active_channels = list(set(active_channels))
         return active_channels
 
+    def _get_active_channel_ids(self):
+        active_channel_ids = [pulse.connection.output['channel'].id
+                              for pulse in self.pulse_sequence()]
+        # Transform into set to ensure that elements are unique
+        active_channel_ids = list(set(active_channel_ids))
+        return active_channel_ids
+
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.instrument.off()
@@ -90,7 +98,7 @@ class M3201AInterface(InstrumentInterface):
                 if i == 0:
                     wf['delay'] = 0.0
                 else:
-                    delay = wf['t_stop'] - waveforms[ch][i-1]['t_stop']
+                    delay = wf['t_start'] - waveforms[ch][i-1]['t_stop']
                     if delay < 0:
                         raise Exception('Overlapping pulses are not allowed for {}. Adjust t_start and t_stop values '
                                         'or consider using the CombinationPulse'.format(self))
@@ -117,7 +125,7 @@ class M3201AInterface(InstrumentInterface):
 
     def start(self):
         mask = 0
-        for c in self.active_channels():
+        for c in self._get_active_channel_ids():
             mask |= 1 << c
         self.instrument.awg_start_multiple(mask)
 
@@ -129,6 +137,10 @@ class M3201AInterface(InstrumentInterface):
 
     def ask_raw(self, cmd):
         pass
+
+    def software_trigger(self):
+        for c in self._get_active_channel_ids():
+            self.instrument.awg_trigger(c)
 
 
 class SinePulseImplementation(PulseImplementation, SinePulse):
@@ -195,7 +207,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
         """
         # TODO: what is the most useful threshold definition for the user (rel. error/abs. error in period/frequency)
-        print('implementing SinePulse for the M3201A interface')
+        # print('implementing SinePulse for the M3201A interface')
         # use t_start, t_stop, sampling_rate, ... to make a waveform object that can be queued in interface.setup()
         # basically, each implement in all PulseImplementations will be a waveform factory
 
@@ -216,39 +228,14 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         period = 1 / self.frequency
         cycles = duration // period
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
-        n_max = min(1000, cycles)
         wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
 
         for ch in channels:
             # TODO: check if sampling rate is indeed something we want to configure on a channel basis
             period_sample = 1 / sampling_rates[ch]
 
-            # brute force method to find the minimum number of sample points in a single waveform cycle, such that it
-            # satisfies the error threshold
-            extra_sample = False
-            n = 0
-
-            for n in range(1, n_max + 1):
-                error = (n * period) % (period_sample * wave_form_multiple)
-                error_extra_sample = (period_sample * wave_form_multiple) - error
-                if error_extra_sample < error:
-                    extra_sample = True
-                    error = error_extra_sample
-                else:
-                    extra_sample = False
-                error = error / n / period
-                if error < threshold:
-                    break
-                else:
-                    continue
-
-            samples = (n * period) // (period_sample * wave_form_multiple) * wave_form_multiple
-            if extra_sample:
-                samples += wave_form_multiple
-
-            # calculate waveform based on the number of samples
-            # TODO: what unit does t_start have? Is this consistent across all pulses?
-            # TODO: Make this very clear in the documentation! Answer is: we use ms as the standard time unit.
+            n, error, samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rates[ch], threshold,
+                                                           n_max=1000, sample_points_multiple=wave_form_multiple)
 
             # the first waveform (waveform_1) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
