@@ -52,6 +52,9 @@ class MeasurementSequence:
         self.datasets.append(dataset)
         condition_set = self.measurement.check_condition_sets(
             *self.condition_sets)
+
+        self.measurement.update_set_parameters()
+
         self.result = condition_set.result
 
         return self.result
