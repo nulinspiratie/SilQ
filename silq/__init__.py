@@ -66,23 +66,25 @@ def initialize(name=None, mode=None, select=None, ignore=None,
 
     # Modify QCoDeS config (add subconfigs, and add custom config filepath)
     config_folder = os.path.join(folder, 'config')
-    # Add config in ./config (if it exists)
-    qc.config.custom_file_name = os.path.join(config_folder,
-                                              qc.config.config_file_name)
+    if os.path.exists(config_folder):
+        # Add config in ./config (if it exists)
+        qc.config.custom_file_name = os.path.join(config_folder,
+                                                  qc.config.config_file_name)
 
-    # Add subconfigs (other files in config). They go in config.user.{subconfig}
-    config_filenames = os.listdir(config_folder)
-    subconfigs = {os.path.splittext(filename):
-                      os.path.join(config_folder,filename)
-                  for filename in config_filenames
-                  if 'qcodesrc' not in filename}
-    qc.config.subconfigs = subconfigs
+        # Add subconfigs (other files in config).
+        # They go in config.user.{subconfig}
+        config_filenames = os.listdir(config_folder)
+        subconfigs = {os.path.splittext(filename):
+                          os.path.join(config_folder,filename)
+                      for filename in config_filenames
+                      if 'qcodesrc' not in filename}
+        qc.config.subconfigs = subconfigs
 
-    # Update config to include custom filepath and subconfigs
-    qc.config.current_config = qc.config.update_config()
-    # Add subconfigs to SilQ config
-    for subconfig_key in subconfigs:
-        config[subconfig_key] = qc.config.user[subconfig_key]
+        # Update config to include custom filepath and subconfigs
+        qc.config.current_config = qc.config.update_config()
+        # Add subconfigs to SilQ config
+        for subconfig_key in subconfigs:
+            config[subconfig_key] = qc.config.user[subconfig_key]
 
 
     # Run initialization files in ./init
