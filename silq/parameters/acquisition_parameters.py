@@ -584,7 +584,7 @@ class DarkCountsParameter(AcquisitionParameter):
                                    threshold_voltage=
                                    self.readout_threshold_voltage,
                                    start_idx=self.start_idx)
-        self.results = fidelities['up_proportion']
+        self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
