@@ -155,7 +155,7 @@ class Measurement(SettingsClass):
         self.base_folder = base_folder
         self.acquisition_parameter = acquisition_parameter
         self.discriminant = discriminant
-        step = step
+        self.step = step
         self.points = points
         self.set_parameters = set_parameters
         self.set_vals = set_vals
@@ -333,6 +333,17 @@ class Measurement(SettingsClass):
             for set_parameter in self.set_parameters:
                 set_parameter(self.initial_set_vals[set_parameter.name])
 
+    def initialize(self):
+        if self.condition_set is not None:
+            self.condition_set.result = None
+        for condition_set in self.condition_sets:
+            condition_set.result = None
+
+        if self.points is not None and self.step is not None:
+            # Reset set_vals if step and points is given
+            self._set_vals = None
+
+
 
 class Loop0DMeasurement(Measurement):
     def __init__(self, name=None, acquisition_parameter=None, **kwargs):
@@ -358,14 +369,13 @@ class Loop0DMeasurement(Measurement):
         Returns:
             Dataset
         """
-        for condition_set in self.condition_sets:
-            condition_set.result = None
+        self.initialize()
 
         self.measurement = qc.Measure(self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
-            data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
+            io=self.disk_io, location=self.loc_provider,
+            quiet=True)
 
         return self.dataset
 
@@ -400,6 +410,8 @@ class Loop1DMeasurement(Measurement):
         Returns:
             Dataset
         """
+        self.initialize()
+
         self.initial_set_vals = {p.name: p() for p in self.set_parameters}
 
         # Set data saving parameters
@@ -409,7 +421,6 @@ class Loop1DMeasurement(Measurement):
         self.dataset = self.measurement.run(
             name='{}_{}_{}'.format(self.name, self.set_parameter.name,
                                    self.acquisition_parameter.name),
-            background=False, data_manager=False,
             io=self.disk_io, location=self.loc_provider,
             quiet=True)
 
@@ -454,7 +465,7 @@ class Loop2DMeasurement(Measurement):
             Dict of set vals (in this case contains two elements)
         """
         if idx == -1:
-            return {p.name: np.nan for p in self.set_parameters[0]}
+            return {p.name: np.nan for p in self.set_parameters}
         else:
             len_inner = len(self.set_vals[1])
             idxs = (idx // len_inner, idx % len_inner)
@@ -468,6 +479,8 @@ class Loop2DMeasurement(Measurement):
         Returns:
             Dataset
         """
+        self.initialize()
+
         self.initial_set_vals = {p.name: p() for p in self.set_parameters}
 
         # Set data saving parameters
@@ -480,8 +493,7 @@ class Loop2DMeasurement(Measurement):
             name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
                                       self.set_parameters[1].name,
                                       self.acquisition_parameter.name),
-            background=False, data_manager=False,
-            io=self.disk_io, location=self.loc_provider)
+            io=self.disk_io, location=self.loc_provider, quiet=True)
 
         # Find optimal values satisfying condition_sets.
         self.get_optimum()
