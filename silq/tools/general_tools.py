@@ -185,8 +185,8 @@ class SettingsClass:
 
 
 def clear_single_settings(f):
-    def clear_single_settings_decorator(self):
-        output = f(self)
+    def clear_single_settings_decorator(self, *args, **kwargs):
+        output = f(self, *args, **kwargs)
         self._single_settings.clear()
         return output
     return clear_single_settings_decorator
