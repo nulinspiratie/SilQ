@@ -147,7 +147,8 @@ class Measurement(SettingsClass):
     def __init__(self, name=None, condition_sets=None,
                  acquisition_parameter=None,
                  base_folder=None,
-                 set_parameters=None, set_vals=None, step=None, points=None,
+                 set_parameters=None, set_vals=None, step=None,
+                 step_percentage=None, points=None,
                  discriminant=None,update=None, silent=True):
         SettingsClass.__init__(self)
 
@@ -156,6 +157,7 @@ class Measurement(SettingsClass):
         self.acquisition_parameter = acquisition_parameter
         self.discriminant = discriminant
         self.step = step
+        self.step_percentage = step_percentage
         self.points = points
         self.set_parameters = set_parameters
         self.set_vals = set_vals
@@ -218,10 +220,10 @@ class Measurement(SettingsClass):
     @property
     def set_vals(self):
         if self._set_vals is None and self.points is not None:
-            self._set_vals = create_set_vals(set_parameters=self.set_parameters,
-                                             step=self.step,
-                                             points=self.points,
-                                             silent=True)
+            self._set_vals = create_set_vals(
+                set_parameters=self.set_parameters, step=self.step,
+                step_percentage=self.step_percentage, points=self.points,
+                silent=True)
         return self._set_vals
 
     @set_vals.setter
@@ -324,12 +326,14 @@ class Measurement(SettingsClass):
 
         if update:
             if not self.silent:
-                print('Updating set parameters to optimal values')
+                print('Updating set parameters to optimal values: '
+                      '{}'.format(self.optimal_set_vals))
             for set_parameter in self.set_parameters:
                 set_parameter(self.optimal_set_vals[set_parameter.name])
         else:
             if not self.silent:
-                print('Updating set parameters to initial values')
+                print('Resetting set parameters to initial values: '
+                      '{}'.format(self.initial_set_vals))
             for set_parameter in self.set_parameters:
                 set_parameter(self.initial_set_vals[set_parameter.name])
 
@@ -344,11 +348,11 @@ class Measurement(SettingsClass):
             self._set_vals = None
 
 
-
 class Loop0DMeasurement(Measurement):
     def __init__(self, name=None, acquisition_parameter=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          **kwargs)
+        self.set_parameters = []
 
     def set_vals_from_idx(self, idx):
         """
@@ -383,10 +387,11 @@ class Loop0DMeasurement(Measurement):
 class Loop1DMeasurement(Measurement):
     def __init__(self, name=None, set_parameter=None,
                  acquisition_parameter=None, set_vals=None, step=None,
-                 points=None, **kwargs):
+                 step_percentage=None, points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=set_vals,
-                         step=step, points=points, **kwargs)
+                         step=step, step_percentage=step_percentage,
+                         points=points, **kwargs)
         self.set_parameter = set_parameter
 
     def set_vals_from_idx(self, idx):
@@ -450,10 +455,11 @@ class Loop1DMeasurement(Measurement):
 class Loop2DMeasurement(Measurement):
     def __init__(self, name=None, set_parameters=None,
                  acquisition_parameter=None, set_vals=None, step=None,
-                 points=None, **kwargs):
+                 step_percentage=None, points=None, **kwargs):
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=set_parameters, set_vals=set_vals,
-                         step=step, points=points, **kwargs)
+                         step_percentage=step_percentage, step=step,
+                         points=points, **kwargs)
 
     def set_vals_from_idx(self, idx):
         """
