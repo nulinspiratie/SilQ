@@ -49,19 +49,16 @@ class MeasurementSequence:
         # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
-            print('Performing measurement {}'.format(self.measurement))
-        dataset = self.measurement()
+            print('Performing {}'.format(self.measurement))
+        # Performing measurement also checks for condition sets, and updates
+        # set parameters accordingly
+        dataset = self.measurement.get(condition_sets=self.condition_sets)
         self.datasets.append(dataset)
-
-        # Check condition sets and update parameters accordingly
-        condition_set = self.measurement.check_condition_sets(
-            *self.condition_sets)
-        self.measurement.update_set_parameters()
 
         # Return result of the final condition set
         # Either this was the first successful condition, or if none were
         # successful, this would be the final condition set
-        self.result = condition_set.result
+        self.result = self.measurement.condition_set.result
         return self.result
 
     def __call__(self):
