@@ -127,7 +127,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
         super().__init__(
             name=name,
-            names=[f'{name}_msmts', 'optimal_set_vals', self.discriminant],
+            names=[name+'_msmts', 'optimal_set_vals', self.discriminant],
             shapes=((), (len(self.set_parameters),), ()),
             discriminant=self.discriminant,
             acquisition_parameter=self.acquisition_parameter,

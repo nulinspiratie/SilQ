@@ -44,19 +44,24 @@ class MeasurementSequence:
             raise StopIteration
         else:
             self.measurement = self.next_measurement
+        self.measurement.silent = self.silent
 
+        # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
             print('Performing measurement {}'.format(self.measurement))
         dataset = self.measurement()
         self.datasets.append(dataset)
+
+        # Check condition sets and update parameters accordingly
         condition_set = self.measurement.check_condition_sets(
             *self.condition_sets)
-
         self.measurement.update_set_parameters()
 
+        # Return result of the final condition set
+        # Either this was the first successful condition, or if none were
+        # successful, this would be the final condition set
         self.result = condition_set.result
-
         return self.result
 
     def __call__(self):
