@@ -53,6 +53,33 @@ class TruthCondition(Condition):
                                    self.target_val)
 
 class ConditionSet:
+    """
+    A ConditionSet represents a set of conditions that a dataset can be
+    tested against. The ConditionSet also contains information on what action
+    should be performed if the dataset satisfies the conditions (success) or
+    does not (fail). These actions can then be performed by a
+    MeasurementSequence. Possible actions are:
+        'success': Finish measurement sequence successfully
+        'fail': Finish measurement sequence unsuccessfully
+        'next_{cmd}: Go to next measurement if it exists, else it is cmd,
+            where cmd can be either 'success' or 'fail'.
+        None: Go to next measurement if it exists. If there is no next
+            measurement, the action is 'success' if the last measurement
+            satisfies the condition_set, else 'fail'.
+
+    Attributes:
+        on_success (str): action to perform if some points satisfy conditions.
+        on_fail (str): action to perform if no points satisfy conditions.
+        update (bool): Values should be updated if dataset satisfies conditions.
+        result (dict): result after testing a dataset for conditions.
+            items are:
+                is_satisfied (bool): Dataset has points that satisfy conditions
+                action (str): action to perform, taken from
+                    self.on_success if is_satisfied, else from self.on_fail.
+                satisfied_arr (bool arr): array of dataset dimensions,
+                    where each element indicates if that value satisfies
+                    conditions.
+    """
     def __init__(self, *conditions, on_success=None, on_fail=None,
                  update=None):
         self.on_success = on_success
@@ -63,6 +90,15 @@ class ConditionSet:
         self.conditions = []
         for condition in conditions:
             self.add_condition(condition)
+
+    def __repr__(self):
+        conditions = [repr(condition) for condition in self.conditions]
+        if len(conditions) > 1:
+            conditions_str = '[' + ', '.join(conditions) + ']'
+        else:
+            conditions_str = ' {}'.format(conditions[0])
+        return 'ConditionSet{}, on_success: {}, on_fail: {}, update: {}'.format(
+            conditions_str, self.on_success, self.on_fail, self.update)
 
     def _JSONEncoder(self):
         """
@@ -244,6 +280,21 @@ class Measurement(SettingsClass):
         self._discriminant = val
 
     def check_condition_sets(self, *condition_sets):
+        """
+        Tests dataset for condition sets.
+        Condition sets are tested until the result of a condition set has an
+        'action' key that is not equal to None. After this, self.condition_set
+        is updated to this condition set. If no condition sets have an action,
+        self.condition_set will equal the last condition set
+        Args:
+            *condition_sets: condition sets to be tested, to be tested before
+            self.condition_sets
+
+        Returns:
+            self.condition_set: condition set that has an 'action', or the
+            last condition set if none have an action.
+        """
+
         condition_sets = list(condition_sets) + self.condition_sets
         if not condition_sets:
             return None
@@ -251,14 +302,17 @@ class Measurement(SettingsClass):
         for condition_set in condition_sets:
             self.condition_set = condition_set
             condition_set.check_satisfied(self.dataset)
-
+            if not self.silent:
+                print('{} condition satisfied: {}, action: {}'.format(
+                    condition_set, condition_set.result['is_satisfied'],
+                    condition_set.result['action']))
             if self.condition_set.result['action'] is not None:
                 break
 
         self.condition_set.result['measurement'] = self.name
         return self.condition_set
 
-    def get_optimum(self, dataset=None):
+    def get_optimum(self, dataset=None, condition_sets=None):
         """
         Get the optimal value from the possible set vals.
         If satisfied_arr is not provided, it will first filter the set vals
@@ -280,8 +334,10 @@ class Measurement(SettingsClass):
         if self.condition_set is not None:
             if self.condition_set.result is None:
                 self.condition_set.check_satisfied(self.dataset)
-        elif self.condition_sets is not None:
+        elif condition_sets is not None:
             # need to test condition sets.
+            self.check_condition_sets(*condition_sets)
+        elif self.condition_sets is not None:
             self.check_condition_sets()
 
         discriminant_vals = getattr(dataset, self.discriminant)
@@ -343,7 +399,8 @@ class Measurement(SettingsClass):
         for condition_set in self.condition_sets:
             condition_set.result = None
 
-        if self.points is not None and self.step is not None:
+        if self.points is not None and (self.step is not None or
+                                            self.step_percentage is not None):
             # Reset set_vals if step and points is given
             self._set_vals = None
 
@@ -367,7 +424,7 @@ class Loop0DMeasurement(Measurement):
         return {}
 
     @clear_single_settings
-    def get(self):
+    def get(self, condition_sets=None):
         """
         Performs a measurement at a single point using qc.Measure
         Returns:
@@ -380,6 +437,9 @@ class Loop0DMeasurement(Measurement):
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
             io=self.disk_io, location=self.loc_provider,
             quiet=True)
+
+        # Find optimal values satisfying condition_sets.
+        self.get_optimum(condition_sets=condition_sets)
 
         return self.dataset
 
@@ -409,7 +469,7 @@ class Loop1DMeasurement(Measurement):
             return {self.set_parameter.name: self.set_vals[0][idx]}
 
     @clear_single_settings
-    def get(self):
+    def get(self, condition_sets=None):
         """
         Performs a 1D measurement loop
         Returns:
@@ -430,7 +490,7 @@ class Loop1DMeasurement(Measurement):
             quiet=True)
 
         # Find optimal values satisfying condition_sets.
-        self.get_optimum()
+        self.get_optimum(condition_sets=condition_sets)
 
         # Update set parameter values, either to optimal values or to initial
         #  values. This depends on self.condition_set.update or alternatively
@@ -479,7 +539,7 @@ class Loop2DMeasurement(Measurement):
                     self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
 
     @clear_single_settings
-    def get(self):
+    def get(self, condition_sets=None):
         """
         Performs a 2D measurement loop
         Returns:
@@ -502,7 +562,7 @@ class Loop2DMeasurement(Measurement):
             io=self.disk_io, location=self.loc_provider, quiet=True)
 
         # Find optimal values satisfying condition_sets.
-        self.get_optimum()
+        self.get_optimum(condition_sets=condition_sets)
 
         # Update set parameter values, either to optimal values or to initial
         #  values. This depends on self.condition_set.update or alternatively
