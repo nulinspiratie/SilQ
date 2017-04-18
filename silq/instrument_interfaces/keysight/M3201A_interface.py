@@ -98,6 +98,7 @@ class M3201AInterface(InstrumentInterface):
                 if i == 0:
                     wf['delay'] = 0.0
                 else:
+                    # TODO: convert delay from s to ns and round the delay to nearest multiple of 10ns
                     delay = wf['t_start'] - waveforms[ch][i-1]['t_stop']
                     if delay < 0:
                         raise Exception('Overlapping pulses are not allowed for {}. Adjust t_start and t_stop values '
