@@ -741,3 +741,69 @@ class CombinationPulse(Pulse):
             return result1 - result2
         elif self.relation == '*':
             return result1 * result2
+
+
+class AWGPulse(Pulse):
+    """
+    This class represents arbitrary waveform pulses that can be implemented by AWGs.
+
+    This class allows the user to create a truly arbitrary pulse by either:
+        - providing a function that converts time-stamps to waveform points
+        - an array of waveform points
+
+    The resulting AWGPulse can be sampled at different sample rates, interpolating between waveform points if necessary.
+
+    Args:
+        name (str): The name for this AWGPulse.
+        fun (): The function used for calculating waveform points based on time-stamps
+        wf_array (np.array): numpy array of (float) with time-stamps and waveform points
+
+    """
+
+    def __init__(self, name=None, fun=None, wf_array=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        if fun:
+            if not callable(fun):
+                raise TypeError('The argument `function` must be a callable function.')
+            self.from_function = True
+            self.function = fun
+        elif wf_array:
+            if not isinstance(wf_array, np.ndarray):
+                raise TypeError('The argument `array` must be of type `np.array`.')
+            if not len(wf_array) == 2:
+                raise TypeError('The argument `array` must be of length 2.')
+            if not len(wf_array[0]) == len(wf_array[1]):
+                raise TypeError('The argument `array` must have equal time-stamps and waveform points')
+            assert np.all(np.diff(wf_array[0]) > 0), 'the time-stamps must be increasing'
+            self.t_start = wf_array[0][0]
+            self.t_stop = wf_array[0][-1]
+            self.from_function = False
+            self.array = wf_array
+        else:
+            raise TypeError('Provide either a function or an array.')
+
+    @classmethod
+    def from_array(cls, array):
+        return cls(wf_array=array)
+
+    @classmethod
+    def from_function(cls, function):
+        return cls(fun=function)
+
+    def __repr__(self):
+        if self.from_function:
+            properties_str = 'function:{}, t_start={}, t_stop={}'.format(self.function, self.t_start, self.t_stop)
+        else:
+            properties_str = 'array:{}, t_start={}, t_stop={}'.format(self.array, self.t_start, self.t_stop)
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} ms is not in the time range {} ms - {} ms of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        if self.from_function:
+            return self.function(t)
+        else:
+            return np.interp(t, self.array[0], self.array[1])
