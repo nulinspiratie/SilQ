@@ -768,9 +768,9 @@ class AWGPulse(Pulse):
                 raise TypeError('The argument `function` must be a callable function.')
             self.from_function = True
             self.function = fun
-        elif wf_array:
-            if not isinstance(wf_array, np.ndarray):
-                raise TypeError('The argument `array` must be of type `np.array`.')
+        elif wf_array is not None:
+            if not type(wf_array) == np.ndarray:
+                raise TypeError('The argument `array` must be of type `np.ndarray`.')
             if not len(wf_array) == 2:
                 raise TypeError('The argument `array` must be of length 2.')
             if not len(wf_array[0]) == len(wf_array[1]):
@@ -784,18 +784,18 @@ class AWGPulse(Pulse):
             raise TypeError('Provide either a function or an array.')
 
     @classmethod
-    def from_array(cls, array):
-        return cls(wf_array=array)
+    def from_array(cls, array, **kwargs):
+        return cls(wf_array=array, **kwargs)
 
     @classmethod
-    def from_function(cls, function):
-        return cls(fun=function)
+    def from_function(cls, function, **kwargs):
+        return cls(fun=function, **kwargs)
 
     def __repr__(self):
         if self.from_function:
             properties_str = 'function:{}, t_start={}, t_stop={}'.format(self.function, self.t_start, self.t_stop)
         else:
-            properties_str = 'array:{}, t_start={}, t_stop={}'.format(self.array, self.t_start, self.t_stop)
+            properties_str = 'array:{}, t_start={}, t_stop={}'.format(self.array.shape, self.t_start, self.t_stop)
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
