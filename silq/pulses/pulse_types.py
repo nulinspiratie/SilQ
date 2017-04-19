@@ -755,12 +755,13 @@ class AWGPulse(Pulse):
 
     Args:
         name (str): The name for this AWGPulse.
-        fun (): The function used for calculating waveform points based on time-stamps
-        wf_array (np.array): numpy array of (float) with time-stamps and waveform points
+        fun (): The function used for calculating waveform points based on time-stamps.
+        wf_array (np.array): Numpy array of (float) with time-stamps and waveform points.
+        interpolate (bool): Flag for turning interpolation of the wf_array on (True) or off (False).
 
     """
 
-    def __init__(self, name=None, fun=None, wf_array=None, **kwargs):
+    def __init__(self, name=None, fun=None, wf_array=None, interpolate=True, **kwargs):
         super().__init__(name=name, **kwargs)
 
         if fun:
@@ -780,6 +781,7 @@ class AWGPulse(Pulse):
             self.t_stop = wf_array[0][-1]
             self.from_function = False
             self.array = wf_array
+            self.interpolate = interpolate
         else:
             raise TypeError('Provide either a function or an array.')
 
@@ -806,4 +808,10 @@ class AWGPulse(Pulse):
         if self.from_function:
             return self.function(t)
         else:
-            return np.interp(t, self.array[0], self.array[1])
+            if self.interpolate:
+                return np.interp(t, self.array[0], self.array[1])
+            elif np.in1d(t, self.array[0]).all():
+                mask = np.in1d(self.array[0], t)
+                return self.array[1][mask]
+            else:
+                raise IndexError('All requested t-values must be in wf_array since interpolation is disabled.')
