@@ -18,6 +18,7 @@ from IPython.core.magic import (register_line_magic, register_cell_magic,
 
 # Qcodes imports
 import qcodes as qc
+from qcodes.utils.helpers import in_notebook
 from qcodes import Instrument, config, Loop
 from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
