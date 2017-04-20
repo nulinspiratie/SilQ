@@ -70,12 +70,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         return self.layout.sample_rate()
 
     @property
-    def _pulse_pts(self):
-        """ Number of points in the trace of each pulse"""
-        return {pulse.name: int(round(pulse.duration / 1e3 * self.sample_rate))
-                for pulse in self.pulse_sequence}
-
-    @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
 
@@ -87,13 +81,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         for pulse in self.pulse_sequence:
             if not pulse.acquire:
                 continue
+            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
             if average_mode == 'point':
                 trace_segments[pulse.name] = np.mean(
-                    trace[:, idx:idx + self._pulse_pts[pulse.name]])
+                    trace[:, idx:idx + pulse_pts])
             else:
                 trace_segments[pulse.name] = \
-                    trace[:, idx:idx + self._pulse_pts[pulse.name]]
-            idx += self._pulse_pts[pulse.name]
+                    trace[:, idx:idx + pulse_pts]
+            idx += pulse_pts
         return trace_segments
 
     def store_traces(self, traces_dict, base_folder=None, subfolder=None):
