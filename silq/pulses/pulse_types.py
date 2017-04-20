@@ -16,9 +16,9 @@ pulse_config = config['user'].get('pulses', {})
 properties_config = config['user'].get('properties', {})
 
 class Pulse(SettingsClass):
-    ncalls = 0
-    calls = []
-    t_start_inspect = []
+    # ncalls = 0
+    # calls = []
+    # t_start_inspect = []
     def __init__(self, name=None, t_start=None, previous_pulse=None,
                  t_stop=None, delay_start=None, delay_stop=None,
                  duration=None, acquire=False, initialize=False,
@@ -138,11 +138,11 @@ class Pulse(SettingsClass):
         Returns:
 
         """
-        Pulse.ncalls += 1
-        Pulse.calls.append(item)
-        if item == 't_start':
-            outer_fun = inspect.getouterframes(inspect.currentframe())
-            Pulse.t_start_inspect += [outer_fun]
+        # Pulse.ncalls += 1
+        # Pulse.calls.append(item)
+        # if item == 't_start':
+        #     outer_fun = inspect.getouterframes(inspect.currentframe())
+        #     Pulse.t_start_inspect += [outer_fun]
         value = object.__getattribute__(self, item)
         if value is not None:
             return value
