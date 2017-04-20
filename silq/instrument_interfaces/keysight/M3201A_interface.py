@@ -65,6 +65,7 @@ class M3201AInterface(InstrumentInterface):
         sampling_rates = {ch: 500e6 for ch in self.active_channels()}
         # TODO: figure out how we want to configure error_threshold
         error_threshold = 1e-6
+        # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
         # flush the onboard RAM and reset waveform counter
         self.instrument.flush_waveform()
@@ -98,30 +99,38 @@ class M3201AInterface(InstrumentInterface):
                 if i == 0:
                     wf['delay'] = 0.0
                 else:
-                    # TODO: convert delay from s to ns and round the delay to nearest multiple of 10ns
                     delay = wf['t_start'] - waveforms[ch][i-1]['t_stop']
                     if delay < 0:
                         raise Exception('Overlapping pulses are not allowed for {}. Adjust t_start and t_stop values '
                                         'or consider using the CombinationPulse'.format(self))
                     else:
-                        wf['delay'] = delay
+                        wf['delay'] = int(round(float(delay*1e9)/10))
 
+        self.instrument.off()
+        self.instrument.flush_waveform()
         for ch in waveforms:
+            self.instrument.awg_flush(self._channels[ch].id)
+            self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=self._channels[ch].id)
+            self.instrument.set_channel_amplitude(amplitude=1.0, channel_number=self._channels[ch].id)
             waveform_array = waveforms[ch]
             ch_wf_counter = 1
             for waveform in waveform_array:
                 print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
                                                                                         waveform_counter))
+                self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 if ch_wf_counter == 1:
                     trigger_mode = 1  # software trigger for first wf
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
                 print('queueing waveform with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
-                      .format(waveform_counter, self._channels[ch].id, waveform['cycles'], waveform['delay'],
+                      .format(waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
                               trigger_mode))
+                self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
+                                                   int(waveform['delay']), int(waveform['cycles']), prescaler=0)
                 waveform_counter += 1
                 ch_wf_counter += 1
             print('starting awg channel {}'.format(self._channels[ch].id))
+            self.instrument.awg_start(self._channels[ch].id)
         pass
 
     def start(self):
@@ -155,12 +164,13 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             self, pulse, interface=interface, **kwargs)
 
         # Add a trigger requirement, which is sent back to the Layout
-        targeted_pulse.additional_pulses.append(
-            TriggerPulse(t_start=pulse.t_start,
-                         duration=1e-3,
-                         connection_requirements={
-                             'input_instrument': interface.instrument_name(),
-                             'trigger': True}))
+        if targeted_pulse.t_start == 0:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=1e-3,
+                             connection_requirements={
+                                 'input_instrument': interface.instrument_name(),
+                                 'trigger': True}))
 
         return targeted_pulse
 
