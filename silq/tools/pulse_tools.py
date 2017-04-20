@@ -29,7 +29,7 @@ def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_
     """
     period = 1 / frequency
     cycles = duration // period
-    n_max = min(n_max, cycles)
+    n_max = int(min(n_max, cycles))
 
     period_sample = 1 / sampling_rate
 
