@@ -97,7 +97,7 @@ class ConditionSet:
             conditions_str = '[' + ', '.join(conditions) + ']'
         else:
             conditions_str = ' {}'.format(conditions[0])
-        return 'ConditionSet{}, on_success: {}, on_fail: {}, update: {}'.format(
+        return 'ConditionSet{}, update: {}'.format(
             conditions_str, self.on_success, self.on_fail, self.update)
 
     def _JSONEncoder(self):
@@ -424,7 +424,7 @@ class Loop0DMeasurement(Measurement):
         return {}
 
     @clear_single_settings
-    def get(self, condition_sets=None):
+    def get(self, condition_sets=None, set_active=True):
         """
         Performs a measurement at a single point using qc.Measure
         Returns:
@@ -436,7 +436,7 @@ class Loop0DMeasurement(Measurement):
         self.dataset = self.measurement.run(
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
             io=self.disk_io, location=self.loc_provider,
-            quiet=True)
+            quiet=True, set_active=set_active)
 
         # Find optimal values satisfying condition_sets.
         self.get_optimum(condition_sets=condition_sets)
@@ -469,7 +469,7 @@ class Loop1DMeasurement(Measurement):
             return {self.set_parameter.name: self.set_vals[0][idx]}
 
     @clear_single_settings
-    def get(self, condition_sets=None):
+    def get(self, condition_sets=None, set_active=True):
         """
         Performs a 1D measurement loop
         Returns:
@@ -487,7 +487,8 @@ class Loop1DMeasurement(Measurement):
             name='{}_{}_{}'.format(self.name, self.set_parameter.name,
                                    self.acquisition_parameter.name),
             io=self.disk_io, location=self.loc_provider,
-            quiet=True)
+            quiet=True,
+            set_active=set_active)
 
         # Find optimal values satisfying condition_sets.
         self.get_optimum(condition_sets=condition_sets)
@@ -539,7 +540,7 @@ class Loop2DMeasurement(Measurement):
                     self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
 
     @clear_single_settings
-    def get(self, condition_sets=None):
+    def get(self, condition_sets=None, set_active=True):
         """
         Performs a 2D measurement loop
         Returns:
@@ -559,7 +560,8 @@ class Loop2DMeasurement(Measurement):
             name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
                                       self.set_parameters[1].name,
                                       self.acquisition_parameter.name),
-            io=self.disk_io, location=self.loc_provider, quiet=True)
+            io=self.disk_io, location=self.loc_provider, quiet=True,
+            set_active=set_active)
 
         # Find optimal values satisfying condition_sets.
         self.get_optimum(condition_sets=condition_sets)

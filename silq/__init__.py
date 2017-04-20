@@ -104,5 +104,11 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             print('Initializing {}'.format(name))
             filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
-                exec(fh.read()+"\n", globals, locals)
+                exec_line = fh.read()
+                try:
+                    exec(exec_line+"\n", globals, locals)
+                except:
+                    raise RuntimeError('SilQ initialization error at line: '
+                                       '\n{}'.format(exec_line)
+                    )
     print("Initialization complete")
