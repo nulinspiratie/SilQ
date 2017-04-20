@@ -20,50 +20,23 @@ def get_latest_data_folder():
     return data_folder
 
 
-def create_raw_data_set(name, data_manager, shape, subfolder=None,
-                        folder_name=None, location=None, formatter=None):
-    if folder_name is None:
-        folder_name = name
-    data_array_set = DataArray(name='set_vals',
-                               shape=(shape[0],),
-                               preset_data=np.arange(shape[0]),
-                               is_setpoint=True)
-    index0 = DataArray(name='index0', shape=shape,
-                       preset_data=np.full(shape,
-                                           np.arange(shape[-1]),
-                                           dtype=np.int))
-    data_array_values = DataArray(name='data_vals',
-                                  shape=shape,
-                                  set_arrays=(
-                                      data_array_set, index0))
+def create_data_set(name, base_folder, subfolder=None, formatter=None):
+    location_string = '{base_folder}/'
+    if subfolder is not None:
+        location_string += '{subfolder}/'
+    location_string += '#{{counter}}_{name}'
 
-    data_mode = DataMode.PUSH_TO_SERVER
+    location = qc.data.location.FormatLocation(
+        fmt=location_string.format(base_folder=base_folder, name=name,
+                                   subfolder=subfolder))
 
-    if hasattr(data_manager, 'base_location'):
-        DataSet.default_io.base_location = data_manager.base_location
-
-    if location is None:
-        data_folder = get_latest_data_folder()
-        if subfolder is None:
-            location = qc.data.location.FormatLocation(
-                fmt='{data_folder}/{name}/#{{counter}}'.format(
-                    data_folder=data_folder, name=folder_name))
-        else:
-            location = qc.data.location.FormatLocation(
-                fmt='{data_folder}/{subfolder}/{name}/#{{counter}}'.format(
-                    data_folder=data_folder,
-                    subfolder=subfolder, name=folder_name))
-
-    data_set = new_data(
-        location=location,
-        arrays=[data_array_set, index0, data_array_values],
-        mode=data_mode,
-        data_manager=data_manager, name=name,
-        formatter=formatter)
+    data_set = new_data(location=location,
+                        mode=DataMode.LOCAL,
+                        data_manager=False,
+                        name=name,
+                        formatter=formatter)
     return data_set
 
-def store_data(data_manager, result):
-    loop_indices = slice(0, result.shape[0], 1)
-    ids_values = {'data_vals': result}
-    data_manager.write('store_data', loop_indices, ids_values)
-    data_manager.write('finalize_data')
+def store_data(dataset, result):
+    dataset.store(loop_indices=slice(0, result.shape[0], 1),
+                  ids_values={'data_vals': result})
