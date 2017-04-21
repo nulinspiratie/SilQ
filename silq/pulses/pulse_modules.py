@@ -1,6 +1,23 @@
 import numpy as np
 import copy
 import inspect
+from blinker import signal
+
+
+class PulseMatch():
+    def __init__(self, pulse, pulse_attr, delay=0):
+        self.pulse = pulse
+        self.pulse_attr = pulse_attr
+        self.delay = delay
+
+    def __call__(self):
+        return getattr(self.pulse, self.pulse_attr) + self.delay
+
+    def signal_function(self, pulse, attr):
+        def signal_pulse(sender, **kwargs):
+            if kwargs.get(self.pulse_attr, None) is not None:
+                setattr(pulse, attr, kwargs[self.pulse_attr] + self.delay)
+        return signal_pulse
 
 
 class PulseRequirement():
@@ -50,6 +67,7 @@ class PulseRequirement():
 
 
 class PulseSequence:
+    signal = signal('pulse')
     def __init__(self, pulses=[], allow_untargeted_pulses=True,
                  allow_targeted_pulses=True, allow_pulse_overlap=True):
         """
@@ -58,6 +76,7 @@ class PulseSequence:
         Args:
             allow_pulse_overlap:
         """
+
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
@@ -68,9 +87,12 @@ class PulseSequence:
         self.connection_conditions = connection_conditions
         self.pulse_conditions = pulse_conditions
 
-        self._duration = None
+        self.duration = 0
 
         self.pulses = []
+        self.enabled_pulses = []
+        self.disabled_pulses = []
+
         if pulses:
             self.add(pulses)
 
@@ -161,27 +183,6 @@ class PulseSequence:
         }
 
     @property
-    def enabled_pulses(self):
-        return [pulse for pulse in self.pulses if pulse.enabled]
-
-    @property
-    def disabled_pulses(self):
-        return [pulse for pulse in self.pulses if not pulse.enabled]
-
-    @property
-    def duration(self):
-        if self._duration is not None:
-            return self._duration
-        elif self.enabled_pulses:
-            return max(pulse.t_stop for pulse in self.enabled_pulses)
-        else:
-            return 0
-
-    @duration.setter
-    def duration(self, duration):
-        self._duration = duration
-
-    @property
     def t_start_list(self):
         return [pulse.t_start for pulse in self.enabled_pulses]
 
@@ -206,7 +207,7 @@ class PulseSequence:
         for attr, val in vars(pulse_sequence).items():
             setattr(self, attr, copy.deepcopy(val))
 
-    def add(self, pulses):
+    def add(self, *pulses):
         """
         Adds pulse(s) to the PulseSequence.
         Pulses can be a list of pulses or a single pulse.
@@ -218,14 +219,11 @@ class PulseSequence:
         - If the pulses are targeted and PulseSequence.allow_targeted_pulses
             is False, it raises a SyntaxError
         Args:
-            pulses: pulse or list of pulses to add
+            *pulses: pulses to add
 
         Returns:
             None
         """
-        if not isinstance(pulses, list):
-            pulses = [pulses]
-
         for pulse in pulses:
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p)
@@ -245,17 +243,22 @@ class PulseSequence:
                     'Not allowed to add targeted pulse {}'.format(pulse))
             else:
                 pulse_copy = pulse.copy()
-                if pulse_copy._t_start is None and pulse_copy._previous_pulse \
-                        is None:
+                if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
                         # the previous_pulse.t_stop will be used as t_start
-                        pulse_copy.previous_pulse = self[-1]
+                        pulse_copy.t_start = PulseMatch(self[-1], 't_stop')
                 self.pulses.append(pulse_copy)
+                self.signal.connect(self._handle_signal, sender=pulse_copy)
 
+                if pulse_copy.enabled:
+                    self.enabled_pulses.append(pulse_copy)
+                else:
+                    self.disabled_pulses.append(pulse_copy)
+        self.duration = max(p.t_stop for p in self.enabled_pulses)
         self.sort()
 
-    def remove(self, pulses):
+    def remove(self, *pulses):
         """
         Adds pulse(s) to the PulseSequence.
         Pulses can be a list of pulses or a single pulse.
@@ -272,9 +275,6 @@ class PulseSequence:
         Returns:
             None
         """
-        if not isinstance(pulses, list):
-            pulses = [pulses]
-
         for pulse in pulses:
             if isinstance(pulse, str):
                 pulses_name = [p for p in self.pulses if p.name==pulse]
@@ -282,7 +282,7 @@ class PulseSequence:
                                         'pulses'.format(pulse, len(pulses_name))
                 pulse = pulses_name[0]
             self.pulses.remove(pulse)
-
+            self.signal.disconnect(self._handle_signal, pulse)
         self.sort()
 
     def sort(self):
@@ -291,12 +291,30 @@ class PulseSequence:
 
     def clear(self):
         self.pulses = []
+        self.signal.disconnect(self._handle_signal)
 
     def copy(self):
         pulse_sequence_copy = copy.deepcopy(self)
-        pulse_sequence_copy.pulses = [pulse.copy(fix_vars=True)
-                                      for pulse in pulse_sequence_copy.pulses]
+        pulse_sequence_copy.add(pulse.copy(fix_vars=True)
+                                for pulse in pulse_sequence_copy.pulses)
         return pulse_sequence_copy
+
+    def _handle_signal(self, pulse, **kwargs):
+        key, val = kwargs.popitem()
+        if key == 'enabled':
+            if val is True:
+                if pulse not in self.enabled_pulses:
+                    self.enabled_pulses.append(pulse)
+                if pulse in self.disabled_pulses:
+                    self.disabled_pulses.remove(pulse)
+            elif val is False:
+                if pulse in self.enabled_pulses:
+                    self.enabled_pulses.remove(pulse)
+                if pulse not in self.disabled_pulses:
+                    self.disabled_pulses.append(pulse)
+        elif key == 't_stop' and val > self.duration:
+            self.duration = val
+
 
     def pulses_overlap(self, pulse1, pulse2):
         """
