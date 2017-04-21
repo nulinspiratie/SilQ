@@ -24,8 +24,7 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, \
 # from qcodes.widgets.slack import Slack
 
 from qcodes.data import hdf5_format
-from qcodes.data.data_set import DataSet, new_data, DataMode
-from qcodes.data.manager import DataManager, DataServer
+from qcodes.data.data_set import DataSet, new_data
 from qcodes.data.data_array import DataArray
 
 
@@ -39,14 +38,6 @@ from silq.tools.notebook_tools import create_cell
 from silq.pulses import *
 
 np.set_printoptions(precision=3)
-
-if not 'USE_MP' in globals():
-    USE_MP = False
-
-if USE_MP:
-    config['core']['legacy_mp'] = True
-else:
-    config['core']['legacy_mp'] = False
 
 # Qcodes config
 if 'pulses' not in config['user']:
