@@ -8,7 +8,8 @@ from qcodes.instrument.parameter import MultiParameter
 from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
-from silq.tools.general_tools import SettingsClass, clear_single_settings
+from silq.tools.general_tools import SettingsClass, clear_single_settings, \
+    attribute_from_config
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
@@ -20,17 +21,12 @@ measurement_config = qc.config['user'].get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
-    def __init__(self, name, acquisition_parameter=None, mode=None,
+    def __init__(self, name, acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
         MultiParameter.__init__(self, name, snapshot_value=False, **kwargs)
 
         self.discriminant = discriminant
-
-        self.mode = mode
-        if self.mode is not None:
-            # Add mode to parameter name and label
-            self.name += self.mode_str
 
         self.silent = silent
         self.acquisition_parameter = acquisition_parameter
@@ -41,6 +37,12 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
     def __repr__(self):
         return '{} measurement parameter'.format(self.name)
+
+    def __getattribute__(self, item):
+        try:
+            super().__getattribute__(item)
+        except AttributeError:
+            return attribute_from_config(item)
 
     @property
     def acquisition_parameter_name(self):
@@ -167,7 +169,7 @@ class SelectFrequencyParameter(MeasurementParameter):
 
         names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
-        names.append('frequency' + self.mode_str)
+        names.append('frequency')
 
         super().__init__(self, name='select_frequency',
                          label='Select frequency',
@@ -220,7 +222,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         if self.condition_result['is_satsisfied']:
             frequency = self.measurement.optimal_set_vals[0]
             if self.update_frequency:
-                properties_config['frequency' + self.mode_str] = frequency
+                properties_config['frequency'] = frequency
         else:
             if not self.silent:
                 logging.warning("Could not find frequency with high enough "

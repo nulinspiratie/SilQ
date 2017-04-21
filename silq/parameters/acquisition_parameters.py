@@ -11,7 +11,8 @@ from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SinePulse, SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
-from silq.tools.general_tools import SettingsClass, clear_single_settings
+from silq.tools.general_tools import SettingsClass, clear_single_settings, \
+    attribute_from_config
 
 
 h5fmt = hdf5_format.HDF5Format()
@@ -21,14 +22,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
 
-    def __init__(self, mode=None, average_mode='none', **kwargs):
+    def __init__(self, average_mode='none', **kwargs):
         SettingsClass.__init__(self)
 
-        self.mode = mode
-        """Mode of the parameter (e.g. ESR)"""
-        if self.mode is not None:
-            # Add mode to parameter name and label
-            kwargs['name'] += self.mode_str
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
@@ -63,6 +59,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
+
+    def __getattribute__(self, item):
+        try:
+            super().__getattribute__(item)
+        except AttributeError:
+            return attribute_from_config(item)
 
     @property
     def sample_rate(self):
@@ -335,7 +337,7 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True, mode='long'),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode))
+            FrequencyRampPulse('adiabatic_ESR'))
 
         self.pulse_sequence.sort()
 
@@ -400,7 +402,7 @@ class RabiParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode))
+            SinePulse('rabi_ESR', duration=0.1))
 
         # Disable previous pulse for sine pulse, since it would
         # otherwise be after 'final' pulse
@@ -466,7 +468,7 @@ class RabiDriveParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode))
+            SinePulse('rabi_ESR', duration=0.1))
 
         self.pulse_sequence.sort()
 
@@ -534,7 +536,7 @@ class T1Parameter(AcquisitionParameter):
             DCPulse('plunge'),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode))
+            FrequencyRampPulse('adiabatic_ESR'))
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_read

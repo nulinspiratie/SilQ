@@ -1,7 +1,6 @@
 import sys
 import operator
 from functools import partial
-from multiprocessing import active_children
 import re
 
 from qcodes import config
@@ -73,6 +72,8 @@ def print_attr(obj, attr):
 
 
 class SettingsClass:
+    _single_settings = {}
+    _temporary_settings = {}
     def __init__(self, **kwargs):
         self._temporary_settings = {}
         self._single_settings = {}
@@ -96,8 +97,7 @@ class SettingsClass:
 
         """
         if item in ['_temporary_settings', '_single_settings',
-                    '_attribute_from_config', 'mode', 'mode_str',
-                    '__setstate__', '__dict__']:
+                    '_attribute_from_config', '__setstate__', '__dict__']:
             return object.__getattribute__(self, item)
         elif item in self._single_settings:
             return self._single_settings[item]
@@ -108,35 +108,6 @@ class SettingsClass:
             if value is not None:
                 return value
 
-            value = self._attribute_from_config(item)
-            return value
-
-    @property
-    def mode_str(self):
-        return '' if self.mode is None else '_{}'.format(self.mode)
-
-    def _attribute_from_config(self, item):
-        """
-        Check if attribute exists somewhere in the config
-        It first ill check properties config if a key matches the item
-        with self.mode appended. This is only checked if the param has a mode.
-        Finally, it will check if properties_config contains the item
-        """
-        # check if {item}_{self.mode} is in properties_config
-        # if mode is None, mode_str='', in which case it checks for {item}
-        item_mode = '{}{}'.format(item, self.mode_str)
-        if item_mode in properties_config:
-            value = properties_config[item_mode]
-        elif item in properties_config:
-            # Check if item is in properties config
-            value = properties_config[item]
-        else:
-            value = None
-
-        if type(value) is DotDict:
-            value = dict(value)
-
-        return value
 
     def settings(self, **kwargs):
         """
@@ -184,17 +155,33 @@ class SettingsClass:
         self._single_settings.clear()
 
 
+def attribute_from_config(item, config=properties_config):
+    """
+    Check if attribute exists somewhere in the config
+    It first ill check properties config if a key matches the item
+    with self.mode appended. This is only checked if the param has a mode.
+    Finally, it will check if properties_config contains the item
+    """
+    # check if {item}_{self.mode} is in properties_config
+    # if mode is None, mode_str='', in which case it checks for {item}
+    if item in config:
+        # Check if item is in properties config
+        value = config[item]
+    else:
+        value = None
+
+    if type(value) is DotDict:
+        value = dict(value)
+
+    return value
+
+
 def clear_single_settings(f):
     def clear_single_settings_decorator(self, *args, **kwargs):
         output = f(self, *args, **kwargs)
         self._single_settings.clear()
         return output
     return clear_single_settings_decorator
-
-
-def terminate_servers():
-    for server in active_children():
-        server.terminate()
 
 def JSONListEncoder(l):
     return_l = []
