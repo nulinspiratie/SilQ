@@ -1,6 +1,8 @@
 import sys
 import os
 from .configurations import _configurations
+import json
+from .tools.config import DictConfig, ListConfig, PulseConfig
 
 import qcodes as qc
 
@@ -73,19 +75,31 @@ def initialize(name=None, mode=None, select=None, ignore=None,
 
         # Add subconfigs (other files in config).
         # They go in config.user.{subconfig}
-        config_filenames = os.listdir(config_folder)
-        subconfigs = {os.path.splittext(filename):
-                          os.path.join(config_folder,filename)
-                      for filename in config_filenames
-                      if 'qcodesrc' not in filename}
-        qc.config.subconfigs = subconfigs
+        config_filenames = {os.path.splittext(filename):
+                                os.path.join(config_folder,filename)
+                            for filename in os.listdir(config_folder)
+                            if 'qcodesrc' not in filename}
+
+        for subconfig_name, filepath in config_filenames:
+            if subconfig_name == 'pulses':
+                item_class = PulseConfig
+            else:
+                item_class = None
+
+            with open(filepath, "r") as fp:
+                subconfig = json.load(fp)
+                if isinstance(subconfig, list):
+                    config[subconfig_name] = ListConfig(subconfig_name,
+                                                        filepath,
+                                                        config=subconfig)
+                elif isinstance(subconfig, dict):
+                    config[subconfig_name] = DictConfig(subconfig_name,
+                                                        filepath,
+                                                        config=subconfig,
+                                                        item_class=item_class)
 
         # Update config to include custom filepath and subconfigs
         qc.config.current_config = qc.config.update_config()
-        # Add subconfigs to SilQ config
-        for subconfig_key in subconfigs:
-            config[subconfig_key] = qc.config.user[subconfig_key]
-
 
     # Run initialization files in ./init
     init_folder = os.path.join(folder, 'init')
