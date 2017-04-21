@@ -87,7 +87,7 @@ class PulseSequence:
         self.connection_conditions = connection_conditions
         self.pulse_conditions = pulse_conditions
 
-        self.duration = 0
+        self._duration = None
 
         self.pulses = []
         self.enabled_pulses = []
@@ -102,7 +102,8 @@ class PulseSequence:
         elif isinstance(index, str):
             pulses = [p for p in self.pulses if p.name == index]
             assert len(pulses) == 1, \
-                "Found more than one pulse with name {}".format(index)
+                "Could not find unique pulse with name {}: \n{}".format(index,
+                                                                        pulses)
             return pulses[0]
 
     def __len__(self):
@@ -183,6 +184,19 @@ class PulseSequence:
         }
 
     @property
+    def duration(self):
+        if self._duration is not None:
+            return self._duration
+        elif self.enabled_pulses:
+            return max(pulse.t_stop for pulse in self.enabled_pulses)
+        else:
+            return 0
+
+    @duration.setter
+    def duration(self, duration):
+        self._duration = duration
+
+    @property
     def t_start_list(self):
         return [pulse.t_start for pulse in self.enabled_pulses]
 
@@ -248,6 +262,8 @@ class PulseSequence:
                         # Add last pulse of this pulse_sequence to the pulse
                         # the previous_pulse.t_stop will be used as t_start
                         pulse_copy.t_start = PulseMatch(self[-1], 't_stop')
+                    else:
+                        pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
                 self.signal.connect(self._handle_signal, sender=pulse_copy)
 
@@ -255,7 +271,6 @@ class PulseSequence:
                     self.enabled_pulses.append(pulse_copy)
                 else:
                     self.disabled_pulses.append(pulse_copy)
-        self.duration = max(p.t_stop for p in self.enabled_pulses)
         self.sort()
 
     def remove(self, *pulses):
@@ -282,6 +297,10 @@ class PulseSequence:
                                         'pulses'.format(pulse, len(pulses_name))
                 pulse = pulses_name[0]
             self.pulses.remove(pulse)
+            if pulse.enabled:
+                self.enabled_pulses.remove(pulse)
+            else:
+                self.disabled_pulses.remove(pulse)
             self.signal.disconnect(self._handle_signal, pulse)
         self.sort()
 
@@ -291,12 +310,17 @@ class PulseSequence:
 
     def clear(self):
         self.pulses = []
+        self.enabled_pulses = []
+        self.disabled_pulses = []
         self.signal.disconnect(self._handle_signal)
 
     def copy(self):
         pulse_sequence_copy = copy.deepcopy(self)
-        pulse_sequence_copy.add(pulse.copy(fix_vars=True)
-                                for pulse in pulse_sequence_copy.pulses)
+        # Clear pulses and add them while fixing their variables (no longer
+        # from config)
+        pulse_sequence_copy.clear()
+        pulse_sequence_copy.add(*[pulse.copy(fix_vars=True)
+                                for pulse in self])
         return pulse_sequence_copy
 
     def _handle_signal(self, pulse, **kwargs):
@@ -312,8 +336,6 @@ class PulseSequence:
                     self.enabled_pulses.remove(pulse)
                 if pulse not in self.disabled_pulses:
                     self.disabled_pulses.append(pulse)
-        elif key == 't_stop' and val > self.duration:
-            self.duration = val
 
 
     def pulses_overlap(self, pulse1, pulse2):
@@ -417,6 +439,7 @@ class PulseSequence:
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
+        self._connected_attrs = {}
         self.pulse_class = pulse_class
 
         # List of conditions that a pulse must satisfy to be targeted
