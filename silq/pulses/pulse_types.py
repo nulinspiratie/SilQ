@@ -1,7 +1,9 @@
 import numpy as np
 import copy
 import inspect
-from .pulse_modules import PulseImplementation
+from blinker import signal
+
+from .pulse_modules import PulseImplementation, PulseMatch
 
 from qcodes import config
 
@@ -19,21 +21,20 @@ class Pulse(SettingsClass):
     ncalls = 0
     calls = []
     t_start_inspect = []
-    def __init__(self, name=None, t_start=None, previous_pulse=None,
-                 t_stop=None, delay_start=None, delay_stop=None,
+    signal = signal('pulse')
+    def __init__(self, name=None, t_start=None, t_stop=None,
                  duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, mode=None,
                  connection_requirements={}):
+        # Dict of attrs that are connected via blinker.signal to other pulses
+        self._connected_attrs = {}
         self.mode = mode
 
         self.name = name
-        self._previous_pulse = previous_pulse
 
-        self._t_start = t_start
-        self._duration = duration
-        self._t_stop = t_stop
-        self.delay_start = delay_start
-        self.delay_stop = delay_stop
+        self.t_start = t_start
+        self.duration = duration
+        self.t_stop = t_stop
 
         self.acquire = acquire
         self.initialize = initialize
@@ -45,11 +46,9 @@ class Pulse(SettingsClass):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
-        # Add attrs that have a corresponding dependent property
-        exclude_attrs += ['_t_start', '_t_stop', '_duration']
 
-        for attr in list(vars(self)) + ['t_start', 't_stop']:
+    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
+        for attr in list(vars(self)):
             if attr in exclude_attrs:
                 continue
             elif not hasattr(other_pulse, attr) \
@@ -138,11 +137,11 @@ class Pulse(SettingsClass):
         Returns:
 
         """
-        Pulse.ncalls += 1
-        Pulse.calls.append(item)
-        if item == 't_start':
-            outer_fun = inspect.getouterframes(inspect.currentframe())
-            Pulse.t_start_inspect += [outer_fun]
+        # Pulse.ncalls += 1
+        # Pulse.calls.append(item)
+        # if item == 't_start':
+        #     outer_fun = inspect.getouterframes(inspect.currentframe())
+        #     Pulse.t_start_inspect += [outer_fun]
         value = object.__getattribute__(self, item)
         if value is not None:
             return value
@@ -153,6 +152,27 @@ class Pulse(SettingsClass):
             value = self._attribute_from_config(item)
             return value
 
+    def __setattr__(self, key, value):
+        if isinstance(value, PulseMatch):
+            super().__setattr__(key, value())
+            set_fun = value.signal_function(self, key)
+            self._connected_attrs[key] = set_fun
+            self.signal.connect(set_fun, sender=value.pulse)
+        else:
+            super().__setattr__(key, value)
+
+            if key in self._connected_attrs:
+                # Remove function from pulse signal because it no longer
+                # depends on other pulse
+                self.signal.disconnect(self._connected_attrs.pop(key))
+
+            if len(list(self.signal.receivers_for(self))):
+                # send signal to anyone listening that attribute has changed
+                self.signal.send(self, **{key: value})
+                if key in ['t_start', 'duration']:
+                    # Also send signal that dependent property t_stop has changed
+                    self.signal.send(self, t_stop=self.t_stop)
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -162,8 +182,7 @@ class Pulse(SettingsClass):
         """
         return_dict = {}
         for attr, val in vars(self).items():
-            if not attr == 'previous_pulse':
-                return_dict[attr] = val
+            return_dict[attr] = val
         return return_dict
 
     def _attribute_from_config(self, item):
@@ -195,67 +214,17 @@ class Pulse(SettingsClass):
         return None
 
     @property
-    def t_start(self):
-        if self._t_start is not None:
-            return self._t_start
-        elif self.previous_pulse is not None:
-            if self.delay_start is not None:
-                return self.previous_pulse.t_start + self.delay_start
-            elif self.delay_stop is not None:
-                return self.previous_pulse.t_stop + self.delay_stop
-            else:
-                return self.previous_pulse.t_stop
-        else:
-            # Check if item exists in config
-            value = self._attribute_from_config('t_start')
-            if value is not None:
-                return value
-            else:
-                return 0
-
-    @t_start.setter
-    def t_start(self, t_start):
-        self._t_start = t_start
-
-    @property
-    def duration(self):
-        if self._t_stop is not None:
-            if self.t_start is not None:
-                return self._t_stop - self.t_start
-            else:
-                return None
-        else:
-            return self._duration
-
-    @duration.setter
-    def duration(self, duration):
-        self._duration = duration
-
-    @property
     def t_stop(self):
-        if self._t_stop is not None:
-            return self._t_stop
-        elif self.t_start is not None and self.duration is not None:
+        if self.t_start is not None and self.duration is not None:
             return self.t_start + self.duration
         else:
             return None
 
     @t_stop.setter
     def t_stop(self, t_stop):
-        self._t_stop = t_stop
-
-    @property
-    def previous_pulse(self):
-        if self._previous_pulse is None:
-            return None
-        elif self._previous_pulse.enabled:
-            return self._previous_pulse
-        else:
-            return self._previous_pulse.previous_pulse
-
-    @previous_pulse.setter
-    def previous_pulse(self, previous_pulse):
-        self._previous_pulse = previous_pulse
+        if t_stop is not None:
+            # Setting duration sends a signal for duration and also t_stop
+            self.duration = t_stop - self.t_start
 
     @property
     def mode_str(self):
@@ -293,10 +262,6 @@ class Pulse(SettingsClass):
         pulse_copy = copy.deepcopy(self)
         if fix_vars:
             for var in vars(pulse_copy):
-                setattr(pulse_copy, var, getattr(pulse_copy, var))
-
-            # Also set dependent properties
-            for var in ['t_start', 't_stop', 'previous_pulse']:
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
         return pulse_copy
 

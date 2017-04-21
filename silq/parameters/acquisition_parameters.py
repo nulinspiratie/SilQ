@@ -199,9 +199,9 @@ class DCParameter(AcquisitionParameter):
 
         self.samples = 1
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse(name='read', acquire=True),
-            DCPulse(name='final')])
+            DCPulse(name='final'))
 
     def setup(self, **kwargs):
         super().setup(**kwargs)
@@ -246,13 +246,13 @@ class DCPulseSweepParameter(AcquisitionParameter):
         self._sweep_voltages = sweep_voltages
         self.pulse_sequence.clear()
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse('sweep_{:.3f}'.format(sweep_voltage),
                     acquire=True,
                     amplitude=sweep_voltage,
                     t_start=k*self.pulse_settings['duration'],
                     **self.pulse_settings)
-            for k, sweep_voltage in enumerate(sweep_voltages)])
+            for k, sweep_voltage in enumerate(sweep_voltages))
         self.sweep_pulse_names = ['sweep_{:.3f}'.format(sweep_voltage)
                                   for sweep_voltage in sweep_voltages]
 
@@ -261,7 +261,7 @@ class DCPulseSweepParameter(AcquisitionParameter):
                     connection_requirements=self.pulse_settings.get(
                         'connection_requirements', {})))
 
-        self.pulse_sequence.add([pulse for pulse in self.additional_pulses])
+        self.pulse_sequence.add(pulse for pulse in self.additional_pulses)
 
         # Update metadata
         self.shapes = [tuple([len(sweep_voltages)])]
@@ -287,11 +287,11 @@ class EPRParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True, mode='long'),
-            DCPulse('final')])
+            DCPulse('final'))
 
         self.analysis = analysis.analyse_EPR
 
@@ -330,12 +330,12 @@ class AdiabaticParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True, mode='long'),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode)])
+            FrequencyRampPulse('adiabatic', mode=self.mode))
 
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
@@ -398,12 +398,12 @@ class RabiParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode)])
+            SinePulse('rabi', duration=0.1, mode=self.mode))
 
         # Disable previous pulse for sine pulse, since it would
         # otherwise be after 'final' pulse
@@ -465,12 +465,12 @@ class RabiDriveParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode)])
+            SinePulse('rabi', duration=0.1, mode=self.mode))
 
         # Disable previous pulse for sine pulse, since it would
         # otherwise be after 'final' pulse
@@ -536,12 +536,12 @@ class T1Parameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge'),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode)])
+            FrequencyRampPulse('adiabatic', mode=self.mode))
         # Disable previous pulse for adiabatic pulse, since it would
         # otherwise be after 'final' pulse
         self.pulse_sequence['adiabatic'].previous_pulse = None
@@ -609,10 +609,10 @@ class DarkCountsParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=True,
                                   mode='long'),
-            DCPulse('read', acquire=True)])
+            DCPulse('read', acquire=True))
 
         self.analysis = analysis.analyse_read
 
@@ -657,16 +657,16 @@ class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='variable_read_acquisition',
                          names=['read_voltage'],
-                         labels='Dead voltage',
+                         labels='Read voltage',
                          average_mode='trace',
                          units=['V'],
                          snapshot_value=False,
                          **kwargs)
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse(name='empty', acquire=True),
             DCPulse(name='plunge', acquire=True),
             DCPulse(name='read', acquire=True),
-            DCPulse(name='final')])
+            DCPulse(name='final'))
 
     @property
     def shape(self):
