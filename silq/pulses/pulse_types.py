@@ -18,9 +18,9 @@ pulse_config = config['user'].get('pulses', {})
 properties_config = config['user'].get('properties', {})
 
 class Pulse(SettingsClass):
-    ncalls = 0
-    calls = []
-    t_start_inspect = []
+    # ncalls = 0
+    # calls = []
+    # t_start_inspect = []
     signal = signal('pulse')
     def __init__(self, name=None, t_start=None, t_stop=None,
                  duration=None, acquire=False, initialize=False,
@@ -484,7 +484,6 @@ class TriggerPulse(Pulse):
     duration = .0001 # ms
 
     def __init__(self, name=None, duration=duration, **kwargs):
-        self.duration = duration
         super().__init__(name=name, duration=duration, **kwargs)
 
     def __repr__(self):

@@ -337,9 +337,6 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('final'),
             FrequencyRampPulse('adiabatic', mode=self.mode))
 
-        # Disable previous pulse for adiabatic pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['adiabatic'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -407,7 +404,6 @@ class RabiParameter(AcquisitionParameter):
 
         # Disable previous pulse for sine pulse, since it would
         # otherwise be after 'final' pulse
-        self.pulse_sequence['rabi'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -472,9 +468,6 @@ class RabiDriveParameter(AcquisitionParameter):
             DCPulse('final'),
             SinePulse('rabi', duration=0.1, mode=self.mode))
 
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['rabi'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -542,9 +535,6 @@ class T1Parameter(AcquisitionParameter):
             DCPulse('read', acquire=True),
             DCPulse('final'),
             FrequencyRampPulse('adiabatic', mode=self.mode))
-        # Disable previous pulse for adiabatic pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['adiabatic'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_read
