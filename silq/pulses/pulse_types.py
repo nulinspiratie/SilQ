@@ -444,11 +444,10 @@ class SinePulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} us is not in the time range {} ms - {} ms of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.power * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
-                                                    self.phase / 360))
+        return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
@@ -537,7 +536,7 @@ class DCPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         if hasattr(t, '__len__'):
@@ -562,7 +561,7 @@ class DCRampPulse(Pulse):
 
     def get_voltage(self, t):
         assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         slope = (self.amplitude_stop - self.amplitude_start) / self.duration
@@ -586,7 +585,7 @@ class TriggerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
@@ -606,7 +605,7 @@ class MarkerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
@@ -680,9 +679,17 @@ class CombinationPulse(Pulse):
     def t_start(self):
         return min(self.pulse1.t_start, self.pulse2.t_start)
 
+    @t_start.setter
+    def t_start(self, t_start):
+        pass
+
     @property
     def t_stop(self):
         return max(self.pulse1.t_stop, self.pulse2.t_stop)
+
+    @t_stop.setter
+    def t_stop(self, t_stop):
+        pass
 
     @property
     def combination_string(self):
@@ -718,15 +725,13 @@ class CombinationPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         result1 = np.zeros(t.shape[0])
         result2 = np.zeros(t.shape[0])
 
-        # pulse1_t = t[self.pulse1.t_start <= t <= self.pulse1.t_stop]
         pulse1_t = t[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)]
-        # pulse2_t = t[self.pulse2.t_start <= t <= self.pulse2.t_stop]
         pulse2_t = t[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)]
 
         voltage1 = self.pulse1.get_voltage(pulse1_t)
@@ -802,7 +807,7 @@ class AWGPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} ms is not in the time range {} ms - {} ms of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         if self.from_function:
