@@ -77,8 +77,6 @@ class SettingsClass:
     def __init__(self, **kwargs):
         self._temporary_settings = {}
         self._single_settings = {}
-        if not hasattr(self, 'mode'):
-            self.mode = None
 
     def __getattribute__(self, item):
         """
@@ -168,7 +166,7 @@ def attribute_from_config(item, config=properties_config):
         # Check if item is in properties config
         value = config[item]
     else:
-        value = None
+        raise AttributeError
 
     if type(value) is DotDict:
         value = dict(value)
