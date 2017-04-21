@@ -40,7 +40,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
     def __getattribute__(self, item):
         try:
-            super().__getattribute__(item)
+            return super().__getattribute__(item)
         except AttributeError:
             return attribute_from_config(item)
 

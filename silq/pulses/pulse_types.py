@@ -34,16 +34,13 @@ class Pulse(SettingsClass):
         self._connected_attrs = {}
         super().__init__()
 
+        self.name = name
+
         if config_label is not None:
             self.config_label = config_label
         else:
             self.config_label = name
         self.pulse_config = self.pulses_config.get(self.config_label, None)
-        if self.pulse_config is not None:
-            signal('pulse_config:'+self.config_label).connect(
-                self._handle_config_signal)
-
-        self.name = name
 
         self.t_start = self._value_or_config('t_start', t_start)
         self.duration = self._value_or_config('duration', duration)
@@ -59,6 +56,9 @@ class Pulse(SettingsClass):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+        if self.pulse_config is not None:
+            signal('pulse_config:'+self.config_label).connect(
+                self._handle_config_signal)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
@@ -242,8 +242,6 @@ class Pulse(SettingsClass):
 
     def _get_repr(self, properties_str):
         pulse_name = self.name
-        if self.mode is not None:
-            pulse_name += ' ({})'.format(self.mode)
         if self.connection:
             properties_str += '\n\tconnection: {}'.format(self.connection)
         if self.connection_requirements:
@@ -338,10 +336,13 @@ class SteeredInitialization(Pulse):
             'readout_threshold_voltage', readout_threshold_voltage)
 
     def __repr__(self):
-        properties_str = \
-            't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th={}'.format(
-                self.t_no_blip, self.t_max_wait, self.t_buffer,
-                self.readout_threshold_voltage)
+        try:
+            properties_str = \
+                't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th={}'.format(
+                    self.t_no_blip, self.t_max_wait, self.t_buffer,
+                    self.readout_threshold_voltage)
+        except:
+            properties_str = ''
         return super()._get_repr(properties_str)
 
 
@@ -356,8 +357,12 @@ class SinePulse(Pulse):
         self.amplitude = self._value_or_config('amplitude', amplitude)
 
     def __repr__(self):
-        properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.power, self.t_start, self.t_stop)
+        try:
+            properties_str = 'f={:.2f} MHz, power={}, t_start={}, ' \
+                             't_stop={}'.format(
+                self.frequency/1e6, self.power, self.t_start, self.t_stop)
+        except:
+            properties_str = ''
 
         return super()._get_repr(properties_str)
 
@@ -429,30 +434,35 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
 
     def __repr__(self):
-        properties_str = 'frequency={:.2f} MHz, frequency_deviation={:.2f}, ' \
-                         'power={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.frequency_deviation/1e6,
-            self.power, self.t_start, self.t_stop)
+        try:
+            properties_str = 'frequency={:.2f} MHz, frequency_deviation={:.2f}, ' \
+                             'power={}, t_start={}, t_stop={}'.format(
+                self.frequency/1e6, self.frequency_deviation/1e6,
+                self.power, self.t_start, self.t_stop)
 
-        if self.frequency_sideband is not None:
-            properties_str += ', f_sb={}'.format(
-                self.frequency_sideband)
-
+            if self.frequency_sideband is not None:
+                properties_str += ', f_sb={}'.format(
+                    self.frequency_sideband)
+        except:
+            properties_str = ''
         return super()._get_repr(properties_str)
 
 
 class DCPulse(Pulse):
     def __init__(self, name=None, amplitude=None, **kwargs):
         super().__init__(name=name, **kwargs)
-
         self.amplitude = self._value_or_config('amplitude', amplitude)
+
         if self.amplitude is None:
             raise AttributeError("'{}' object has no attribute "
                                  "'amplitude'".format(self.__class__.__name__))
 
     def __repr__(self):
-        properties_str = 'A={}, t_start={}, t_stop={}'.format(
-            self.amplitude, self.t_start, self.t_stop)
+        try:
+            properties_str = 'A={}, t_start={}, t_stop={}'.format(
+                self.amplitude, self.t_start, self.t_stop)
+        except:
+            properties_str = ''
 
         return super()._get_repr(properties_str)
 
@@ -478,8 +488,13 @@ class DCRampPulse(Pulse):
                                                     amplitude_stop)
 
     def __repr__(self):
-        properties_str = 'A_start={}, A_stop={}, t_start={}, t_stop={}'.format(
-            self.amplitude_start, self.amplitude_stop, self.t_start, self.t_stop)
+        try:
+            properties_str = 'A_start={}, A_stop={}, ' \
+                             't_start={}, t_stop={}'.format(
+                self.amplitude_start, self.amplitude_stop,
+                self.t_start, self.t_stop)
+        except:
+            properties_str = ''
 
         return super()._get_repr(properties_str)
 
@@ -501,9 +516,11 @@ class TriggerPulse(Pulse):
         super().__init__(name=name, duration=duration, **kwargs)
 
     def __repr__(self):
-        properties_str = 't_start={}, duration={}'.format(
-            self.t_start, self.duration)
-
+        try:
+            properties_str = 't_start={}, duration={}'.format(
+                self.t_start, self.duration)
+        except:
+            properties_str = ''
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
@@ -522,9 +539,11 @@ class MarkerPulse(Pulse):
         super().__init__(name=name, **kwargs)
 
     def __repr__(self):
-        properties_str = 't_start={}, duration={}'.format(
-            self.t_start, self.duration)
-
+        try:
+            properties_str = 't_start={}, duration={}'.format(
+                self.t_start, self.duration)
+        except:
+            properties_str = ''
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
@@ -543,8 +562,11 @@ class TriggerWaitPulse(Pulse):
         super().__init__(name=name, t_start=t_start, duration=0, **kwargs)
 
     def __repr__(self):
-        properties_str = 't_start={}'.format(
-            self.t_start, self.duration)
+        try:
+            properties_str = 't_start={}'.format(
+                self.t_start, self.duration)
+        except:
+            properties_str = ''
 
         return super()._get_repr(properties_str)
 
@@ -554,8 +576,11 @@ class MeasurementPulse(Pulse):
         super().__init__(name=name, **kwargs)
 
     def __repr__(self):
-        properties_str = 't_start={}, duration={}'.format(
-            self.t_start, self.duration)
+        try:
+            properties_str = 't_start={}, duration={}'.format(
+                self.t_start, self.duration)
+        except:
+            properties_str = ''
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
