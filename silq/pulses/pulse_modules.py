@@ -67,7 +67,6 @@ class PulseRequirement():
 
 
 class PulseSequence:
-    signal = signal('pulse')
     def __init__(self, pulses=[], allow_untargeted_pulses=True,
                  allow_targeted_pulses=True, allow_pulse_overlap=True):
         """
@@ -183,6 +182,20 @@ class PulseSequence:
             'pulses': [pulse._JSONEncoder() for pulse in self.pulses]
         }
 
+    def _handle_signal(self, pulse, **kwargs):
+        key, val = kwargs.popitem()
+        if key == 'enabled':
+            if val is True:
+                if pulse not in self.enabled_pulses:
+                    self.enabled_pulses.append(pulse)
+                if pulse in self.disabled_pulses:
+                    self.disabled_pulses.remove(pulse)
+            elif val is False:
+                if pulse in self.enabled_pulses:
+                    self.enabled_pulses.remove(pulse)
+                if pulse not in self.disabled_pulses:
+                    self.disabled_pulses.append(pulse)
+
     @property
     def duration(self):
         if self._duration is not None:
@@ -265,7 +278,7 @@ class PulseSequence:
                     else:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
-                self.signal.connect(self._handle_signal, sender=pulse_copy)
+                signal('pulse').connect(self._handle_signal, sender=pulse_copy)
 
                 if pulse_copy.enabled:
                     self.enabled_pulses.append(pulse_copy)
@@ -301,7 +314,7 @@ class PulseSequence:
                 self.enabled_pulses.remove(pulse)
             else:
                 self.disabled_pulses.remove(pulse)
-            self.signal.disconnect(self._handle_signal, pulse)
+            signal('pulse').disconnect(self._handle_signal, pulse)
         self.sort()
 
     def sort(self):
@@ -312,7 +325,7 @@ class PulseSequence:
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-        self.signal.disconnect(self._handle_signal)
+        signal('pulse').disconnect(self._handle_signal)
 
     def copy(self):
         pulse_sequence_copy = copy.deepcopy(self)
@@ -322,21 +335,6 @@ class PulseSequence:
         pulse_sequence_copy.add(*[pulse.copy(fix_vars=True)
                                 for pulse in self])
         return pulse_sequence_copy
-
-    def _handle_signal(self, pulse, **kwargs):
-        key, val = kwargs.popitem()
-        if key == 'enabled':
-            if val is True:
-                if pulse not in self.enabled_pulses:
-                    self.enabled_pulses.append(pulse)
-                if pulse in self.disabled_pulses:
-                    self.disabled_pulses.remove(pulse)
-            elif val is False:
-                if pulse in self.enabled_pulses:
-                    self.enabled_pulses.remove(pulse)
-                if pulse not in self.disabled_pulses:
-                    self.disabled_pulses.append(pulse)
-
 
     def pulses_overlap(self, pulse1, pulse2):
         """
