@@ -14,7 +14,7 @@ interfaces = {}
 
 
 ### SIM900
-SIM900 = SIM900('SIM900', 'GPIB0::6::INSTR',server_name='' if USE_MP else None)
+SIM900 = SIM900('SIM900', 'GPIB0::6::INSTR')
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 DC_sources = [('TG',2,8,16), ('LB',3,8,8), ('RB',8,8,8), ('PL',5,8,8),
          ('SRC',1,1000,5), ('DS',7,8,8), ('DF',6,8,8)]
@@ -22,8 +22,6 @@ gates = ['TG', 'LB', 'RB', 'PL', 'SRC', 'DS', 'DF']
 SIM900_scaled_parameters = []
 for ch_name, ch, ratio,max_voltage in DC_sources:
     SIM900.define_slot(channel=ch, name=ch_name+'_raw', max_voltage=max_voltage)
-    if USE_MP:
-        SIM900.update()
     param_raw = SIM900.parameters[ch_name+'_raw']
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name, ratio=ratio)
     SIM900_scaled_parameters.append(param)
@@ -35,8 +33,7 @@ for ch_name, ch, ratio,max_voltage in DC_sources:
 ### ArbStudio
 dll_path = os.path.join(os.getcwd(), r'C:\lecroy\Library\ArbStudioSDK.dll')
 arbstudio = ArbStudio1104('arbstudio',
-                          dll_path=dll_path,
-                          server_name='' if USE_MP else None)
+                          dll_path=dll_path)
 for ch in ['ch1', 'ch2', 'ch4']:
     arbstudio.parameters[ch + '_sampling_rate_prescaler'](250)
 # ch3 is used for sideband modulation
@@ -46,38 +43,29 @@ arbstudio_interface = interfaces['arbstudio']
 
 
 ### PulseBlaster
-pulseblaster = PulseBlasterESRPRO('pulseblaster',
-                            api_path='spinapi.py',
-                            server_name='' if USE_MP else None)
+pulseblaster = PulseBlasterESRPRO('pulseblaster', api_path='spinapi.py',)
 pulseblaster.core_clock(500)
 interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
 pulseblaster_interface = interfaces['pulseblaster']
 
 ### Chip
-chip = Chip(name='chip', channels=['PL', 'DF', 'ESR'],
-            server_name='' if USE_MP else None)
+chip = Chip(name='chip', channels=['PL', 'DF', 'ESR'])
 interfaces['chip'] = get_instrument_interface(chip)
 chip_interface = interfaces['chip']
 
 
 ### ATS
-if USE_MP:
-    from qcodes.instrument.server import InstrumentServerManager
-    InstrumentServerManager('Alazar_server', {'target_instrument': pulseblaster})
-ATS = ATS9440('ATS', server_name='Alazar_server' if USE_MP else None)
+ATS = ATS9440('ATS')
 triggered_controller = Triggered_AcquisitionController(
     name='triggered_controller',
-    alazar_name='ATS',
-    server_name='Alazar_server' if USE_MP else None)
+    alazar_name='ATS')
 # continuous_controller = Continuous_AcquisitionController(
 #     name='continuous_controller',
-#     alazar_name='ATS',
-#     server_name='Alazar_server' if USE_MP else None)
+#     alazar_name='ATS')
 # steered_controller = SteeredInitialization_AcquisitionController(
 #     name='steered_initialization_controller',
 #     target_instrument=pulseblaster,
-#     alazar_name='ATS',
-#     server_name='Alazar_server' if USE_MP else None)
+#     alazar_name='ATS')
 # steered_controller.record_initialization_traces(True)
 
 interfaces['ATS'] = get_instrument_interface(ATS)
@@ -89,8 +77,7 @@ ATS_interface = interfaces['ATS']
 
 
 # ### MW source
-# keysight = Keysight_E8267D('keysight','TCPIP0::192.168.0.5::inst0::INSTR',
-#                            server_name='' if USE_MP else None)
+# keysight = Keysight_E8267D('keysight','TCPIP0::192.168.0.5::inst0::INSTR')
 # interfaces['keysight'] = get_instrument_interface(keysight)
 # keysight_interface = interfaces['keysight']
 # interfaces['keysight'].modulation_channel('ext2')
