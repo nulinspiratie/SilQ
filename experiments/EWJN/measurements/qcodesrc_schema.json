@@ -1,46 +1,10 @@
 {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "schema for a qcodes config file",
     "properties": {
-        "user": {
-            "properties": {},
-            "description": "controls user settings of qcodes",
-            "type": "object"
-        },
-        "gui": {
-            "properties": {
-                "plotlib": {
-                    "enum": [
-                        "QT",
-                        "matplotlib"
-                    ],
-                    "description": "Plotting library",
-                    "default": "matplotlib",
-                    "type": "string"
-                },
-                "notebook": {
-                    "description": "Use notebook frontend",
-                    "default": true,
-                    "type": "boolean"
-                }
-            },
-            "description": "controls gui of qcodes",
-            "required": [
-                "notebook",
-                "plotlib"
-            ],
-            "type": "object"
-        },
         "core": {
+            "description": "controls core settings of qcodes",
             "properties": {
-                "legacy_mp": {
-                    "description": "control legacy buggy multiprocess",
-                    "default": false,
-                    "type": "boolean"
-                },
-                "default_fmt": {
-                    "description": "default location formatter",
-                    "default": "data/{date}/#{counter}_{name}_{time}",
-                    "type": "string"
-                },
                 "loglevel": {
                     "enum": [
                         "CRITICAL",
@@ -52,22 +16,52 @@
                     "description": "control logging  level",
                     "default": "DEBUG",
                     "type": "string"
+                },
+                "default_fmt": {
+                    "description": "default location formatter",
+                    "default": "data/{date}/#{counter}_{name}_{time}",
+                    "type": "string"
                 }
             },
-            "description": "controls core settings of qcodes",
+            "type": "object",
             "required": [
-                "legacy_mp",
                 "loglevel"
-            ],
+            ]
+        },
+        "user": {
+            "description": "controls user settings of qcodes",
+            "properties": {},
             "type": "object"
+        },
+        "gui": {
+            "description": "controls gui of qcodes",
+            "properties": {
+                "notebook": {
+                    "description": "Use notebook frontend",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "plotlib": {
+                    "enum": [
+                        "QT",
+                        "matplotlib"
+                    ],
+                    "description": "Plotting library",
+                    "default": "matplotlib",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "required": [
+                "notebook",
+                "plotlib"
+            ]
         }
     },
-    "description": "schema for a qcodes config file",
+    "type": "object",
     "required": [
         "gui",
         "core",
         "user"
-    ],
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object"
+    ]
 }

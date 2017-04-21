@@ -1,24 +1,42 @@
 {
+    "core": {
+        "loglevel": "DEBUG",
+        "legacy_mp": false,
+        "default_fmt": "data/{date}/#{counter}_{name}_{time}"
+    },
     "user": {
-        "matplot": {
-            "2D_settings": {
-                "cmap": "inferno"
-            }
+        "slack": {
+            "names": [
+                "serwan",
+                "ybex"
+            ],
+            "token": "xoxb-120654724535-zLWd4VEP0JVJpCuWHz3xxEFR",
+            "bot_name": "silq"
         },
+        "data_folder": "E:\\EWJN\\data",
         "properties": {
+            "frequency_NMR": 66500000.0,
+            "frequency_ESR": 27976000000.0,
+            "readout_threshold_voltage": 0.3333333333333333,
+            "samples": 100,
+            "t_read": 20,
+            "t_skip": 0.07,
             "frequencies_ESR": {
                 "down": 27951000000.0,
                 "up": 27852500000.0
             },
-            "samples": 100,
             "parameters": {
+                "2D": [
+                    "TGAC",
+                    "DF_DS"
+                ],
                 "TGAC": {
                     "steps": [
                         0.0005,
                         1
                     ]
                 },
-                "2D": [
+                "2": [
                     "TGAC",
                     "DF_DS"
                 ],
@@ -27,78 +45,61 @@
                         0.00025,
                         0.5
                     ]
-                },
-                "2": [
-                    "TGAC",
-                    "DF_DS"
-                ]
-            },
-            "frequency_ESR": 27976000000.0,
-            "t_skip": 0.07,
-            "t_read": 20,
-            "frequency_NMR": 66500000.0,
-            "readout_threshold_voltage": 0.3333333333333333
+                }
+            }
         },
-        "data_folder": "E:\\EWJN\\data",
+        "matplot": {
+            "2D_settings": {
+                "cmap": "inferno"
+            }
+        },
         "pulses": {
+            "read": {
+                "amplitude": 0,
+                "duration": 20
+            },
+            "read_long": {
+                "amplitude": 0,
+                "duration": 120
+            },
+            "plunge": {
+                "amplitude": 0.08,
+                "duration": 5
+            },
+            "adiabatic_ESR": {
+                "frequency_deviation": 500000.0,
+                "power": 0,
+                "t_start": 3,
+                "duration": 0.2
+            },
+            "final": {
+                "amplitude": 0,
+                "duration": 2
+            },
             "steered_initialization_long": {
                 "t_max_wait": 1000,
                 "t_no_blip": 200
             },
-            "adiabatic_ESR": {
-                "t_start": 3,
-                "duration": 0.2,
-                "frequency_deviation": 500000.0,
-                "power": 0
-            },
-            "final": {
-                "duration": 2,
-                "amplitude": 0
-            },
-            "read_long": {
-                "duration": 120
-            },
-            "plunge": {
-                "duration": 5,
-                "amplitude": 0.08
-            },
             "empty": {
-                "duration": 5,
-                "amplitude": -0.06
-            },
-            "steered_initialization": {
-                "t_buffer": 30,
-                "enabled": false,
-                "t_no_blip": 120,
-                "t_max_wait": 400
-            },
-            "read": {
-                "duration": 20,
-                "amplitude": 0
+                "amplitude": -0.06,
+                "duration": 5
             },
             "adiabatic_NMR": {
-                "t_start": 3,
-                "duration": 0.5,
                 "frequency_deviation": 100000.0,
-                "power": 0
+                "power": 0,
+                "t_start": 3,
+                "duration": 0.5
+            },
+            "steered_initialization": {
+                "enabled": false,
+                "t_max_wait": 400,
+                "t_no_blip": 120,
+                "t_buffer": 30
             }
-        },
-        "slack": {
-            "names": [
-                "serwan",
-                "ybex"
-            ],
-            "token": "xoxb-120654724535-zLWd4VEP0JVJpCuWHz3xxEFR",
-            "bot_name": "silq"
         }
     },
     "gui": {
-        "plotlib": "matplotlib",
-        "notebook": true
-    },
-    "core": {
-        "legacy_mp": false,
-        "default_fmt": "data/{date}/#{counter}_{name}_{time}",
-        "loglevel": "DEBUG"
+        "notebook": true,
+        "plotlib": "matplotlib"
     }
 }

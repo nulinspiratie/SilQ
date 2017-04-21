@@ -62,7 +62,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def __getattribute__(self, item):
         try:
-            super().__getattribute__(item)
+            return super().__getattribute__(item)
         except AttributeError:
             return attribute_from_config(item)
 
@@ -292,7 +292,7 @@ class EPRParameter(AcquisitionParameter):
         self.pulse_sequence.add(
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True, mode='long'),
+            DCPulse('read_long', acquire=True),
             DCPulse('final'))
 
         self.analysis = analysis.analyse_EPR
@@ -335,7 +335,7 @@ class AdiabaticParameter(AcquisitionParameter):
         self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True, mode='long'),
+            DCPulse('read_long', acquire=True),
             DCPulse('final'),
             FrequencyRampPulse('adiabatic_ESR'))
 
@@ -602,8 +602,7 @@ class DarkCountsParameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=True,
-                                  mode='long'),
+            SteeredInitialization('steered_initialization', enabled=True,),
             DCPulse('read', acquire=True))
 
         self.analysis = analysis.analyse_read
