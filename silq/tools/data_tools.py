@@ -4,7 +4,7 @@ import numpy as np
 import qcodes as qc
 from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataMode, DataSet
+from qcodes.data.data_set import new_data, DataSet
 from qcodes.data.data_array import DataArray
 
 def get_latest_data_folder():
@@ -31,8 +31,6 @@ def create_data_set(name, base_folder, subfolder=None, formatter=None):
                                    subfolder=subfolder))
 
     data_set = new_data(location=location,
-                        mode=DataMode.LOCAL,
-                        data_manager=False,
                         name=name,
                         formatter=formatter)
     return data_set
