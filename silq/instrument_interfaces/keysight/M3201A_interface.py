@@ -1,7 +1,7 @@
 import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse
+from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
@@ -37,6 +37,9 @@ class M3201AInterface(InstrumentInterface):
                                     ('power', {'max': 1.5})]
             ),
             AWGPulseImplementation(
+                pulse_requirements=[]
+            ),
+            CombinationPulseImplementation(
                 pulse_requirements=[]
             )
         ]
@@ -299,6 +302,61 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting AWGPulse for M3201A interface {}'.format(interface))
+        # Target the generic pulse to this specific interface
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, **kwargs)
+
+        # Add a trigger requirement, which is sent back to the Layout
+        if targeted_pulse.t_start == 0:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=1e-3,
+                             connection_requirements={
+                                 'input_instrument': interface.instrument_name(),
+                                 'trigger': True}))
+
+        return targeted_pulse
+
+    def implement(self, instrument, sampling_rates, threshold):
+        if isinstance(self.connection, SingleConnection):
+            channels = [self.connection.output['channel'].name]
+        else:
+            raise Exception('No implementation for connection {}'.format(
+                self.connection))
+
+        waveforms = {}
+
+        wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+
+        for ch in channels:
+            # TODO: check if sampling rate is indeed something we want to configure on a channel basis
+            period_sample = 1 / sampling_rates[ch]
+
+            waveform_start = self.t_start
+            waveform_samples = wave_form_multiple * round(
+                ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
+            waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
+            t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
+
+            waveform_data = self.get_voltage(t_list)
+
+            waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
+                                                                        waveform_data_a=waveform_data),
+                        'cycles': 1,
+                        't_start': self.t_start,
+                        't_stop': waveform_stop}
+
+            waveforms[ch] = [waveform]
+
+        return waveforms
+
+
+class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        print('targeting CombinationPulse for M3201A interface {}'.format(interface))
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
