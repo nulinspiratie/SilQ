@@ -2,7 +2,7 @@ import sys
 import os
 from .configurations import _configurations
 import json
-from .tools.config import DictConfig, ListConfig, PulseConfig
+from .tools.config import DictConfig, ListConfig
 
 import qcodes as qc
 
@@ -81,11 +81,6 @@ def initialize(name=None, mode=None, select=None, ignore=None,
                             if 'qcodesrc' not in filename}
 
         for subconfig_name, filepath in config_filenames:
-            if subconfig_name == 'pulses':
-                item_class = PulseConfig
-            else:
-                item_class = None
-
             with open(filepath, "r") as fp:
                 subconfig = json.load(fp)
                 if isinstance(subconfig, list):
@@ -95,8 +90,7 @@ def initialize(name=None, mode=None, select=None, ignore=None,
                 elif isinstance(subconfig, dict):
                     config[subconfig_name] = DictConfig(subconfig_name,
                                                         filepath,
-                                                        config=subconfig,
-                                                        item_class=item_class)
+                                                        config=subconfig)
 
         # Update config to include custom filepath and subconfigs
         qc.config.current_config = qc.config.update_config()
