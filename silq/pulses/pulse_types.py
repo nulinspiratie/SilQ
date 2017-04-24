@@ -57,7 +57,7 @@ class Pulse(SettingsClass):
         self.connection_requirements = connection_requirements
 
         if self.pulse_config is not None:
-            signal('pulse_config:'+self.config_label).connect(
+            signal('config:pulses.'+self.config_label).connect(
                 self._handle_config_signal)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
