@@ -10,6 +10,31 @@ class SubConfig(DotDict):
     def __init__(self, name, filepath=None):
         self.name = name
         self.filepath = filepath
+        self._connected_attrs = {}
+
+    @property
+    def config_path(self):
+        if self.parent is not None:
+            return f'{self.parent.config_path}.{self.name}'
+        else:
+            return f'config:{self.name}'
+
+    def __setitem__(self, key, val):
+        current_val = super().__getitem__(key)
+        if isinstance(current_val, str) and 'config:' in current_val:
+            config_path, attr = current_val.rsplit('.', 1)
+            signal(config_path).disconnect(self._connected_attrs.pop(key))
+
+        super().__setitem__(key, val)
+
+        # Get val after setting (can be different if val is depedent,
+        # i.e. contains 'config:')
+        get_val = self[key]
+        signal(self.config_path).send(self, **{key: get_val})
+
+    __setattr__ = __setitem__
+
+
 
 
 class DictConfig(DotDict):
@@ -58,16 +83,3 @@ class PulseConfig(DotDict):
             val = qc.config['user'].__getitem__(val[7:])
         return val
 
-    def __setitem__(self, key, val):
-        current_val = super().__getitem__(key)
-        if isinstance(current_val, str) and 'config:' in current_val:
-            # Remove signal functionsignal
-
-        super().__setitem__(key, val)
-
-        # Get val after setting (can be different if val is depedent,
-        # i.e. contains 'config:')
-        get_val = self[key]
-        self.signal.send(self, **{key: get_val})
-
-    __setattr__ = __setitem__
