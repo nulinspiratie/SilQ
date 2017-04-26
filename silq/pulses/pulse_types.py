@@ -145,10 +145,20 @@ class Pulse(SettingsClass):
             self._connected_attrs[key] = set_fun
             signal('pulse').connect(set_fun, sender=value.pulse)
         else:
+            if key == 'environment' and hasattr(self, key):
+                self.pulse_config = config[value].pulses[self.name]
+                signal('config:{}.pulses.{}'.format(self.environment,
+                                                    self.name)).disconnect(
+                    self._handle_config_signal)
+                signal('config:{}.pulses.{}'.format(value, self.name)).connect(
+                    self._handle_config_signal)
+
+                for env_key, env_val in self.pulse_config.items():
+                    if hasattr(self, env_key):
+                        setattr(self, env_key, env_val)
+
             super().__setattr__(key, value)
 
-            if key == 'environment':
-                self.pulse_config = config[self.environment].pulses[self.name]
 
             if key in self._connected_attrs:
                 # Remove function from pulse signal because it no longer
@@ -161,6 +171,7 @@ class Pulse(SettingsClass):
                 if key in ['t_start', 'duration']:
                     # Also send signal that dependent property t_stop has changed
                     signal('pulse').send(self, t_stop=self.t_stop)
+
 
     def _value_or_config(self, key, value):
         """

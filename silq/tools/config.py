@@ -19,10 +19,13 @@ class SubConfig:
 
         if self.parent is not None:
             # return f'{self.parent.config_path}.{self.name}'
-            self.__dict__['config_path'] = '{}.{}'.format(
-                self.parent.config_path, self.name)
+            parent_path = self.parent.config_path
+            if parent_path[-1] != ':':
+                parent_path += '.'
+
+            self.__dict__['config_path'] = parent_path + self.name
         else:
-            self.__dict__['config_path'] = 'config:{}'.format(self.name)
+            self.__dict__['config_path'] = '{}:'.format(self.name)
             # return f'config:{self.name}'
 
     def load(self, folder=None):
@@ -99,6 +102,8 @@ class DictConfig(SubConfig, DotDict):
         return val
 
     def __setitem__(self, key, val):
+
+        # If previous value was dependent, remove connected function
         try:
             current_val = DotDict.__getitem__(self, key)
             if isinstance(current_val, str) and 'config:' in current_val:
