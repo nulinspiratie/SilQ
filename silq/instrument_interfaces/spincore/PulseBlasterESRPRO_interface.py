@@ -122,7 +122,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
                 self.instrument.send_instruction(0, 'branch', 0, 50)
 
-        print('loops: {}'.format(loop_idx))
         self.instrument.stop_programming()
 
     def start(self):
