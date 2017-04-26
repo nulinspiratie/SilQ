@@ -1,3 +1,4 @@
+import os
 from blinker import signal
 import json
 import warnings
@@ -8,12 +9,13 @@ from qcodes.config.config import DotDict, update
 
 
 class SubConfig:
-    def __init__(self, name, filepath=None, parent=None):
+    def __init__(self, name, folder=None, parent=None, save_as_dir=None):
         # Set through __dict__ since setattr may be overridden
         self.__dict__['name'] = name
-        self.__dict__['filepath'] = filepath
+        self.__dict__['folder'] = folder
         self.__dict__['_connected_attrs'] = {}
         self.__dict__['parent'] = parent
+        self.__dict__['save_as_dir'] = save_as_dir
 
         if self.parent is not None:
             # return f'{self.parent.config_path}.{self.name}'
@@ -23,19 +25,69 @@ class SubConfig:
             self.__dict__['config_path'] = 'config:{}'.format(self.name)
             # return f'config:{self.name}'
 
+    def load(self, folder=None):
+        if folder is None:
+            folder = self.folder
+
+        filepath = os.path.join(folder, '{}.json'.format(self.name))
+        if os.path.exists(filepath):
+            # Update self.save_as_dir to False unless explicitly set to True
+            if self.__dict__['save_as_dir'] is None:
+                self.__dict__['save_as_dir'] = False
+
+            # Load config from file
+            with open(filepath, "r") as fp:
+                return json.load(fp)
+
+        else:
+            # Load config from folder
+            folderpath = os.path.join(folder, self.name)
+            assert os.path.exists(folderpath), "No file nor folder found to " \
+                                               "load for {}".format(self.name)
+
+            # Update self.save_as_dir to False unless explicitly set to True
+            if self.__dict__['save_as_dir'] is None:
+                self.__dict__['save_as_dir'] = True
+
+            config = {}
+            for file in os.listdir(folderpath):
+                filename = file.split('.')[0]
+                filepath = os.path.join(folderpath, file)
+                with open(filepath, "r") as fp:
+                    config[filename] = json.load(fp)
+            return config
+
+
+
+    def save(self, folder=None, save_as_dir=None):
+        if folder == None:
+            folder = self.folder
+        if save_as_dir == None:
+            save_as_dir = self.save_as_dir
+
+        if not save_as_dir:
+            filepath = os.path.join(folder, '{}.json'.format(self.name))
+            with open(filepath, 'w') as fp:
+                json.dump(self, fp, indent=4)
+        else:
+            folderpath = os.path.join(folder, self.name)
+            if not os.path.isdir(folderpath):
+                os.mkdir((folderpath))
+            for filename, val in self.items():
+                filepath = os.path.join(folderpath, '{}.json'.format(filename))
+                with open(filepath, 'w') as fp:
+                    json.dump(self[filename], fp, indent=4)
+
 
 class DictConfig(SubConfig, DotDict):
-    def __init__(self, name, filepath=None, parent=None, config=None):
+    def __init__(self, name, folder=None, parent=None, config=None,
+                 save_as_dir=None):
         DotDict.__init__(self)
-        SubConfig.__init__(self, name=name, filepath=filepath, parent=parent)
+        SubConfig.__init__(self, name=name, folder=folder, parent=parent,
+                           save_as_dir=save_as_dir)
 
-        if config is None and filepath is not None:
-            try:
-                with open(filepath, "r") as fp:
-                    config = json.load(fp)
-            except FileNotFoundError:
-                warnings.warn('Could not find config file for {}'.format(name))
-
+        if config is None and folder is not None:
+            config = self.load()
         update(self, config)
 
         qc.config.user.update({name: self})
@@ -104,24 +156,12 @@ class DictConfig(SubConfig, DotDict):
 
 
 class ListConfig(SubConfig, list):
-    def __init__(self, name, filepath=None, parent=None, config=None):
+    def __init__(self, name, folder=None, parent=None, config=None):
         list.__init__()
-        SubConfig.__init__(self, name=name, filepath=filepath, parent=parent)
+        SubConfig.__init__(self, name=name, folder=folder, parent=parent)
 
-        if config is None and filepath is not None:
-            try:
-                with open(filepath, "r") as fp:
-                    self += json.load(fp)
-            except FileNotFoundError:
-                warnings.warn('Could not find config file for {}'.format(name))
+        if config is None and folder is not None:
+            config = self.load()
+        self += config
 
         qc.config.user.update({name: self})
-
-
-# class PulseConfig(DotDict):
-#     def __init__(self, name, **kwargs):
-#         self.__dict__['name'] = name
-#         self.__dict__['signal'] = signal('pulse_config:' + self.name)
-#         self.update(**kwargs)
-#
-#
