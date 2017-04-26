@@ -61,7 +61,7 @@ setup(name='silq',
           'ipywidgets>=4.1',
           'h5py>=2.6',
           'pyperclip>=1.5',
-          'qcodes'
+          'blinker'
       ],
       extras_require=extras_require,
       zip_safe=False)
