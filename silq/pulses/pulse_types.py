@@ -5,43 +5,36 @@ from blinker import signal
 
 from .pulse_modules import PulseImplementation, PulseMatch
 
-from qcodes import config
-
 from silq.tools.general_tools import get_truth, SettingsClass
+from silq import config
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
 pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
                     'connection', 'amplitude', 'enabled']
 
-# pulses_config = config['user'].get('pulses', {})
-properties_config = config['user'].get('properties', {})
-
-
 
 class Pulse(SettingsClass):
-    # ncalls = 0
-    # calls = []
-    # t_start_inspect = []
-    pulses_config = config['user'].get('pulses', {})
-
     _connected_attrs = {}
-    def __init__(self, name=None, t_start=None, t_stop=None,
-                 duration=None, acquire=False, initialize=False,
-                 connection=None, enabled=True,
-                 connection_requirements={}, config_label=None):
+    def __init__(self, name=None, id=None, environment='default', t_start=None,
+                 t_stop=None, duration=None, acquire=False, initialize=False,
+                 connection=None, enabled=True, connection_requirements={}):
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
         super().__init__()
 
         self.name = name
+        self.id = id
 
-        if config_label is not None:
-            self.config_label = config_label
-        else:
-            self.config_label = name
-        self.pulse_config = self.pulses_config.get(self.config_label, None)
+        if environment == 'default':
+            environment = config.properties.default_environment
+        self.environment = environment
 
+
+        # Set pulse_config from SilQ environment config
+        self.pulse_config = config[self.environment].pulses[self.name]
+
+        # Set attributes that can also be retrieved from pulse_config
         self.t_start = self._value_or_config('t_start', t_start)
         self.duration = self._value_or_config('duration', duration)
         self.t_stop = self._value_or_config('t_stop', t_stop)
@@ -57,7 +50,8 @@ class Pulse(SettingsClass):
         self.connection_requirements = connection_requirements
 
         if self.pulse_config is not None:
-            signal('config:pulses.'+self.config_label).connect(
+            signal('config:{}.pulses.{}'.format(self.environment,
+                                                self.name)).connect(
                 self._handle_config_signal)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
@@ -144,31 +138,6 @@ class Pulse(SettingsClass):
         # Pulse is always equal to true
         return True
 
-    # def __getattribute__(self, item):
-    #     """
-    #     Used when requesting an attribute. If the attribute is explicitly set to
-    #     None, it will check the config if the item exists.
-    #     Args:
-    #         item: Attribute to be retrieved
-    #
-    #     Returns:
-    #
-    #     """
-    #     # Pulse.ncalls += 1
-    #     # Pulse.calls.append(item)
-    #     # if item == 't_start':
-    #     #     outer_fun = inspect.getouterframes(inspect.currentframe())
-    #     #     Pulse.t_start_inspect += [outer_fun]
-    #     value = object.__getattribute__(self, item)
-    #     if value is not None:
-    #         return value
-    #     # Cannot obtain mode or mode_str, since they are called in
-    #     # _attribute_from_config
-    #     elif item not in ['mode', 'mode_str', 'name']:
-    #         # Retrieve value from config
-    #         value = self._attribute_from_config(item)
-    #         return value
-
     def __setattr__(self, key, value):
         if isinstance(value, PulseMatch):
             super().__setattr__(key, value())
@@ -177,6 +146,9 @@ class Pulse(SettingsClass):
             signal('pulse').connect(set_fun, sender=value.pulse)
         else:
             super().__setattr__(key, value)
+
+            if key == 'environment':
+                self.pulse_config = config[self.environment].pulses[self.name]
 
             if key in self._connected_attrs:
                 # Remove function from pulse signal because it no longer
@@ -223,9 +195,6 @@ class Pulse(SettingsClass):
         for attr, val in vars(self).items():
             return_dict[attr] = val
         return return_dict
-
-    def _attribute_from_config(self, item):
-        pass
 
     @property
     def t_stop(self):

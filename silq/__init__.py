@@ -1,13 +1,15 @@
 import sys
 import os
+import warnings
 from .configurations import _configurations
 import json
 from .tools.config import DictConfig, ListConfig
 
 import qcodes as qc
+from qcodes.config.config import DotDict
 
 # Dictionary of SilQ subconfigs
-config = {}
+config = DotDict()
 
 def get_silq_folder():
     import silq
@@ -18,8 +20,7 @@ def get_SilQ_folder():
     return os.path.join(silq_folder, r"../")
 
 
-def initialize(name=None, mode=None, select=None, ignore=None,
-               globals=None, locals=None):
+def initialize(name=None, mode=None, select=None, ignore=None):
     """
     Initializes the global namespace by executing a list of files.
     Possible configurations are taken from the dictionary _configurations in
@@ -35,18 +36,14 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             be executed. Possible modes can be specified in _configurations.
         select: Files to select, all others will be ignored.
         ignore: Files to ignore, all others will be selected.
-        globals: The globals namespace, actual global namespace used by default.
-        locals: The locals namespace, actual local namespace used by default.
 
     Returns:
 
     """
     # Determine base folder by looking at the silq package
 
-    if globals is None:
-        globals = sys._getframe(1).f_globals
-    if locals is None:
-        locals = sys._getframe(1).f_locals
+    globals = sys._getframe(1).f_globals
+    locals = sys._getframe(1).f_locals
 
     if name is None:
         # Find init_name from mac address
@@ -64,7 +61,6 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             name]['modes'][mode].get('ignore', None)
 
     folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
-
 
     # Modify QCoDeS config (add subconfigs, and add custom config filepath)
     config_folder = os.path.join(folder, 'config')
@@ -119,4 +115,11 @@ def initialize(name=None, mode=None, select=None, ignore=None,
                     raise RuntimeError('SilQ initialization error at line: '
                                        '\n{}'.format(exec_line)
                     )
+
     print("Initialization complete")
+
+    if not 'properties' in config:
+        warnings.warn("'properties' should be added to SilQ config")
+    elif not 'default_environment' in config:
+        warnings.warn("'properties.default_environment' should be specified "
+                      "in config")
