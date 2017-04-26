@@ -5,7 +5,7 @@ import numpy as np
 import qcodes as qc
 from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataMode
+from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
 
@@ -95,8 +95,6 @@ class StoreParameter(Parameter):
                                       set_arrays=(
                                       data_array_set, index0))
 
-        data_mode = DataMode.PUSH_TO_SERVER
-
         data_folder = data_tools.get_latest_data_folder()
         loc_provider = qc.data.location.FormatLocation(
             fmt=data_folder+'/traces/#{counter}_trace_{time}')
@@ -104,8 +102,7 @@ class StoreParameter(Parameter):
         self.data_set = new_data(
             location=loc_provider,
             arrays=[data_array_set, index0, data_array_values],
-            mode=data_mode,
-            data_manager=self.data_manager, name='test_data_parameter',
+            name='test_data_parameter',
             formatter=formatter)
 
     def get(self):

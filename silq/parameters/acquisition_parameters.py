@@ -4,30 +4,27 @@ import logging
 
 from qcodes.instrument.parameter import MultiParameter
 from qcodes.data import hdf5_format, io
+from qcodes.data.data_array import DataArray
+from qcodes.loops import active_loop
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
     SinePulse, SteeredInitialization
 from silq.analysis import analysis
 from silq.tools import data_tools
-from silq.tools.general_tools import SettingsClass, clear_single_settings
+from silq.tools.general_tools import SettingsClass, clear_single_settings, \
+    attribute_from_config
 
 
 h5fmt = hdf5_format.HDF5Format()
 
 
 class AcquisitionParameter(SettingsClass, MultiParameter):
-    data_manager = None
     layout = None
     formatter = h5fmt
 
-    def __init__(self, mode=None, average_mode='none', **kwargs):
+    def __init__(self, average_mode='none', **kwargs):
         SettingsClass.__init__(self)
 
-        self.mode = mode
-        """Mode of the parameter (e.g. ESR)"""
-        if self.mode is not None:
-            # Add mode to parameter name and label
-            kwargs['name'] += self.mode_str
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
@@ -48,30 +45,31 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.t_skip = None
         self.trace_segments = None
         self.data = None
-        self.data_set = None
+        self.dataset = None
         self.results = None
+
+        self.subfolder = None
 
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
         # passed along when the parameter is spawned from a new process
         self.layout = self.layout
-        self.data_manager = self.data_manager
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
 
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
 
+    def __getattribute__(self, item):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            return attribute_from_config(item)
+
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
         return self.layout.sample_rate()
-
-    @property
-    def _pulse_pts(self):
-        """ Number of points in the trace of each pulse"""
-        return {pulse.name: int(round(pulse.duration / 1e3 * self.sample_rate))
-                for pulse in self.pulse_sequence}
 
     @property
     def start_idx(self):
@@ -85,30 +83,80 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         for pulse in self.pulse_sequence:
             if not pulse.acquire:
                 continue
+            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
             if average_mode == 'point':
                 trace_segments[pulse.name] = np.mean(
-                    trace[:, idx:idx + self._pulse_pts[pulse.name]])
+                    trace[:, idx:idx + pulse_pts])
             else:
                 trace_segments[pulse.name] = \
-                    trace[:, idx:idx + self._pulse_pts[pulse.name]]
-            idx += self._pulse_pts[pulse.name]
+                    trace[:, idx:idx + pulse_pts]
+            idx += pulse_pts
         return trace_segments
 
-    def store_traces(self, traces_dict, subfolder=None):
+    def store_traces(self, traces_dict, base_folder=None, subfolder=None):
         # Store raw traces
-        # Pause until data_manager is done measuring
-        while self.data_manager.ask('get_measuring'):
-            sleep(0.01)
+        if base_folder is None:
+            # Extract base_folder from dataset of currently active loop
+            active_dataset = active_loop().get_data_set()
+            base_folder = active_dataset.location
+        self.dataset = data_tools.create_data_set(name='traces',
+                                                  base_folder=base_folder,
+                                                  subfolder=subfolder)
 
+        # Create dictionary of set arrays
+        set_arrs = {}
         for traces_name, traces in traces_dict.items():
-            self.data_set = data_tools.create_raw_data_set(
-                name=traces_name,
-                data_manager=self.data_manager,
-                shape=traces.shape,
-                formatter=self.formatter,
-                subfolder=subfolder)
-            data_tools.store_data(data_manager=self.data_manager,
-                                  result=traces)
+            number_of_traces, points_per_trace = traces.shape
+
+            if traces.shape not in set_arrs:
+                time_step = 1 / self.sample_rate * 1e3
+                t_list = np.arange(0, points_per_trace * time_step, time_step)
+                t_list_arr = DataArray(name='time',
+                                       array_id='time',
+                                       label=' Time (ms)',
+                                       # shape=(points_per_trace, ),
+                                       # preset_data=t_list,
+                                       shape=traces.shape,
+                                       preset_data=np.full(traces.shape,
+                                                           t_list),
+                                       is_setpoint=True)
+
+                trace_num_arr = DataArray(name='trace_num',
+                                          array_id='trace_num',
+                                          label='Trace number',
+                                          # shape=traces.shape,
+                                          # preset_data=np.full(traces.shape[
+                                          #                     ::-1],
+                                          #                     np.arange(number_of_traces),
+                                          #                     dtype=np.float64).transpose(),
+                                          shape=(number_of_traces, ),
+                                          preset_data=np.arange(
+                                              number_of_traces, dtype=np.float64),
+                                          is_setpoint=True)
+                set_arrs[traces.shape] = (trace_num_arr, t_list_arr)
+
+        # Add set arrays to dataset
+        for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
+            for arr in (t_list_arr, trace_num_arr):
+                if len(set_arrs) > 1:
+                    # Need to give individual array_ids to each of the set arrays
+                    arr.array_id += '_{}'.format(k)
+                self.dataset.add_array(arr)
+
+        # Add trace arrs to dataset
+        for traces_name, traces in traces_dict.items():
+            t_list_arr, trace_num_arr = set_arrs[traces.shape]
+
+            # Must transpose traces array
+            trace_arr = DataArray(name=traces_name,
+                                  array_id=traces_name,
+                                  label=traces_name + ' signal (V)',
+                                  shape=traces.shape,
+                                  preset_data=traces,
+                                  set_arrays=(t_list_arr, trace_num_arr))
+            self.dataset.add_array(trace_arr)
+
+        self.dataset.finalize()
 
     def print_results(self):
         if self.names is not None:
@@ -153,9 +201,9 @@ class DCParameter(AcquisitionParameter):
 
         self.samples = 1
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse(name='read', acquire=True),
-            DCPulse(name='final')])
+            DCPulse(name='final'))
 
     def setup(self, **kwargs):
         super().setup(**kwargs)
@@ -200,13 +248,13 @@ class DCPulseSweepParameter(AcquisitionParameter):
         self._sweep_voltages = sweep_voltages
         self.pulse_sequence.clear()
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse('sweep_{:.3f}'.format(sweep_voltage),
                     acquire=True,
                     amplitude=sweep_voltage,
                     t_start=k*self.pulse_settings['duration'],
                     **self.pulse_settings)
-            for k, sweep_voltage in enumerate(sweep_voltages)])
+            for k, sweep_voltage in enumerate(sweep_voltages))
         self.sweep_pulse_names = ['sweep_{:.3f}'.format(sweep_voltage)
                                   for sweep_voltage in sweep_voltages]
 
@@ -215,7 +263,7 @@ class DCPulseSweepParameter(AcquisitionParameter):
                     connection_requirements=self.pulse_settings.get(
                         'connection_requirements', {})))
 
-        self.pulse_sequence.add([pulse for pulse in self.additional_pulses])
+        self.pulse_sequence.add(pulse for pulse in self.additional_pulses)
 
         # Update metadata
         self.shapes = [tuple([len(sweep_voltages)])]
@@ -241,11 +289,11 @@ class EPRParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True, mode='long'),
-            DCPulse('final')])
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'))
 
         self.analysis = analysis.analyse_EPR
 
@@ -284,16 +332,13 @@ class AdiabaticParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True, mode='long'),
+            DCPulse('read_long', acquire=True),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode)])
+            FrequencyRampPulse('adiabatic_ESR'))
 
-        # Disable previous pulse for adiabatic pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['adiabatic'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -352,16 +397,15 @@ class RabiParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode)])
+            SinePulse('rabi_ESR', duration=0.1))
 
         # Disable previous pulse for sine pulse, since it would
         # otherwise be after 'final' pulse
-        self.pulse_sequence['rabi'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -419,16 +463,13 @@ class RabiDriveParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge', acquire=True),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi', duration=0.1, mode=self.mode)])
+            SinePulse('rabi_ESR', duration=0.1))
 
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['rabi'].previous_pulse = None
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_PR
@@ -490,15 +531,12 @@ class T1Parameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge'),
             DCPulse('read', acquire=True),
             DCPulse('final'),
-            FrequencyRampPulse('adiabatic', mode=self.mode)])
-        # Disable previous pulse for adiabatic pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence['adiabatic'].previous_pulse = None
+            FrequencyRampPulse('adiabatic_ESR'))
         self.pulse_sequence.sort()
 
         self.analysis = analysis.analyse_read
@@ -538,9 +576,13 @@ class T1Parameter(AcquisitionParameter):
             if 'post_initialization_traces' in self.data:
                 saved_traces['post_initialization_output'] = \
                     self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces,
-                              name=self.plunge_duration,
-                              subfolder=self.subfolder)
+            if self.subfolder is not None:
+                subfolder = '{}/tau_{:.0f}'.format(self.subfolder,
+                                               self.wait_time)
+            else:
+                subfolder = 'tau_{:.0f}'.format(self.wait_time)
+
+            self.store_traces(saved_traces, subfolder=subfolder)
 
         if not self.silent:
             self.print_results()
@@ -559,10 +601,9 @@ class DarkCountsParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
-        self.pulse_sequence.add([
-            SteeredInitialization('steered_initialization', enabled=True,
-                                  mode='long'),
-            DCPulse('read', acquire=True)])
+        self.pulse_sequence.add(
+            SteeredInitialization('steered_initialization', enabled=True,),
+            DCPulse('read', acquire=True))
 
         self.analysis = analysis.analyse_read
 
@@ -584,7 +625,7 @@ class DarkCountsParameter(AcquisitionParameter):
                                    threshold_voltage=
                                    self.readout_threshold_voltage,
                                    start_idx=self.start_idx)
-        self.results = fidelities['up_proportion']
+        self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -607,16 +648,16 @@ class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='variable_read_acquisition',
                          names=['read_voltage'],
-                         labels='Dead voltage',
+                         labels='Read voltage',
                          average_mode='trace',
                          units=['V'],
                          snapshot_value=False,
                          **kwargs)
-        self.pulse_sequence.add([
+        self.pulse_sequence.add(
             DCPulse(name='empty', acquire=True),
             DCPulse(name='plunge', acquire=True),
             DCPulse(name='read', acquire=True),
-            DCPulse(name='final')])
+            DCPulse(name='final'))
 
     @property
     def shape(self):
