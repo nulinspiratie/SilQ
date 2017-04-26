@@ -252,7 +252,9 @@ class Layout(Instrument):
             if connection in self.connections:
                 return [connection]
             else:
-                raise RuntimeError(f"{connection} not found in connections")
+                # raise RuntimeError(f"{connection} not found in connections")
+                raise RuntimeError("{} not found in connections".format(
+                    connection))
         else:
             return [connection for connection in self.connections
                     if connection.satisfies_conditions(**conditions)]
