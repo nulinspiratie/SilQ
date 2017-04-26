@@ -53,7 +53,12 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             # Iteratively increase time
             t = 0
             t_stop_max = max(self._pulse_sequence.t_stop_list)
+
+            # Generate pulses once for speedup reasons
+            pulses = self._pulse_sequence.pulses # TODO should be unnecessary
+            loop_idx = 0
             while t < t_stop_max:
+                loop_idx += 1
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses
                 active_input_pulses = [pulse for pulse
@@ -64,7 +69,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                         self.instrument.send_instruction(0,'wait', 0, 50)
 
                 # Segment remaining pulses into next pulses and others
-                active_pulses = [pulse for pulse in self._pulse_sequence
+                active_pulses = [pulse for pulse in pulses
                                  if pulse.t_start <= t < pulse.t_stop]
                 if not active_pulses:
                     total_channel_value = 0

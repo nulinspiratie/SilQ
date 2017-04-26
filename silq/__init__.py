@@ -1,6 +1,8 @@
 import sys
 import os
 from .configurations import _configurations
+import json
+from .tools.config import DictConfig, ListConfig
 
 import qcodes as qc
 
@@ -66,24 +68,32 @@ def initialize(name=None, mode=None, select=None, ignore=None,
 
     # Modify QCoDeS config (add subconfigs, and add custom config filepath)
     config_folder = os.path.join(folder, 'config')
-    # Add config in ./config (if it exists)
-    qc.config.custom_file_name = os.path.join(config_folder,
-                                              qc.config.config_file_name)
+    if os.path.exists(config_folder):
+        # Add config in ./config (if it exists)
+        qc.config.custom_file_name = os.path.join(config_folder,
+                                                  qc.config.config_file_name)
 
-    # Add subconfigs (other files in config). They go in config.user.{subconfig}
-    config_filenames = os.listdir(config_folder)
-    subconfigs = {os.path.splittext(filename):
-                      os.path.join(config_folder,filename)
-                  for filename in config_filenames
-                  if 'qcodesrc' not in filename}
-    qc.config.subconfigs = subconfigs
+        # Add subconfigs (other files in config).
+        # They go in config.user.{subconfig}
+        config_filenames = {os.path.splittext(filename):
+                                os.path.join(config_folder,filename)
+                            for filename in os.listdir(config_folder)
+                            if 'qcodesrc' not in filename}
 
-    # Update config to include custom filepath and subconfigs
-    qc.config.current_config = qc.config.update_config()
-    # Add subconfigs to SilQ config
-    for subconfig_key in subconfigs:
-        config[subconfig_key] = qc.config.user[subconfig_key]
+        for subconfig_name, filepath in config_filenames:
+            with open(filepath, "r") as fp:
+                subconfig = json.load(fp)
+                if isinstance(subconfig, list):
+                    config[subconfig_name] = ListConfig(subconfig_name,
+                                                        filepath,
+                                                        config=subconfig)
+                elif isinstance(subconfig, dict):
+                    config[subconfig_name] = DictConfig(subconfig_name,
+                                                        filepath,
+                                                        config=subconfig)
 
+        # Update config to include custom filepath and subconfigs
+        qc.config.current_config = qc.config.update_config()
 
     # Run initialization files in ./init
     init_folder = os.path.join(folder, 'init')
@@ -102,5 +112,11 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             print('Initializing {}'.format(name))
             filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
-                exec(fh.read()+"\n", globals, locals)
+                exec_line = fh.read()
+                try:
+                    exec(exec_line+"\n", globals, locals)
+                except:
+                    raise RuntimeError('SilQ initialization error at line: '
+                                       '\n{}'.format(exec_line)
+                    )
     print("Initialization complete")
