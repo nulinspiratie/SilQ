@@ -6,10 +6,9 @@ import json
 from .tools.config import DictConfig, ListConfig
 
 import qcodes as qc
-from qcodes.config.config import DotDict
 
 # Dictionary of SilQ subconfigs
-config = DotDict()
+config = DictConfig(name='config')
 
 def get_silq_folder():
     import silq
