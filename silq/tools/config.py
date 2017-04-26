@@ -57,8 +57,6 @@ class SubConfig:
                     config[filename] = json.load(fp)
             return config
 
-
-
     def save(self, folder=None, save_as_dir=None):
         if folder == None:
             folder = self.folder
@@ -88,7 +86,9 @@ class DictConfig(SubConfig, DotDict):
 
         if config is None and folder is not None:
             config = self.load()
-        update(self, config)
+
+        if config is not None:
+            update(self, config)
 
         qc.config.user.update({name: self})
 
@@ -154,7 +154,6 @@ class DictConfig(SubConfig, DotDict):
     __setattr__ = __setitem__
 
 
-
 class ListConfig(SubConfig, list):
     def __init__(self, name, folder=None, parent=None, config=None):
         list.__init__()
@@ -162,6 +161,8 @@ class ListConfig(SubConfig, list):
 
         if config is None and folder is not None:
             config = self.load()
-        self += config
+
+        if config is not None:
+            self += config
 
         qc.config.user.update({name: self})

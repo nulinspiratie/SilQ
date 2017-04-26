@@ -95,7 +95,7 @@ class SettingsClass:
 
         """
         if item in ['_temporary_settings', '_single_settings',
-                    '_attribute_from_config', '__setstate__', '__dict__']:
+                    '__setstate__', '__dict__']:
             return object.__getattribute__(self, item)
         elif item in self._single_settings:
             return self._single_settings[item]
