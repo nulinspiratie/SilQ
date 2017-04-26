@@ -4,11 +4,12 @@ import logging
 import qcodes as qc
 from qcodes.data import hdf5_format, io
 from qcodes import config
-from qcodes.instrument.parameter import Parameter
+from qcodes.instrument.parameter import MultiParameter
 from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
-from silq.tools.general_tools import SettingsClass, clear_single_settings
+from silq.tools.general_tools import SettingsClass, clear_single_settings, \
+    attribute_from_config
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
@@ -19,18 +20,13 @@ parameter_config = qc.config['user']['properties'].get('parameters', {})
 measurement_config = qc.config['user'].get('measurements', {})
 
 
-class MeasurementParameter(SettingsClass, Parameter):
-    def __init__(self, name, acquisition_parameter=None, mode=None,
+class MeasurementParameter(SettingsClass, MultiParameter):
+    def __init__(self, name, acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
-        Parameter.__init__(self, name, snapshot_value=False, **kwargs)
+        MultiParameter.__init__(self, name, snapshot_value=False, **kwargs)
 
         self.discriminant = discriminant
-
-        self.mode = mode
-        if self.mode is not None:
-            # Add mode to parameter name and label
-            self.name += self.mode_str
 
         self.silent = silent
         self.acquisition_parameter = acquisition_parameter
@@ -41,6 +37,12 @@ class MeasurementParameter(SettingsClass, Parameter):
 
     def __repr__(self):
         return '{} measurement parameter'.format(self.name)
+
+    def __getattribute__(self, item):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            return attribute_from_config(item)
 
     @property
     def acquisition_parameter_name(self):
@@ -96,6 +98,65 @@ class MeasurementParameter(SettingsClass, Parameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
 
+class MeasurementSequenceParameter(MeasurementParameter):
+    def __init__(self, name, measurement_sequence=None,
+                 set_parameters=None, discriminant=None, **kwargs):
+        """
+
+        Args:
+            name:
+            set_parameters:
+            acquisition_parameter:
+            operations:
+            discriminant:
+            conditions: Must be of one of the following forms
+                {'mode': 'measure'}
+                {'mode': '1D_scan', 'span', 'set_points', 'set_parameter',
+                 'center_val'(optional)
+            **kwargs:
+        """
+        SettingsClass.__init__(self)
+
+        self.discriminant = discriminant
+        self.set_parameters = set_parameters
+
+        if isinstance(measurement_sequence, str):
+            # Load sequence from dict
+            load_dict = measurement_config[measurement_sequence]
+            measurement_sequence = MeasurementSequence.load_from_dict(load_dict)
+        self.measurement_sequence = measurement_sequence
+        self.acquisition_parameter = measurement_sequence.acquisition_parameter
+
+        super().__init__(
+            name=name,
+            names=[name+'_msmts', 'optimal_set_vals', self.discriminant],
+            shapes=((), (len(self.set_parameters),), ()),
+            discriminant=self.discriminant,
+            acquisition_parameter=self.acquisition_parameter,
+            **kwargs)
+
+
+        self._meta_attrs.extend(['discriminant'])
+
+    @clear_single_settings
+    def get(self):
+        result = self.measurement_sequence()
+        num_measurements = self.measurement_sequence.num_measurements
+
+        if result['action'] == 'success':
+            # Retrieve dict of {param.name: val} of optimal set vals
+            optimal_set_vals = self.measurement_sequence.optimal_set_vals
+            # Convert dict to list of set vals
+            optimal_set_vals = [optimal_set_vals.get(p.name, p())
+                                for p in self.set_parameters]
+        else:
+            optimal_set_vals = [p() for p in self.set_parameters]
+
+        optimal_val = self.measurement_sequence.optimal_val
+
+        return num_measurements, optimal_set_vals, optimal_val
+
+
 class SelectFrequencyParameter(MeasurementParameter):
     def __init__(self, threshold=0.5, discriminant=None,
                  frequencies=None, mode=None,
@@ -108,7 +169,7 @@ class SelectFrequencyParameter(MeasurementParameter):
 
         names = ['{}_{}'.format(self.discriminant, spin_state)
                  for spin_state in self.spin_states]
-        names.append('frequency' + self.mode_str)
+        names.append('frequency')
 
         super().__init__(self, name='select_frequency',
                          label='Select frequency',
@@ -161,7 +222,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         if self.condition_result['is_satsisfied']:
             frequency = self.measurement.optimal_set_vals[0]
             if self.update_frequency:
-                properties_config['frequency' + self.mode_str] = frequency
+                properties_config['frequency'] = frequency
         else:
             if not self.silent:
                 logging.warning("Could not find frequency with high enough "
@@ -245,60 +306,3 @@ class TrackPeakParameter(MeasurementParameter):
             self.set_parameter.name]
         self.result = [optimal_set_val, set_vals, trace]
         return self.result
-
-
-class MeasurementSequenceParameter(MeasurementParameter):
-    def __init__(self, name, measurement_sequence=None,
-                 set_parameters=None, discriminant=None, **kwargs):
-        """
-
-        Args:
-            name:
-            set_parameters:
-            acquisition_parameter:
-            operations:
-            discriminant:
-            conditions: Must be of one of the following forms
-                {'mode': 'measure'}
-                {'mode': '1D_scan', 'span', 'set_points', 'set_parameter',
-                 'center_val'(optional)
-            **kwargs:
-        """
-        SettingsClass.__init__(self)
-
-        self.discriminant = discriminant
-        self.set_parameters = set_parameters
-
-        if isinstance(measurement_sequence, str):
-            # Load sequence from dict
-            load_dict = measurement_config[measurement_sequence]
-            measurement_sequence = MeasurementSequence.load_from_dict(load_dict)
-        self.measurement_sequence = measurement_sequence
-        self.acquisition_parameter = measurement_sequence.acquisition_parameter
-
-        names = [name + '_msmts', 'optimal_set_vals', self.discriminant]
-        super().__init__(
-            name=name, names=names, discriminant=self.discriminant,
-            acquisition_parameter=self.acquisition_parameter, **kwargs)
-
-
-        self._meta_attrs.extend(['conditions', 'measurement_sequence',
-                                 'discriminant'])
-
-    @clear_single_settings
-    def get(self):
-        result = self.measurement_sequence()
-        num_measurements = self.measurement_sequence.num_measurements
-
-        if result['action'] == 'success':
-            # Retrieve dict of {param.name: val} of optimal set vals
-            optimal_set_vals = self.measurement_sequence.optimal_set_vals
-            # Convert dict to list of set vals
-            optimal_set_vals = [optimal_set_vals.get(p.name, p())
-                                for p in self.set_parameters]
-        else:
-            optimal_set_vals = [p() for p in self.set_parameters]
-
-        optimal_val = self.measurement_sequence.optimal_val
-
-        return num_measurements, optimal_set_vals, optimal_val
