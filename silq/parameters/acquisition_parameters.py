@@ -602,7 +602,7 @@ class DarkCountsParameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=True,),
+            SteeredInitialization('steered_initialization', enabled=True),
             DCPulse('read', acquire=True))
 
         self.analysis = analysis.analyse_read
