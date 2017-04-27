@@ -18,7 +18,8 @@ class Pulse(SettingsClass):
     _connected_attrs = {}
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
-                 connection=None, enabled=True, connection_requirements={}):
+                 connection=None, enabled=True,
+                 connection_label=None, connection_requirements={}):
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
         super().__init__()
@@ -38,6 +39,8 @@ class Pulse(SettingsClass):
         self.t_start = self._value_or_config('t_start', t_start)
         self.duration = self._value_or_config('duration', duration)
         self.t_stop = self._value_or_config('t_stop', t_stop)
+        self.connection_label = self._value_or_config('connection_label',
+                                                      connection_label)
 
         self.acquire = acquire
         self.initialize = initialize
@@ -64,7 +67,16 @@ class Pulse(SettingsClass):
         else:
             return True
 
-    def _handle_config_signal(self, pulse_config, **kwargs):
+    def _handle_config_signal(self, _, **kwargs):
+        """
+        Update attr when attr in pulse config is modified
+        Args:
+            _: sender config (unused)
+            **kwargs: {attr: new_val}
+
+        Returns:
+
+        """
         key, val = kwargs.popitem()
         setattr(self, key, val)
 
@@ -171,7 +183,6 @@ class Pulse(SettingsClass):
                 if key in ['t_start', 'duration']:
                     # Also send signal that dependent property t_stop has changed
                     signal('pulse').send(self, t_stop=self.t_stop)
-
 
     def _value_or_config(self, key, value):
         """

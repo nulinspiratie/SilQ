@@ -4,10 +4,11 @@ from collections import OrderedDict as od
 import inspect
 
 import silq
+from silq import config
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
-from qcodes import Instrument, config
+from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
 
@@ -289,8 +290,7 @@ class Layout(Instrument):
                     environment = config.user.default_environment
 
             # Obtain list of connections from environment
-            environment_connections = config.user.environments[
-                environment].connections
+            environment_connections = config[environment].connections
 
             # Find connection from environment connections
             assert connection_label in environment_connections, \
@@ -451,23 +451,15 @@ class Layout(Instrument):
             connection_requirements['output_interface'] = interface
         elif instrument is not None:
             connection_requirements['output_instrument'] = instrument
-        else:
-            connection_requirements['output_interface'] = \
-                self._get_pulse_interface(pulse)
 
-        connections = self.get_connections(**connection_requirements, **kwargs)
-        if len(connections) > 1:
-            connections = [connection for connection in connections
-                           if connection.default]
-
-        if len(connections) != 1:
-            raise Exception(
-                'Instrument {} did not have suitable connection out of '
-                'connections {}. requirements: {}'.format(
-                    interface.instrument_name(), connections,
-                    connection_requirements))
+        if pulse.connection_label is not None:
+            connection = self.get_connection(
+                environment=pulse.environment,
+                connection_label=pulse.connection_label,
+                **connection_requirements)
         else:
-            return connections[0]
+            connection = self.get_connection(**connection_requirements)
+        return connection
 
     def _target_pulse(self, pulse, **kwargs):
         """
@@ -488,8 +480,8 @@ class Layout(Instrument):
             None
         """
         # Get default output instrument
-        interface = self._get_pulse_interface(pulse)
-        connection = self.get_pulse_connection(pulse, interface=interface)
+        connection = self.get_pulse_connection(pulse)
+        interface = self._interfaces[connection.output['instrument']]
 
         is_primary = self.primary_instrument() == interface.instrument_name()
 
@@ -536,12 +528,17 @@ class Layout(Instrument):
         if self.active():
             self.stop()
 
+
+        # targeted_pulse_sequence = pulse_sequence.copy()
+        #
+        # for pulse in targeted_pulse_sequence:
+        #     pulse.connection = self.get_pulse_connection(pulse)
+
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.initialize()
-            interface.pulse_sequence(('duration', pulse_sequence.duration))
-            interface.input_pulse_sequence(('duration',
-                                            pulse_sequence.duration))
+            interface._pulse_sequence.duration = pulse_sequence.duration
+            interface._input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
