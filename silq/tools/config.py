@@ -1,7 +1,6 @@
 import os
 from blinker import signal
 import json
-import warnings
 from functools import partial
 
 import qcodes as qc
@@ -10,12 +9,14 @@ from qcodes.config.config import DotDict, update
 
 class SubConfig:
     def __init__(self, name, folder=None, parent=None, save_as_dir=None):
+
+
         # Set through __dict__ since setattr may be overridden
-        self.__dict__['name'] = name
-        self.__dict__['folder'] = folder
-        self.__dict__['_connected_attrs'] = {}
-        self.__dict__['parent'] = parent
-        self.__dict__['save_as_dir'] = save_as_dir
+        self.name = name
+        self.folder = folder
+        self._connected_attrs = {}
+        self.parent = parent
+        self.save_as_dir = save_as_dir
 
         if self.parent is not None:
             # return f'{self.parent.config_path}.{self.name}'
@@ -23,42 +24,92 @@ class SubConfig:
             if parent_path[-1] != ':':
                 parent_path += '.'
 
-            self.__dict__['config_path'] = parent_path + self.name
+            self.config_path = parent_path + self.name
         else:
-            self.__dict__['config_path'] = '{}:'.format(self.name)
+            self.config_path = '{}:'.format(self.name)
             # return f'config:{self.name}'
 
+        qc.config.user.update({name: self})
+
     def load(self, folder=None):
+        """
+        Load config from folder.
+        The folder must either contain a {self.name}.json file, 
+        or alternatively a folder containing config files/folders.
+        In the latter case, a dict is created, and all the files/folders in 
+        the folder will be elements of the dict.
+        
+        If `self.save_as_dir is None`, it will be updated to either True or 
+        False depending if there is a subfolder or file to load from the folder, 
+        respectively. 
+        
+        Note that load() returns a dict/list, which should then be added to 
+        the Subconfig object depending on the subclass. This should be 
+        implemented in the load() method of subclasses.
+         
+        Args:
+            folder: folder to look for. If not provided, uses self.folder.
+
+        Returns:
+            dict/list config, to be added by the load() method of the subclass
+        """
         if folder is None:
             folder = self.folder
 
         filepath = os.path.join(folder, '{}.json'.format(self.name))
+        folderpath = os.path.join(folder, self.name)
+
         if os.path.exists(filepath):
+            # Load config from file
             # Update self.save_as_dir to False unless explicitly set to True
-            if self.__dict__['save_as_dir'] is None:
-                self.__dict__['save_as_dir'] = False
+            if self.save_as_dir is None:
+                self.save_as_dir = False
 
             # Load config from file
             with open(filepath, "r") as fp:
-                return json.load(fp)
+                config = json.load(fp)
 
-        else:
-            # Load config from folder
-            folderpath = os.path.join(folder, self.name)
-            assert os.path.exists(folderpath), "No file nor folder found to " \
-                                               "load for {}".format(self.name)
+        elif os.path.isdir(folderpath):
+            # Config is a folder, and so each item in the folder is added to
+            # a dict.
+            config = {}
 
             # Update self.save_as_dir to False unless explicitly set to True
-            if self.__dict__['save_as_dir'] is None:
-                self.__dict__['save_as_dir'] = True
+            if self.save_as_dir is None:
+                self.save_as_dir = True
 
-            config = {}
             for file in os.listdir(folderpath):
-                filename = file.split('.')[0]
                 filepath = os.path.join(folderpath, file)
-                with open(filepath, "r") as fp:
-                    config[filename] = json.load(fp)
-            return config
+                if '.json' in file:
+                    with open(filepath, "r") as fp:
+                        # Determine type of config
+                        subconfig = json.load(fp)
+                        if isinstance(subconfig, list):
+                            config_class = ListConfig
+                        elif isinstance(subconfig, dict):
+                            config_class = DictConfig
+                        else:
+                            raise RuntimeError(f'Could not load config file '
+                                               f'{filepath}')
+
+                        subconfig_name = file.split('.')[0]
+                        subconfig = config_class(name=subconfig_name,
+                                                 folder=folderpath,
+                                                 save_as_dir=False)
+                elif os.path.isdir(filepath):
+                    subconfig = DictConfig(name=file,
+                                           folder=folderpath,
+                                           save_as_dir=True)
+                else:
+                    raise RuntimeError(f'Could not load {filepath} to config')
+                subconfig.load()
+                config[subconfig_name] = subconfig
+
+        else:
+            raise FileNotFoundError(
+                f"No file nor folder found to load for {self.name}")
+
+        return config
 
     def save(self, folder=None, save_as_dir=None):
         if folder == None:
@@ -81,19 +132,18 @@ class SubConfig:
 
 
 class DictConfig(SubConfig, DotDict):
+    _exclude_from_dict = ['name', 'folder', '_connected_attrs', 'parent',
+                         'save_as_dir', 'config_path']
     def __init__(self, name, folder=None, parent=None, config=None,
                  save_as_dir=None):
         DotDict.__init__(self)
         SubConfig.__init__(self, name=name, folder=folder, parent=parent,
                            save_as_dir=save_as_dir)
 
-        if config is None and folder is not None:
-            config = self.load()
-
         if config is not None:
             update(self, config)
-
-        qc.config.user.update({name: self})
+        elif folder is not None:
+            self.load()
 
     def __getitem__(self, key):
         val = DotDict.__getitem__(self, key)
@@ -122,6 +172,8 @@ class DictConfig(SubConfig, DotDict):
         else:
             if isinstance(val, dict) and not isinstance(val, SubConfig):
                 val = DictConfig(name=key, config=val, parent=self)
+            elif isinstance(val, list) and not isinstance(val, SubConfig):
+                val = ListConfig(name=key, config=val, parent=self)
             dict.__setitem__(self, key, val)
 
         if isinstance(val, str) and 'config:' in val:
@@ -137,6 +189,12 @@ class DictConfig(SubConfig, DotDict):
         if hasattr(self, key):
             get_val = self[key]
             signal(self.config_path).send(self, **{key: get_val})
+
+    def __setattr__(self, key, val):
+        if key in self._exclude_from_dict:
+            self.__dict__[key] = val
+        else:
+            self.__setitem__(key, val)
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """
@@ -156,18 +214,23 @@ class DictConfig(SubConfig, DotDict):
         if sender_key == listen_attr:
             signal(self.config_path).send(self, **{dependent_attr: sender_val})
 
-    __setattr__ = __setitem__
+    def load(self, folder=None):
+        self.clear()
+        config = super().load(folder=folder)
+        update(self, config)
 
 
 class ListConfig(SubConfig, list):
-    def __init__(self, name, folder=None, parent=None, config=None):
-        list.__init__()
+    def __init__(self, name, folder=None, parent=None, config=None, **kwargs):
+        list().__init__(self)
         SubConfig.__init__(self, name=name, folder=folder, parent=parent)
-
-        if config is None and folder is not None:
-            config = self.load()
 
         if config is not None:
             self += config
+        elif folder is not None:
+            self.load()
 
-        qc.config.user.update({name: self})
+    def load(self, folder=None):
+        self.clear()
+        config = super().load(folder=folder)
+        self += config
