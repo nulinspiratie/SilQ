@@ -8,7 +8,7 @@ from .tools.config import DictConfig, ListConfig
 import qcodes as qc
 
 # Dictionary of SilQ subconfigs
-config = DictConfig(name='config')
+config = DictConfig(name='config', save_as_dir=True)
 
 def get_silq_folder():
     import silq
@@ -60,35 +60,9 @@ def initialize(name=None, mode=None, select=None, ignore=None):
             name]['modes'][mode].get('ignore', None)
 
     folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
-
-    # Modify QCoDeS config (add subconfigs, and add custom config filepath)
-    config_folder = os.path.join(folder, 'config')
-    if os.path.exists(config_folder):
-        # Add config in ./config (if it exists)
-        qc.config.custom_file_name = os.path.join(config_folder,
-                                                  qc.config.config_file_name)
-
-        # Add subconfigs (other files in config).
-        # They go in config.user.{subconfig}
-        config_filenames = {os.path.splittext(filename):
-                                os.path.join(config_folder,filename)
-                            for filename in os.listdir(config_folder)
-                            if 'qcodesrc' not in filename}
-
-        for subconfig_name, filepath in config_filenames:
-            with open(filepath, "r") as fp:
-                subconfig = json.load(fp)
-                if isinstance(subconfig, list):
-                    config[subconfig_name] = ListConfig(subconfig_name,
-                                                        filepath,
-                                                        config=subconfig)
-                elif isinstance(subconfig, dict):
-                    config[subconfig_name] = DictConfig(subconfig_name,
-                                                        filepath,
-                                                        config=subconfig)
-
-        # Update config to include custom filepath and subconfigs
-        qc.config.current_config = qc.config.update_config()
+    config.__dict__['folder'] = folder
+    if os.path.exists(os.path.join(folder, 'config')):
+        config.load()
 
     # Run initialization files in ./init
     init_folder = os.path.join(folder, 'init')
