@@ -26,9 +26,13 @@ _configurations = {
                                          'analysis', 'plotting']}
              }},
     'Steffi': {'folder': r"personal\Steffi",
-             'macs': [140870679927045],
-             'modes': {
+               'macs': [140870679927045],
+               'modes': {
                  'analysis': {'select': ['imports', 'functions', 'data',
                                          'analysis', 'parameters', 'plotting']}
-             }}
+             }},
+    'Antimony': {'folder': r"experiments\Antimony",
+                 'macs': [30902517727200],
+                 'modes': {}
+                 }
 }
