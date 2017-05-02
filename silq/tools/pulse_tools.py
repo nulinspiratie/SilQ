@@ -1,4 +1,4 @@
-def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_max=1000, sample_points_multiple=1):
+def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_min=1, n_max=1000, sample_points_multiple=1):
     """
     This method can be used when generating a periodic signal with an AWG device. Given a frequency and duration of the
     desired signal, a general AWG can produce that signal by repeating one waveform (waveform_1) for a number of times
@@ -17,6 +17,7 @@ def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_
             frequency (float): frequency of the signal in Hz
             sampling_rate (float): the sampling rate of the waveform
             threshold (float): threshold in relative period error
+            n_min (int): minimum number of signal periods that the waveform must contain
             n_max (int): maximum number of signal periods that a waveform can contain
             sample_points_multiple (int): the number of samples must be a multiple of
 
@@ -37,7 +38,7 @@ def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_
     n = 0
     error = 0
 
-    for n in range(1, n_max + 1):
+    for n in range(n_min, n_max + 1):
         error = (n * period) % (period_sample * sample_points_multiple)
         error_extra_sample = (period_sample * sample_points_multiple) - error
         if error_extra_sample < error:
