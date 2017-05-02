@@ -1,7 +1,7 @@
 import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse
+from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
@@ -251,12 +251,98 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             # TODO: check if sampling rate is indeed something we want to configure on a channel basis
             period_sample = 1 / sampling_rates[ch]
 
+            n_min = -(-cycles // 2**16)
+
             n, error, samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rates[ch], threshold,
-                                                           n_max=1000, sample_points_multiple=wave_form_multiple)
+                                                           n_min=n_min, n_max=1000,
+                                                           sample_points_multiple=wave_form_multiple)
 
             # the first waveform (waveform_1) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
             #   n_cycles * waveform_1 + waveform_2
+            waveform_1_period = period_sample * samples
+            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
+
+            waveform_1_cycles = cycles // n
+            waveform_1_duration = waveform_1_period * waveform_1_cycles
+
+            waveform_2_start = self.t_start + waveform_1_duration
+            waveform_2_samples = wave_form_multiple * round(
+                ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
+            waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
+            t_list_2 = np.linspace(waveform_2_start, waveform_2_stop, waveform_2_samples, endpoint=True)
+
+            waveform_1 = {}
+            waveform_2 = {}
+
+            waveform_1_data = self.get_voltage(t_list_1)
+
+            waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                         waveform_data_a=waveform_1_data)
+            waveform_1['cycles'] = waveform_1_cycles
+            waveform_1['t_start'] = self.t_start
+            waveform_1['t_stop'] = waveform_2_start
+
+            if len(t_list_2) == 0:
+                waveforms[ch] = [waveform_1]
+            else:
+                waveform_2_data = self.get_voltage(t_list_2)
+
+                waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                             waveform_data_a=waveform_2_data)
+                waveform_2['cycles'] = 1
+                waveform_2['t_start'] = waveform_2_start
+                waveform_2['t_stop'] = waveform_2_stop
+
+                waveforms[ch] = [waveform_1, waveform_2]
+
+        return waveforms
+
+
+class DCPulseImplementation(PulseImplementation, DCPulse):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        print('targeting DCPulse for {}'.format(interface))
+        # Target the generic pulse to this specific interface
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, **kwargs)
+
+        # Add a trigger requirement, which is sent back to the Layout
+        if targeted_pulse.t_start == 0:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=1e-3,
+                             connection_requirements={
+                                 'input_instrument': interface.instrument_name(),
+                                 'trigger': True}))
+
+        return targeted_pulse
+
+    def implement(self, instrument, sampling_rates, threshold):
+        if isinstance(self.connection, SingleConnection):
+            channels = [self.connection.output['channel'].name]
+        else:
+            raise Exception('No implementation for connection {}'.format(
+                self.connection))
+
+        waveforms = {}
+
+        # channel independent parameters
+        duration = self.t_stop - self.t_start
+        wave_form_multiple = 5
+
+        for ch in channels:
+            period_sample = 1 / sampling_rates[ch]
+
+            period = period_sample * wave_form_multiple
+            cycles = duration // period
+
+            n = -(-cycles // 2 ** 16)
+
+            samples = n * wave_form_multiple
+
             waveform_1_period = period_sample * samples
             t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
 
@@ -301,7 +387,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting AWGPulse for M3201A interface {}'.format(interface))
+        print('targeting AWGPulse for {}'.format(interface))
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
@@ -356,7 +442,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting CombinationPulse for M3201A interface {}'.format(interface))
+        print('targeting CombinationPulse for {}'.format(interface))
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
