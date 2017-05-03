@@ -9,20 +9,26 @@ Adding a mac address to a setting will result in that settings file to be
 instantiated upon calling intialize without specifying init_name
 '''
 _configurations = {
-    'Serwan': {'folder': r"personal\Serwan\init",
+    'Serwan': {'folder': r"personal\Serwan",
                'macs': [113780617482],
                'modes': {
                    'test1': {'select': ['num2', 'num3']},
                    'test2': {'ignore': ['imports', 'num2']},
                    'test3': {}
                }},
-    'EWJN': {'folder': r"experiments\EWJN\init",
+    'EWJN': {'folder': r"experiments\EWJN",
              'macs': [140870679927045],
              'modes': {
                  'analysis': {'select': ['imports', 'functions', 'data',
                                          'analysis', 'plotting']}
              }},
-    'Steffi': {'folder': r"personal\Steffi\init",
+    'OF27': {'folder': r"experiments\OF27",
+             'macs': [],
+             'modes': {
+                 'analysis': {'select': ['imports', 'functions', 'data',
+                                         'analysis', 'plotting']}
+             }},
+    'Steffi': {'folder': r"personal\Steffi",
              'macs': [140870679927045],
              'modes': {
                  'analysis': {'select': ['imports', 'functions', 'data',

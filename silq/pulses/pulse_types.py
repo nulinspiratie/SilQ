@@ -14,6 +14,7 @@ pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
 pulse_config = config['user'].get('pulses', {})
 properties_config = config['user'].get('properties', {})
 
+
 class Pulse(SettingsClass):
     def __init__(self, name=None, t_start=None, previous_pulse=None,
                  t_stop=None, delay_start=None, delay_stop=None,
@@ -144,6 +145,70 @@ class Pulse(SettingsClass):
             value = self._attribute_from_config(item)
             return value
 
+    def __add__(self, other):
+        """
+        This method is called when adding two pulse instances by performing `pulse1 + pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be added to self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '+')
+
+    def __radd__(self, other):
+        """
+        This method is called when reverse adding something to a pulse.
+        The reason this method is implemented is so that the user can sum over multiple pulses by performing:
+
+            combination_pulse = sum([pulse1, pulse2, pulse3])
+
+        The sum method actually tries calling 0.__add__(pulse1), which doesn't exist, so it is converted into
+        pulse1.__radd__(0).
+
+        Args:
+            other: an instance of unknown type that might be int(0)
+
+        Returns:
+            pulse (Pulse): Either self (if other is zero) or the sum of self and other.
+
+        """
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
+
+    def __sub__(self, other):
+        """
+        This method is called when subtracting two pulse instances by performing `pulse1 - pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be subtracted from self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '-')
+
+    def __mul__(self, other):
+        """
+        This method is called when multiplying two pulse instances by performing `pulse1 * pulse2`.
+
+        Args:
+            other (Pulse): The pulse instance to be multiplied with self.
+
+        Returns:
+            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+
+        """
+        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        return CombinationPulse(name, self, other, '*')
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -265,7 +330,7 @@ class Pulse(SettingsClass):
             properties_str += '\n\tadditional_pulses:'
             for pulse in self.additional_pulses:
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
-                properties_str  += '\n\t{}'.format(pulse_repr)
+                properties_str += '\n\t{}'.format(pulse_repr)
 
         return '{pulse_type}({name}, {properties})'.format(
             pulse_type=self.__class__.__name__,
@@ -373,17 +438,16 @@ class SinePulse(Pulse):
 
     def __repr__(self):
         properties_str = 'f={:.2f} MHz, power={}, t_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.power, self.t_start, self.t_stop)
+            self.frequency / 1e6, self.power, self.t_start, self.t_stop)
 
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} us is not in the time range {} ms - {} ms of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t * 1e-3 +
-                                                    self.phase/360))
+        return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
@@ -445,7 +509,7 @@ class FrequencyRampPulse(Pulse):
     def __repr__(self):
         properties_str = 'f_center={:.2f} MHz, f_dev={:.2f}, power={}, ' \
                          't_start={}, t_stop={}'.format(
-            self.frequency/1e6, self.frequency_deviation/1e6,
+            self.frequency / 1e6, self.frequency_deviation / 1e6,
             self.power, self.t_start, self.t_stop)
 
         if self.frequency_sideband is not None:
@@ -472,11 +536,11 @@ class DCPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         if hasattr(t, '__len__'):
-            return [self.amplitude] * len(t)
+            return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
 
@@ -497,7 +561,7 @@ class DCRampPulse(Pulse):
 
     def get_voltage(self, t):
         assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         slope = (self.amplitude_stop - self.amplitude_start) / self.duration
@@ -507,7 +571,7 @@ class DCRampPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .0001 # ms
+    duration = .0001  # ms
 
     def __init__(self, name=None, duration=duration, **kwargs):
         self.duration = duration
@@ -521,7 +585,7 @@ class TriggerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
@@ -530,7 +594,6 @@ class TriggerPulse(Pulse):
 
 
 class MarkerPulse(Pulse):
-
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -542,7 +605,7 @@ class MarkerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= t <= self.t_stop, \
-            "voltage at {} us is not in the time range {} us - {} us of " \
+            "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
@@ -551,7 +614,6 @@ class MarkerPulse(Pulse):
 
 
 class TriggerWaitPulse(Pulse):
-
     def __init__(self, name=None, t_start=None, **kwargs):
         super().__init__(name=name, t_start=t_start, duration=0, **kwargs)
 
@@ -573,3 +635,188 @@ class MeasurementPulse(Pulse):
 
     def get_voltage(self, t):
         raise NotImplementedError('Measurement pulses do not have a voltage')
+
+
+class CombinationPulse(Pulse):
+    """
+    This class represents pulses that are combinations of multiple pulse types.
+
+    For example:
+        CombinationPulse = SinePulse + DCPulse
+        CombinationPulse = DCPulse * SinePulse
+
+    Just like any other pulse, a CombinationPulse has a name, t_start and t_stop. t_start and t_stop are calculated and
+    updated from the pulses that make up the combination.
+
+    A CombinationPulse is itself a child of the Pulse class, therefore a CombinationPulse can also be used in
+    consecutive combinations like:
+        CombinationPulse1 = SinePulse1 + DCPulse
+        CombinationPulse2 = SinePulse2 + CombinationPulse1
+
+    Args:
+        name (str): The name for this CombinationPulse.
+        pulse1 (Pulse): The first pulse this combination is made up from.
+        pulse2 (Pulse): The second pulse this combination is made up from.
+        relation (str): The relation between pulse1 and pulse2. This must be one of the following:
+            '+'     :   pulse1 + pulse2
+            '-'     :   pulse1 - pulse2
+            '*'     :   pulse1 * pulse2
+
+    """
+
+    def __init__(self, name=None, pulse1=None, pulse2=None, relation=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        self.pulse1 = pulse1
+        self.pulse2 = pulse2
+        self.relation = relation
+
+        assert isinstance(pulse1, Pulse), 'pulse1 needs to be a Pulse'
+        assert isinstance(pulse2, Pulse), 'pulse2 needs to be a Pulse'
+        assert relation in ['+', '-', '*'], 'relation has a non-supported value'
+
+    @property
+    def t_start(self):
+        return min(self.pulse1.t_start, self.pulse2.t_start)
+
+    @t_start.setter
+    def t_start(self, t_start):
+        pass
+
+    @property
+    def t_stop(self):
+        return max(self.pulse1.t_stop, self.pulse2.t_stop)
+
+    @t_stop.setter
+    def t_stop(self, t_stop):
+        pass
+
+    @property
+    def combination_string(self):
+        if isinstance(self.pulse1, CombinationPulse):
+            pulse1_string = self.pulse1.combination_string
+        else:
+            pulse1_string = self.pulse1.name
+        if isinstance(self.pulse2, CombinationPulse):
+            pulse2_string = self.pulse2.combination_string
+        else:
+            pulse2_string = self.pulse2.name
+        return '({pulse1} {relation} {pulse2})'.format(pulse1=pulse1_string,
+                                                       relation=self.relation,
+                                                       pulse2=pulse2_string)
+
+    @property
+    def pulse_details(self):
+        if isinstance(self.pulse1, CombinationPulse):
+            pulse1_details = self.pulse1.pulse_details
+        else:
+            pulse1_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse1.name,
+                                                                  pulse_repr=repr(self.pulse1))
+        if isinstance(self.pulse2, CombinationPulse):
+            pulse2_details = self.pulse2.pulse_details
+        else:
+            pulse2_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse2.name,
+                                                                  pulse_repr=repr(self.pulse2))
+        return pulse1_details + pulse2_details
+
+    def __repr__(self):
+        return 'CombinationPulse of: {combination} with\n{details}'.format(combination=self.combination_string,
+                                                                           details=self.pulse_details)
+
+    def get_voltage(self, t):
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} s is not in the time range {} s - {} s of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        result1 = np.zeros(t.shape[0])
+        result2 = np.zeros(t.shape[0])
+
+        pulse1_t = t[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)]
+        pulse2_t = t[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)]
+
+        voltage1 = self.pulse1.get_voltage(pulse1_t)
+        voltage2 = self.pulse2.get_voltage(pulse2_t)
+
+        result1[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)] = voltage1
+        result2[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)] = voltage2
+
+        if self.relation == '+':
+            return result1 + result2
+        elif self.relation == '-':
+            return result1 - result2
+        elif self.relation == '*':
+            return result1 * result2
+
+
+class AWGPulse(Pulse):
+    """
+    This class represents arbitrary waveform pulses that can be implemented by AWGs.
+
+    This class allows the user to create a truly arbitrary pulse by either:
+        - providing a function that converts time-stamps to waveform points
+        - an array of waveform points
+
+    The resulting AWGPulse can be sampled at different sample rates, interpolating between waveform points if necessary.
+
+    Args:
+        name (str): The name for this AWGPulse.
+        fun (): The function used for calculating waveform points based on time-stamps.
+        wf_array (np.array): Numpy array of (float) with time-stamps and waveform points.
+        interpolate (bool): Flag for turning interpolation of the wf_array on (True) or off (False).
+
+    """
+
+    def __init__(self, name=None, fun=None, wf_array=None, interpolate=True, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        if fun:
+            if not callable(fun):
+                raise TypeError('The argument `function` must be a callable function.')
+            self.from_function = True
+            self.function = fun
+        elif wf_array is not None:
+            if not type(wf_array) == np.ndarray:
+                raise TypeError('The argument `array` must be of type `np.ndarray`.')
+            if not len(wf_array) == 2:
+                raise TypeError('The argument `array` must be of length 2.')
+            if not len(wf_array[0]) == len(wf_array[1]):
+                raise TypeError('The argument `array` must have equal time-stamps and waveform points')
+            assert np.all(np.diff(wf_array[0]) > 0), 'the time-stamps must be increasing'
+            self.t_start = wf_array[0][0]
+            self.t_stop = wf_array[0][-1]
+            self.from_function = False
+            self.array = wf_array
+            self.interpolate = interpolate
+        else:
+            raise TypeError('Provide either a function or an array.')
+
+    @classmethod
+    def from_array(cls, array, **kwargs):
+        return cls(wf_array=array, **kwargs)
+
+    @classmethod
+    def from_function(cls, function, **kwargs):
+        return cls(fun=function, **kwargs)
+
+    def __repr__(self):
+        if self.from_function:
+            properties_str = 'function:{}, t_start={}, t_stop={}'.format(self.function, self.t_start, self.t_stop)
+        else:
+            properties_str = 'array:{}, t_start={}, t_stop={}'.format(self.array.shape, self.t_start, self.t_stop)
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t):
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} s is not in the time range {} s - {} s of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        if self.from_function:
+            return self.function(t)
+        else:
+            if self.interpolate:
+                return np.interp(t, self.array[0], self.array[1])
+            elif np.in1d(t, self.array[0]).all():
+                mask = np.in1d(self.array[0], t)
+                return self.array[1][mask]
+            else:
+                raise IndexError('All requested t-values must be in wf_array since interpolation is disabled.')
