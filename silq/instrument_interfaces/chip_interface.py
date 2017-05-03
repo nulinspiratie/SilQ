@@ -15,7 +15,7 @@ class ChipInterface(InstrumentInterface):
             channel_name: Channel(instrument_name=self.instrument_name(),
                                   name=channel_name,
                                   input=True)
-                               for channel_name in ['TGAC', 'DF', 'ESR']}
+                               for channel_name in self.instrument.channels()}
         self._channels = {**self._input_channels, **self._output_channels}
 
     def setup(self, **kwargs):
