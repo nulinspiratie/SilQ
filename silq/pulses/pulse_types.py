@@ -540,7 +540,7 @@ class DCPulse(Pulse):
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         if hasattr(t, '__len__'):
-            return [self.amplitude] * len(t)
+            return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
 
