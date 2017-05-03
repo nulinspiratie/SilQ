@@ -2,7 +2,7 @@ from time import sleep
 import numpy as np
 import logging
 
-from qcodes.instrument.parameter import Parameter
+from qcodes.instrument.parameter import MultiParameter
 from qcodes.data import hdf5_format, io
 
 from silq.pulses import PulseSequence, DCPulse, FrequencyRampPulse, \
@@ -15,26 +15,33 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(SettingsClass, Parameter):
+class AcquisitionParameter(SettingsClass, MultiParameter):
     data_manager = None
     layout = None
     formatter = h5fmt
 
     def __init__(self, mode=None, average_mode='none', **kwargs):
         SettingsClass.__init__(self)
-        self.mode = mode
 
+        self.mode = mode
+        """Mode of the parameter (e.g. ESR)"""
         if self.mode is not None:
             # Add mode to parameter name and label
             kwargs['name'] += self.mode_str
-            kwargs['label'] += ' {}'.format(self.mode)
-        Parameter.__init__(self, **kwargs)
-        self.label = kwargs['label']
+        shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
+        MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
         self.pulse_sequence = PulseSequence()
+        """Pulse sequence of acquisition parameter"""
+
         self.silent = True
+        """Do not print results after acquisition"""
+
         self.average_mode = average_mode
+        """Type of averaging performed on data"""
+
         self.save_traces = False
+        """ Save traces in separate files (does not work)"""
 
         self.samples = None
         self.t_read = None
@@ -136,9 +143,10 @@ class AcquisitionParameter(SettingsClass, Parameter):
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, **kwargs):
-        super().__init__(name='DC_voltage',
-                         label='DC voltage',
-                         units='V',
+        super().__init__(name='DC_acquisition',
+                         names=['DC_voltage'],
+                         labels=['DC voltage'],
+                         units=['V'],
                          average_mode='point',
                          snapshot_value=False,
                          **kwargs)
@@ -162,15 +170,15 @@ class DCParameter(AcquisitionParameter):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        return self.data['acquisition_traces']['output']
+        return [self.data['acquisition_traces']['output']]
 
 
 class DCPulseSweepParameter(AcquisitionParameter):
     def __init__(self, sweep_name=None, **kwargs):
-        super().__init__(name='DC_voltage',
-                         label='DC voltage',
+        super().__init__(name='DC_acquisition',
+                         names=['DC_voltage'],
+                         labels=['DC voltage'],
                          snapshot_value=False,
-                         shape=(1,),
                          setpoint_names=[sweep_name],
                          setpoint_labels=[sweep_name],
                          **kwargs)
@@ -210,7 +218,7 @@ class DCPulseSweepParameter(AcquisitionParameter):
         self.pulse_sequence.add([pulse for pulse in self.additional_pulses])
 
         # Update metadata
-        self.shape = tuple([len(sweep_voltages)])
+        self.shapes = [tuple([len(sweep_voltages)])]
         self.setpoints = (tuple(sweep_voltages), )
 
     @clear_single_settings
@@ -224,11 +232,13 @@ class DCPulseSweepParameter(AcquisitionParameter):
 
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
-        super().__init__(name='EPR',
-                         label='Empty Plunge Read',
-                         snapshot_value=False,
+        super().__init__(name='EPR_acquisition',
                          names=['contrast', 'dark_counts', 'voltage_difference',
                                 'fidelity_empty', 'fidelity_load'],
+                         labels=['Contrast', 'Dark counts',
+                                 'Voltage difference',
+                                 'Fidelity empty', 'Fidelity load'],
+                         snapshot_value=False,
                          **kwargs)
 
         self.pulse_sequence.add([
@@ -266,11 +276,12 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         Parameter used to perform an adiabatic sweep
         """
-        super().__init__(name='adiabatic',
-                         label='Adiabatic',
-                         snapshot_value=False,
+        super().__init__(name='adiabatic_acquisition',
                          names=['contrast', 'dark_counts',
                                 'voltage_difference'],
+                         labels=['Contrast', 'Dark counts',
+                                 'Voltage difference'],
+                         snapshot_value=False,
                          **kwargs)
 
         self.pulse_sequence.add([
@@ -327,22 +338,18 @@ class AdiabaticParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
 
 class RabiParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
-        super().__init__(name='rabi',
-                         label='rabi',
-                         snapshot_value=False,
+        super().__init__(name='rabi_acquisition',
                          names=['contrast', 'dark_counts',
                                 'voltage_difference'],
+                         labels=['Contrast', 'Dark counts',
+                                'Voltage difference'],
+                         snapshot_value=False,
                          **kwargs)
 
         self.pulse_sequence.add([
@@ -399,22 +406,17 @@ class RabiParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
-
 class RabiDriveParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         """
         Parameter used to drive Rabi oscillations
         """
         super().__init__(name='rabi_drive',
-                         label='rabi_drive',
-                         snapshot_value=False,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference'],
+                         labels=['Contrast', 'Dark counts',
+                                'Voltage difference'],
+                         snapshot_value=False,
                          **kwargs)
 
         self.pulse_sequence.add([
@@ -479,18 +481,13 @@ class RabiDriveParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, duration):
-        # Change drive duration
-        self.duration = duration
-        self.setup()
-
 
 class T1Parameter(AcquisitionParameter):
     def __init__(self, **kwargs):
-        super().__init__(name='T1_wait_time',
-                         label='T1 wait time',
-                         snapshot_value=False,
+        super().__init__(name='T1_acquisition',
                          names=['up_proportion', 'num_traces'],
+                         labels=['Up proportion', 'Number of traces'],
+                         snapshot_value=False,
                          **kwargs)
 
         self.pulse_sequence.add([
@@ -550,18 +547,15 @@ class T1Parameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, wait_time):
-        self.pulse_sequence['plunge'].duration = wait_time
-        self.setup()
-
 
 class DarkCountsParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
-        super().__init__(name='dark_counts',
-                         label='Dark counts',
+        super().__init__(name='dark_counts_acquisition',
+                         names=['dark_counts'],
+                         labels=['Dark counts'],
                          snapshot_value=False,
                          **kwargs)
 
@@ -609,16 +603,13 @@ class DarkCountsParameter(AcquisitionParameter):
 
         return self.results
 
-    def set(self, frequency):
-        # Change center frequency
-        self.frequency = frequency
-        self.setup()
-
-
 class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
-        super().__init__(name='variable_read_voltage',
-                         label='Variable read voltage',
+        super().__init__(name='variable_read_acquisition',
+                         names=['read_voltage'],
+                         labels='Dead voltage',
+                         average_mode='trace',
+                         units=['V'],
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add([
@@ -627,28 +618,13 @@ class VariableReadParameter(AcquisitionParameter):
             DCPulse(name='read', acquire=True),
             DCPulse(name='final')])
 
-    def setup(self, samples=None, **kwargs):
-        if samples:
-            self.samples = samples
-
-        self.layout.target_pulse_sequence(self.pulse_sequence)
-
-        self.layout.setup(samples=self.samples, average_mode='trace')
-
-        # Setup parameter metadata
-        self.names = self.layout.acquisition.names
-        self.labels = self.layout.acquisition.labels
-        self.shapes = self.layout.acquisition.shapes
-
-        super().setup(**kwargs)
+    @property
+    def shape(self):
+        return self.layout.acquisition.shapes[0]
 
     def get(self):
-        self.traces = self.layout.acquisition()
-        return self.traces
-
-    def set(self, read_voltage):
-        # Change read stage voltage.
-        self.read_voltage = read_voltage
-        self.pulse_sequence['read'].voltage = self.read_voltage
-
         self.setup()
+
+        self.acquire(segment_traces=False)
+
+        return self.data['acquisition_traces']['output']
