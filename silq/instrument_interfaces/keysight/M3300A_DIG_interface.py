@@ -15,6 +15,11 @@ class M3300A_DIG_Interface(InstrumentInterface):
         # A prelim implementation for a triggered connection, can only handle
         # one trigger per pulse sequence
         self.acq_mode = 'OneShot'
+        self.add_parameter('acquisition_parameter',
+                label='Acquisition parameter',
+                get_cmd = self.acquire,
+                docstring='Parameter to use for acquisition in loop'
+        )
         # Initialize channels
         self._input_channels = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
@@ -88,6 +93,18 @@ class M3300A_DIG_Interface(InstrumentInterface):
     def start(self):
         self.daq_flush_multiple(2**9-1)
         self.daq_start_multiple(2**9-1)
+
+    def acquire(self):
+        data = {}
+        # Split data into pulse traces 
+        for pulse in self._pulse_sequence.get_pulses(acquire=True):
+            ts = (pulse.t_start, pulse.t_stop)
+            sample_range = [int(t * self.sample_freq) for t in ts]
+            for ch in range(8):
+                ch_data = self.daq_read(ch)
+                # Extract acquired data from the channel data
+                data{pulse.name}{ch} = ch_data[sample_range]
+        return data
 
     def stop(self):
         pass
