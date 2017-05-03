@@ -41,6 +41,9 @@ class M3201AInterface(InstrumentInterface):
             ),
             CombinationPulseImplementation(
                 pulse_requirements=[]
+            ),
+            DCPulseImplementation(
+                pulse_requirements=[('amplitude', {'min': -1.5, 'max': 1.5})]
             )
         ]
 
@@ -75,7 +78,7 @@ class M3201AInterface(InstrumentInterface):
 
         # flush the onboard RAM and reset waveform counter
         self.instrument.flush_waveform()
-        waveform_counter = 1
+        waveform_counter = 0
 
         # for each pulse:
         #   - implement
@@ -119,12 +122,12 @@ class M3201AInterface(InstrumentInterface):
             self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=self._channels[ch].id)
             self.instrument.set_channel_amplitude(amplitude=1.0, channel_number=self._channels[ch].id)
             waveform_array = waveforms[ch]
-            ch_wf_counter = 1
+            ch_wf_counter = 0
             for waveform in waveform_array:
                 print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
                                                                                         waveform_counter))
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
-                if ch_wf_counter == 1:
+                if ch_wf_counter == 0:
                     trigger_mode = 1  # software trigger for first wf
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
@@ -136,6 +139,7 @@ class M3201AInterface(InstrumentInterface):
                 waveform_counter += 1
                 ch_wf_counter += 1
             print('starting awg channel {}'.format(self._channels[ch].id))
+            self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=0)
             self.instrument.awg_start(self._channels[ch].id)
         pass
 
@@ -246,12 +250,13 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         cycles = duration // period
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
         wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        wave_form_minimum = 15  # the minimum size of a waveform
 
         for ch in channels:
             # TODO: check if sampling rate is indeed something we want to configure on a channel basis
             period_sample = 1 / sampling_rates[ch]
 
-            n_min = -(-cycles // 2**16)
+            n_min = int(-(-cycles // 2**16))
 
             n, error, samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rates[ch], threshold,
                                                            n_min=n_min, n_max=1000,
@@ -269,6 +274,11 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             waveform_2_start = self.t_start + waveform_1_duration
             waveform_2_samples = wave_form_multiple * round(
                 ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
+
+            if waveform_2_samples < wave_form_minimum:
+                print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
+                waveform_2_samples = 0
+
             waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
             t_list_2 = np.linspace(waveform_2_start, waveform_2_stop, waveform_2_samples, endpoint=True)
 
@@ -301,7 +311,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
 class DCPulseImplementation(PulseImplementation, DCPulse):
     def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting DCPulse for {}'.format(interface))
@@ -332,16 +342,17 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         # channel independent parameters
         duration = self.t_stop - self.t_start
         wave_form_multiple = 5
+        wave_form_minimum = 15  # the minimum size of a waveform
 
         for ch in channels:
             period_sample = 1 / sampling_rates[ch]
 
-            period = period_sample * wave_form_multiple
+            period = period_sample * wave_form_minimum
             cycles = duration // period
 
-            n = -(-cycles // 2 ** 16)
+            n = int(-(-cycles // 2 ** 16))
 
-            samples = n * wave_form_multiple
+            samples = n * wave_form_minimum
 
             waveform_1_period = period_sample * samples
             t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
@@ -352,6 +363,11 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             waveform_2_start = self.t_start + waveform_1_duration
             waveform_2_samples = wave_form_multiple * round(
                 ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
+
+            if waveform_2_samples < wave_form_minimum:
+                print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
+                waveform_2_samples = 0
+
             waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
             t_list_2 = np.linspace(waveform_2_start, waveform_2_stop, waveform_2_samples, endpoint=True)
 
