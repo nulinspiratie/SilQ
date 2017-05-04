@@ -1,10 +1,11 @@
 import os
+import collections
 from blinker import signal
 import json
 from functools import partial
 
 import qcodes as qc
-from qcodes.config.config import DotDict, update
+from qcodes.config.config import DotDict
 
 
 class SubConfig:
@@ -103,7 +104,6 @@ class SubConfig:
                                            save_as_dir=True)
                 else:
                     raise RuntimeError(f'Could not load {filepath} to config')
-                subconfig.load()
                 config[subconfig_name] = subconfig
 
         else:
@@ -126,10 +126,8 @@ class SubConfig:
             folderpath = os.path.join(folder, self.name)
             if not os.path.isdir(folderpath):
                 os.mkdir((folderpath))
-            for filename, val in self.items():
-                filepath = os.path.join(folderpath, '{}.json'.format(filename))
-                with open(filepath, 'w') as fp:
-                    json.dump(self[filename], fp, indent=4)
+            for subconfig in self.values():
+                subconfig.save(folder=folderpath)
 
 
 class DictConfig(SubConfig, DotDict):
@@ -235,3 +233,17 @@ class ListConfig(SubConfig, list):
         self.clear()
         config = super().load(folder=folder)
         self += config
+
+
+def update(d, u):
+    """ 
+    Update dictionary recursively.
+    this ensures that subdicts are also converted
+    This is a modified version of the update function in qcodes config
+    """
+    for k, v in u.items():
+        if isinstance(v, collections.Mapping) and k in d:
+            # Update existing dict in d with dict v
+            v = update(d.get(k, {}), v)
+        d[k] = v
+    return d
