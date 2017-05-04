@@ -1,5 +1,6 @@
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
+from silq.pulses.pulse_types import TriggerPulse
 
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.keysight.M3300A import M3300A_DIG as dig_driver
@@ -51,13 +52,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
             for k in range(8):
                 # Trigger on rising edge of some channel
                 # TODO: Read connections to figure out where to trigger from
-                self.parameters['trigger_mode_{}'.format(k)].set(3)
-                self.parameters['trigger_threshold_{}'.format(k)].set(0.65)
-                self.parameters['trigger_mode_{}'.format(k)].set(3)
+                self.instrument.parameters['trigger_mode_{}'.format(k)].set(3)
+                self.instrument.parameters['trigger_threshold_{}'.format(k)].set(0.65)
+                self.instrument.parameters['trigger_mode_{}'.format(k)].set(3)
                 # Select channel on which to trigger each DAQ
-                self.parameters['analog_trigger_mask_{}'.format(k)].set(0)
-                self.parameters['DAQ_trigger_delay_{}'.format(k)].set(0)
-                self.parameters['DAQ_trigger_mode_{}'.format(k)].set(3)
+                self.instrument.parameters['analog_trigger_mask_{}'.format(k)].set(0)
+                self.instrument.parameters['DAQ_trigger_delay_{}'.format(k)].set(0)
+                self.instrument.parameters['DAQ_trigger_mode_{}'.format(k)].set(3)
 
 
     def get_final_additional_pulses(self, **kwargs):
@@ -76,9 +77,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
             T = t_stop - t_start
             # Capture maximum number of samples on all channels
             for k in range(8):
-                self.parameters['n_points_{}'.format(k)].set(T*self.sample_freq)
+                self.instrument.parameters['n_points_{}'.format(k)].set(int(T*self.sample_freq))
                 # Set an acquisition timeout to be 10% after the last pulse finishes.
-                self.parameters['timeout_{}'.format(k)].set(t_final*1.1)
+                self.instrument.parameters['timeout_{}'.format(k)].set(int(t_final*1.1))
 
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start,
@@ -88,22 +89,24 @@ class M3300A_DIG_Interface(InstrumentInterface):
             return [acquisition_pulse]
 
     def setup(self, **kwargs):
-        for param in self._used_params:
+        pass
+        #for param in self._used_params:
             
     def start(self):
-        self.daq_flush_multiple(2**9-1)
-        self.daq_start_multiple(2**9-1)
+        self.instrument.daq_flush_multiple(2**9-1)
+        self.instrument.daq_start_multiple(2**9-1)
 
     def acquire(self):
         data = {}
         # Split data into pulse traces 
         for pulse in self._pulse_sequence.get_pulses(acquire=True):
+            data[pulse.name] = {}
             ts = (pulse.t_start, pulse.t_stop)
             sample_range = [int(t * self.sample_freq) for t in ts]
             for ch in range(8):
                 ch_data = self.daq_read(ch)
                 # Extract acquired data from the channel data
-                data{pulse.name}{ch} = ch_data[sample_range]
+                data[pulse.name][ch] = ch_data[sample_range]
         return data
 
     def stop(self):
