@@ -93,6 +93,6 @@ def initialize(name=None, mode=None, select=None, ignore=None):
 
     if not 'properties' in config:
         warnings.warn("'properties' should be added to SilQ config")
-    elif not 'default_environment' in config:
+    elif not 'default_environment' in config.properties:
         warnings.warn("'properties.default_environment' should be specified "
                       "in config")
