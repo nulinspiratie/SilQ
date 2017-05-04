@@ -584,13 +584,16 @@ class TriggerPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        return self.amplitude
+        if hasattr(t, '__len__'):
+            return np.ones(len(t))*self.amplitude
+        else:
+            return self.amplitude
 
 
 class MarkerPulse(Pulse):
