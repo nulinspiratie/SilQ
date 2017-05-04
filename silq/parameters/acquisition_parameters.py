@@ -202,8 +202,10 @@ class DCParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True),
-            DCPulse(name='final'))
+            DCPulse(name='read', acquire=True,
+                    connection_label='stage'),
+            DCPulse(name='final',
+                    connection_label='stage'))
 
     def setup(self, **kwargs):
         super().setup(**kwargs)
