@@ -42,9 +42,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
     def initialize_driver(self):
         for k in range(8):
-            self.parameters['impedance_'.format(k)].set(1)    # 50 Ohm impedance
-            self.parameters['coupling_'.format(k)].set(0)     # DC Coupled
-            self.parameters['full_scale_'.format(k)].set(3.0) # 3.0 Volts
+            self.instrument..parameters['impedance_'.format(k)].set(1)    # 50 Ohm impedance
+            self.instrument..parameters['coupling_'.format(k)].set(0)     # DC Coupled
+            self.instrument..parameters['full_scale_'.format(k)].set(3.0) # 3.0 Volts
         
         self.sample_freq = 100e6;
         # Configure the trigger type
