@@ -1,0 +1,14 @@
+{
+    "stage": [
+        [
+            "arbstudio.ch1",
+            "arbstudio.ch2",
+            "arbstudio.ch3"
+        ],
+        [
+            "chip.DF",
+            "chip.TGAC",
+            "ATS.chB"
+        ]
+    ]
+}

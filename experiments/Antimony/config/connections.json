@@ -15,11 +15,13 @@
     },
     {
         "output_arg": "arbstudio.ch1",
-        "input_arg": "chip.???"
+        "input_arg": "chip.DF",
+        "scale": 0.0125
     },
     {
         "output_arg": "arbstudio.ch2",
-        "input_arg": "chip.???"
+        "input_arg": "chip.TGAC",
+        "scale": 0.0125
     },
     {
         "output_arg": "arbstudio.ch3",

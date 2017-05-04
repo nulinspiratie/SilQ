@@ -1,0 +1,11 @@
+{
+    "read": {
+        "duration": 20,
+        "amplitude": 0
+    },
+    "final": {
+        "duration": 5,
+        "amplitude": 0
+    },
+    "trigger": {}
+}
