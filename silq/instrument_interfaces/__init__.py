@@ -20,7 +20,7 @@ def get_instrument_interface(instrument):
         'MockATS': ATSInterface,
         'Keysight_E8267D': E8267DInterface,
         'Keysight_M3201A': M3201AInterface,
-        'Keysight_M3300A_DIG': M3300A_DIGInterface
+        'M3300A_DIG': M3300A_DIGInterface
     }
 
     instrument_class = get_instrument_class(instrument)
