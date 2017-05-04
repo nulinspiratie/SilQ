@@ -504,6 +504,9 @@ class TriggerPulse(Pulse):
     duration = .0001 # ms
 
     def __init__(self, name=None, duration=duration, **kwargs):
+        # Trigger pulses don't necessarily need a specific name
+        if name is None:
+            name = 'trigger'
         super().__init__(name=name, duration=duration, **kwargs)
 
     def __repr__(self):
