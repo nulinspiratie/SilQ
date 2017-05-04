@@ -44,6 +44,9 @@ class M3201AInterface(InstrumentInterface):
             ),
             DCPulseImplementation(
                 pulse_requirements=[('amplitude', {'min': -1.5, 'max': 1.5})]
+            ),
+            TriggerPulseImplementation(
+                pulse_requirements=[]
             )
         ]
 
@@ -106,7 +109,7 @@ class M3201AInterface(InstrumentInterface):
 
             for i, wf in enumerate(waveforms[ch]):
                 if i == 0:
-                    wf['delay'] = 0.0
+                    wf['delay'] = int(round(float(wf['t_start']*1e9)/10))
                 else:
                     delay = wf['t_start'] - waveforms[ch][i-1]['t_stop']
                     if delay < 0:
@@ -504,5 +507,46 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
                         't_stop': waveform_stop}
 
             waveforms[ch] = [waveform]
+
+        return waveforms
+
+
+class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
+    def __init__(self, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+
+    @property
+    def amplitude(self):
+        return 1.0
+
+    def implement(self, instrument, sampling_rates, threshold):
+        if isinstance(self.connection, SingleConnection):
+            channel = self.connection.output['channel'].name
+        else:
+            raise Exception('No implementation for connection {}'.format(self.connection))
+
+        wave_form_multiple = 5
+
+        waveforms = {}
+
+        period_sample = 1 / sampling_rates[channel]
+
+        self.duration = 1e-6
+
+        waveform_start = self.t_start
+        waveform_samples = wave_form_multiple * round(
+            ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
+        waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
+        t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
+
+        waveform_data = self.get_voltage(t_list)
+
+        waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
+                                                                    waveform_data_a=waveform_data),
+                    'cycles': 1,
+                    't_start': self.t_start,
+                    't_stop': waveform_stop}
+
+        waveforms[channel] = [waveform]
 
         return waveforms
