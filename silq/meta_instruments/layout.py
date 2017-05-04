@@ -189,8 +189,8 @@ class Layout(Instrument):
             with open(filepath, "r") as fp:
                 connections = json.load(fp)
         else:
-            from qcodes import config
-            connections = config.user.get('connections', None)
+            from silq import config
+            connections = config.get('connections', None)
             if connections is None:
                 raise RuntimeError('No connections found in config.user')
 
@@ -975,23 +975,20 @@ class CombinedConnection(Connection):
                               for connection in connections]
         self.output['instruments'] = list(set([connection.output['instrument']
                                           for connection in connections]))
-        assert len(self.output['instruments']) == 1, \
-            'Connections with multiple output instruments not yet supported'
-        self.output['instrument'] = self.output['instruments'][0]
-
-        self.output['channels'] = list(set([connection.output['channel']
-                                       for connection in connections]))
+        if len(self.output['instruments']) == 1:
+            self.output['instrument'] = self.output['instruments'][0]
+            self.output['channels'] = list(set([connection.output['channel']
+                                           for connection in connections]))
 
 
         self.input['str'] = [connection.input['str']
                              for connection in connections]
         self.input['instruments'] = list(set([connection.input['instrument']
                                          for connection in connections]))
-        assert len(self.input['instruments']) == 1, \
-            'Connections with multiple input instruments not yet supported'
-        self.input['instrument'] = self.input['instruments'][0]
-        self.input['channels'] = list(set([connection.input['channel']
-                                      for connection in connections]))
+        if len(self.input['instruments']) == 1:
+            self.input['instrument'] = self.input['instruments'][0]
+            self.input['channels'] = list(set([connection.input['channel']
+                                          for connection in connections]))
 
     def __repr__(self):
         output = 'CombinedConnection\n'
@@ -1078,6 +1075,18 @@ class CombinedConnection(Connection):
                 if not any(connection.satisfies_conditions(output_arg=output,
                                                            input_arg=input)
                            for output, input in zip(output_arg, input_arg)):
+                    return False
+        elif output_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an output that satisfies conditions
+                if not any(connection.satisfies_conditions(output_arg=output)
+                           for output in output_arg):
+                    return False
+        elif input_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an input that satisfies conditions
+                if not any(connection.satisfies_conditions(input_arg=input)
+                           for input in input_arg):
                     return False
 
         if not super().satisfies_conditions(**kwargs):
