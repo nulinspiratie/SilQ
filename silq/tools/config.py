@@ -97,6 +97,7 @@ class SubConfig:
                                                  folder=folderpath,
                                                  save_as_dir=False)
                 elif os.path.isdir(filepath):
+                    subconfig_name = file
                     subconfig = DictConfig(name=file,
                                            folder=folderpath,
                                            save_as_dir=True)
