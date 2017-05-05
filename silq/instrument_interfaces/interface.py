@@ -73,6 +73,22 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
+    def has_pulse_implementation(self, pulse):
+        """
+        Checks if the interface has a pulse implementation that satisfies the pulse requirements.
+
+        Args:
+            pulse (Pulse): pulse for which an implementation is requested
+
+        Returns:
+            PulseImplementation if found. Otherwise None.
+        """
+        for pulse_implementation in self.pulse_implementations:
+            if pulse_implementation.satisfies_requirements(pulse):
+                return pulse_implementation
+        else:
+            return None
+
     def _set_pulse_sequence(self, pulse_sequence, val):
         """
         set function for parameter self.pulse_sequence.
