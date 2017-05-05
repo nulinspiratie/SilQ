@@ -12,9 +12,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
         self._pulse_sequence.allow_untargeted_pulses = True
 
-        for kw in kwargs.keys():
-            if (kw in M3300A_interface_kwargs):
-                print(kw)
+        # for kw in kwargs.keys():
+        #     if (kw in M3300A_interface_kwargs):
+        #         print(kw)
         # A prelim implementation for a triggered connection, can only handle
         # one trigger per pulse sequence
         self.acq_mode = 'OneShot'
@@ -60,9 +60,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
             for k in range(8):
                 # Trigger on rising edge of some channel
                 # TODO: Read connections to figure out where to trigger from
-                self.instrument.parameters['trigger_mode_{}'.format(k)].set(3)
+                self.instrument.parameters['trigger_edge_{}'.format(k)].set(3)
                 self.instrument.parameters['trigger_threshold_{}'.format(k)].set(0.65)
-                self.instrument.parameters['trigger_mode_{}'.format(k)].set(3)
+                self.instrument.parameters['trigger_edge_{}'.format(k)].set(3)
                 # Select channel on which to trigger each DAQ
                 self.instrument.parameters['analog_trigger_mask_{}'.format(k)].set(0)
                 self.instrument.parameters['DAQ_trigger_delay_{}'.format(k)].set(0)
