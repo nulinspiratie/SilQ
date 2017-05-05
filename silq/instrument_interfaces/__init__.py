@@ -8,7 +8,7 @@ def get_instrument_interface(instrument):
     from .spincore.PulseBlasterESRPRO_interface import \
         PulseBlasterESRPROInterface
     from .AlazarTech.ATS_interface import ATSInterface
-    from .keysight import E8267DInterface
+    from .keysight import E8267DInterface, M3201AInterface, M3300A_DIG_Interface
 
     instrument_interfaces = {
         'ArbStudio1104': ArbStudio1104Interface,
@@ -18,7 +18,9 @@ def get_instrument_interface(instrument):
         'Chip': ChipInterface,
         'ATS9440': ATSInterface,
         'MockATS': ATSInterface,
-        'Keysight_E8267D': E8267DInterface
+        'Keysight_E8267D': E8267DInterface,
+        'Keysight_M3201A': M3201AInterface,
+        'M3300A_DIG': M3300A_DIG_Interface
     }
 
     instrument_class = get_instrument_class(instrument)
