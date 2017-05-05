@@ -6,8 +6,8 @@ def get_instrument_interface(instrument):
     from .lecroy.ArbStudio1104_interface import ArbStudio1104Interface
     from .chip_interface import ChipInterface
     from .spincore.PulseBlasterESRPRO_interface import \
-        PulseBlasterESRPROInterface, \
-        PulseBlasterDDSInterface
+        PulseBlasterESRPROInterface
+    from .spincore.PulseBlasterDDS_interface import PulseBlasterDDSInterface
     from .AlazarTech.ATS_interface import ATSInterface
     from .keysight import E8267DInterface, M3201AInterface, M3300A_DIG_Interface
 
