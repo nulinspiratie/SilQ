@@ -35,5 +35,9 @@ _configurations = {
                  'macs': [30902517727200],
                  'modes': {
                      'analysis': {'select': ['imports', 'functions', 'data']}
-                 }}
+                 }},
+    'Bayesian': {'folder': r"experiments\Bayesian",
+                 'macs': [],
+                 'modes': {}
+                 }
 }
