@@ -1,11 +1,22 @@
+##################
+### Parameters ###
+##################
+
 acquisition_parameters.AcquisitionParameter.layout = layout
 
 dummy_parameter = ManualParameter(name='dummy', initial_value=42)
+
+#####################
+### DC parameters ###
+#####################
 DF_DS = general_parameters.CombinedParameter(parameters=[DF, DS])
 turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = general_parameters.CombinedParameter(parameters=[TGAC, DF, DS])
 LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
 
+##############################
+### Acquisition parameters ###
+##############################
 DC_parameter = acquisition_parameters.DCParameter()
 # EPR_parameter = acquisition_parameters.EPRParameter()
 # T1_parameter = acquisition_parameters.T1Parameter()
@@ -21,12 +32,6 @@ DC_parameter = acquisition_parameters.DCParameter()
 #
 # plunge_voltage_parameter = general_parameters.ConfigPulseAttribute(
 #     pulse_name='plunge', attribute='amplitude')
-#
-# # Add all our instruments and parameters for logging
-# station = qc.Station(
-#     SIM900, arbstudio, pulseblaster, ATS, triggered_controller,
-#     continuous_controller, keysight, layout,
-#     DC_parameter, EPR_parameter, T1_parameter,adiabatic_ESR_parameter,
-#     adiabatic_NMR_parameter, dark_counts_parameter,
-#     DF_DS,
-#     *SIM900_scaled_parameters)
+
+for parameter in [DC_parameter]:
+    station.add_component(parameter)

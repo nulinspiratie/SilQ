@@ -54,10 +54,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 break
 
     if mode is not None:
-        select = _configurations[
-            name]['modes'][mode].get('select', None)
-        ignore = _configurations[
-            name]['modes'][mode].get('ignore', None)
+        select = _configurations[name]['modes'][mode].get('select', None)
+        ignore = _configurations[name]['modes'][mode].get('ignore', None)
 
     folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
     config.__dict__['folder'] = folder
