@@ -60,11 +60,11 @@ class M3300A_DIG_Interface(InstrumentInterface):
             for k in range(8):
                 # Trigger on rising edge of some channel
                 # TODO: Read connections to figure out where to trigger from
-                self.instrument.parameters['trigger_edge_{}'.format(k)].set(3)
-                self.instrument.parameters['trigger_threshold_{}'.format(k)].set(0.65)
-                self.instrument.parameters['trigger_edge_{}'.format(k)].set(3)
+                self.instrument.parameters['trigger_edge_{}'.format(k)].set(1)
+                self.instrument.parameters['trigger_threshold_{}'.format(k)].set(0.5)
                 # Select channel on which to trigger each DAQ
-                self.instrument.parameters['analog_trigger_mask_{}'.format(k)].set(0)
+                self.instrument.parameters['analog_trigger_mask_{}'.format(k)].set(1 << 2)
+                self.instrument.parameters['n_cycles_{}'.format(k)].set(-1)
                 self.instrument.parameters['DAQ_trigger_delay_{}'.format(k)].set(0)
                 self.instrument.parameters['DAQ_trigger_mode_{}'.format(k)].set(3)
 
