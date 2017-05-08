@@ -108,15 +108,21 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
     def acquire(self):
         data = {}
+        # The start of acquisition
+        t_0 = min(pulse.t_start for pulse in
+                      self._pulse_sequence.get_pulses(acquire=True))
         # Split data into pulse traces
-        for pulse in self._pulse_sequence.get_pulses(acquire=True):
-            data[pulse.name] = {}
-            ts = (pulse.t_start, pulse.t_stop)
-            sample_range = [int(t * self.sample_freq) for t in ts]
-            for ch in range(8):
-                ch_data = self.daq_read(ch)
+        for ch in range(8):
+            data[ch] = {}
+            ch_data = self.instrument.daq_read(ch)
+            for pulse in self._pulse_sequence.get_pulses(acquire=True):
+                ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
+                sample_range = [int(t * self.sample_freq) for t in ts]
                 # Extract acquired data from the channel data
-                data[pulse.name][ch] = ch_data[sample_range]
+                data[ch][pulse.name] = ch_data[sample_range[0]:sample_range[1]]
+
+        # For instrument safety, stop all acquisition after we are done
+        self.instrument.daq_stop_multiple(2 ** 8 - 1)
         return data
 
     def stop(self):
