@@ -18,7 +18,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         # A prelim implementation for a triggered connection, can only handle
         # one trigger per pulse sequence
         self.acq_mode = 'OneShot'
-        self.add_parameter('acquisition_parameter',
+        self.add_parameter('acquisition',
                            label='Acquisition parameter',
                            get_cmd=self.acquire,
                            docstring='Parameter to use for acquisition in loop'
