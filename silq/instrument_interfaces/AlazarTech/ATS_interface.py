@@ -8,7 +8,6 @@ from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
     ATSAcquisitionParameter
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.tools.instrument_tools import get_instrument_class
 from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
     MarkerPulse, TriggerWaitPulse, PulseImplementation
 
@@ -137,7 +136,7 @@ class ATSInterface(InstrumentInterface):
         acquisition_controller = self.find_instrument(
             acquisition_controller_name)
         if cls_name is None:
-            cls_name = get_instrument_class(acquisition_controller)
+            cls_name = acquisition_controller.__class__.__name__
         # Remove _AcquisitionController from cls_name
         cls_name = cls_name.replace('_AcquisitionController', '')
 
