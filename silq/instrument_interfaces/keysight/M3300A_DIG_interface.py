@@ -82,11 +82,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
                           self._pulse_sequence.get_pulses())
 
             T = t_stop - t_start
+
             # Capture maximum number of samples on all channels
             for k in range(8):
+                self.instrument.parameters['points_per_cycle_{}'.format(k)].set(int(T * self.sample_freq))
                 self.instrument.parameters['n_points_{}'.format(k)].set(int(T * self.sample_freq))
                 # Set an acquisition timeout to be 10% after the last pulse finishes.
-                self.instrument.parameters['timeout_{}'.format(k)].set(int(t_final * 1.1))
+                self.instrument.parameters['timeout_{}'.format(k)].set(int(t_final * self.sample_freq * 1.1))
 
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start,
