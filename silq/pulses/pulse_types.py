@@ -241,7 +241,6 @@ class Pulse(SettingsClass):
             self.duration = t_stop - self.t_start
 
     def _get_repr(self, properties_str):
-        pulse_name = self.name
         if self.connection:
             properties_str += '\n\tconnection: {}'.format(self.connection)
         if self.connection_requirements:
@@ -253,9 +252,8 @@ class Pulse(SettingsClass):
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
                 properties_str  += '\n\t{}'.format(pulse_repr)
 
-        return '{pulse_type}({name}, {properties})'.format(
-            pulse_type=self.__class__.__name__,
-            name=pulse_name, properties=properties_str)
+        pulse_class = self.__class__.__name__
+        return f'{pulse_class}({self.full_name}, {properties_str})'
 
     def copy(self, fix_vars=False):
         """
