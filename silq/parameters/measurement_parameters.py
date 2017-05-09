@@ -51,25 +51,13 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     @property
     def base_folder(self):
         """
-        Obtain measurement base folder (if any).
+        Obtain measurement base folder (if any). 
         Returns:
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        in_msmt = False
-
-        if config['core']['legacy_mp']:
-            # Multiprocessing is on, determining if in process 'Measurement'
-            import multiprocessing as mp
-            current_process = mp.process.current_process()
-            in_msmt = (current_process.name == 'Measurement')
-        else:
-            logging.warning('Cannot determine if in msmt if not in bg mode')
-
-        if in_msmt:
-            return data_tools.get_latest_data_folder()
-        else:
-            return None
+        # TODO Currently broken!
+        return None
 
     @property
     def discriminant(self):
