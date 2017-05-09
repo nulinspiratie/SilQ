@@ -19,18 +19,17 @@ class SubConfig:
         self.parent = parent
         self.save_as_dir = save_as_dir
 
-        if self.parent is not None:
-            # return f'{self.parent.config_path}.{self.name}'
+        qc.config.user.update({name: self})
+
+    @property
+    def config_path(self):
+        if self.parent is None:
+            return f'{self.name}:'
+        else:
             parent_path = self.parent.config_path
             if parent_path[-1] != ':':
                 parent_path += '.'
-
-            self.config_path = parent_path + self.name
-        else:
-            self.config_path = '{}:'.format(self.name)
-            # return f'config:{self.name}'
-
-        qc.config.user.update({name: self})
+            return parent_path + self.name
 
     def load(self, folder=None):
         """
@@ -167,11 +166,12 @@ class DictConfig(SubConfig, DotDict):
             myKey, restOfKey = key.split('.', 1)
             self.setdefault(myKey, DictConfig(name=myKey, config=val,
                                               parent=self))
-            # target[restOfKey] = value
         else:
-            if isinstance(val, dict) and not isinstance(val, SubConfig):
+            if isinstance(val, SubConfig):
+                val.parent = self
+            elif isinstance(val, dict):
                 val = DictConfig(name=key, config=val, parent=self)
-            elif isinstance(val, list) and not isinstance(val, SubConfig):
+            elif isinstance(val, list):
                 val = ListConfig(name=key, config=val, parent=self)
             dict.__setitem__(self, key, val)
 
@@ -185,8 +185,10 @@ class DictConfig(SubConfig, DotDict):
         # Get val after setting, as it can be different if val is dependent,
         # (i.e. contains 'config:'). Using if because if val is dependent,
         # and the 'listened' property does not exist yet, hasattr=False.
+
         if hasattr(self, key):
             get_val = self[key]
+            # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
 
     def __setattr__(self, key, val):
