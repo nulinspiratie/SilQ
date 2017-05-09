@@ -85,10 +85,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 continue
             pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
             if average_mode == 'point':
-                trace_segments[pulse.name] = np.mean(
+                trace_segments[pulse.full_name] = np.mean(
                     trace[:, idx:idx + pulse_pts])
             else:
-                trace_segments[pulse.name] = \
+                trace_segments[pulse.full_name] = \
                     trace[:, idx:idx + pulse_pts]
             idx += pulse_pts
         return trace_segments
@@ -229,8 +229,9 @@ class DCSweepParameter(AcquisitionParameter):
                          names=['DC_voltage'],
                          labels=['DC voltage'],
                          snapshot_value=False,
-                         setpoint_names=[sweep_name],
-                         setpoint_labels=[sweep_name],
+                         setpoint_names=((sweep_name,),),
+                         setpoint_labels=((sweep_name,),),
+                         shapes=((1,),),
                          **kwargs)
 
         self.pulse_settings = {'duration': 20}
@@ -250,12 +251,12 @@ class DCSweepParameter(AcquisitionParameter):
         self._sweep_voltages = sweep_voltages
         self.pulse_sequence.clear()
 
-        self.pulse_sequence.add(
+        self.pulse_sequence.add(*[
             DCPulse('DC_read'.format(sweep_voltage),
                     acquire=True,
                     amplitude=sweep_voltage,
                     **self.pulse_settings)
-            for sweep_voltage in sweep_voltages)
+            for sweep_voltage in sweep_voltages])
         self.pulse_sequence.add(
             DCPulse(name='final',
                     connection_label=self.pulse_settings['connection_label']))
@@ -263,15 +264,15 @@ class DCSweepParameter(AcquisitionParameter):
         self.pulse_sequence.add(*self.additional_pulses)
 
         # Update metadata
-        self.shapes = [tuple([len(sweep_voltages)])]
+        self.shapes = tuple((len(sweep_voltages),))
         self.setpoints = (tuple(sweep_voltages), )
 
     @clear_single_settings
     def get(self):
         self.setup()
         self.acquire(average_mode='point')
-        self.results = [self.trace_segments['output'][pulse_name]
-                        for pulse_name in self.sweep_pulse_names]
+        self.results = [self.trace_segments['output'][f'DC_read[{k}]']
+                        for k in range(len(self.sweep_voltages))]
         return self.results
 
 
