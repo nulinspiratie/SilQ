@@ -223,7 +223,7 @@ class DCParameter(AcquisitionParameter):
         return [self.data['acquisition_traces']['output']]
 
 
-class DCPulseSweepParameter(AcquisitionParameter):
+class DCSweepParameter(AcquisitionParameter):
     def __init__(self, sweep_name=None, **kwargs):
         super().__init__(name='DC_acquisition',
                          names=['DC_voltage'],
@@ -251,21 +251,16 @@ class DCPulseSweepParameter(AcquisitionParameter):
         self.pulse_sequence.clear()
 
         self.pulse_sequence.add(
-            DCPulse('sweep_{:.3f}'.format(sweep_voltage),
+            DCPulse('DC_read'.format(sweep_voltage),
                     acquire=True,
                     amplitude=sweep_voltage,
-                    t_start=k*self.pulse_settings['duration'],
                     **self.pulse_settings)
-            for k, sweep_voltage in enumerate(sweep_voltages))
-        self.sweep_pulse_names = ['sweep_{:.3f}'.format(sweep_voltage)
-                                  for sweep_voltage in sweep_voltages]
-
+            for sweep_voltage in sweep_voltages)
         self.pulse_sequence.add(
             DCPulse(name='final',
-                    connection_requirements=self.pulse_settings.get(
-                        'connection_requirements', {})))
+                    connection_label=self.pulse_settings['connection_label']))
 
-        self.pulse_sequence.add(pulse for pulse in self.additional_pulses)
+        self.pulse_sequence.add(*self.additional_pulses)
 
         # Update metadata
         self.shapes = [tuple([len(sweep_voltages)])]
