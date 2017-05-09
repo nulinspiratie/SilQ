@@ -161,15 +161,18 @@ class Pulse(SettingsClass):
             signal('pulse').connect(set_fun, sender=value.pulse)
         else:
             if key == 'environment' and hasattr(self, key):
-                self.pulse_config = config[value].pulses[self.name]
                 signal(f'config:{self.environment}.pulses.{self.name}'
                        ).disconnect(self._handle_config_signal)
                 signal(f'config:{value}.pulses.{self.name}').connect(
                     self._handle_config_signal)
 
-                for env_key, env_val in self.pulse_config.items():
-                    if hasattr(self, env_key):
-                        setattr(self, env_key, env_val)
+                if self.name in config[value].pulses:
+                    self.pulse_config = config[value].pulses[self.name]
+                    for env_key, env_val in self.pulse_config.items():
+                        if hasattr(self, env_key):
+                            setattr(self, env_key, env_val)
+                else:
+                    self.pulse_config = None
 
             super().__setattr__(key, value)
 
