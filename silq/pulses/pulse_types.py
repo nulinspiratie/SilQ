@@ -10,8 +10,9 @@ from silq import config
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['t_start', 't_stop', 'duration', 'acquire', 'initialize',
-                    'connection', 'amplitude', 'enabled']
+pulse_conditions = ['name', 'id', 'environment', 't_start', 't_stop',
+                    'duration', 'acquire', 'initialize', 'connection',
+                    'amplitude', 'enabled']
 
 
 class Pulse(SettingsClass):
@@ -220,6 +221,13 @@ class Pulse(SettingsClass):
         return return_dict
 
     @property
+    def full_name(self):
+        if self.id is None:
+            return self.name
+        else:
+            return f'{self.name}[{self.id}]'
+
+    @property
     def t_stop(self):
         if self.t_start is not None and self.duration is not None:
             return self.t_start + self.duration
@@ -233,7 +241,6 @@ class Pulse(SettingsClass):
             self.duration = t_stop - self.t_start
 
     def _get_repr(self, properties_str):
-        pulse_name = self.name
         if self.connection:
             properties_str += '\n\tconnection: {}'.format(self.connection)
         if self.connection_requirements:
@@ -245,9 +252,8 @@ class Pulse(SettingsClass):
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
                 properties_str  += '\n\t{}'.format(pulse_repr)
 
-        return '{pulse_type}({name}, {properties})'.format(
-            pulse_type=self.__class__.__name__,
-            name=pulse_name, properties=properties_str)
+        pulse_class = self.__class__.__name__
+        return f'{pulse_class}({self.full_name}, {properties_str})'
 
     def copy(self, fix_vars=False):
         """
@@ -266,6 +272,7 @@ class Pulse(SettingsClass):
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None,
+                             name=None, id=None, environment=None,
                              t_start=None, t_stop=None, duration=None,
                              acquire=None, initialize=None, connection=None,
                              amplitude=None, enabled=None):
@@ -287,6 +294,11 @@ class Pulse(SettingsClass):
         """
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
+
+        if name is not None and name[-1] == ']':
+            # Pulse id is part of name
+            name, id = name[:-1].split('[')
+            id = int(id)
 
         for property in pulse_conditions:
 
