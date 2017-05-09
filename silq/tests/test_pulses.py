@@ -15,6 +15,12 @@ class TestPulseSignals(unittest.TestCase):
         self.is_set = False
         self.dict = {}
 
+    def set_val(self, _, **kwargs):
+        self.is_set = True
+
+    def set_dict(self, _, **kwargs):
+        self.dict.update(**kwargs)
+
     def test_set_val(self):
         self.assertFalse(self.is_set)
         self.set_val(self)
@@ -57,12 +63,6 @@ class TestPulseSignals(unittest.TestCase):
         self.assertEqual(p2.duration, 4)
         self.assertEqual(p2.t_stop, 4)
 
-    def set_val(self, _, **kwargs):
-        self.is_set = True
-
-    def set_dict(self, _, **kwargs):
-        self.dict.update(**kwargs)
-
 
 class TestPulseConfig(unittest.TestCase):
     def setUp(self):
@@ -81,6 +81,9 @@ class TestPulseConfig(unittest.TestCase):
     def tearDown(self):
         for key in self.pulses_config:
             signal('config:pulses.' + key).receivers = {}
+
+    def set_dict(self, sender, **kwargs):
+        self.dict.update(**kwargs)
 
     def test_set_item(self):
         with self.assertRaises(KeyError):
@@ -155,13 +158,8 @@ class TestPulseConfig(unittest.TestCase):
         self.assertEqual(self.pulse_config.t_start, 40)
         self.assertEqual(p.t_start, 40)
 
-    def set_dict(self, sender, **kwargs):
-        self.dict.update(**kwargs)
 
-class TestPulseSequence(unittest.TestCase):
-    def setUp(self):
-        self.pulse_sequence = PulseSequence()
-
+class TestPulse(unittest.TestCase):
     def test_pulse_equality(self):
         pulse1 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
         self.assertTrue(pulse1)
@@ -170,65 +168,82 @@ class TestPulseSequence(unittest.TestCase):
         pulse3 = DCPulse(name='dc', amplitude=2.5, duration=10, t_start=0)
         self.assertNotEqual(pulse1, pulse3)
 
+    def test_pulse_id(self):
+        p = Pulse(name='read')
+        self.assertEqual(p.id, None)
+
+        self.assertEqual(p.full_name, 'read')
+        p.id = 0
+        self.assertEqual(p.name, 'read')
+        self.assertEqual(p.full_name, 'read[0]')
+        self.assertTrue(p.satisfies_conditions(name='read', id=0))
+        self.assertTrue(p.satisfies_conditions(name='read[0]'))
+
+
+class TestPulseSequence(unittest.TestCase):
     def test_add_remove_pulse(self):
-        if self.pulse_sequence:
+        pulse_sequence = PulseSequence()
+        if pulse_sequence:
             isempty = False
         else:
             isempty = True
         self.assertTrue(isempty)
 
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        self.pulse_sequence.add(pulse)
-        self.assertIn(pulse, self.pulse_sequence)
+        pulse_sequence.add(pulse)
+        self.assertIn(pulse, pulse_sequence)
 
-        if self.pulse_sequence:
+        if pulse_sequence:
             isempty = False
         else:
             isempty = True
         self.assertFalse(isempty)
 
         # Remove pulses
-        self.pulse_sequence.clear()
-        self.assertEqual(len(self.pulse_sequence.pulses), 0)
+        pulse_sequence.clear()
+        self.assertEqual(len(pulse_sequence.pulses), 0)
 
-        if self.pulse_sequence:
+        if pulse_sequence:
             isempty = False
         else:
             isempty = True
         self.assertTrue(isempty)
 
     def test_sort(self):
+        pulse_sequence = PulseSequence()
         pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
         pulse2 = DCPulse(name='dc2', amplitude=1.5, duration=10, t_start=0)
-        self.pulse_sequence.add(pulse1, pulse2)
-        self.assertEqual(pulse2, self.pulse_sequence[0])
+        pulse_sequence.add(pulse1, pulse2)
+        self.assertEqual(pulse2, pulse_sequence[0])
 
     def test_get_pulses(self):
-        self.assertListEqual(self.pulse_sequence.get_pulses(), [])
+        pulse_sequence = PulseSequence()
+
+        self.assertListEqual(pulse_sequence.get_pulses(), [])
         pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
         pulse2 = DCPulse(name='dc2', amplitude=2.5, duration=10, t_start=1)
         pulse3 = TriggerPulse(name='trig', duration=12, t_start=1)
-        self.pulse_sequence.add(pulse1, pulse2, pulse3)
+        pulse_sequence.add(pulse1, pulse2, pulse3)
 
-        subset_pulses = self.pulse_sequence.get_pulses()
+        subset_pulses = pulse_sequence.get_pulses()
         self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
-        subset_pulses = self.pulse_sequence.get_pulses(t_start=1)
+        subset_pulses = pulse_sequence.get_pulses(t_start=1)
         self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
-        subset_pulses = self.pulse_sequence.get_pulses(duration=10)
+        subset_pulses = pulse_sequence.get_pulses(duration=10)
         self.assertListEqual(subset_pulses, [pulse1, pulse2])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=1.5)
+        subset_pulses = pulse_sequence.get_pulses(amplitude=1.5)
         self.assertListEqual(subset_pulses, [pulse1])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=('>', 1.5))
+        subset_pulses = pulse_sequence.get_pulses(amplitude=('>', 1.5))
         self.assertListEqual(subset_pulses, [pulse2])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=('>=', 1.5))
+        subset_pulses = pulse_sequence.get_pulses(amplitude=('>=', 1.5))
         self.assertListEqual(subset_pulses, [pulse1, pulse2])
 
-        pulse = self.pulse_sequence.get_pulse(amplitude=1.5)
+        pulse = pulse_sequence.get_pulse(amplitude=1.5)
         self.assertEqual(pulse, pulse1)
-        pulse = self.pulse_sequence.get_pulse(duration=12)
+        pulse = pulse_sequence.get_pulse(duration=12)
         self.assertEqual(pulse, pulse3)
         with self.assertRaises(RuntimeError):
-            self.pulse_sequence.get_pulse(duration=10)
+            pulse_sequence.get_pulse(duration=10)
 
     def test_transition_voltages(self):
         # To test transitions, pulses must be on the same connection
@@ -247,28 +262,37 @@ class TestPulseSequence(unittest.TestCase):
                   DCPulse(name='dc4', amplitude=3, duration=7, t_start=12,
                           connection=c1)]
 
-        self.pulse_sequence.add(*pulses)
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(*pulses)
 
-        self.assertRaises(TypeError,
-                          self.pulse_sequence.get_transition_voltages)
-        self.assertRaises(TypeError,
-                          self.pulse_sequence.get_transition_voltages,
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages)
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages,
                           connection=c1)
-        self.assertRaises(TypeError,
-                          self.pulse_sequence.get_transition_voltages, t=5)
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages,
+                          t=5)
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
+        transition_voltage = pulse_sequence.get_transition_voltages(
             pulse=pulses[1])
         self.assertTupleEqual(transition_voltage, (0, 1))
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
+        transition_voltage = pulse_sequence.get_transition_voltages(
             connection=c1, t=5)
         self.assertTupleEqual(transition_voltage, (0, 1))
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
+        transition_voltage = pulse_sequence.get_transition_voltages(
             connection=c1, t=15)
         self.assertTupleEqual(transition_voltage, (1, 2))
 
+    def test_pulse_sequence_id(self):
+        p = Pulse(name='read')
+
+
+        self.assertEqual(p.id, None)
+
+        self.assertEqual(p.full_name, 'read')
+        p.id = 0
+        self.assertEqual(p.name, 'read')
+        self.assertEqual(p.full_name, 'read[0]')
 
 if __name__ == '__main__':
     unittest.main()
