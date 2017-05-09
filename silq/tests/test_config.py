@@ -69,6 +69,13 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config_loaded.save_as_dir)
         self.assertTrue(self.dicts_equal(self.config, config_loaded))
 
+    def test_add_SubConfig(self):
+        subconfig = DictConfig(name='pulses',
+                               folder=None,
+                               config={'read': {}})
+        config.env1 = {'pulses': subconfig}
+        self.assertEqual(subconfig.config_path, 'config:env1.pulses')
+
     def dicts_equal(self, d1, d2):
         d1_keys = list(d1.keys())
         for d2_key, d2_val in d2.items():
@@ -87,9 +94,9 @@ class TestConfig(unittest.TestCase):
         return True
 
 
+
 class TestPulseEnvironment(unittest.TestCase):
     def setUp(self):
-        config
         config.properties = DictConfig('properties')
         config.env1 = {
             'pulses': {
@@ -127,3 +134,6 @@ class TestPulseEnvironment(unittest.TestCase):
 
         self.p.environment = 'env1'
         self.assertEqual(self.p.t_start, 2)
+
+if __name__ == '__main__':
+    unittest.main()
