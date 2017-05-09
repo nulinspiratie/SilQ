@@ -1,10 +1,12 @@
 import unittest
 from blinker import signal, Signal
 
+import silq
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse, PulseMatch
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.config import *
+from silq import config
 
 
 class TestPulseSignals(unittest.TestCase):
@@ -64,16 +66,17 @@ class TestPulseSignals(unittest.TestCase):
 
 class TestPulseConfig(unittest.TestCase):
     def setUp(self):
-        self.signal = signal('config:pulses.read')
+        self.signal = signal('config:env.pulses.read')
 
-        pulses_dict = {'read': {}}
+        config.properties.default_environment = 'env'
+
+        self.dict = {}
+
         self.pulses_config = DictConfig(name='pulses',
                                         folder=None,
-                                        config=pulses_dict)
-        qc.config.user.pulses = self.pulses_config
+                                        config={'read': {}})
+        config.env = {'pulses': self.pulses_config}
         self.pulse_config = self.pulses_config.read
-        self.dict = {}
-        Pulse.pulses_config = self.pulses_config
 
     def tearDown(self):
         for key in self.pulses_config:
@@ -92,13 +95,14 @@ class TestPulseConfig(unittest.TestCase):
         self.assertIn('duration', self.pulse_config)
         self.assertEqual(self.pulse_config.duration, 1)
 
-        self.pulses_config.read2 = {'t_start': 'config:pulses.read.duration'}
+        self.pulses_config.read2 = {'t_start':
+                                        'config:env.pulses.read.duration'}
         self.assertIsInstance(self.pulses_config.read2, DictConfig)
 
         self.assertEqual(self.pulses_config.read2.t_start, 1)
 
-        signal('config:pulses.read').connect(self.set_dict)
-        signal('config:pulses.read2').connect(self.set_dict)
+        signal('config:env.pulses.read').connect(self.set_dict)
+        signal('config:env.pulses.read2').connect(self.set_dict)
 
         self.pulse_config.duration = 3
         self.assertEqual(self.dict['duration'], 3)
@@ -135,7 +139,7 @@ class TestPulseConfig(unittest.TestCase):
         self.pulse_config.t_start = 0
         self.assertEqual(p.t_start, 0)
 
-        self.pulse_config.t_start = 'config:pulses.read.t_stop'
+        self.pulse_config.t_start = 'config:env.pulses.read.t_stop'
         with self.assertRaises(AttributeError):
             self.pulse_config.t_start
 
@@ -196,7 +200,7 @@ class TestPulseSequence(unittest.TestCase):
     def test_sort(self):
         pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
         pulse2 = DCPulse(name='dc2', amplitude=1.5, duration=10, t_start=0)
-        self.pulse_sequence.add([pulse1, pulse2])
+        self.pulse_sequence.add(pulse1, pulse2)
         self.assertEqual(pulse2, self.pulse_sequence[0])
 
     def test_get_pulses(self):
@@ -204,7 +208,7 @@ class TestPulseSequence(unittest.TestCase):
         pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
         pulse2 = DCPulse(name='dc2', amplitude=2.5, duration=10, t_start=1)
         pulse3 = TriggerPulse(name='trig', duration=12, t_start=1)
-        self.pulse_sequence.add([pulse1, pulse2, pulse3])
+        self.pulse_sequence.add(pulse1, pulse2, pulse3)
 
         subset_pulses = self.pulse_sequence.get_pulses()
         self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
@@ -243,7 +247,7 @@ class TestPulseSequence(unittest.TestCase):
                   DCPulse(name='dc4', amplitude=3, duration=7, t_start=12,
                           connection=c1)]
 
-        self.pulse_sequence.add(pulses)
+        self.pulse_sequence.add(*pulses)
 
         self.assertRaises(TypeError,
                           self.pulse_sequence.get_transition_voltages)
@@ -264,3 +268,7 @@ class TestPulseSequence(unittest.TestCase):
         transition_voltage = self.pulse_sequence.get_transition_voltages(
             connection=c1, t=15)
         self.assertTupleEqual(transition_voltage, (1, 2))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -28,12 +28,15 @@ class Pulse(SettingsClass):
         self.id = id
 
         if environment == 'default':
-            environment = config.properties.default_environment
+            environment = config.properties.get('default_environment',
+                                                'default')
         self.environment = environment
 
-
-        # Set pulse_config from SilQ environment config
-        self.pulse_config = config[self.environment].pulses[self.name]
+        try:
+            # Set pulse_config from SilQ environment config
+            self.pulse_config = config[self.environment].pulses[self.name]
+        except KeyError:
+            self.pulse_config = None
 
         # Set attributes that can also be retrieved from pulse_config
         self.t_start = self._value_or_config('t_start', t_start)
@@ -53,8 +56,7 @@ class Pulse(SettingsClass):
         self.connection_requirements = connection_requirements
 
         if self.pulse_config is not None:
-            signal('config:{}.pulses.{}'.format(self.environment,
-                                                self.name)).connect(
+            signal(f'config:{self.environment}.pulses.{self.name}').connect(
                 self._handle_config_signal)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
@@ -159,10 +161,9 @@ class Pulse(SettingsClass):
         else:
             if key == 'environment' and hasattr(self, key):
                 self.pulse_config = config[value].pulses[self.name]
-                signal('config:{}.pulses.{}'.format(self.environment,
-                                                    self.name)).disconnect(
-                    self._handle_config_signal)
-                signal('config:{}.pulses.{}'.format(value, self.name)).connect(
+                signal(f'config:{self.environment}.pulses.{self.name}'
+                       ).disconnect(self._handle_config_signal)
+                signal(f'config:{value}.pulses.{self.name}').connect(
                     self._handle_config_signal)
 
                 for env_key, env_val in self.pulse_config.items():
