@@ -8,7 +8,7 @@ from .tools.config import DictConfig, ListConfig
 import qcodes as qc
 
 # Dictionary of SilQ subconfigs
-config = DictConfig(name='config', save_as_dir=True)
+config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 
 def get_silq_folder():
     import silq
@@ -54,10 +54,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 break
 
     if mode is not None:
-        select = _configurations[
-            name]['modes'][mode].get('select', None)
-        ignore = _configurations[
-            name]['modes'][mode].get('ignore', None)
+        select = _configurations[name]['modes'][mode].get('select', None)
+        ignore = _configurations[name]['modes'][mode].get('ignore', None)
 
     folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
     config.__dict__['folder'] = folder
@@ -85,14 +83,11 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 try:
                     exec(exec_line+"\n", globals, locals)
                 except:
-                    raise RuntimeError('SilQ initialization error at line: '
-                                       '\n{}'.format(exec_line)
-                    )
+                    raise RuntimeError(f'SilQ initialization error in '
+                                       f'{filepath}')
 
     print("Initialization complete")
 
-    if not 'properties' in config:
-        warnings.warn("'properties' should be added to SilQ config")
-    elif not 'default_environment' in config.properties:
-        warnings.warn("'properties.default_environment' should be specified "
-                      "in config")
+    if not 'default_environment' in config.properties:
+        warnings.warn("'default_environment' should be specified "
+                      "in silq.config.properties")
