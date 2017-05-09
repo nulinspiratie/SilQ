@@ -79,7 +79,7 @@ class MeasureSingle(PlotAction):
 class MoveGates(PlotAction):
     key = 'alt+m'
     action_keys = ['alt+' + key for key in
-                   ['up', 'down', 'left', 'right', '-', '+']]
+                   ['up', 'down', 'left', 'right', '-', '+', '=']]
     def __init__(self, plot, key=None):
         self.delta = 0.001
         super().__init__(plot=plot, key=key)
@@ -87,7 +87,7 @@ class MoveGates(PlotAction):
     def key_press(self, event):
         if event.key == self.key:
             self.point = self.plot[0].plot(self.plot.x_gate(),
-                                           self.plot.y_gate(), 'o')[0]
+                                           self.plot.y_gate(), 'or', )[0]
         elif event.key in ['alt+up', 'alt+down']:
             val = self.plot.y_gate()
             delta = self.delta * (1 if event.key == 'alt+up' else -1)
@@ -98,13 +98,19 @@ class MoveGates(PlotAction):
             delta = self.delta * (1 if event.key == 'alt+right' else -1)
             self.plot.x_gate(val + delta)
             self.point.set_xdata(val + delta)
-        elif event.key == 'alt++':
+        elif event.key in ['alt++', 'alt+=']:
             self.delta /= 1.5
         elif event.key == 'alt+-':
             self.delta *= 1.5
 
     def button_press(self, event):
-        pass
+        self.plot.txt += '\nreceived'
+        if event.guiEvent['altKey']:
+            self.plot.txt += ' alt'
+            self.plot.x_gate(event.xdata)
+            self.point.set_xdata(event.xdata)
+            self.plot.y_gate(event.ydata)
+            self.point.set_ydata(event.ydata)
 
 
 class InteractivePlot(MatPlot):
@@ -127,6 +133,9 @@ class InteractivePlot(MatPlot):
         self.last_action = None
         self.copy = False
         self.execute = False
+
+        self._event_key = None
+        self._event_button = None
 
         self.connect_event('key_press_event', self.handle_key_press)
         self.connect_event('button_press_event', self.handle_button_press)
@@ -186,6 +195,7 @@ class InteractivePlot(MatPlot):
         self.cid[event] = cid
 
     def handle_key_press(self, event):
+        self._event_key = event
         if self.get_action(event.key) is not None:
             self.t_previous = time()
             self.last_key = event.key
@@ -194,13 +204,18 @@ class InteractivePlot(MatPlot):
             self.last_action = action
         elif self.last_action is not None \
                 and event.key in self.last_action.action_keys:
+            self.t_previous = time()
             self.last_action.key_press(event)
         else:
             pass
 
     def handle_button_press(self, event):
+        self._event_button = event
+        self.txt = f'x:{plot._event_button.xdata}, y:{plot._event_button.ydata}, alt: {plot._event_button.guiEvent["altKey"]}'
         action = self.get_action()
         if action is not None:
+            self.t_previous = time()
+            self.txt += '\nSent'
             action.button_press(event)
 
 class CalibrationPlot(InteractivePlot):

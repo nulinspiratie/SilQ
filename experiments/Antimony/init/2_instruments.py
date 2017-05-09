@@ -30,6 +30,7 @@ for ch_name, ch, ratio,max_voltage in DC_sources:
     SIM900.define_slot(channel=ch, name=ch_name+'_raw', max_voltage=max_voltage*ratio)
     param_raw = SIM900.parameters[ch_name+'_raw']
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name, ratio=ratio)
+    station.add_component(param)
     SIM900_scaled_parameters.append(param)
 
     exec('{ch_name}_raw = param_raw'.format(ch_name=ch_name))
