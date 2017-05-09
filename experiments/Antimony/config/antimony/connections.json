@@ -10,5 +10,13 @@
             "chip.TGAC",
             "ATS.chB"
         ]
+    ],
+    "TGAC": [
+        "arbstudio.ch2",
+        "chip.TGAC"
+    ],
+    "DF": [
+        "arbstudio.ch1",
+        "chip.DF"
     ]
 }
