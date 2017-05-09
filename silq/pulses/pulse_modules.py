@@ -319,7 +319,8 @@ class PulseSequence:
 
     def sort(self):
         self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
-        return self.pulses
+        self.enabled_pulses = sorted(self.enabled_pulses,
+                                     key=lambda p: p.t_start)
 
     def clear(self):
         self.pulses = []
