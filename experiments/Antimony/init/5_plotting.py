@@ -78,7 +78,7 @@ class MeasureSingle(PlotAction):
 
 class MoveGates(PlotAction):
     key = 'alt+m'
-    action_keys = ['alt'+key for key in
+    action_keys = ['alt+' + key for key in
                    ['up', 'down', 'left', 'right', '-', '+']]
     def __init__(self, plot, key=None):
         self.delta = 0.001
@@ -98,9 +98,9 @@ class MoveGates(PlotAction):
             delta = self.delta * (1 if event.key == 'alt+right' else -1)
             self.plot.x_gate(val + delta)
             self.point.set_xdata(val + delta)
-        elif event.key == '+':
+        elif event.key == 'alt++':
             self.delta /= 1.5
-        elif event.key == '-':
+        elif event.key == 'alt+-':
             self.delta *= 1.5
 
     def button_press(self, event):
@@ -236,4 +236,4 @@ class DCPlot(InteractivePlot):
         self.add(self.dataset.DC_voltage)
 
 if 'TGAC' in locals():
-    InteractivePlot.gates = {'TGAC': TGAC, 'DF_DS': DF_DS, 'TG': TG}
+    InteractivePlot.gates = {'TGAC': TGAC, 'DF_DS': DF_DS, 'TG': TG, 'DF': DF, 'DS': DS}
