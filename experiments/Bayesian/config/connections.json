@@ -1,0 +1,23 @@
+[
+    {
+        "output_arg": "AWG.ch0",
+        "input_arg": "chip.DF",
+        "scale": 0.025
+    },
+    {
+        "output_arg": "AWG.ch2",
+        "input_arg": "chip.TGAC",
+        "scale": 0.0125
+    },
+    {
+        "combine": [
+            "AWG.ch0",
+            "AWG.ch2"
+        ],
+        "scale": [-1.9079, 1]
+    },
+    {
+        "output_arg": "chip.output",
+        "input_arg": "M3300A_DIG.ch7"
+    }
+]
