@@ -99,10 +99,10 @@ class PulseSequence:
         if isinstance(index, int):
             return self.enabled_pulses[index]
         elif isinstance(index, str):
-            pulses = [p for p in self.pulses if p.name == index]
-            assert len(pulses) == 1, \
-                "Could not find unique pulse with name {}: \n{}".format(index,
-                                                                        pulses)
+            pulses = [p for p in self.pulses
+                      if p.satisfies_conditions(name=index)]
+            assert len(pulses) == 1, f"Could not find unique pulse with name " \
+                                     f"{index}, pulses found:\n{pulses}"
             return pulses[0]
 
     def __len__(self):
@@ -262,13 +262,24 @@ class PulseSequence:
                                 if self.pulses_overlap(pulse, p)]))
             elif not isinstance(pulse, PulseImplementation) and \
                     not self.allow_untargeted_pulses:
-                raise SyntaxError(
-                    'Not allowed to add untargeted pulse {}'.format(pulse))
+                raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
             elif isinstance(pulse, PulseImplementation) and \
                     not self.allow_targeted_pulses:
-                raise SyntaxError(
-                    'Not allowed to add targeted pulse {}'.format(pulse))
+                raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
+            elif pulse.duration is None:
+                raise SyntaxError(f'Pulse {pulse} duration must be specified')
             else:
+                # Check if pulse with same name exists
+                pulses_same_name = self.get_pulses(name=pulse.name)
+                if pulses_same_name:
+                    # Ensure id is unique
+                    if pulses_same_name[0].id is None:
+                        pulses_same_name[0].id = 0
+                        pulse.id = 1
+                    else:
+                        max_id = max(p.id for p in pulses_same_name)
+                        pulse.id = max_id + 1
+
                 pulse_copy = pulse.copy()
                 if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
