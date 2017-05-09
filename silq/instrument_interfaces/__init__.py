@@ -1,5 +1,4 @@
 from .interface import InstrumentInterface, Channel
-from silq.tools.instrument_tools import get_instrument_class
 
 
 def get_instrument_interface(instrument):
@@ -21,7 +20,7 @@ def get_instrument_interface(instrument):
         'Keysight_E8267D': E8267DInterface
     }
 
-    instrument_class = get_instrument_class(instrument)
+    instrument_class = instrument.__class__.__name__
     instrument_interface_class = instrument_interfaces[instrument_class]
 
     server_name = getattr(instrument, '_server_name', None)
