@@ -153,6 +153,24 @@ class SettingsClass:
         self._single_settings.clear()
 
 
+class UpdateDotDict(DotDict):
+    """
+    DotDict that can evaluate function upon updating
+    """
+    _exclude_from_dict = ['update_function', '_exclude_from_dict']
+    def __init__(self, update_function=None, **kwargs):
+        self.update_function = update_function
+        super().__init__()
+
+        for key, val in kwargs.items():
+            DotDict.__setitem__(self, key, val)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        if self.update_function is not None:
+            self.update_function()
+
+
 def attribute_from_config(item, config=properties_config):
     """
     Check if attribute exists somewhere in the config
