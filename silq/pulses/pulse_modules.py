@@ -93,7 +93,7 @@ class PulseSequence:
         self.disabled_pulses = []
 
         if pulses:
-            self.add(pulses)
+            self.add(*pulses)
 
     def __getitem__(self, index):
         if isinstance(index, int):
