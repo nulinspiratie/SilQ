@@ -91,7 +91,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
                 self.instrument.parameters['timeout_{}'.format(k)].set(int(t_final * self.sample_freq * 1.1))
 
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start,
+                TriggerPulse(t_start=t_start, duration=1e-5,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True})
