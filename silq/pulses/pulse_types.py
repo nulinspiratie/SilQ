@@ -837,3 +837,68 @@ class AWGPulse(Pulse):
                 return self.array[1][mask]
             else:
                 raise IndexError('All requested t-values must be in wf_array since interpolation is disabled.')
+
+
+class ELRPulse(Pulse):
+    def __init__(self, name=None, amplitude=None, ELR_amplitude=None, ELR_duration=None, repeat=True, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', amplitude)
+        self.ELR_amplitude = self._value_or_config('ELR_amplitude', ELR_amplitude)
+        self.ELR_duration = self._value_or_config('ELR_duration', ELR_duration)
+
+        if self.amplitude is None:
+            raise AttributeError("'{}' object has no attribute "
+                                 "'amplitude'".format(self.__class__.__name__))
+
+        if len(self.ELR_amplitude) != 3:
+            raise AttributeError('{} object must have attribute ELR_amplitude of length 3'
+                                 .format(self.__class__.__name__))
+        if len(self.ELR_duration) != 3:
+            raise AttributeError('{} object must have attribute ELR_duration of length 3'
+                                 .format(self.__class__.__name__))
+
+        self.t_stop = self.t_start + sum(ELR_duration)
+
+        self.empty_start = self.t_start
+        self.load_start = self.t_start + self.ELR_duration[0]
+        self.read_start = self.t_start + self.ELR_duration[0] + self.ELR_duration[1]
+
+        self.repeat = repeat
+
+    def __repr__(self):
+        try:
+            properties_str = 'A={}, t_start={}, t_stop={}, ELR_duration={}, ELR_amplitude={}'.format(
+                self.amplitude, self.t_start, self.t_stop, self.ELR_duration, self.ELR_amplitude)
+        except:
+            properties_str = ''
+
+        return super()._get_repr(properties_str)
+
+    def get_single_voltage(self, t):
+        if self.empty_start <= t < self.load_start:
+            return self.amplitude * self.ELR_amplitude[0]
+        if self.load_start <= t < self.read_start:
+            return self.amplitude * self.ELR_amplitude[1]
+        else:
+            return self.amplitude * self.ELR_amplitude[2]
+
+    def get_voltage_array(self, t):
+        i_empty = np.searchsorted(t, self.empty_start)
+        i_load = np.searchsorted(t, self.load_start)
+        i_read = np.searchsorted(t, self.read_start)
+        a_empty = np.ones(i_empty) * self.amplitude * self.ELR_amplitude[0]
+        a_load = np.ones(i_load) * self.amplitude * self.ELR_amplitude[1]
+        a_read = np.ones(i_read) * self.amplitude * self.ELR_amplitude[2]
+
+        return np.append(np.append(a_empty, a_load), a_read)
+
+    def get_voltage(self, t):
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            "voltage at {} s is not in the time range {} s - {} s of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        if hasattr(t, '__len__'):
+            print('len(t) = {}'.format(len(t)))
+            return self.get_voltage_array(t)
+        else:
+            return self.get_single_voltage(t)
