@@ -340,13 +340,7 @@ class PulseSequence:
         signal('pulse').disconnect(self._handle_signal)
 
     def copy(self):
-        pulse_sequence_copy = copy.deepcopy(self)
-        # Clear pulses and add them while fixing their variables (no longer
-        # from config)
-        pulse_sequence_copy.clear()
-        pulse_sequence_copy.add(*[pulse.copy(fix_vars=True)
-                                for pulse in self])
-        return pulse_sequence_copy
+        return copy.deepcopy(self)
 
     def pulses_overlap(self, pulse1, pulse2):
         """
