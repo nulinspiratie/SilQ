@@ -10,7 +10,7 @@ from silq import config
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['name', 'id', 'environment', 't_start', 't_stop',
+pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled']
 
@@ -276,7 +276,7 @@ class Pulse(SettingsClass):
 
     def satisfies_conditions(self, pulse_class=None,
                              name=None, id=None, environment=None,
-                             t_start=None, t_stop=None, duration=None,
+                             t=None, t_start=None, t_stop=None, duration=None,
                              acquire=None, initialize=None, connection=None,
                              amplitude=None, enabled=None):
         """
@@ -310,17 +310,21 @@ class Pulse(SettingsClass):
 
             if val is None:
                 continue
+            elif property == 't':
+                if t < self.t_start or t >= self.t_stop:
+                    return False
             elif not hasattr(self, property):
                 return False
-
-            # If the arg is a tuple, the first element specifies its relation
-            if isinstance(val, (list, tuple)):
-                relation, val = val
             else:
-                relation = '=='
-            if not get_truth(test_val=getattr(self, property), target_val=val,
-                             relation=relation):
-                return False
+                # If arg is a tuple, the first element specifies its relation
+                if isinstance(val, (list, tuple)):
+                    relation, val = val
+                else:
+                    relation = '=='
+                if not get_truth(test_val=getattr(self, property),
+                                 target_val=val,
+                                 relation=relation):
+                    return False
         else:
             return True
 
