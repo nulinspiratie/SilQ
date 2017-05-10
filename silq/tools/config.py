@@ -130,7 +130,7 @@ class SubConfig:
 
 
 class DictConfig(SubConfig, DotDict):
-    _exclude_from_dict = ['name', 'folder', '_connected_attrs', 'parent',
+    exclude_from_dict = ['name', 'folder', '_connected_attrs', 'parent',
                          'save_as_dir', 'config_path']
     def __init__(self, name, folder=None, parent=None, config=None,
                  save_as_dir=None):
@@ -190,12 +190,6 @@ class DictConfig(SubConfig, DotDict):
             get_val = self[key]
             # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
-
-    def __setattr__(self, key, val):
-        if key in self._exclude_from_dict:
-            self.__dict__[key] = val
-        else:
-            self.__setitem__(key, val)
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """
