@@ -1,16 +1,16 @@
 {
     "AWG_output": [
-        "AWG.ch0",
-        "M3300A_DIG.ch6"
+        "AWG.ch1",
+        "M3300A_DIG.ch1"
     ],
     "ELR": [
         [
-            "AWG.ch0",
+            "AWG.ch1",
             "AWG.ch2"
         ],
         [
-            "M3300A_DIG.ch6",
-            "M3300A_DIG.ch0"
+            "M3300A_DIG.ch1",
+            "M3300A_DIG.ch3"
         ]
     ]
 }

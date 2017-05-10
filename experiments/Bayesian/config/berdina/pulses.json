@@ -2,5 +2,10 @@
     "sinewave1": {},
     "sinewave2": {},
     "sinewave3": {},
-    "trigger": {}
+    "trigger": {},
+    "ELR1": {},
+    "DC_empty": {},
+    "DC_load": {},
+    "DC_read": {},
+    "trigger_test": {}
 }
