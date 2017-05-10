@@ -157,7 +157,7 @@ class UpdateDotDict(DotDict):
     """
     DotDict that can evaluate function upon updating
     """
-    _exclude_from_dict = ['update_function', '_exclude_from_dict']
+    exclude_from_dict = ['update_function', 'exclude_from_dict']
     def __init__(self, update_function=None, **kwargs):
         self.update_function = update_function
         super().__init__()
