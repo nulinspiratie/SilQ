@@ -2,22 +2,22 @@
 ### Parameters ###
 ##################
 
-acquisition_parameters.AcquisitionParameter.layout = layout
+parameters.AcquisitionParameter.layout = layout
 
 dummy_parameter = ManualParameter(name='dummy', initial_value=42)
 
 #####################
 ### DC parameters ###
 #####################
-DF_DS = general_parameters.CombinedParameter(parameters=[DF, DS])
-turnon_parameter = general_parameters.CombinedParameter(parameters=[TG, LB, RB])
-TGAC_DF_DS = general_parameters.CombinedParameter(parameters=[TGAC, DF, DS])
-LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
+DF_DS = parameters.CombinedParameter(parameters=[DF, DS])
+turnon_parameter = parameters.CombinedParameter(parameters=[TG, LB, RB])
+TGAC_DF_DS = parameters.CombinedParameter(parameters=[TGAC, DF, DS])
+LB_RB = parameters.CombinedParameter(parameters=[LB, RB])
 
 ##############################
 ### Acquisition parameters ###
 ##############################
-DC_parameter = acquisition_parameters.DCParameter()
+DC_parameter = parameters.DCParameter()
 # EPR_parameter = acquisition_parameters.EPRParameter()
 # T1_parameter = acquisition_parameters.T1Parameter()
 # # variable_read = acquisition_parameters.VariableRead_Parameter(layout=layout)

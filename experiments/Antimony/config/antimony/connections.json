@@ -18,5 +18,9 @@
     "DF": [
         "arbstudio.ch1",
         "chip.DF"
+    ],
+    "arb_output": [
+        "arbstudio.ch3",
+        "ATS.chB"
     ]
 }

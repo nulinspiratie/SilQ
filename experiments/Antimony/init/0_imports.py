@@ -27,10 +27,13 @@ from IPython.core.magic import (register_line_magic, register_cell_magic,
 ### Qcodes ###
 ##############
 import qcodes as qc
-from qcodes import Instrument, config, Loop, Task, load_data, MatPlot, combine
+from qcodes.utils.helpers import in_notebook
+from qcodes import Instrument, Loop, Task, load_data,combine
 from qcodes.utils.helpers import in_notebook
 from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
+if in_notebook():
+    from qcodes import MatPlot
 # from qcodes.widgets.slack import Slack
 
 from qcodes.data.hdf5_format import HDF5Format as h5fmt
@@ -41,7 +44,7 @@ from qcodes.data.data_array import DataArray
 ############
 ### SilQ ###
 ############
-from silq.parameters import measurement_parameters, general_parameters, acquisition_parameters
+from silq import parameters, config
 from silq.instrument_interfaces import get_instrument_interface
 from silq.tools.general_tools import partial_from_attr, print_attr, run_code
 from silq.tools.parameter_tools import create_set_vals
