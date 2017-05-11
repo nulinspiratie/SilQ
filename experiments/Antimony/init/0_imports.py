@@ -14,7 +14,7 @@ from functools import partial
 from importlib import reload
 from time import sleep, time
 from winsound import Beep
-from matplotlib import pyplot as plt
+from matplotlib import rcParams, pyplot as plt
 import pyperclip
 
 np.set_printoptions(precision=3)
@@ -22,6 +22,9 @@ np.set_printoptions(precision=3)
 from IPython.core.magic import (register_line_magic, register_cell_magic,
                                 register_line_cell_magic, needs_local_scope)
 
+rcParams['figure.max_open_warning'] = 80
+rcParams['figure.max_open_warning'] = 80
+plt.ion()
 
 ##############
 ### Qcodes ###
@@ -40,6 +43,7 @@ from qcodes.data.hdf5_format import HDF5Format as h5fmt
 from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
 
+station = qc.Station()
 
 ############
 ### SilQ ###
@@ -47,6 +51,7 @@ from qcodes.data.data_array import DataArray
 from silq import parameters, config
 from silq.instrument_interfaces import get_instrument_interface
 from silq.tools.general_tools import partial_from_attr, print_attr, run_code
+from silq.tools.plot_tools import InteractivePlot, CalibrationPlot, DCPlot
 from silq.tools.parameter_tools import create_set_vals
 from silq.tools.notebook_tools import create_cell
 from silq.pulses import *

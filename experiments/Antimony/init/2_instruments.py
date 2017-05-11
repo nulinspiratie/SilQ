@@ -13,7 +13,6 @@ from silq.meta_instruments.chip import Chip
 from silq.parameters.general_parameters import ScaledParameter
 from silq.meta_instruments.layout import Layout
 
-station = qc.Station()
 interfaces = {}
 
 ##############
@@ -102,3 +101,6 @@ station.add_component(layout)
 layout.primary_instrument('pulseblaster')
 layout.acquisition_instrument('ATS')
 layout.load_connections()
+
+# Update InteractivePlot layout
+InteractivePlot.layout = layout

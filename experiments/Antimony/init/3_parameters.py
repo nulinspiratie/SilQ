@@ -14,6 +14,8 @@ turnon_parameter = parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = parameters.CombinedParameter(parameters=[TGAC, DF, DS])
 LB_RB = parameters.CombinedParameter(parameters=[LB, RB])
 
+for parameter in [DF_DS]:
+    station.add_component(parameter)
 ##############################
 ### Acquisition parameters ###
 ##############################
