@@ -29,7 +29,7 @@ extras = {
     'Peak finding': ('peakutils', '1.0.3'),
     'PythonNet': ('pythonnet', '2.1'),
     'slacker': ('slacker', '0.9.42'),
-    'ipympl': ('ipympl', '0.0.3')
+    # 'ipympl': ('ipympl', '0.0.3')
 
 }
 extras_require = {k: '>='.join(v) for k, v in extras.items()}
@@ -67,28 +67,22 @@ setup(name='silq',
       zip_safe=False)
 
 version_template = '''
-*****
 ***** package {0} must be at least version {1}.
 ***** Please upgrade it (pip install -U {0} or conda install {0})
 ***** in order to use {2}
-*****
 '''
 
 missing_template = '''
-*****
 ***** package {0} not found
 ***** Please install it (pip install {0} or conda install {0})
 ***** in order to use {1}
-*****
 '''
 
 valueerror_template = '''
-*****
 ***** package {0} version not understood
 ***** Please make sure the installed version ({1})
 ***** is compatible with the minimum required version ({2})
 ***** in order to use {3}
-*****
 '''
 
 # now test the versions of extras
