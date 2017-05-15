@@ -8,7 +8,8 @@ from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
     SteeredInitialization_AcquisitionController
 from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
 from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
-from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900
+from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900, \
+    get_voltages, ramp_voltages
 from silq.meta_instruments.chip import Chip
 from silq.parameters.general_parameters import ScaledParameter
 from silq.meta_instruments.layout import Layout

@@ -52,38 +52,6 @@ def try_close_instruments(
         except:
             pass
 
-
-def get_voltages(SIM900):
-    voltages = {}
-
-    for channel, name in SIM900.channels().items():
-        voltages[name] = SIM900.parameters[name]()
-    return voltages
-
-def ramp_to_voltages(target_voltages, channels=None, use_scaled=True):
-    if use_scaled:
-        global SIM900_scaled_parameters
-        parameters = {param.name: param for param in SIM900_scaled_parameters}
-    else:
-        global SIM900
-        parameters = {parameter_name: parameter
-                      for [parameter_name, parameter] in SIM900.parameters.items()
-                      if hasattr(parameter, 'channel')}
-
-    if isinstance(target_voltages, dict):
-        channels = target_voltages.keys()
-    elif isinstance(target_voltages, int):
-        if channels is None:
-            channels = parameters.keys()
-        target_voltages = {channel: target_voltages for channel in
-                           channels}
-    initial_voltages = {channel: parameters[channel]() for channel in channels}
-    for ratio in np.linspace(0, 1, 11):
-        for channel in channels:
-            voltage = (1 - ratio) * initial_voltages[channel] + \
-                      ratio * target_voltages[channel]
-            parameters[channel](voltage)
-
 if in_notebook():
     @register_cell_magic
     def label(line, cell):
