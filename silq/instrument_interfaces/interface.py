@@ -17,23 +17,13 @@ class InstrumentInterface(Instrument):
 
         self._channels = {}
 
-        self._pulse_sequence = PulseSequence(allow_untargeted_pulses=False,
-                                             allow_pulse_overlap=False)
-        self._input_pulse_sequence = PulseSequence(
+        self.pulse_sequence = PulseSequence(allow_untargeted_pulses=False,
+                                            allow_pulse_overlap=False)
+        self.input_pulse_sequence = PulseSequence(
             allow_untargeted_pulses=False, allow_pulse_overlap=False)
         self.add_parameter('instrument_name',
                            parameter_class=ManualParameter,
                            initial_value=instrument_name,
-                           vals=vals.Anything())
-        self.add_parameter('pulse_sequence',
-                           get_cmd=lambda: self._pulse_sequence,
-                           set_cmd=partial(self._set_pulse_sequence,
-                                           self._pulse_sequence),
-                           vals=vals.Anything())
-        self.add_parameter('input_pulse_sequence',
-                           get_cmd=lambda: self._input_pulse_sequence,
-                           set_cmd=partial(self._set_pulse_sequence,
-                                           self._input_pulse_sequence),
                            vals=vals.Anything())
 
         self.pulse_implementations = []
@@ -73,47 +63,6 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def _set_pulse_sequence(self, pulse_sequence, val):
-        """
-        set function for parameter self.pulse_sequence.
-        This function is created because properties/methods of the
-        pulse_sequence cannot directly be
-        modified/accessed from outside an interface object.
-        This set command therefore allows access to properties/methods.
-
-        Usage is as follows:
-        If val is a PulseSequence, self.pulse_sequence will be replaced.
-        if val is string 'sort' or 'clear', that function will be called.
-        If val is a tuple (key (str), value), the action is dependent on key
-        If key is 'add', then value is the pulse to be added.
-        Else key should be a property, and value is its updated value
-        Args:
-            val: Either a PulseSequence, string, or a tuple (key, value)
-                 (see above)
-
-        Returns:
-            None
-        """
-        if type(val) == PulseSequence:
-            pulse_sequence.replace(val)
-        elif type(val) == str:
-            if val == 'clear':
-                pulse_sequence.clear()
-            elif val == 'sort':
-                pulse_sequence.sort()
-            else:
-                raise Exception(
-                    'Pulse sequence command {} not understood'.format(val))
-        elif type(val) == tuple:
-            key, value = val
-            if key == 'add':
-                pulse_sequence.add(value)
-            else:
-                setattr(pulse_sequence, key, value)
-        else:
-            raise Exception(
-                'Pulse sequence command {} not understood'.format(val))
-
     def get_final_additional_pulses(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
@@ -124,8 +73,8 @@ class InstrumentInterface(Instrument):
         Returns:
             None
         """
-        self.pulse_sequence('clear')
-        self.input_pulse_sequence('clear')
+        self.pulse_sequence.clear()
+        self.input_pulse_sequence.clear()
 
     def setup(self):
         raise NotImplementedError(

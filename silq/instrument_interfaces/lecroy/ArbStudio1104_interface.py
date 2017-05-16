@@ -55,7 +55,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def _get_active_channels(self):
         active_channels = [pulse.connection.output['channel'].name
-                           for pulse in self.pulse_sequence()]
+                           for pulse in self.pulse_sequence]
         # Transform into set to ensure that elements are unique
         active_channels = list(set(active_channels))
         return active_channels
@@ -70,8 +70,8 @@ class ArbStudio1104Interface(InstrumentInterface):
             self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
             self.instrument.functions[ch + '_clear_waveforms']()
 
-            if self.pulse_sequence().get_pulses(output_channel=ch,
-                                                pulse_class=SinePulse):
+            if self.pulse_sequence.get_pulses(output_channel=ch,
+                                              pulse_class=SinePulse):
                 # TODO better check for when to use burst or stepped mode
                 self.instrument.parameters[ch + '_trigger_mode']('burst')
             else:
@@ -100,24 +100,24 @@ class ArbStudio1104Interface(InstrumentInterface):
         final_pulses = []
 
         # Return empty list if no pulses are in the pulse sequence
-        if not self._pulse_sequence:
+        if not self.pulse_sequence:
             return final_pulses
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
         for ch in self.active_channels():
-            pulses = self._pulse_sequence.get_pulses(output_channel=ch)
-            connection = self._pulse_sequence.get_connection(output_channel=ch)
+            pulses = self.pulse_sequence.get_pulses(output_channel=ch)
+            connection = self.pulse_sequence.get_connection(output_channel=ch)
             t = 0
-            while t < self._pulse_sequence.duration:
+            while t < self.pulse_sequence.duration:
                 remaining_pulses = [pulse for pulse in pulses
                                     if pulse.t_start >= t]
                 if not remaining_pulses:
                     # Add final DC pulse at amplitude zero
                     dc_pulse = self.get_pulse_implementation(
-                        DCPulse(t_start=t, t_stop=self._pulse_sequence.duration,
+                        DCPulse(t_start=t, t_stop=self.pulse_sequence.duration,
                                 amplitude=0, connection=connection))
-                    self._pulse_sequence.add(dc_pulse)
+                    self.pulse_sequence.add(dc_pulse)
 
                     # Check if trigger pulse is necessary.
                     if dc_pulse.additional_pulses:
@@ -125,7 +125,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                         if trigger_pulse not in final_pulses:
                             final_pulses.append(trigger_pulse)
 
-                    t = self._pulse_sequence.duration
+                    t = self.pulse_sequence.duration
                 else:
                     # Determine start time of next pulse
                     t_next = min(pulse.t_start for pulse in remaining_pulses)
@@ -136,7 +136,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                         dc_pulse = self.get_pulse_implementation(
                             DCPulse(t_start=t, t_stop=t_next, amplitude=0,
                                     connection=connection))
-                        self._pulse_sequence.add(dc_pulse)
+                        self.pulse_sequence.add(dc_pulse)
 
                         # Check if trigger pulse is necessary. Only the case when
                         #  no trigger pulse already exists at the same time,
@@ -150,8 +150,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                     t = pulse_next.t_stop
 
         # Add a trigger pulse at the end if it does not yet exist
-        trigger_pulse = self.get_trigger_pulse(self._pulse_sequence.duration)
-        if trigger_pulse not in self._input_pulse_sequence \
+        trigger_pulse = self.get_trigger_pulse(self.pulse_sequence.duration)
+        if trigger_pulse not in self.input_pulse_sequence \
                 and trigger_pulse not in final_pulses:
             final_pulses.append(trigger_pulse)
 
@@ -182,13 +182,13 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
-        for pulse in self.pulse_sequence():
+        for pulse in self.pulse_sequence:
 
             # For each channel, obtain list of waverforms, and the sequence
             # in which to perform the waveforms
             channels_waveforms, channels_sequence = \
                 pulse.implement(sampling_rates=sampling_rates,
-                                input_pulse_sequence=self._input_pulse_sequence)
+                                input_pulse_sequence=self.input_pulse_sequence)
 
             # Set sequence start idx after the previous final sequence idx
             for ch, seq in channels_sequence.items():
@@ -211,9 +211,9 @@ class ArbStudio1104Interface(InstrumentInterface):
         # Ensure that the start of this pulse corresponds to the end of
         # the previous pulse for each channel
         for ch in self.active_channels():
-            assert t_pulse[ch] == self._pulse_sequence.duration, \
+            assert t_pulse[ch] == self.pulse_sequence.duration, \
                 "Final pulse of channel {} ends at {} instead of {}".format(
-                    ch, t_pulse[ch], self._pulse_sequence.duration)
+                    ch, t_pulse[ch], self.pulse_sequence.duration)
         return self.waveforms
 
 
@@ -229,7 +229,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         targeted_pulse.final_delay = interface.final_delay()
 
         # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=pulse.t_start, trigger=True
         )
 
@@ -313,7 +313,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             self, pulse, interface=interface, is_primary=is_primary, **kwargs)
 
         # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=pulse.t_start, trigger=True
         )
 
@@ -382,7 +382,7 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
         targeted_pulse.final_delay = interface.final_delay()
 
         # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=pulse.t_start, trigger=True
         )
 
