@@ -47,7 +47,7 @@ class ScaledParameter(Parameter):
     Setting this parameter sets the underlying parameter multiplied by the ratio
     Getting this parameter gets the underlying parameter divided by the ratio
     """
-    def __init__(self, parameter, ratio=1,
+    def __init__(self, parameter, scale=1,
                  name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = parameter.name
@@ -58,16 +58,16 @@ class ScaledParameter(Parameter):
         super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameter = parameter
 
-        self.ratio = ratio
-        self._meta_attrs.extend(['ratio'])
+        self.scale = scale
+        self._meta_attrs.extend(['scale'])
 
     def get(self):
-        value = self.parameter() / self.ratio
+        value = self.parameter() / self.scale
         self._save_val(value)
         return value
 
     def set(self, val):
-        value = val * self.ratio
+        value = val * self.scale
         self._save_val(val)
         self.parameter(value)
 
