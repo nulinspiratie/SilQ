@@ -84,11 +84,6 @@ class ATSInterface(InstrumentInterface):
                            vals=vals.Enum(
                                'None', *self.acquisition_controllers.keys()))
 
-        self.add_parameter(name='average_mode',
-                           parameter_class=ManualParameter,
-                           initial_value='trace',
-                           vals=vals.Enum('none', 'trace', 'point'))
-
         # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
                            parameter_class=ManualParameter,
@@ -196,17 +191,12 @@ class ATSInterface(InstrumentInterface):
         super().initialize()
         self.acquisition_controller(self.default_acquisition_controller())
 
-    def setup(self, samples=None, average_mode=None, connections=None,
-              **kwargs):
+    def setup(self, samples=None, connections=None, **kwargs):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
         if samples is not None:
             self.samples(samples)
-
-        if average_mode is not None:
-            self.average_mode(average_mode)
-            self._acquisition_controller.average_mode(average_mode)
 
         self.setup_trigger()
         self.setup_ATS()
@@ -358,7 +348,7 @@ class ATSInterface(InstrumentInterface):
         # Update settings in acquisition controller
         self._acquisition_controller.set_acquisition_settings(
             **self._acquisition_settings)
-        self._acquisition_controller.average_mode(self.average_mode())
+        self._acquisition_controller.average_mode('none')
         self._acquisition_controller.setup()
 
     def start(self):
@@ -368,7 +358,27 @@ class ATSInterface(InstrumentInterface):
         pass
 
     def _acquisition(self):
-        return self._acquisition_controller.acquisition()
+        traces = self._acquisition_controller.acquisition()
+        segmented_traces = self.segment_traces(traces)
+        return segmented_traces
+
+    def segment_traces(self, trace):
+        trace_segments = {}
+        idx = 0
+        for pulse in self.pulse_sequence:
+            if not pulse.acquire:
+                continue
+            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
+            start_idx =
+            # TODO Stopped midway
+            if average_mode == 'point':
+                trace_segments[pulse.full_name] = np.mean(
+                    trace[:, idx:idx + pulse_pts])
+            else:
+                trace_segments[pulse.full_name] = \
+                    trace[:, idx:idx + pulse_pts]
+            idx += pulse_pts
+        return trace_segments
 
     def setting(self, setting):
         """
