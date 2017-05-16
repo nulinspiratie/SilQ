@@ -74,24 +74,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
 
-    def segment_trace(self, trace, average_mode=None):
-        # TODO this function should likely go to Layout.
-        # Furthermore, average_mode should perhaps be done elsewhere
-        trace_segments = {}
-        idx = 0
-        for pulse in self.pulse_sequence:
-            if not pulse.acquire:
-                continue
-            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
-            if average_mode == 'point':
-                trace_segments[pulse.full_name] = np.mean(
-                    trace[:, idx:idx + pulse_pts])
-            else:
-                trace_segments[pulse.full_name] = \
-                    trace[:, idx:idx + pulse_pts]
-            idx += pulse_pts
-        return trace_segments
-
     def store_traces(self, traces_dict, base_folder=None, subfolder=None):
         # Store raw traces
         if base_folder is None:
