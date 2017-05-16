@@ -370,16 +370,6 @@ class ATSInterface(InstrumentInterface):
     def _acquisition(self):
         return self._acquisition_controller.acquisition()
 
-    def get_traces(self, mode='acquisition'):
-        if mode == 'acquisition':
-            return self._acquisition_controller.traces()
-        elif mode == 'initialization':
-            return self._acquisition_controller.initialization_traces()
-        if mode == 'post_initialization':
-            return self._acquisition_controller.post_initialization_traces()
-        else:
-            raise ValueError('Mode {} not understood'.format(mode))
-
     def setting(self, setting):
         """
         Obtain a setting for the ATS.
