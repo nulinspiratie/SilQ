@@ -485,17 +485,16 @@ class Layout(Instrument):
             # Force t_start to have a fixed value
             targeted_pulse.t_start = targeted_pulse.t_start
 
-            interface.pulse_sequence(('add', targeted_pulse))
+            interface.pulse_sequence.add(targeted_pulse)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            input_interface.input_pulse_sequence(('add', targeted_pulse))
+            input_interface.input_pulse_sequence.add(targeted_pulse)
 
             # Add pulse to acquisition instrument if it must be acquired
             if pulse.acquire:
-                self.acquisition_interface.pulse_sequence(
-                    ('add', targeted_pulse))
+                self.acquisition_interface.pulse_sequence.add(targeted_pulse)
 
             # Also target pulses that are in additional_pulses, such as triggers
             for additional_pulse in targeted_pulse.additional_pulses:
@@ -526,8 +525,8 @@ class Layout(Instrument):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.initialize()
-            interface._pulse_sequence.duration = pulse_sequence.duration
-            interface._input_pulse_sequence.duration = pulse_sequence.duration
+            interface.pulse_sequence.duration = pulse_sequence.duration
+            interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -610,7 +609,7 @@ class Layout(Instrument):
                 [ch_name for _, ch_name in self.acquisition_channels.items()])
 
         for interface in self._get_interfaces_hierarchical():
-            if interface.pulse_sequence():
+            if interface.pulse_sequence:
                 # Get existing setup flags (if any)
                 instrument_flags = self.flags[interface.instrument_name()]
                 setup_flags = instrument_flags.get('setup', {})
@@ -637,7 +636,7 @@ class Layout(Instrument):
                                                              False):
                 # Interface has a flag to skip start
                 continue
-            elif interface.pulse_sequence():
+            elif interface.pulse_sequence:
                 interface.start()
             else:
                 pass
