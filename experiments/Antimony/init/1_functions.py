@@ -60,6 +60,26 @@ if in_notebook():
         code_labels[line] = cell
 
 
+def create_window(window, *args, use_thread=True):
+    if use_thread:
+        t = threading.Thread(target=create_window, name='gui',
+                             args=(window, *args),
+                             kwargs={'use_thread': False})
+        t.start()
+        return t
+    else:
+        qApp = QApplication(sys.argv)
+        aw = window(*args)
+        aw.show()
+        qApp.exec_()
+        return qApp
+
+
+def sim_gui():
+    from silq.gui.SIMGui import SIMControlDialog
+    global SIM900_scaled_parameters
+    create_window(SIMControlDialog, SIM900_scaled_parameters)
+
 def parameter_info(self, *parameter_names, detailed=False):
     snapshot = self.snapshot()
     param_info = {}

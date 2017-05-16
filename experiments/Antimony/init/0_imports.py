@@ -16,6 +16,8 @@ from time import sleep, time
 from winsound import Beep
 from matplotlib import rcParams, pyplot as plt
 import pyperclip
+import threading
+from PyQt5.QtWidgets import QApplication
 
 np.set_printoptions(precision=3)
 
