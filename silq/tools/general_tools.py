@@ -252,3 +252,16 @@ def run_code(label, **kwargs):
         repl = r'{} = {}'.format(var, val)
         code = re.sub(pattern, repl, code, count=1)
     create_cell(code, 'bottom', execute=True)
+
+
+def get_exponent(val):
+    if val <= 0:
+        raise SyntaxError(f'Val {val} must be larger than zero')
+    else:
+        return int(np.floor(np.log10(val)))
+
+
+def get_first_digit(val):
+    exponent = get_exponent(val)
+    first_digit = int(np.floor(val * 10 ** -get_exponent(val)))
+    return first_digit
