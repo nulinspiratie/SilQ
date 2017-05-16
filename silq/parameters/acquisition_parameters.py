@@ -187,7 +187,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if segment_traces:
             self.trace_segments = {
                 ch_label: self.segment_trace(trace, average_mode=average_mode)
-                for ch_label, trace in self.data['acquisition_traces'].items()}
+                for ch_label, trace in self.data.items()}
 
 
 class DCParameter(AcquisitionParameter):
@@ -222,7 +222,7 @@ class DCParameter(AcquisitionParameter):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        return [self.data['acquisition_traces']['output']]
+        return [self.data['output']]
 
 
 class DCSweepParameter(AcquisitionParameter):
@@ -365,9 +365,7 @@ class EPRParameter(AcquisitionParameter):
         self.results = [fidelities[name] for name in self.names]
 
         if self.save_traces:
-            saved_traces = {
-                'acquisition_traces': self.data['acquisition_traces']['output']}
-            self.store_traces(saved_traces)
+            self.store_traces(self.data)
 
         if not self.silent:
             self.print_results()
@@ -424,15 +422,7 @@ class AdiabaticParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {
-                'acquisition_traces': self.data['acquisition_traces']['output']}
-            if 'initialization_traces' in self.data:
-                saved_traces['initialization'] = \
-                    self.data['initialization_traces']
-            if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization_output'] = \
-                    self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces, subfolder=self.subfolder)
+            self.store_traces(self.data, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -491,15 +481,7 @@ class RabiParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {
-                'acquisition_traces': self.data['acquisition_traces']['output']}
-            if 'initialization_traces' in self.data:
-                saved_traces['initialization'] = \
-                    self.data['initialization_traces']
-            if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization_output'] = \
-                    self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces, subfolder=self.subfolder)
+            self.store_traces(self.data, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -563,15 +545,7 @@ class RabiDriveParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {
-                'acquisition_traces': self.data['acquisition_traces']['output']}
-            if 'initialization_traces' in self.data:
-                saved_traces['initialization'] = \
-                    self.data['initialization_traces']
-            if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization_output'] = \
-                    self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces, subfolder=self.subfolder)
+            self.store_traces(self.data, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -624,21 +598,13 @@ class T1Parameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {'acquisition_traces':
-                                self.data['acquisition_traces']['output']}
-            if 'initialization_traces' in self.data:
-                saved_traces['initialization'] = \
-                    self.data['initialization_traces']
-            if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization_output'] = \
-                    self.data['post_initialization_traces']['output']
             if self.subfolder is not None:
                 subfolder = '{}/tau_{:.0f}'.format(self.subfolder,
                                                self.wait_time)
             else:
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
-            self.store_traces(saved_traces, subfolder=subfolder)
+            self.store_traces(self.data, subfolder=subfolder)
 
         if not self.silent:
             self.print_results()
@@ -685,15 +651,7 @@ class DarkCountsParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            saved_traces = {'acquisition_traces':
-                                self.data['acquisition_traces']['output']}
-            if 'initialization_traces' in self.data:
-                saved_traces['initialization'] = \
-                    self.data['initialization_traces']
-            if 'post_initialization_traces' in self.data:
-                saved_traces['post_initialization_output'] = \
-                    self.data['post_initialization_traces']['output']
-            self.store_traces(saved_traces, subfolder=self.subfolder)
+            self.store_traces(self.data, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -724,4 +682,4 @@ class VariableReadParameter(AcquisitionParameter):
 
         self.acquire(segment_traces=False)
 
-        return self.data['acquisition_traces']['output']
+        return self.data['output']

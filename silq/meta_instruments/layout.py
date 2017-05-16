@@ -666,11 +666,8 @@ class Layout(Instrument):
             return_initialization_traces:
 
         Returns:
-            data (Dict): Dictionary containing 'acquisition_traces' key,
-                which is another dict where every element is of the form
+            data (Dict): Dictionary where every element is of the form
                 acquisition_channel: acquisition_signal.
-                'Additionally data can also have 'initialization_traces' and
-                'post_initialization_traces', used for steered initialization
         """
         if start:
             self.start()
@@ -679,20 +676,10 @@ class Layout(Instrument):
             self.stop()
 
         if return_dict:
-            data = {}
             # Change dictionary keys from channels to connection outputs
-            data['acquisition_traces'] = od((ch_label,
+            data = od((ch_label,
                 channel_signals[self.acquisition_interface.acquisition.names
                     .index(ch_name+'_signal')])
-                for ch_label, ch_name in self.acquisition_channels.items())
-
-            if return_initialization_traces:
-                data['initialization_traces'] = \
-                    self.acquisition_interface.get_traces('initialization')
-
-                data['post_initialization_traces'] = od((ch_label,
-                    self.acquisition_interface.get_traces('post_initialization')
-                        [ch_name])
                 for ch_label, ch_name in self.acquisition_channels.items())
         else:
             # Sort signals according to the order in layout.acquisition_outputs
