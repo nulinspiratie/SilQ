@@ -19,7 +19,7 @@ class Pulse(SettingsClass):
     _connected_attrs = {}
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
-                 connection=None, enabled=True,
+                 connection=None, enabled=True, average='none',
                  connection_label=None, connection_requirements={}):
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
