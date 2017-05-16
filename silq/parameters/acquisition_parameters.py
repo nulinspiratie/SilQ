@@ -292,9 +292,6 @@ class DCSweepParameter(AcquisitionParameter):
                         sweep_voltage = (
                         inner_sweep_voltage, outer_sweep_voltages)
 
-                        # TODO removeme
-                        sweep_voltage = inner_sweep_voltage + outer_sweep_voltage
-
                         pulses.append(DCPulse('DC_read',
                                               duration=self.pulse_duration,
                                               acquire=True,
