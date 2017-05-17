@@ -12,14 +12,14 @@ from silq import config
 # useful when multiple objects have distinct satisfies_conditions kwargs
 pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
-                    'amplitude', 'enabled']
+                    'amplitude', 'enabled', 'average']
 
 
 class Pulse(SettingsClass):
     _connected_attrs = {}
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
-                 connection=None, enabled=True,
+                 connection=None, enabled=True, average='none',
                  connection_label=None, connection_requirements={}):
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
@@ -50,6 +50,7 @@ class Pulse(SettingsClass):
         self.initialize = initialize
         self.enabled = enabled
         self.connection = connection
+        self.average = average
 
         # List of potential connection requirements.
         # These can be set so that the pulse can only be sent to connections
