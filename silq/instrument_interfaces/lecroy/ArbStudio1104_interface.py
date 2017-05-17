@@ -198,7 +198,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             for ch in channels_waveforms:
                 # Ensure that the start of this pulse corresponds to the end of
                 # the previous pulse for each channel
-                assert pulse.t_start == t_pulse[ch], \
+                assert abs(pulse.t_start - t_pulse[ch]) < 1e-11, \
                     "Pulse {}: pulses.t_start = {} does not match {}".format(
                         pulse, pulse.t_start, t_pulse[ch])
 
@@ -211,7 +211,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # Ensure that the start of this pulse corresponds to the end of
         # the previous pulse for each channel
         for ch in self.active_channels():
-            assert t_pulse[ch] == self._pulse_sequence.duration, \
+            assert abs(t_pulse[ch] - self._pulse_sequence.duration) < 1e-11, \
                 "Final pulse of channel {} ends at {} instead of {}".format(
                     ch, t_pulse[ch], self._pulse_sequence.duration)
         return self.waveforms
