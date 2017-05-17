@@ -1,10 +1,8 @@
-import sys
-import threading
+import traceback
 from functools import partial
-import numpy as np
-from winsound import Beep
+import json
+import pyperclip
 
-from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtGui import QPalette, QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -104,7 +102,7 @@ class SIM928Dialog(QFrame):
         self.current_val_label.setFont(QFont("Times", 12))
         layout.addWidget(self.current_val_label)
 
-        self.val_textbox.textEdited.connect(self._val_textbox_changed)
+        self.val_textbox.textChanged.connect(self._val_textbox_changed)
 
         # Add voltage buttons
         self.val_grid = QGridLayout()
@@ -138,10 +136,17 @@ class SIM928Dialog(QFrame):
         layout.addWidget(self.raw_val_label)
 
     def _val_textbox_changed(self):
-        self.modified_val = True
-        self.val_textbox.setStyleSheet("color: rgb(255, 0, 0);")
-        if self.current_val_label.text() == '':
-            self.current_val_label.setText(f'Current val: {self.parameter()}')
+        try:
+            textbox_val = float(self.val_textbox.text())
+            self.modified_val = (textbox_val != self.parameter())
+        except:
+            self.modified_val = True
+        if self.modified_val:
+            self.val_textbox.setStyleSheet("color: rgb(255, 0, 0);")
+            if self.current_val_label.text() == '':
+                self.current_val_label.setText(f'Current val: {self.parameter()}')
+        else:
+            self._reset_val_textbox()
 
     def set_voltage(self, val):
         try:
@@ -236,6 +241,7 @@ class SIMConfigDialog(QFrame):
         ramp_hbox.addWidget(self.ramp_zero_button)
         self.layout.addLayout(ramp_hbox)
 
+
         self.layout.addStretch(1)
 
     def set_step(self, state, val):
@@ -248,8 +254,8 @@ class SIMConfigDialog(QFrame):
             self.step[state] = val
             self.step_textbox[state].setText(str(val))
             self._clear_focus()
-        except Exception as e:
-            print(e)
+        except:
+            traceback.print_exc()
 
     def increase_step(self, state):
         current_val = self.step[state]
@@ -314,6 +320,12 @@ class SIMControlDialog(QDialog):
         self.config_widget.ramp_zero_button.clicked.connect(
             lambda clicked: self.ramp_voltages(0))
 
+        self.config_widget.copy_button = QPushButton('Copy from clipboard')
+        self.config_widget.copy_button.clicked.connect(
+            self._copy_from_clipboard)
+        self.config_widget.layout.addWidget(self.config_widget.copy_button)
+
+
         self.layout.addWidget(self.config_widget)
 
         for k, parameter in enumerate(self.parameters):
@@ -331,7 +343,6 @@ class SIMControlDialog(QDialog):
                 SIM928_dialog._reset_val_textbox)
 
     def keyPressEvent(self, event):
-        print(f'key pressed: {event.key()}')
         try:
             if event.key() in self.index_keys:
                 # Change state of SIM928 dialog
@@ -363,8 +374,8 @@ class SIMControlDialog(QDialog):
                 self.config_widget.increase_step('left_right')
             elif event.key() == Qt.Key_D:
                 self.config_widget.decrease_step('left_right')
-        except Exception as e:
-            print(f'Keypress error: {e}')
+        except:
+            traceback.print_exc()
 
     def increase_voltages(self, parameters, val):
         for parameter in parameters:
@@ -378,6 +389,11 @@ class SIMControlDialog(QDialog):
         # Iterate through SIM928 dialogs and add them to state_parameters
         for dialog in self.SIM928_dialogs.values():
             self.state_parameters[dialog.state].append(dialog.parameter)
+
+    def _copy_from_clipboard(self, *args):
+        clipboard_dict = json.loads(pyperclip.paste())
+        for parameter_name, val in clipboard_dict.items():
+            self.SIM928_dialogs[parameter_name].val_textbox.setText(str(val))
 
     def _clear_focus(self):
         print('clearing focus')
