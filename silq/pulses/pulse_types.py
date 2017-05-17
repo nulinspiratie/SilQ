@@ -498,6 +498,7 @@ class DCPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
+
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
             "voltage at {} us is not in the time range {} us - {} us of " \
