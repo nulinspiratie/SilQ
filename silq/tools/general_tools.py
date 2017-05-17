@@ -2,6 +2,7 @@ import sys
 import operator
 from functools import partial
 import re
+import numpy as np
 
 from qcodes import config
 from qcodes.config.config import DotDict
