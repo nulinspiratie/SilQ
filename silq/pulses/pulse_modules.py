@@ -270,15 +270,16 @@ class PulseSequence:
                 raise SyntaxError(f'Pulse {pulse} duration must be specified')
             else:
                 # Check if pulse with same name exists
-                pulses_same_name = self.get_pulses(name=pulse.name)
-                if pulses_same_name:
-                    # Ensure id is unique
-                    if pulses_same_name[0].id is None:
-                        pulses_same_name[0].id = 0
-                        pulse.id = 1
-                    else:
-                        max_id = max(p.id for p in pulses_same_name)
-                        pulse.id = max_id + 1
+                if pulse.name is not None:
+                    pulses_same_name = self.get_pulses(name=pulse.name)
+                    if pulses_same_name:
+                        # Ensure id is unique
+                        if pulses_same_name[0].id is None:
+                            pulses_same_name[0].id = 0
+                            pulse.id = 1
+                        else:
+                            max_id = max(p.id for p in pulses_same_name)
+                            pulse.id = max_id + 1
 
                 pulse_copy = pulse.copy()
                 if pulse_copy.t_start is None:
