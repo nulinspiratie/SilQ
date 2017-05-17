@@ -299,7 +299,7 @@ class Pulse(SettingsClass):
                              name=None, id=None, environment=None,
                              t=None, t_start=None, t_stop=None, duration=None,
                              acquire=None, initialize=None, connection=None,
-                             amplitude=None, enabled=None):
+                             amplitude=None, enabled=None, average=None):
         """
         Checks if pulse satisfies certain conditions.
         Each kwarg is a condition, and can be a value (equality testing) or it
