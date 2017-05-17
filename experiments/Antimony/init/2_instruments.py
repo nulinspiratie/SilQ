@@ -16,6 +16,7 @@ from silq.meta_instruments.layout import Layout
 
 interfaces = {}
 
+
 ##############
 ### SIM900 ###
 ##############
@@ -49,6 +50,7 @@ arbstudio.ch3_sampling_rate_prescaler(1)
 interfaces['arbstudio'] = get_instrument_interface(arbstudio)
 arbstudio_interface = interfaces['arbstudio']
 
+
 ####################
 ### PulseBlaster ###
 ####################
@@ -57,6 +59,7 @@ station.add_component(pulseblaster)
 pulseblaster.core_clock(500)
 interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
 pulseblaster_interface = interfaces['pulseblaster']
+
 
 ############
 ### Chip ###
@@ -70,6 +73,7 @@ chip_interface = interfaces['chip']
 ### ATS ###
 ###########
 ATS = ATS9440('ATS')
+ATS.config(sample_rate=500000)
 station.add_component(ATS)
 triggered_controller = Triggered_AcquisitionController(
     name='triggered_controller',
@@ -91,6 +95,7 @@ interfaces['ATS'].add_acquisition_controller('continuous_controller')
 # interfaces['ATS'].add_acquisition_controller('steered_initialization_controller')
 interfaces['ATS'].default_acquisition_controller('Triggered')
 ATS_interface = interfaces['ATS']
+
 
 ##############
 ### Layout ###

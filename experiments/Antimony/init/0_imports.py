@@ -60,6 +60,8 @@ from silq.tools.parameter_tools import create_set_vals
 from silq.tools.notebook_tools import create_cell
 from silq.pulses import *
 
+antimony = silq.config.antimony
+
 # Dictionary of code with labels, these can be registered via cell magic
 # %label {lbl}. They can then be run via for instance Slack
 code_labels = {}
