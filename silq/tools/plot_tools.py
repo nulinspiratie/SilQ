@@ -2,6 +2,7 @@ from qcodes.plots.qcmatplotlib import MatPlot
 from silq.tools.notebook_tools import *
 import pyperclip
 from time import time
+import numpy as np
 
 from qcodes.station import Station
 station = Station.default
@@ -240,11 +241,8 @@ class DCPlot(InteractivePlot):
         self.add(self.dataset.DC_voltage)
 
 
-from silq.tools.plot_tools import *
-
-
 class DCSweepPlot(InteractivePlot):
-    def __init__(self, parameter, interval=1, auto_start=False):
+    def __init__(self, parameter, interval=0.05, auto_start=False):
         super().__init__(subplots=1)
         self.layout = station.layout
 
@@ -291,6 +289,5 @@ class DCSweepPlot(InteractivePlot):
         if ax is None:
             ax = self[0]
         results = self.parameter.acquire(start=False, stop=False)
-        noise = 0.01 * self.random_data(shape=results.shape)
-        self.traces[0]['config']['z'] = results + noise
+        self.traces[0]['config']['z'] = results
         self.update_plot()
