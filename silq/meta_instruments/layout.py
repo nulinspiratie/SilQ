@@ -630,6 +630,7 @@ class Layout(Instrument):
         Returns:
 
         """
+        self.active(True)
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
                 continue
@@ -641,7 +642,6 @@ class Layout(Instrument):
                 interface.start()
             else:
                 pass
-        self.active(True)
 
     def stop(self):
         """
@@ -1138,7 +1138,7 @@ class LayoutAcquisitionParameter(MultiParameter):
     @property
     def shapes(self):
         if self.layout.acquisition_interface is not None:
-            return self.layout.acquisition_interface.acquisition.units
+            return self.layout.acquisition_interface.acquisition.shapes
         else:
             return ((),) * len(self.names)
 
