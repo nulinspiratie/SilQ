@@ -242,7 +242,7 @@ class DCPlot(InteractivePlot):
 
 
 class ScanningPlot(InteractivePlot):
-    def __init__(self, parameter, interval=0.05, auto_start=False, **kwargs):
+    def __init__(self, parameter, interval=0.5, auto_start=False, **kwargs):
         super().__init__(**kwargs)
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
@@ -251,12 +251,8 @@ class ScanningPlot(InteractivePlot):
 
         self.parameter = parameter
 
-        self.scan(initialize=True)
-
-        if self.parameter.results is None:
-            self.parameter.setup(start=False)
-
-        self.parameter.acquire(stop=(not auto_start))
+        self.parameter.setup()
+        self.scan(initialize=True, start=True, stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -282,29 +278,45 @@ class ScanningPlot(InteractivePlot):
         self.timer.stop()
         self.layout.stop()
 
-    def scan(self, initialize=False):
-        self.results = self.parameter.acquire(start=False, stop=False)
+    def scan(self, initialize=False, start=False, stop=False):
+        from winsound import Beep
+        self.results = self.parameter.acquire(start=start, stop=stop)
         self.update_plot(initialize=initialize)
-
-    def update_plot(self, initialize=False):
-        raise NotImplementedError("Must implement update_plot in subclass")
 
 
 class DCSweepPlot(ScanningPlot):
     def __init__(self, parameter, **kwargs):
         if parameter.trace_pulse.enabled:
-            subplots = 2
+            subplots = (2, 1)
         else:
             subplots = 1
         super().__init__(parameter, subplots=subplots, **kwargs)
 
-    def scan(self):
-        self.results = self.parameter.acquire(start=False, stop=False)
-        self.update_plot()
+        if parameter.trace_pulse.enabled:
+            self[1].set_ylim(-0.1, 1.3)
+
+        self[0].plot([0], [0], 'or', ms=5)
 
     def update_plot(self, initialize=False):
         for k, result in enumerate(self.results):
             if initialize:
-                self.add(self.parameter.results)
+                setpoints = self.parameter.setpoints[k]
+                setpoint_names = self.parameter.setpoint_names[k]
+                name = self.parameter.names[k]
+                if len(setpoints) == 2:
+                    self[k].add(result, x=setpoints[0], y=setpoints[1],
+                                xlabel=setpoint_names[0],
+                                ylabel=setpoint_names[1],
+                                zlabel=name)
+                else:
+                    self[k].add(result, x=setpoints[0],
+                                xlabel=setpoint_names[0],
+                                ylabel=name)
+
             else:
-                self.traces[k]['config']['z'] = result
+                result_config = self.traces[k]['config']
+                if 'z' in result_config:
+                    result_config['z'] = result
+                else:
+                    result_config['y'] = result
+        super().update_plot()
