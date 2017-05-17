@@ -241,31 +241,26 @@ class DCPlot(InteractivePlot):
         self.add(self.dataset.DC_voltage)
 
 
-class DCSweepPlot(InteractivePlot):
-    def __init__(self, parameter, interval=0.05, auto_start=False):
-        super().__init__(subplots=1)
+class ScanningPlot(InteractivePlot):
+    def __init__(self, parameter, interval=0.05, auto_start=False, **kwargs):
+        super().__init__(**kwargs)
+        self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
+        self.timer.add_callback(self.scan)
+
         self.layout = station.layout
 
         self.parameter = parameter
 
-        if auto_start:
-            self.parameter.setup(start=True)
+        self.scan(initialize=True)
 
         if self.parameter.results is None:
-            if auto_start:
-                self.parameter.acquire(start=False, stop=False)
-            else:
-                self.parameter()
-        self.add(self.parameter.results)
+            self.parameter.setup(start=False)
 
-        self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
-        self.timer.add_callback(self.rescan, self[0])
+        self.parameter.acquire(stop=(not auto_start))
 
         if auto_start:
-            self.start(setup=False)
-
-    def random_data(self, shape=(10, 10)):
-        return np.random.randint(0, 10, size=shape)
+            # Already started during acquire
+            self.start(setup=False, start=False)
 
     @property
     def interval(self):
@@ -276,18 +271,40 @@ class DCSweepPlot(InteractivePlot):
         if hasattr(self, 'timer'):
             self.timer.interval = interval * 1000
 
-    def start(self, setup=True):
+    def start(self, setup=True, start=True):
         if setup:
-            self.parameter.setup(start=True)
+            self.parameter.setup()
+        if start:
+            self.layout.start()
         self.timer.start()
 
     def stop(self):
         self.timer.stop()
         self.layout.stop()
 
-    def rescan(self, ax=None):
-        if ax is None:
-            ax = self[0]
-        results = self.parameter.acquire(start=False, stop=False)
-        self.traces[0]['config']['z'] = results
+    def scan(self, initialize=False):
+        self.results = self.parameter.acquire(start=False, stop=False)
+        self.update_plot(initialize=initialize)
+
+    def update_plot(self, initialize=False):
+        raise NotImplementedError("Must implement update_plot in subclass")
+
+
+class DCSweepPlot(ScanningPlot):
+    def __init__(self, parameter, **kwargs):
+        if parameter.trace_pulse.enabled:
+            subplots = 2
+        else:
+            subplots = 1
+        super().__init__(parameter, subplots=subplots, **kwargs)
+
+    def scan(self):
+        self.results = self.parameter.acquire(start=False, stop=False)
         self.update_plot()
+
+    def update_plot(self, initialize=False):
+        for k, result in enumerate(self.results):
+            if initialize:
+                self.add(self.parameter.results)
+            else:
+                self.traces[k]['config']['z'] = result
