@@ -235,8 +235,8 @@ class DCSweepParameter(AcquisitionParameter):
                          shapes=((1,),),
                          **kwargs)
 
-        self.pulse_duration = 5
-        self.final_delay = 10
+        self.pulse_duration = 1
+        self.final_delay = 120
 
         self.additional_pulses = []
         self.samples = 1
@@ -246,8 +246,8 @@ class DCSweepParameter(AcquisitionParameter):
     def __getitem__(self, item):
         return self.sweep_parameters[item]
 
-    def add_sweep(self, parameter_name, sweep_voltages=None,
-                  connection_label=None):
+    def add_sweep(self, parameter_name,
+                  sweep_voltages=None, connection_label=None):
         if connection_label is None:
             connection_label = parameter_name
 
@@ -282,29 +282,48 @@ class DCSweepParameter(AcquisitionParameter):
         elif len(self.sweep_parameters) == 2:
             outer_sweep_name, outer_sweep_dict = next(iter_sweep_parameters)
             outer_sweep_voltages = outer_sweep_dict.sweep_voltages
+            outer_connection_label = outer_sweep_dict.connection_label
             inner_sweep_name, inner_sweep_dict = next(iter_sweep_parameters)
             inner_sweep_voltages = inner_sweep_dict.sweep_voltages
+            inner_connection_label = inner_sweep_dict.connection_label
+
+            pulses = []
             if outer_sweep_dict.connection_label == inner_sweep_dict.connection_label:
-                connection_label = outer_sweep_dict.connection_label
-                pulses = []
                 for outer_sweep_voltage in outer_sweep_voltages:
                     for inner_sweep_voltage in inner_sweep_voltages:
                         sweep_voltage = (
                         inner_sweep_voltage, outer_sweep_voltages)
-
-                        pulses.append(DCPulse('DC_read',
-                                              duration=self.pulse_duration,
-                                              acquire=True,
-                                              amplitude=sweep_voltage,
-                                              connection_label=connection_label))
-                self.pulse_sequence = PulseSequence(pulses=pulses)
-                self.setpoint_names = ((outer_sweep_name, inner_sweep_name),),
-                self.shapes = (
-                (len(outer_sweep_voltages), len(inner_sweep_voltages),),)
-                self.setpoints = ((outer_sweep_voltages, inner_sweep_voltages),)
+                        pulses.append(
+                            DCPulse('DC_read',
+                                    duration=self.pulse_duration,
+                                    acquire=True,
+                                    amplitude=sweep_voltage,
+                                    connection_label=outer_connection_label))
             else:
-                raise NotImplementedError(
-                    f"Cannot handle two parameters with different connection_labels")
+                t = 0
+                for outer_sweep_voltage in outer_sweep_voltages:
+                    pulses.append(
+                        DCPulse('DC_read',
+                                t_start=t,
+                                duration=self.pulse_duration * len(
+                                    inner_sweep_voltages),
+                                amplitude=outer_sweep_voltage,
+                                connection_label=outer_connection_label))
+                    for inner_sweep_voltage in inner_sweep_voltages:
+                        pulses.append(
+                            DCPulse('DC_read',
+                                    t_start=t,
+                                    duration=self.pulse_duration,
+                                    acquire=True,
+                                    amplitude=inner_sweep_voltage,
+                                    connection_label=inner_connection_label))
+                        t += self.pulse_duration
+
+            self.pulse_sequence = PulseSequence(pulses=pulses)
+            self.setpoint_names = ((outer_sweep_name, inner_sweep_name),),
+            self.shapes = (
+            (len(outer_sweep_voltages), len(inner_sweep_voltages),),)
+            self.setpoints = ((outer_sweep_voltages, inner_sweep_voltages),)
         else:
             raise NotImplementedError(
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
@@ -316,7 +335,8 @@ class DCSweepParameter(AcquisitionParameter):
 
         # Process results
         DC_voltages = np.array([self.trace_segments['output'][pulse.full_name]
-                                for pulse in self.pulse_sequence])
+                                for pulse in
+                                self.pulse_sequence.get_pulses(acquire=True)])
         if len(self.sweep_parameters) == 1:
             self.results = DC_voltages
         elif len(self.sweep_parameters) == 2:
