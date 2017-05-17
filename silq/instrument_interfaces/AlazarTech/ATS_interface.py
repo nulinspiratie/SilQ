@@ -204,9 +204,9 @@ class ATSInterface(InstrumentInterface):
         if samples is not None:
             self.samples(samples)
 
-        if average_mode is not None:
-            self.average_mode(average_mode)
-            self._acquisition_controller.average_mode(average_mode)
+        # TODO remove average_mode from interface
+        self.average_mode('none')
+        self._acquisition_controller.average_mode('none')
 
         self.setup_trigger()
         self.setup_ATS()
