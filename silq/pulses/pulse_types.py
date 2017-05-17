@@ -231,9 +231,29 @@ class Pulse(SettingsClass):
             return f'{self.name}[{self.id}]'
 
     @property
+    def t_start(self):
+        return self._t_start
+
+    @t_start.setter
+    def t_start(self, t_start):
+        if t_start is not None:
+            t_start = round(t_start, 11)
+        self._t_start = t_start
+
+    @property
+    def duration(self):
+        return self._duration
+
+    @duration.setter
+    def duration(self, duration):
+        if duration is not None:
+            duration = round(duration, 11)
+        self._duration = duration
+
+    @property
     def t_stop(self):
         if self.t_start is not None and self.duration is not None:
-            return self.t_start + self.duration
+            return round(self.t_start + self.duration, 11)
         else:
             return None
 
@@ -241,7 +261,7 @@ class Pulse(SettingsClass):
     def t_stop(self, t_stop):
         if t_stop is not None:
             # Setting duration sends a signal for duration and also t_stop
-            self.duration = t_stop - self.t_start
+            self.duration = round(t_stop - self.t_start, 11)
 
     def _get_repr(self, properties_str):
         if self.connection:
