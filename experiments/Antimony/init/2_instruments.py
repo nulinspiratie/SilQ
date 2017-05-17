@@ -9,7 +9,7 @@ from qcodes.instrument_drivers.AlazarTech.ATS_acquisition_controllers import \
 from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
 from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
 from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900, \
-    get_voltages, ramp_voltages
+    get_voltages, ramp_voltages, voltage_parameters
 from silq.meta_instruments.chip import Chip
 from silq.parameters.general_parameters import ScaledParameter
 from silq.meta_instruments.layout import Layout
@@ -25,13 +25,12 @@ station.add_component(SIM900)
 DC_sources = [('SRC', 1, 1, 1), ('LB', 2, 8, 2), ('RB', 3, 8, 2), ('TG', 4, 8, 2.25),
               ('TGAC', 5, 8, 1.25), ('DF', 6, 8, 1.25), ('DS', 7, 8, 1.25)]
 gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'DF', 'DS']
-SIM900_scaled_parameters = []
 for ch_name, ch, ratio,max_voltage in DC_sources:
     SIM900.define_slot(channel=ch, name=ch_name+'_raw', max_voltage=max_voltage*ratio)
     param_raw = SIM900.parameters[ch_name+'_raw']
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name, scale=ratio)
     station.add_component(param)
-    SIM900_scaled_parameters.append(param)
+    voltage_parameters.append(param)
 
     exec('{ch_name}_raw = param_raw'.format(ch_name=ch_name))
     exec('{ch_name} = param'.format(ch_name=ch_name))

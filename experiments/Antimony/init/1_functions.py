@@ -77,8 +77,8 @@ def create_window(window, *args, use_thread=True):
 
 def sim_gui():
     from silq.gui.SIMGui import SIMControlDialog
-    global SIM900_scaled_parameters
-    create_window(SIMControlDialog, SIM900_scaled_parameters)
+    global voltage_parameters
+    create_window(SIMControlDialog, voltage_parameters)
 
 
 # Override dataset
