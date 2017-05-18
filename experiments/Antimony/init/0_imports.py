@@ -40,7 +40,7 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
 if in_notebook():
     from qcodes import MatPlot
-# from qcodes.widgets.slack import Slack
+from qcodes.widgets.slack import Slack
 
 from qcodes.data.hdf5_format import HDF5Format as h5fmt
 from qcodes.data.data_set import DataSet

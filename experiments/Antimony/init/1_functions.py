@@ -60,9 +60,9 @@ if in_notebook():
         code_labels[line] = cell
 
 
-def create_window(window, *args, use_thread=True):
+def start_gui(window, *args, use_thread=True):
     if use_thread:
-        t = threading.Thread(target=create_window, name='gui',
+        t = threading.Thread(target=start_gui, name='gui',
                              args=(window, *args),
                              kwargs={'use_thread': False})
         t.start()
@@ -78,7 +78,7 @@ def create_window(window, *args, use_thread=True):
 def sim_gui():
     from silq.gui.SIMGui import SIMControlDialog
     global voltage_parameters
-    create_window(SIMControlDialog, voltage_parameters)
+    start_gui(SIMControlDialog, voltage_parameters)
 
 
 # Override dataset
