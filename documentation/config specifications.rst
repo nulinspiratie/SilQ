@@ -1,6 +1,6 @@
-======
-Config
-======
+=====================
+Config specifications
+=====================
 
 The QCoDeS config is a useful feature that facilitates the storage of
 information such that it can be accessed by different objects. It furthermore
