@@ -21,7 +21,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
 
-    def __init__(self, average_mode='none', **kwargs):
+    def __init__(self, **kwargs):
         SettingsClass.__init__(self)
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
@@ -32,9 +32,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         self.silent = True
         """Do not print results after acquisition"""
-
-        self.average_mode = average_mode
-        """Type of averaging performed on data"""
 
         self.save_traces = False
         """ Save traces in separate files (does not work)"""
@@ -73,6 +70,24 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
+
+    def segment_trace(self, trace):
+        # TODO this function should likely go to Layout.
+        trace_segments = {}
+        idx = 0
+        for pulse in self.pulse_sequence:
+            if not pulse.acquire:
+                continue
+            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
+            pulse_traces = trace[:, idx:idx + pulse_pts]
+            if pulse.average == 'point':
+                trace_segments[pulse.full_name] = np.mean(pulse_traces)
+            elif pulse.average == 'trace':
+                trace_segments[pulse.full_name] = np.mean(pulse_traces, axis=0)
+            else:
+                trace_segments[pulse.full_name] = pulse_traces
+            idx += pulse_pts
+        return trace_segments
 
     def store_traces(self, traces_dict, base_folder=None, subfolder=None):
         # Store raw traces
@@ -154,21 +169,17 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.layout.target_pulse_sequence(pulse_sequence)
 
         samples = kwargs.pop('samples', self.samples)
-        average_mode = kwargs.pop('average_mode', self.average_mode)
-        self.layout.setup(samples=samples,
-                          average_mode=average_mode,
-                          **kwargs)
+        self.layout.setup(samples=samples, **kwargs)
 
         if start:
             self.layout.start()
 
-    def acquire(self, segment_traces=True, average_mode=None, **kwargs):
+    def acquire(self, segment_traces=True, **kwargs):
         # Perform acquisition
-        self.data = self.layout.do_acquisition(return_dict=True,
-                                               **kwargs)
+        self.data = self.layout.do_acquisition(return_dict=True, **kwargs)
         if segment_traces:
             self.trace_segments = {
-                ch_label: self.segment_trace(trace, average_mode=average_mode)
+                ch_label: self.segment_trace(trace)
                 for ch_label, trace in self.data.items()}
 
 
@@ -179,14 +190,13 @@ class DCParameter(AcquisitionParameter):
                          names=['DC_voltage'],
                          labels=['DC voltage'],
                          units=['V'],
-                         average_mode='point',
                          snapshot_value=False,
                          **kwargs)
 
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True,
+            DCPulse(name='read', acquire=True, average='point',
                     connection_label='stage'),
             DCPulse(name='final',
                     connection_label='stage'))
@@ -197,14 +207,14 @@ class DCParameter(AcquisitionParameter):
 
     def acquire(self, **kwargs):
         # Do not segment traces since we only receive a single value
-        super().acquire(start=False, stop=False, segment_traces=False)
+        super().acquire(start=False, stop=False, segment_traces=True)
 
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        return [self.data['output']]
+        return [self.trace_segments['output']['read']]
 
 
 class DCSweepParameter(AcquisitionParameter):
@@ -217,19 +227,27 @@ class DCSweepParameter(AcquisitionParameter):
                          shapes=((1,),),
                          **kwargs)
 
-        self.pulse_duration = 5
-        self.final_delay = 10
+        self.pulse_duration = 1
+        self.final_delay = 120
 
         self.additional_pulses = []
         self.samples = 1
+
+        # Pulse to acquire trace at the end, disabled by default
+        self.trace_pulse = DCPulse(name='trace',
+                                   duration=100,
+                                   enabled=False,
+                                   acquire=True,
+                                   average='trace',
+                                   amplitude=0)
 
         self.sweep_parameters = OrderedDict()
 
     def __getitem__(self, item):
         return self.sweep_parameters[item]
 
-    def add_sweep(self, parameter_name, sweep_voltages=None,
-                  connection_label=None):
+    def add_sweep(self, parameter_name,
+                  sweep_voltages=None, connection_label=None):
         if connection_label is None:
             connection_label = parameter_name
 
@@ -262,50 +280,85 @@ class DCSweepParameter(AcquisitionParameter):
             self.shapes = ((len(sweep_voltages),),)
             self.setpoints = ((sweep_voltages,),)
         elif len(self.sweep_parameters) == 2:
-            outer_sweep_name, outer_sweep_dict = next(iter_sweep_parameters)
-            outer_sweep_voltages = outer_sweep_dict.sweep_voltages
             inner_sweep_name, inner_sweep_dict = next(iter_sweep_parameters)
             inner_sweep_voltages = inner_sweep_dict.sweep_voltages
-            if outer_sweep_dict.connection_label == inner_sweep_dict.connection_label:
-                connection_label = outer_sweep_dict.connection_label
-                pulses = []
+            inner_connection_label = inner_sweep_dict.connection_label
+            outer_sweep_name, outer_sweep_dict = next(iter_sweep_parameters)
+            outer_sweep_voltages = outer_sweep_dict.sweep_voltages
+            outer_connection_label = outer_sweep_dict.connection_label
+
+            pulses = []
+            if outer_connection_label == inner_connection_label:
                 for outer_sweep_voltage in outer_sweep_voltages:
                     for inner_sweep_voltage in inner_sweep_voltages:
-                        sweep_voltage = (
-                        inner_sweep_voltage, outer_sweep_voltages)
-
-                        pulses.append(DCPulse('DC_read',
-                                              duration=self.pulse_duration,
-                                              acquire=True,
-                                              amplitude=sweep_voltage,
-                                              connection_label=connection_label))
-                self.pulse_sequence = PulseSequence(pulses=pulses)
-                self.setpoint_names = ((outer_sweep_name, inner_sweep_name),),
-                self.shapes = (
-                (len(outer_sweep_voltages), len(inner_sweep_voltages),),)
-                self.setpoints = ((outer_sweep_voltages, inner_sweep_voltages),)
+                        sweep_voltage = (inner_sweep_voltage,
+                                         outer_sweep_voltage)
+                        pulses.append(
+                            DCPulse('DC_read',
+                                    duration=self.pulse_duration,
+                                    acquire=True,
+                                    amplitude=sweep_voltage,
+                                    average='point',
+                                    connection_label=outer_connection_label))
             else:
-                raise NotImplementedError(
-                    f"Cannot handle two parameters with different connection_labels")
+                t = 0
+                for outer_sweep_voltage in outer_sweep_voltages:
+                    pulses.append(
+                        DCPulse('DC_outer',
+                                t_start=t,
+                                duration=self.pulse_duration * len(
+                                    inner_sweep_voltages),
+                                amplitude=outer_sweep_voltage,
+                                connection_label=outer_connection_label))
+                    for inner_sweep_voltage in inner_sweep_voltages:
+                        pulses.append(
+                            DCPulse('DC_read',
+                                    t_start=t,
+                                    duration=self.pulse_duration,
+                                    acquire=True,
+                                    average='point',
+                                    amplitude=inner_sweep_voltage,
+                                    connection_label=inner_connection_label))
+                        t += self.pulse_duration
+
+            self.setpoint_names = (inner_sweep_name, outer_sweep_name),
+            self.shapes = (len(inner_sweep_voltages),
+                            len(outer_sweep_voltages),),
+            self.setpoints = (inner_sweep_voltages, outer_sweep_voltages),
         else:
             raise NotImplementedError(
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
 
+        if self.trace_pulse.enabled:
+            # Also obtain a time trace at the end
+            pulses.append(self.trace_pulse)
+            self.names += ('DC_voltage',),
+            self.setpoint_names += ('time',),
+            points = round(self.trace_pulse.duration * 1e-3 * self.sample_rate)
+            setpoints = np.linspace(0, self.trace_pulse.duration, points)
+            self.setpoints += (setpoints,),
+            self.shapes += (len(setpoints),),
+
+        self.pulse_sequence = PulseSequence(pulses=pulses)
         self.pulse_sequence.duration += self.final_delay
 
     def acquire(self, stop=False, **kwargs):
-        super().acquire(average_mode='point', stop=stop, **kwargs)
+        super().acquire(stop=stop, **kwargs)
 
         # Process results
         DC_voltages = np.array([self.trace_segments['output'][pulse.full_name]
-                                for pulse in self.pulse_sequence])
+                                for pulse in
+                                self.pulse_sequence.get_pulses(name='DC_read')])
         if len(self.sweep_parameters) == 1:
-            self.results = DC_voltages
+            self.results = [DC_voltages]
         elif len(self.sweep_parameters) == 2:
-            self.results = DC_voltages.reshape(self.shapes[0])
+            self.results = [DC_voltages.reshape(self.shapes[0])]
         else:
             raise NotImplementedError(
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
+
+        if self.trace_pulse.enabled:
+            self.results.append(self.trace_segments['output']['trace'])
 
         return self.results
 
@@ -640,28 +693,39 @@ class DarkCountsParameter(AcquisitionParameter):
 
         return self.results
 
+
 class VariableReadParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='variable_read_acquisition',
-                         names=['read_voltage'],
-                         labels='Read voltage',
-                         average_mode='trace',
+                         names=('read_voltage',),
+                         labels=('Read voltage',),
                          units=['V'],
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add(
-            DCPulse(name='empty', acquire=True),
-            DCPulse(name='plunge', acquire=True),
-            DCPulse(name='read', acquire=True),
-            DCPulse(name='final'))
+            DCPulse(name='plunge', acquire=True, average='trace',
+                    connection_label='stage'),
+            DCPulse(name='read', acquire=True, average='trace',
+                    connection_label='stage'),
+            DCPulse(name='empty', acquire=True, average='trace',
+                    connection_label='stage'),
+            DCPulse(name='final',
+                    connection_label='stage'))
 
     @property
-    def shape(self):
-        return self.layout.acquisition.shapes[0]
+    def shapes(self):
+        return (self.layout.acquisition.shapes[0][1],),
+
+    @shapes.setter
+    def shapes(self, shapes):
+        pass
 
     def get(self):
         self.setup()
 
         self.acquire(segment_traces=False)
 
-        return self.data['output']
+        self.results = np.mean(self.data['output'],
+                               axis=0)
+
+        return self.results,
