@@ -16,6 +16,7 @@ from time import sleep, time
 from winsound import Beep
 from matplotlib import rcParams, pyplot as plt
 import pyperclip
+import json
 import threading
 from PyQt5.QtWidgets import QApplication
 
@@ -53,10 +54,13 @@ station = qc.Station()
 from silq import parameters, config
 from silq.instrument_interfaces import get_instrument_interface
 from silq.tools.general_tools import partial_from_attr, print_attr, run_code
-from silq.tools.plot_tools import InteractivePlot, CalibrationPlot, DCPlot
+from silq.tools.plot_tools import InteractivePlot, CalibrationPlot, DCPlot, \
+    DCSweepPlot
 from silq.tools.parameter_tools import create_set_vals
 from silq.tools.notebook_tools import create_cell
 from silq.pulses import *
+
+antimony = silq.config.antimony
 
 # Dictionary of code with labels, these can be registered via cell magic
 # %label {lbl}. They can then be run via for instance Slack

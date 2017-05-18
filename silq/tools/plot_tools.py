@@ -2,6 +2,7 @@ from qcodes.plots.qcmatplotlib import MatPlot
 from silq.tools.notebook_tools import *
 import pyperclip
 from time import time
+import numpy as np
 
 from qcodes.station import Station
 station = Station.default
@@ -240,34 +241,22 @@ class DCPlot(InteractivePlot):
         self.add(self.dataset.DC_voltage)
 
 
-from silq.tools.plot_tools import *
+class ScanningPlot(InteractivePlot):
+    def __init__(self, parameter, interval=0.01, auto_start=False, **kwargs):
+        super().__init__(**kwargs)
+        self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
+        self.timer.add_callback(self.scan)
 
-
-class DCSweepPlot(InteractivePlot):
-    def __init__(self, parameter, interval=1, auto_start=False):
-        super().__init__(subplots=1)
         self.layout = station.layout
 
         self.parameter = parameter
 
-        if auto_start:
-            self.parameter.setup(start=True)
-
-        if self.parameter.results is None:
-            if auto_start:
-                self.parameter.acquire(start=False, stop=False)
-            else:
-                self.parameter()
-        self.add(self.parameter.results)
-
-        self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
-        self.timer.add_callback(self.rescan, self[0])
+        self.parameter.setup()
+        self.scan(initialize=True, start=True, stop=(not auto_start))
 
         if auto_start:
-            self.start(setup=False)
-
-    def random_data(self, shape=(10, 10)):
-        return np.random.randint(0, 10, size=shape)
+            # Already started during acquire
+            self.start(setup=False, start=False)
 
     @property
     def interval(self):
@@ -278,19 +267,56 @@ class DCSweepPlot(InteractivePlot):
         if hasattr(self, 'timer'):
             self.timer.interval = interval * 1000
 
-    def start(self, setup=True):
+    def start(self, setup=True, start=True):
         if setup:
-            self.parameter.setup(start=True)
+            self.parameter.setup()
+        if start:
+            self.layout.start()
         self.timer.start()
 
     def stop(self):
         self.timer.stop()
         self.layout.stop()
 
-    def rescan(self, ax=None):
-        if ax is None:
-            ax = self[0]
-        results = self.parameter.acquire(start=False, stop=False)
-        noise = 0.01 * self.random_data(shape=results.shape)
-        self.traces[0]['config']['z'] = results + noise
-        self.update_plot()
+    def scan(self, initialize=False, start=False, stop=False):
+        from winsound import Beep
+        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.update_plot(initialize=initialize)
+
+
+class DCSweepPlot(ScanningPlot):
+    def __init__(self, parameter, **kwargs):
+        if parameter.trace_pulse.enabled:
+            subplots = (2, 1)
+        else:
+            subplots = 1
+        super().__init__(parameter, subplots=subplots, **kwargs)
+
+        if parameter.trace_pulse.enabled:
+            self[1].set_ylim(-0.1, 1.3)
+
+        self[0].plot([0], [0], 'or', ms=5)
+
+    def update_plot(self, initialize=False):
+        for k, result in enumerate(self.results):
+            if initialize:
+                setpoints = self.parameter.setpoints[k]
+                setpoint_names = self.parameter.setpoint_names[k]
+                name = self.parameter.names[k]
+                if len(setpoints) == 2:
+                    self[k].add(result, x=setpoints[0], y=setpoints[1],
+                                xlabel=setpoint_names[0],
+                                ylabel=setpoint_names[1],
+                                zlabel=name)
+                else:
+                    self[k].add(result, x=setpoints[0],
+                                xlabel=setpoint_names[0],
+                                ylabel=name)
+
+            else:
+                result_config = self.traces[k]['config']
+                if 'z' in result_config:
+                    result_config['z'] = result
+                else:
+                    result_config['y'] = result
+        super().update_plot()

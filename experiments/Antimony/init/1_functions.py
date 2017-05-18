@@ -77,9 +77,11 @@ def create_window(window, *args, use_thread=True):
 
 def sim_gui():
     from silq.gui.SIMGui import SIMControlDialog
-    global SIM900_scaled_parameters
-    create_window(SIMControlDialog, SIM900_scaled_parameters)
+    global voltage_parameters
+    create_window(SIMControlDialog, voltage_parameters)
 
+
+# Override dataset
 def parameter_info(self, *parameter_names, detailed=False):
     snapshot = self.snapshot()
     param_info = {}
@@ -91,3 +93,12 @@ def parameter_info(self, *parameter_names, detailed=False):
             param_info[parameter_name] = param_snapshot['value']
     return param_info
 DataSet.parameter_info = parameter_info
+
+def SIM_voltages(self, copy=True):
+    global gates
+    voltage_dict = self.parameter_info(*gates)
+    if copy:
+        pyperclip.copy(json.dumps(voltage_dict))
+    return voltage_dict
+DataSet.SIM_voltages = SIM_voltages
+gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'DF', 'DS']

@@ -22,7 +22,7 @@ for parameter in [DF_DS]:
 DC_parameter = parameters.DCParameter()
 # EPR_parameter = acquisition_parameters.EPRParameter()
 # T1_parameter = acquisition_parameters.T1Parameter()
-# # variable_read = acquisition_parameters.VariableRead_Parameter(layout=layout)
+variable_read_parameter = parameters.VariableReadParameter()
 # adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter()
 # adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter()
 # rabi_ESR_parameter = acquisition_parameters.RabiParameter()

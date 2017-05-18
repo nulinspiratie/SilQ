@@ -32,7 +32,8 @@
             "arbstudio.ch1",
             "arbstudio.ch2",
             "arbstudio.ch3"
-        ]
+        ],
+        "scale": [1, -1.5, 1]
     },
     {
         "output_arg": "chip.output",
