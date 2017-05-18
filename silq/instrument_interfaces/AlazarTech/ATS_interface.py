@@ -202,9 +202,6 @@ class ATSInterface(InstrumentInterface):
         self.setup_ATS()
         self.setup_acquisition_controller()
 
-        # Update acquisition controller in acquisition parameter
-        self.acquisition.acquisition_controller = self._acquisition_controller
-
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
             target_instrument = self._acquisition_controller.target_instrument()
@@ -357,10 +354,10 @@ class ATSInterface(InstrumentInterface):
     def stop(self):
         pass
 
-    def _acquisition(self):
+    def acquisition(self):
         traces = self._acquisition_controller.acquisition()
-        traces_dict = {ch: trace for ch, trace in zip(self.acquisition_channels,
-                                                      traces)}
+        traces_dict = {
+            ch: trace for ch, trace in zip(self.acquisition_channels, traces)}
         pulse_traces = self.segment_traces(traces_dict)
         return pulse_traces
 
@@ -528,3 +525,59 @@ class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
 
         def implement(self, interface, **kwargs):
             pass
+
+
+
+class InterfaceAcquisitionParameter(MultiParameter):
+    def __init__(self, **kwargs):
+        super().__init__(snapshot_value=False,
+                         names=[''], shapes=[()], **kwargs)
+
+    @property
+    def names(self):
+        return tuple([f'{ch}_signal' for ch in
+                      self.instrument.acquisition_channels()])
+
+    @names.setter
+    def names(self, names):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def labels(self):
+        return self.names
+
+    @labels.setter
+    def labels(self, labels):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def units(self):
+        return ['V'] * len(self.names)
+
+    @units.setter
+    def units(self, units):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def shapes(self):
+        shapes = {}
+        sample_rate = self._instrument.setting('sample_rate')
+        for pulse in self._instrument.pulse_sequence:
+            if not pulse.acquire:
+                continue
+
+            if pulse.average_mode == 'point':
+                shape = (1,)
+            elif pulse.average_mode == 'trace':
+                shape = (pulse.duration * 1e-3 * sample_rate)
+            else:
+                shape = (self._instrument.samples(),
+                         pulse.duration * 1e-3 * sample_rate)
+
+            shapes[pulse.full_name] = {
+                ch: shape for ch in self._instrument.acquisition_channels()}
+
+        return shapes

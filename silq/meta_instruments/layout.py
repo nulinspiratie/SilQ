@@ -60,21 +60,9 @@ class Layout(Instrument):
                                           else []),
                            vals=vals.Anything())
 
-        self.add_parameter(name="acquisition",
-                           parameter_class=LayoutAcquisitionParameter)
-
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=1)
-        self.add_parameter(name="sample_rate",
-                           label='Sample Rate',
-                           unit='S/s',
-                           get_cmd=lambda:
-                            (self.acquisition_interface.setting('sample_rate')
-                                    if self.acquisition_interface is not None
-                                    else None),
-                           snapshot_get=False,
-                           snapshot_value=False)
 
         self.add_parameter(name='active',
                            parameter_class=ManualParameter,
@@ -97,11 +85,14 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        # Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-        #  The acquisition_label is the label associated with a certain
-        #  acquisition channel. This is settable via layout.acquisition_outputs
-        #  The acquisition_channel_name is the actual channel name of the
-        #  acquisition controller.
+        """
+        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
+        The acquisition_label is the label associated with a certain
+        acquisition channel. This is settable via layout.acquisition_outputs
+        The acquisition_channel_name is the actual channel name of the
+        acquisition controller.
+        """
+
         acquisition_channels = od()
         for output_arg, output_label in self.acquisition_outputs():
             # Use try/except in case not all connections exist
@@ -114,6 +105,13 @@ class Layout(Instrument):
             except:
                 return None
         return acquisition_channels
+
+    @property
+    def sample_rate(self):
+        if self.acquisition_interface is not None:
+            return self.acquisition_interface.setting('sample_rate')
+        else:
+            return None
 
     def add_connection(self, output_arg, input_arg, **kwargs):
         """
@@ -620,6 +618,9 @@ class Layout(Instrument):
                 if flags:
                     self.update_flags(flags)
 
+        self.acquisition.shapes = self.pulse_sequence.get_trace_shapes(
+            sample_rate=self.sample_rate, samples=self.samples())
+
     def start(self):
         """
         Starts all the instruments except the acquisition instrument
@@ -652,7 +653,7 @@ class Layout(Instrument):
             interface.stop()
         self.active(False)
 
-    def do_acquisition(self, start=True, stop=True):
+    def acquisition(self, start=True, stop=True):
         """
         Performs an acquisition.
         By default this includes starting and stopping of all the instruments.
@@ -1076,65 +1077,3 @@ class CombinedConnection(Connection):
             return False
         else:
             return True
-
-
-class LayoutAcquisitionParameter(MultiParameter):
-    """
-    Acquisition parameter for the Layout
-    """
-    def __init__(self, name, **kwargs):
-        self.layout = kwargs['instrument']
-        super().__init__(name=name, names=self.names,
-                         labels=self.labels,
-                         units=self.units,
-                         shapes=self.shapes,
-                         snapshot_value=False,
-                         **kwargs)
-
-    @property
-    def names(self):
-        if self.layout.acquisition_channels is None:
-            return ['']
-        else:
-            return list('signal_' + ch for ch in
-                        self.layout.acquisition_channels.keys())
-
-    @names.setter
-    def names(self, names):
-        pass
-
-    @property
-    def labels(self):
-        if self.layout.acquisition_channels is None:
-            return ['']
-        else:
-            return list('{} signal' + ch for ch in
-                        self.layout.acquisition_channels.keys())
-    @labels.setter
-    def labels(self, labels):
-        pass
-
-    @property
-    def units(self):
-        if self.layout.acquisition_interface is not None:
-            return self.layout.acquisition_interface.acquisition.units
-        else:
-            return [''] * len(self.names)
-
-    @units.setter
-    def units(self, units):
-        pass
-
-    @property
-    def shapes(self):
-        if self.layout.acquisition_interface is not None:
-            return self.layout.acquisition_interface.acquisition.shapes
-        else:
-            return ((),) * len(self.names)
-
-    @shapes.setter
-    def shapes(self, shapes):
-        pass
-
-    def get(self):
-        return self.acquisition_interface.acquisition()
