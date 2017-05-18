@@ -84,12 +84,12 @@ def ramp_to_voltages(target_voltages, channels=None, use_scaled=True):
                       ratio * target_voltages[channel]
             parameters[channel](voltage)
 
-
-@register_cell_magic
-def label(line, cell):
-    # Add cell magic %label {lbl}, that can be executed later on
-    global code_labels
-    code_labels[line] = cell
+if in_notebook():
+    @register_cell_magic
+    def label(line, cell):
+        # Add cell magic %label {lbl}, that can be executed later on
+        global code_labels
+        code_labels[line] = cell
 
 
 def parameter_info(self, *parameter_names, detailed=False):

@@ -8,12 +8,12 @@ LB_RB = general_parameters.CombinedParameter(parameters=[LB, RB])
 
 DC_parameter = acquisition_parameters.DCParameter()
 EPR_parameter = acquisition_parameters.EPRParameter()
-T1_parameter = acquisition_parameters.T1Parameter(mode='ESR')
+T1_parameter = acquisition_parameters.T1Parameter()
 # variable_read = acquisition_parameters.VariableRead_Parameter(layout=layout)
-adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
-adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter(mode='ESR')
-rabi_ESR_parameter = acquisition_parameters.RabiParameter(mode='ESR')
-rabi_drive_ESR_parameter =  acquisition_parameters.RabiDriveParameter(mode='ESR')
+adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter()
+adiabatic_NMR_parameter = acquisition_parameters.AdiabaticParameter()
+rabi_ESR_parameter = acquisition_parameters.RabiParameter()
+rabi_drive_ESR_parameter =  acquisition_parameters.RabiDriveParameter()
 # select_ESR_parameter = measurement_parameters.SelectFrequencyParameter(
 #     acquisition_parameter=adiabatic_ESR_parameter,
 #     mode='ESR', discriminant='contrast')
