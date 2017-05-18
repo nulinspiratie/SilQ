@@ -64,7 +64,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
-        return self.layout.sample_rate()
+        return self.layout.sample_rate
 
     @property
     def start_idx(self):
@@ -679,7 +679,10 @@ class VariableReadParameter(AcquisitionParameter):
 
     @property
     def shapes(self):
-        return (self.layout.acquisition.shapes[0][1],),
+        shapes = self.layout.acquisition.shapes
+        pts = sum(shapes[pulse_name]['output']
+                  for pulse_name in ['plunge', 'read', 'empty'])
+        return (pts,),
 
     @shapes.setter
     def shapes(self, shapes):

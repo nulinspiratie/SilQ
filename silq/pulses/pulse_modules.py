@@ -441,6 +441,24 @@ class PulseSequence:
 
         return pre_voltage, post_voltage
 
+    def get_trace_shapes(self, sample_rate, samples):
+        """ Obtain diction"""
+
+        shapes = {}
+        for pulse in self:
+            if not pulse.acquire:
+                continue
+
+            if self.average_mode == 'point':
+                shape = (1,)
+            elif self.average_mode == 'trace':
+                shape = (self.duration * 1e-3 * sample_rate)
+            else:
+                shape = (samples, self.duration * 1e-3 * sample_rate)
+
+            shapes[pulse.full_name] = shape
+
+        return shapes
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
