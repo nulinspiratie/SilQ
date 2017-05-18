@@ -376,10 +376,7 @@ class Layout(Instrument):
 
         matched_interfaces = []
         for instrument_name, interface in interfaces.items():
-            is_primary = self.primary_instrument() == \
-                         interface.instrument_name()
-            pulse_implementation = interface.get_pulse_implementation(
-                pulse, connections=self.connections, is_primary=is_primary)
+            pulse_implementation = interface.has_pulse_implementation(pulse)
 
             # Skip to next interface if there is no pulse implementation
             if pulse_implementation is None:
