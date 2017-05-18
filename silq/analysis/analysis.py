@@ -190,16 +190,19 @@ def analyse_empty(traces, filter_loaded=True):
             'num_traces': len(traces)}
 
 
-def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
+def analyse_EPR(pulse_traces, sample_rate, t_skip=0, t_read=20,
                 min_trace_perc=0.5):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    fidelity_empty = analyse_empty(trace_segments['empty'])['up_proportion']
-    fidelity_load = analyse_load(trace_segments['plunge'])['up_proportion']
+    results_empty = analyse_empty(pulse_traces['empty']['output'])
+    fidelity_empty = results_empty['up_proportion']
+
+    results_load = analyse_load(pulse_traces['plunge'])
+    fidelity_load = results_load['up_proportion']
 
 
-    read_high_low = find_high_low(trace_segments['read'])
+    read_high_low = find_high_low(pulse_traces['read']['output'])
     threshold_voltage = read_high_low['threshold_voltage']
     voltage_difference = read_high_low['voltage_difference']
 
@@ -210,8 +213,8 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
                 'fidelity_empty': fidelity_empty,
                 'fidelity_load': fidelity_load}
     else:
-        read_segment1 = trace_segments['read'][:,:read_pts]
-        read_segment2 = trace_segments['read'][:,-read_pts:]
+        read_segment1 = pulse_traces['read']['output'][:, :read_pts]
+        read_segment2 = pulse_traces['read']['output'][:, -read_pts:]
 
         results1 = analyse_read(read_segment1, start_idx=start_idx,
                                 threshold_voltage=threshold_voltage,
@@ -233,12 +236,13 @@ def analyse_EPR(trace_segments, sample_rate, t_skip=0, t_read=20,
             'fidelity_empty': fidelity_empty,
             'fidelity_load': fidelity_load}
 
-def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20,
+
+def analyse_PR(pulse_traces, sample_rate, t_skip=0, t_read=20,
                min_trace_perc=0.5):
     start_idx = round(t_skip * 1e-3 * sample_rate)
     read_pts = round(t_read * 1e-3 * sample_rate)
 
-    read_high_low = find_high_low(trace_segments['read'])
+    read_high_low = find_high_low(pulse_traces['read']['output'])
     threshold_voltage = read_high_low['threshold_voltage']
     voltage_difference = read_high_low['voltage_difference']
 
@@ -247,17 +251,18 @@ def analyse_PR(trace_segments, sample_rate, t_skip=0, t_read=20,
                 'dark_counts': 0,
                 'voltage_difference': 0}
     else:
-        read_segment1 = trace_segments['read'][:,:read_pts]
-        read_segment2 = trace_segments['read'][:,-read_pts:]
+        read_segment1 = pulse_traces['read']['output'][:, :read_pts]
+        read_segment2 = pulse_traces['read']['output'][:, -read_pts:]
 
         results1 = analyse_read(read_segment1, start_idx=start_idx,
-                                     threshold_voltage=threshold_voltage,
-                                     filter_loaded=True)
+                                threshold_voltage=threshold_voltage,
+                                filter_loaded=True)
         up_proportion = results1['up_proportion']
 
-        dark_counts = analyse_read(read_segment2, start_idx=start_idx,
-                                   threshold_voltage=threshold_voltage,
-                                   filter_loaded=False)['up_proportion']
+        results2 = analyse_read(read_segment2, start_idx=start_idx,
+                                threshold_voltage=threshold_voltage,
+                                filter_loaded=False)
+        dark_counts = results2['up_proportion']
 
         if sum(results1['idx']) < min_trace_perc:
             # Not enough traces start loaded

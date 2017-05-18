@@ -652,8 +652,7 @@ class Layout(Instrument):
             interface.stop()
         self.active(False)
 
-    def do_acquisition(self, start=True, stop=True, return_dict=False,
-                       return_initialization_traces=False):
+    def do_acquisition(self, start=True, stop=True):
         """
         Performs an acquisition.
         By default this includes starting and stopping of all the instruments.
@@ -661,9 +660,6 @@ class Layout(Instrument):
             start (Bool): Whether to first start instruments (true by default)
             stop (Bool): Whether to stop instruments after finishing
                 measurements (True by default)
-            return_dict (Bool): Whether to return the initialization traces,
-                related to steered initialization (False by default)
-            return_initialization_traces:
 
         Returns:
             data (Dict): Dictionary where every element is of the form
@@ -671,22 +667,30 @@ class Layout(Instrument):
         """
         if start:
             self.start()
-        channel_signals = self.acquisition_interface.acquisition()
+
+        # Obtain traces from acquisition interface as dict
+        pulse_traces = self.acquisition_interface.acquisition()
+
         if stop:
             self.stop()
 
-        if return_dict:
-            # Change dictionary keys from channels to connection outputs
-            data = od((ch_label,
-                channel_signals[self.acquisition_interface.acquisition.names
-                    .index(ch_name+'_signal')])
-                for ch_label, ch_name in self.acquisition_channels.items())
-        else:
-            # Sort signals according to the order in layout.acquisition_outputs
-            data = [
-                channel_signals[self.acquisition_interface.acquisition.names
-                    .index(ch_name+'_signal')]
-                for ch_label, ch_name in self.acquisition_channels.items()]
+        # current output is pulse_traces[pulse_name][acquisition_channel]
+        # needs to be converted to data[pulse_name][output_label]
+        # where output_label is taken from self.acquisition_channels()
+        data = {}
+        for pulse, channel_traces in pulse_traces.items():
+            data[pulse.full_name] = {}
+            for channel, trace in channel_traces.items():
+                # Find corresponding connection
+                connection = self.get_connection(
+                    input_channel=channel,
+                    input_instrument=self.acquisition_instrument())
+                # Get output arg (instrument.channel)
+                output_arg = connection.output['str']
+                # Find label corresponding to output arg
+                output_label = next(item for item in self.acquisition_channels()
+                                    if item[0] == output_arg)
+                data[pulse.full_name][output_label] = trace
 
         return data
 

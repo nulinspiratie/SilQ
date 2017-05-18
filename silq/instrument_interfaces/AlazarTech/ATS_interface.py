@@ -359,26 +359,29 @@ class ATSInterface(InstrumentInterface):
 
     def _acquisition(self):
         traces = self._acquisition_controller.acquisition()
-        segmented_traces = self.segment_traces(traces)
-        return segmented_traces
+        traces_dict = {ch: trace for ch, trace in zip(self.acquisition_channels,
+                                                      traces)}
+        pulse_traces = self.segment_traces(traces_dict)
+        return pulse_traces
 
-    def segment_traces(self, trace):
-        trace_segments = {}
-        idx = 0
+    def segment_traces(self, traces):
+        pulse_traces = {}
         for pulse in self.pulse_sequence:
             if not pulse.acquire:
                 continue
-            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
-            start_idx =
-            # TODO Stopped midway
-            if average_mode == 'point':
-                trace_segments[pulse.full_name] = np.mean(
-                    trace[:, idx:idx + pulse_pts])
-            else:
-                trace_segments[pulse.full_name] = \
-                    trace[:, idx:idx + pulse_pts]
-            idx += pulse_pts
-        return trace_segments
+            start_idx = int(round(pulse.t_start / 1e3 * self.sample_rate))
+            pts = int(round(pulse.duration / 1e3 * self.sample_rate))
+
+            pulse_traces[pulse.full_name] = {}
+            for ch, trace in traces.items():
+                pulse_trace = trace[:, start_idx:start_idx + pts]
+                if pulse.average == 'point':
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
+                elif pulse.average == 'trace':
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
+                else:
+                    pulse_traces[pulse.full_name][ch] = pulse_trace
+        return pulse_traces
 
     def setting(self, setting):
         """
