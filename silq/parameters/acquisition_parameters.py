@@ -39,7 +39,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.samples = None
         self.t_read = None
         self.t_skip = None
-        self.trace_segments = None
         self.data = None
         self.dataset = None
         self.results = None
@@ -70,24 +69,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def start_idx(self):
         return round(self.t_skip * 1e-3 * self.sample_rate)
-
-    def segment_trace(self, trace):
-        # TODO this function should likely go to Layout.
-        trace_segments = {}
-        idx = 0
-        for pulse in self.pulse_sequence:
-            if not pulse.acquire:
-                continue
-            pulse_pts = int(round(pulse.duration / 1e3 * self.sample_rate))
-            pulse_traces = trace[:, idx:idx + pulse_pts]
-            if pulse.average == 'point':
-                trace_segments[pulse.full_name] = np.mean(pulse_traces)
-            elif pulse.average == 'trace':
-                trace_segments[pulse.full_name] = np.mean(pulse_traces, axis=0)
-            else:
-                trace_segments[pulse.full_name] = pulse_traces
-            idx += pulse_pts
-        return trace_segments
 
     def store_traces(self, traces_dict, base_folder=None, subfolder=None):
         # Store raw traces
@@ -174,13 +155,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, segment_traces=True, **kwargs):
+    def acquire(self, **kwargs):
         # Perform acquisition
-        self.data = self.layout.do_acquisition(return_dict=True, **kwargs)
-        if segment_traces:
-            self.trace_segments = {
-                ch_label: self.segment_trace(trace)
-                for ch_label, trace in self.data.items()}
+        self.data = self.layout.do_acquisition(**kwargs)
 
 
 class DCParameter(AcquisitionParameter):
@@ -206,15 +183,15 @@ class DCParameter(AcquisitionParameter):
         self.layout.start()
 
     def acquire(self, **kwargs):
-        # Do not segment traces since we only receive a single value
-        super().acquire(start=False, stop=False, segment_traces=True)
+        super().acquire(start=False, stop=False)
 
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        return [self.trace_segments['output']['read']]
+        self.results = [self.data['read']['output']]
+        return self.results
 
 
 class DCSweepParameter(AcquisitionParameter):
@@ -346,7 +323,7 @@ class DCSweepParameter(AcquisitionParameter):
         super().acquire(stop=stop, **kwargs)
 
         # Process results
-        DC_voltages = np.array([self.trace_segments['output'][pulse.full_name]
+        DC_voltages = np.array([self.data[pulse.full_name]['output']
                                 for pulse in
                                 self.pulse_sequence.get_pulses(name='DC_read')])
         if len(self.sweep_parameters) == 1:
@@ -358,7 +335,7 @@ class DCSweepParameter(AcquisitionParameter):
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
 
         if self.trace_pulse.enabled:
-            self.results.append(self.trace_segments['output']['trace'])
+            self.results.append(self.data['trace']['output'])
 
         return self.results
 
@@ -386,17 +363,16 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True),
             DCPulse('final'))
 
-        self.analysis = analysis.analyse_EPR
-
     @clear_single_settings
     def get(self):
         self.setup()
 
         self.acquire()
 
-        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
-                                   sample_rate=self.sample_rate,
-                                   t_skip=self.t_skip, t_read=self.t_read)
+        fidelities = analysis.analyse_EPR(pulse_traces=self.data,
+                                          sample_rate=self.sample_rate,
+                                          t_skip=self.t_skip,
+                                          t_read=self.t_read)
         self.results = [fidelities[name] for name in self.names]
 
         if self.save_traces:
@@ -430,8 +406,6 @@ class AdiabaticParameter(AcquisitionParameter):
 
         self.pulse_sequence.sort()
 
-        self.analysis = analysis.analyse_PR
-
     @property
     def frequency(self):
         return self.pulse_sequence['adiabatic'].frequency
@@ -441,8 +415,7 @@ class AdiabaticParameter(AcquisitionParameter):
         self.pulse_sequence['adiabatic'].frequency = frequency
 
     def acquire(self, **kwargs):
-        super().acquire(return_initialization_traces=self.pulse_sequence[
-            'steered_initialization'].enabled, **kwargs)
+        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -450,9 +423,10 @@ class AdiabaticParameter(AcquisitionParameter):
 
         self.acquire()
 
-        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
-                                   sample_rate=self.sample_rate,
-                                   t_skip=self.t_skip, t_read=self.t_read)
+        fidelities = analysis.analyse_PR(pulse_traces=self.data,
+                                         sample_rate=self.sample_rate,
+                                         t_skip=self.t_skip,
+                                         t_read=self.t_read)
         self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
@@ -489,8 +463,6 @@ class RabiParameter(AcquisitionParameter):
         # otherwise be after 'final' pulse
         self.pulse_sequence.sort()
 
-        self.analysis = analysis.analyse_PR
-
     @property
     def frequency(self):
         return self.pulse_sequence['rabi'].frequency
@@ -500,8 +472,7 @@ class RabiParameter(AcquisitionParameter):
         self.pulse_sequence['rabi'].frequency = frequency
 
     def acquire(self, **kwargs):
-        super().acquire(return_initialization_traces=self.pulse_sequence[
-            'steered_initialization'].enabled, **kwargs)
+        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -509,9 +480,10 @@ class RabiParameter(AcquisitionParameter):
 
         self.acquire()
 
-        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
-                                   sample_rate=self.sample_rate,
-                                   t_skip=self.t_skip, t_read=self.t_read)
+        fidelities = analysis.analyse_PR(pulse_traces=self.data,
+                                         sample_rate=self.sample_rate,
+                                         t_skip=self.t_skip,
+                                         t_read=self.t_read)
         self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
@@ -522,6 +494,7 @@ class RabiParameter(AcquisitionParameter):
             self.print_results()
 
         return self.results
+
 
 class RabiDriveParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
@@ -545,8 +518,6 @@ class RabiDriveParameter(AcquisitionParameter):
 
         self.pulse_sequence.sort()
 
-        self.analysis = analysis.analyse_PR
-
     @property
     def frequency(self):
         return self.pulse_sequence['rabi'].frequency
@@ -564,8 +535,7 @@ class RabiDriveParameter(AcquisitionParameter):
         self.pulse_sequence['rabi'].duration = duration
 
     def acquire(self, **kwargs):
-        super().acquire(return_initialization_traces=self.pulse_sequence[
-            'steered_initialization'].enabled, **kwargs)
+        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -573,9 +543,10 @@ class RabiDriveParameter(AcquisitionParameter):
 
         self.acquire()
 
-        fidelities = self.analysis(trace_segments=self.trace_segments['output'],
-                                   sample_rate=self.sample_rate,
-                                   t_skip=self.t_skip, t_read=self.t_read)
+        fidelities = analysis.analyse_PR(pulse_traces=self.data,
+                                         sample_rate=self.sample_rate,
+                                         t_skip=self.t_skip,
+                                         t_read=self.t_read)
         self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
@@ -604,8 +575,6 @@ class T1Parameter(AcquisitionParameter):
             FrequencyRampPulse('adiabatic_ESR'))
         self.pulse_sequence.sort()
 
-        self.analysis = analysis.analyse_read
-
         self.readout_threshold_voltage = None
 
         self._meta_attrs.append('readout_threshold_voltage')
@@ -615,8 +584,7 @@ class T1Parameter(AcquisitionParameter):
         return self.pulse_sequence['plunge'].duration
 
     def acquire(self, **kwargs):
-        super().acquire(return_initialization_traces=self.pulse_sequence[
-            'steered_initialization'].enabled, **kwargs)
+        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -625,10 +593,10 @@ class T1Parameter(AcquisitionParameter):
         self.acquire()
 
         # Analysis
-        fidelities = self.analysis(traces=self.trace_segments['output']['read'],
-                                   threshold_voltage=
-                                   self.readout_threshold_voltage,
-                                   start_idx=self.start_idx)
+        fidelities = analysis.analyse_read(
+            traces=self.data['read']['output'],
+            threshold_voltage=self.readout_threshold_voltage,
+            start_idx=self.start_idx)
         self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
@@ -662,15 +630,12 @@ class DarkCountsParameter(AcquisitionParameter):
             SteeredInitialization('steered_initialization', enabled=True),
             DCPulse('read', acquire=True))
 
-        self.analysis = analysis.analyse_read
-
         self.readout_threshold_voltage = None
 
         self._meta_attrs.append('readout_threshold_voltage')
 
     def acquire(self, **kwargs):
-        super().acquire(return_initialization_traces=self.pulse_sequence[
-            'steered_initialization'].enabled, **kwargs)
+        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -678,10 +643,10 @@ class DarkCountsParameter(AcquisitionParameter):
 
         self.acquire()
 
-        fidelities = self.analysis(traces=self.trace_segments['output']['read'],
-                                   threshold_voltage=
-                                   self.readout_threshold_voltage,
-                                   start_idx=self.start_idx)
+        fidelities = analysis.analyse_read(
+            traces=self.data['read']['output'],
+            threshold_voltage=self.readout_threshold_voltage,
+            start_idx=self.start_idx)
         self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
@@ -723,9 +688,9 @@ class VariableReadParameter(AcquisitionParameter):
     def get(self):
         self.setup()
 
-        self.acquire(segment_traces=False)
+        self.acquire()
 
-        self.results = np.mean(self.data['output'],
-                               axis=0)
-
+        self.results = np.concatenate([self.data['plunge']['output'],
+                                       self.data['read']['output'],
+                                       self.data['empty']['output']])
         return self.results,
