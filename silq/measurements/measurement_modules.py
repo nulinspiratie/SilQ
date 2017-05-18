@@ -8,7 +8,7 @@ measurement_config = config['user'].get('measurement', {})
 class MeasurementSequence:
     def __init__(self, name=None, measurements=None, condition_sets=None,
                  set_parameters=None, acquisition_parameter=None,
-                 silent=True):
+                 silent=True, set_active=False):
         self.set_parameters = set_parameters
         self.acquisition_parameter = acquisition_parameter
 
@@ -21,6 +21,7 @@ class MeasurementSequence:
         self.condition_sets = [] if condition_sets is None else condition_sets
 
         self.silent = silent
+        self.set_active = set_active
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -44,16 +45,23 @@ class MeasurementSequence:
             raise StopIteration
         else:
             self.measurement = self.next_measurement
+        self.measurement.silent = self.silent
 
+        # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
-            print('Performing measurement {}'.format(self.measurement))
-        dataset = self.measurement()
+            print('Performing {}'.format(self.measurement))
+        self.measurement.silent = self.silent
+        # Performing measurement also checks for condition sets, and updates
+        # set parameters accordingly
+        dataset = self.measurement.get(condition_sets=self.condition_sets,
+                                       set_active=self.set_active)
         self.datasets.append(dataset)
-        condition_set = self.measurement.check_condition_sets(
-            *self.condition_sets)
-        self.result = condition_set.result
 
+        # Return result of the final condition set
+        # Either this was the first successful condition, or if none were
+        # successful, this would be the final condition set
+        self.result = self.measurement.condition_set.result
         return self.result
 
     def __call__(self):
