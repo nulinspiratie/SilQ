@@ -1,6 +1,23 @@
 import numpy as np
 import copy
 import inspect
+from blinker import signal
+
+
+class PulseMatch():
+    def __init__(self, pulse, pulse_attr, delay=0):
+        self.pulse = pulse
+        self.pulse_attr = pulse_attr
+        self.delay = delay
+
+    def __call__(self):
+        return getattr(self.pulse, self.pulse_attr) + self.delay
+
+    def signal_function(self, pulse, attr):
+        def signal_pulse(sender, **kwargs):
+            if kwargs.get(self.pulse_attr, None) is not None:
+                setattr(pulse, attr, kwargs[self.pulse_attr] + self.delay)
+        return signal_pulse
 
 
 class PulseRequirement():
@@ -58,6 +75,7 @@ class PulseSequence:
         Args:
             allow_pulse_overlap:
         """
+
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
@@ -71,16 +89,20 @@ class PulseSequence:
         self._duration = None
 
         self.pulses = []
+        self.enabled_pulses = []
+        self.disabled_pulses = []
+
         if pulses:
-            self.add(pulses)
+            self.add(*pulses)
 
     def __getitem__(self, index):
         if isinstance(index, int):
             return self.enabled_pulses[index]
         elif isinstance(index, str):
-            pulses = [p for p in self.pulses if p.name == index]
-            assert len(pulses) == 1, \
-                "Found more than one pulse with name {}".format(index)
+            pulses = [p for p in self.pulses
+                      if p.satisfies_conditions(name=index)]
+            assert len(pulses) == 1, f"Could not find unique pulse with name " \
+                                     f"{index}, pulses found:\n{pulses}"
             return pulses[0]
 
     def __len__(self):
@@ -160,13 +182,19 @@ class PulseSequence:
             'pulses': [pulse._JSONEncoder() for pulse in self.pulses]
         }
 
-    @property
-    def enabled_pulses(self):
-        return [pulse for pulse in self.pulses if pulse.enabled]
-
-    @property
-    def disabled_pulses(self):
-        return [pulse for pulse in self.pulses if not pulse.enabled]
+    def _handle_signal(self, pulse, **kwargs):
+        key, val = kwargs.popitem()
+        if key == 'enabled':
+            if val is True:
+                if pulse not in self.enabled_pulses:
+                    self.enabled_pulses.append(pulse)
+                if pulse in self.disabled_pulses:
+                    self.disabled_pulses.remove(pulse)
+            elif val is False:
+                if pulse in self.enabled_pulses:
+                    self.enabled_pulses.remove(pulse)
+                if pulse not in self.disabled_pulses:
+                    self.disabled_pulses.append(pulse)
 
     @property
     def duration(self):
@@ -206,7 +234,7 @@ class PulseSequence:
         for attr, val in vars(pulse_sequence).items():
             setattr(self, attr, copy.deepcopy(val))
 
-    def add(self, pulses):
+    def add(self, *pulses):
         """
         Adds pulse(s) to the PulseSequence.
         Pulses can be a list of pulses or a single pulse.
@@ -218,14 +246,11 @@ class PulseSequence:
         - If the pulses are targeted and PulseSequence.allow_targeted_pulses
             is False, it raises a SyntaxError
         Args:
-            pulses: pulse or list of pulses to add
+            *pulses: pulses to add
 
         Returns:
             None
         """
-        if not isinstance(pulses, list):
-            pulses = [pulses]
-
         for pulse in pulses:
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p)
@@ -237,25 +262,43 @@ class PulseSequence:
                                 if self.pulses_overlap(pulse, p)]))
             elif not isinstance(pulse, PulseImplementation) and \
                     not self.allow_untargeted_pulses:
-                raise SyntaxError(
-                    'Not allowed to add untargeted pulse {}'.format(pulse))
+                raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
             elif isinstance(pulse, PulseImplementation) and \
                     not self.allow_targeted_pulses:
-                raise SyntaxError(
-                    'Not allowed to add targeted pulse {}'.format(pulse))
+                raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
+            elif pulse.duration is None:
+                raise SyntaxError(f'Pulse {pulse} duration must be specified')
             else:
+                # Check if pulse with same name exists
+                if pulse.name is not None:
+                    pulses_same_name = self.get_pulses(name=pulse.name)
+                    if pulses_same_name:
+                        # Ensure id is unique
+                        if pulses_same_name[0].id is None:
+                            pulses_same_name[0].id = 0
+                            pulse.id = 1
+                        else:
+                            max_id = max(p.id for p in pulses_same_name)
+                            pulse.id = max_id + 1
+
                 pulse_copy = pulse.copy()
-                if pulse_copy._t_start is None and pulse_copy._previous_pulse \
-                        is None:
+                if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
                         # the previous_pulse.t_stop will be used as t_start
-                        pulse_copy.previous_pulse = self[-1]
+                        pulse_copy.t_start = PulseMatch(self[-1], 't_stop')
+                    else:
+                        pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
+                signal('pulse').connect(self._handle_signal, sender=pulse_copy)
 
+                if pulse_copy.enabled:
+                    self.enabled_pulses.append(pulse_copy)
+                else:
+                    self.disabled_pulses.append(pulse_copy)
         self.sort()
 
-    def remove(self, pulses):
+    def remove(self, *pulses):
         """
         Adds pulse(s) to the PulseSequence.
         Pulses can be a list of pulses or a single pulse.
@@ -272,9 +315,6 @@ class PulseSequence:
         Returns:
             None
         """
-        if not isinstance(pulses, list):
-            pulses = [pulses]
-
         for pulse in pulses:
             if isinstance(pulse, str):
                 pulses_name = [p for p in self.pulses if p.name==pulse]
@@ -282,21 +322,26 @@ class PulseSequence:
                                         'pulses'.format(pulse, len(pulses_name))
                 pulse = pulses_name[0]
             self.pulses.remove(pulse)
-
+            if pulse.enabled:
+                self.enabled_pulses.remove(pulse)
+            else:
+                self.disabled_pulses.remove(pulse)
+            signal('pulse').disconnect(self._handle_signal, pulse)
         self.sort()
 
     def sort(self):
         self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
-        return self.pulses
+        self.enabled_pulses = sorted(self.enabled_pulses,
+                                     key=lambda p: p.t_start)
 
     def clear(self):
         self.pulses = []
+        self.enabled_pulses = []
+        self.disabled_pulses = []
+        signal('pulse').disconnect(self._handle_signal)
 
     def copy(self):
-        pulse_sequence_copy = copy.deepcopy(self)
-        pulse_sequence_copy.pulses = [pulse.copy(fix_vars=True)
-                                      for pulse in pulse_sequence_copy.pulses]
-        return pulse_sequence_copy
+        return copy.deepcopy(self)
 
     def pulses_overlap(self, pulse1, pulse2):
         """
@@ -399,6 +444,7 @@ class PulseSequence:
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
+        self._connected_attrs = {}
         self.pulse_class = pulse_class
 
         # List of conditions that a pulse must satisfy to be targeted

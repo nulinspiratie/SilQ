@@ -5,7 +5,7 @@ import numpy as np
 import qcodes as qc
 from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataMode
+from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
 
@@ -47,7 +47,7 @@ class ScaledParameter(Parameter):
     Setting this parameter sets the underlying parameter multiplied by the ratio
     Getting this parameter gets the underlying parameter divided by the ratio
     """
-    def __init__(self, parameter, ratio=1,
+    def __init__(self, parameter, scale=1,
                  name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = parameter.name
@@ -58,16 +58,16 @@ class ScaledParameter(Parameter):
         super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameter = parameter
 
-        self.ratio = ratio
-        self._meta_attrs.extend(['ratio'])
+        self.scale = scale
+        self._meta_attrs.extend(['scale'])
 
     def get(self):
-        value = self.parameter() / self.ratio
+        value = self.parameter() / self.scale
         self._save_val(value)
         return value
 
     def set(self, val):
-        value = val * self.ratio
+        value = val * self.scale
         self._save_val(val)
         self.parameter(value)
 
@@ -95,8 +95,6 @@ class StoreParameter(Parameter):
                                       set_arrays=(
                                       data_array_set, index0))
 
-        data_mode = DataMode.PUSH_TO_SERVER
-
         data_folder = data_tools.get_latest_data_folder()
         loc_provider = qc.data.location.FormatLocation(
             fmt=data_folder+'/traces/#{counter}_trace_{time}')
@@ -104,8 +102,7 @@ class StoreParameter(Parameter):
         self.data_set = new_data(
             location=loc_provider,
             arrays=[data_array_set, index0, data_array_values],
-            mode=data_mode,
-            data_manager=self.data_manager, name='test_data_parameter',
+            name='test_data_parameter',
             formatter=formatter)
 
     def get(self):
