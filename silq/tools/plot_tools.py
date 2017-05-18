@@ -242,7 +242,7 @@ class DCPlot(InteractivePlot):
 
 
 class ScanningPlot(InteractivePlot):
-    def __init__(self, parameter, interval=0.5, auto_start=False, **kwargs):
+    def __init__(self, parameter, interval=0.01, auto_start=False, **kwargs):
         super().__init__(**kwargs)
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
