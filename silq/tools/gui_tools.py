@@ -12,7 +12,6 @@ from PyQt4.QtCore import QThread
 from qcodes.process.server import BaseServer
 
 
-
 class GUIServer(BaseServer):
     def __init__(self, query_queue, response_queue, extras=None):
         super().__init__(query_queue, response_queue, extras)
