@@ -280,12 +280,12 @@ class DCSweepParameter(AcquisitionParameter):
             self.shapes = ((len(sweep_voltages),),)
             self.setpoints = ((sweep_voltages,),)
         elif len(self.sweep_parameters) == 2:
-            outer_sweep_name, outer_sweep_dict = next(iter_sweep_parameters)
-            outer_sweep_voltages = outer_sweep_dict.sweep_voltages
-            outer_connection_label = outer_sweep_dict.connection_label
             inner_sweep_name, inner_sweep_dict = next(iter_sweep_parameters)
             inner_sweep_voltages = inner_sweep_dict.sweep_voltages
             inner_connection_label = inner_sweep_dict.connection_label
+            outer_sweep_name, outer_sweep_dict = next(iter_sweep_parameters)
+            outer_sweep_voltages = outer_sweep_dict.sweep_voltages
+            outer_connection_label = outer_sweep_dict.connection_label
 
             pulses = []
             if outer_connection_label == inner_connection_label:
