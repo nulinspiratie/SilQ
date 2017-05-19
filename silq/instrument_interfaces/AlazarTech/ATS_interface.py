@@ -357,17 +357,19 @@ class ATSInterface(InstrumentInterface):
     def acquisition(self):
         traces = self._acquisition_controller.acquisition()
         traces_dict = {
-            ch: trace for ch, trace in zip(self.acquisition_channels, traces)}
+            ch: trace for ch, trace in zip(self.acquisition_channels(), traces)}
         pulse_traces = self.segment_traces(traces_dict)
         return pulse_traces
 
     def segment_traces(self, traces):
+        sample_rate = self.setting('sample_rate')
         pulse_traces = {}
         for pulse in self.pulse_sequence:
             if not pulse.acquire:
                 continue
-            start_idx = int(round(pulse.t_start / 1e3 * self.sample_rate))
-            pts = int(round(pulse.duration / 1e3 * self.sample_rate))
+
+            start_idx = int(round(pulse.t_start / 1e3 * sample_rate))
+            pts = int(round(pulse.duration / 1e3 * sample_rate))
 
             pulse_traces[pulse.full_name] = {}
             for ch, trace in traces.items():
