@@ -49,10 +49,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.select_board(0)
         self.instrument.start_programming()
 
-        if self._pulse_sequence:
+        if self.pulse_sequence:
             # Iteratively increase time
             t = 0
-            t_stop_max = max(self._pulse_sequence.t_stop_list)
+            t_stop_max = max(self.pulse_sequence.t_stop_list)
 
             # Generate pulses once for speedup reasons
             loop_idx = 0
@@ -60,14 +60,14 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 loop_idx += 1
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses
-                active_input_pulses = self._input_pulse_sequence.get_pulses(
+                active_input_pulses = self.input_pulse_sequence.get_pulses(
                     t_start=t)
                 for input_pulse in active_input_pulses:
                     if isinstance(input_pulse,TriggerWaitPulse):
                         self.instrument.send_instruction(0,'wait', 0, 50)
 
                 # Segment remaining pulses into next pulses and others
-                active_pulses = self._pulse_sequence.get_pulses(t=t)
+                active_pulses = self.pulse_sequence.get_pulses(t=t)
 
                 if not active_pulses:
                     total_channel_value = 0
@@ -76,7 +76,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                         [pulse.implement() for pulse in active_pulses])
 
                 # find time of next event
-                t_next = min(t_val for t_val in self._pulse_sequence.t_list
+                t_next = min(t_val for t_val in self.pulse_sequence.t_list
                              if t_val > t)
 
                 # Send wait instruction until next event
@@ -101,7 +101,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Add final instructions
 
                 # Wait until end of pulse sequence
-                wait_duration = max(self._pulse_sequence.duration - t, 0)
+                wait_duration = max(self.pulse_sequence.duration - t, 0)
                 if wait_duration:
                     wait_cycles = round(wait_duration * ms)
                     if wait_cycles < 1e9:
@@ -116,7 +116,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                         self.instrument.send_instruction(
                             0, 'long_delay', divisor, delay)
 
-                    t += self._pulse_sequence.duration
+                    t += self.pulse_sequence.duration
 
                 self.instrument.send_instruction(0, 'branch', 0, 50)
 

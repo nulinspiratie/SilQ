@@ -60,21 +60,9 @@ class Layout(Instrument):
                                           else []),
                            vals=vals.Anything())
 
-        self.add_parameter(name="acquisition",
-                           parameter_class=LayoutAcquisitionParameter)
-
         self.add_parameter(name='samples',
                            parameter_class=ManualParameter,
                            initial_value=1)
-        self.add_parameter(name="sample_rate",
-                           label='Sample Rate',
-                           unit='S/s',
-                           get_cmd=lambda:
-                            (self.acquisition_interface.setting('sample_rate')
-                                    if self.acquisition_interface is not None
-                                    else None),
-                           snapshot_get=False,
-                           snapshot_value=False)
 
         self.add_parameter(name='active',
                            parameter_class=ManualParameter,
@@ -82,6 +70,7 @@ class Layout(Instrument):
                            vals=vals.Bool())
 
         self.pulse_sequence = PulseSequence()
+        self.acquisition_shapes = {}
 
     @property
     def acquisition_interface(self):
@@ -97,11 +86,14 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        # Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-        #  The acquisition_label is the label associated with a certain
-        #  acquisition channel. This is settable via layout.acquisition_outputs
-        #  The acquisition_channel_name is the actual channel name of the
-        #  acquisition controller.
+        """
+        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
+        The acquisition_label is the label associated with a certain
+        acquisition channel. This is settable via layout.acquisition_outputs
+        The acquisition_channel_name is the actual channel name of the
+        acquisition controller.
+        """
+
         acquisition_channels = od()
         for output_arg, output_label in self.acquisition_outputs():
             # Use try/except in case not all connections exist
@@ -114,6 +106,13 @@ class Layout(Instrument):
             except:
                 return None
         return acquisition_channels
+
+    @property
+    def sample_rate(self):
+        if self.acquisition_interface is not None:
+            return self.acquisition_interface.setting('sample_rate')
+        else:
+            return None
 
     def add_connection(self, output_arg, input_arg, **kwargs):
         """
@@ -471,6 +470,10 @@ class Layout(Instrument):
 
         is_primary = self.primary_instrument() == interface.instrument_name()
 
+        # Add pulse to acquisition instrument if it must be acquired
+        if pulse.acquire:
+            self.acquisition_interface.pulse_sequence.add(pulse)
+
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
             pulses = [pulses]
@@ -482,17 +485,12 @@ class Layout(Instrument):
             # Force t_start to have a fixed value
             targeted_pulse.t_start = targeted_pulse.t_start
 
-            interface.pulse_sequence(('add', targeted_pulse))
+            interface.pulse_sequence.add(targeted_pulse)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            input_interface.input_pulse_sequence(('add', targeted_pulse))
-
-            # Add pulse to acquisition instrument if it must be acquired
-            if pulse.acquire:
-                self.acquisition_interface.pulse_sequence(
-                    ('add', targeted_pulse))
+            input_interface.input_pulse_sequence.add(targeted_pulse)
 
             # Also target pulses that are in additional_pulses, such as triggers
             for additional_pulse in targeted_pulse.additional_pulses:
@@ -523,8 +521,8 @@ class Layout(Instrument):
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             interface.initialize()
-            interface._pulse_sequence.duration = pulse_sequence.duration
-            interface._input_pulse_sequence.duration = pulse_sequence.duration
+            interface.pulse_sequence.duration = pulse_sequence.duration
+            interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -575,7 +573,7 @@ class Layout(Instrument):
                     # Instrument Flag exists, and values match
                     pass
 
-    def setup(self, samples=None, average_mode=None, **kwargs):
+    def setup(self, samples=None, **kwargs):
         """
         Sets up all the instruments after having targeted a pulse sequence.
         Instruments are setup through their respective interfaces, and only
@@ -586,8 +584,6 @@ class Layout(Instrument):
         and applied at this stage.
         Args:
             samples: Number of samples (by default uses previous value)
-            average_mode: Type of averaging ('none', 'trace', 'point')
-                (by default uses previous value).
             **kwargs: additional kwargs sent to all interfaces being setup.
 
         Returns:
@@ -607,16 +603,25 @@ class Layout(Instrument):
                 [ch_name for _, ch_name in self.acquisition_channels.items()])
 
         for interface in self._get_interfaces_hierarchical():
-            if interface.pulse_sequence():
+            if interface.pulse_sequence:
                 # Get existing setup flags (if any)
                 instrument_flags = self.flags[interface.instrument_name()]
                 setup_flags = instrument_flags.get('setup', {})
 
                 flags = interface.setup(samples=self.samples(),
-                                        average_mode=average_mode,
                                         **setup_flags, **kwargs)
                 if flags:
                     self.update_flags(flags)
+
+        # Create acquisition shapes
+        trace_shapes = self.pulse_sequence.get_trace_shapes(
+            sample_rate=self.sample_rate, samples=self.samples())
+        self.acquisition_shapes = {}
+        output_labels = [output[1] for output in self.acquisition_outputs()]
+        for pulse_name, shape in trace_shapes.items():
+            self.acquisition_shapes[pulse_name] = {
+                label: shape for label in output_labels}
+
 
     def start(self):
         """
@@ -635,7 +640,7 @@ class Layout(Instrument):
                                                              False):
                 # Interface has a flag to skip start
                 continue
-            elif interface.pulse_sequence():
+            elif interface.pulse_sequence:
                 interface.start()
             else:
                 pass
@@ -650,8 +655,7 @@ class Layout(Instrument):
             interface.stop()
         self.active(False)
 
-    def do_acquisition(self, start=True, stop=True, return_dict=False,
-                       return_initialization_traces=False):
+    def acquisition(self, start=True, stop=True):
         """
         Performs an acquisition.
         By default this includes starting and stopping of all the instruments.
@@ -659,45 +663,38 @@ class Layout(Instrument):
             start (Bool): Whether to first start instruments (true by default)
             stop (Bool): Whether to stop instruments after finishing
                 measurements (True by default)
-            return_dict (Bool): Whether to return the initialization traces,
-                related to steered initialization (False by default)
-            return_initialization_traces:
 
         Returns:
-            data (Dict): Dictionary containing 'acquisition_traces' key,
-                which is another dict where every element is of the form
+            data (Dict): Dictionary where every element is of the form
                 acquisition_channel: acquisition_signal.
-                'Additionally data can also have 'initialization_traces' and
-                'post_initialization_traces', used for steered initialization
         """
         if start:
             self.start()
-        channel_signals = self.acquisition_interface.acquisition()
+
+        # Obtain traces from acquisition interface as dict
+        pulse_traces = self.acquisition_interface.acquisition()
+
         if stop:
             self.stop()
 
-        if return_dict:
-            data = {}
-            # Change dictionary keys from channels to connection outputs
-            data['acquisition_traces'] = od((ch_label,
-                channel_signals[self.acquisition_interface.acquisition.names
-                    .index(ch_name+'_signal')])
-                for ch_label, ch_name in self.acquisition_channels.items())
-
-            if return_initialization_traces:
-                data['initialization_traces'] = \
-                    self.acquisition_interface.get_traces('initialization')
-
-                data['post_initialization_traces'] = od((ch_label,
-                    self.acquisition_interface.get_traces('post_initialization')
-                        [ch_name])
-                for ch_label, ch_name in self.acquisition_channels.items())
-        else:
-            # Sort signals according to the order in layout.acquisition_outputs
-            data = [
-                channel_signals[self.acquisition_interface.acquisition.names
-                    .index(ch_name+'_signal')]
-                for ch_label, ch_name in self.acquisition_channels.items()]
+        # current output is pulse_traces[pulse_name][acquisition_channel]
+        # needs to be converted to data[pulse_name][output_label]
+        # where output_label is taken from self.acquisition_channels()
+        data = {}
+        for pulse, channel_traces in pulse_traces.items():
+            data[pulse] = {}
+            for channel, trace in channel_traces.items():
+                # Find corresponding connection
+                connection = self.get_connection(
+                    input_channel=channel,
+                    input_instrument=self.acquisition_instrument())
+                # Get output arg (instrument.channel)
+                output_arg = connection.output['str']
+                # Find label corresponding to output arg
+                output_label = next(
+                    item[1]for item in self.acquisition_outputs()
+                    if item[0] == output_arg)
+                data[pulse][output_label] = trace
 
         return data
 
@@ -1083,65 +1080,3 @@ class CombinedConnection(Connection):
             return False
         else:
             return True
-
-
-class LayoutAcquisitionParameter(MultiParameter):
-    """
-    Acquisition parameter for the Layout
-    """
-    def __init__(self, name, **kwargs):
-        self.layout = kwargs['instrument']
-        super().__init__(name=name, names=self.names,
-                         labels=self.labels,
-                         units=self.units,
-                         shapes=self.shapes,
-                         snapshot_value=False,
-                         **kwargs)
-
-    @property
-    def names(self):
-        if self.layout.acquisition_channels is None:
-            return ['']
-        else:
-            return list('signal_' + ch for ch in
-                        self.layout.acquisition_channels.keys())
-
-    @names.setter
-    def names(self, names):
-        pass
-
-    @property
-    def labels(self):
-        if self.layout.acquisition_channels is None:
-            return ['']
-        else:
-            return list('{} signal' + ch for ch in
-                        self.layout.acquisition_channels.keys())
-    @labels.setter
-    def labels(self, labels):
-        pass
-
-    @property
-    def units(self):
-        if self.layout.acquisition_interface is not None:
-            return self.layout.acquisition_interface.acquisition.units
-        else:
-            return [''] * len(self.names)
-
-    @units.setter
-    def units(self, units):
-        pass
-
-    @property
-    def shapes(self):
-        if self.layout.acquisition_interface is not None:
-            return self.layout.acquisition_interface.acquisition.shapes
-        else:
-            return ((),) * len(self.names)
-
-    @shapes.setter
-    def shapes(self, shapes):
-        pass
-
-    def get(self):
-        return self.acquisition_interface.acquisition()
