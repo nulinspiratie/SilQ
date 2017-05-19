@@ -157,7 +157,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def acquire(self, **kwargs):
         # Perform acquisition
-        self.data = self.layout.do_acquisition(**kwargs)
+        self.data = self.layout.acquisition(**kwargs)
 
 
 class DCParameter(AcquisitionParameter):
@@ -666,7 +666,6 @@ class VariableReadParameter(AcquisitionParameter):
                          labels=('Read voltage',),
                          units=['V'],
                          snapshot_value=False,
-                         setpoint_names=(('time',),),
                          **kwargs)
         self.pulse_sequence.add(
             DCPulse(name='plunge', acquire=True, average='trace',
@@ -678,20 +677,20 @@ class VariableReadParameter(AcquisitionParameter):
             DCPulse(name='final',
                     connection_label='stage'))
 
-    @property
-    def setpoints(self):
-        duration = sum(pulse.duration for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True))
-        return (duration * 1e-3 * self.sample_rate, ),
-
-    @setpoints.setter
-    def setpoints(self, setpoints):
-        pass
+    # @property
+    # def setpoints(self):
+    #     duration = sum(pulse.duration for pulse in
+    #                    self.pulse_sequence.get_pulses(acquire=True))
+    #     return (duration * 1e-3 * self.sample_rate, ),
+    #
+    # @setpoints.setter
+    # def setpoints(self, setpoints):
+    #     pass
 
     @property
     def shapes(self):
         shapes = self.layout.acquisition_shapes
-        pts = sum(shapes[pulse_name]['output']
+        pts = sum(shapes[pulse_name]['output'][0]
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
 

@@ -470,6 +470,10 @@ class Layout(Instrument):
 
         is_primary = self.primary_instrument() == interface.instrument_name()
 
+        # Add pulse to acquisition instrument if it must be acquired
+        if pulse.acquire:
+            self.acquisition_interface.pulse_sequence.add(pulse)
+
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
             pulses = [pulses]
@@ -487,10 +491,6 @@ class Layout(Instrument):
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence.add(targeted_pulse)
-
-            # Add pulse to acquisition instrument if it must be acquired
-            if pulse.acquire:
-                self.acquisition_interface.pulse_sequence.add(targeted_pulse)
 
             # Also target pulses that are in additional_pulses, such as triggers
             for additional_pulse in targeted_pulse.additional_pulses:
@@ -682,7 +682,7 @@ class Layout(Instrument):
         # where output_label is taken from self.acquisition_channels()
         data = {}
         for pulse, channel_traces in pulse_traces.items():
-            data[pulse.full_name] = {}
+            data[pulse] = {}
             for channel, trace in channel_traces.items():
                 # Find corresponding connection
                 connection = self.get_connection(
@@ -691,9 +691,10 @@ class Layout(Instrument):
                 # Get output arg (instrument.channel)
                 output_arg = connection.output['str']
                 # Find label corresponding to output arg
-                output_label = next(item for item in self.acquisition_channels()
-                                    if item[0] == output_arg)
-                data[pulse.full_name][output_label] = trace
+                output_label = next(
+                    item[1]for item in self.acquisition_outputs()
+                    if item[0] == output_arg)
+                data[pulse][output_label] = trace
 
         return data
 
