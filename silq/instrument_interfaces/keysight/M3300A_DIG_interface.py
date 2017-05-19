@@ -14,14 +14,14 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self._pulse_sequence.allow_untargeted_pulses = True
 
         # Initialize channels
-        self._input_channels = {
+        self._acquisition_channels  = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
                                       name='ch{}'.format(k), input=True)
             for k in range(8)
             }
 
         self._channels = {
-            **self._input_channels,
+            **self._acquisition_channels ,
             'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in', input=True),
         }
@@ -30,20 +30,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self.acquisition_controllers = {}
         for acquisition_controller_name in acquisition_controller_names:
             self.add_acquisition_controller(acquisition_controller_name)
-
-        self._configuration_settings = {}
-        self._acquisition_settings = {}
-
-        # Obtain a list of all valid Keysight acquisition settings
-        self._acquisition_settings_names = sorted(list(
-            dig_driver.parameters.keys()))
-        self._settings_names = sorted(self._acquisition_settings_names)
-
-        self.add_parameter(name='acquisition_settings',
-                           get_cmd=lambda: self._acquisition_settings)
-
-        self.add_parameter(name="acquisition",
-                           parameter_class=KeysightAcquisitionParameter)
 
         self.add_parameter(name='default_acquisition_controller',
                            parameter_class=ManualParameter,
@@ -56,44 +42,53 @@ class M3300A_DIG_Interface(InstrumentInterface):
                            vals=vals.Enum(
                                'None', *self.acquisition_controllers.keys()))
 
-        self.add_parameter(name='average_mode',
-                           parameter_class=ManualParameter,
-                           initial_value='trace',
-                           vals=vals.Enum('none', 'trace', 'point'))
-
         # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
                            parameter_class=ManualParameter,
                            initial_value=[],
                            vals=vals.Anything())
 
-        self.add_parameter(name='samples',
-                           parameter_class=ManualParameter,
-                           initial_value=1)
 
-        self.add_parameter(name='trigger_channel',
-                           parameter_class=ManualParameter,
-                           initial_value='trig_in',
-                           vals=vals.Enum('trig_in', 'disable',
-                                          *self._acquisition_channels.keys()))
+    # Make all parameters of the interface transparent to the acquisition controller
+    @property
+    def acquisition(self):
+        """
+        Return:
+            The acquisition parameter in the current interface
+        """
+        return self._acquisition_controller.acquisition
 
-        self.add_parameter(name='trigger_slope',
-                           parameter_class=ManualParameter,
-                           vals=vals.Enum('positive', 'negative', 'both'))
+    @property
+    def samples(self):
+        """
+        Return:
+            The samples_per_record parameter in the current interface
+        """
+        return self._acquisition_controller.samples_per_record
 
-        self.add_parameter(name='trigger_threshold',
-                           unit='V',
-                           parameter_class=ManualParameter,
-                           vals=vals.Numbers())
+    @property
+    def trigger_channel(self):
+        """
+        Return:
+            The trigger_channel parameter in the current interface
+        """
+        return self._acquisition_controller.trigger_channel
 
-        # Obtain a list of all valid M3300A Digitizer parameters
-        self._parameter_names = sorted(list(
-            self.parameters.keys()))
-        # Set up the driver to a known default state
-        self.default_driver()
+    @property
+    def trigger_edge(self):
+        """
+        Return:
+            The trigger_edge parameter in the current interface
+        """
+        return self._acquisition_controller.trigger_edge
 
-    def default_driver(self):
-        self.sample_freq = 100e6;
+    @property
+    def trigger_threshold(self):
+        return self._acquisition_controller.trigger_threshold
+
+    @property
+    def sample_rate(self):
+        return self._acquisition_controller.sample_rate
         for k in range(8):
             self.instrument.parameters['impedance_{}'.format(k)].set(1)  # 50 Ohm impedance
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
