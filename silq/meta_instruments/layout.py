@@ -70,6 +70,7 @@ class Layout(Instrument):
                            vals=vals.Bool())
 
         self.pulse_sequence = PulseSequence()
+        self.acquisition_shapes = {}
 
     @property
     def acquisition_interface(self):
@@ -618,8 +619,15 @@ class Layout(Instrument):
                 if flags:
                     self.update_flags(flags)
 
-        self.acquisition.shapes = self.pulse_sequence.get_trace_shapes(
+        # Create acquisition shapes
+        trace_shapes = self.pulse_sequence.get_trace_shapes(
             sample_rate=self.sample_rate, samples=self.samples())
+        self.acquisition_shapes = {}
+        output_labels = [output[1] for output in self.acquisition_outputs()]
+        for pulse_name, shape in trace_shapes.items():
+            self.acquisition_shapes[pulse_name] = {
+                label: shape for label in output_labels}
+
 
     def start(self):
         """
