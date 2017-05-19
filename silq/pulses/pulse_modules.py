@@ -290,7 +290,7 @@ class PulseSequence:
                     else:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
-                signal('pulse').connect(self._handle_signal, sender=pulse_copy)
+                pulse_copy.signal.connect(self._handle_signal)
 
                 if pulse_copy.enabled:
                     self.enabled_pulses.append(pulse_copy)
@@ -326,7 +326,7 @@ class PulseSequence:
                 self.enabled_pulses.remove(pulse)
             else:
                 self.disabled_pulses.remove(pulse)
-            signal('pulse').disconnect(self._handle_signal, pulse)
+            pulse.signal.disconnect(self._handle_signal)
         self.sort()
 
     def sort(self):
@@ -335,10 +335,11 @@ class PulseSequence:
                                      key=lambda p: p.t_start)
 
     def clear(self):
+        for pulse in self.pulses:
+            pulse.signal.disconnect(self._handle_signal)
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-        signal('pulse').disconnect(self._handle_signal)
 
     def copy(self):
         return copy.deepcopy(self)
