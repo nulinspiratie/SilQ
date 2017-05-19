@@ -679,7 +679,7 @@ class VariableReadParameter(AcquisitionParameter):
 
     @property
     def shapes(self):
-        shapes = self.layout.acquisition.shapes
+        shapes = self.layout.acquisition_shapes
         pts = sum(shapes[pulse_name]['output']
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
