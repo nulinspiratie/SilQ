@@ -569,9 +569,9 @@ class InterfaceAcquisitionParameter(MultiParameter):
             if not pulse.acquire:
                 continue
 
-            if pulse.average_mode == 'point':
+            if pulse.average == 'point':
                 shape = (1,)
-            elif pulse.average_mode == 'trace':
+            elif pulse.average == 'trace':
                 shape = (pulse.duration * 1e-3 * sample_rate)
             else:
                 shape = (self._instrument.samples(),
