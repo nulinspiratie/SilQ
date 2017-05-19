@@ -191,8 +191,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         # for param in self._used_params:
 
     def start(self):
-        self.instrument.daq_flush_multiple(2 ** 9 - 1)
-        self.instrument.daq_start_multiple(2 ** 9 - 1)
+        self._acquisition_controller.pre_start_capture()
 
     def acquire(self):
         data = {}
