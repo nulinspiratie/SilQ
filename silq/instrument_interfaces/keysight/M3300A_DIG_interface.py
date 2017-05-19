@@ -163,7 +163,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         if not self._pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
-        elif self.average_mode() == 'none':
+        else:
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self._pulse_sequence.get_pulses(acquire=True))
@@ -174,13 +174,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
             T = t_stop - t_start
             # Capture maximum number of samples on all channels
-            for k in range(8):
-                self.instrument.parameters['n_points_{}'.format(k)].set(int(T * self.sample_freq))
-                # Set an acquisition timeout to be 10% after the last pulse finishes.
-                self.instrument.parameters['timeout_{}'.format(k)].set(int(t_final * 1.1))
+            self.samples(int(T * self.sample_rate.get_latest()))
+
+            # Set an acquisition timeout to be 10% after the last pulse finishes.
+            self.instrument.read_timeout(int(t_final * self.sample_rate.get_latest() * 1.1))
 
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start,
+                TriggerPulse(t_start=t_start, duration=1e-5,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True})
