@@ -576,7 +576,7 @@ class Layout(Instrument):
                     # Instrument Flag exists, and values match
                     pass
 
-    def setup(self, samples=None, average_mode=None, **kwargs):
+    def setup(self, samples=None, **kwargs):
         """
         Sets up all the instruments after having targeted a pulse sequence.
         Instruments are setup through their respective interfaces, and only
@@ -587,8 +587,6 @@ class Layout(Instrument):
         and applied at this stage.
         Args:
             samples: Number of samples (by default uses previous value)
-            average_mode: Type of averaging ('none', 'trace', 'point')
-                (by default uses previous value).
             **kwargs: additional kwargs sent to all interfaces being setup.
 
         Returns:
@@ -614,7 +612,6 @@ class Layout(Instrument):
                 setup_flags = instrument_flags.get('setup', {})
 
                 flags = interface.setup(samples=self.samples(),
-                                        average_mode=average_mode,
                                         **setup_flags, **kwargs)
                 if flags:
                     self.update_flags(flags)

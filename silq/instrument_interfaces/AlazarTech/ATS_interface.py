@@ -523,5 +523,61 @@ class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
                                'SteeredInitialization')
         return targeted_pulse
 
-        def implement(self, interface, **kwargs):
-            pass
+    def implement(self, interface, **kwargs):
+        pass
+
+
+class InterfaceAcquisitionParameter(MultiParameter):
+    def __init__(self, **kwargs):
+        super().__init__(snapshot_value=False,
+                         names=[''], shapes=[()], **kwargs)
+
+    @property
+    def names(self):
+        return tuple([f'{ch}_signal' for ch in
+                      self.instrument.acquisition_channels()])
+
+    @names.setter
+    def names(self, names):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def labels(self):
+        return self.names
+
+    @labels.setter
+    def labels(self, labels):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def units(self):
+        return ['V'] * len(self.names)
+
+    @units.setter
+    def units(self, units):
+        # Ignore setter since getter is extracted from acquisition controller
+        pass
+
+    @property
+    def shapes(self):
+        shapes = {}
+        sample_rate = self._instrument.setting('sample_rate')
+        for pulse in self._instrument.pulse_sequence:
+            if not pulse.acquire:
+                continue
+
+            if pulse.average == 'point':
+                shape = (1,)
+            elif pulse.average == 'trace':
+                shape = (pulse.duration * 1e-3 * sample_rate)
+            else:
+                shape = (self._instrument.samples(),
+                         pulse.duration * 1e-3 * sample_rate)
+
+            shapes[pulse.full_name] = {
+                ch: shape for ch in self._instrument.acquisition_channels()}
+
+        return shapes
+>>>>>>> origin/feature/AcquisitionInterface

@@ -449,12 +449,12 @@ class PulseSequence:
             if not pulse.acquire:
                 continue
 
-            if self.average_mode == 'point':
+            if pulse.average == 'point':
                 shape = (1,)
-            elif self.average_mode == 'trace':
-                shape = (self.duration * 1e-3 * sample_rate)
+            elif pulse.average == 'trace':
+                shape = (pulse.duration * 1e-3 * sample_rate)
             else:
-                shape = (samples, self.duration * 1e-3 * sample_rate)
+                shape = (samples, pulse.duration * 1e-3 * sample_rate)
 
             shapes[pulse.full_name] = shape
 
