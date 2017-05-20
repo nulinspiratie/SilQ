@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import inspect
-from blinker import signal
+from blinker import Signal
 
 
 class PulseMatch():
@@ -480,6 +480,7 @@ class PulseSequence:
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
+        self.signal = Signal()
         self._connected_attrs = {}
         self.pulse_class = pulse_class
 
