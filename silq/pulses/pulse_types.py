@@ -100,7 +100,7 @@ class Pulse:
         Returns:
 
         """
-        exclude_attrs = ['connection', 'connection_requirements']
+        exclude_attrs = ['connection', 'connection_requirements', 'signal']
         if isinstance(self, PulseImplementation):
             if isinstance(other, PulseImplementation):
                 # Both pulses are pulse implementations
@@ -108,7 +108,7 @@ class Pulse:
                 if self.pulse_class != other.pulse_class:
                     return False
                 # All attributes must match
-                return self._matches_attrs(other)
+                return self._matches_attrs(other, exclude_attrs['signal'])
             else:
                 # Only self is a pulse implementation
                 if not isinstance(other, self.pulse_class):
@@ -144,7 +144,7 @@ class Pulse:
             if not isinstance(other, self.__class__):
                 return False
             # All attributes must match
-            return self._matches_attrs(other)
+            return self._matches_attrs(other, exclude_attrs=['signal'])
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -159,11 +159,21 @@ class Pulse:
 
     def __setattr__(self, key, value):
         if isinstance(value, PulseMatch):
-            super().__setattr__(key, value())
-            set_fun = value.signal_function(self, key)
-            self._connected_attrs[key] = {'pulse': value.pulse,
-                                          'set_function': set_fun}
-            value.pulse.signal.connect(set_fun)
+            previous_pulse_match = self._connected_attrs.get(key, None)
+            if previous_pulse_match is not value:
+                # Either no previous pulse, or it was different from value
+                if isinstance(previous_pulse_match, PulseMatch):
+                    # Disconnect previous PulseMatch
+                    previous_pulse_match.origin_pulse.signal.disconnect(
+                        previous_pulse_match)
+
+                value.origin_pulse.signal.connect(value)
+                value.target_pulse = self
+                value.target_pulse_attr = key
+                self._connected_attrs[key] = value
+
+            super().__setattr__(key, value.value)
+
         else:
             if key == 'environment' and hasattr(self, key):
                 signal(f'config:{self.environment}.pulses.{self.name}'
@@ -183,10 +193,11 @@ class Pulse:
 
 
             if key in self._connected_attrs:
-                pulse, set_fun = self._connected_attrs.pop(key)
+                previous_pulse_match = self._connected_attrs.pop(key)
                 # Remove function from pulse signal because it no longer
                 # depends on other pulse
-                pulse.signal.disconnect(set_fun)
+                previous_pulse_match.origin_pulse.signal.disconnect(
+                    previous_pulse_match)
 
             if self.signal.receivers:
                 # send signal to anyone listening that attribute has changed
