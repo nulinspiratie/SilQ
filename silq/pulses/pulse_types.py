@@ -108,7 +108,7 @@ class Pulse:
                 if self.pulse_class != other.pulse_class:
                     return False
                 # All attributes must match
-                return self._matches_attrs(other, exclude_attrs='signal')
+                return self._matches_attrs(other, exclude_attrs['signal'])
             else:
                 # Only self is a pulse implementation
                 if not isinstance(other, self.pulse_class):
@@ -167,7 +167,7 @@ class Pulse:
                     previous_pulse_match.origin_pulse.signal.disconnect(
                         previous_pulse_match)
 
-                value.origin_pulse.signal.connect(value)
+                value.origin_pulse.signal.connect(value, weak=False)
                 value.target_pulse = self
                 value.target_pulse_attr = key
                 self._connected_attrs[key] = value
@@ -179,7 +179,7 @@ class Pulse:
                 signal(f'config:{self.environment}.pulses.{self.name}'
                        ).disconnect(self._handle_config_signal)
                 signal(f'config:{value}.pulses.{self.name}').connect(
-                    self._handle_config_signal)
+                    self._handle_config_signal, weak=False)
 
                 if self.name in config[value].pulses:
                     self.pulse_config = config[value].pulses[self.name]
@@ -369,8 +369,7 @@ class Pulse:
         Returns:
             Copy of pulse
         """
-        pulse_copy = copy.copy(self)
-        self.signal = Signal()
+        pulse_copy = copy.deepcopy(self)
         if fix_vars:
             for var in vars(pulse_copy):
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
