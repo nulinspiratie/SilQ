@@ -482,9 +482,6 @@ class Layout(Instrument):
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary, connections=self.connections)
 
-            # Force t_start to have a fixed value
-            targeted_pulse.t_start = targeted_pulse.t_start
-
             interface.pulse_sequence.add(targeted_pulse)
 
             # Also add pulse to input interface pulse sequence
