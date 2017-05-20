@@ -5,19 +5,36 @@ from blinker import signal
 
 
 class PulseMatch():
-    def __init__(self, pulse, pulse_attr, delay=0):
-        self.pulse = pulse
-        self.pulse_attr = pulse_attr
+    def __init__(self, origin_pulse, origin_pulse_attr, delay=0,
+                 target_pulse=None, target_pulse_attr=None):
+        """
+        Object used to match a pulse attribute to another pulse attribute
+        Args:
+            origin_pulse: Origin pulse that a target pulse is matched to
+            origin_pulse_attr: Attribute of origin pulse
+            delay: Offset from pulse attribute vavlue
+        """
+        self.origin_pulse = origin_pulse
+        self.origin_pulse_attr = origin_pulse_attr
         self.delay = delay
 
-    def __call__(self):
-        return getattr(self.pulse, self.pulse_attr) + self.delay
+        self.target_pulse = target_pulse
+        self.target_pulse_attr = target_pulse_attr
 
-    def signal_function(self, pulse, attr):
-        def signal_pulse(sender, **kwargs):
-            if kwargs.get(self.pulse_attr, None) is not None:
-                setattr(pulse, attr, kwargs[self.pulse_attr] + self.delay)
-        return signal_pulse
+    @property
+    def value(self):
+        return getattr(self.origin_pulse, self.origin_pulse_attr) + self.delay
+
+    def __call__(self, sender, **kwargs):
+        """
+        Set value of target 
+        Args:
+            sender: 
+            **kwargs: 
+
+        """
+        if self.origin_pulse_attr in kwargs:
+            setattr(self.target_pulse, self.target_pulse_attr, self)
 
 
 class PulseRequirement():
