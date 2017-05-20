@@ -108,7 +108,7 @@ class Pulse:
                 if self.pulse_class != other.pulse_class:
                     return False
                 # All attributes must match
-                return self._matches_attrs(other, exclude_attrs['signal'])
+                return self._matches_attrs(other, exclude_attrs='signal')
             else:
                 # Only self is a pulse implementation
                 if not isinstance(other, self.pulse_class):
@@ -369,7 +369,8 @@ class Pulse:
         Returns:
             Copy of pulse
         """
-        pulse_copy = copy.deepcopy(self)
+        pulse_copy = copy.copy(self)
+        self.signal = Signal()
         if fix_vars:
             for var in vars(pulse_copy):
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
