@@ -11,7 +11,6 @@ from silq import config
 
 class TestPulseSignals(unittest.TestCase):
     def setUp(self):
-        self.signal = signal('pulse')
         self.is_set = False
         self.dict = {}
 
@@ -28,7 +27,7 @@ class TestPulseSignals(unittest.TestCase):
 
     def test_signal_emit(self):
         p = Pulse()
-        self.signal.connect(self.set_dict)
+        p.signal.connect(self.set_dict)
         self.assertFalse('t_start' in self.dict)
         p.t_start = 1
         self.assertEqual(1, self.dict['t_start'])
@@ -52,6 +51,15 @@ class TestPulseSignals(unittest.TestCase):
         self.assertEqual(p2.t_start, 15)
         self.assertEqual(p2.duration, 4)
         self.assertEqual(p2.t_stop, 19)
+
+        p1.t_stop = 16
+        self.assertEqual(p1.t_start, 0)
+        self.assertEqual(p1.duration, 16)
+        self.assertEqual(p1.t_stop, 16)
+
+        self.assertEqual(p2.t_start, 17)
+        self.assertEqual(p2.duration, 4)
+        self.assertEqual(p2.t_stop, 21)
 
         p2.t_start = 0
         self.assertEqual(p2.t_start, 0)
