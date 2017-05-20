@@ -369,7 +369,10 @@ class Pulse:
         Returns:
             Copy of pulse
         """
+        # temporarily remove signal because it takes time copying
+        self.signal, signal = Signal(), self.signal
         pulse_copy = copy.deepcopy(self)
+        self.signal = signal
         if fix_vars:
             for var in vars(pulse_copy):
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
