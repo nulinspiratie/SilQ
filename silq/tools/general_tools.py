@@ -20,6 +20,12 @@ def execfile(filename, globals=None, locals=None):
         exec(fh.read()+"\n", globals, locals)
 
 
+ops = {'>': operator.gt,
+       '<': operator.lt,
+       '>=': operator.ge,
+       '<=': operator.le,
+       '==': operator.eq}
+
 def get_truth(test_val, target_val, relation='=='):
     """
     Tests if the test_val satisfies the relation to target_val.
@@ -32,11 +38,6 @@ def get_truth(test_val, target_val, relation='=='):
     Returns:
         Bool depending on if relation holds
     """
-    ops = {'>': operator.gt,
-           '<': operator.lt,
-           '>=': operator.ge,
-           '<=': operator.le,
-           '==': operator.eq}
     return ops[relation](test_val, target_val)
 
 
