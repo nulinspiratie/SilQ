@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import inspect
 from blinker import Signal, signal
+Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseImplementation, PulseMatch
 
@@ -167,7 +168,7 @@ class Pulse:
                     previous_pulse_match.origin_pulse.signal.disconnect(
                         previous_pulse_match)
 
-                value.origin_pulse.signal.connect(value, weak=False)
+                value.origin_pulse.signal.connect(value)
                 value.target_pulse = self
                 value.target_pulse_attr = key
                 self._connected_attrs[key] = value
@@ -179,7 +180,7 @@ class Pulse:
                 signal(f'config:{self.environment}.pulses.{self.name}'
                        ).disconnect(self._handle_config_signal)
                 signal(f'config:{value}.pulses.{self.name}').connect(
-                    self._handle_config_signal, weak=False)
+                    self._handle_config_signal)
 
                 if self.name in config[value].pulses:
                     self.pulse_config = config[value].pulses[self.name]
@@ -370,9 +371,7 @@ class Pulse:
             Copy of pulse
         """
         # temporarily remove signal because it takes time copying
-        self.signal, signal = Signal(), self.signal
         pulse_copy = copy.deepcopy(self)
-        self.signal = signal
         if fix_vars:
             for var in vars(pulse_copy):
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
