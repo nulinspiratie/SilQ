@@ -664,7 +664,11 @@ class VariableReadParameter(AcquisitionParameter):
         super().__init__(name='variable_read_acquisition',
                          names=('read_voltage',),
                          labels=('Read voltage',),
-                         units=['V'],
+                         units=('V',),
+                         shapes=((1,),),
+                         setpoint_names=(('time',),),
+                         setpoint_labels=(('Time',),),
+                         setpoint_units=(('ms',),),
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add(
@@ -677,15 +681,15 @@ class VariableReadParameter(AcquisitionParameter):
             DCPulse(name='final',
                     connection_label='stage'))
 
-    # @property
-    # def setpoints(self):
-    #     duration = sum(pulse.duration for pulse in
-    #                    self.pulse_sequence.get_pulses(acquire=True))
-    #     return (duration * 1e-3 * self.sample_rate, ),
-    #
-    # @setpoints.setter
-    # def setpoints(self, setpoints):
-    #     pass
+    @property
+    def setpoints(self):
+        duration = sum(pulse.duration for pulse in
+                       self.pulse_sequence.get_pulses(acquire=True))
+        return (tuple(np.linspace(0, duration, self.shapes[0][0])), ),
+
+    @setpoints.setter
+    def setpoints(self, setpoints):
+        pass
 
     @property
     def shapes(self):
