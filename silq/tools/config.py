@@ -179,7 +179,7 @@ class DictConfig(SubConfig, DotDict):
             # Attach update function if file is in config
             config_path, attr = val.rsplit('.', 1)
             signal_function = partial(self._handle_config_signal, key, attr)
-            signal(config_path).connect(signal_function, weak=False)
+            signal(config_path).connect(signal_function)
             self._connected_attrs[key] = signal_function
 
         # Get val after setting, as it can be different if val is dependent,
