@@ -307,7 +307,7 @@ class PulseSequence:
                     else:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
-                pulse_copy.signal.connect(self._handle_signal, weak=False)
+                pulse_copy.signal.connect(self._handle_signal)
 
                 if pulse_copy.enabled:
                     self.enabled_pulses.append(pulse_copy)
