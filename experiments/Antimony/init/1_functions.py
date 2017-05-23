@@ -60,27 +60,6 @@ if in_notebook():
         code_labels[line] = cell
 
 
-def start_gui(window, *args, use_thread=True):
-    if use_thread:
-        t = threading.Thread(target=start_gui, name='gui',
-                             args=(window, *args),
-                             kwargs={'use_thread': False})
-        t.start()
-        return t
-    else:
-        qApp = QApplication(sys.argv)
-        aw = window(*args)
-        aw.show()
-        qApp.exec_()
-        return qApp
-
-
-def sim_gui():
-    from silq.gui.SIMGui import SIMControlDialog
-    global voltage_parameters
-    start_gui(SIMControlDialog, voltage_parameters)
-
-
 # Override dataset
 def parameter_info(self, *parameter_names, detailed=False):
     snapshot = self.snapshot()

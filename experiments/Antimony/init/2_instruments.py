@@ -35,7 +35,7 @@ for ch_name, ch, ratio,max_voltage in DC_sources:
 
     exec('{ch_name}_raw = param_raw'.format(ch_name=ch_name))
     exec('{ch_name} = param'.format(ch_name=ch_name))
-
+sim_gui.voltage_parameters = voltage_parameters
 
 #################
 ### Arbstudio ###
@@ -107,5 +107,5 @@ layout.primary_instrument('pulseblaster')
 layout.acquisition_instrument('ATS')
 layout.load_connections()
 
-# Update InteractivePlot layout
-InteractivePlot.layout = layout
+# # Update InteractivePlot layout
+# InteractivePlot.layout = layout
