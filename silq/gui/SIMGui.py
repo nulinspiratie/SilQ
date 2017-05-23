@@ -8,8 +8,14 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 
 from silq.tools.general_tools import get_exponent, get_first_digit
+from . import start_gui
 
 states = ['up_down', 'left_right', 'none']
+
+
+def sim_gui():
+    # Must set sim_gui.voltage_parameters
+    start_gui(SIMControlDialog, 'sim_gui', sim_gui.voltage_parameters)
 
 
 class SIM928Dialog(QFrame):
