@@ -10,6 +10,7 @@ from qcodes.instrument_drivers.lecroy.ArbStudio1104 import ArbStudio1104
 from qcodes.instrument_drivers.spincore.PulseBlasterESRPRO import PulseBlasterESRPRO
 from qcodes.instrument_drivers.stanford_research.SIM900 import SIM900, \
     get_voltages, ramp_voltages, voltage_parameters
+from qcodes.instrument_drivers.Keysight.E8267D import Keysight_E8267D
 from silq.meta_instruments.chip import Chip
 from silq.parameters.general_parameters import ScaledParameter
 from silq.meta_instruments.layout import Layout
@@ -59,6 +60,17 @@ station.add_component(pulseblaster)
 pulseblaster.core_clock(500)
 interfaces['pulseblaster'] = get_instrument_interface(pulseblaster)
 pulseblaster_interface = interfaces['pulseblaster']
+
+
+#################
+### MW source ###
+#################
+keysight = Keysight_E8267D('keysight','TCPIP0::192.168.7.67::inst0::INSTR')
+interfaces['keysight'] = get_instrument_interface(keysight)
+keysight_interface = interfaces['keysight']
+interfaces['keysight'].modulation_channel('ext2')
+interfaces['keysight'].envelope_padding(0.2)
+keysight.power(10)
 
 
 ############
