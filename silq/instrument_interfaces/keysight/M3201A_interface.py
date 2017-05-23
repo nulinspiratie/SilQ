@@ -141,7 +141,7 @@ class M3201AInterface(InstrumentInterface):
         for ch in waveforms:
             self.instrument.awg_flush(self._channels[ch].id)
             self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=self._channels[ch].id)
-            self.instrument.set_channel_amplitude(amplitude=1.0, channel_number=self._channels[ch].id)
+            self.instrument.set_channel_amplitude(amplitude=1.5, channel_number=self._channels[ch].id)
             waveform_array = waveforms[ch]
             ch_wf_counter = 0
             for waveform in waveform_array:
@@ -351,7 +351,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             waveform_1 = {}
             waveform_2 = {}
 
-            waveform_1_data = self.get_voltage(t_list_1)
+            waveform_1_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
 
             waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_1_data)
@@ -362,7 +362,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
             else:
-                waveform_2_data = self.get_voltage(t_list_2)
+                waveform_2_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
 
                 waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_2_data)
@@ -445,7 +445,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             waveform_1 = {}
             waveform_2 = {}
 
-            waveform_1_data = self.get_voltage(t_list_1)
+            waveform_1_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
 
             waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_1_data)
@@ -456,7 +456,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
             else:
-                waveform_2_data = self.get_voltage(t_list_2)
+                waveform_2_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
 
                 waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_2_data)
@@ -511,7 +511,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
             waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
             t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
 
-            waveform_data = self.get_voltage(t_list)
+            waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
@@ -566,7 +566,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
             waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
             t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
 
-            waveform_data = self.get_voltage(t_list)
+            waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
@@ -605,7 +605,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
         t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
 
-        waveform_data = self.get_voltage(t_list)
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
@@ -649,7 +649,7 @@ class ELRPulseImplementation(ELRPulse, PulseImplementation):
         waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
         t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
 
-        waveform_data = self.get_voltage(t_list)
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
         if self.repeat:
             cycles = 0
