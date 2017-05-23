@@ -5,7 +5,6 @@ from time import time
 import numpy as np
 
 from qcodes.station import Station
-station = Station.default
 
 set_gates_txt = """\
 {x_label}({x_val:.5f})
@@ -115,6 +114,10 @@ class InteractivePlot(MatPlot):
                  nticks=6, timeout=60, **kwargs):
         super().__init__(subplots=subplots, figsize=figsize,
                          **kwargs)
+        self.station = Station.default
+
+        if hasattr(self.station, 'layout'):
+            self.layout = self.station.layout
         self.timeout = timeout
         self.cid = {}
 
@@ -149,8 +152,11 @@ class InteractivePlot(MatPlot):
         self.dataset = dataset
         self.x_label = getattr(self.dataset, self.key).set_arrays[1].name
         self.y_label = getattr(self.dataset, self.key).set_arrays[0].name
-        self.x_gate = getattr(station, self.x_label)
-        self.y_gate = getattr(station, self.y_label)
+
+        if hasattr(self.station, self.x_label):
+            self.x_gate = getattr(self.station, self.x_label)
+        if hasattr(self.station, self.x_label):
+            self.y_gate = getattr(self.station, self.y_label)
 
     def get_action(self, key=None):
         if key is None:
@@ -247,7 +253,6 @@ class ScanningPlot(InteractivePlot):
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
 
-        self.layout = station.layout
 
         self.parameter = parameter
 
