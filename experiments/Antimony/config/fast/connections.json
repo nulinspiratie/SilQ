@@ -22,5 +22,9 @@
     "arb_output": [
         "arbstudio.ch3",
         "ATS.chB"
+    ],
+    "ESR": [
+        "keysight.RF_out",
+        "chip.antenna"
     ]
 }
