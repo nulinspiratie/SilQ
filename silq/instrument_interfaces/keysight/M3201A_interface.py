@@ -1,7 +1,7 @@
 import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse, ELRPulse
+from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
@@ -46,9 +46,6 @@ class M3201AInterface(InstrumentInterface):
                 pulse_requirements=[('amplitude', {'min': -1.5, 'max': 1.5})]
             ),
             TriggerPulseImplementation(
-                pulse_requirements=[]
-            ),
-            ELRPulseImplementation(
                 pulse_requirements=[]
             )
         ]
@@ -617,51 +614,3 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
         return waveforms
 
-
-class ELRPulseImplementation(ELRPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=ELRPulse, **kwargs)
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting ELRPulse for {}'.format(interface))
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
-        print('implementing ELRPulse for {}'.format(self.connection.output['channel'].name))
-        if isinstance(self.connection, SingleConnection):
-            channel = self.connection.output['channel'].name
-        else:
-            raise Exception('No implementation for connection {}'.format(self.connection))
-
-        waveforms = {}
-
-        wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
-
-        period_sample = 1 / sampling_rates[channel]
-
-        waveform_start = self.t_start
-        waveform_samples = wave_form_multiple * round(
-            ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
-        waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
-        t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
-
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
-
-        if self.repeat:
-            cycles = 0
-        else:
-            cycles = 1
-
-        waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
-                                                                    waveform_data_a=waveform_data),
-                    'cycles': cycles,
-                    't_start': self.t_start,
-                    't_stop': waveform_stop}
-
-        waveforms[channel] = [waveform]
-
-        return waveforms
