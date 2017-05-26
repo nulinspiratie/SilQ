@@ -139,39 +139,50 @@ class M3300A_DIG_Interface(InstrumentInterface):
             self.instrument.parameters['impedance_{}'.format(k)].set(1) # 50 Ohm impedance
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
-        self.acquisition_controller().initialize_driver()
-
-    def configure_driver(self):
-        """ Configures the underlying driver using interface parameters
-
-            Args:
-                None
-            Return: 
-                None
-        """
-        controller = self._acquisition_controller
-        # Acquire on all channels
-        controller.channel_selection = [x for x in range(8)]
-        if controller() == 'Triggered':
-            # TODO: Read connections to figure out where to trigger from
-            controller.trigger_channel(4)
-            controller.trigger_edge(1)
-            controller.trigger_threshold(0.5)
-            controller.sample_rate(1e6)
-    
-        # Check what averaging mode is needed by each pulse            
-        if any(self._pulse_sequence.get_pulses(average='none')):
-            controller.average_mode('none')
-        else:
-            controller.average_mode('trace')
-
 
     def get_final_additional_pulses(self, **kwargs):
-        if not self._pulse_sequence.get_pulses(acquire=True):
+        if not self.input_pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
         else:
             # Add a single trigger pulse when starting acquisition
+            t_start = min(pulse.t_start for pulse in
+                          self.input_pulse_sequence.get_pulses(acquire=True))
+
+            acquisition_pulse = \
+                TriggerPulse(t_start=t_start, duration=1e-5, acquire=True,
+                             average='none',
+                             connection_requirements={
+                                 'input_instrument': self.instrument_name(),
+                                 'trigger': True
+                             })
+            return [acquisition_pulse]
+
+    def setup(self, **kwargs):
+        controller = self._acquisition_controller
+        self.samples(kwargs.pop('samples', 1))
+
+        # Find all unique pulse_connections to choose which channels to acquire on
+        channel_selection = {pulse.connection.input['channel'].id
+                                  for pulse in self.input_pulse_sequence.get_pulses(acquire=True)}
+        # import pdb; pdb.set_trace()
+        self.channel_selection(sorted(list(channel_selection)))
+        controller.channel_selection(self.channel_selection())
+        # Acquire on all channels
+        # controller.channel_selection = [x for x in range(8)]
+
+        # Check what averaging mode is needed by each pulse
+        if any(self.input_pulse_sequence.get_pulses(average='none')):
+            controller.average_mode('none')
+        else:
+            controller.average_mode('trace')
+
+        if controller() == 'Triggered':
+            # Get trigger connection to determine how to trigger the controller
+            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+            trigger_connection = trigger_pulse.connection
+            self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
+
             t_start = min(pulse.t_start for pulse in
                           self.input_pulse_sequence.get_pulses(acquire=True))
             t_stop = max(pulse.t_stop for pulse in
@@ -179,22 +190,21 @@ class M3300A_DIG_Interface(InstrumentInterface):
             t_final = max(self.input_pulse_sequence.t_stop_list)
 
             T = t_stop - t_start
+
+            controller.sample_rate(int(round((self.sample_rate()))))
+            controller.traces_per_acquisition(int(round(self.samples())))
+
+            controller.trigger_channel(trigger_connection.input['channel'].id)
+            controller.trigger_threshold(self.trigger_threshold())
+            # Map the string value of trigger edge to a device integer
+            controller.trigger_edge(self.trigger_edge())
+
             # Capture maximum number of samples on all channels
-            self.samples(int(T * self.sample_rate.get_latest()))
+            controller.samples_per_record(int(T * self.sample_rate()))
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
-            self.instrument.read_timeout(int(t_final * self.sample_rate.get_latest() * 1.1))
-
-            acquisition_pulse = \
-                TriggerPulse(t_start=t_start, duration=1e-5,
-                             connection_requirements={
-                                 'input_instrument': self.instrument_name(),
-                                 'trigger': True})
-            return [acquisition_pulse]
-
-    def setup(self, **kwargs):
-        pass
-        # for param in self._used_params:
+            # NOTE: time is defined in milliseconds
+            controller.read_timeout(int(t_final * 1.1 * 1e3))
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
