@@ -182,6 +182,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
             trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
             trigger_connection = trigger_pulse.connection
             self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
+            self.trigger_edge('rising')
 
             t_start = min(pulse.t_start for pulse in
                           self.input_pulse_sequence.get_pulses(acquire=True))
