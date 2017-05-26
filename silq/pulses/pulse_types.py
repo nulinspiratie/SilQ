@@ -1,7 +1,8 @@
 import numpy as np
 import copy
 import inspect
-from blinker import signal
+from blinker import Signal, signal
+Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseImplementation, PulseMatch
 
@@ -16,12 +17,14 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
 
 
 
-class Pulse(SettingsClass):
+class Pulse:
     _connected_attrs = {}
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
                  connection_label=None, connection_requirements={}):
+        # Initialize signals (to notify change of attributes)
+        self.signal = Signal()
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
         super().__init__()
@@ -98,7 +101,7 @@ class Pulse(SettingsClass):
         Returns:
 
         """
-        exclude_attrs = ['connection', 'connection_requirements']
+        exclude_attrs = ['connection', 'connection_requirements', 'signal']
         if isinstance(self, PulseImplementation):
             if isinstance(other, PulseImplementation):
                 # Both pulses are pulse implementations
@@ -106,7 +109,7 @@ class Pulse(SettingsClass):
                 if self.pulse_class != other.pulse_class:
                     return False
                 # All attributes must match
-                return self._matches_attrs(other)
+                return self._matches_attrs(other, exclude_attrs['signal'])
             else:
                 # Only self is a pulse implementation
                 if not isinstance(other, self.pulse_class):
@@ -142,7 +145,7 @@ class Pulse(SettingsClass):
             if not isinstance(other, self.__class__):
                 return False
             # All attributes must match
-            return self._matches_attrs(other)
+            return self._matches_attrs(other, exclude_attrs=['signal'])
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -157,10 +160,21 @@ class Pulse(SettingsClass):
 
     def __setattr__(self, key, value):
         if isinstance(value, PulseMatch):
-            super().__setattr__(key, value())
-            set_fun = value.signal_function(self, key)
-            self._connected_attrs[key] = set_fun
-            signal('pulse').connect(set_fun, sender=value.pulse)
+            previous_pulse_match = self._connected_attrs.get(key, None)
+            if previous_pulse_match is not value:
+                # Either no previous pulse, or it was different from value
+                if isinstance(previous_pulse_match, PulseMatch):
+                    # Disconnect previous PulseMatch
+                    previous_pulse_match.origin_pulse.signal.disconnect(
+                        previous_pulse_match)
+
+                value.origin_pulse.signal.connect(value)
+                value.target_pulse = self
+                value.target_pulse_attr = key
+                self._connected_attrs[key] = value
+
+            super().__setattr__(key, value.value)
+
         else:
             if key == 'environment' and hasattr(self, key):
                 signal(f'config:{self.environment}.pulses.{self.name}'
@@ -180,16 +194,18 @@ class Pulse(SettingsClass):
 
 
             if key in self._connected_attrs:
+                previous_pulse_match = self._connected_attrs.pop(key)
                 # Remove function from pulse signal because it no longer
                 # depends on other pulse
-                signal('pulse').disconnect(self._connected_attrs.pop(key))
+                previous_pulse_match.origin_pulse.signal.disconnect(
+                    previous_pulse_match)
 
-            if len(list(signal('pulse').receivers_for(self))):
+            if self.signal.receivers:
                 # send signal to anyone listening that attribute has changed
-                signal('pulse').send(self, **{key: value})
+                self.signal.send(self, **{key: value})
                 if key in ['t_start', 'duration']:
                     # Also send signal that dependent property t_stop has changed
-                    signal('pulse').send(self, t_stop=self.t_stop)
+                    self.signal.send(self, t_stop=self.t_stop)
 
     def _value_or_config(self, key, value):
         """
@@ -354,17 +370,14 @@ class Pulse(SettingsClass):
         Returns:
             Copy of pulse
         """
+        # temporarily remove signal because it takes time copying
         pulse_copy = copy.deepcopy(self)
         if fix_vars:
             for var in vars(pulse_copy):
                 setattr(pulse_copy, var, getattr(pulse_copy, var))
         return pulse_copy
 
-    def satisfies_conditions(self, pulse_class=None,
-                             name=None, id=None, environment=None,
-                             t=None, t_start=None, t_stop=None, duration=None,
-                             acquire=None, initialize=None, connection=None,
-                             amplitude=None, enabled=None, average=None):
+    def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
         """
         Checks if pulse satisfies certain conditions.
         Each kwarg is a condition, and can be a value (equality testing) or it
@@ -384,20 +397,18 @@ class Pulse(SettingsClass):
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
 
-        if name is not None and name[-1] == ']':
-            # Pulse id is part of name
-            name, id = name[:-1].split('[')
-            id = int(id)
+        if name is not None:
+            if name[-1] == ']':
+                # Pulse id is part of name
+                name, id = name[:-1].split('[')
+                kwargs['id'] = int(id)
+            kwargs['name'] = name
 
-        for property in pulse_conditions:
-
-            # Get arg value from property name
-            val = eval(property)
-
+        for property, val in kwargs.items():
             if val is None:
                 continue
             elif property == 't':
-                if t < self.t_start or t >= self.t_stop:
+                if val < self.t_start or val >= self.t_stop:
                     return False
             elif not hasattr(self, property):
                 return False
