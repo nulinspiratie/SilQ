@@ -11,7 +11,8 @@ from qcodes.instrument_drivers.keysight.M3300A import M3300A_DIG as dig_driver
 class M3300A_DIG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
         super().__init__(instrument_name, **kwargs)
-        self._pulse_sequence.allow_untargeted_pulses = True
+        self.pulse_sequence.allow_untargeted_pulses = True
+        self.pulse_sequence.allow_pulse_overlap = True
 
         # Initialize channels
         self._acquisition_channels  = {
@@ -166,11 +167,10 @@ class M3300A_DIG_Interface(InstrumentInterface):
         else:
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
-                          self._pulse_sequence.get_pulses(acquire=True))
+                          self.input_pulse_sequence.get_pulses(acquire=True))
             t_stop = max(pulse.t_stop for pulse in
-                         self._pulse_sequence.get_pulses(acquire=True))
-            t_final = max(pulse.t_stop for pulse in
-                          self._pulse_sequence.get_pulses())
+                         self.input_pulse_sequence.get_pulses(acquire=True))
+            t_final = max(self.input_pulse_sequence.t_stop_list)
 
             T = t_stop - t_start
             # Capture maximum number of samples on all channels
@@ -201,13 +201,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         # The start of acquisition
         t_0 = min(pulse.t_start for pulse in
-                      self._pulse_sequence.get_pulses(acquire=True))
+                      self.input_pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
         for ch in range(8):
             data[ch] = {}
             ch_data = acq_data[ch]
-            for pulse in self._pulse_sequence.get_pulses(acquire=True):
+            for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
                 ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
                 sample_range = [int(t * self.sample_rate()) for t in ts]
 
