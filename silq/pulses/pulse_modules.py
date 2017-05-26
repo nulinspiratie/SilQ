@@ -1,23 +1,40 @@
 import numpy as np
 import copy
 import inspect
-from blinker import signal
+from blinker import Signal
 
 
 class PulseMatch():
-    def __init__(self, pulse, pulse_attr, delay=0):
-        self.pulse = pulse
-        self.pulse_attr = pulse_attr
+    def __init__(self, origin_pulse, origin_pulse_attr, delay=0,
+                 target_pulse=None, target_pulse_attr=None):
+        """
+        Object used to match a pulse attribute to another pulse attribute
+        Args:
+            origin_pulse: Origin pulse that a target pulse is matched to
+            origin_pulse_attr: Attribute of origin pulse
+            delay: Offset from pulse attribute vavlue
+        """
+        self.origin_pulse = origin_pulse
+        self.origin_pulse_attr = origin_pulse_attr
         self.delay = delay
 
-    def __call__(self):
-        return getattr(self.pulse, self.pulse_attr) + self.delay
+        self.target_pulse = target_pulse
+        self.target_pulse_attr = target_pulse_attr
 
-    def signal_function(self, pulse, attr):
-        def signal_pulse(sender, **kwargs):
-            if kwargs.get(self.pulse_attr, None) is not None:
-                setattr(pulse, attr, kwargs[self.pulse_attr] + self.delay)
-        return signal_pulse
+    @property
+    def value(self):
+        return getattr(self.origin_pulse, self.origin_pulse_attr) + self.delay
+
+    def __call__(self, sender, **kwargs):
+        """
+        Set value of target 
+        Args:
+            sender: 
+            **kwargs: 
+
+        """
+        if self.origin_pulse_attr in kwargs:
+            setattr(self.target_pulse, self.target_pulse_attr, self)
 
 
 class PulseRequirement():
@@ -290,7 +307,7 @@ class PulseSequence:
                     else:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
-                signal('pulse').connect(self._handle_signal, sender=pulse_copy)
+                pulse_copy.signal.connect(self._handle_signal)
 
                 if pulse_copy.enabled:
                     self.enabled_pulses.append(pulse_copy)
@@ -326,7 +343,7 @@ class PulseSequence:
                 self.enabled_pulses.remove(pulse)
             else:
                 self.disabled_pulses.remove(pulse)
-            signal('pulse').disconnect(self._handle_signal, pulse)
+            pulse.signal.disconnect(self._handle_signal)
         self.sort()
 
     def sort(self):
@@ -335,10 +352,11 @@ class PulseSequence:
                                      key=lambda p: p.t_start)
 
     def clear(self):
+        for pulse in self.pulses:
+            pulse.signal.disconnect(self._handle_signal)
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-        signal('pulse').disconnect(self._handle_signal)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -441,9 +459,28 @@ class PulseSequence:
 
         return pre_voltage, post_voltage
 
+    def get_trace_shapes(self, sample_rate, samples):
+        """ Obtain diction"""
+
+        shapes = {}
+        for pulse in self:
+            if not pulse.acquire:
+                continue
+            pts = round(pulse.duration * 1e-3 * sample_rate)
+            if pulse.average == 'point':
+                shape = (1,)
+            elif pulse.average == 'trace':
+                shape = (pts, )
+            else:
+                shape = (samples, pts)
+
+            shapes[pulse.full_name] = shape
+
+        return shapes
 
 class PulseImplementation:
     def __init__(self, pulse_class, pulse_requirements=[]):
+        self.signal = Signal()
         self._connected_attrs = {}
         self.pulse_class = pulse_class
 
