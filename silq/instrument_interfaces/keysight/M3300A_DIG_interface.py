@@ -249,8 +249,8 @@ class M3300A_DIG_Interface(InstrumentInterface):
                         data[ch][pulse.name] = np.mean(data[ch][pulse.name])
 
         # For instrument safety, stop all acquisition after we are done
-        self.instrument.daq_stop_multiple(self._ch_array_to_mask( \
-                    self.controller.channel_selection))
+        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
+                    self._acquisition_controller.channel_selection))
     
         return data
 
