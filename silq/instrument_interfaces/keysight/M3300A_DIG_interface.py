@@ -17,7 +17,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         # Initialize channels
         self._acquisition_channels  = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
-                                      name='ch{}'.format(k), input=True)
+                                      name='ch{}'.format(k), id=k, input=True)
             for k in range(8)
             }
 
@@ -48,6 +48,44 @@ class M3300A_DIG_Interface(InstrumentInterface):
                            parameter_class=ManualParameter,
                            initial_value=[],
                            vals=vals.Anything())
+
+        # Add ManualParameters which will be distributed to the active acquisition
+        # controller during the setup routine
+        self.add_parameter(
+            'sample_rate',
+            vals=Numbers(),
+            parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            'samples',
+            vals=Numbers(),
+            parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            'channel_selection',
+            vals=Anything(),
+            parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            'trigger_channel',
+            vals=Enum(0, 1, 2, 3, 4, 5, 6, 7),
+            parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            'trigger_edge',
+            vals=Enum('rising', 'falling', 'both'),
+            parameter_class=ManualParameter
+        )
+
+        self.add_parameter(
+            'trigger_threshold',
+            parameter_class=ManualParameter
+        )
+
         # Set up the driver to a known default state
         self.initialize_driver()
 
@@ -57,45 +95,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
             self.acquisition_controller(), None)
 
     # Make all parameters of the interface transparent to the acquisition controller
+
+
+
     @property
-    def acquisition(self):
         """
         Return:
-            The acquisition parameter in the current interface
         """
-        return self._acquisition_controller.acquisition
-
-    @property
-    def samples(self):
-        """
-        Return:
-            The samples_per_record parameter in the current interface
-        """
-        return self._acquisition_controller.samples_per_record
-
-    @property
-    def trigger_channel(self):
-        """
-        Return:
-            The trigger_channel parameter in the current interface
-        """
-        return self._acquisition_controller.trigger_channel
-
-    @property
-    def trigger_edge(self):
-        """
-        Return:
-            The trigger_edge parameter in the current interface
-        """
-        return self._acquisition_controller.trigger_edge
-
-    @property
-    def trigger_threshold(self):
-        return self._acquisition_controller.trigger_threshold
-
-    @property
-    def sample_rate(self):
-        return self._acquisition_controller.sample_rate
 
     def add_acquisition_controller(self, acquisition_controller_name,
                                    cls_name=None):
