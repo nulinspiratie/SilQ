@@ -110,7 +110,7 @@ class Layout(Instrument):
     @property
     def sample_rate(self):
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.setting('sample_rate')
+            return self.acquisition_interface.sample_rate()
         else:
             return None
 
