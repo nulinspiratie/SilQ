@@ -99,9 +99,12 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
 
     @property
+    def acquisition(self):
         """
         Return:
+            The acquisition parameter in the current interface
         """
+        return self._acquisition_controller.acquisition
 
     def add_acquisition_controller(self, acquisition_controller_name,
                                    cls_name=None):
