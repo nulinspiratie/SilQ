@@ -198,6 +198,8 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
+        self._acquisition_controller.start()
+
 
     def acquire(self):
         data = {}
@@ -239,5 +241,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
         return data
 
     def stop(self):
-        pass
+        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
+            self._acquisition_controller.channel_selection))
 
