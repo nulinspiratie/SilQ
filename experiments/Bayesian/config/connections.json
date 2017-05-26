@@ -1,0 +1,24 @@
+[
+    {
+        "output_arg": "Berdina.output",
+        "input_arg": "M3300A_DIG.ch7",
+        "scale": 1.0
+    },
+    {
+        "output_arg": "AWG.ch1",
+        "input_arg": "M3300A_DIG.ch1",
+        "scale": 0.025
+    },
+    {
+        "output_arg": "AWG.ch2",
+        "input_arg": "M3300A_DIG.ch3",
+        "scale": 0.0125
+    },
+    {
+        "combine": [
+            "AWG.ch1",
+            "AWG.ch2"
+        ],
+        "scale": [-1.9079, 1]
+    }
+]

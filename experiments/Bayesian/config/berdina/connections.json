@@ -1,0 +1,31 @@
+{
+    "AWG_output": [
+        "AWG.ch1",
+        "M3300A_DIG.ch1"
+    ],
+    "DF": [
+        "AWG.ch1",
+        "M3300A_DIG.ch1"
+    ],
+
+    "TGAC": [
+        "AWG.ch2",
+        "M3300A_DIG.ch3"
+    ],
+
+    "ELR": [
+        [
+            "AWG.ch1",
+            "AWG.ch2"
+        ],
+        [
+            "M3300A_DIG.ch1",
+            "M3300A_DIG.ch3"
+        ]
+    ],
+
+    "SET": [
+        "Berdina.output",
+        "M3300A_DIG.ch7"
+    ]
+}
