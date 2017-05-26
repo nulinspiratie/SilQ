@@ -203,16 +203,17 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
     def acquire(self):
         data = {}
-        acq_data = self._acquisition_controller.do_acquisition()
+        acq_data = self._acquisition_controller.acquire()
+        acq_data = self._acquisition_controller.post_acquire(acq_data)
 
-        acquisition_average_mode = self.controller.average_mode.get_latest()
+        acquisition_average_mode = self._acquisition_controller.average_mode()
 
         # The start of acquisition
         t_0 = min(pulse.t_start for pulse in
                       self.input_pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
-        for ch in range(8):
+        for ch in self.channel_selection():
             data[ch] = {}
             ch_data = acq_data[ch]
             for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
