@@ -3,10 +3,7 @@ from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses.pulse_types import TriggerPulse
 
 from qcodes.utils import validators as vals
-from qcodes import ManualParameter
 from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
-from qcodes.instrument_drivers.keysight.M3300A import M3300A_DIG as dig_driver
-
 
 class M3300A_DIG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
