@@ -243,7 +243,7 @@ class Measurement(SettingsClass):
 
     @property
     def disk_io(self):
-        return io.DiskIO(config['user']['data_folder'])
+        return io.DiskIO(config['user']['properties']['data_folder'])
 
     @property
     def loc_provider(self):
