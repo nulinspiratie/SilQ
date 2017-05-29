@@ -81,9 +81,9 @@ class TestArbStudio(unittest.TestCase):
         for pulse in pulses:
             targeted_pulse = self.arbstudio_interface.get_pulse_implementation(
                 pulse)
-            self.arbstudio_interface.pulse_sequence(('add', targeted_pulse))
+            self.arbstudio_interface.pulse_sequence.add(targeted_pulse)
         self.assertEqual(len(pulses),
-                         len(self.arbstudio_interface.pulse_sequence().pulses))
+                         len(self.arbstudio_interface.pulse_sequence.pulses))
 
 
 class TestATS(unittest.TestCase):
@@ -155,7 +155,7 @@ class TestATS(unittest.TestCase):
             'basic_acquisition_controller',
             cls_name='Basic_AcquisitionController')
         pulse = MeasurementPulse(t_start=10, t_stop=20)
-        self.ATS_interface.pulse_sequence(('add', pulse))
+        self.ATS_interface.pulse_sequence.add(pulse)
         self.ATS_interface.average_mode('point')
         self.ATS_interface.setup()
 
@@ -363,15 +363,13 @@ class TestLayout(unittest.TestCase):
         self.layout.setup()
 
         # Test Pulseblaster
-        # print('pulseblaster pulsesequence: {}'.format(self.interfaces['pulseblaster'].pulse_sequence()))
-        # print('Pulseblaster instructions:\n{}\n\n'.format(self.pulseblaster.instructions()))
         self.assertEqual(len(self.pulseblaster.instructions()), 7)
         self.assertEqual([ins[0] for ins in self.pulseblaster.instructions()],
                          [1, 0, 1, 0, 3, 0, 0])
         self.assertEqual(self.pulseblaster.instructions()[-1][2], 1)
 
         # Test ATS
-        ATS_pulse_sequence = self.interfaces['ATS'].pulse_sequence()
+        ATS_pulse_sequence = self.interfaces['ATS'].pulse_sequence
         self.assertEqual(self.interfaces['ATS'].active_acquisition_controller(),
                          'basic_acquisition_controller')
         self.assertEqual(self.interfaces['ATS'].trigger_slope(), 'positive')
@@ -446,7 +444,7 @@ class TestLayout(unittest.TestCase):
         self.layout.setup(samples=100)
 
         # Test pulseblaster
-        self.assertEqual(len(self.interfaces['pulseblaster'].pulse_sequence()),
+        self.assertEqual(len(self.interfaces['pulseblaster'].pulse_sequence),
                          4)
         self.assertEqual(len(self.pulseblaster.instructions()), 7)
         self.assertEqual([ins[0] for ins in self.pulseblaster.instructions()],
@@ -454,7 +452,7 @@ class TestLayout(unittest.TestCase):
         self.assertEqual(self.pulseblaster.instructions()[-1][2], 1)
 
         # Test arbstudio
-        pulse_sequence = self.interfaces['arbstudio'].pulse_sequence()
+        pulse_sequence = self.interfaces['arbstudio'].pulse_sequence
         self.assertEqual(len(pulse_sequence), 6)
         pulses_ch1 = pulse_sequence.get_pulses(output_arg='arbstudio.ch1')
         self.assertEqual([p.t_start for p in pulses_ch1], [0, 10, 20])
@@ -464,8 +462,8 @@ class TestLayout(unittest.TestCase):
         self.assertEqual([p.amplitude for p in pulses_ch2], [-2.25, 2.25, 0])
 
         # Test ATS
-        pulse_sequence = self.interfaces['ATS'].pulse_sequence()
-        input_pulse_sequence = self.interfaces['ATS'].input_pulse_sequence()
+        pulse_sequence = self.interfaces['ATS'].pulse_sequence
+        input_pulse_sequence = self.interfaces['ATS'].input_pulse_sequence
         self.assertEqual(len(pulse_sequence), 2)
         self.assertEqual(len(input_pulse_sequence), 1)
         configuration_settings = self.interfaces['ATS'].configuration_settings()
