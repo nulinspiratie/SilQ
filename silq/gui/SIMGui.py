@@ -5,21 +5,30 @@ import pyperclip
 
 from PyQt5.QtGui import QPalette, QFont
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
 from silq.tools.general_tools import get_exponent, get_first_digit
+from . import start_gui
 
 states = ['up_down', 'left_right', 'none']
+
+
+def sim_gui(mini=False):
+    # Must set sim_gui.voltage_parameters
+    start_gui(SIMControlDialog, 'sim_gui',
+              parameters=sim_gui.voltage_parameters,
+              mini=mini)
 
 
 class SIM928Dialog(QFrame):
     state_change = pyqtSignal()
 
-    def __init__(self, parameter, idx=1):
+    def __init__(self, parameter, idx=1, mini=False):
         super().__init__()
 
         self.parameter = parameter
         self.idx = idx
+        self.mini = mini
 
         self._state = 'none'
         self.min_step = 0.0001
@@ -74,27 +83,35 @@ class SIM928Dialog(QFrame):
         # Set parameter name
         self.name_label = QLabel(f'{self.idx}: {self.parameter.name}')
         self.name_label.setAlignment(Qt.AlignCenter)
-        self.name_label.setFont(QFont("Times", 16, QFont.Bold))
-        layout.addWidget(self.name_label)
+
+        if not self.mini:
+            self.name_label.setFont(QFont("Times", 16, QFont.Bold))
+            layout.addWidget(self.name_label)
 
         # Add editable voltage
-        val_descr_label = QLabel('Val:')
-        val_descr_label.setFont(QFont("Times", 12, QFont.Bold))
+        val_hbox = QHBoxLayout()
+        layout.addLayout(val_hbox)
 
-        self.val_textbox = QLineEdit('{:.5g}'.format(self.parameter()))
+        if not self.mini:
+            val_descr_label = QLabel('Val:')
+            val_descr_label.setFont(QFont("Times", 12, QFont.Bold))
+            val_hbox.addWidget(val_descr_label)
+        else:
+            self.name_label.setFont(QFont("Times", 12, QFont.Bold))
+            val_hbox.addWidget(self.name_label)
+
+        self.val_textbox = QLineEdit('{:.5g}'.format(
+            self.parameter.get_latest()))
         self.val_textbox.setAlignment(Qt.AlignCenter)
         self.val_textbox.setFont(QFont("Times", 12, QFont.Bold))
         self.val_textbox.returnPressed.connect(
             lambda: self.set_voltage(self.val_textbox.text()))
+        val_hbox.addWidget(self.val_textbox)
 
         val_units_label = QLabel('V')
         val_units_label.setFont(QFont("Times", 12, QFont.Bold))
-
-        val_hbox = QHBoxLayout()
-        val_hbox.addWidget(val_descr_label)
-        val_hbox.addWidget(self.val_textbox)
         val_hbox.addWidget(val_units_label)
-        layout.addLayout(val_hbox)
+
 
         # Add current val
         self.current_val_label = QLabel(f'')
@@ -105,46 +122,48 @@ class SIM928Dialog(QFrame):
         self.val_textbox.textChanged.connect(self._val_textbox_changed)
 
         # Add voltage buttons
-        self.val_grid = QGridLayout()
-        self.val_grid.setHorizontalSpacing(0)
-        self.val_grid.setVerticalSpacing(0)
-        layout.addLayout(self.val_grid)
-        self.val_buttons = {}
-        for column_idx, scale in enumerate([100, 10, 1]):
-            for row_idx, sign in enumerate([1, -1]):
-                val = sign * scale
-                button = QPushButton(f"{'+' if sign == 1 else '-'}{scale} mV")
-                self.val_grid.addWidget(button, row_idx, column_idx + 1)
-                width = button.fontMetrics().boundingRect(
-                    f"+100 mV").width() + 7
-                button.setMaximumWidth(width)
-                button.clicked.connect(
-                    partial(self.increase_voltage, val / 1000))
-                self.val_buttons[val] = button
+        if not self.mini:
+            self.val_grid = QGridLayout()
+            self.val_grid.setHorizontalSpacing(0)
+            self.val_grid.setVerticalSpacing(0)
+            layout.addLayout(self.val_grid)
+            self.val_buttons = {}
+            for column_idx, scale in enumerate([100, 10, 1]):
+                for row_idx, sign in enumerate([1, -1]):
+                    val = sign * scale
+                    button = QPushButton(f"{'+' if sign == 1 else '-'}{scale} mV")
+                    self.val_grid.addWidget(button, row_idx, column_idx + 1)
+                    width = button.fontMetrics().boundingRect(
+                        f"+100 mV").width() + 7
+                    button.setMaximumWidth(width)
+                    button.clicked.connect(
+                        partial(self.increase_voltage, val / 1000))
+                    self.val_buttons[val] = button
 
-        # Add scale
-        self.scale_label = QLabel(f'Scale: {self.parameter.scale}')
-        self.scale_label.setAlignment(Qt.AlignCenter)
-        self.scale_label.setFont(QFont("Times", 12))
-        layout.addWidget(self.scale_label)
+            # Add scale
+            self.scale_label = QLabel(f'Scale: {self.parameter.scale}')
+            self.scale_label.setAlignment(Qt.AlignCenter)
+            self.scale_label.setFont(QFont("Times", 12))
+            layout.addWidget(self.scale_label)
 
-        # Add SIM voltage
-        self.raw_val_label = QLabel('SIM val: {:.3g} V'.format(
-            self.parameter() * self.parameter.scale))
-        self.raw_val_label.setAlignment(Qt.AlignCenter)
-        self.raw_val_label.setFont(QFont("Times", 12))
-        layout.addWidget(self.raw_val_label)
+            # Add SIM voltage
+            self.raw_val_label = QLabel('SIM val: {:.3g} V'.format(
+                self.parameter.get_latest() * self.parameter.scale))
+            self.raw_val_label.setAlignment(Qt.AlignCenter)
+            self.raw_val_label.setFont(QFont("Times", 12))
+            layout.addWidget(self.raw_val_label)
 
     def _val_textbox_changed(self):
         try:
             textbox_val = float(self.val_textbox.text())
-            self.modified_val = (textbox_val != self.parameter())
+            self.modified_val = (textbox_val != self.parameter.get_latest())
         except:
             self.modified_val = True
         if self.modified_val:
             self.val_textbox.setStyleSheet("color: rgb(255, 0, 0);")
             if self.current_val_label.text() == '':
-                self.current_val_label.setText(f'Current val: {self.parameter()}')
+                self.current_val_label.setText(
+                    f'Current val: {self.parameter.get_latest()}')
         else:
             self._reset_val_textbox()
 
@@ -158,20 +177,23 @@ class SIM928Dialog(QFrame):
 
     def _reset_val_textbox(self):
         self.modified_val = False
-        self.val_textbox.setText('{:.5g}'.format(self.parameter()))
+        self.val_textbox.setText('{:.5g}'.format(self.parameter.get_latest()))
         self.current_val_label.setText('')
         self.val_textbox.setStyleSheet("color: rgb(0, 0, 0);")
 
-        self.raw_val_label.setText('SIM val: {:.3g} V'.format(
-            self.parameter() * self.parameter.scale))
+        if not self.mini:
+            self.raw_val_label.setText('SIM val: {:.3g} V'.format(
+                self.parameter.get_latest() * self.parameter.scale))
 
     def increase_voltage(self, increment):
-        self.set_voltage(self.parameter() + increment)
+        self.set_voltage(self.parameter.get_latest() + increment)
 
 
 class SIMConfigDialog(QFrame):
-    def __init__(self):
+    def __init__(self, mini=False):
         super().__init__()
+
+        self.mini = mini
 
         self.step = {'up_down': 0.001, 'left_right': 0.001}
         self.min_step = 0.0001
@@ -184,31 +206,32 @@ class SIMConfigDialog(QFrame):
         self.setLayout(self.layout)
 
         # Add up, down, left, right color indication
-        key_grid = QGridLayout()
-        key_grid.setVerticalSpacing(0)
-        for k, (color, keys) in enumerate([
-            ('blue', [('up', (0, 1)), ('down', (1, 1))]),
-            ('darkGreen', [('left', (1, 0)), ('right', (1, 2))])]):
-            for (key, pos) in keys:
-                key_label = QLabel(key)
-                key_label.setAlignment(Qt.AlignCenter)
-                key_label.setFont(QFont("Times", 12, QFont.Bold))
+        if not self.mini:
+            key_grid = QGridLayout()
+            key_grid.setVerticalSpacing(0)
+            for k, (color, keys) in enumerate([
+                ('blue', [('up', (0, 1)), ('down', (1, 1))]),
+                ('darkGreen', [('left', (1, 0)), ('right', (1, 2))])]):
+                for (key, pos) in keys:
+                    key_label = QLabel(key)
+                    key_label.setAlignment(Qt.AlignCenter)
+                    key_label.setFont(QFont("Times", 12, QFont.Bold))
 
-                key_palette = QPalette()
-                key_palette.setColor(QPalette.Foreground, getattr(Qt, color))
-                key_label.setPalette(key_palette)
+                    key_palette = QPalette()
+                    key_palette.setColor(QPalette.Foreground, getattr(Qt, color))
+                    key_label.setPalette(key_palette)
 
-                key_grid.addWidget(key_label, *pos)
-        self.layout.addLayout(key_grid)
+                    key_grid.addWidget(key_label, *pos)
+            self.layout.addLayout(key_grid)
 
-        self.layout.addStretch(1)
+            self.layout.addStretch(1)
 
-        # Add step sizes
+            # Add step sizes
 
-        step_label = QLabel('Step:')
-        step_label.setAlignment(Qt.AlignCenter)
-        step_label.setFont(QFont("Times", 12, QFont.Bold))
-        self.layout.addWidget(step_label)
+            step_label = QLabel('Step:')
+            step_label.setAlignment(Qt.AlignCenter)
+            step_label.setFont(QFont("Times", 12, QFont.Bold))
+            self.layout.addWidget(step_label)
 
         step_hbox = QHBoxLayout()
         self.layout.addLayout(step_hbox)
@@ -299,30 +322,40 @@ class Separator(QFrame):
 
 
 class SIMControlDialog(QDialog):
-    def __init__(self, parameters):
-        super().__init__()
+    def __init__(self, parameters, mini=False):
+        super().__init__(
+            flags=Qt.WindowMinimizeButtonHint|Qt.WindowCloseButtonHint)
         self.parameters = parameters
+        self.mini = mini
 
         self.index_keys = {}
         self.state_parameters = {state: [] for state in states}
+
+        # Dict of {parameter.name: SIM928Dialog}
         self.SIM928_dialogs = {}
 
         self.initUI()
 
     def initUI(self):
-        self.layout = QHBoxLayout()
+        if not self.mini:
+            self.layout = QHBoxLayout()
+        else:
+            self.layout = QVBoxLayout()
         self.layout.setSpacing(0)
         self.setLayout(self.layout)
 
-        self.config_widget = SIMConfigDialog()
+        self.config_widget = SIMConfigDialog(mini=self.mini)
         self.config_widget.ramp_button.clicked.connect(
             lambda clicked: self.ramp_voltages())
+        self.config_widget.ramp_button.clicked.connect(self._clear_focus)
         self.config_widget.ramp_zero_button.clicked.connect(
             lambda clicked: self.ramp_voltages(0))
+        self.config_widget.ramp_zero_button.clicked.connect(self._clear_focus)
 
         self.config_widget.copy_button = QPushButton('Copy from clipboard')
         self.config_widget.copy_button.clicked.connect(
             self._copy_from_clipboard)
+        self.config_widget.copy_button.clicked.connect(self._clear_focus)
         self.config_widget.layout.addWidget(self.config_widget.copy_button)
 
 
@@ -330,7 +363,7 @@ class SIMControlDialog(QDialog):
 
         for k, parameter in enumerate(self.parameters):
             self.layout.addWidget(Separator())
-            SIM928_dialog = SIM928Dialog(parameter, idx=k + 1)
+            SIM928_dialog = SIM928Dialog(parameter, idx=k + 1, mini=self.mini)
             self.layout.addWidget(SIM928_dialog)
             Qt_index_key = getattr(Qt, f'Key_{k+1}')
             self.index_keys[Qt_index_key] = SIM928_dialog
@@ -412,3 +445,12 @@ class SIMControlDialog(QDialog):
             for SIM928_dialog in self.SIM928_dialogs.values():
                 if SIM928_dialog.modified_val:
                     SIM928_dialog.set_voltage(SIM928_dialog.val_textbox.text())
+
+    def changeEvent(self, event):
+        # Correctly determines it is unminimized, but cannot clear focus
+        super().changeEvent(event)
+        if event.type() == QEvent.WindowStateChange:
+            if self.windowState() == Qt.WindowNoState:
+                self._clear_focus()
+                for SIM928_dialog in self.SIM928_dialogs.values():
+                    SIM928_dialog._reset_val_textbox()

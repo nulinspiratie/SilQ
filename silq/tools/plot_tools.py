@@ -5,7 +5,6 @@ from time import time
 import numpy as np
 
 from qcodes.station import Station
-station = Station.default
 
 set_gates_txt = """\
 {x_label}({x_val:.5f})
@@ -115,6 +114,10 @@ class InteractivePlot(MatPlot):
                  nticks=6, timeout=60, **kwargs):
         super().__init__(subplots=subplots, figsize=figsize,
                          **kwargs)
+        self.station = Station.default
+
+        if hasattr(self.station, 'layout'):
+            self.layout = self.station.layout
         self.timeout = timeout
         self.cid = {}
 
@@ -149,8 +152,11 @@ class InteractivePlot(MatPlot):
         self.dataset = dataset
         self.x_label = getattr(self.dataset, self.key).set_arrays[1].name
         self.y_label = getattr(self.dataset, self.key).set_arrays[0].name
-        self.x_gate = getattr(station, self.x_label)
-        self.y_gate = getattr(station, self.y_label)
+
+        if hasattr(self.station, self.x_label):
+            self.x_gate = getattr(self.station, self.x_label)
+        if hasattr(self.station, self.x_label):
+            self.y_gate = getattr(self.station, self.y_label)
 
     def get_action(self, key=None):
         if key is None:
@@ -247,12 +253,11 @@ class ScanningPlot(InteractivePlot):
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
 
-        self.layout = station.layout
-
         self.parameter = parameter
 
-        self.parameter.setup()
-        self.scan(initialize=True, start=True, stop=(not auto_start))
+        self.parameter.continuous = auto_start
+        self.scan(initialize=True, setup=True, start=True,
+                  stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -269,18 +274,17 @@ class ScanningPlot(InteractivePlot):
 
     def start(self, setup=True, start=True):
         if setup:
-            self.parameter.setup()
-        if start:
-            self.layout.start()
+            self.parameter.setup(start=start)
         self.timer.start()
 
     def stop(self):
         self.timer.stop()
         self.layout.stop()
 
-    def scan(self, initialize=False, start=False, stop=False):
+    def scan(self, initialize=False, setup=False, start=False, stop=False):
         from winsound import Beep
-        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.results = self.parameter.acquire(start=start, stop=stop,
+                                              setup=setup)
         self.update_plot(initialize=initialize)
 
 
