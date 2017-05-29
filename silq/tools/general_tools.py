@@ -108,7 +108,6 @@ class SettingsClass:
             if value is not None:
                 return value
 
-
     def settings(self, **kwargs):
         """
         Sets up the meta properties of a measurement parameter

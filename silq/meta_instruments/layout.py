@@ -619,7 +619,6 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-
     def start(self):
         """
         Starts all the instruments except the acquisition instrument
