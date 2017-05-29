@@ -4,7 +4,6 @@ from silq.pulses.pulse_types import TriggerPulse
 
 from qcodes.utils import validators as vals
 from qcodes import ManualParameter
-from qcodes.instrument_drivers.keysight.M3300A import M3300A_DIG as dig_driver
 
 
 class M3300A_DIG_Interface(InstrumentInterface):
