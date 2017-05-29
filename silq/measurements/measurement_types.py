@@ -297,8 +297,8 @@ class Measurement(SettingsClass):
 
         condition_sets = list(condition_sets) + self.condition_sets
         if not condition_sets:
+            print(f'checking condition set {condition_set}')
             return None
-
         for condition_set in condition_sets:
             self.condition_set = condition_set
             condition_set.check_satisfied(self.dataset)
@@ -394,8 +394,7 @@ class Measurement(SettingsClass):
                 set_parameter(self.initial_set_vals[set_parameter.name])
 
     def initialize(self):
-        if self.condition_set is not None:
-            self.condition_set.result = None
+        self.condition_set = None
         for condition_set in self.condition_sets:
             condition_set.result = None
 
@@ -431,7 +430,6 @@ class Loop0DMeasurement(Measurement):
             Dataset
         """
         self.initialize()
-
         self.measurement = qc.Measure(self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
