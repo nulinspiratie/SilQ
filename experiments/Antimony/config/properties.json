@@ -1,4 +1,26 @@
 {
-    "default_environment": "antimony",
-    "data_folder": "F:\\Antimony\\data"
+    "default_environment": "fast",
+    "data_folder": "F:\\Antimony\\data",
+    "parameters": {
+        "2D": [
+            "TGAC",
+            "DF"
+        ],
+        "TGAC": {
+            "steps": [
+                0.0005,
+                1
+            ]
+        },
+        "2": [
+            "TGAC",
+            "DF"
+        ],
+        "DF": {
+            "steps": [
+                0.0005,
+                1
+            ]
+        }
+    }
 }
