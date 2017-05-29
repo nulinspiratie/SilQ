@@ -35,5 +35,6 @@ _configurations = {
                  'macs': [30902517727200],
                  'modes': {
                      'analysis': {'select': ['imports', 'functions', 'data',
+                                             'jupyter', 'logging']}
                  }}
 }
