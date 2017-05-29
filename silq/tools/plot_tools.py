@@ -256,7 +256,9 @@ class ScanningPlot(InteractivePlot):
         self.parameter = parameter
 
         self.parameter.continuous = auto_start
-        self.scan(initialize=True, setup=True, start=True,
+        if auto_start:
+            self.parameter.setup(start=False)
+        self.scan(initialize=True, start=True,
                   stop=(not auto_start))
 
         if auto_start:
@@ -281,10 +283,9 @@ class ScanningPlot(InteractivePlot):
         self.timer.stop()
         self.layout.stop()
 
-    def scan(self, initialize=False, setup=False, start=False, stop=False):
+    def scan(self, initialize=False, start=False, stop=False):
         from winsound import Beep
-        self.results = self.parameter.acquire(start=start, stop=stop,
-                                              setup=setup)
+        self.results = self.parameter.acquire(start=start, stop=stop)
         self.update_plot(initialize=initialize)
 
 
@@ -299,23 +300,38 @@ class DCSweepPlot(ScanningPlot):
         if parameter.trace_pulse.enabled:
             self[1].set_ylim(-0.1, 1.3)
 
-        self[0].plot([0], [0], 'or', ms=5)
+        self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
         for k, result in enumerate(self.results):
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
+                setpoint_units = self.parameter.setpoint_units[k]
                 name = self.parameter.names[k]
+                unit = self.parameter.units[k]
                 if len(setpoints) == 2:
-                    self[k].add(result, x=setpoints[0], y=setpoints[1],
-                                xlabel=setpoint_names[0],
-                                ylabel=setpoint_names[1],
-                                zlabel=name)
+                    self[k].add(result, x=setpoints[1], y=setpoints[0],
+                                xlabel=setpoint_names[1],
+                                ylabel=setpoint_names[0],
+                                xunit=setpoint_units[1],
+                                yunit=setpoint_units[0],
+                                zlabel=name,
+                                zunit=unit)
+                    self.y_label, self.x_label = setpoint_names
+                    if hasattr(self.station, self.x_label) and \
+                            hasattr(self.station, self.y_label):
+                        self.x_gate = getattr(self.station, self.x_label)
+                        self.y_gate = getattr(self.station, self.y_label)
+
+                        self[k].plot([self.x_gate.get_latest()],
+                                     [self.y_gate.get_latest()], 'ob', ms=5)
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
-                                ylabel=name)
+                                ylabel=name,
+                                xunit=setpoint_units[0],
+                                yunit=unit)
 
             else:
                 result_config = self.traces[k]['config']
