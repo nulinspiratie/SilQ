@@ -1,0 +1,19 @@
+{
+    "read": {
+        "duration": 20,
+        "amplitude": 0
+    },
+    "final": {
+        "duration": 5,
+        "amplitude": 0
+    },
+    "trigger": {},
+    "empty": {
+        "amplitude": -0.06,
+        "duration": 20
+    },
+    "plunge": {
+        "amplitude": 0.06,
+        "duration": 20
+    }
+}
