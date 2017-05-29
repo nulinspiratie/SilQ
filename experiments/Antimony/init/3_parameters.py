@@ -14,8 +14,6 @@ turnon_parameter = parameters.CombinedParameter(parameters=[TG, LB, RB])
 TGAC_DF_DS = parameters.CombinedParameter(parameters=[TGAC, DF, DS])
 LB_RB = parameters.CombinedParameter(parameters=[LB, RB])
 
-for parameter in [DF_DS]:
-    station.add_component(parameter)
 ##############################
 ### Acquisition parameters ###
 ##############################
@@ -24,6 +22,7 @@ EPR_parameter = parameters.EPRParameter()
 T1_parameter = parameters.T1Parameter()
 variable_read_parameter = parameters.VariableReadParameter()
 adiabatic_ESR_parameter = parameters.AdiabaticParameter()
+DC_sweep_parameter = parameters.DCSweepParameter()
 # adiabatic_NMR_parameter = parameters.AdiabaticParameter()
 # rabi_ESR_parameter = parameters.RabiParameter()
 # rabi_drive_ESR_parameter =  parameters.RabiDriveParameter()
@@ -35,5 +34,6 @@ adiabatic_ESR_parameter = parameters.AdiabaticParameter()
 # plunge_voltage_parameter = general_parameters.ConfigPulseAttribute(
 #     pulse_name='plunge', attribute='amplitude')
 
-for parameter in [DC_parameter, EPR_parameter, variable_read_parameter]:
+for parameter in [DC_parameter, EPR_parameter, variable_read_parameter,
+                  adiabatic_ESR_parameter, T1_parameter]:
     station.add_component(parameter)

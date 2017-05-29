@@ -12,7 +12,8 @@ import numpy as np
 from numpy import array, nan
 from functools import partial
 from importlib import reload
-from time import sleep, time
+import time
+from time import sleep
 from winsound import Beep
 import logging
 from matplotlib import pyplot as plt
@@ -30,7 +31,7 @@ from IPython.core.magic import (register_line_magic, register_cell_magic,
 ##############
 import qcodes as qc
 from qcodes.utils.helpers import in_notebook
-from qcodes import Instrument, Loop, Task, load_data,combine
+from qcodes import Instrument, Loop, Measure, Task, load_data,combine
 from qcodes.utils.helpers import in_notebook
 from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
@@ -38,7 +39,7 @@ if in_notebook():
     from qcodes import MatPlot
 from qcodes.widgets.slack import Slack
 
-from qcodes.data.hdf5_format import HDF5Format as h5fmt
+from qcodes.data import hdf5_format
 from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
 
@@ -78,17 +79,4 @@ antimony = silq.config.antimony
 code_labels = {}
 silq.tools.general_tools.code_labels = code_labels
 
-
-# Logging
-note_formatter = logging.Formatter('%(asctime)s - %(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
-
-file_handler = logging.FileHandler('notes.log')
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(note_formatter)
-
-note_logger = logging.getLogger('notes')
-note_logger.setLevel(logging.INFO)
-
-note_logger.addHandler(file_handler)
-note_logger.addFilter(logging.Filter(name='notes'))
+h5fmt = hdf5_format.HDF5Format()
