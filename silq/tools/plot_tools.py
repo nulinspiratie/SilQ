@@ -253,11 +253,11 @@ class ScanningPlot(InteractivePlot):
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
 
-
         self.parameter = parameter
 
-        self.parameter.setup()
-        self.scan(initialize=True, start=True, stop=(not auto_start))
+        self.parameter.continuous = auto_start
+        self.scan(initialize=True, setup=True, start=True,
+                  stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -274,18 +274,17 @@ class ScanningPlot(InteractivePlot):
 
     def start(self, setup=True, start=True):
         if setup:
-            self.parameter.setup()
-        if start:
-            self.layout.start()
+            self.parameter.setup(start=start)
         self.timer.start()
 
     def stop(self):
         self.timer.stop()
         self.layout.stop()
 
-    def scan(self, initialize=False, start=False, stop=False):
+    def scan(self, initialize=False, setup=False, start=False, stop=False):
         from winsound import Beep
-        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.results = self.parameter.acquire(start=start, stop=stop,
+                                              setup=setup)
         self.update_plot(initialize=initialize)
 
 
