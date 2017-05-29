@@ -34,6 +34,6 @@ _configurations = {
     'Antimony': {'folder': r"experiments\Antimony",
                  'macs': [30902517727200],
                  'modes': {
-                     'analysis': {'select': ['imports', 'functions', 'data']}
+                     'analysis': {'select': ['imports', 'functions', 'data',
                  }}
 }
