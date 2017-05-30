@@ -3,8 +3,11 @@ from silq.tools.notebook_tools import *
 import pyperclip
 from time import time
 import numpy as np
+import logging
 
 from qcodes.station import Station
+
+logger = logging.getLogger(__name__)
 
 set_gates_txt = """\
 {x_label}({x_val:.5f})
@@ -252,6 +255,7 @@ class ScanningPlot(InteractivePlot):
         super().__init__(**kwargs)
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
+        self.connect_event('close_event', self.stop)
 
         self.parameter = parameter
 
@@ -279,9 +283,12 @@ class ScanningPlot(InteractivePlot):
             self.parameter.setup(start=start)
         self.timer.start()
 
-    def stop(self):
+    def stop(self, *args):
+        # *args are needed for if it is a callback
+        logger.debug('Stopped')
         self.timer.stop()
         self.layout.stop()
+        self.parameter.continuous = False
 
     def scan(self, initialize=False, start=False, stop=False):
         from winsound import Beep
