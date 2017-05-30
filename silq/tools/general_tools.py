@@ -412,3 +412,10 @@ def convert_setpoints(*args):
             remaining_args = tuple((arg,) * len(first_arg)
                                   for arg in remaining_args)
         return (first_arg, ) + remaining_args
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
