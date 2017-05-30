@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import inspect
 from blinker import Signal, signal
+import logging
 Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseImplementation, PulseMatch
@@ -15,6 +16,7 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average']
 
+logger = logging.getLogger(__name__)
 
 
 class Pulse:
@@ -168,10 +170,10 @@ class Pulse:
                     previous_pulse_match.origin_pulse.signal.disconnect(
                         previous_pulse_match)
 
-                value.origin_pulse.signal.connect(value)
-                value.target_pulse = self
-                value.target_pulse_attr = key
-                self._connected_attrs[key] = value
+            value.origin_pulse.signal.connect(value)
+            value.target_pulse = self
+            value.target_pulse_attr = key
+            self._connected_attrs[key] = value
 
             super().__setattr__(key, value.value)
 
@@ -200,12 +202,12 @@ class Pulse:
                 previous_pulse_match.origin_pulse.signal.disconnect(
                     previous_pulse_match)
 
-            if self.signal.receivers:
-                # send signal to anyone listening that attribute has changed
-                self.signal.send(self, **{key: value})
-                if key in ['t_start', 'duration']:
-                    # Also send signal that dependent property t_stop has changed
-                    self.signal.send(self, t_stop=self.t_stop)
+        if self.signal.receivers:
+            # send signal to anyone listening that attribute has changed
+            self.signal.send(self, **{key: value})
+            if key in ['t_start', 'duration']:
+                # Also send signal that dependent property t_stop has changed
+                self.signal.send(self, t_stop=self.t_stop)
 
     def _value_or_config(self, key, value):
         """
@@ -360,21 +362,22 @@ class Pulse:
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
 
-    def copy(self, fix_vars=False):
+    def copy(self):
         """
         Creates a copy of a pulse.
         Args:
-            fix_vars: If set to True, all of its vars are explicitly copied,
-            ensuring that they are no longer linked to the settings
 
         Returns:
             Copy of pulse
         """
         # temporarily remove signal because it takes time copying
         pulse_copy = copy.deepcopy(self)
-        if fix_vars:
-            for var in vars(pulse_copy):
-                setattr(pulse_copy, var, getattr(pulse_copy, var))
+
+        # Add receiver for config signals
+        if self.pulse_config is not None:
+            signal(f'config:{pulse_copy.environment}.pulses'
+                   f'.{pulse_copy.name}').connect(
+                pulse_copy._handle_config_signal)
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
