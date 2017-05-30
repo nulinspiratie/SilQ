@@ -141,14 +141,17 @@ class TestPulseConfig(unittest.TestCase):
 
     def test_pulse_from_config(self):
         self.pulse_config.t_start = 10
-        p = Pulse(name='read')
+        p = Pulse(name='read', duration = 10)
+        pseq = PulseSequence([p])
         self.assertEqual(p.t_start, 10)
+        self.assertEqual(pseq['read'].t_start, 10)
 
         p.t_start = 20
         self.assertEqual(p.t_start, 20)
 
         self.pulse_config.t_start = 0
         self.assertEqual(p.t_start, 0)
+        self.assertEqual(pseq['read'].t_start, 0)
 
         self.pulse_config.t_start = 'config:env.pulses.read.t_stop'
         with self.assertRaises(AttributeError):
@@ -157,14 +160,17 @@ class TestPulseConfig(unittest.TestCase):
         self.pulse_config.t_stop = 50
         self.assertEqual(self.pulse_config.t_start, 50)
         self.assertEqual(p.t_start, 50)
+        self.assertEqual(pseq['read'].t_start, 50)
 
         self.pulse_config.t_start = 40
         self.assertEqual(self.pulse_config.t_start, 40)
         self.assertEqual(p.t_start, 40)
+        self.assertEqual(pseq['read'].t_start, 40)
 
         self.pulse_config.t_stop = 60
         self.assertEqual(self.pulse_config.t_start, 40)
         self.assertEqual(p.t_start, 40)
+        self.assertEqual(pseq['read'].t_start, 40)
 
 
 class TestPulse(unittest.TestCase):
