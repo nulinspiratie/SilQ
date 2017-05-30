@@ -335,6 +335,7 @@ class SIMControlDialog(QDialog):
         self.SIM928_dialogs = {}
 
         self.initUI()
+        self.move(1400, 350)
 
     def initUI(self):
         if not self.mini:
