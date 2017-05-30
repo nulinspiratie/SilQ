@@ -5,8 +5,6 @@ from .configurations import _configurations
 import json
 from .tools.config import DictConfig, ListConfig
 
-import qcodes as qc
-
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 
