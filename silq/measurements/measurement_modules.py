@@ -1,7 +1,11 @@
+import logging
 from qcodes import config
 
 from silq.measurements.measurement_types import *
 from silq.tools.general_tools import JSONEncoder
+
+logger = logging.getLogger(__name__)
+
 measurement_config = config['user'].get('measurement', {})
 
 
@@ -44,7 +48,7 @@ class MeasurementSequence:
     def __next__(self):
         if self.next_measurement is None:
             if not self.silent:
-                print('Finished measurements')
+                logging.debug('Finished measurements')
             raise StopIteration
         else:
             self.measurement = self.next_measurement
@@ -54,7 +58,7 @@ class MeasurementSequence:
         # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
-            print(f'Performing {self.measurement}')
+            logging.debug(f'Performing {self.measurement}')
         self.measurement.silent = self.silent
         # Performing measurement also checks for condition sets, and updates
         # set parameters accordingly
