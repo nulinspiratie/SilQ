@@ -3,6 +3,7 @@ import copy
 import inspect
 from blinker import Signal, signal
 import logging
+from functools import partial
 Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseImplementation, PulseMatch
@@ -39,12 +40,46 @@ class Pulse:
                                                 'default')
         self.environment = environment
 
+        # Setup pulse config
         try:
             # Set pulse_config from SilQ environment config
             self.pulse_config = config[self.environment].pulses[self.name]
         except KeyError:
             self.pulse_config = None
+        try:
+            # Set properties_config from SilQ environment config
+            self.properties_config = config[self.environment].properties
+        except KeyError:
+            self.properties_config = None
 
+
+        ### Setup signals
+        # Connect changes in pulse config to handling method
+        # If environment.pulses has no self.name key, this will never be called.
+        signal(f'config:{self.environment}.pulses.{self.name}').connect(
+            self._handle_config_signal)
+
+        # Setup properties config. If pulse requires additional
+        # properties_attrs, place them before calling Pulse.__init__,
+        # else they are not added to attrs.
+        # Make sure that self.properties_attrs is never replaced, only appended.
+        # Else it is no longer used for self._handle_properties_config_signal.
+        if not hasattr(self, 'properties_attrs'):
+            # Create attr if it does not already exist
+            self.properties_attrs = []
+        self.properties_attrs += ['t_read', 't_skip']
+
+        # Set handler that only uses attributes in properties_attrs
+        self._handle_properties_config_signal = partial(
+            self._handle_config_signal,
+            select=self.properties_attrs)
+        # Connect changes in properties config to handling method
+        # If environment has no properties key, this will never be called.
+        signal(f'config:{self.environment}.properties').connect(
+            self._handle_properties_config_signal)
+
+
+        ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
         self.t_start = self._value_or_config('t_start', t_start)
         self.duration = self._value_or_config('duration', duration)
@@ -52,6 +87,12 @@ class Pulse:
         self.connection_label = self._value_or_config('connection_label',
                                                       connection_label)
 
+        # Set attributes that can also be retrieved from properties_config
+        if self.properties_config is not None:
+            for attr in self.properties_attrs:
+                setattr(self, attr, self.properties_config.get(attr, None))
+
+        # Set attributes that should not be retrieved from pulse_config
         self.acquire = acquire
         self.initialize = initialize
         self.enabled = enabled
@@ -63,9 +104,6 @@ class Pulse:
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-        if self.pulse_config is not None:
-            signal(f'config:{self.environment}.pulses.{self.name}').connect(
-                self._handle_config_signal)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
@@ -77,18 +115,27 @@ class Pulse:
         else:
             return True
 
-    def _handle_config_signal(self, _, **kwargs):
+    def _handle_config_signal(self, _, select=None, **kwargs):
         """
         Update attr when attr in pulse config is modified
         Args:
             _: sender config (unused)
+            select (Optional(List(str): list of attrs that can be set. 
+                Will update any attribute if not specified. 
             **kwargs: {attr: new_val}
 
         Returns:
 
         """
         key, val = kwargs.popitem()
-        setattr(self, key, val)
+        if select is None or key in select:
+            setattr(self, key, val)
+
+    def __str__(self):
+        # This is called by blinker.signal to get a repr. Instead of creating
+        # a full repr which requires several attrs, this is much faster.
+        pulse_class = self.__class__.__name__
+        return f'{pulse_class}({self.full_name})'
 
     def __eq__(self, other):
         """
@@ -103,7 +150,8 @@ class Pulse:
         Returns:
 
         """
-        exclude_attrs = ['connection', 'connection_requirements', 'signal']
+        exclude_attrs = ['connection', 'connection_requirements', 'signal',
+                         '_handle_properties_config_signal']
         if isinstance(self, PulseImplementation):
             if isinstance(other, PulseImplementation):
                 # Both pulses are pulse implementations
@@ -111,7 +159,7 @@ class Pulse:
                 if self.pulse_class != other.pulse_class:
                     return False
                 # All attributes must match
-                return self._matches_attrs(other, exclude_attrs['signal'])
+                return self._matches_attrs(other, exclude_attrs=exclude_attrs)
             else:
                 # Only self is a pulse implementation
                 if not isinstance(other, self.pulse_class):
@@ -147,7 +195,7 @@ class Pulse:
             if not isinstance(other, self.__class__):
                 return False
             # All attributes must match
-            return self._matches_attrs(other, exclude_attrs=['signal'])
+            return self._matches_attrs(other, exclude_attrs=exclude_attrs)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -179,18 +227,36 @@ class Pulse:
 
         else:
             if key == 'environment' and hasattr(self, key):
+                # Disconnect previous handlers if they existed
                 signal(f'config:{self.environment}.pulses.{self.name}'
                        ).disconnect(self._handle_config_signal)
+                signal(f'config:{self.environment}.properties'
+                       ).disconnect(self._handle_properties_config_signal)
+
+                # Connect to new handlers
                 signal(f'config:{value}.pulses.{self.name}').connect(
                     self._handle_config_signal)
+                signal(f'config:{value}.properties').connect(
+                    self._handle_properties_config_signal)
 
                 if self.name in config[value].pulses:
+                    # Replace pulse_config
                     self.pulse_config = config[value].pulses[self.name]
+                    # Update all pulse attrs that exist in new pulse_config
                     for env_key, env_val in self.pulse_config.items():
                         if hasattr(self, env_key):
                             setattr(self, env_key, env_val)
                 else:
                     self.pulse_config = None
+
+                if 'properties' in config[value]:
+                    # Repace properties_config
+                    self.properties_attrs = config[value].properties
+                    # Replace all attrs in new properties_config if they are
+                    # in self.properties_attrs
+                    for attr in self.properties_attrs:
+                        if attr in config[value].properties:
+                            setattr(self, attr, config[value].properties[attr])
 
             super().__setattr__(key, value)
 
@@ -374,10 +440,11 @@ class Pulse:
         pulse_copy = copy.deepcopy(self)
 
         # Add receiver for config signals
-        if self.pulse_config is not None:
-            signal(f'config:{pulse_copy.environment}.pulses'
-                   f'.{pulse_copy.name}').connect(
-                pulse_copy._handle_config_signal)
+        signal(f'config:{pulse_copy.environment}.pulses.'
+               f'{pulse_copy.name}').connect(
+            pulse_copy._handle_config_signal)
+        signal(f'config:{pulse_copy.environment}.properties').connect(
+            pulse_copy._handle_properties_config_signal)
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
