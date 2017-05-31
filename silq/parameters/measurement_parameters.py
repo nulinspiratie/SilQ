@@ -16,6 +16,8 @@ from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
 from silq.measurements.measurement_modules import MeasurementSequence
 
+logger = logging.getLogger(__name__)
+
 properties_config = config['user'].get('properties', {})
 parameter_config = qc.config['user']['properties'].get('parameters', {})
 measurement_config = qc.config['user'].get('measurements', {})
@@ -85,9 +87,9 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in zip(self.names, self.results):
-                print('{}: {:.3f}'.format(name, result))
+                logger.info('{}: {:.3f}'.format(name, result))
         elif hasattr(self, 'results'):
-            print('{}: {:.3f}'.format(self.name, self.results))
+            logger.info('{}: {:.3f}'.format(self.name, self.results))
 
 
 class MeasurementSequenceParameter(MeasurementParameter):
@@ -218,7 +220,7 @@ class SelectFrequencyParameter(MeasurementParameter):
                 properties_config['frequency'] = frequency
         else:
             if not self.silent:
-                logging.warning("Could not find frequency with high enough "
+                logger.warning("Could not find frequency with high enough "
                                 "contrast")
 
         self.results += [frequency]
