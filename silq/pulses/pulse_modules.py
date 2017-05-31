@@ -479,6 +479,7 @@ class PulseSequence:
         return shapes
 
 class PulseImplementation:
+    pulse_config = None
     def __init__(self, pulse_class, pulse_requirements=[]):
         self.signal = Signal()
         self._connected_attrs = {}
