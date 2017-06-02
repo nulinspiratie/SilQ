@@ -76,14 +76,16 @@ class TestPulseConfig(unittest.TestCase):
     def setUp(self):
         self.signal = signal('config:env.pulses.read')
 
-        config.properties.default_environment = 'env'
+        config.clear()
+        config.properties = {'default_environment': 'env'}
 
         self.dict = {}
 
         self.pulses_config = DictConfig(name='pulses',
                                         folder=None,
                                         config={'read': {}})
-        config.env = {'pulses': self.pulses_config}
+        config.env = {'pulses': self.pulses_config,
+                      'properties': {}}
         self.pulse_config = self.pulses_config.read
 
     def tearDown(self):
@@ -141,14 +143,17 @@ class TestPulseConfig(unittest.TestCase):
 
     def test_pulse_from_config(self):
         self.pulse_config.t_start = 10
-        p = Pulse(name='read')
+        p = Pulse(name='read', duration = 10)
+        pseq = PulseSequence([p])
         self.assertEqual(p.t_start, 10)
+        self.assertEqual(pseq['read'].t_start, 10)
 
         p.t_start = 20
         self.assertEqual(p.t_start, 20)
 
         self.pulse_config.t_start = 0
         self.assertEqual(p.t_start, 0)
+        self.assertEqual(pseq['read'].t_start, 0)
 
         self.pulse_config.t_start = 'config:env.pulses.read.t_stop'
         with self.assertRaises(AttributeError):
@@ -157,15 +162,41 @@ class TestPulseConfig(unittest.TestCase):
         self.pulse_config.t_stop = 50
         self.assertEqual(self.pulse_config.t_start, 50)
         self.assertEqual(p.t_start, 50)
+        self.assertEqual(pseq['read'].t_start, 50)
 
         self.pulse_config.t_start = 40
         self.assertEqual(self.pulse_config.t_start, 40)
         self.assertEqual(p.t_start, 40)
+        self.assertEqual(pseq['read'].t_start, 40)
 
         self.pulse_config.t_stop = 60
         self.assertEqual(self.pulse_config.t_start, 40)
         self.assertEqual(p.t_start, 40)
+        self.assertEqual(pseq['read'].t_start, 40)
 
+    def test_pulse_from_properties_config(self):
+        read_pulse = Pulse(name='read', duration=10)
+        pseq = PulseSequence([read_pulse])
+
+        self.assertEqual(read_pulse.t_skip, None)
+        self.assertEqual(pseq['read'].t_skip, None)
+
+        config.env.properties = {'t_skip': 1}
+        self.assertEqual(read_pulse.t_skip, 1)
+        self.assertEqual(pseq['read'].t_skip, 1)
+
+        config.env.properties = {'t_skip': 2}
+        self.assertEqual(read_pulse.t_skip, 2)
+        self.assertEqual(pseq['read'].t_skip, 2)
+
+        read_pulse = Pulse(name='read', duration=10)
+        pseq = PulseSequence([read_pulse])
+        self.assertEqual(read_pulse.t_skip, 2)
+        self.assertEqual(pseq['read'].t_skip, 2)
+
+        config.env.properties = {'t_skip': 1}
+        self.assertEqual(read_pulse.t_skip, 1)
+        self.assertEqual(pseq['read'].t_skip, 1)
 
 class TestPulse(unittest.TestCase):
     def test_pulse_equality(self):
@@ -190,7 +221,12 @@ class TestPulse(unittest.TestCase):
 
 class TestPulseSequence(unittest.TestCase):
     def setUp(self):
+
+        config.clear()
+        config.properties = {}
+
         self.pulse_sequence = PulseSequence()
+
     def test_add_remove_pulse(self):
         if self.pulse_sequence:
             isempty = False
@@ -222,6 +258,7 @@ class TestPulseSequence(unittest.TestCase):
         pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
         pulse2 = DCPulse(name='dc2', amplitude=1.5, duration=10, t_start=0)
         self.pulse_sequence.add(pulse1, pulse2)
+
         self.assertEqual(pulse2, self.pulse_sequence[0])
 
     def test_get_pulses(self):

@@ -2,6 +2,7 @@ import numpy as np
 import logging
 
 import qcodes as qc
+from qcodes.loops import active_loop
 from qcodes.data import hdf5_format, io
 from qcodes import config
 from qcodes.instrument.parameter import MultiParameter
@@ -14,6 +15,8 @@ from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
 from silq.measurements.measurement_modules import MeasurementSequence
+
+logger = logging.getLogger(__name__)
 
 properties_config = config['user'].get('properties', {})
 parameter_config = qc.config['user']['properties'].get('parameters', {})
@@ -56,8 +59,11 @@ class MeasurementParameter(SettingsClass, MultiParameter):
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        # TODO Currently broken!
-        return None
+        if active_loop() is None:
+            return None
+        else:
+            dataset = active_loop().get_data_set()
+            return dataset.location
 
     @property
     def discriminant(self):
@@ -81,9 +87,9 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in zip(self.names, self.results):
-                print('{}: {:.3f}'.format(name, result))
+                logger.info('{}: {:.3f}'.format(name, result))
         elif hasattr(self, 'results'):
-            print('{}: {:.3f}'.format(self.name, self.results))
+            logger.info('{}: {:.3f}'.format(self.name, self.results))
 
 
 class MeasurementSequenceParameter(MeasurementParameter):
@@ -128,6 +134,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
     @clear_single_settings
     def get(self):
+        self.measurement_sequence.base_folder = self.base_folder
         result = self.measurement_sequence()
         num_measurements = self.measurement_sequence.num_measurements
 
@@ -213,7 +220,7 @@ class SelectFrequencyParameter(MeasurementParameter):
                 properties_config['frequency'] = frequency
         else:
             if not self.silent:
-                logging.warning("Could not find frequency with high enough "
+                logger.warning("Could not find frequency with high enough "
                                 "contrast")
 
         self.results += [frequency]
