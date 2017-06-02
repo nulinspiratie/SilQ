@@ -56,14 +56,14 @@ class M3201AInterface(InstrumentInterface):
     # TODO: is this device specific? Does it return [0,1,2] or [1,2,3]?
     def _get_active_channels(self):
         active_channels = [pulse.connection.output['channel'].name
-                           for pulse in self.pulse_sequence()]
+                           for pulse in self.pulse_sequence]
         # Transform into set to ensure that elements are unique
         active_channels = list(set(active_channels))
         return active_channels
 
     def _get_active_channel_ids(self):
         active_channel_ids = [pulse.connection.output['channel'].id
-                              for pulse in self.pulse_sequence()]
+                              for pulse in self.pulse_sequence]
         # Transform into set to ensure that elements are unique
         active_channel_ids = list(set(active_channel_ids))
         return active_channel_ids
@@ -92,7 +92,7 @@ class M3201AInterface(InstrumentInterface):
 
         waveforms = dict()
 
-        for pulse in self.pulse_sequence():
+        for pulse in self.pulse_sequence:
             channel_waveforms = pulse.implement(instrument=self.instrument,
                                                 sampling_rates=sampling_rates,
                                                 threshold=error_threshold)
@@ -383,7 +383,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             self, pulse, interface=interface, **kwargs)
 
         # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence().get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=pulse.t_start, trigger=True
         )
 
