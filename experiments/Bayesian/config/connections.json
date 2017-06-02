@@ -1,6 +1,6 @@
 [
     {
-        "output_arg": "Berdina.output",
+        "output_arg": "chip.output",
         "input_arg": "M3300A_DIG.ch7",
         "scale": 1.0
     },

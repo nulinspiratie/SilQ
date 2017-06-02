@@ -30,7 +30,7 @@
     ],
 
     "SET": [
-        "Berdina.output",
+        "chip.output",
         "M3300A_DIG.ch7"
     ]
 }

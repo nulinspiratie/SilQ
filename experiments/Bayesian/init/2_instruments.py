@@ -72,15 +72,15 @@ AWG_interface = interfaces['awg']
 ############
 ### Chip ###
 ############
-chip = Chip(name='Berdina', channels=['TGAC', 'DF', 'antenna'])
+chip = Chip(name='chip', channels=['TGAC', 'DF', 'antenna', 'output'])
 station.add_component(chip)
-interfaces['Berdina'] = get_instrument_interface(chip)
-berdina_interface = interfaces['Berdina']
+interfaces['chip'] = get_instrument_interface(chip)
+berdina_interface = interfaces['chip']
 
 
-###########
-### ATS ###
-###########
+##########################
+### Keysight Digitiser ###
+##########################
 
 DIG_instrument = DIGDriver('M3300A_DIG')
 ctrl = Triggered_Controller('M3300A_Controller', 'M3300A_DIG')
