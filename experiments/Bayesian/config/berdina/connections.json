@@ -13,6 +13,11 @@
         "M3300A_DIG.ch3"
     ],
 
+    "trigger": [
+        "AWG.ch0",
+        "M3300A_DIG.ch4"
+    ],
+
     "ELR": [
         [
             "AWG.ch1",
