@@ -21,21 +21,26 @@ interfaces = {}
 ##############
 ### SIM900 ###
 ##############
-SIM900 = SIM900('SIM900', 'GPIB0::4::INSTR')
-station.add_component(SIM900)
+SIM900_DC = SIM900('SIM900_DC', 'GPIB0::4::INSTR')
+station.add_component(SIM900_DC)
+SIM900_SRC = SIM900('SIM900_SRC', 'GPIB0::2::INSTR')
+station.add_component(SIM900_SRC)
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
-DC_sources = {'SRC':  {'ch': 1, 'ratio': 1, 'max': 1},
-              'LB':   {'ch': 2, 'ratio': 8, 'max': 0.8},
-              'RB':   {'ch': 3, 'ratio': 8, 'max': 0.8},
-              'TG':   {'ch': 4, 'ratio': 8, 'max': 2.25},
-              'TGAC': {'ch': 5, 'ratio': 8, 'max': 1},
-              'DF':   {'ch': 6, 'ratio': 8, 'max': 1},
-              'DS':   {'ch': 7, 'ratio': 8, 'max': 1}}
-gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'DF', 'DS']
+DC_sources = {'SRC':  {'ch': 1, 'ratio': 1, 'max': 1, 'ins': SIM900_SRC},
+              'LB':   {'ch': 1, 'ratio': 8, 'max': 0.8, 'ins':SIM900_DC},
+              'RB':   {'ch': 2, 'ratio': 8, 'max': 0.8, 'ins': SIM900_DC},
+              'TG':   {'ch': 3, 'ratio': 8, 'max': 2.25, 'ins': SIM900_DC},
+              'TGAC': {'ch': 4, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
+              'LDF':  {'ch': 5, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
+              'RDF':  {'ch': 6, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
+              'LDS':  {'ch': 7, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
+              'RDS':  {'ch': 8, 'ratio': 8, 'max': 1, 'ins': SIM900_DC}}
+gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'LDF', 'RDF', 'LDS', 'RDS']
 for ch_name, info in DC_sources.items():
-    SIM900.define_slot(channel=info['ch'], name=f'{ch_name}_raw',
+    instrument = info['ins']
+    instrument.define_slot(channel=info['ch'], name=f'{ch_name}_raw',
                        max_voltage=info['max'] * info['ratio'])
-    param_raw = SIM900.parameters[f'{ch_name}_raw']
+    param_raw = instrument.parameters[f'{ch_name}_raw']
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name,
                             scale=info['ratio'])
     station.add_component(param)
@@ -44,6 +49,7 @@ for ch_name, info in DC_sources.items():
     exec(f'{ch_name}_raw = param_raw')
     exec(f'{ch_name} = param')
 sim_gui.voltage_parameters = voltage_parameters
+
 
 #################
 ### Arbstudio ###
@@ -125,6 +131,3 @@ station.add_component(layout)
 layout.primary_instrument('pulseblaster')
 layout.acquisition_instrument('ATS')
 layout.load_connections()
-
-# # Update InteractivePlot layout
-# InteractivePlot.layout = layout

@@ -9,10 +9,18 @@ dummy_parameter = ManualParameter(name='dummy', initial_value=42)
 #####################
 ### DC parameters ###
 #####################
-DF_DS = parameters.CombinedParameter(parameters=[DF, DS])
+DF = parameters.CombinedParameter(parameters=[LDF, RDF], name='DF')
+DS = parameters.CombinedParameter(parameters=[LDS, RDS], name='DS')
+DF_DS = parameters.CombinedParameter(parameters=[LDF, RDF, LDS, RDS],
+                                     name='DF_DS')
 turnon_parameter = parameters.CombinedParameter(parameters=[TG, LB, RB])
-TGAC_DF_DS = parameters.CombinedParameter(parameters=[TGAC, DF, DS])
+TGAC_DF_DS = parameters.CombinedParameter(parameters=[TGAC, LDF, RDF, LDS,
+                                                      RDS])
 LB_RB = parameters.CombinedParameter(parameters=[LB, RB])
+
+for parameter in [DF, DS, DF_DS, turnon_parameter, TGAC_DF_DS, LB_RB]:
+    station.add_component(parameter)
+
 
 ##############################
 ### Acquisition parameters ###
