@@ -440,11 +440,13 @@ class Pulse:
         pulse_copy = copy.deepcopy(self)
 
         # Add receiver for config signals
-        signal(f'config:{pulse_copy.environment}.pulses.'
-               f'{pulse_copy.name}').connect(
-            pulse_copy._handle_config_signal)
-        signal(f'config:{pulse_copy.environment}.properties').connect(
-            pulse_copy._handle_properties_config_signal)
+        if hasattr(self, 'environment'):
+            # For PulseImplementation
+            signal(f'config:{pulse_copy.environment}.pulses.'
+                   f'{pulse_copy.name}').connect(
+                pulse_copy._handle_config_signal)
+            signal(f'config:{pulse_copy.environment}.properties').connect(
+                pulse_copy._handle_properties_config_signal)
         return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
