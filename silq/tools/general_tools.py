@@ -419,3 +419,17 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+def array_in_list(myarr, list_arrays):
+    """
+    Get index of array in list of arrays, testing equality
+    Args:
+        myarr: arr to be found in list
+        list_arrays: List of numpy arrays
+
+    Returns:
+        idx of array in list equal to myarr, None if not found. 
+    """
+    return next((idx for idx, elem in enumerate(list_arrays)
+                 if np.array_equal(elem, myarr)),
+                None)
