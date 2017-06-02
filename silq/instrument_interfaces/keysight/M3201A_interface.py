@@ -232,12 +232,13 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting SinePulse for M3201A interface {}'.format(interface))
+        is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
         # Add a trigger requirement, which is sent back to the Layout
-        if targeted_pulse.t_start == 0:
+        if (not is_primary) and targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=1e-3,
@@ -378,6 +379,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting DCPulse for {}'.format(interface))
+        is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
@@ -388,7 +390,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         )
 
         # Add a trigger requirement, which is sent back to the Layout
-        if targeted_pulse.t_start == 0 and not trigger_pulses:
+        if (not is_primary) and targeted_pulse.t_start == 0 and not trigger_pulses:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=1e-3,
@@ -472,12 +474,13 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting AWGPulse for {}'.format(interface))
+        is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
         # Add a trigger requirement, which is sent back to the Layout
-        if targeted_pulse.t_start == 0:
+        if (not is_primary) and targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=1e-3,
@@ -527,12 +530,13 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
     def target_pulse(self, pulse, interface, **kwargs):
         print('targeting CombinationPulse for {}'.format(interface))
+        is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
         # Add a trigger requirement, which is sent back to the Layout
-        if targeted_pulse.t_start == 0:
+        if (not is_primary) and targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
                              duration=1e-3,
