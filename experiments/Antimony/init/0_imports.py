@@ -16,6 +16,7 @@ import time
 from time import sleep
 from winsound import Beep
 import logging
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 import pyperclip
 import json
@@ -37,7 +38,7 @@ from qcodes.instrument.parameter import Parameter, ManualParameter, \
     StandardParameter
 if in_notebook():
     from qcodes import MatPlot
-from qcodes.widgets.slack import Slack
+from qcodes.utils.slack import Slack
 
 from qcodes.data import hdf5_format
 from qcodes.data.data_set import DataSet
@@ -77,6 +78,6 @@ antimony = silq.config.antimony
 # Dictionary of code with labels, these can be registered via cell magic
 # %label {lbl}. They can then be run via for instance Slack
 code_labels = {}
-silq.tools.general_tools.code_labels = code_labels
+# silq.tools.general_tools.code_labels = code_labels
 
 h5fmt = hdf5_format.HDF5Format()
