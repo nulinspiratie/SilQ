@@ -284,13 +284,15 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
     """
     def __init__(self, filename, when='h', interval=1, backupCount=0,
                  encoding=None, delay=False, utc=False, postfix = ".log"):
-
         self.origFileName = filename
         self.when = when.upper()
         self.interval = interval
         self.backupCount = backupCount
         self.utc = utc
         self.postfix = postfix
+
+        # Seems to be needed for self.computeRollover
+        self.atTime = None
 
         if self.when == 'S':
             self.interval = 1 # one second
@@ -388,3 +390,32 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
                 else:           # DST bows out before next rollover, so we need to add an hour
                     newRolloverAt = newRolloverAt + 3600
         self.rolloverAt = newRolloverAt
+
+
+def convert_setpoints(*args):
+    """
+    Convert setpoints to tuples, supporting multidimensional setpoints.
+    Temporary solution to make setpoints work (see issue #627).
+    Args:
+        *args: 1D setpoint arrays. each successive setpoints array gains an 
+            extra dimension
+
+    Returns:
+
+    """
+    if not args:
+        return tuple()
+    else:
+        first_arg = tuple(args[0])
+        remaining_args = convert_setpoints(*args[1:])
+        if remaining_args:
+            remaining_args = tuple((arg,) * len(first_arg)
+                                  for arg in remaining_args)
+        return (first_arg, ) + remaining_args
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

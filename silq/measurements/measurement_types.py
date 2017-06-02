@@ -9,6 +9,8 @@ from silq.tools.parameter_tools import create_set_vals
 from silq.tools.general_tools import SettingsClass, get_truth, \
     clear_single_settings, JSONEncoder
 
+logger = logging.getLogger(__name__)
+
 
 class Condition:
     def __init__(self, **kwargs):
@@ -200,7 +202,6 @@ class Measurement(SettingsClass):
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
         self.condition_set = None
-        self.measurement = None
         self.silent = silent
         self.update = update
         self.initial_set_vals = None
@@ -297,13 +298,13 @@ class Measurement(SettingsClass):
 
         condition_sets = list(condition_sets) + self.condition_sets
         if not condition_sets:
+            logger.debug(f'checking condition set {condition_set}')
             return None
-
         for condition_set in condition_sets:
             self.condition_set = condition_set
             condition_set.check_satisfied(self.dataset)
             if not self.silent:
-                print('{} condition satisfied: {}, action: {}'.format(
+                logger.debug('{} condition satisfied: {}, action: {}'.format(
                     condition_set, condition_set.result['is_satisfied'],
                     condition_set.result['action']))
             if self.condition_set.result['action'] is not None:
@@ -382,20 +383,19 @@ class Measurement(SettingsClass):
 
         if update:
             if not self.silent:
-                print('Updating set parameters to optimal values: '
+                logger.debug('Updating set parameters to optimal values: '
                       '{}'.format(self.optimal_set_vals))
             for set_parameter in self.set_parameters:
                 set_parameter(self.optimal_set_vals[set_parameter.name])
         else:
             if not self.silent:
-                print('Resetting set parameters to initial values: '
+                logger.debug('Resetting set parameters to initial values: '
                       '{}'.format(self.initial_set_vals))
             for set_parameter in self.set_parameters:
                 set_parameter(self.initial_set_vals[set_parameter.name])
 
     def initialize(self):
-        if self.condition_set is not None:
-            self.condition_set.result = None
+        self.condition_set = None
         for condition_set in self.condition_sets:
             condition_set.result = None
 
@@ -423,6 +423,10 @@ class Loop0DMeasurement(Measurement):
         """
         return {}
 
+    @property
+    def measurement(self):
+        return qc.Measure(self.acquisition_parameter)
+
     @clear_single_settings
     def get(self, condition_sets=None, set_active=True):
         """
@@ -431,8 +435,6 @@ class Loop0DMeasurement(Measurement):
             Dataset
         """
         self.initialize()
-
-        self.measurement = qc.Measure(self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}'.format(self.name, self.acquisition_parameter.name),
             io=self.disk_io, location=self.loc_provider,
@@ -468,6 +470,12 @@ class Loop1DMeasurement(Measurement):
         else:
             return {self.set_parameter.name: self.set_vals[0][idx]}
 
+    @property
+    def measurement(self):
+        return qc.Loop(
+            self.set_vals[0]).each(
+                self.acquisition_parameter)
+
     @clear_single_settings
     def get(self, condition_sets=None, set_active=True):
         """
@@ -479,10 +487,6 @@ class Loop1DMeasurement(Measurement):
 
         self.initial_set_vals = {p.name: p() for p in self.set_parameters}
 
-        # Set data saving parameters
-        self.measurement = qc.Loop(
-            self.set_vals[0]).each(
-                self.acquisition_parameter)
         self.dataset = self.measurement.run(
             name='{}_{}_{}'.format(self.name, self.set_parameter.name,
                                    self.acquisition_parameter.name),
@@ -539,6 +543,13 @@ class Loop2DMeasurement(Measurement):
             return {self.set_parameters[0].name: self.set_vals[0][idxs[0]],
                     self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
 
+    @property
+    def measurement(self):
+        return qc.Loop(
+            self.set_vals[0]).loop(
+                self.set_vals[1]).each(
+                    self.acquisition_parameter)
+
     @clear_single_settings
     def get(self, condition_sets=None, set_active=True):
         """
@@ -549,12 +560,6 @@ class Loop2DMeasurement(Measurement):
         self.initialize()
 
         self.initial_set_vals = {p.name: p() for p in self.set_parameters}
-
-        # Set data saving parameters
-        self.measurement = qc.Loop(
-            self.set_vals[0]).loop(
-                self.set_vals[1]).each(
-                    self.acquisition_parameter)
 
         self.dataset = self.measurement.run(
             name='{}_{}_{}_{}'.format(self.name, self.set_parameters[0].name,
@@ -585,3 +590,7 @@ class Loop2DMeasurement(Measurement):
                 self.step = step
             if points is not None:
                 self.points = points
+
+#
+# class Measure2DMeasurement(Loop2DMeasurement):
+#     def
