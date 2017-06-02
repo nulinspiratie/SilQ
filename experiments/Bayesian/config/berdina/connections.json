@@ -1,7 +1,13 @@
 {
-    "AWG_output": [
-        "AWG.ch1",
-        "M3300A_DIG.ch1"
+    "stage": [
+        [
+            "AWG.ch1",
+            "AWG.ch2"
+        ],
+        [
+            "M3300A_DIG.ch1",
+            "M3300A_DIG.ch3"
+        ]
     ],
     "DF": [
         "AWG.ch1",
