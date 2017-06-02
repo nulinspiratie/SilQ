@@ -290,3 +290,4 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
             self._acquisition_controller.channel_selection))
 
+

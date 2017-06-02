@@ -2,6 +2,7 @@ import traceback
 from functools import partial
 import json
 import pyperclip
+import logging
 
 from PyQt5.QtGui import QPalette, QFont
 from PyQt5.QtWidgets import *
@@ -9,6 +10,8 @@ from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
 from silq.tools.general_tools import get_exponent, get_first_digit
 from . import start_gui
+
+logger = logging.getLogger(__name__)
 
 states = ['up_down', 'left_right', 'none']
 
@@ -48,7 +51,7 @@ class SIM928Dialog(QFrame):
     @state.setter
     def state(self, state):
         if state not in ['none', 'up_down', 'left_right']:
-            print(f'State {state} not recognized')
+            logger.debug(f'State {state} not recognized')
 
         else:
             # Create palette for name color customization
@@ -67,7 +70,7 @@ class SIM928Dialog(QFrame):
         self.state_change.emit()
 
     def cycle_state(self, *args, **kwargs):
-        print('cycling')
+        logger.debug(f'Cycling gate {self.parameter.name}')
         if self.state == 'none':
             self.state = 'up_down'
         elif self.state == 'up_down':
@@ -335,6 +338,7 @@ class SIMControlDialog(QDialog):
         self.SIM928_dialogs = {}
 
         self.initUI()
+        self.move(1400, 350)
 
     def initUI(self):
         if not self.mini:
@@ -415,7 +419,7 @@ class SIMControlDialog(QDialog):
             self.SIM928_dialogs[parameter.name].increase_voltage(val)
 
     def update_parameters(self):
-        print('updating parameters')
+        logger.debug('updating parameters')
         # Clear parameters from self.state_parameters
         self.state_parameters = {state: [] for state in states}
 
@@ -429,7 +433,7 @@ class SIMControlDialog(QDialog):
             self.SIM928_dialogs[parameter_name].val_textbox.setText(str(val))
 
     def _clear_focus(self):
-        print('clearing focus')
+        logger.debug('clearing focus')
         focus_widget = QApplication.focusWidget()
         if focus_widget is not None:
             focus_widget.clearFocus()

@@ -364,11 +364,11 @@ class ATSInterface(InstrumentInterface):
     def segment_traces(self, traces):
         sample_rate = self.setting('sample_rate')
         pulse_traces = {}
-        for pulse in self.pulse_sequence:
-            if not pulse.acquire:
-                continue
-
-            start_idx = int(round(pulse.t_start / 1e3 * sample_rate))
+        t_start_initial = min(p.t_start for p in
+                              self.pulse_sequence.get_pulses(acquire=True))
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
+            delta_t_start = pulse.t_start - t_start_initial
+            start_idx = int(round(delta_t_start / 1e3 * sample_rate))
             pts = int(round(pulse.duration / 1e3 * sample_rate))
 
             pulse_traces[pulse.full_name] = {}
