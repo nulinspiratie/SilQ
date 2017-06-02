@@ -93,15 +93,49 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
     # Make all parameters of the interface transparent to the acquisition controller
 
-
-
-    @property
     def acquisition(self):
         """
-        Return:
-            The acquisition parameter in the current interface
+        Perform acquisition
         """
-        return self._acquisition_controller.acquisition
+        data = {}
+        acq_data = self._acquisition_controller.acquire()
+        acq_data = self._acquisition_controller.post_acquire(acq_data)
+
+        acquisition_average_mode = self._acquisition_controller.average_mode()
+
+        # The start of acquisition
+        t_0 = min(pulse.t_start for pulse in
+                  self.input_pulse_sequence.get_pulses(acquire=True))
+
+        # Split data into pulse traces
+        for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
+            data[pulse.name] = {}
+            for ch in self.channel_selection():
+                ch_data = acq_data[ch]
+                ch_name = 'ch{}'.format(ch)
+                ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
+                sample_range = [int(t * self.sample_rate()) for t in ts]
+
+                # Extract pulse data from the channel data
+                if acquisition_average_mode == 'none':
+                    data[pulse.name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                    # Further average the pulse data
+                    if pulse.average == 'trace':
+                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name], axis=0)
+                    elif pulse.average == 'point':
+                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name])
+
+                elif acquisition_average_mode == 'trace':
+                    data[pulse.name][ch_name] = ch_data[sample_range[0]:sample_range[1]]
+                    # Further average the pulse data
+                    if pulse.average == 'point':
+                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name])
+
+        # For instrument safety, stop all acquisition after we are done
+        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
+            self._acquisition_controller.channel_selection))
+
+        return data
 
     def add_acquisition_controller(self, acquisition_controller_name,
                                    cls_name=None):
