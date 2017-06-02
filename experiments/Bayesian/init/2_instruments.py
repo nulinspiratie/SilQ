@@ -22,14 +22,18 @@ AOI = AODriver.PXIe_4322('4322','Dev2')
 station.add_component(AOI)
 voltage_parameters = []
 # ch_names = ['TG', 'LB', 'RB', 'SD','DF', 'DS', 'TGAC', 'NUL']
-DC_sources = [('TG', 0, 1, 1), ('LB', 1, 8, 2), ('RB', 2, 8, 2), ('SD', 3, 8, 2.25),
-              ('DF', 4, 8, 1.25), ('DS', 5, 8, 1.25), ('TGAC', 6, 8, 1.25)]
+DC_sources = [('TG', 0, 5.0, 1), ('LB', 1, 8, 2), ('RB', 2, 8, 2), ('SD', 3, 8, 2.25),
+              ('DF', 4, 3.0, 1.25), ('DS', 5, 4.0, 1.25), ('TGAC', 6, 3.0, 1.25)]
 for ch_name, ch, ratio, max_voltage in DC_sources:
     param_name = 'voltage_channel_'
     param_raw = AOI.parameters[param_name  + str(ch)]
     param = ScaledParameter(param_raw, name=ch_name, label=ch_name, scale=ratio)
     station.add_component(param)
     voltage_parameters.append(param)
+
+    exec('{ch_name}_raw = param_raw'.format(ch_name=ch_name))
+    exec('{ch_name} = param'.format(ch_name=ch_name))
+
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 # DC_sources = [('SRC', 1, 1, 1), ('LB', 2, 8, 2), ('RB', 3, 8, 2), ('TG', 4, 8, 2.25),
 #               ('TGAC', 5, 8, 1.25), ('DF', 6, 8, 1.25), ('DS', 7, 8, 1.25)]
