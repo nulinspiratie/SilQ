@@ -1,11 +1,28 @@
 {
-    "sinewave1": {},
-    "sinewave2": {},
-    "sinewave3": {},
+    "read": {
+        "duration": 20,
+        "amplitude": 0,
+        "connection_label": "ELR"
+    },
+    "final": {
+        "duration": 5,
+        "amplitude": 0,
+        "connection_label": "ELR"
+    },
     "trigger": {},
-    "ELR1": {},
-    "DC_empty": {},
-    "DC_load": {},
-    "DC_read": {},
-    "trigger_test": {}
+    "empty": {
+        "amplitude": 0.007,
+        "duration": 20,
+        "connection_label": "ELR"
+    },
+    "plunge": {
+        "amplitude": 0.007,
+        "duration": 20,
+        "connection_label": "ELR"
+    },
+    "adiabatic_ESR": {
+        "duration": 0.5,
+        "frequency": "config:antimony.properties.frequency_ESR",
+        "connection_label": "SET"
+    }
 }
