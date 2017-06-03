@@ -300,6 +300,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
 
 class DCPulseImplementation(PulseImplementation, DCPulse):
+    # Number of points in a waveform (must be at least 4)
+    pts = 4
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
@@ -352,7 +354,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             raise Exception(
                 "No implementation for connection {}".format(self.connection))
 
-        waveforms = {ch: [np.ones(4) * self.amplitude] for ch in channels}
+        waveforms = {ch: [np.ones(self.pts) * self.amplitude]
+                     for ch in channels}
         sequences = {ch: np.zeros(len(trigger_pulses) + 1, dtype=int) for ch in
                      channels}
 
