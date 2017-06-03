@@ -74,10 +74,15 @@ def parameter_info(self, *parameter_names, detailed=False):
 DataSet.parameter_info = parameter_info
 
 def SIM_voltages(self, copy=True):
-    global gates
-    voltage_dict = self.parameter_info(*gates)
-    if copy:
-        pyperclip.copy(json.dumps(voltage_dict))
-    return voltage_dict
+    global gates, gates_old
+    for gate_names in [gates, gates_old]:
+        try:
+            voltage_dict = self.parameter_info(*gate_names)
+            if copy:
+                pyperclip.copy(json.dumps(voltage_dict))
+            return voltage_dict
+        except:
+            pass
 DataSet.SIM_voltages = SIM_voltages
-gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'DF', 'DS']
+gates = ['SRC','LB', 'RB', 'TG', 'TGAC', 'LDF', 'RDF', 'LDS', 'RDS']
+gates_old = ['SRC','LB', 'RB', 'TG', 'TGAC', 'DF', 'DS']
