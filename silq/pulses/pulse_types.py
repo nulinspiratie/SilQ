@@ -25,7 +25,6 @@ class Pulse:
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
-                 initial_delay=None, final_delay=None,
                  connection_label=None, connection_requirements={}):
         # Initialize signals (to notify change of attributes)
         self.signal = Signal()
@@ -87,12 +86,6 @@ class Pulse:
         self.t_stop = self._value_or_config('t_stop', t_stop)
         self.connection_label = self._value_or_config('connection_label',
                                                       connection_label)
-        self.initial_delay = self._value_or_config('initial_delay',
-                                                   initial_delay,
-                                                   default=0)
-        self.final_delay = self._value_or_config('final_delay',
-                                                 final_delay,
-                                                 default=0)
 
         # Set attributes that can also be retrieved from properties_config
         if self.properties_config is not None:
@@ -667,17 +660,13 @@ class DCPulse(Pulse):
 
 class DCRampPulse(Pulse):
     def __init__(self, name=None, amplitude_start=None, amplitude_stop=None,
-                 amplitude_final=None, duration_final=None, **kwargs):
+                 **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.amplitude_start = self._value_or_config('amplitude_start',
                                                      amplitude_start)
         self.amplitude_stop = self._value_or_config('amplitude_stop',
                                                     amplitude_stop)
-        self.amplitude_final = self._value_or_config('amplitude_final',
-                                                     amplitude_final)
-        self.duration_final = self._value_or_config('duration_final',
-                                                    duration_final)
 
     def __repr__(self):
         try:
