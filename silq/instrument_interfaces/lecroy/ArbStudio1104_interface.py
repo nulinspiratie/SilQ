@@ -36,7 +36,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                            parameter_class=ManualParameter, unit='us',
                            initial_value=0.1)
         self.add_parameter('final_delay', parameter_class=ManualParameter,
-                           unit='us', initial_value=10)
+                           unit='us', initial_value=0.2)
 
         self.add_parameter('active_channels', get_cmd=self._get_active_channels)
 

@@ -295,6 +295,8 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.pulse_duration = 1
         self.final_delay = 120
+        self.inter_delay = 0.2
+        self.use_ramp = False
 
         self.additional_pulses = []
         self.samples = 1
@@ -450,6 +452,9 @@ class DCSweepParameter(AcquisitionParameter):
 
             pulses = []
             if outer_connection_label == inner_connection_label:
+                if self.use_ramp:
+                    raise NotImplementedError('Ramp Pulse not implemented for '
+                                              'CombinedConnection')
                 for outer_sweep_voltage in outer_sweep_voltages:
                     for inner_sweep_voltage in inner_sweep_voltages:
                         sweep_voltage = (
@@ -461,19 +466,43 @@ class DCSweepParameter(AcquisitionParameter):
                                     connection_label=outer_connection_label))
             else:
                 t = 0
+                sweep_duration = self.pulse_duration * len(inner_sweep_voltages)
                 for outer_sweep_voltage in outer_sweep_voltages:
-                    pulses.append(DCPulse('DC_outer', t_start=t,
-                                          duration=self.pulse_duration * len(
-                                              inner_sweep_voltages),
-                                          amplitude=outer_sweep_voltage,
-                                          connection_label=outer_connection_label))
-                    for inner_sweep_voltage in inner_sweep_voltages:
-                        pulses.append(DCPulse('DC_read', t_start=t,
-                                              duration=self.pulse_duration,
-                                              acquire=True, average='point',
-                                              amplitude=inner_sweep_voltage,
-                                              connection_label=inner_connection_label))
-                        t += self.pulse_duration
+                    pulses.append(
+                        DCPulse('DC_outer', t_start=t,
+                                duration=sweep_duration + self.inter_delay,
+                                amplitude=outer_sweep_voltage,
+                                connection_label=outer_connection_label))
+                    if self.inter_delay > 0:
+                        pulses.append(
+                            DCPulse('DC_inter_delay', t_start=t,
+                                    duration=self.inter_delay,
+                                    amplitude=inner_sweep_voltages[0],
+                                    connection_label=inner_connection_label))
+                        t += self.inter_delay
+
+                    if self.use_ramp:
+                        sweep_points = len(inner_sweep_voltages)
+                        pulses.append(
+                            DCRampPulse('DC_inner', t_start=t,
+                                        duration=sweep_duration,
+                                        amplitude_start=inner_sweep_voltages[0],
+                                        amplitude_stop=inner_sweep_voltages[-1],
+                                        acquire=True,
+                                        average=f'point_segment:{sweep_points}',
+                                        connection_label=inner_connection_label)
+                        )
+                        t += sweep_duration
+                    else:
+                        for inner_sweep_voltage in inner_sweep_voltages:
+                            pulses.append(
+                                DCPulse('DC_read', t_start=t,
+                                        duration=self.pulse_duration,
+                                        acquire=True, average='point',
+                                        amplitude=inner_sweep_voltage,
+                                        connection_label=inner_connection_label)
+                            )
+                            t += self.pulse_duration
 
         else:
             raise NotImplementedError(
