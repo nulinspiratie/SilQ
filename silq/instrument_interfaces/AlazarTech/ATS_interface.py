@@ -378,8 +378,20 @@ class ATSInterface(InstrumentInterface):
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
                 elif pulse.average == 'trace':
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
-                else:
+                elif 'point_segment' in pulse.average:
+                    segments = pulse.average.split(':')[1]
+
+                    segments_idx = [int(round(pts * idx / segments))
+                                    for idx in np.arange(segments + 1)]
+
+                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
+                    for k in range(segments):
+                        pulse_traces[pulse.full_name][ch][k] = np.mean(
+                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]])
+                elif pulse.average == 'none':
                     pulse_traces[pulse.full_name][ch] = pulse_trace
+                else:
+                    raise SyntaxError(f'Unknown average mode {pulse.average}')
         return pulse_traces
 
     def setting(self, setting):
