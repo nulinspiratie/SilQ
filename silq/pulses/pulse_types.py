@@ -659,20 +659,23 @@ class DCPulse(Pulse):
 
 class DCRampPulse(Pulse):
     def __init__(self, name=None, amplitude_start=None, amplitude_stop=None,
-                 **kwargs):
+                 amplitude_final=None, duration_final=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.amplitude_start = self._value_or_config('amplitude_start',
                                                      amplitude_start)
         self.amplitude_stop = self._value_or_config('amplitude_stop',
                                                     amplitude_stop)
+        self.amplitude_final = self._value_or_config('amplitude_final',
+                                                     amplitude_final)
+        self.duration_final = self._value_or_config('duration_final',
+                                                    duration_final)
 
     def __repr__(self):
         try:
-            properties_str = 'A_start={}, A_stop={}, ' \
-                             't_start={}, t_stop={}'.format(
-                self.amplitude_start, self.amplitude_stop,
-                self.t_start, self.t_stop)
+            properties_str = f'A_start={self.amplitude_start}, ' \
+                             f'A_stop={self.amplitude_stop}, ' \
+                             f't_start={self.t_start}, t_stop={self.t_stop}'
         except:
             properties_str = ''
 
@@ -680,8 +683,8 @@ class DCRampPulse(Pulse):
 
     def get_voltage(self, t):
         assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+            f"voltage at {t} s is not in the time range {self.t_start} s " \
+            f"- {self.t_stop} s of pulse {self}"
 
         slope = (self.amplitude_stop - self.amplitude_start) / self.duration
         offset = self.amplitude_start - slope * self.t_start
