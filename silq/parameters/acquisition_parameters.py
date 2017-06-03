@@ -433,12 +433,23 @@ class DCSweepParameter(AcquisitionParameter):
         if len(self.sweep_parameters) == 1:
             sweep_name, sweep_dict = next(iter_sweep_parameters)
             sweep_voltages = sweep_dict.sweep_voltages
+            connection_label = sweep_dict.connection_label
+            if self.use_ramp:
+                sweep_points = len(sweep_voltages)
+                pulses = DCRampPulse('DC_inner', t_start=t,
+                                     duration=self.pulse_duration*sweep_points,
+                                     amplitude_start=sweep_voltages[0],
+                                     amplitude_stop=sweep_voltages[-1],
+                                     acquire=True,
+                                     average=f'point_segment:{sweep_points}',
+                                     connection_label=connection_label)
+            else:
+                pulses = [
+                    DCPulse('DC_read', duration=self.pulse_duration,
+                            acquire=True, amplitude=sweep_voltage,
+                            connection_label=connection_label)
+                for sweep_voltage in sweep_voltages]
 
-            pulses = [
-                DCPulse('DC_read', duration=self.pulse_duration, acquire=True,
-                        amplitude=sweep_voltage,
-                        connection_label=sweep_dict.connection_label) for
-                sweep_voltage in sweep_voltages]
             self.pulse_sequence = PulseSequence(pulses=pulses)
             #             self.pulse_sequence.add(*self.additional_pulses)
 
