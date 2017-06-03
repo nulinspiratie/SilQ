@@ -25,6 +25,7 @@ class Pulse:
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
+                 initial_delay=None, final_delay=None,
                  connection_label=None, connection_requirements={}):
         # Initialize signals (to notify change of attributes)
         self.signal = Signal()
@@ -86,6 +87,12 @@ class Pulse:
         self.t_stop = self._value_or_config('t_stop', t_stop)
         self.connection_label = self._value_or_config('connection_label',
                                                       connection_label)
+        self.initial_delay = self._value_or_config('initial_delay',
+                                                   initial_delay,
+                                                   default=0)
+        self.final_delay = self._value_or_config('final_delay',
+                                                 final_delay,
+                                                 default=0)
 
         # Set attributes that can also be retrieved from properties_config
         if self.properties_config is not None:
@@ -275,7 +282,7 @@ class Pulse:
                 # Also send signal that dependent property t_stop has changed
                 self.signal.send(self, t_stop=self.t_stop)
 
-    def _value_or_config(self, key, value):
+    def _value_or_config(self, key, value, default=None):
         """
         Decides what value to return depending on value and config.
         Used for setting pulse attributes at the start
@@ -283,6 +290,7 @@ class Pulse:
         Args:
             key: key to check in config
             value: value to choose if not equal to None
+            default: default value if no value specified. None by default
 
         Returns:
             if value is not None, return value
@@ -295,7 +303,7 @@ class Pulse:
         elif self.pulse_config is not None:
             return self.pulse_config.get(key, None)
         else:
-            return None
+            return default
 
     def __add__(self, other):
         """
