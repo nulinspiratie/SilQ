@@ -326,6 +326,8 @@ class Separator(QFrame):
 
 class SIMControlDialog(QDialog):
     def __init__(self, parameters, mini=False):
+        if len(parameters) > 10:
+            raise SyntaxError('Can use at most 10 gates')
         super().__init__(
             flags=Qt.WindowMinimizeButtonHint|Qt.WindowCloseButtonHint)
         self.parameters = parameters
@@ -366,10 +368,11 @@ class SIMControlDialog(QDialog):
         self.layout.addWidget(self.config_widget)
 
         for k, parameter in enumerate(self.parameters):
+            idx = (k+1) % 10
             self.layout.addWidget(Separator())
-            SIM928_dialog = SIM928Dialog(parameter, idx=k + 1, mini=self.mini)
+            SIM928_dialog = SIM928Dialog(parameter, idx=idx, mini=self.mini)
             self.layout.addWidget(SIM928_dialog)
-            Qt_index_key = getattr(Qt, f'Key_{k+1}')
+            Qt_index_key = getattr(Qt, f'Key_{idx}')
             self.index_keys[Qt_index_key] = SIM928_dialog
             self.SIM928_dialogs[parameter.name] = SIM928_dialog
 
