@@ -57,6 +57,7 @@ AWG_instrument = AWGDriver('AWG')
 station.add_component(AWG_instrument)
 interfaces['awg'] = get_instrument_interface(AWG_instrument)
 AWG_interface = interfaces['awg']
+AWG_interface.auto_trigger = True
 
 
 ####################
@@ -107,7 +108,7 @@ station.add_component(layout)
 layout.primary_instrument('AWG')
 # Specify the acquisition instrument
 layout.acquisition_instrument('M3300A_DIG')
-layout.acquisition_outputs([('AWG.ch0', 'output')])
+layout.acquisition_outputs([('chip.output', 'output'), ('AWG.ch0', 'trigger')])
 layout.load_connections()
 
 # Update InteractivePlot layout
