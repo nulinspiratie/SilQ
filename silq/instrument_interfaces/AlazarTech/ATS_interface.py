@@ -379,7 +379,7 @@ class ATSInterface(InstrumentInterface):
                 elif pulse.average == 'trace':
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
                 elif 'point_segment' in pulse.average:
-                    segments = pulse.average.split(':')[1]
+                    segments = int(pulse.average.split(':')[1])
 
                     segments_idx = [int(round(pts * idx / segments))
                                     for idx in np.arange(segments + 1)]
