@@ -110,7 +110,8 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         # Split data into pulse traces
         for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
-            data[pulse.name] = {}
+            name = pulse.full_name
+            data[name] = {}
             for ch in self.channel_selection():
                 ch_data = acq_data[ch]
                 ch_name = 'ch{}'.format(ch)
@@ -119,18 +120,18 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
                 # Extract pulse data from the channel data
                 if acquisition_average_mode == 'none':
-                    data[pulse.name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                    data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
                     # Further average the pulse data
                     if pulse.average == 'trace':
-                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name], axis=0)
+                        data[name][ch_name] = np.mean(data[name][ch_name], axis=0)
                     elif pulse.average == 'point':
-                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name])
+                        data[name][ch_name] = np.mean(data[name][ch_name])
 
                 elif acquisition_average_mode == 'trace':
-                    data[pulse.name][ch_name] = ch_data[sample_range[0]:sample_range[1]]
+                    data[name][ch_name] = ch_data[sample_range[0]:sample_range[1]]
                     # Further average the pulse data
                     if pulse.average == 'point':
-                        data[pulse.name][ch_name] = np.mean(data[pulse.name][ch_name])
+                        data[name][ch_name] = np.mean(data[name][ch_name])
 
         # For instrument safety, stop all acquisition after we are done
         self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
