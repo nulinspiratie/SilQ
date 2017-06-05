@@ -1,30 +1,66 @@
-# Imports
+###############
+### Imports ###
+###############
+
+
+###############
+### General ###
+###############
 import os
 import sys
 import numpy as np
+from numpy import array, nan
 from functools import partial
 from importlib import reload
 from time import sleep, time
-from matplotlib import pyplot as plt
+from winsound import Beep
+from matplotlib import rcParams, pyplot as plt
+import pyperclip
+import json
+import threading
+from PyQt5.QtWidgets import QApplication
 
-# SilQ imports
-from silq.analysis import analysis
-from silq.parameters import measurement_parameters, general_parameters
+np.set_printoptions(precision=3)
 
+from IPython.core.magic import (register_line_magic, register_cell_magic,
+                                register_line_cell_magic, needs_local_scope)
 
-# Qcodes imports
+rcParams['figure.max_open_warning'] = 80
+rcParams['figure.max_open_warning'] = 80
+plt.ion()
+
+##############
+### Qcodes ###
+##############
 import qcodes as qc
-from qcodes import Instrument
-from qcodes.instrument.parameter import Parameter, ManualParameter, StandardParameter
-from qcodes.data import hdf5_format
-from qcodes.data.data_set import DataSet
-h5fmt = hdf5_format.HDF5Format()
+from qcodes.utils.helpers import in_notebook
+from qcodes import Instrument, Loop, Task, load_data,combine
+from qcodes.utils.helpers import in_notebook
+from qcodes.instrument.parameter import Parameter, ManualParameter, \
+    StandardParameter
+if in_notebook():
+    from qcodes import MatPlot
+from qcodes.widgets.slack import Slack
 
-from qcodes.data.manager import DataManager, DataServer
-from qcodes.data.data_set import new_data, DataMode
+from qcodes.data.hdf5_format import HDF5Format as h5fmt
+from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
 
-# Data handling
-qc.data.data_set.DataSet.default_io.base_location = r"C:\Users\serwa_000\Documents\data"
-loc_provider = qc.data.location.FormatLocation(fmt='{date}/#{counter}_{name}_{time}')
-qc.data.data_set.DataSet.location_provider=loc_provider
+station = qc.Station()
+
+############
+### SilQ ###
+############
+from silq import parameters, config
+from silq.instrument_interfaces import get_instrument_interface
+from silq.tools.general_tools import partial_from_attr, print_attr, run_code
+from silq.tools.plot_tools import InteractivePlot, CalibrationPlot, DCPlot, \
+    DCSweepPlot
+from silq.tools.parameter_tools import create_set_vals
+from silq.tools.notebook_tools import create_cell
+from silq.pulses import *
+
+# Dictionary of code with labels, these can be registered via cell magic
+# %label {lbl}. They can then be run via for instance Slack
+code_labels = {}
+silq.tools.general_tools.code_labels = code_labels

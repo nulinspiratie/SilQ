@@ -2,12 +2,12 @@ import numpy as np
 import inspect
 import logging
 
-from qcodes.instrument.parameter import ManualParameter
+from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
-from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS
+from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
+    ATSAcquisitionParameter
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.tools.instrument_tools import get_instrument_class
 from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
     MarkerPulse, TriggerWaitPulse, PulseImplementation
 
@@ -17,7 +17,7 @@ class ATSInterface(InstrumentInterface):
                  **kwargs):
         super().__init__(instrument_name, **kwargs)
         # Override untargeted pulse adding (measurement pulses can be added)
-        self._pulse_sequence.allow_untargeted_pulses = True
+        self.pulse_sequence.allow_untargeted_pulses = True
 
         # Define channels
         self._acquisition_channels = {
@@ -70,14 +70,8 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='acquisition_settings',
                            get_cmd=lambda: self._acquisition_settings)
 
-        # Names and shapes must have initial value, even through they will be
-        # overwritten in set_acquisition_settings. If we don't do this, the
-        # remoteInstrument will not recognize that it returns multiple values.
         self.add_parameter(name="acquisition",
-                           names=['channel_signal'],
-                           get_cmd=self._acquisition,
-                           shapes=((),),
-                           snapshot_value=False)
+                           parameter_class=ATSAcquisitionParameter)
 
         self.add_parameter(name='default_acquisition_controller',
                            parameter_class=ManualParameter,
@@ -89,11 +83,6 @@ class ATSInterface(InstrumentInterface):
                            parameter_class=ManualParameter,
                            vals=vals.Enum(
                                'None', *self.acquisition_controllers.keys()))
-
-        self.add_parameter(name='average_mode',
-                           parameter_class=ManualParameter,
-                           initial_value='trace',
-                           vals=vals.Enum('none', 'trace', 'point'))
 
         # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
@@ -114,7 +103,7 @@ class ATSInterface(InstrumentInterface):
                            parameter_class=ManualParameter,
                            vals=vals.Enum('positive', 'negative'))
         self.add_parameter(name='trigger_threshold',
-                           units='V',
+                           unit='V',
                            parameter_class=ManualParameter,
                            vals=vals.Numbers())
 
@@ -142,7 +131,7 @@ class ATSInterface(InstrumentInterface):
         acquisition_controller = self.find_instrument(
             acquisition_controller_name)
         if cls_name is None:
-            cls_name = get_instrument_class(acquisition_controller)
+            cls_name = acquisition_controller.__class__.__name__
         # Remove _AcquisitionController from cls_name
         cls_name = cls_name.replace('_AcquisitionController', '')
 
@@ -155,13 +144,13 @@ class ATSInterface(InstrumentInterface):
             'None', *self.acquisition_controllers.keys())
 
     def get_final_additional_pulses(self, pulse_sequence):
-        if not self._pulse_sequence.get_pulses(acquire=True):
+        if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
         elif self.acquisition_controller() == 'Triggered':
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
-                          self._pulse_sequence.get_pulses(acquire=True))
+                          self.pulse_sequence.get_pulses(acquire=True))
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start,
                              connection_requirements={
@@ -175,12 +164,12 @@ class ATSInterface(InstrumentInterface):
             # timing even if it should acquire for the entire duration of the
             #  pulse sequence.
             t_start = min(pulse.t_start for pulse in
-                          self._pulse_sequence.get_pulses(acquire=True))
+                          self.pulse_sequence.get_pulses(acquire=True))
             t_stop = max(pulse.t_stop for pulse in
-                         self._pulse_sequence.get_pulses(acquire=True))
+                         self.pulse_sequence.get_pulses(acquire=True))
             # Add a marker high for readout stage
             # Get steered initialization pulse
-            initialization = self._pulse_sequence.get_pulse(initialize=True)
+            initialization = self.pulse_sequence.get_pulse(initialize=True)
 
             acquisition_pulse = MarkerPulse(
                 t_start=t_start, t_stop=t_stop,
@@ -202,26 +191,16 @@ class ATSInterface(InstrumentInterface):
         super().initialize()
         self.acquisition_controller(self.default_acquisition_controller())
 
-    def setup(self, samples=None, average_mode=None, connections=None,
-              **kwargs):
+    def setup(self, samples=None, connections=None, **kwargs):
         self._configuration_settings.clear()
         self._acquisition_settings.clear()
 
         if samples is not None:
             self.samples(samples)
 
-        if average_mode is not None:
-            self.average_mode(average_mode)
-            self._acquisition_controller.average_mode(average_mode)
-
         self.setup_trigger()
         self.setup_ATS()
         self.setup_acquisition_controller()
-
-        # Update acquisition metadata
-        for attr in ['names', 'labels', 'units', 'shapes']:
-            val = getattr(self._acquisition_controller.acquisition, attr)
-            setattr(self.acquisition, attr, val)
 
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
@@ -239,12 +218,12 @@ class ATSInterface(InstrumentInterface):
                 trigger_id = trigger_channel.id
                 trigger_range = self.setting('channel_range' + trigger_id)
 
-            trigger_pulses = self._input_pulse_sequence.get_pulses(
+            trigger_pulses = self.input_pulse_sequence.get_pulses(
                 input_channel=self.trigger_channel())
             if trigger_pulses:
                 trigger_pulse = min(trigger_pulses, key=lambda p: p.t_start)
                 pre_voltage, post_voltage = \
-                    self._input_pulse_sequence.get_transition_voltages(
+                    self.input_pulse_sequence.get_transition_voltages(
                         pulse=trigger_pulse)
                 assert post_voltage != pre_voltage, \
                     'Could not determine trigger voltage transition'
@@ -281,9 +260,9 @@ class ATSInterface(InstrumentInterface):
         # Get duration of acquisition. Use flag acquire=True because
         # otherwise initialization Pulses would be taken into account as well
         t_start = min(pulse.t_start for pulse in
-                      self._pulse_sequence.get_pulses(acquire=True))
+                      self.pulse_sequence.get_pulses(acquire=True))
         t_stop = max(pulse.t_stop for pulse in
-                     self._pulse_sequence.get_pulses(acquire=True))
+                     self.pulse_sequence.get_pulses(acquire=True))
         acquisition_duration = t_stop - t_start
 
         sample_rate = self.setting('sample_rate')
@@ -323,7 +302,7 @@ class ATSInterface(InstrumentInterface):
             self._acquisition_settings.pop('buffers_per_acquisition', None)
 
             # Get steered initialization pulse
-            initialization = self._pulse_sequence.get_pulse(initialize=True)
+            initialization = self.pulse_sequence.get_pulse(initialize=True)
 
             # TODO better way to decide on allocated buffers
             allocated_buffers = 80
@@ -359,14 +338,14 @@ class ATSInterface(InstrumentInterface):
             # logging.warning("ATS cannot be configured with three acquisition "
             #                 "channels {}, setting to ABCD".format(channel_ids))
             channel_ids = 'ABCD'
-        buffer_timeout = int(max(20000, 3.1 * self._pulse_sequence.duration))
+        buffer_timeout = int(max(20000, 3.1 * self.pulse_sequence.duration))
         self.update_settings(channel_selection=channel_ids,
                              buffer_timeout=buffer_timeout)  # ms
 
         # Update settings in acquisition controller
         self._acquisition_controller.set_acquisition_settings(
             **self._acquisition_settings)
-        self._acquisition_controller.average_mode(self.average_mode())
+        self._acquisition_controller.average_mode('none')
         self._acquisition_controller.setup()
 
     def start(self):
@@ -375,18 +354,33 @@ class ATSInterface(InstrumentInterface):
     def stop(self):
         pass
 
-    def _acquisition(self):
-        return self._acquisition_controller.acquisition()
+    def acquisition(self):
+        traces = self._acquisition_controller.acquisition()
+        traces_dict = {
+            ch: trace for ch, trace in zip(self.acquisition_channels(), traces)}
+        pulse_traces = self.segment_traces(traces_dict)
+        return pulse_traces
 
-    def get_traces(self, mode='acquisition'):
-        if mode == 'acquisition':
-            return self._acquisition_controller.traces()
-        elif mode == 'initialization':
-            return self._acquisition_controller.initialization_traces()
-        if mode == 'post_initialization':
-            return self._acquisition_controller.post_initialization_traces()
-        else:
-            raise ValueError('Mode {} not understood'.format(mode))
+    def segment_traces(self, traces):
+        sample_rate = self.setting('sample_rate')
+        pulse_traces = {}
+        t_start_initial = min(p.t_start for p in
+                              self.pulse_sequence.get_pulses(acquire=True))
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
+            delta_t_start = pulse.t_start - t_start_initial
+            start_idx = int(round(delta_t_start / 1e3 * sample_rate))
+            pts = int(round(pulse.duration / 1e3 * sample_rate))
+
+            pulse_traces[pulse.full_name] = {}
+            for ch, trace in traces.items():
+                pulse_trace = trace[:, start_idx:start_idx + pts]
+                if pulse.average == 'point':
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
+                elif pulse.average == 'trace':
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
+                else:
+                    pulse_traces[pulse.full_name][ch] = pulse_trace
+        return pulse_traces
 
     def setting(self, setting):
         """
@@ -531,5 +525,6 @@ class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
                                'SteeredInitialization')
         return targeted_pulse
 
-        def implement(self, interface, **kwargs):
-            pass
+    def implement(self, interface, **kwargs):
+        pass
+
