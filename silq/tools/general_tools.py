@@ -420,9 +420,11 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-def array_in_list(myarr, list_arrays):
+def arreq_in_list(myarr, list_arrays):
     """
     Get index of array in list of arrays, testing equality
+    Modified from https://stackoverflow.com/questions/23979146/
+                  check-if-numpy-array-is-in-list-of-numpy-arrays
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
@@ -432,4 +434,21 @@ def array_in_list(myarr, list_arrays):
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if np.array_equal(elem, myarr)),
+                None)
+
+def arreqclose_in_list(myarr, list_arrays):
+    """
+    Get index of array in list of arrays, testing approximate equality
+    Modified from https://stackoverflow.com/questions/23979146/
+                  check-if-numpy-array-is-in-list-of-numpy-arrays
+    Args:
+        myarr: arr to be found in list
+        list_arrays: List of numpy arrays
+
+    Returns:
+        idx of array in list approximately equal to myarr, None if not found. 
+    """
+    return next((idx for idx, elem in enumerate(list_arrays)
+                 if elem.size == myarr.size
+                 and np.allclose(elem, myarr)),
                 None)
