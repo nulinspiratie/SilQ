@@ -243,47 +243,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self._acquisition_controller.pre_start_capture()
         self._acquisition_controller.start()
 
-
-    def acquire(self):
-        data = {}
-        acq_data = self._acquisition_controller.acquire()
-        acq_data = self._acquisition_controller.post_acquire(acq_data)
-
-        acquisition_average_mode = self._acquisition_controller.average_mode()
-
-        # The start of acquisition
-        t_0 = min(pulse.t_start for pulse in
-                      self.input_pulse_sequence.get_pulses(acquire=True))
-
-        # Split data into pulse traces
-        for ch in self.channel_selection():
-            data[ch] = {}
-            ch_data = acq_data[ch]
-            for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
-                ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
-                sample_range = [int(t * self.sample_rate()) for t in ts]
-
-                # Extract pulse data from the channel data
-                if acquisition_average_mode == 'none':
-                    data[ch][pulse.name] = ch_data[:, sample_range[0]:sample_range[1]]
-                    # Further average the pulse data
-                    if pulse.average == 'trace':
-                        data[ch][pulse.name] = np.mean(data[ch][pulse.name], axis=0)
-                    elif pulse.average == 'point':
-                        data[ch][pulse.name] = np.mean(data[ch][pulse.name])
-
-                elif acquisition_average_mode == 'trace':
-                    data[ch][pulse.name] = ch_data[sample_range[0]:sample_range[1]]
-                    # Further average the pulse data
-                    if pulse.average == 'point':
-                        data[ch][pulse.name] = np.mean(data[ch][pulse.name])
-
-        # For instrument safety, stop all acquisition after we are done
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-                    self._acquisition_controller.channel_selection))
-    
-        return data
-
     def stop(self):
         self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
             self._acquisition_controller.channel_selection))
