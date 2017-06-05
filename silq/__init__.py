@@ -1,6 +1,12 @@
 import sys
 import os
+import warnings
 from .configurations import _configurations
+import json
+from .tools.config import DictConfig, ListConfig
+
+# Dictionary of SilQ subconfigs
+config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 
 def get_silq_folder():
     import silq
@@ -11,8 +17,7 @@ def get_SilQ_folder():
     return os.path.join(silq_folder, r"../")
 
 
-def initialize(name=None, mode=None, select=None, ignore=None,
-               globals=None, locals=None):
+def initialize(name=None, mode=None, select=None, ignore=None):
     """
     Initializes the global namespace by executing a list of files.
     Possible configurations are taken from the dictionary _configurations in
@@ -28,18 +33,14 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             be executed. Possible modes can be specified in _configurations.
         select: Files to select, all others will be ignored.
         ignore: Files to ignore, all others will be selected.
-        globals: The globals namespace, actual global namespace used by default.
-        locals: The locals namespace, actual local namespace used by default.
 
     Returns:
 
     """
     # Determine base folder by looking at the silq package
 
-    if globals is None:
-        globals = sys._getframe(1).f_globals
-    if locals is None:
-        locals = sys._getframe(1).f_locals
+    globals = sys._getframe(1).f_globals
+    locals = sys._getframe(1).f_locals
 
     if name is None:
         # Find init_name from mac address
@@ -51,18 +52,19 @@ def initialize(name=None, mode=None, select=None, ignore=None,
                 break
 
     if mode is not None:
-        select = _configurations[
-            name]['modes'][mode].get('select', None)
-        ignore = _configurations[
-            name]['modes'][mode].get('ignore', None)
+        select = _configurations[name]['modes'][mode].get('select', None)
+        ignore = _configurations[name]['modes'][mode].get('ignore', None)
 
-    SilQ_folder = get_SilQ_folder()
-    folder = os.path.join(SilQ_folder,
-                          _configurations[name]['folder'])
+    folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
+    config.__dict__['folder'] = folder
+    if os.path.exists(os.path.join(folder, 'config')):
+        config.load()
 
-    filenames = os.listdir(folder)
+    # Run initialization files in ./init
+    init_folder = os.path.join(folder, 'init')
+    init_filenames = os.listdir(init_folder)
 
-    for filename in filenames:
+    for filename in init_filenames:
         # Remove prefix
         name = filename.split('_', 1)[1]
         # Remove .py extension
@@ -73,7 +75,17 @@ def initialize(name=None, mode=None, select=None, ignore=None,
             continue
         else:
             print('Initializing {}'.format(name))
-            filepath = os.path.join(folder, filename)
+            filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
-                exec(fh.read()+"\n", globals, locals)
+                exec_line = fh.read()
+                try:
+                    exec(exec_line+"\n", globals, locals)
+                except:
+                    raise RuntimeError(f'SilQ initialization error in '
+                                       f'{filepath}')
+
     print("Initialization complete")
+
+    if not 'default_environment' in config.properties:
+        warnings.warn("'default_environment' should be specified "
+                      "in silq.config.properties")
