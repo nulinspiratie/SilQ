@@ -106,10 +106,10 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         # The start of acquisition
         t_0 = min(pulse.t_start for pulse in
-                  self.input_pulse_sequence.get_pulses(acquire=True))
+                  self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
-        for pulse in self.input_pulse_sequence.get_pulses(acquire=True):
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
             data[name] = {}
             for ch in self.channel_selection():
@@ -177,17 +177,16 @@ class M3300A_DIG_Interface(InstrumentInterface):
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
 
     def get_final_additional_pulses(self, **kwargs):
-        if not self.input_pulse_sequence.get_pulses(acquire=True):
+        if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
         else:
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
-                          self.input_pulse_sequence.get_pulses(acquire=True))
+                          self.pulse_sequence.get_pulses(acquire=True))
 
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start, duration=1e-5, acquire=True,
-                             average='none',
+                TriggerPulse(t_start=t_start, duration=1e-5,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True
