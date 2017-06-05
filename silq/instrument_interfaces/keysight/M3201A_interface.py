@@ -4,6 +4,7 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
+import threading
 
 
 class M3201AInterface(InstrumentInterface):
@@ -29,6 +30,9 @@ class M3201AInterface(InstrumentInterface):
                                name='trig_in', input_trigger=True, input_TTL=(0, 5.0)),
             'trig_out': Channel(instrument_name=self.instrument_name(),
                                 name='trig_out', output_TTL=(0, 3.3))}
+
+        # By default, do not trigger self
+        self.auto_trigger = False
 
         # TODO: how does the power parameter work? How can I set requirements on the amplitude?
         self.pulse_implementations = [
@@ -166,6 +170,20 @@ class M3201AInterface(InstrumentInterface):
         for c in self._get_active_channel_ids():
             mask |= 1 << c
         self.instrument.awg_start_multiple(mask)
+        print('auto_trigger = {}'.format(self.auto_trigger))
+        if self.auto_trigger:
+            t = threading.Thread(target=self.trigger_self, name='AWG_auto_trigger')
+            t.start()
+
+    def trigger_self(self):
+        mask = 0
+        for c in self._get_active_channel_ids():
+            mask |= 1 << c
+        print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
+        while(1):
+            self.instrument.awg_stop_multiple(mask)
+            self.instrument.awg_start_multiple(mask)
+            self.instrument.awg_trigger_multiple(mask)
 
     def get_final_additional_pulses(self, **kwargs):
         return []
