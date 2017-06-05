@@ -96,6 +96,7 @@ interfaces['DIG'] = DIG_interface
 # interfaces['DIG'].add_acquisition_controller('continuous_controller')
 # interfaces['DIG'].add_acquisition_controller('steered_initialization_controller')
 interfaces['DIG'].default_acquisition_controller('Triggered')
+DIG_interface.sample_rate(1e6)
 
 ##############
 ### Layout ###
