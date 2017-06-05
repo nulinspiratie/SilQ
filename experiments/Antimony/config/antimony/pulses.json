@@ -1,0 +1,23 @@
+{
+    "read": {
+        "duration": 20,
+        "amplitude": 0
+    },
+    "final": {
+        "duration": 5,
+        "amplitude": 0
+    },
+    "trigger": {},
+    "empty": {
+        "amplitude": 0.007,
+        "duration": 20
+    },
+    "plunge": {
+        "amplitude": 0.007,
+        "duration": 20
+    },
+    "adiabatic_ESR": {
+        "duration": 0.5,
+        "frequency": "config:antimony.properties.frequency_ESR"
+    }
+}

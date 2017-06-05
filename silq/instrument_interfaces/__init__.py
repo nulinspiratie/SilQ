@@ -1,31 +1,36 @@
 from .interface import InstrumentInterface, Channel
-from silq.tools.instrument_tools import get_instrument_class
 
 
 def get_instrument_interface(instrument):
-    from .lecroy.ArbStudio1104_interface import ArbStudio1104Interface
-    from .chip_interface import ChipInterface
-    from .spincore.PulseBlasterESRPRO_interface import \
-        PulseBlasterESRPROInterface, \
-        PulseBlasterDDSInterface
-    from .AlazarTech.ATS_interface import ATSInterface
-    from .keysight import E8267DInterface
-
     instrument_interfaces = {
-        'ArbStudio1104': ArbStudio1104Interface,
-        'MockArbStudio': ArbStudio1104Interface,
-        'PulseBlasterESRPRO': PulseBlasterESRPROInterface,
-        'PulseBlasterDDS': PulseBlasterDDSInterface,
-        'MockPulseBlaster': PulseBlasterESRPROInterface,
-        'Chip': ChipInterface,
-        'ATS9440': ATSInterface,
-        'MockATS': ATSInterface,
-        'Keysight_E8267D': E8267DInterface
+        'ArbStudio1104': {'module': '.lecroy.ArbStudio1104_interface',
+                          'class': 'ArbStudio1104Interface'},
+        'MockArbStudio': {'module': '.lecroy.ArbStudio1104_interface',
+                          'class': 'ArbStudio1104Interface'},
+        'PulseBlasterDDS' : {'module' : '.spincore.PulseBlasterDDS_interface', 
+                             'class' : 'PulseBlasterDDSInterface'},
+        'PulseBlasterESRPRO': {'module': '.spincore.PulseBlasterESRPRO_interface',
+                               'class': 'PulseBlasterESRPROInterface'},
+        'MockPulseBlaster': {'module': '.spincore.PulseBlasterESRPRO_interface',
+                             'class': 'PulseBlasterESRPROInterface'},
+        'Chip': {'module': '.chip_interface',
+                 'class': 'ChipInterface'},
+        'ATS9440': {'module': '.AlazarTech.ATS_interface',
+                    'class': 'ATSInterface'},
+        'MockATS': {'module': '.AlazarTech.ATS_interface',
+                    'class': 'ATSInterface'},
+        'Keysight_E8267D': {'module': '.keysight',
+                            'class': 'E8267DInterface'},
+        'Keysight_M3201A': {'module': '.keysight',
+                            'class': 'M3201AInterface'},
+        'M3300A_DIG': {'module': '.keysight',
+                       'class': 'M3300A_DIG_Interface'}
     }
 
-    instrument_class = get_instrument_class(instrument)
-    instrument_interface_class = instrument_interfaces[instrument_class]
-
+    instrument_class = instrument.__class__.__name__
+    import_dict = instrument_interfaces[instrument_class]
+    exec(f'from {import_dict["module"]} import {import_dict["class"]}')
+    instrument_interface_class = eval(import_dict['class'])
     server_name = getattr(instrument, '_server_name', None)
 
     instrument_interface = instrument_interface_class(
