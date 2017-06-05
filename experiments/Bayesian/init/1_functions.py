@@ -1,4 +1,18 @@
 # General functions
+def close_SD1():
+    print('Starting thread that will kill any instance of SD1')
+    while(1):
+        result = os.system("taskkill /im SD1_SFP.exe 2> nul")
+        if result == 0:
+            win32ui.MessageBox("Don't open the SD1 SFP tool while using python! \
+    You may cause your computer to crash", "WARNING", 4096)
+        os.system("taskkill /im SD1_SFP.exe 2> nul")
+
+# t_sd1 = threading.Thread(target=close_SD1, name='auto_close_SD1')
+# t_sd1.start()
+
+
+
 def plot_traces(traces, ax=None, traces_AWG=None, threshold_voltage=None,
                 plot1D=False):
     if ax is None:

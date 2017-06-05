@@ -8,6 +8,7 @@
 ###############
 import os
 import sys
+import win32ui
 import numpy as np
 from numpy import array, nan
 from functools import partial
