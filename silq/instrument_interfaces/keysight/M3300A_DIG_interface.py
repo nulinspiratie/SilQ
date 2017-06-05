@@ -234,8 +234,8 @@ class M3300A_DIG_Interface(InstrumentInterface):
             controller.samples_per_record(int(T * self.sample_rate()))
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
-            # NOTE: time is defined in milliseconds
-            controller.read_timeout(int(t_final * 1.1 * 1e3))
+            # NOTE: time is defined in seconds
+            controller.read_timeout(int(t_final * 1.1))
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
