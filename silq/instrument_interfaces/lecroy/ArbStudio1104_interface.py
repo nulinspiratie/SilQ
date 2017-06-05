@@ -5,7 +5,7 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation
-from silq.tools.general_tools import array_in_list
+from silq.tools.general_tools import arreqclose_in_list
 
 from qcodes.instrument.parameter import ManualParameter
 
@@ -189,7 +189,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
                 # Only add waveforms that don't already exist
                 for waveform in channel_waveforms:
-                    waveform_idx = array_in_list(waveform, self.waveforms[ch])
+                    waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch])
                     if waveform_idx is None:
                         self.waveforms[ch].append(waveform)
 
@@ -199,7 +199,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                 # are no duplicate waveforms and each sequence idx is correct.
                 for k, sequence_idx in enumerate(channel_sequence):
                     waveform = channel_waveforms[sequence_idx]
-                    waveform_idx = array_in_list(waveform, self.waveforms[ch])
+                    waveform_idx = arreqclose_in_list(waveform,
+                                                      self.waveforms[ch])
                     # Update channel_sequence item to correct index
                     channel_sequence[k] = waveform_idx
                 self.sequences[ch].extend(channel_sequence)
