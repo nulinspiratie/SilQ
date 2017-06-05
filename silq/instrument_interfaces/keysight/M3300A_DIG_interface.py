@@ -97,6 +97,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         """
         Perform acquisition
         """
+        self.start()
         data = {}
         acq_data = self._acquisition_controller.acquire()
         acq_data = self._acquisition_controller.post_acquire(acq_data)
