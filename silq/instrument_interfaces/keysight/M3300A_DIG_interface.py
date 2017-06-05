@@ -199,7 +199,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         # Find all unique pulse_connections to choose which channels to acquire on
         channel_selection = [int(ch_name[-1]) for ch_name in self.acquisition_channels()]
-                self.channel_selection(sorted(channel_selection))
+        self.channel_selection(sorted(channel_selection))
         controller.channel_selection(self.channel_selection())
 
         # Check what averaging mode is needed by each pulse
