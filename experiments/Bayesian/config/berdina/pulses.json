@@ -1,27 +1,32 @@
 {
     "read": {
-        "duration": 20,
+        "duration": 20e-3,
+        "amplitude": 0,
+        "connection_label": "ELR"
+    },
+    "read_long": {
+        "duration": 50e-3,
         "amplitude": 0,
         "connection_label": "ELR"
     },
     "final": {
-        "duration": 5,
+        "duration": 5e-3,
         "amplitude": 0,
         "connection_label": "ELR"
     },
     "trigger": {},
     "empty": {
         "amplitude": 0.007,
-        "duration": 20,
+        "duration": 20e-3,
         "connection_label": "ELR"
     },
     "plunge": {
         "amplitude": 0.007,
-        "duration": 20,
+        "duration": 20e-3,
         "connection_label": "ELR"
     },
     "adiabatic_ESR": {
-        "duration": 0.5,
+        "duration": 0.5e-3,
         "frequency": "config:antimony.properties.frequency_ESR",
         "connection_label": "SET"
     }
