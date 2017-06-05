@@ -197,13 +197,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self.samples(kwargs.pop('samples', 1))
 
         # Find all unique pulse_connections to choose which channels to acquire on
-        channel_selection = {pulse.connection.input['channel'].id
-                                  for pulse in self.input_pulse_sequence.get_pulses(acquire=True)}
-        # import pdb; pdb.set_trace()
-        self.channel_selection(sorted(list(channel_selection)))
+        channel_selection = [int(ch_name[-1]) for ch_name in self.acquisition_channels()]
+                self.channel_selection(sorted(channel_selection))
         controller.channel_selection(self.channel_selection())
-        # Acquire on all channels
-        # controller.channel_selection = [x for x in range(8)]
 
         # Check what averaging mode is needed by each pulse
         if any(self.input_pulse_sequence.get_pulses(average='none')):
