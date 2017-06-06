@@ -27,8 +27,8 @@ SIM900_SRC = SIM900('SIM900_SRC', 'GPIB0::2::INSTR')
 station.add_component(SIM900_SRC)
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 DC_sources = {'SRC':  {'ch': 1, 'ratio': 1, 'max': 1, 'ins': SIM900_SRC},
-              'LB':   {'ch': 1, 'ratio': 8, 'max': 0.8, 'ins':SIM900_DC},
-              'RB':   {'ch': 2, 'ratio': 8, 'max': 0.8, 'ins': SIM900_DC},
+              'LB':   {'ch': 1, 'ratio': 8, 'max': 1.6, 'ins':SIM900_DC},
+              'RB':   {'ch': 2, 'ratio': 8, 'max': 1.6, 'ins': SIM900_DC},
               'TG':   {'ch': 3, 'ratio': 8, 'max': 2.25, 'ins': SIM900_DC},
               'TGAC': {'ch': 4, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
               'LDF':  {'ch': 5, 'ratio': 8, 'max': 1, 'ins': SIM900_DC},
@@ -48,6 +48,11 @@ for ch_name, info in DC_sources.items():
 
     exec(f'{ch_name}_raw = param_raw')
     exec(f'{ch_name} = param')
+
+RDF_raw.set_step(0.02)
+LDF_raw.set_step(0.02)
+TGAC_raw.set_step(0.02)
+
 sim_gui.voltage_parameters = voltage_parameters
 
 
@@ -57,12 +62,14 @@ sim_gui.voltage_parameters = voltage_parameters
 dll_path = os.path.join(os.getcwd(),'C:\lecroy\\Library\\ArbStudioSDK.dll')
 arbstudio = ArbStudio1104('arbstudio', dll_path=dll_path)
 station.add_component(arbstudio)
-for ch in ['ch1', 'ch2', 'ch4']:
-    arbstudio.parameters[ch + '_sampling_rate_prescaler'](250)
-# ch3 is used for sideband modulation
-arbstudio.ch3_sampling_rate_prescaler(1)
+arbstudio.optimize = ['divisors']
+for ch in ['ch1', 'ch2', 'ch3', 'ch4']:
+    arbstudio.parameters[ch + '_sampling_rate_prescaler'](40)
+# # ch3 is used for sideband modulation
+# arbstudio.ch3_sampling_rate_prescaler(1)
 interfaces['arbstudio'] = get_instrument_interface(arbstudio)
 arbstudio_interface = interfaces['arbstudio']
+arbstudio_interface.final_delay(0.3)
 
 
 ####################

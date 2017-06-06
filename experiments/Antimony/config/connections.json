@@ -20,7 +20,7 @@
     {
         "output_arg": "arbstudio.ch1",
         "input_arg": "chip.DF",
-        "scale": 0.025
+        "scale": 0.0285
     },
     {
         "output_arg": "arbstudio.ch2",
@@ -29,7 +29,8 @@
     },
     {
         "output_arg": "arbstudio.ch3",
-        "input_arg": "ATS.chB"
+        "input_arg": "ATS.chB",
+        "scale": 0.1
     },
     {
         "output_arg": "arbstudio.ch4",
@@ -44,7 +45,7 @@
         "scale": [
             1,
             -1.5,
-            0.1
+            1
         ]
     },
     {
