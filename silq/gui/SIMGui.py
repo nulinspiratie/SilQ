@@ -4,6 +4,7 @@ import json
 import pyperclip
 import logging
 
+from PyQt5 import QtGui
 from PyQt5.QtGui import QPalette, QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
@@ -80,7 +81,10 @@ class SIM928Dialog(QFrame):
 
     def initUI(self):
         layout = QVBoxLayout()
-        layout.setContentsMargins(5, 0, 5, 0)
+        if self.mini:
+            layout.setContentsMargins(0, 0, 0, 0)
+        else:
+            layout.setContentsMargins(5, 0, 5, 0)
         self.setLayout(layout)
 
         # Set parameter name
@@ -103,8 +107,7 @@ class SIM928Dialog(QFrame):
             self.name_label.setFont(QFont("Times", 12, QFont.Bold))
             val_hbox.addWidget(self.name_label)
 
-        self.val_textbox = QLineEdit('{:.5g}'.format(
-            self.parameter.get_latest()))
+        self.val_textbox = QLineEdit(f'{self.parameter.get_latest():.5g}')
         self.val_textbox.setAlignment(Qt.AlignCenter)
         self.val_textbox.setFont(QFont("Times", 12, QFont.Bold))
         self.val_textbox.returnPressed.connect(
@@ -134,7 +137,7 @@ class SIM928Dialog(QFrame):
             for column_idx, scale in enumerate([100, 10, 1]):
                 for row_idx, sign in enumerate([1, -1]):
                     val = sign * scale
-                    button = QPushButton(f"{'+' if sign == 1 else '-'}{scale} mV")
+                    button = QPushButton(f"{['-','+'][sign==1]}{scale} mV")
                     self.val_grid.addWidget(button, row_idx, column_idx + 1)
                     width = button.fontMetrics().boundingRect(
                         f"+100 mV").width() + 7
@@ -329,7 +332,8 @@ class SIMControlDialog(QDialog):
         if len(parameters) > 10:
             raise SyntaxError('Can use at most 10 gates')
         super().__init__(
-            flags=Qt.WindowMinimizeButtonHint|Qt.WindowCloseButtonHint)
+            flags=Qt.WindowMinimizeButtonHint|
+                  Qt.WindowCloseButtonHint)
         self.parameters = parameters
         self.mini = mini
 
@@ -454,9 +458,9 @@ class SIMControlDialog(QDialog):
                     SIM928_dialog.set_voltage(SIM928_dialog.val_textbox.text())
 
     def changeEvent(self, event):
-        # Correctly determines it is unminimized, but cannot clear focus
+        # Correctly determines it is activated, but cannot clear focus
         super().changeEvent(event)
-        if event.type() == QEvent.WindowStateChange:
+        if event.type() == QEvent.ActivationChange:
             if self.windowState() == Qt.WindowNoState:
                 self._clear_focus()
                 for SIM928_dialog in self.SIM928_dialogs.values():
