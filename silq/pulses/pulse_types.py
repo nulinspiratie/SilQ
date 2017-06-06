@@ -49,7 +49,7 @@ class Pulse:
         try:
             # Set properties_config from SilQ environment config
             self.properties_config = config[self.environment].properties
-        except KeyError:
+        except (KeyError, AttributeError):
             self.properties_config = None
 
 
@@ -275,7 +275,7 @@ class Pulse:
                 # Also send signal that dependent property t_stop has changed
                 self.signal.send(self, t_stop=self.t_stop)
 
-    def _value_or_config(self, key, value):
+    def _value_or_config(self, key, value, default=None):
         """
         Decides what value to return depending on value and config.
         Used for setting pulse attributes at the start
@@ -283,6 +283,7 @@ class Pulse:
         Args:
             key: key to check in config
             value: value to choose if not equal to None
+            default: default value if no value specified. None by default
 
         Returns:
             if value is not None, return value
@@ -295,7 +296,7 @@ class Pulse:
         elif self.pulse_config is not None:
             return self.pulse_config.get(key, None)
         else:
-            return None
+            return default
 
     def __add__(self, other):
         """
@@ -669,10 +670,9 @@ class DCRampPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 'A_start={}, A_stop={}, ' \
-                             't_start={}, t_stop={}'.format(
-                self.amplitude_start, self.amplitude_stop,
-                self.t_start, self.t_stop)
+            properties_str = f'A_start={self.amplitude_start}, ' \
+                             f'A_stop={self.amplitude_stop}, ' \
+                             f't_start={self.t_start}, t_stop={self.t_stop}'
         except:
             properties_str = ''
 
@@ -680,8 +680,8 @@ class DCRampPulse(Pulse):
 
     def get_voltage(self, t):
         assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+            f"voltage at {t} s is not in the time range {self.t_start} s " \
+            f"- {self.t_stop} s of pulse {self}"
 
         slope = (self.amplitude_stop - self.amplitude_start) / self.duration
         offset = self.amplitude_start - slope * self.t_start
