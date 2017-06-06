@@ -1,9 +1,11 @@
+import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
 from silq.tools.notebook_tools import *
 import pyperclip
 from time import time
 import numpy as np
 import logging
+from winsound import Beep
 
 from qcodes.station import Station
 
@@ -34,10 +36,16 @@ class PlotAction:
         self.plot.execute = (event.key[-1].isupper())
 
     def button_press(self, event):
-        if self.plot.copy:
+        raise NotImplementedError
+
+    def handle_code(self, code, copy=False, execute=False, new_cell=True):
+        if copy:
+            logger.debug('Copying code to clipboard')
             self.txt_to_clipboard(self.txt)
-        else:
-            create_cell(self.txt, execute=self.plot.execute, location='below')
+
+        if new_cell:
+            logger.debug(f'Adding code to new cell below, execute: {execute}')
+            create_cell(self.txt, execute=execute, location='below')
 
 
 class SetGates(PlotAction):
@@ -53,7 +61,8 @@ class SetGates(PlotAction):
         self.txt = set_gates_txt.format(x_label=self.plot.x_label,
                                         y_label=self.plot.y_label,
                                         x_val=event.xdata, y_val=event.ydata)
-        super().button_press(event)
+        self.handle_code(self.txt, copy=self.plot.copy,
+                         execute=self.plot.execute)
 
 
 class MeasureSingle(PlotAction):
@@ -72,7 +81,8 @@ class MeasureSingle(PlotAction):
                               x_val=event.xdata, y_val=event.ydata,
                               param=self.plot.measure_parameter,
                               samples_measure=self.plot.samples_measure)
-        super().button_press(event)
+        self.handle_code(self.txt, copy=self.plot.copy,
+                         execute=self.plot.execute)
 
 
 class MoveGates(PlotAction):
@@ -85,31 +95,38 @@ class MoveGates(PlotAction):
 
     def key_press(self, event):
         if event.key == self.key:
-            self.point = self.plot[0].plot(self.plot.x_gate(),
-                                           self.plot.y_gate(), 'or', )[0]
+            if self.plot.point is None:
+                self.plot.point = self.plot[0].plot(self.plot.x_gate(),
+                                               self.plot.y_gate(), 'ob', )[0]
+            else:
+                self.plot.point.set_xdata(self.plot.x_gate())
+                self.plot.point.set_ydata(self.plot.y_gate())
+
         elif event.key in ['alt+up', 'alt+down']:
             val = self.plot.y_gate()
             delta = self.delta * (1 if event.key == 'alt+up' else -1)
             self.plot.y_gate(val + delta)
-            self.point.set_ydata(val + delta)
+            self.plot.point.set_ydata(val + delta)
         elif event.key in ['alt+left', 'alt+right']:
             val = self.plot.x_gate()
             delta = self.delta * (1 if event.key == 'alt+right' else -1)
             self.plot.x_gate(val + delta)
-            self.point.set_xdata(val + delta)
+            self.plot.point.set_xdata(val + delta)
         elif event.key in ['alt++', 'alt+=']:
             self.delta /= 1.5
         elif event.key == 'alt+-':
             self.delta *= 1.5
 
     def button_press(self, event):
-        self.plot.txt += '\nreceived'
+        logger.info('MoveGates button pressed')
         if event.guiEvent['altKey']:
-            self.plot.txt += ' alt'
+            logger.info(f'Moving to gates ({event.xdata}, {event.ydata})')
             self.plot.x_gate(event.xdata)
-            self.point.set_xdata(event.xdata)
+            self.plot.point.set_xdata(event.xdata)
             self.plot.y_gate(event.ydata)
-            self.point.set_ydata(event.ydata)
+            self.plot.point.set_ydata(event.ydata)
+        else:
+            logger.info('Alt key not pressed, not moving gates')
 
 
 class InteractivePlot(MatPlot):
@@ -153,13 +170,15 @@ class InteractivePlot(MatPlot):
 
     def load_dataset(self, dataset):
         self.dataset = dataset
-        self.x_label = getattr(self.dataset, self.key).set_arrays[1].name
-        self.y_label = getattr(self.dataset, self.key).set_arrays[0].name
 
-        if hasattr(self.station, self.x_label):
-            self.x_gate = getattr(self.station, self.x_label)
-        if hasattr(self.station, self.x_label):
-            self.y_gate = getattr(self.station, self.y_label)
+        if hasattr(self, 'key'):
+            self.x_label = getattr(self.dataset, self.key).set_arrays[1].name
+            self.y_label = getattr(self.dataset, self.key).set_arrays[0].name
+
+            if hasattr(self.station, self.x_label):
+                self.x_gate = getattr(self.station, self.x_label)
+            if hasattr(self.station, self.x_label):
+                self.y_gate = getattr(self.station, self.y_label)
 
     def get_action(self, key=None):
         if key is None:
@@ -194,27 +213,85 @@ class InteractivePlot(MatPlot):
             self.t_previous = time()
             self.last_key = event.key
             action = self.get_action(event.key)
-            action.key_press(event)
+            logger.debug(f'Enabling action {action} with key {event.key}')
+            try:
+                action.key_press(event)
+            except Exception as e:
+                logger.error(f'Performing action {action}: {e}')
             self.last_action = action
         elif self.last_action is not None \
                 and event.key in self.last_action.action_keys:
+
+            logger.debug(f'Using last action {self.last_action} '
+                        f'with key {event.key}')
             self.t_previous = time()
-            self.last_action.key_press(event)
+            try:
+                self.last_action.key_press(event)
+            except Exception as e:
+                logger.error(f'Performing action {action}: {e}')
         else:
             pass
 
     def handle_button_press(self, event):
         self._event_button = event
-        self.txt = f'x:{plot._event_button.xdata}, y:{plot._event_button.ydata}, alt: {plot._event_button.guiEvent["altKey"]}'
+        logger.debug(f'Clicked (x:{event.xdata:.6}, '
+                     f'y:{event.ydata:.6}), '
+                     f'alt: {event.guiEvent["altKey"]}')
         action = self.get_action()
         if action is not None:
             self.t_previous = time()
-            self.txt += '\nSent'
-            action.button_press(event)
+            try:
+                action.button_press(event)
+            except Exception as e:
+                logger.error('Button action {action}: {e}')
 
     def plot_data(self, **kwargs):
         raise NotImplementedError(
             'plot_data should be implemented in a subclass')
+
+
+class Interactive3DPlot(InteractivePlot):
+    def __init__(self, data_array, **kwargs):
+
+        self.data_array = data_array
+        self.x_set_array = self.data_array.set_arrays[2]
+        self.y_set_array = self.data_array.set_arrays[1]
+        self.z_set_array = self.data_array.set_arrays[0]
+
+        self.plot_idx = 0
+
+        super().__init__(subplots=1, dataset=data_array.data_set, **kwargs)
+        self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
+
+        # Add slider
+        self.sliderax = self.fig.add_axes([0.2, 0.01, 0.6, 0.07],
+                                          facecolor='yellow')
+        self.slider = mpl.widgets.Slider(self.sliderax,
+                                         self.z_set_array.name,
+                                         self.z_set_array[0],
+                                         self.z_set_array[-1],
+                                         valinit=self.z_set_array[0])
+        self.slider.on_changed(self.update_slider)
+        self.slider.drawon = False
+
+    @property
+    def plot_kwargs(self):
+        return {'x': self.x_set_array[self.plot_idx,0],
+                'y': self.y_set_array[self.plot_idx],
+                'xlabel': self.x_set_array.name,
+                'ylabel': self.y_set_array.name,
+                'xunit': self.x_set_array.unit,
+                'yunit': self.y_set_array.unit}
+
+    def update_slider(self, value):
+        self.plot_idx = np.argmin(abs(self.z_set_array.ndarray - value))
+        value = self.z_set_array[self.plot_idx]
+        self.slider.valtext.set_text(f'{self.z_set_array.name}: {value}')
+
+        self[0].clear()
+        self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
+        self.update()
+
 
 class CalibrationPlot(InteractivePlot):
     measure_parameter = 'adiabatic_ESR'
@@ -253,6 +330,10 @@ class DCPlot(InteractivePlot):
 class ScanningPlot(InteractivePlot):
     def __init__(self, parameter, interval=0.01, auto_start=False, **kwargs):
         super().__init__(**kwargs)
+        self.update_idx = 0
+        self.update_start_idx = 1
+        self.t_start = None
+
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
         self.connect_event('close_event', self.stop)
@@ -278,10 +359,19 @@ class ScanningPlot(InteractivePlot):
         if hasattr(self, 'timer'):
             self.timer.interval = interval * 1000
 
+    @property
+    def update_interval(self):
+        if self.update_idx > 0:
+            return (time() - self.t_start) / (self.update_idx -
+                                              self.update_start_idx)
+
     def start(self, setup=True, start=True):
+        self.parameter.continuous = True
         if setup:
             self.parameter.setup(start=start)
         self.timer.start()
+
+        self.update_idx = 0
 
     def stop(self, *args):
         # *args are needed for if it is a callback
@@ -291,15 +381,25 @@ class ScanningPlot(InteractivePlot):
         self.parameter.continuous = False
 
     def scan(self, initialize=False, start=False, stop=False):
-        from winsound import Beep
+        if self.update_idx == self.update_start_idx:
+            self.t_start = time()
+
         self.results = self.parameter.acquire(start=start, stop=stop)
         self.update_plot(initialize=initialize)
 
+        self.update_idx += 1
+
 
 class DCSweepPlot(ScanningPlot):
-    def __init__(self, parameter, **kwargs):
+    gate_mapping = {}
+    def __init__(self, parameter, gate_mapping=None, **kwargs):
+        if gate_mapping is not None:
+            self.gate_mapping = gate_mapping
+
         if parameter.trace_pulse.enabled:
-            subplots = (2, 1)
+            subplots = {'nrows': 2, 'ncols': 1,
+                        'gridspec_kw': {'height_ratios': [2,1]}}
+            kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
         super().__init__(parameter, subplots=subplots, **kwargs)
@@ -325,14 +425,19 @@ class DCSweepPlot(ScanningPlot):
                                 yunit=setpoint_units[0],
                                 zlabel=name,
                                 zunit=unit)
-                    self.y_label, self.x_label = setpoint_names
+                    self.x_label = self.gate_mapping.get(setpoint_names[1],
+                                                         setpoint_names[1])
+                    self.y_label = self.gate_mapping.get(setpoint_names[0],
+                                                         setpoint_names[0])
+
                     if hasattr(self.station, self.x_label) and \
                             hasattr(self.station, self.y_label):
                         self.x_gate = getattr(self.station, self.x_label)
                         self.y_gate = getattr(self.station, self.y_label)
 
-                        self[k].plot([self.x_gate.get_latest()],
-                                     [self.y_gate.get_latest()], 'ob', ms=5)
+                        self.point = self[k].plot(self.x_gate.get_latest(),
+                                                  self.y_gate.get_latest(),
+                                                  'ob', ms=5)[0]
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
@@ -343,7 +448,13 @@ class DCSweepPlot(ScanningPlot):
             else:
                 result_config = self.traces[k]['config']
                 if 'z' in result_config:
+                    result_config['x'] = self.parameter.setpoints[k][1]
+                    result_config['y'] = self.parameter.setpoints[k][0]
                     result_config['z'] = result
+                    if self.point is not None:
+                        self.point.set_xdata(self.x_gate.get_latest())
+                        self.point.set_ydata(self.y_gate.get_latest())
                 else:
                     result_config['y'] = result
+
         super().update_plot()
