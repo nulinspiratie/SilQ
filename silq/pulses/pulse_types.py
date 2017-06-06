@@ -49,7 +49,7 @@ class Pulse:
         try:
             # Set properties_config from SilQ environment config
             self.properties_config = config[self.environment].properties
-        except AttributeError:
+        except (KeyError, AttributeError):
             self.properties_config = None
 
 
