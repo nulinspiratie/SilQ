@@ -28,7 +28,7 @@ note_logger.addFilter(logging.Filter(name='notes'))
 
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
                                   '%(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
+                                  datefmt='%H:%M:%S')
 
 filename = r'F:\Antimony\data\log\log'
 file_handler = ParallelTimedRotatingFileHandler(filename=filename,
@@ -44,13 +44,11 @@ if logger.handlers:
 logger.addHandler(file_handler)
 
 class logFilter:
+    ignore = ['requests.packages.urllib3.connectionpool',
+              'pyvisa']
     def filter(self, record):
         self.record = record
-        if record.name == 'requests.packages.urllib3.connectionpool':
-            # Filter these out, emitted by Slacker after every request
-            return False
-        else:
-            return True
+        return not record.name in self.ignore
 
 file_handler.addFilter(logFilter())
 logger.addFilter(logFilter())

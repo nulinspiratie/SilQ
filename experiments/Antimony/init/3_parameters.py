@@ -21,6 +21,7 @@ LB_RB = parameters.CombinedParameter(parameters=[LB, RB])
 for parameter in [DF, DS, DF_DS, turnon_parameter, TGAC_DF_DS, LB_RB]:
     station.add_component(parameter)
 
+DCSweepPlot.gate_mapping = {'DF': 'RDF'}
 
 ##############################
 ### Acquisition parameters ###

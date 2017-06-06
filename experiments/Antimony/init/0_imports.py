@@ -22,6 +22,7 @@ import pyperclip
 import json
 import threading
 from PyQt5.QtWidgets import QApplication
+from importlib import reload
 
 from IPython.core.magic import (register_line_magic, register_cell_magic,
                                 register_line_cell_magic, needs_local_scope)
