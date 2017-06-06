@@ -85,7 +85,8 @@ class PulseRequirement():
 
 class PulseSequence:
     def __init__(self, pulses=[], allow_untargeted_pulses=True,
-                 allow_targeted_pulses=True, allow_pulse_overlap=True):
+                 allow_targeted_pulses=True, allow_pulse_overlap=True,
+                 final_delay=None):
         """
         A PulseSequence object is a container for pulses.
         It can be used to store untargeted or targeted pulses
@@ -104,6 +105,7 @@ class PulseSequence:
         self.pulse_conditions = pulse_conditions
 
         self._duration = None
+        self.final_delay = final_delay
 
         self.pulses = []
         self.enabled_pulses = []
@@ -218,9 +220,14 @@ class PulseSequence:
         if self._duration is not None:
             return self._duration
         elif self.enabled_pulses:
-            return max(pulse.t_stop for pulse in self.enabled_pulses)
+            duration = max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
-            return 0
+            duration = 0
+
+        if self.final_delay is not None:
+            duration += self.final_delay
+
+        return duration
 
     @duration.setter
     def duration(self, duration):
@@ -232,11 +239,12 @@ class PulseSequence:
 
     @property
     def t_stop_list(self):
+
         return [pulse.t_stop for pulse in self.enabled_pulses]
 
     @property
     def t_list(self):
-        return list(set(self.t_start_list + self.t_stop_list))
+        return list(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def replace(self, pulse_sequence):
         """
