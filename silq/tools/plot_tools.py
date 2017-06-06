@@ -118,9 +118,9 @@ class MoveGates(PlotAction):
             self.delta *= 1.5
 
     def button_press(self, event):
-        logger.info('MoveGates button pressed')
+        logger.debug('MoveGates button pressed')
         if event.guiEvent['altKey']:
-            logger.info(f'Moving to gates ({event.xdata}, {event.ydata})')
+            logger.debug(f'Moving to gates ({event.xdata}, {event.ydata})')
             self.plot.x_gate(event.xdata)
             self.plot.point.set_xdata(event.xdata)
             self.plot.y_gate(event.ydata)
@@ -131,7 +131,7 @@ class MoveGates(PlotAction):
 
 class InteractivePlot(MatPlot):
     def __init__(self, subplots, dataset=None, figsize=None,
-                 nticks=6, timeout=60, **kwargs):
+                 nticks=6, timeout=600, **kwargs):
         super().__init__(subplots=subplots, figsize=figsize,
                          **kwargs)
         self.station = Station.default
@@ -243,7 +243,7 @@ class InteractivePlot(MatPlot):
             try:
                 action.button_press(event)
             except Exception as e:
-                logger.error('Button action {action}: {e}')
+                logger.error(f'Button action {action}: {e}')
 
     def plot_data(self, **kwargs):
         raise NotImplementedError(
