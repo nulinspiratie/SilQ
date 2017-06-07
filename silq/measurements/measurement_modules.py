@@ -1,14 +1,19 @@
+import logging
 from qcodes import config
 
 from silq.measurements.measurement_types import *
 from silq.tools.general_tools import JSONEncoder
+
+logger = logging.getLogger(__name__)
+
 measurement_config = config['user'].get('measurement', {})
 
 
 class MeasurementSequence:
     def __init__(self, name=None, measurements=None, condition_sets=None,
                  set_parameters=None, acquisition_parameter=None,
-                 silent=True, set_active=False):
+                 silent=True, set_active=False, continuous=False,
+                 base_folder=None):
         self.set_parameters = set_parameters
         self.acquisition_parameter = acquisition_parameter
 
@@ -22,6 +27,8 @@ class MeasurementSequence:
 
         self.silent = silent
         self.set_active = set_active
+        self.continuous = continuous
+        self.base_folder = base_folder
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -41,16 +48,17 @@ class MeasurementSequence:
     def __next__(self):
         if self.next_measurement is None:
             if not self.silent:
-                print('Finished measurements')
+                logging.debug('Finished measurements')
             raise StopIteration
         else:
             self.measurement = self.next_measurement
         self.measurement.silent = self.silent
+        self.measurement.base_folder = self.base_folder
 
         # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
-            print('Performing {}'.format(self.measurement))
+            logging.debug(f'Performing {self.measurement}')
         self.measurement.silent = self.silent
         # Performing measurement also checks for condition sets, and updates
         # set parameters accordingly
@@ -65,6 +73,10 @@ class MeasurementSequence:
         return self.result
 
     def __call__(self):
+        if self.continuous:
+            self.acquisition_parameter.temporary_settings(continuous=True)
+            self.acquisition_parameter.setup(start=True)
+
         # Perform measurements iteratively, collecting their results
         self.results = [result for result in self]
         # Choose last measurement result
@@ -80,6 +92,11 @@ class MeasurementSequence:
 
         # Optimal vals
         self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
+
+        # Clear settings such as continuous=True
+        self.acquisition_parameter.clear_settings()
+        if self.continuous:
+            self.acquisition_parameter.layout.stop()
 
         #TODO correct return
         return result

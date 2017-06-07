@@ -619,7 +619,6 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-
     def start(self):
         """
         Starts all the instruments except the acquisition instrument
@@ -881,7 +880,10 @@ class SingleConnection(Connection):
             targeted_pulse = pulse
         targeted_pulse.connection = self
         if apply_scale and self.scale is not None:
-            targeted_pulse.amplitude /= self.scale
+            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
+                if hasattr(pulse, attr):
+                    val = getattr(pulse, attr)
+                    setattr(targeted_pulse, attr, val / self.scale)
         return targeted_pulse
 
     def satisfies_conditions(self, output_arg=None, input_arg=None,
@@ -991,13 +993,16 @@ class CombinedConnection(Connection):
         pulses = []
         for k, connection in enumerate(self.connections):
             targeted_pulse = pulse.copy()
-            if isinstance(pulse.amplitude, tuple):
-                if k < len(pulse.amplitude):
-                    targeted_pulse.amplitude = pulse.amplitude[k]
-                else:
-                    targeted_pulse.amplitude = pulse.amplitude[0]
-            elif self.scale is not None:
-                targeted_pulse.amplitude /= self.scale[k]
+            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
+                if hasattr(pulse, attr):
+                    val = getattr(pulse, attr)
+                    if isinstance(val, tuple):
+                        if k < len(pulse.amplitude):
+                            setattr(targeted_pulse, attr, val[k])
+                        else:
+                            setattr(targeted_pulse, attr, val[0])
+                    elif self.scale is not None:
+                        setattr(targeted_pulse, attr, val / self.scale[k])
             targeted_pulse = connection.target_pulse(targeted_pulse,
                                                      copy_pulse=False)
             pulses.append(targeted_pulse)
