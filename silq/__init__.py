@@ -1,20 +1,68 @@
 import sys
 import os
 import warnings
-from .configurations import _configurations
 import json
 from .tools.config import DictConfig, ListConfig
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 
+
 def get_silq_folder():
-    import silq
-    return os.path.split(silq.__file__)[0]
+    return os.path.split(__file__)[0]
+
 
 def get_SilQ_folder():
     silq_folder = get_silq_folder()
     return os.path.join(silq_folder, r"../")
+
+
+def set_experiments_folder(folder):
+    """
+    Sets experiments folder, used by silq.initialize()
+    Args:
+        folder: experiments folder
+
+    Returns:
+
+    """
+    experiments_filepath = os.path.join(get_SilQ_folder(),
+                                        'experiments_folder.txt')
+    with open(experiments_filepath, 'w') as f:
+        f.write(folder)
+
+
+def get_experiments_folder():
+    """
+    Gets experiments folder if found, raises error otherwise.
+    Returns:
+        experiments folder
+    """
+    experiment_filepath = os.path.join(get_SilQ_folder(),
+                                       'experiments_folder.txt')
+    if os.path.exists(experiment_filepath):
+        with open(experiment_filepath, 'r')as f:
+            experiments_folder = f.readline()
+        return experiments_folder
+    else:
+        raise FileNotFoundError('No file "Silq/experiments_folder.txt" exists. '
+                                'Can be set via silq.set_experiments_folder()')
+
+
+def get_configurations():
+    """
+    Retrieves configurations folder from experiments folder. This contains 
+    all configurations that can be used by silq.initialize.
+    Filepath should be {experiments_folder/configurations.json}
+    Returns:
+        dict of configurations
+    """
+    experiments_folder = get_experiments_folder()
+    configurations_filepath = os.path.join(experiments_folder,
+                                           'configurations.json')
+    with open(configurations_filepath, 'r') as file:
+        return json.load(file)
+
 
 def initialize(name=None, mode=None, select=None, ignore=None):
     """
@@ -41,21 +89,23 @@ def initialize(name=None, mode=None, select=None, ignore=None):
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
+    configurations = get_configurations()
+
     if name is None:
         # Find init_name from mac address
         from uuid import getnode as get_mac
         mac = get_mac()
-        for name, properties in _configurations.items():
+        for name, properties in configurations.items():
             if mac in properties.get('macs', []):
                 name = name
                 break
 
     if mode is not None:
-        select = _configurations[name]['modes'][mode].get('select', None)
-        ignore = _configurations[name]['modes'][mode].get('ignore', None)
+        select = configurations[name]['modes'][mode].get('select', None)
+        ignore = configurations[name]['modes'][mode].get('ignore', None)
 
-    folder = os.path.join(get_SilQ_folder(), _configurations[name]['folder'])
-    config.__dict__['folder'] = folder
+    folder = os.path.join(get_SilQ_folder(), configurations[name]['folder'])
+    config.__dict__['folder'] = os.path.join(get_experiments_folder(), folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
 
@@ -85,6 +135,6 @@ def initialize(name=None, mode=None, select=None, ignore=None):
 
     print("Initialization complete")
 
-    if not 'default_environment' in config.properties:
+    if 'default_environment' not in config.properties:
         warnings.warn("'default_environment' should be specified "
                       "in silq.config.properties")
