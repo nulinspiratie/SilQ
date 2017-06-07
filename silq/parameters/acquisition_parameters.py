@@ -2,12 +2,15 @@ from time import sleep
 import numpy as np
 from collections import OrderedDict
 from matplotlib import pyplot as plt
+from blinker import signal
+from functools import partial
 
 from qcodes.instrument.parameter import MultiParameter
 from qcodes.data import hdf5_format, io
 from qcodes.data.data_array import DataArray
 from qcodes.loops import active_loop
 
+from silq import config
 from silq.pulses import *
 from silq.analysis import analysis
 from silq.tools import data_tools
@@ -22,7 +25,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
 
-    def __init__(self, continuous=False, **kwargs):
+    def __init__(self, continuous=False, environment='default',
+                 properties_attrs=[], **kwargs):
         SettingsClass.__init__(self)
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
@@ -35,11 +39,41 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Do not print results after acquisition"""
 
         self.save_traces = False
-        """ Save traces in separate files (does not work)"""
+        """ Save traces in separate files"""
+
+        if environment == 'default':
+            environment = config.properties.get('default_environment',
+                                                'default')
+        self.environment = environment
+
+        # Setup properties config. If pulse requires additional
+        # properties_attrs, place them before calling Pulse.__init__,
+        # else they are not added to attrs.
+        # Make sure that self.properties_attrs is never replaced, only appended.
+        # Else it is no longer used for self._handle_properties_config_signal.
+        try:
+            # Set properties_config from SilQ environment config
+            self.properties_config = config[self.environment].properties
+        except (KeyError, AttributeError):
+            self.properties_config = None
+
+        self.properties_attrs = properties_attrs
+
+        # Set handler that only uses attributes in properties_attrs
+        self._handle_properties_config_signal = partial(
+            self._handle_config_signal,
+            select=self.properties_attrs)
+        # Connect changes in properties config to handling method
+        # If environment has no properties key, this will never be called.
+        signal(f'config:{self.environment}.properties').connect(
+            self._handle_properties_config_signal)
+
+        # Set attributes that can also be retrieved from properties_config
+        if self.properties_config is not None:
+            for attr in self.properties_attrs:
+                setattr(self, attr, self.properties_config.get(attr, None))
 
         self.samples = None
-        self.t_read = None
-        self.t_skip = None
         self.data = None
         self.dataset = None
         self.results = None
@@ -54,7 +88,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.layout = self.layout
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
-    trace_formatter = h5fmt
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
 
@@ -69,9 +102,21 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """ Acquisition sample rate """
         return self.layout.sample_rate
 
-    @property
-    def start_idx(self):
-        return round(self.t_skip * 1e-3 * self.sample_rate)
+    def _handle_config_signal(self, _, select=None, **kwargs):
+        """
+        Update attr when attr in pulse config is modified
+        Args:
+            _: sender config (unused)
+            select (Optional(List(str): list of attrs that can be set. 
+                Will update any attribute if not specified. 
+            **kwargs: {attr: new_val}
+
+        Returns:
+
+        """
+        key, val = kwargs.popitem()
+        if select is None or key in select:
+            setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
                      channels=['output']):
@@ -86,7 +131,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
                                                   subfolder=subfolder,
-                                                  formatter=self.trace_formatter)
+                                                  formatter=self.formatter)
 
         # Create dictionary of set arrays
         set_arrs = {}
@@ -106,8 +151,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                            array_id='time',
                                            label=' Time',
                                            unit='ms',
-                                           # shape=(points_per_trace, ),
-                                           # preset_data=t_list,
                                            shape=traces.shape,
                                            preset_data=np.full(traces.shape,
                                                                t_list),
@@ -117,11 +160,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                               array_id='trace_num',
                                               label='Trace',
                                               unit='num',
-                                              # shape=traces.shape,
-                                              # preset_data=np.full(traces.shape[
-                                              #                     ::-1],
-                                              #                     np.arange(number_of_traces),
-                                              #                     dtype=np.float64).transpose(),
                                               shape=(number_of_traces, ),
                                               preset_data=np.arange(
                                                   number_of_traces, dtype=np.float64),
@@ -370,6 +408,8 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.pulse_duration = 1
         self.final_delay = 120
+        self.inter_delay = 0.2
+        self.use_ramp = False
 
         self.additional_pulses = []
         self.samples = 1
@@ -506,12 +546,24 @@ class DCSweepParameter(AcquisitionParameter):
         if len(self.sweep_parameters) == 1:
             sweep_name, sweep_dict = next(iter_sweep_parameters)
             sweep_voltages = sweep_dict.sweep_voltages
+            connection_label = sweep_dict.connection_label
+            if self.use_ramp:
+                sweep_points = len(sweep_voltages)
+                pulses = [DCRampPulse('DC_inner',
+                                      duration=self.pulse_duration*sweep_points,
+                                      amplitude_start=sweep_voltages[0],
+                                      amplitude_stop=sweep_voltages[-1],
+                                      acquire=True,
+                                      average=f'point_segment:{sweep_points}',
+                                      connection_label=connection_label)]
+            else:
+                pulses = [
+                    DCPulse('DC_inner', duration=self.pulse_duration,
+                            acquire=True, average='point',
+                            amplitude=sweep_voltage,
+                            connection_label=connection_label)
+                for sweep_voltage in sweep_voltages]
 
-            pulses = [
-                DCPulse('DC_read', duration=self.pulse_duration, acquire=True,
-                        amplitude=sweep_voltage,
-                        connection_label=sweep_dict.connection_label) for
-                sweep_voltage in sweep_voltages]
             self.pulse_sequence = PulseSequence(pulses=pulses)
             #             self.pulse_sequence.add(*self.additional_pulses)
 
@@ -525,6 +577,9 @@ class DCSweepParameter(AcquisitionParameter):
 
             pulses = []
             if outer_connection_label == inner_connection_label:
+                if self.use_ramp:
+                    raise NotImplementedError('Ramp Pulse not implemented for '
+                                              'CombinedConnection')
                 for outer_sweep_voltage in outer_sweep_voltages:
                     for inner_sweep_voltage in inner_sweep_voltages:
                         sweep_voltage = (
@@ -536,19 +591,43 @@ class DCSweepParameter(AcquisitionParameter):
                                     connection_label=outer_connection_label))
             else:
                 t = 0
+                sweep_duration = self.pulse_duration * len(inner_sweep_voltages)
                 for outer_sweep_voltage in outer_sweep_voltages:
-                    pulses.append(DCPulse('DC_outer', t_start=t,
-                                          duration=self.pulse_duration * len(
-                                              inner_sweep_voltages),
-                                          amplitude=outer_sweep_voltage,
-                                          connection_label=outer_connection_label))
-                    for inner_sweep_voltage in inner_sweep_voltages:
-                        pulses.append(DCPulse('DC_read', t_start=t,
-                                              duration=self.pulse_duration,
-                                              acquire=True, average='point',
-                                              amplitude=inner_sweep_voltage,
-                                              connection_label=inner_connection_label))
-                        t += self.pulse_duration
+                    pulses.append(
+                        DCPulse('DC_outer', t_start=t,
+                                duration=sweep_duration + self.inter_delay,
+                                amplitude=outer_sweep_voltage,
+                                connection_label=outer_connection_label))
+                    if self.inter_delay > 0:
+                        pulses.append(
+                            DCPulse('DC_inter_delay', t_start=t,
+                                    duration=self.inter_delay,
+                                    amplitude=inner_sweep_voltages[0],
+                                    connection_label=inner_connection_label))
+                        t += self.inter_delay
+
+                    if self.use_ramp:
+                        sweep_points = len(inner_sweep_voltages)
+                        pulses.append(
+                            DCRampPulse('DC_inner', t_start=t,
+                                        duration=sweep_duration,
+                                        amplitude_start=inner_sweep_voltages[0],
+                                        amplitude_stop=inner_sweep_voltages[-1],
+                                        acquire=True,
+                                        average=f'point_segment:{sweep_points}',
+                                        connection_label=inner_connection_label)
+                        )
+                        t += sweep_duration
+                    else:
+                        for inner_sweep_voltage in inner_sweep_voltages:
+                            pulses.append(
+                                DCPulse('DC_inner', t_start=t,
+                                        duration=self.pulse_duration,
+                                        acquire=True, average='point',
+                                        amplitude=inner_sweep_voltage,
+                                        connection_label=inner_connection_label)
+                            )
+                            t += self.pulse_duration
 
         else:
             raise NotImplementedError(
@@ -559,7 +638,7 @@ class DCSweepParameter(AcquisitionParameter):
             pulses.append(self.trace_pulse)
 
         self.pulse_sequence = PulseSequence(pulses=pulses)
-        self.pulse_sequence.duration += self.final_delay
+        self.pulse_sequence.final_delay = self.final_delay
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
@@ -567,14 +646,18 @@ class DCSweepParameter(AcquisitionParameter):
         # Process results
         DC_voltages = np.array(
             [self.data[pulse.full_name]['output'] for pulse in
-             self.pulse_sequence.get_pulses(name='DC_read')])
-        if len(self.sweep_parameters) == 1:
-            self.results = [DC_voltages]
-        elif len(self.sweep_parameters) == 2:
-            self.results = [DC_voltages.reshape(self.shapes[0])]
+             self.pulse_sequence.get_pulses(name='DC_inner')])
+
+        if self.use_ramp:
+            if len(self.sweep_parameters) == 1:
+                self.results = [DC_voltages[0]]
+            elif len(self.sweep_parameters) == 2:
+                self.results = [DC_voltages]
         else:
-            raise NotImplementedError(
-                f"Cannot handle {len(self.sweep_parameters)} parameters")
+            if len(self.sweep_parameters) == 1:
+                self.results = [DC_voltages]
+            elif len(self.sweep_parameters) == 2:
+                self.results = [DC_voltages.reshape(self.shapes[0])]
 
         if self.trace_pulse.enabled:
             self.results.append(self.data['trace']['output'])
@@ -596,6 +679,7 @@ class EPRParameter(AcquisitionParameter):
                                  'Voltage difference',
                                  'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -634,6 +718,7 @@ class AdiabaticParameter(AcquisitionParameter):
                          labels=['Contrast', 'Dark counts',
                                  'Voltage difference'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -687,6 +772,7 @@ class RabiParameter(AcquisitionParameter):
                          labels=['Contrast', 'Dark counts',
                                 'Voltage difference'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -742,6 +828,7 @@ class RabiDriveParameter(AcquisitionParameter):
                          labels=['Contrast', 'Dark counts',
                                 'Voltage difference'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -798,6 +885,7 @@ class T1Parameter(AcquisitionParameter):
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -824,7 +912,7 @@ class T1Parameter(AcquisitionParameter):
         fidelities = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=self.start_idx)
+            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
         self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
@@ -852,6 +940,7 @@ class DarkCountsParameter(AcquisitionParameter):
                          names=['dark_counts'],
                          labels=['Dark counts'],
                          snapshot_value=False,
+                         properties_attrs=['t_skip'],
                          **kwargs)
 
         self.pulse_sequence.add(
@@ -872,7 +961,7 @@ class DarkCountsParameter(AcquisitionParameter):
         fidelities = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=self.start_idx)
+            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
         self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
