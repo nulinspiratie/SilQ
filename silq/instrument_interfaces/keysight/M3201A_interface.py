@@ -74,6 +74,7 @@ class M3201AInterface(InstrumentInterface):
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
+        self.started = False
         self.instrument.off()
 
     def setup(self, **kwargs):
@@ -171,15 +172,18 @@ class M3201AInterface(InstrumentInterface):
             mask |= 1 << c
         self.instrument.awg_start_multiple(mask)
         if self.auto_trigger:
-            t = threading.Thread(target=self.trigger_self, name='AWG_auto_trigger')
-            t.start()
+            self.started = True
+            self.trigger_self()
 
     def trigger_self(self):
-        mask = 0
-        for c in self._get_active_channel_ids():
-            mask |= 1 << c
-        print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
-        while(1):
+        if self.started:
+            threading.Timer(0.25, self.trigger_self).start()
+
+            mask = 0
+            for c in self._get_active_channel_ids():
+                mask |= 1 << c
+            # print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
+
             self.instrument.awg_stop_multiple(mask)
             self.instrument.awg_start_multiple(mask)
             self.instrument.awg_trigger_multiple(mask)
