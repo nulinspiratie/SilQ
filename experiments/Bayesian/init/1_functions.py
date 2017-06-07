@@ -89,12 +89,6 @@ def create_window(window, *args, use_thread=True):
         return qApp
 
 
-def sim_gui():
-    from silq.gui.SIMGui import SIMControlDialog
-    global voltage_parameters
-    create_window(SIMControlDialog, voltage_parameters)
-
-
 # Override dataset
 def parameter_info(self, *parameter_names, detailed=False):
     snapshot = self.snapshot()
