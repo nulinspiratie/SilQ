@@ -16,7 +16,6 @@ def get_SilQ_folder():
     silq_folder = get_silq_folder()
     return os.path.join(silq_folder, r"../")
 
-
 def initialize(name=None, mode=None, select=None, ignore=None):
     """
     Initializes the global namespace by executing a list of files.
