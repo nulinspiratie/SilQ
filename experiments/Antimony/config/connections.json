@@ -14,18 +14,27 @@
         "input_arg": "ATS.chC"
     },
     {
+        "output_arg": "pulseblaster.ch4",
+        "input_arg": "keysight.trig_in"
+    },
+    {
         "output_arg": "arbstudio.ch1",
         "input_arg": "chip.DF",
-        "scale": 0.0125
+        "scale": 0.0285
     },
     {
         "output_arg": "arbstudio.ch2",
         "input_arg": "chip.TGAC",
-        "scale": 0.0125
+        "scale": 0.025
     },
     {
         "output_arg": "arbstudio.ch3",
-        "input_arg": "ATS.chB"
+        "input_arg": "ATS.chB",
+        "scale": 0.1
+    },
+    {
+        "output_arg": "arbstudio.ch4",
+        "input_arg": "keysight.ext2"
     },
     {
         "combine": [
@@ -33,7 +42,15 @@
             "arbstudio.ch2",
             "arbstudio.ch3"
         ],
-        "scale": [1, -1.5, 1]
+        "scale": [
+            1,
+            -1.5,
+            1
+        ]
+    },
+    {
+        "output_arg": "keysight.RF_out",
+        "input_arg": "chip.antenna"
     },
     {
         "output_arg": "chip.output",
