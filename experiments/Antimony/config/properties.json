@@ -1,5 +1,5 @@
 {
-    "default_environment": "fast",
+    "default_environment": "antimony",
     "data_folder": "F:\\Antimony\\data",
     "parameters": {
         "2D": [
@@ -17,6 +17,18 @@
             "DF"
         ],
         "DF": {
+            "steps": [
+                0.0005,
+                1
+            ]
+        },
+        "LDF": {
+            "steps": [
+                0.0005,
+                1
+            ]
+        },
+        "RDF": {
             "steps": [
                 0.0005,
                 1
