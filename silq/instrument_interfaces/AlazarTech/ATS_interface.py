@@ -364,11 +364,11 @@ class ATSInterface(InstrumentInterface):
     def segment_traces(self, traces):
         sample_rate = self.setting('sample_rate')
         pulse_traces = {}
-        for pulse in self.pulse_sequence:
-            if not pulse.acquire:
-                continue
-
-            start_idx = int(round(pulse.t_start / 1e3 * sample_rate))
+        t_start_initial = min(p.t_start for p in
+                              self.pulse_sequence.get_pulses(acquire=True))
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
+            delta_t_start = pulse.t_start - t_start_initial
+            start_idx = int(round(delta_t_start / 1e3 * sample_rate))
             pts = int(round(pulse.duration / 1e3 * sample_rate))
 
             pulse_traces[pulse.full_name] = {}
@@ -378,8 +378,20 @@ class ATSInterface(InstrumentInterface):
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
                 elif pulse.average == 'trace':
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
-                else:
+                elif 'point_segment' in pulse.average:
+                    segments = int(pulse.average.split(':')[1])
+
+                    segments_idx = [int(round(pts * idx / segments))
+                                    for idx in np.arange(segments + 1)]
+
+                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
+                    for k in range(segments):
+                        pulse_traces[pulse.full_name][ch][k] = np.mean(
+                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]])
+                elif pulse.average == 'none':
                     pulse_traces[pulse.full_name][ch] = pulse_trace
+                else:
+                    raise SyntaxError(f'Unknown average mode {pulse.average}')
         return pulse_traces
 
     def setting(self, setting):
