@@ -1,0 +1,39 @@
+{
+    "core": {
+        "legacy_mp": false,
+        "loglevel": "DEBUG"
+    },
+    "gui": {
+        "notebook": true,
+        "plotlib": "matplotlib"
+    },
+    "user": {
+        "data_folder": "C:\\Users\\Talullah\\Documents\\data",
+        "properties": {
+            "t_skip": 0.05,
+            "t_read": 1.5,
+            "readout_threshold_voltage": 0.2
+        },
+        "pulses": {
+            "read": {
+                "amplitude": 0,
+                "duration": 1.5
+            },
+            "final": {
+                "amplitude": 0,
+                "duration": 1
+            },
+            "plunge": {
+                "amplitude": 0.01,
+                "duration": 0.5
+            },
+            "empty": {
+                "amplitude": -0.01,
+                "duration": 0.5
+            },
+            "read_long": {
+                "duration": 5
+            }
+        }
+    }
+}

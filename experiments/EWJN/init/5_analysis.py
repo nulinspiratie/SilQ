@@ -71,7 +71,7 @@ class T1_Analysis:
         self.skip_rows = skip_rows
         self.T1_label = self.get_label(T1_label, 'up_proportion')
         self.T1_wait_time_label = self.get_label(T1_wait_time_label,
-                                                 'T1_wait_time')
+                                                 'duration_set')
 
         if analyse:
             self.analyse_data()

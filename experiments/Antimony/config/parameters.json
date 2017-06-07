@@ -1,0 +1,49 @@
+{
+    "labels": {
+        "2D": [
+            "TGAC",
+            "RDF"
+        ],
+        "2": [
+            "TGAC",
+            "RDF"
+        ]
+    },
+    "TGAC": {
+        "steps": [
+            0.0005,
+            1
+        ]
+    },
+    "DF": {
+        "steps": [
+            0.0005,
+            1
+        ]
+    },
+    "LDF": {
+        "steps": [
+            0.0005,
+            1
+        ]
+    },
+    "RDF": {
+        "steps": [
+            0.0005,
+            1
+        ]
+    },
+    "EPR_parameter": {
+        "samples": 100
+    },
+    "DC_sweep_parameter": {
+        "pulse_duration": 0.05,
+        "inter_delay": 0,
+        "trace_pulse.duration": 20,
+        "final_delay": 300,
+        "pulse_sequence.final_delay": 300,
+        "trace_pulse.enabled": true,
+        "use_ramp": true,
+        "trace_pulse.connection_label": "TGAC"
+    }
+}
