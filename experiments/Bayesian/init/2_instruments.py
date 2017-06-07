@@ -109,7 +109,12 @@ station.add_component(layout)
 layout.primary_instrument('AWG')
 # Specify the acquisition instrument
 layout.acquisition_instrument('M3300A_DIG')
-layout.acquisition_outputs([('chip.output', 'output'), ('AWG.ch0', 'trigger')])
+layout.acquisition_outputs([('chip.output', 'output'),
+                            # ('AWG.ch0', 'trigger'),
+                            ('AWG.ch1', 'DF'),
+                            ('AWG.ch2', 'TGAC'),
+                            # ('AWG.ch3', 'init_done'),
+                            ])
 layout.load_connections()
 
 # Update InteractivePlot layout

@@ -56,7 +56,7 @@ from silq import parameters, config
 from silq.instrument_interfaces import get_instrument_interface
 from silq.tools.general_tools import partial_from_attr, print_attr, run_code
 from silq.tools.plot_tools import InteractivePlot, CalibrationPlot, DCPlot, \
-    DCSweepPlot
+    DCSweepPlot, ScanningPlot, TracePlot
 from silq.tools.parameter_tools import create_set_vals
 from silq.tools.notebook_tools import create_cell
 from silq.pulses import *

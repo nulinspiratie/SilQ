@@ -38,5 +38,10 @@
     "SET": [
         "chip.output",
         "M3300A_DIG.ch7"
+    ],
+
+    "init_done" : [
+        "AWG.ch3",
+        "M3300A_DIG.ch6"
     ]
 }

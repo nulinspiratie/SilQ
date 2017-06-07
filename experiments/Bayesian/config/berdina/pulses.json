@@ -15,8 +15,13 @@
         "connection_label": "ELR"
     },
     "trigger": {},
+    "init_done": {
+         "duration":1e-6,
+         "amplitude" : 1,
+         "connection_label": "init_done"
+    },
     "empty": {
-        "amplitude": 0.007,
+        "amplitude": -0.007,
         "duration": 20e-3,
         "connection_label": "ELR"
     },

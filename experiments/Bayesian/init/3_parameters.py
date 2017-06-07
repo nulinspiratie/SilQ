@@ -20,7 +20,9 @@ for parameter in [DF_DS]:
 ### Acquisition parameters ###
 ##############################
 DC_parameter = parameters.DCParameter()
-# EPR_parameter = acquisition_parameters.EPRParameter()
+DC_sweep_parameter = parameters.DCSweepParameter()
+trace_parameter = parameters.TraceParameter()
+EPR_parameter = parameters.EPRParameter()
 # T1_parameter = acquisition_parameters.T1Parameter()
 variable_read_parameter = parameters.VariableReadParameter()
 # adiabatic_ESR_parameter = acquisition_parameters.AdiabaticParameter()
