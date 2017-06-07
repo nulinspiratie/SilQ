@@ -253,9 +253,9 @@ class DCParameter(AcquisitionParameter):
 class TraceParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, **kwargs):
-        super().__init__(name='DC_acquisition',
-                         names=['mean_voltage', 'noise', 'voltage_trace'],
-                         labels=['DC voltage', 'Noise', 'Voltage'],
+        super().__init__(name='Trace_acquisition',
+                         names=self.names,
+                         labels=self.names,
                          units=['V', 'V', 'V'],
                          snapshot_value=False,
                          **kwargs)
@@ -268,14 +268,89 @@ class TraceParameter(AcquisitionParameter):
             DCPulse(name='final',
                     connection_label='stage'))
 
+    def acquire(self, **kwargs):
+        super().acquire(**kwargs)
+        # Grab the actual output name from the list of acquisition outputs
+        outputs = [output[1] for output in self.layout.acquisition_outputs()]
+        traces = []
+        # Merge all pulses together for a single acquisition channel
+
+        for k, output in enumerate(outputs):
+
+            if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
+                # Data is 2D,
+                trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                                self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+            else:
+                trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                                self.pulse_sequence.get_pulses(acquire=True)])
+            # print(f'{k}, {output} : {np.shape(trace)}')
+
+            # TODO: This should be done at time of acquisition, fix dimensions of trace
+            # import pdb; pdb.set_trace()
+            # if trace:
+            #     shape = (self.samples, len(self.setpoints[0][1]))
+            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
+            #     trace = (trace, )*self.samples
+            # trace = (trace,) * self.samples
+            traces.append(trace)
+
+        return traces
+
+    @property
+    def names(self):
+        return [output[1] for output in self.layout.acquisition_outputs()]
+
+    @names.setter
+    def names(self, _):
+        pass
+
+
+    @property
+    def setpoints(self):
+        # TODO: Create blank regions for non continous acquisition periods
+        t_start = min([pulse.t_start for pulse in
+                       self.pulse_sequence.get_pulses(acquire=True)])
+        t_stop = max([pulse.t_stop for pulse in
+                       self.pulse_sequence.get_pulses(acquire=True)])
+        duration = t_stop - t_start
+        # duration = self.pulse_sequence.get_pulse(name='read').duration
+        num_traces = len(self.layout.acquisition_outputs())
+        if self.samples > 1:
+            setpoints = ((tuple(np.arange(self.samples, dtype=float)),
+                           1e3*np.linspace(0, duration, duration*self.sample_rate + 1)[0:-1]),) * num_traces
+        else:
+            setpoints = ((1e3*np.linspace(0, duration,
+                                          duration*self.sample_rate + 1)[0:-1],),)*num_traces
+        return setpoints
+
+    @setpoints.setter
+    def setpoints(self, _):
+        pass
+
+    @property
+    def setpoint_names(self):
+        return (('Sample','Time',),)* len(self.layout.acquisition_outputs())
+
+    @setpoint_names.setter
+    def setpoint_names(self, _):
+        pass
+
+    @property
+    def setpoint_units(self):
+        return ((None,'ms',),) * len(self.layout.acquisition_outputs())
+
+    @setpoint_units.setter
+    def setpoint_units(self, _):
+        pass
+
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
-        self.acquire()
-        trace = self.data['read']['output']
+        trace, = self.acquire()
 
-        self.results = [np.mean(trace), np.std(trace), trace]
+        self.results = [trace, np.mean(trace), np.std(trace)]
 
         return self.results
 
