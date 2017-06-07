@@ -166,7 +166,8 @@ class DictConfig(SubConfig, DotDict):
         # Update item in dict (modified version of DotDict)
         if type(key)==str and '.' in key:
             myKey, restOfKey = key.split('.', 1)
-            self.setdefault(myKey, DictConfig(name=myKey, config=val,
+            self.setdefault(myKey, DictConfig(name=myKey,
+                                              config={restOfKey: val},
                                               parent=self))
         else:
             if isinstance(val, SubConfig):
