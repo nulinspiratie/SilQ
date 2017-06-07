@@ -1,0 +1,37 @@
+[
+    {
+        "output_arg": "chip.output",
+        "input_arg": "M3300A_DIG.ch7",
+        "scale": 1.0
+    },
+
+    {
+        "output_arg": "AWG.ch0",
+        "input_arg": "M3300A_DIG.ch4",
+        "trigger": true
+    },
+
+    {
+        "output_arg": "AWG.ch1",
+        "input_arg": "M3300A_DIG.ch1",
+        "scale": 0.1
+    },
+    {
+        "output_arg": "AWG.ch2",
+        "input_arg": "M3300A_DIG.ch3",
+        "scale": 0.05
+    },
+
+    {
+        "output_arg" : "AWG.ch3",
+        "input_arg" : "M3300A_DIG.ch6"
+    },
+
+    {
+        "combine": [
+            "AWG.ch1",
+            "AWG.ch2"
+        ],
+        "scale": [1, -1.9079]
+    }
+]
