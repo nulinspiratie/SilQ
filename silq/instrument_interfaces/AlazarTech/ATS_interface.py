@@ -1,8 +1,9 @@
 import numpy as np
 import inspect
 import logging
+from functools import partial
 
-from qcodes.instrument.parameter import ManualParameter, MultiParameter
+from qcodes.instrument.parameter import ManualParameter, StandardParameter
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
     ATSAcquisitionParameter
@@ -105,6 +106,12 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='trigger_threshold',
                            unit='V',
                            parameter_class=ManualParameter,
+                           vals=vals.Numbers())
+        self.add_parameter(name='sample_rate',
+                           unit='samples/sec',
+                           parameter_class=StandardParameter,
+                           get_cmd=partial(self.setting, 'sample_rate'),
+                           set_cmd=lambda x:self.update_settings(sample_rate=x),
                            vals=vals.Numbers())
 
     @property
@@ -265,8 +272,7 @@ class ATSInterface(InstrumentInterface):
                      self.pulse_sequence.get_pulses(acquire=True))
         acquisition_duration = t_stop - t_start
 
-        sample_rate = self.setting('sample_rate')
-        samples_per_trace = sample_rate * acquisition_duration * 1e-3
+        samples_per_trace = self.sample_rate() * acquisition_duration * 1e-3
         if self.acquisition_controller() == 'Triggered':
             # samples_per_record must be a multiple of 16
             samples_per_record = int(16 * np.ceil(float(samples_per_trace) / 16))
@@ -307,7 +313,8 @@ class ATSInterface(InstrumentInterface):
             # TODO better way to decide on allocated buffers
             allocated_buffers = 80
 
-            samples_per_buffer = sample_rate * initialization.t_buffer * 1e-3
+            samples_per_buffer = self.sample_rate() * \
+                                 initialization.t_buffer * 1e-3
             # samples_per_record must be a multiple of 16
             samples_per_buffer = int(16 * np.ceil(float(samples_per_buffer) / 16))
             self.update_settings(samples_per_record=samples_per_buffer,
@@ -362,14 +369,13 @@ class ATSInterface(InstrumentInterface):
         return pulse_traces
 
     def segment_traces(self, traces):
-        sample_rate = self.setting('sample_rate')
         pulse_traces = {}
         t_start_initial = min(p.t_start for p in
                               self.pulse_sequence.get_pulses(acquire=True))
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             delta_t_start = pulse.t_start - t_start_initial
-            start_idx = int(round(delta_t_start / 1e3 * sample_rate))
-            pts = int(round(pulse.duration / 1e3 * sample_rate))
+            start_idx = int(round(delta_t_start / 1e3 * self.sample_rate()))
+            pts = int(round(pulse.duration / 1e3 * self.sample_rate()))
 
             pulse_traces[pulse.full_name] = {}
             for ch, trace in traces.items():
@@ -378,8 +384,20 @@ class ATSInterface(InstrumentInterface):
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
                 elif pulse.average == 'trace':
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
-                else:
+                elif 'point_segment' in pulse.average:
+                    segments = int(pulse.average.split(':')[1])
+
+                    segments_idx = [int(round(pts * idx / segments))
+                                    for idx in np.arange(segments + 1)]
+
+                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
+                    for k in range(segments):
+                        pulse_traces[pulse.full_name][ch][k] = np.mean(
+                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]])
+                elif pulse.average == 'none':
                     pulse_traces[pulse.full_name][ch] = pulse_trace
+                else:
+                    raise SyntaxError(f'Unknown average mode {pulse.average}')
         return pulse_traces
 
     def setting(self, setting):

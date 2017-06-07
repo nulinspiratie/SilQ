@@ -1,7 +1,8 @@
 import unittest
-from blinker import signal, Signal
+import tempfile
+from copy import deepcopy
 
-import silq
+
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse, PulseMatch
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
@@ -197,6 +198,26 @@ class TestPulseConfig(unittest.TestCase):
         config.env.properties = {'t_skip': 1}
         self.assertEqual(read_pulse.t_skip, 1)
         self.assertEqual(pseq['read'].t_skip, 1)
+
+    def test_pulse_attr_after_load(self):
+        self.pulse_config.duration = 10
+        pulse = Pulse('read')
+        self.assertEqual(pulse.duration, 10)
+
+        config.env.pulses.read.duration = 20
+
+        # Save config to temporary folder
+        with tempfile.TemporaryDirectory() as folderpath:
+            config.save(folder=folderpath)
+            config.env.pulses.read.duration = 10
+
+            # Pulse duration has not yet been updated
+            self.assertEqual(pulse.duration, 10)
+
+            config.load(folderpath)
+            # Pulse duration has not yet been updated
+            self.assertEqual(pulse.duration, 20)
+
 
 class TestPulse(unittest.TestCase):
     def test_pulse_equality(self):

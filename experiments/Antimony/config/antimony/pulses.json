@@ -3,18 +3,21 @@
         "duration": 20,
         "amplitude": 0
     },
-    "final": {
-        "duration": 5,
+    "read_long": {
+        "duration": 60,
         "amplitude": 0
     },
-    "trigger": {},
+    "final": {
+        "duration": 0.25,
+        "amplitude": 0
+    },
     "empty": {
-        "amplitude": 0.007,
-        "duration": 20
+        "amplitude": -0.02,
+        "duration": 4
     },
     "plunge": {
-        "amplitude": 0.007,
-        "duration": 20
+        "amplitude": 0.02,
+        "duration": 4
     },
     "adiabatic_ESR": {
         "duration": 0.5,

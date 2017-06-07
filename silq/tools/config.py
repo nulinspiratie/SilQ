@@ -95,12 +95,14 @@ class SubConfig:
                         subconfig_name = file.split('.')[0]
                         subconfig = config_class(name=subconfig_name,
                                                  folder=folderpath,
-                                                 save_as_dir=False)
+                                                 save_as_dir=False,
+                                                 parent=self)
                 elif os.path.isdir(filepath):
                     subconfig_name = file
                     subconfig = DictConfig(name=file,
                                            folder=folderpath,
-                                           save_as_dir=True)
+                                           save_as_dir=True,
+                                           parent=self)
                 else:
                     raise RuntimeError(f'Could not load {filepath} to config')
                 config[subconfig_name] = subconfig
@@ -164,7 +166,8 @@ class DictConfig(SubConfig, DotDict):
         # Update item in dict (modified version of DotDict)
         if type(key)==str and '.' in key:
             myKey, restOfKey = key.split('.', 1)
-            self.setdefault(myKey, DictConfig(name=myKey, config=val,
+            self.setdefault(myKey, DictConfig(name=myKey,
+                                              config={restOfKey: val},
                                               parent=self))
         else:
             if isinstance(val, SubConfig):
