@@ -6,7 +6,7 @@ from .tools.config import DictConfig, ListConfig
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
-
+silq_env_var = 'SILQ_EXP_FOLDER'
 
 def get_silq_folder():
     return os.path.split(__file__)[0]
@@ -38,15 +38,20 @@ def get_experiments_folder():
     Returns:
         experiments folder
     """
-    experiment_filepath = os.path.join(get_SilQ_folder(),
-                                       'experiments_folder.txt')
-    if os.path.exists(experiment_filepath):
-        with open(experiment_filepath, 'r')as f:
-            experiments_folder = f.readline()
+    experiments_folder = os.getenv(silq_env_var, None)
+    if experiments_folder is not None:
         return experiments_folder
     else:
-        raise FileNotFoundError('No file "Silq/experiments_folder.txt" exists. '
-                                'Can be set via silq.set_experiments_folder()')
+        warnings.warn("Could not find experiments folder in system environment variable 'SILQ_EXP_FOLDER'.")
+        experiment_filepath = os.path.join(get_SilQ_folde r(),
+                                           'experiments_folder.txt')
+        if os.path.exists(experiment_filepath):
+            with open(experiment_filepath, 'r')as f:
+                experiments_folder = f.readline()
+            return experiments_folder
+        else:
+            raise FileNotFoundError('No file "Silq/experiments_folder.txt" exists. '
+                                    'Can be set via silq.set_experiments_folder()')
 
 
 def get_configurations():
