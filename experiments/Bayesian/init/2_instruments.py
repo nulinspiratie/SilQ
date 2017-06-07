@@ -34,6 +34,8 @@ for ch_name, ch, ratio, max_voltage in DC_sources:
     exec('{ch_name}_raw = param_raw'.format(ch_name=ch_name))
     exec('{ch_name} = param'.format(ch_name=ch_name))
 
+sim_gui.voltage_parameters = voltage_parameters
+
 # Each DC voltage source has format (name, slot number, divider, max raw voltage)
 # DC_sources = [('SRC', 1, 1, 1), ('LB', 2, 8, 2), ('RB', 3, 8, 2), ('TG', 4, 8, 2.25),
 #               ('TGAC', 5, 8, 1.25), ('DF', 6, 8, 1.25), ('DS', 7, 8, 1.25)]
