@@ -1,0 +1,42 @@
+[
+    {
+        "output_arg": "pulseblaster.ch1",
+        "input_arg": "arbstudio.trig_in",
+        "trigger": true
+    },
+    {
+        "output_arg": "pulseblaster.ch2",
+        "input_arg": "ATS.trig_in",
+        "trigger": true
+    },
+    {
+        "output_arg": "pulseblaster.ch3",
+        "input_arg": "ATS.chC"
+    },
+    {
+        "output_arg": "arbstudio.ch1",
+        "input_arg": "chip.DF",
+        "scale": 0.0125
+    },
+    {
+        "output_arg": "arbstudio.ch2",
+        "input_arg": "chip.TGAC",
+        "scale": 0.0125
+    },
+    {
+        "output_arg": "arbstudio.ch3",
+        "input_arg": "ATS.chB"
+    },
+    {
+        "combine": [
+            "arbstudio.ch1",
+            "arbstudio.ch2",
+            "arbstudio.ch3"
+        ],
+        "scale": [1, -1.5, 1]
+    },
+    {
+        "output_arg": "chip.output",
+        "input_arg": "ATS.chA"
+    }
+]

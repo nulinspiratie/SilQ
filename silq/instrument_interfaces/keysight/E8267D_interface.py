@@ -47,7 +47,7 @@ class E8267DInterface(InstrumentInterface):
         ]
 
         self.add_parameter('envelope_padding',
-                           units='ms',
+                           unit='ms',
                            parameter_class=ManualParameter,
                            initial_value=0)
         self.add_parameter('modulation_channel',
@@ -64,16 +64,16 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.phase_modulation('off')
 
         frequencies = [pulse.implement()['frequency']
-                       for pulse in self._pulse_sequence]
+                       for pulse in self.pulse_sequence]
 
-        powers = [pulse.power for pulse in self._pulse_sequence]
+        powers = [pulse.power for pulse in self.pulse_sequence]
         assert len(set(frequencies)) == 1, "Cannot handle multiple frequencies"
         assert len(set(powers)) == 1, "Cannot handle multiple pulse powers"
 
         if any('deviation' in pulse.implement()
-               for pulse in self._pulse_sequence):
+               for pulse in self.pulse_sequence):
             deviations = [pulse.implement()['deviation']
-                    for pulse in self._pulse_sequence]
+                    for pulse in self.pulse_sequence]
             assert len(set(deviations)) == 1, "Cannot handle multiple " \
                                               "deviations"
             deviation = deviations[0]

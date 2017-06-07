@@ -1,14 +1,15 @@
 {
     "core": {
+        "legacy_mp": false,
         "loglevel": "DEBUG",
-        "legacy_mp": true
+        "default_fmt": "data/{date}/#{counter}_{name}_{time}"
     },
     "gui": {
-        "plotlib": "matplotlib",
-        "notebook": true
+        "notebook": true,
+        "plotlib": "matplotlib"
     },
     "user": {
-        "data_folder": "C:\\Users\\lab.BluG12Meas\\Documents\\data",
+        "data_folder": "C:\\Users\\serwa_000\\Documents\\data",
         "slack": {
             "names": [
                 "serwan"

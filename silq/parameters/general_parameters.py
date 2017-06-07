@@ -5,7 +5,7 @@ import numpy as np
 import qcodes as qc
 from qcodes import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataMode
+from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
 
@@ -14,14 +14,19 @@ pulse_config = config['user'].get('pulses', {})
 
 
 class CombinedParameter(Parameter):
-    def __init__(self, parameters, name=None, label=None, units=None, **kwargs):
+    """
+    Combines multiple parameters into a single parameter.
+    Setting this parameter sets all underlying parameters to this value
+    Getting this parameter gets the value of the first parameter
+    """
+    def __init__(self, parameters, name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
         if label is None:
-            label = ' and '.join([parameter.name for parameter in parameters])
-        if units is None:
-            units = parameters[0].units
-        super().__init__(name, label=label, units=units, **kwargs)
+            label = ' and '.join([parameter.label for parameter in parameters])
+        if unit is None:
+            unit = parameters[0].unit
+        super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameters = parameters
 
     def get(self):
@@ -37,32 +42,40 @@ class CombinedParameter(Parameter):
 
 
 class ScaledParameter(Parameter):
-    def __init__(self, parameter, ratio=1,
-                 name=None, label=None, units=None, **kwargs):
+    """
+    Creates a new parameter that scales a previous parameter by a ratio
+    Setting this parameter sets the underlying parameter multiplied by the ratio
+    Getting this parameter gets the underlying parameter divided by the ratio
+    """
+    def __init__(self, parameter, scale=1,
+                 name=None, label=None, unit=None, **kwargs):
         if name is None:
             name = parameter.name
         if label is None:
-            label = parameter.name
-        if units is None:
-            units = parameter.units
-        super().__init__(name, label=label, units=units, **kwargs)
+            label = parameter.label
+        if unit is None:
+            unit = parameter.unit
+        super().__init__(name, label=label, unit=unit, **kwargs)
         self.parameter = parameter
 
-        self.ratio = ratio
-        self._meta_attrs.extend(['ratio'])
+        self.scale = scale
+        self._meta_attrs.extend(['scale'])
 
     def get(self):
-        value = self.parameter() / self.ratio
+        value = self.parameter() / self.scale
         self._save_val(value)
         return value
 
     def set(self, val):
-        value = val * self.ratio
+        value = val * self.scale
         self._save_val(val)
         self.parameter(value)
 
 
 class StoreParameter(Parameter):
+    """
+    Stores data in a separate file (not working anymore, needs upgrading)
+    """
     def __init__(self, shape, data_manager, formatter=None, **kwargs):
         super().__init__(name='random_parameter', shape=shape, **kwargs)
         self.data_manager = data_manager
@@ -82,8 +95,6 @@ class StoreParameter(Parameter):
                                       set_arrays=(
                                       data_array_set, index0))
 
-        data_mode = DataMode.PUSH_TO_SERVER
-
         data_folder = data_tools.get_latest_data_folder()
         loc_provider = qc.data.location.FormatLocation(
             fmt=data_folder+'/traces/#{counter}_trace_{time}')
@@ -91,8 +102,7 @@ class StoreParameter(Parameter):
         self.data_set = new_data(
             location=loc_provider,
             arrays=[data_array_set, index0, data_array_values],
-            mode=data_mode,
-            data_manager=self.data_manager, name='test_data_parameter',
+            name='test_data_parameter',
             formatter=formatter)
 
     def get(self):

@@ -1,6 +1,8 @@
-import qcodes as qc
 import numpy as np
-parameter_config = qc.config['user']['properties'].get('parameters', {})
+import qcodes as qc
+from silq import config
+
+parameter_config = config.parameters
 
 def create_set_vals(num_parameters=None, step=None, step_percentage=None,
                     points=None, window=None, set_parameters=None, silent=True,
@@ -53,6 +55,7 @@ def create_set_vals(num_parameters=None, step=None, step_percentage=None,
 
     if set_parameters is None:
         # Get default parameters from station
+        # the parameters to use depend on num_parameters
         station = qc.station.Station.default
         set_parameter_names = parameter_config[str(num_parameters)]
         set_parameters = [getattr(station, name) for name in
@@ -66,6 +69,7 @@ def create_set_vals(num_parameters=None, step=None, step_percentage=None,
                                max_val=max_val)
             set_vals.append(set_parameter[vals])
     else:
+        # Set_parameters is a single parameter
         vals = create_vals(set_parameters, points=points, window=window,
                            center_val=center_val, min_val=min_val,
                            max_val=max_val)
