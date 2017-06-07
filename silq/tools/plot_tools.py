@@ -295,6 +295,59 @@ class ScanningPlot(InteractivePlot):
         self.results = self.parameter.acquire(start=start, stop=stop)
         self.update_plot(initialize=initialize)
 
+class TracePlot(ScanningPlot):
+    def __init__(self, parameter, **kwargs):
+        subplots = kwargs.pop('subplots', 1)
+        if parameter.samples > 1:
+            subplots = (len(self.layout.acquisition_outputs()), 1)
+        else:
+            subplots = 1
+        super().__init__(parameter, subplots=subplots, **kwargs)
+
+        # self.actions = [MoveGates(self)]
+
+    def update_plot(self, initialize=False):
+        for k, result in enumerate(self.results):
+            if initialize:
+                setpoints = self.parameter.setpoints[k]
+                setpoint_names = self.parameter.setpoint_names[k]
+                setpoint_units = self.parameter.setpoint_units[k]
+                name = self.parameter.names[k]
+                unit = self.parameter.units[k]
+
+                if len(setpoints) == 2:
+                    # import pdb; pdb.set_trace()
+                    self[k].add(result, x=setpoints[1], y=setpoints[0],
+                                xlabel=setpoint_names[1],
+                                ylabel=setpoint_names[0],
+                                xunit=setpoint_units[1],
+                                yunit=setpoint_units[0],
+                                zlabel=name,
+                                zunit=unit)
+                    self[k].y_label, self.x_label = setpoint_names
+                    if hasattr(self.station, self.x_label) and \
+                            hasattr(self.station, self.y_label):
+                        self[k].x_gate = getattr(self.station, self.x_label)
+                        self[k].y_gate = getattr(self.station, self.y_label)
+
+                        self[k].plot([self.x_gate.get_latest()],
+                                     [self.y_gate.get_latest()], 'ob', ms=5)
+                else:
+                    print(f'adding plot for {name}')
+                    # import pdb; pdb.set_trace()
+                    self.add(result[0], x=setpoints[0],
+                                xlabel=setpoint_names[0],
+                                ylabel=name,
+                                xunit=setpoint_units[0],
+                                yunit=unit)
+
+            else:
+                result_config = self.traces[k]['config']
+                if 'z' in result_config:
+                    result_config['z'] = result
+                else:
+                    result_config['y'] = result
+        super().update_plot()
 
 class DCSweepPlot(ScanningPlot):
     def __init__(self, parameter, **kwargs):
