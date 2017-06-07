@@ -146,21 +146,21 @@ class M3201AInterface(InstrumentInterface):
             waveform_array = waveforms[ch]
             ch_wf_counter = 0
             for waveform in waveform_array:
-                print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
-                                                                                        waveform_counter))
+                # print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
+                #                                                                         waveform_counter))
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 if ch_wf_counter == 0:
                     trigger_mode = 1  # software trigger for first wf
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
-                print('queueing waveform with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
-                      .format(waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
-                              trigger_mode))
+                # print('queueing waveform with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
+                #       .format(waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
+                #               trigger_mode))
                 self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
                                                    int(waveform['delay']), int(waveform['cycles']), prescaler=0)
                 waveform_counter += 1
                 ch_wf_counter += 1
-            print('starting awg channel {}'.format(self._channels[ch].id))
+            # print('starting awg channel {}'.format(self._channels[ch].id))
             self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=0)
             self.instrument.awg_start(self._channels[ch].id)
         pass
@@ -170,7 +170,6 @@ class M3201AInterface(InstrumentInterface):
         for c in self._get_active_channel_ids():
             mask |= 1 << c
         self.instrument.awg_start_multiple(mask)
-        print('auto_trigger = {}'.format(self.auto_trigger))
         if self.auto_trigger:
             t = threading.Thread(target=self.trigger_self, name='AWG_auto_trigger')
             t.start()
@@ -249,7 +248,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting SinePulse for M3201A interface {}'.format(interface))
+        # print('targeting SinePulse for M3201A interface {}'.format(interface))
         is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
@@ -358,7 +357,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                 ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
 
             if waveform_2_samples < wave_form_minimum:
-                print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
+                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
                 waveform_2_samples = 0
 
             waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
@@ -396,7 +395,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting DCPulse for {}'.format(interface))
+        # print('targeting DCPulse for {}'.format(interface))
         is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
@@ -453,7 +452,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
 
             if waveform_2_samples < wave_form_minimum:
-                print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
+                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
                 waveform_2_samples = 0
 
             waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
@@ -491,7 +490,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting AWGPulse for {}'.format(interface))
+        # print('targeting AWGPulse for {}'.format(interface))
         is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
@@ -547,7 +546,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
-        print('targeting CombinationPulse for {}'.format(interface))
+        # print('targeting CombinationPulse for {}'.format(interface))
         is_primary = kwargs.pop('is_primary', False)
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
