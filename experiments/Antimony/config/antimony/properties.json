@@ -1,6 +1,0 @@
-{
-    "frequency": 40000000000.0,
-    "readout_threshold_voltage": 0.4,
-    "t_skip": 0.1,
-    "t_read": 1.5
-}
