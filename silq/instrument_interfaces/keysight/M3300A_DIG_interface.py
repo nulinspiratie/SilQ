@@ -3,7 +3,9 @@ from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses.pulse_types import TriggerPulse
 
 from qcodes.utils import validators as vals
-from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
+# from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
+import numpy as np
+from qcodes import ManualParameter
 
 class M3300A_DIG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
@@ -50,31 +52,31 @@ class M3300A_DIG_Interface(InstrumentInterface):
         # controller during the setup routine
         self.add_parameter(
             'sample_rate',
-            vals=Numbers(),
+            vals=vals.Numbers(),
             parameter_class=ManualParameter
         )
 
         self.add_parameter(
             'samples',
-            vals=Numbers(),
+            vals=vals.Numbers(),
             parameter_class=ManualParameter
         )
 
         self.add_parameter(
             'channel_selection',
-            vals=Anything(),
+            vals=vals.Anything(),
             parameter_class=ManualParameter
         )
 
         self.add_parameter(
             'trigger_channel',
-            vals=Enum(0, 1, 2, 3, 4, 5, 6, 7),
+            vals=vals.Enum(0, 1, 2, 3, 4, 5, 6, 7),
             parameter_class=ManualParameter
         )
 
         self.add_parameter(
             'trigger_edge',
-            vals=Enum('rising', 'falling', 'both'),
+            vals=vals.Enum('rising', 'falling', 'both'),
             parameter_class=ManualParameter
         )
 
