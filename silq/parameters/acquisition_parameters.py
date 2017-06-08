@@ -290,6 +290,9 @@ class DCParameter(AcquisitionParameter):
 
 class TraceParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
+        self._average_mode = kwargs.pop('average_mode', 'none')
+        self._pulse_sequence = PulseSequence()
+
         super().__init__(name='Trace_acquisition',
                          names=self.names,
                          labels=self.names,
@@ -305,6 +308,29 @@ class TraceParameter(AcquisitionParameter):
             DCPulse(name='final',
                     connection_label='stage'))
 
+    @property
+    def average_mode(self):
+        return self._average_mode
+
+    @average_mode.setter
+    def average_mode(self, mode):
+        if (self._average_mode != mode):
+            self._average_mode = mode
+            # This line will ensure that the pulse sequence is recreated
+            # with the correct averaging mode
+            self.pulse_sequence = self.pulse_sequence
+
+    @property
+    def pulse_sequence(self):
+        return self._pulse_sequence
+
+    @pulse_sequence.setter
+    def pulse_sequence(self, pulse_sequence):
+        new_pulse_sequence = pulse_sequence.copy()
+        for pulse in new_pulse_sequence.get_pulses(acquire=True):
+            pulse.average = self.average_mode
+        self._pulse_sequence = new_pulse_sequence
+
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
         # Grab the actual output name from the list of acquisition outputs
@@ -313,14 +339,17 @@ class TraceParameter(AcquisitionParameter):
         # Merge all pulses together for a single acquisition channel
 
         for k, output in enumerate(outputs):
-
-            if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
-                # Data is 2D,
-                trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+            if self.average_mode == 'none':
+                if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
+                    # Data is 2D,
+                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                                    self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+                else:
+                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                                    self.pulse_sequence.get_pulses(acquire=True)])
             else:
-                trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                self.pulse_sequence.get_pulses(acquire=True)])
+                trace = (np.concatenate([self.data[pulse.name][output] for pulse in
+                                    self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
             # print(f'{k}, {output} : {np.shape(trace)}')
 
             # TODO: This should be done at time of acquisition, fix dimensions of trace
@@ -359,7 +388,7 @@ class TraceParameter(AcquisitionParameter):
                        self.pulse_sequence.get_pulses(acquire=True)])
         duration = t_stop - t_start
         num_traces = len(self.layout.acquisition_outputs())
-        if self.samples > 1:
+        if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
                            1e3*np.linspace(0, duration, duration*self.sample_rate + 1)[0:-1]),) * num_traces
         else:
@@ -373,7 +402,11 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def setpoint_names(self):
-        return (('Sample','Time',),)* len(self.layout.acquisition_outputs())
+        if (self.samples > 1 and self.average_mode == 'none'):
+            return (('Sample', 'Time',),) * len(self.layout.acquisition_outputs())
+        else:
+            return (('Time',),) * len(self.layout.acquisition_outputs())
+
 
     @setpoint_names.setter
     def setpoint_names(self, _):
@@ -381,7 +414,11 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def setpoint_units(self):
-        return ((None,'ms',),) * len(self.layout.acquisition_outputs())
+        if (self.samples > 1 and self.average_mode == 'none'):
+            return ((None, 'ms',),) * len(self.layout.acquisition_outputs())
+        else:
+            return (('ms',),) * len(self.layout.acquisition_outputs())
+
 
     @setpoint_units.setter
     def setpoint_units(self, _):
