@@ -1,12 +1,17 @@
 import sys
 import os
 import warnings
+import logging
 import json
 from .tools.config import DictConfig, ListConfig
+
+
+logger = logging.getLogger(__name__)
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
+
 
 def get_silq_folder():
     return os.path.split(__file__)[0]
@@ -42,7 +47,8 @@ def get_experiments_folder():
     if experiments_folder is not None:
         return experiments_folder
     else:
-        warnings.warn("Could not find experiments folder in system environment variable 'SILQ_EXP_FOLDER'.")
+        logger.debug("Could not find experiments folder in system "
+                     "environment variable 'SILQ_EXP_FOLDER'.")
         experiment_filepath = os.path.join(get_SilQ_folder(),
                                            'experiments_folder.txt')
         if os.path.exists(experiment_filepath):
@@ -50,8 +56,9 @@ def get_experiments_folder():
                 experiments_folder = f.readline()
             return experiments_folder
         else:
-            raise FileNotFoundError('No file "Silq/experiments_folder.txt" exists. '
-                                    'Can be set via silq.set_experiments_folder()')
+            raise FileNotFoundError('No file "Silq/experiments_folder.txt" '
+                                    'exists. Can be set via '
+                                    'silq.set_experiments_folder()')
 
 
 def get_configurations():
@@ -94,6 +101,7 @@ def initialize(name=None, mode=None, select=None, ignore=None):
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
+    experiments_folder = get_experiments_folder()
     configurations = get_configurations()
 
     if name is None:
@@ -109,8 +117,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
         select = configurations[name]['modes'][mode].get('select', None)
         ignore = configurations[name]['modes'][mode].get('ignore', None)
 
-    folder = os.path.join(get_SilQ_folder(), configurations[name]['folder'])
-    config.__dict__['folder'] = os.path.join(get_experiments_folder(), folder)
+    folder = os.path.join(experiments_folder, configurations[name]['folder'])
+    config.__dict__['folder'] = os.path.join(experiments_folder, folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
 
