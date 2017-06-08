@@ -386,9 +386,9 @@ class TraceParameter(AcquisitionParameter):
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
-        trace, = self.acquire()
+        traces = self.acquire()
 
-        self.results = [trace, np.mean(trace), np.std(trace)]
+        self.results = [[trace, np.mean(trace), np.std(trace)] for trace in traces]
 
         return self.results
 
