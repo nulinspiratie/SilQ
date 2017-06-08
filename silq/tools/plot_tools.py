@@ -393,7 +393,15 @@ class ScanningPlot(InteractivePlot):
 class TracePlot(ScanningPlot):
     def __init__(self, parameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
-        if parameter.samples > 1:
+
+        # An attribute that will retain previous sample and
+        # plot the whole dataset over time
+        self.growing = kwargs.pop('growing', False)
+        if self.growing:
+            self.all_results = []
+            print('trying to grow')
+
+        if parameter.samples > 1 or self.growing:
             subplots = (len(self.layout.acquisition_outputs()), 1)
         else:
             subplots = 1
@@ -402,11 +410,20 @@ class TracePlot(ScanningPlot):
         # self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
-        for k, result in enumerate(self.results):
+        if self.growing:
+            data = self.all_results
+        else:
+            data = self.results
+        for k, result in enumerate(data):
             if initialize:
-                setpoints = self.parameter.setpoints[k]
-                setpoint_names = self.parameter.setpoint_names[k]
-                setpoint_units = self.parameter.setpoint_units[k]
+                if self.growing:
+                    setpoints = self.parameter.setpoints[0]
+                    setpoint_names = self.parameter.setpoint_names[0]
+                    setpoint_units = self.parameter.setpoint_units[0]
+                else:
+                    setpoints = self.parameter.setpoints[k]
+                    setpoint_names = self.parameter.setpoint_names[k]
+                    setpoint_units = self.parameter.setpoint_units[k]
                 name = self.parameter.names[k]
                 unit = self.parameter.units[k]
 
@@ -443,6 +460,12 @@ class TracePlot(ScanningPlot):
                 else:
                     result_config['y'] = result
         super().update_plot()
+
+    def scan(self, **kwargs):
+        super().scan(**kwargs)
+        if self.growing:
+            for result in self.results:
+                self.all_results.append(result)
 
 class DCSweepPlot(ScanningPlot):
     gate_mapping = {}
