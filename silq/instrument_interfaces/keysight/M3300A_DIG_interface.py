@@ -135,10 +135,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
                     if pulse.average == 'point':
                         data[name][ch_name] = np.mean(data[name][ch_name])
 
-        # For instrument safety, stop all acquisition after we are done
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
-
         return data
 
     def add_acquisition_controller(self, acquisition_controller_name,
