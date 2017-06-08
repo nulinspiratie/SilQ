@@ -177,7 +177,9 @@ class M3201AInterface(InstrumentInterface):
 
     def trigger_self(self):
         if self.started:
-            threading.Timer(0.25, self.trigger_self).start()
+            duration = self.pulse_sequence.duration
+            # print(f'pulse sequence duration = {duration}')
+            threading.Timer(3*duration, self.trigger_self).start()
 
             mask = 0
             for c in self._get_active_channel_ids():
