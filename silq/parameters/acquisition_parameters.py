@@ -289,12 +289,11 @@ class DCParameter(AcquisitionParameter):
 
 
 class TraceParameter(AcquisitionParameter):
-    # TODO implement continuous acquisition
     def __init__(self, **kwargs):
         super().__init__(name='Trace_acquisition',
                          names=self.names,
                          labels=self.names,
-                         units=['V', 'V', 'V'],
+                         units=self.units,
                          snapshot_value=False,
                          **kwargs)
 
@@ -343,6 +342,13 @@ class TraceParameter(AcquisitionParameter):
     def names(self, _):
         pass
 
+    @property
+    def units(self):
+        return ['V' for _ in self.layout.acquisition_outputs()]
+
+    @units.setter
+    def units(self, _):
+        pass
 
     @property
     def setpoints(self):
