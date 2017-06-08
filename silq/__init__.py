@@ -89,6 +89,7 @@ def initialize(name=None, mode=None, select=None, ignore=None):
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
+    experiments_folder = get_experiments_folder()
     configurations = get_configurations()
 
     if name is None:
@@ -104,8 +105,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
         select = configurations[name]['modes'][mode].get('select', None)
         ignore = configurations[name]['modes'][mode].get('ignore', None)
 
-    folder = os.path.join(get_SilQ_folder(), configurations[name]['folder'])
-    config.__dict__['folder'] = os.path.join(get_experiments_folder(), folder)
+    folder = os.path.join(experiments_folder, configurations[name]['folder'])
+    config.__dict__['folder'] = os.path.join(experiments_folder, folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
 
