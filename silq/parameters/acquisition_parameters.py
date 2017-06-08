@@ -352,7 +352,6 @@ class TraceParameter(AcquisitionParameter):
         t_stop = max([pulse.t_stop for pulse in
                        self.pulse_sequence.get_pulses(acquire=True)])
         duration = t_stop - t_start
-        # duration = self.pulse_sequence.get_pulse(name='read').duration
         num_traces = len(self.layout.acquisition_outputs())
         if self.samples > 1:
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
