@@ -10,7 +10,7 @@ from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
-    attribute_from_config
+    attribute_from_config, convert_setpoints
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
@@ -90,6 +90,109 @@ class MeasurementParameter(SettingsClass, MultiParameter):
                 logger.info('{}: {:.3f}'.format(name, result))
         elif hasattr(self, 'results'):
             logger.info('{}: {:.3f}'.format(self.name, self.results))
+
+
+class DCMultisweepParameter(MeasurementParameter):
+    def __init__(self, name, acquisition_parameter, x_gate, y_gate, **kwargs):
+        super().__init__(name=name, names=['DC_voltage'], labels=['DC voltage'],
+                         units=['V'], shapes=((1, 1),),
+                         setpoint_names=((y_gate.name, x_gate.name),),
+                         setpoint_units=(('V', 'V'),),
+                         acquisition_parameter=acquisition_parameter)
+
+        self.x_gate = x_gate
+        self.y_gate = y_gate
+
+        self.x_range = None
+        self.y_range = None
+
+        self.AC_range = 0.2
+        self.pts = 120
+
+    @property
+    def x_sweeps(self):
+        return np.ceil((self.x_range[1] - self.x_range[0]) / self.AC_range)
+
+    @property
+    def y_sweeps(self):
+        return np.ceil((self.y_range[1] - self.y_range[0]) / self.AC_range)
+
+    @property
+    def x_sweep_range(self):
+        return (self.x_range[1] - self.x_range[0]) / self.x_sweeps
+
+    @property
+    def y_sweep_range(self):
+        return (self.y_range[1] - self.y_range[0]) / self.y_sweeps
+
+    @property
+    def AC_x_vals(self):
+        return np.linspace(-self.x_sweep_range / 2, self.x_sweep_range / 2,
+                           self.pts + 1)[:-1]
+
+    @property
+    def AC_y_vals(self):
+        return np.linspace(-self.y_sweep_range / 2, self.y_sweep_range / 2,
+                           self.pts + 1)[:-1]
+
+    @property
+    def DC_x_vals(self):
+        return np.linspace(self.x_range[0] + self.x_sweep_range / 2,
+                           self.x_range[1] - self.x_sweep_range / 2,
+                           self.x_sweeps).tolist()
+
+    @property
+    def DC_y_vals(self):
+        return np.linspace(self.y_range[0] + self.y_sweep_range / 2,
+                           self.y_range[1] - self.y_sweep_range / 2,
+                           self.y_sweeps).tolist()
+
+    @property
+    def setpoints(self):
+        return convert_setpoints(np.linspace(self.y_range[0], self.y_range[1],
+                                             self.pts * self.y_sweeps),
+            np.linspace(self.x_range[0], self.x_range[1],
+                        self.pts * self.x_sweeps)),
+
+    @setpoints.setter
+    def setpoints(self, setpoints):
+        pass
+
+    @property
+    def shapes(self):
+        return (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts),
+
+    @shapes.setter
+    def shapes(self, shapes):
+        pass
+
+    def get(self):
+        self.acquisition_parameter.sweep_parameters.clear()
+        self.acquisition_parameter.add_sweep(self.x_gate.name, self.AC_x_vals,
+                                             connection_label=self.x_gate.name,
+                                             offset_parameter=self.x_gate)
+        self.acquisition_parameter.add_sweep(self.y_gate.name, self.AC_y_vals,
+                                             connection_label=self.y_gate.name,
+                                             offset_parameter=self.y_gate)
+        self.loop = qc.Loop(self.y_gate[self.DC_y_vals]).loop(
+            self.x_gate[self.DC_x_vals]).each(self.acquisition_parameter)
+
+        self.acquisition_parameter.temporary_settings(continuous=True)
+        try:
+            self.acquisition_parameter.setup()
+            self.data = self.loop.run(name=f'multi_2D_scan')
+        finally:
+            layout.stop()
+            self.acquisition_parameter.clear_settings()
+
+        arr = np.zeros(
+            (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts))
+        for y_idx in range(len(self.DC_y_vals)):
+            for x_idx in range(len(self.DC_x_vals)):
+                DC_data = self.data.DC_voltage[y_idx, x_idx]
+                arr[y_idx * self.pts:(y_idx + 1) * self.pts,
+                x_idx * self.pts:(x_idx + 1) * self.pts] = DC_data
+        return arr,
 
 
 class MeasurementSequenceParameter(MeasurementParameter):
