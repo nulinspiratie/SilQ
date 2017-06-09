@@ -19,7 +19,7 @@ class CombinedParameter(Parameter):
     Setting this parameter sets all underlying parameters to this value
     Getting this parameter gets the value of the first parameter
     """
-    def __init__(self, parameters, name=None, label=None, unit=None, **kwargs):
+    def __init__(self, parameters, name=None, label=None, unit=None, offsets=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
         if label is None:
@@ -27,17 +27,25 @@ class CombinedParameter(Parameter):
         if unit is None:
             unit = parameters[0].unit
         super().__init__(name, label=label, unit=unit, **kwargs)
+
         self.parameters = parameters
+        self.offsets = offsets
 
     def get(self):
         value = self.parameters[0]()
+        if self.offsets is not None:
+            value -= self.offsets[0]
         self._save_val(value)
         return value
 
     def set(self, value):
         self._save_val(value)
-        for parameter in self.parameters:
-            parameter(value)
+        for k, parameter in enumerate(self.parameters):
+            if self.offsets is not None:
+                offset = self.offsets[k]
+            else:
+                offset = 0
+            parameter(value + offset)
             sleep(0.005)
 
 
