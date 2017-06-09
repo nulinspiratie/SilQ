@@ -1,3 +1,4 @@
+from functools import partial
 import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
 from silq.tools.notebook_tools import *
@@ -130,10 +131,8 @@ class MoveGates(PlotAction):
 
 
 class InteractivePlot(MatPlot):
-    def __init__(self, subplots, dataset=None, figsize=None,
-                 nticks=6, timeout=600, **kwargs):
-        super().__init__(subplots=subplots, figsize=figsize,
-                         **kwargs)
+    def __init__(self, *args, nticks=6, timeout=600, **kwargs):
+        super().__init__(*args, **kwargs)
         self.station = Station.default
 
         if hasattr(self.station, 'layout'):
@@ -147,9 +146,6 @@ class InteractivePlot(MatPlot):
         self.last_action = None
         self.copy = False
         self.execute = False
-
-        if dataset:
-            self.load_dataset(dataset)
 
         self._event_key = None
         self._event_button = None
@@ -168,21 +164,19 @@ class InteractivePlot(MatPlot):
     def action_keys(self):
         return {action.key: action for action in self.actions}
 
-    def load_dataset(self, dataset):
-        self.dataset = dataset
-
-        if hasattr(self, 'key'):
-            self.x_label = getattr(self.dataset, self.key).set_arrays[1].name
-            self.y_label = getattr(self.dataset, self.key).set_arrays[0].name
-
-            if hasattr(self.station, self.x_label):
-                self.x_gate = getattr(self.station, self.x_label)
-            if hasattr(self.station, self.x_label):
-                self.y_gate = getattr(self.station, self.y_label)
+    def load_data_array(self, data_array):
+        set_arrays = data_array.set_arrays
+        labels = []
+        gates = []
+        for set_array in data_array.set_arrays:
+            labels.append(set_array.name)
+            gates.append(getattr(self.station, set_array.name, None))
+        return {'set_arrays': set_arrays,
+                'labels': labels,
+                'gates': gates}
 
     def get_action(self, key=None):
         if key is None:
-            action = self.last_action
             if self.last_action is not None and self.t_elapsed < self.timeout:
                 return self.last_action
             else:
@@ -245,86 +239,173 @@ class InteractivePlot(MatPlot):
             except Exception as e:
                 logger.error(f'Button action {action}: {e}')
 
-    def plot_data(self, **kwargs):
-        raise NotImplementedError(
-            'plot_data should be implemented in a subclass')
 
-
-class Interactive3DPlot(InteractivePlot):
+class DoubleSlider2DPlot(InteractivePlot):
+    """
+    Used to slide through 2D images of a 4D dataset
+    """
     def __init__(self, data_array, **kwargs):
-
         self.data_array = data_array
-        self.x_set_array = self.data_array.set_arrays[2]
-        self.y_set_array = self.data_array.set_arrays[1]
-        self.z_set_array = self.data_array.set_arrays[0]
+        super().__init__(**kwargs)
+        self.fig.tight_layout(rect=[0, 0.15, 1, 0.95])
 
-        self.plot_idx = 0
+        results = self.load_data_array(data_array)
+        self.set_arrays = results['set_arrays']
 
-        super().__init__(subplots=1, dataset=data_array.data_set, **kwargs)
-        self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
+        self.plot_idx = (0, 0)
 
-        # Add slider
-        self.sliderax = self.fig.add_axes([0.2, 0.01, 0.6, 0.07],
-                                          facecolor='yellow')
-        self.slider = mpl.widgets.Slider(self.sliderax,
-                                         self.z_set_array.name,
-                                         self.z_set_array[0],
-                                         self.z_set_array[-1],
-                                         valinit=self.z_set_array[0])
-        self.slider.on_changed(self.update_slider)
-        self.slider.drawon = False
+        self.add(self.data_array[self.plot_idx],
+                 **self.plot_kwargs)
+
+        # Add sliders
+        self.slideraxes = [self.fig.add_axes([0.13, 0.02, 0.6, 0.05],
+                                             facecolor='yellow'),
+                           self.fig.add_axes([0.13, 0.06, 0.6, 0.05],
+                                             facecolor='yellow')]
+        self.sliders = []
+        self.set_vals = []
+        for k, sliderax in enumerate(self.slideraxes):
+            set_idx = -3 - k
+            set_vals = self.set_arrays[set_idx]
+            if set_vals.ndim == 2:
+                set_vals = set_vals[0]
+            slider = mpl.widgets.Slider(ax=sliderax,
+                                        label=self.set_arrays[set_idx].name,
+                                        valmin=set_vals[0],
+                                        valmax=set_vals[-1],
+                                        valinit=set_vals[0])
+            self.set_vals.append(set_vals)
+            slider.on_changed(partial(self.update_slider, k))
+            slider.drawon = False
+            self.sliders.append(slider)
 
     @property
     def plot_kwargs(self):
-        return {'x': self.x_set_array[self.plot_idx,0],
-                'y': self.y_set_array[self.plot_idx],
-                'xlabel': self.x_set_array.name,
-                'ylabel': self.y_set_array.name,
-                'xunit': self.x_set_array.unit,
-                'yunit': self.y_set_array.unit}
+        return {'x': self.set_arrays[-1][self.plot_idx][0],
+                'y': self.set_arrays[-2][self.plot_idx],
+                'xlabel': self.set_arrays[-1].label,
+                'ylabel': self.set_arrays[-2].label,
+                'zlabel': self.data_array.label,
+                'xunit': self.set_arrays[-1].unit,
+                'yunit': self.set_arrays[-2].unit,
+                'zunit': self.data_array.unit}
 
-    def update_slider(self, value):
-        self.plot_idx = np.argmin(abs(self.z_set_array.ndarray - value))
-        value = self.z_set_array[self.plot_idx]
-        self.slider.valtext.set_text(f'{self.z_set_array.name}: {value}')
+    def update_slider(self, idx, value=None):
+        if value is not None:
+            # Check if value is one of the set values
+            set_idx = -3 - idx
+            logger.debug(f'Updating slider {idx} to {value}')
+            slider_idx = np.argmin(abs(self.set_vals[idx] - value))
+
+            if idx == 0:
+                self.plot_idx = (slider_idx, self.plot_idx[1])
+            else:
+                self.plot_idx = (self.plot_idx[0], slider_idx)
+
+            logger.debug(f'set_idx: {set_idx}, slider_idx: {slider_idx}, '
+                         f'plot_idx: {self.plot_idx}')
+            set_value = self.set_vals[idx][slider_idx]
+            logger.debug(f'val {value} set_value {set_value}')
+
+            if value != set_value:
+                logger.debug(f'val {value} not equal to set_value {set_value}')
+                self.sliders[idx].set_val(set_value)
+                return
+
+        # Update plot
+        logger.debug(f'val {value} equal to set_value {set_value}')
+        self.sliders[idx].valtext.set_text(
+            f'{self.set_arrays[set_idx].name}: {value}')
 
         self[0].clear()
         self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
         self.update()
 
 
+class Slider2DPlot(InteractivePlot):
+    """
+    Used to slide through 2D images of a 3D dataset
+    """
+    def __init__(self, data_array, **kwargs):
+        self.data_array = data_array
+        super().__init__(**kwargs)
+        self.fig.tight_layout(rect=[0, 0.1, 1, 0.95])
+
+        results = self.load_data_array(data_array)
+        self.set_arrays = results['set_arrays']
+
+        self.plot_idx = 0
+
+        self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
+
+        # Add slider
+        self.sliderax = self.fig.add_axes([0.13, 0.02, 0.6, 0.05],
+                                          facecolor='yellow')
+        self.slider = mpl.widgets.Slider(self.sliderax,
+                                         self.set_arrays[-3].name,
+                                         self.set_arrays[-3][0],
+                                         self.set_arrays[-3][-1],
+                                         valinit=self.set_arrays[-3][0])
+        self.slider.on_changed(self.update_slider)
+        self.slider.drawon = False
+
+    @property
+    def plot_kwargs(self):
+        return {'x': self.set_arrays[-1][self.plot_idx,0],
+                'y': self.set_arrays[-2][self.plot_idx],
+                'xlabel': self.set_arrays[-1].label,
+                'ylabel': self.set_arrays[-2].label,
+                'zlabel': self.data_array.label,
+                'xunit': self.set_arrays[-1].unit,
+                'yunit': self.set_arrays[-2].unit,
+                'zunit': self.data_array.unit}
+
+    def update_slider(self, value):
+        logger.debug(f'Updating slider to {value}')
+        self.plot_idx = np.argmin(abs(self.set_arrays[-3].ndarray - value))
+        set_value = self.set_arrays[-3][self.plot_idx]
+        if value != set_value:
+            logger.debug(f'val {value} not equal to set_value {set_value}')
+            self.slider.set_val(set_value)
+        else:
+            self.slider.valtext.set_text(f'{self.set_arrays[-3].name}: {value}')
+
+            self[0].clear()
+            self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
+            self.update()
+
+
 class CalibrationPlot(InteractivePlot):
     measure_parameter = 'adiabatic_ESR'
-    samples_measure =200
+    samples_measure = 200
     samples_scan = 100
 
-    def __init__(self, dataset, **kwargs):
-        subplots = 3 if 'voltage_difference' in dataset.arrays else 2
-        self.key = 'contrast'
-        super().__init__(subplots=subplots, dataset=dataset, **kwargs)
+    def __init__(self, data_set, **kwargs):
+        self.data_set = data_set
+        if 'voltage_difference' in data_set.arrays:
+            super().__init__(data_set.contrast, data_set.dark_counts,
+                             data_set.voltage_difference,
+                             **kwargs)
+        else:
+            super().__init__(data_set.contrast, data_set.dark_counts, **kwargs)
 
-        self.plot_data(nticks=self.nticks)
+        results = self.load_data_array(self.data_set.contrast)
+        self.y_gate, self.x_gate = results['gates']
+        self.y_label, self.x_label = results['labels']
 
         self.actions = [SetGates(self), MeasureSingle(self), MoveGates(self)]
 
-    def plot_data(self, nticks=6):
-        self.add(self.dataset.contrast, subplot=0, nticks=nticks)
-        self.add(self.dataset.dark_counts, subplot=1, nticks=nticks)
-        if 'voltage_difference' in self.dataset.arrays:
-            self.add(self.dataset.voltage_difference, subplot=2, nticks=nticks)
-
 
 class DCPlot(InteractivePlot):
-    def __init__(self, dataset,  **kwargs):
-        self.key = 'DC_voltage'
-        super().__init__(dataset=dataset, subplots=1, **kwargs)
+    def __init__(self, data_set,  **kwargs):
+        self.data_set = data_set
+        super().__init__(data_set.DC_voltage, **kwargs)
 
-        self.plot_data(nticks=self.nticks)
+        results = self.load_data_array(data_set.DC_voltage)
+        self.y_gate, self.x_gate = results['gates']
+        self.y_label, self.x_label = results['labels']
 
         self.actions = [SetGates(self), MoveGates(self)]
-
-    def plot_data(self, nticks=6):
-        self.add(self.dataset.DC_voltage)
 
 
 class ScanningPlot(InteractivePlot):
@@ -443,6 +524,7 @@ class TracePlot(ScanningPlot):
                 else:
                     result_config['y'] = result
         super().update_plot()
+
 
 class DCSweepPlot(ScanningPlot):
     gate_mapping = {}
