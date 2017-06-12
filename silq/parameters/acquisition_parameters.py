@@ -342,13 +342,13 @@ class TraceParameter(AcquisitionParameter):
             if self.average_mode == 'none':
                 if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
                     # Data is 2D,
-                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                    trace = np.concatenate([self.data[pulse.full_name][output] for pulse in
                                     self.pulse_sequence.get_pulses(acquire=True)], axis=1)
                 else:
-                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
+                    trace = np.concatenate([self.data[pulse.full_name][output] for pulse in
                                     self.pulse_sequence.get_pulses(acquire=True)])
             else:
-                trace = (np.concatenate([self.data[pulse.name][output] for pulse in
+                trace = (np.concatenate([self.data[pulse.full_name][output] for pulse in
                                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
             # print(f'{k}, {output} : {np.shape(trace)}')
 
