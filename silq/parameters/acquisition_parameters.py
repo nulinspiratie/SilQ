@@ -327,41 +327,6 @@ class TraceParameter(AcquisitionParameter):
         for pulse in self._pulse_sequence.get_pulses(acquire=True):
             pulse.average = self.average_mode
 
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-        # Grab the actual output name from the list of acquisition outputs
-        outputs = [output[1] for output in self.layout.acquisition_outputs()]
-        traces = []
-        # Merge all pulses together for a single acquisition channel
-
-        for k, output in enumerate(outputs):
-            if self.average_mode == 'none':
-                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
-                    # Data is 2D,
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-                else:
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)])
-            else:
-                trace = (np.concatenate(
-                    [self.data[pulse.full_name][output] for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
-            # print(f'{k}, {output} : {np.shape(trace)}')
-
-            # TODO: This should be done at time of acquisition, fix trace dims
-            # import pdb; pdb.set_trace()
-            # if trace:
-            #     shape = (self.samples, len(self.setpoints[0][1]))
-            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
-            #     trace = (trace, )*self.samples
-            # trace = (trace,) * self.samples
-            traces.append(trace)
-
-        return traces
-
     @property
     def names(self):
         return [output[1] for output in self.layout.acquisition_outputs()]
@@ -433,6 +398,41 @@ class TraceParameter(AcquisitionParameter):
             pulse.average_mode = self.average_mode
 
         super().setup(start=start, **kwargs)
+
+    def acquire(self, **kwargs):
+        super().acquire(**kwargs)
+        # Grab the actual output name from the list of acquisition outputs
+        outputs = [output[1] for output in self.layout.acquisition_outputs()]
+        traces = []
+        # Merge all pulses together for a single acquisition channel
+
+        for k, output in enumerate(outputs):
+            if self.average_mode == 'none':
+                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
+                    # Data is 2D,
+                    trace = np.concatenate(
+                        [self.data[pulse.full_name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+                else:
+                    trace = np.concatenate(
+                        [self.data[pulse.full_name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)])
+            else:
+                trace = (np.concatenate(
+                    [self.data[pulse.full_name][output] for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
+            # print(f'{k}, {output} : {np.shape(trace)}')
+
+            # TODO: This should be done at time of acquisition, fix trace dims
+            # import pdb; pdb.set_trace()
+            # if trace:
+            #     shape = (self.samples, len(self.setpoints[0][1]))
+            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
+            #     trace = (trace, )*self.samples
+            # trace = (trace,) * self.samples
+            traces.append(trace)
+
+        return traces
 
     @clear_single_settings
     def get(self):
