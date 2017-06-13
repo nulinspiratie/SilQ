@@ -305,18 +305,19 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
+        self.pulse_sequence.add(
+            DCPulse(name='read', acquire=True))
+        self.samples = 1
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
                          labels=self.names,
                          units=self.units,
+                         shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
 
-        self.samples = 1
 
-        self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True))
 
     @property
     def average_mode(self):
@@ -355,6 +356,21 @@ class TraceParameter(AcquisitionParameter):
 
     @units.setter
     def units(self, _):
+        pass
+
+    @property
+    def shapes(self):
+        t_start = min(pulse.t_start for pulse in
+                      self.pulse_sequence.get_pulses(acquire=True))
+        t_stop = max(pulse.t_stop for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True))
+        duration = t_stop - t_start
+        pts = int(duration * self.sample_rate)
+
+        return ((self.samples, pts),) * len(self.layout.acquisition_outputs())
+
+    @shapes.setter
+    def shapes(self, _):
         pass
 
     @property
