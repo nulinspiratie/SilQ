@@ -329,7 +329,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def names(self):
-        return [output[1] for output in self.layout.acquisition_outputs()]
+                for output in self.layout.acquisition_outputs()]
 
     @names.setter
     def names(self, _):
@@ -369,7 +369,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def setpoint_names(self):
-        if (self.samples > 1 and self.average_mode == 'none'):
+        if self.samples > 1 and self.average_mode == 'none':
             return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
@@ -401,12 +401,10 @@ class TraceParameter(AcquisitionParameter):
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
-        # Grab the actual output name from the list of acquisition outputs
-        outputs = [output[1] for output in self.layout.acquisition_outputs()]
         traces = []
         # Merge all pulses together for a single acquisition channel
 
-        for k, output in enumerate(outputs):
+        for k, (_, output) in enumerate(self.layout.acquisition_outputs()):
             if self.average_mode == 'none':
                 if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
                     # Data is 2D,
