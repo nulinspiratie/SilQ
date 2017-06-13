@@ -185,10 +185,7 @@ class M3201AInterface(InstrumentInterface):
             for c in self._get_active_channel_ids():
                 mask |= 1 << c
             # print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
-
-            self.instrument.awg_stop_multiple(mask)
-            self.instrument.awg_start_multiple(mask)
-            self.instrument.awg_trigger_multiple(mask)
+            self.software_trigger()
 
     def get_final_additional_pulses(self, **kwargs):
         return []
@@ -201,6 +198,8 @@ class M3201AInterface(InstrumentInterface):
 
     def software_trigger(self):
         for c in self._get_active_channel_ids():
+            self.instrument.awg_stop(c)
+            self.instrument.awg_start(c)
             self.instrument.awg_trigger(c)
 
     def create_zero_waveform(self, duration, sampling_rate):
