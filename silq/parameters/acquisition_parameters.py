@@ -393,9 +393,9 @@ class TraceParameter(AcquisitionParameter):
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
-                          t_list),) * num_traces
+                          t_list), ) * num_traces
         else:
-            setpoints = ((t_list,),)*num_traces
+            setpoints = ((t_list, ), ) * num_traces
         return setpoints
 
     @setpoints.setter
@@ -405,10 +405,10 @@ class TraceParameter(AcquisitionParameter):
     @property
     def setpoint_names(self):
         if (self.samples > 1 and self.average_mode == 'none'):
-            return (('sample', 'time',),) * \
+            return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('time',),) * len(self.layout.acquisition_outputs())
+            return (('time', ), ) * len(self.layout.acquisition_outputs())
 
 
     @setpoint_names.setter
@@ -418,9 +418,9 @@ class TraceParameter(AcquisitionParameter):
     @property
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
-            return ((None, 'ms',),) * len(self.layout.acquisition_outputs())
+            return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
         else:
-            return (('ms',),) * len(self.layout.acquisition_outputs())
+            return (('ms', ), ) * len(self.layout.acquisition_outputs())
 
 
     @setpoint_units.setter
@@ -428,11 +428,11 @@ class TraceParameter(AcquisitionParameter):
         pass
 
     def setup(self, start=None, **kwargs):
-        for pulse in self.pulse_sequence:
-            # Ensure that each pulse is average to the parameter specs
-            if pulse.average != self.average_mode:
-                pulse.average = self.average_mode
-        super().setup()
+        # Ensure that each pulse is average to the parameter specs
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
+            pulse.average_mode = self.average_mode
+
+        super().setup(start=start, **kwargs)
 
     @clear_single_settings
     def get(self):
