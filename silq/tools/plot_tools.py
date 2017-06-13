@@ -309,7 +309,8 @@ class DoubleSlider2DPlot(InteractivePlot):
 
             if value != set_value:
                 logger.debug(f'val {value} not equal to set_value {set_value}')
-                self.sliders[idx].set_val(set_value)
+                if not np.isnan(value):
+                    self.sliders[idx].set_val(set_value)
                 return
 
         # Update plot
@@ -343,8 +344,8 @@ class Slider2DPlot(InteractivePlot):
                                           facecolor='yellow')
         self.slider = mpl.widgets.Slider(self.sliderax,
                                          self.set_arrays[-3].name,
-                                         self.set_arrays[-3][0],
-                                         self.set_arrays[-3][-1],
+                                         float(np.nanmin(self.set_arrays[-3])),
+                                         float(np.nanmax(self.set_arrays[-3])),
                                          valinit=self.set_arrays[-3][0])
         self.slider.on_changed(self.update_slider)
         self.slider.drawon = False
@@ -361,18 +362,24 @@ class Slider2DPlot(InteractivePlot):
                 'zunit': self.data_array.unit}
 
     def update_slider(self, value):
-        logger.debug(f'Updating slider to {value}')
-        self.plot_idx = np.argmin(abs(self.set_arrays[-3].ndarray - value))
-        set_value = self.set_arrays[-3][self.plot_idx]
-        if value != set_value:
-            logger.debug(f'val {value} not equal to set_value {set_value}')
-            self.slider.set_val(set_value)
-        else:
-            self.slider.valtext.set_text(f'{self.set_arrays[-3].name}: {value}')
+        try:
+            logger.debug(f'Updating slider to {value}')
+            self.plot_idx = np.nanargmin(abs(self.set_arrays[-3].ndarray -
+                                             value))
+            set_value = self.set_arrays[-3][self.plot_idx]
 
-            self[0].clear()
-            self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
-            self.update()
+            if value != set_value:
+                logger.debug(f'val {value} not equal to set_value {set_value}')
+                if not np.isnan(value):
+                    self.slider.set_val(set_value)
+            else:
+                self.slider.valtext.set_text(f'{self.set_arrays[-3].name}: {value}')
+
+                self[0].clear()
+                self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
+                self.update()
+        except Exception as e:
+            logger.debug(f'Error: {e}')
 
 
 class CalibrationPlot(InteractivePlot):
