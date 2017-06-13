@@ -340,19 +340,22 @@ class TraceParameter(AcquisitionParameter):
 
         for k, output in enumerate(outputs):
             if self.average_mode == 'none':
-                if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
+                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
                     # Data is 2D,
-                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                    self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+                    trace = np.concatenate(
+                        [self.data[pulse.name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
                 else:
-                    trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                    self.pulse_sequence.get_pulses(acquire=True)])
+                    trace = np.concatenate(
+                        [self.data[pulse.name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)])
             else:
-                trace = (np.concatenate([self.data[pulse.name][output] for pulse in
-                                    self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
+                trace = (np.concatenate(
+                    [self.data[pulse.name][output] for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
             # print(f'{k}, {output} : {np.shape(trace)}')
 
-            # TODO: This should be done at time of acquisition, fix dimensions of trace
+            # TODO: This should be done at time of acquisition, fix trace dims
             # import pdb; pdb.set_trace()
             # if trace:
             #     shape = (self.samples, len(self.setpoints[0][1]))
@@ -373,7 +376,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def units(self):
-        return ['V' for _ in self.layout.acquisition_outputs()]
+        return ['V'] * len(self.layout.acquisition_outputs())
 
     @units.setter
     def units(self, _):
@@ -382,18 +385,21 @@ class TraceParameter(AcquisitionParameter):
     @property
     def setpoints(self):
         # TODO: Create blank regions for non continous acquisition periods
-        t_start = min([pulse.t_start for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True)])
-        t_stop = max([pulse.t_stop for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True)])
+        t_start = min(pulse.t_start for pulse in
+                      self.pulse_sequence.get_pulses(acquire=True))
+        t_stop = max(pulse.t_stop for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True))
         duration = t_stop - t_start
         num_traces = len(self.layout.acquisition_outputs())
+
+        pts = duration * self.sample_rate
+        t_list = np.linspace(0, duration, pts + 1)[0:-1] * 1e3
+
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
-                           1e3*np.linspace(0, duration, duration*self.sample_rate + 1)[0:-1]),) * num_traces
+                          t_list),) * num_traces
         else:
-            setpoints = ((1e3*np.linspace(0, duration,
-                                          duration*self.sample_rate + 1)[0:-1],),)*num_traces
+            setpoints = ((t_list,),)*num_traces
         return setpoints
 
     @setpoints.setter
@@ -403,9 +409,10 @@ class TraceParameter(AcquisitionParameter):
     @property
     def setpoint_names(self):
         if (self.samples > 1 and self.average_mode == 'none'):
-            return (('Sample', 'Time',),) * len(self.layout.acquisition_outputs())
+            return (('sample', 'time',),) * \
+                   len(self.layout.acquisition_outputs())
         else:
-            return (('Time',),) * len(self.layout.acquisition_outputs())
+            return (('time',),) * len(self.layout.acquisition_outputs())
 
 
     @setpoint_names.setter
@@ -414,7 +421,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def setpoint_units(self):
-        if (self.samples > 1 and self.average_mode == 'none'):
+        if self.samples > 1 and self.average_mode == 'none':
             return ((None, 'ms',),) * len(self.layout.acquisition_outputs())
         else:
             return (('ms',),) * len(self.layout.acquisition_outputs())
@@ -430,7 +437,8 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = [[trace, np.mean(trace), np.std(trace)] for trace in traces]
+        self.results = [[trace, np.mean(trace), np.std(trace)]
+                        for trace in traces]
 
         return self.results
 
