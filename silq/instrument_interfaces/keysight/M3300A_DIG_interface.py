@@ -101,6 +101,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
         """
         self.start()
         data = {}
+        self._acquisition_controller.pre_acquire()
         acq_data = self._acquisition_controller.acquire()
         acq_data = self._acquisition_controller.post_acquire(acq_data)
 
@@ -182,7 +183,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
-
+            if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
+                # Trigger already given
+                return []
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start, duration=1e-5,
                              connection_requirements={
@@ -228,14 +231,14 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
-            controller.read_timeout(t_final * 1.1)
+            controller.read_timeout(T * 10)
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
         self._acquisition_controller.start()
 
     def stop(self):
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
+        # Stop all DAQs
+        self.instrument.daq_stop_multiple((1 << 8) - 1)
 
 
