@@ -329,6 +329,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def names(self):
+        return [f'trace_{output[1]}'
                 for output in self.layout.acquisition_outputs()]
 
     @names.setter
