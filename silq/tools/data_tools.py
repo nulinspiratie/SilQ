@@ -36,7 +36,7 @@ def store_data(dataset, result):
                   ids_values={'data_vals': result})
 
 
-def get_data_folder(path_str=''):
+def get_data_folder(path_str='', subfolder=None):
     path_str = path_str.replace('\\', '/')
 
     base_path = config.properties.data_folder
@@ -59,6 +59,7 @@ def get_data_folder(path_str=''):
         else:
             raise RuntimeError(f'No date folder found in {base_path}')
             # TODO include previous dates
+
         # No date provided, so any data folder must match path_str
         data_str = path_str
     elif ':' in path_str:
@@ -67,11 +68,26 @@ def get_data_folder(path_str=''):
         # relative path, likely of form {date}/{data_folder}
         date_folder, data_str = path_str.split('/')[-2:]
 
+    if data_str[:1] == '#' and data_str[1:].isdigit():
+        data_str = f'#{data_str[1:]:03}'
+
     date_path = os.path.join(base_path, date_folder)
 
     data_folders = reversed(os.listdir(date_path))
     data_folder = next(folder for folder in data_folders if data_str in folder)
-    data_path = os.path.join(date_folder, data_folder)
-    data_path.replace('\\', '/')
+    data_path = os.path.join(date_path, data_folder)
 
-    return data_path
+    if subfolder is not None:
+        if subfolder[:1] == '#' and subfolder[1:].isdigit():
+            subfolder = f'#{int(subfolder[1:]):03}'
+
+        data_subfolders = reversed(os.listdir(data_path))
+        data_subfolder = next(folder for folder in data_subfolders
+                              if subfolder in folder)
+        logger.debug(f'Subfolder: {data_subfolder}')
+        data_folder = os.path.join(data_folder, data_subfolder)
+
+    data_relative_path = os.path.join(date_folder, data_folder)
+    data_relative_path.replace('\\', '/')
+
+    return data_relative_path
