@@ -1,23 +1,18 @@
 import os
 import numpy as np
+from dateutil.parser import parse
+from collections import Iterable
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 import qcodes as qc
-from qcodes import config
+from silq import config
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes.data.data_set import new_data, DataSet
 from qcodes.data.data_array import DataArray
-
-def get_latest_data_folder():
-    if 'data_folder' in config['user']:
-        base_location = config['user']['data_folder']
-    else:
-        base_location = DataSet.default_io.base_location
-    date = os.listdir(base_location)[-1]
-    dir_date = os.path.join(base_location, date)
-    folders_date = os.listdir(dir_date)
-    latest_folder = folders_date[-1]
-    data_folder = os.path.join(dir_date, latest_folder)
-    return data_folder
 
 
 def create_data_set(name, base_folder, subfolder=None, formatter=None):
@@ -35,6 +30,48 @@ def create_data_set(name, base_folder, subfolder=None, formatter=None):
                         formatter=formatter)
     return data_set
 
+
 def store_data(dataset, result):
     dataset.store(loop_indices=slice(0, result.shape[0], 1),
                   ids_values={'data_vals': result})
+
+
+def get_data_folder(path_str=''):
+    path_str = path_str.replace('\\', '/')
+
+    base_path = config.properties.data_folder
+    base_path = base_path.replace('\\', '/')
+
+    logger.debug(f'Dirs: {os.listdir(base_path)}')
+
+    if '/' not in path_str:
+        logging.debug('No date provided, getting latest date folder')
+        date_folders = reversed(os.listdir(base_path))
+        for date_folder in date_folders:
+            try:
+                parse(date_folder)
+                logging.debug(f'Date folder: {date_folder}')
+                # date_folder has date format, exit loop
+                break
+            except:
+                # date_folder does not have date format, continuing to next
+                continue
+        else:
+            raise RuntimeError(f'No date folder found in {base_path}')
+            # TODO include previous dates
+        # No date provided, so any data folder must match path_str
+        data_str = path_str
+    elif ':' in path_str:
+        raise NotImplementedError('Full paths not yet implemented')
+    else:
+        # relative path, likely of form {date}/{data_folder}
+        date_folder, data_str = path_str.split('/')[-2:]
+
+    date_path = os.path.join(base_path, date_folder)
+
+    data_folders = reversed(os.listdir(date_path))
+    data_folder = next(folder for folder in data_folders if data_str in folder)
+    data_path = os.path.join(date_folder, data_folder)
+    data_path.replace('\\', '/')
+
+    return data_path
