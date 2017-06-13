@@ -103,7 +103,7 @@ class StoreParameter(Parameter):
                                       set_arrays=(
                                       data_array_set, index0))
 
-        data_folder = data_tools.get_latest_data_folder()
+        data_folder = data_tools.get_data_folder()
         loc_provider = qc.data.location.FormatLocation(
             fmt=data_folder+'/traces/#{counter}_trace_{time}')
 
