@@ -293,8 +293,8 @@ class Pulse:
         """
         if value is not None:
             return value
-        elif self.pulse_config is not None:
-            return self.pulse_config.get(key, None)
+        elif self.pulse_config is not None and key in self.pulse_config:
+            return self.pulse_config[key]
         else:
             return default
 
