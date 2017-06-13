@@ -24,6 +24,7 @@ measurement_config = qc.config['user'].get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
+
     def __init__(self, name, acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
@@ -109,6 +110,8 @@ class DCMultisweepParameter(MeasurementParameter):
         self.AC_range = 0.2
         self.pts = 120
 
+        self.continuous = False
+
     @property
     def x_sweeps(self):
         return np.ceil((self.x_range[1] - self.x_range[0]) / self.AC_range)
@@ -129,6 +132,7 @@ class DCMultisweepParameter(MeasurementParameter):
     def AC_x_vals(self):
         return np.linspace(-self.x_sweep_range / 2, self.x_sweep_range / 2,
                            self.pts + 1)[:-1]
+
 
     @property
     def AC_y_vals(self):
@@ -166,7 +170,7 @@ class DCMultisweepParameter(MeasurementParameter):
     def shapes(self, shapes):
         pass
 
-    def get(self):
+    def setup(self):
         self.acquisition_parameter.sweep_parameters.clear()
         self.acquisition_parameter.add_sweep(self.x_gate.name, self.AC_x_vals,
                                              connection_label=self.x_gate.name,
@@ -174,16 +178,28 @@ class DCMultisweepParameter(MeasurementParameter):
         self.acquisition_parameter.add_sweep(self.y_gate.name, self.AC_y_vals,
                                              connection_label=self.y_gate.name,
                                              offset_parameter=self.y_gate)
+        self.acquisition_parameter.setup()
+
+    def get(self):
         self.loop = qc.Loop(self.y_gate[self.DC_y_vals]).loop(
             self.x_gate[self.DC_x_vals]).each(self.acquisition_parameter)
 
         self.acquisition_parameter.temporary_settings(continuous=True)
         try:
-            self.acquisition_parameter.setup()
+            if not self.continuous:
+                self.setup()
             self.data = self.loop.run(name=f'multi_2D_scan')
+        # except:
+        #     logger.debug('except stopping')
+        #     self.layout.stop()
+        #     self.acquisition_parameter.clear_settings()
+        #     raise
         finally:
-            layout.stop()
-            self.acquisition_parameter.clear_settings()
+            if not self.continuous:
+                logger.debug('finally stopping')
+                self.layout.stop()
+                self.acquisition_parameter.clear_settings()
+
 
         arr = np.zeros(
             (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts))
@@ -193,6 +209,7 @@ class DCMultisweepParameter(MeasurementParameter):
                 arr[y_idx * self.pts:(y_idx + 1) * self.pts,
                 x_idx * self.pts:(x_idx + 1) * self.pts] = DC_data
         return arr,
+
 
 
 class MeasurementSequenceParameter(MeasurementParameter):
