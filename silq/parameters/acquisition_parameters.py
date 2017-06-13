@@ -292,14 +292,15 @@ class TraceParameter(AcquisitionParameter):
     """An acquisition parameter for obtaining a trace or multiple traces
     of a given PulseSequence.
 
-    A generic initial PulseSequence is defined, but can be redefined at run-time.
+    A generic initial PulseSequence is defined, but can be redefined at
+    run-time.
     e.g.
         parameter.average_mode = 'none'
         parameter.pulse_sequence = my_pulse_sequence
 
-    Note that for the above example, all pulses in my_pulse_sequence will be copied
-    and then their 'average' attribute will be set to the parameter's 'average_mode'
-    attribute.
+    Note that for the above example, all pulses in my_pulse_sequence will be
+    copied and then their 'average' attribute will be set to the parameter's
+    'average_mode' attribute.
 
     """
     def __init__(self, average_mode='none', **kwargs):
