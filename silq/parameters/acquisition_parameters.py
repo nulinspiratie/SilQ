@@ -424,6 +424,13 @@ class TraceParameter(AcquisitionParameter):
     def setpoint_units(self, _):
         pass
 
+    def setup(self, start=None, **kwargs):
+        for pulse in self.pulse_sequence:
+            # Ensure that each pulse is average to the parameter specs
+            if pulse.average != self.average_mode:
+                pulse.average = self.average_mode
+        super().setup()
+
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
