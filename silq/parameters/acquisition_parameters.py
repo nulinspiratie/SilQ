@@ -343,15 +343,15 @@ class TraceParameter(AcquisitionParameter):
                 if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
                     # Data is 2D,
                     trace = np.concatenate(
-                        [self.data[pulse.name][output] for pulse in
+                        [self.data[pulse.full_name][output] for pulse in
                          self.pulse_sequence.get_pulses(acquire=True)], axis=1)
                 else:
                     trace = np.concatenate(
-                        [self.data[pulse.name][output] for pulse in
+                        [self.data[pulse.full_name][output] for pulse in
                          self.pulse_sequence.get_pulses(acquire=True)])
             else:
                 trace = (np.concatenate(
-                    [self.data[pulse.name][output] for pulse in
+                    [self.data[pulse.full_name][output] for pulse in
                      self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
             # print(f'{k}, {output} : {np.shape(trace)}')
 
@@ -430,6 +430,13 @@ class TraceParameter(AcquisitionParameter):
     @setpoint_units.setter
     def setpoint_units(self, _):
         pass
+
+    def setup(self, start=None, **kwargs):
+        for pulse in self.pulse_sequence:
+            # Ensure that each pulse is average to the parameter specs
+            if pulse.average != self.average_mode:
+                pulse.average = self.average_mode
+        super().setup()
 
     @clear_single_settings
     def get(self):
