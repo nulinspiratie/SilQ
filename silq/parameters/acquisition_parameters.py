@@ -289,6 +289,19 @@ class DCParameter(AcquisitionParameter):
 
 
 class TraceParameter(AcquisitionParameter):
+    """An acquisition parameter for obtaining a trace or multiple traces
+    of a given PulseSequence.
+
+    A generic initial PulseSequence is defined, but can be redefined at run-time.
+    e.g.
+        parameter.average_mode = 'none'
+        parameter.pulse_sequence = my_pulse_sequence
+
+    Note that for the above example, all pulses in my_pulse_sequence will be copied
+    and then their 'average' attribute will be set to the parameter's 'average_mode'
+    attribute.
+
+    """
     def __init__(self, average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
@@ -329,6 +342,12 @@ class TraceParameter(AcquisitionParameter):
         self._pulse_sequence = new_pulse_sequence
 
     def acquire(self, **kwargs):
+        """Acquires the number of traces defined in self.samples
+
+        :param kwargs: Passed to AcquisitionParameter acquire()
+        :return: A tuple of data points. e.g.
+                ((data_for_1st_output), (data_for_2nd_output), ...)
+        """
         super().acquire(**kwargs)
         # Grab the actual output name from the list of acquisition outputs
         outputs = [output[1] for output in self.layout.acquisition_outputs()]
