@@ -336,55 +336,14 @@ class TraceParameter(AcquisitionParameter):
 
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
-        new_pulse_sequence = pulse_sequence.copy()
-        for pulse in new_pulse_sequence.get_pulses(acquire=True):
+        self._pulse_sequence = pulse_sequence.copy()
+        for pulse in self._pulse_sequence.get_pulses(acquire=True):
             pulse.average = self.average_mode
-        self._pulse_sequence = new_pulse_sequence
-
-    def acquire(self, **kwargs):
-        """Acquires the number of traces defined in self.samples
-
-        :param kwargs: Passed to AcquisitionParameter acquire()
-        :return: A tuple of data points. e.g.
-                ((data_for_1st_output), (data_for_2nd_output), ...)
-        """
-        super().acquire(**kwargs)
-        # Grab the actual output name from the list of acquisition outputs
-        outputs = [output[1] for output in self.layout.acquisition_outputs()]
-        traces = []
-        # Merge all pulses together for a single acquisition channel
-
-        for k, output in enumerate(outputs):
-            if self.average_mode == 'none':
-                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
-                    # Data is 2D,
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-                else:
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)])
-            else:
-                trace = (np.concatenate(
-                    [self.data[pulse.full_name][output] for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
-            # print(f'{k}, {output} : {np.shape(trace)}')
-
-            # TODO: This should be done at time of acquisition, fix trace dims
-            # import pdb; pdb.set_trace()
-            # if trace:
-            #     shape = (self.samples, len(self.setpoints[0][1]))
-            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
-            #     trace = (trace, )*self.samples
-            # trace = (trace,) * self.samples
-            traces.append(trace)
-
-        return traces
 
     @property
     def names(self):
-        return [output[1] for output in self.layout.acquisition_outputs()]
+        return [f'trace_{output[1]}'
+                for output in self.layout.acquisition_outputs()]
 
     @names.setter
     def names(self, _):
@@ -413,9 +372,9 @@ class TraceParameter(AcquisitionParameter):
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
-                          t_list),) * num_traces
+                          t_list), ) * num_traces
         else:
-            setpoints = ((t_list,),)*num_traces
+            setpoints = ((t_list, ), ) * num_traces
         return setpoints
 
     @setpoints.setter
@@ -424,11 +383,11 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def setpoint_names(self):
-        if (self.samples > 1 and self.average_mode == 'none'):
-            return (('sample', 'time',),) * \
+        if self.samples > 1 and self.average_mode == 'none':
+            return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('time',),) * len(self.layout.acquisition_outputs())
+            return (('time', ), ) * len(self.layout.acquisition_outputs())
 
 
     @setpoint_names.setter
@@ -438,9 +397,9 @@ class TraceParameter(AcquisitionParameter):
     @property
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
-            return ((None, 'ms',),) * len(self.layout.acquisition_outputs())
+            return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
         else:
-            return (('ms',),) * len(self.layout.acquisition_outputs())
+            return (('ms', ), ) * len(self.layout.acquisition_outputs())
 
 
     @setpoint_units.setter
@@ -448,11 +407,50 @@ class TraceParameter(AcquisitionParameter):
         pass
 
     def setup(self, start=None, **kwargs):
-        for pulse in self.pulse_sequence:
-            # Ensure that each pulse is average to the parameter specs
-            if pulse.average != self.average_mode:
-                pulse.average = self.average_mode
-        super().setup()
+        # Ensure that each pulse is average to the parameter specs
+        for pulse in self.pulse_sequence.get_pulses(acquire=True):
+            pulse.average_mode = self.average_mode
+
+        super().setup(start=start, **kwargs)
+
+    def acquire(self, **kwargs):
+        """Acquires the number of traces defined in self.samples
+
+            :param kwargs: Passed to AcquisitionParameter acquire()
+            :return: A tuple of data points. e.g.
+                    ((data_for_1st_output), (data_for_2nd_output), ...)
+        """
+        super().acquire(**kwargs)
+        traces = []
+        # Merge all pulses together for a single acquisition channel
+
+        for k, (_, output) in enumerate(self.layout.acquisition_outputs()):
+            if self.average_mode == 'none':
+                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
+                    # Data is 2D,
+                    trace = np.concatenate(
+                        [self.data[pulse.full_name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+                else:
+                    trace = np.concatenate(
+                        [self.data[pulse.full_name][output] for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True)])
+            else:
+                trace = (np.concatenate(
+                    [self.data[pulse.full_name][output] for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
+            # print(f'{k}, {output} : {np.shape(trace)}')
+
+            # TODO: This should be done at time of acquisition, fix trace dims
+            # import pdb; pdb.set_trace()
+            # if trace:
+            #     shape = (self.samples, len(self.setpoints[0][1]))
+            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
+            #     trace = (trace, )*self.samples
+            # trace = (trace,) * self.samples
+            traces.append(trace)
+
+        return traces
 
     @clear_single_settings
     def get(self):
