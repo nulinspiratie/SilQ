@@ -289,8 +289,8 @@ class DCParameter(AcquisitionParameter):
 
 
 class TraceParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        self._average_mode = kwargs.pop('average_mode', 'none')
+    def __init__(self, average_mode='none', **kwargs):
+        self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
 
         super().__init__(name='Trace_acquisition',
