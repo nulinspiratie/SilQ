@@ -305,8 +305,6 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
-        self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True))
         self.samples = 1
 
         super().__init__(name='Trace_acquisition',
@@ -316,8 +314,6 @@ class TraceParameter(AcquisitionParameter):
                          shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
-
-
 
     @property
     def average_mode(self):
@@ -360,10 +356,10 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def shapes(self):
-        t_start = min(pulse.t_start for pulse in
-                      self.pulse_sequence.get_pulses(acquire=True))
-        t_stop = max(pulse.t_stop for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True))
+        t_start = min((pulse.t_start for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
+        t_stop = max((pulse.t_stop for pulse in
+                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
         duration = t_stop - t_start
         pts = int(duration * self.sample_rate)
 
@@ -441,21 +437,25 @@ class TraceParameter(AcquisitionParameter):
         # Merge all pulses together for a single acquisition channel
 
         for k, (_, output) in enumerate(self.layout.acquisition_outputs()):
-            if self.average_mode == 'none':
-                if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
-                    # Data is 2D,
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-                else:
-                    trace = np.concatenate(
-                        [self.data[pulse.full_name][output] for pulse in
-                         self.pulse_sequence.get_pulses(acquire=True)])
-            else:
-                trace = (np.concatenate(
-                    [self.data[pulse.full_name][output] for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
-            # print(f'{k}, {output} : {np.shape(trace)}')
+            trace = np.concatenate(
+                [self.data[pulse.full_name][output] for pulse in
+                 self.pulse_sequence.get_pulses(acquire=True)], axis=1
+            )
+            # if self.average_mode == 'none':
+            #     if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
+            #         # Data is 2D,
+            #         trace = np.concatenate(
+            #             [self.data[pulse.full_name][output] for pulse in
+            #              self.pulse_sequence.get_pulses(acquire=True)], axis=1)
+            #     else:
+            #         trace = np.concatenate(
+            #             [self.data[pulse.full_name][output] for pulse in
+            #              self.pulse_sequence.get_pulses(acquire=True)])
+            # else:
+            #     trace = (np.concatenate(
+            #         [self.data[pulse.full_name][output] for pulse in
+            #          self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
+            # # print(f'{k}, {output} : {np.shape(trace)}')
 
             # TODO: This should be done at time of acquisition, fix trace dims
             # import pdb; pdb.set_trace()
