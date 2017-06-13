@@ -2,6 +2,7 @@ import numpy as np
 from functools import partial
 from collections import OrderedDict as od
 import inspect
+import logging
 
 import silq
 from silq import config
@@ -12,6 +13,8 @@ from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter, MultiParameter
 from qcodes.utils import validators as vals
 
+
+logger = logging.getLogger(__name__)
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -628,6 +631,7 @@ class Layout(Instrument):
         Returns:
 
         """
+        logger.debug('Layout started')
         self.active(True)
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
@@ -647,6 +651,7 @@ class Layout(Instrument):
         Returns:
             None
         """
+        logger.debug('Layout stopped')
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
         self.active(False)
