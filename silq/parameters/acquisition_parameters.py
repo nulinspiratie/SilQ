@@ -303,10 +303,7 @@ class TraceParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True))
 
     @property
     def average_mode(self):
