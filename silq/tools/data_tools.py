@@ -69,7 +69,7 @@ def get_data_folder(path_str='', subfolder=None):
         date_folder, data_str = path_str.split('/')[-2:]
 
     if data_str[:1] == '#' and data_str[1:].isdigit():
-        data_str = f'#{data_str[1:]:03}'
+        data_str = f'#{int(data_str[1:]):03}'
 
     date_path = os.path.join(base_path, date_folder)
 
