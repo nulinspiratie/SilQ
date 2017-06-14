@@ -133,26 +133,29 @@ class MoveGates(PlotAction):
             logger.info('Alt key not pressed, not moving gates')
 
 
-# class ModifyPlotIdx(PlotAction):
-#     def key_press(self, event):
-#         super().key_press(event)
-#
-#         if event.key == 'alt+left':
-#             self.plot.plot_idx[0] = max(self.plot.plot_idx[0] - 1, 0)
-#         elif event.key == 'alt+right':
-#             self.plot.plot_idx[0] = min(self.plot.plot_idx[0] + 1,
-#                                         len(self.plot.set_vals[0]) - 1)
-#         elif event.key == 'alt+down':
-#             if len(self.plot.plot_idx) > 1:
-#                 self.plot.plot_idx[1] = max(self.plot.plot_idx[1] - 1, 0)
-#         elif event.key == 'alt+up':
-#             if len(self.plot.plot_idx) > 1:
-#                 self.plot.plot_idx[1] = min(self.plot.plot_idx[1] + 1,
-#                                             len(self.plot.set_vals[1]) - 1)
-#         else:
-#             return
-#
-#         self.plot.
+class SwitchPlotIdx(PlotAction):
+    def key_press(self, event):
+        super().key_press(event)
+
+        plot_idx = list(self.plot.plot_idx)
+        if event.key in ['alt+left', 'alt+right']:
+            set_vals = self.plot.set_vals[0]
+            if event.key == 'alt+left':
+                plot_idx[0] = max(plot_idx[0] - 1, 0)
+            else:
+                plot_idx[0] = min(plot_idx[0] + 1, len(set_vals) - 1)
+            self.plot.plot_idx = tuple(plot_idx)
+            self.plot.update_slider(0)
+        elif event.key in ['alt+down', 'alt+up'] and len(plot_idx) > 1:
+            set_vals = self.plot.set_vals[1]
+            if event.key == 'alt+down':
+                plot_idx[1] = max(plot_idx[1] - 1, 0)
+            else:
+                plot_idx[1] = min(plot_idx[1] + 1, len(set_vals) - 1)
+            self.plot.plot_idx = tuple(plot_idx)
+            self.plot.update_slider(1)
+
+
 class InteractivePlot(MatPlot):
     def __init__(self, *args, actions=(), timeout=600, **kwargs):
         super().__init__(*args, **kwargs)
@@ -206,7 +209,7 @@ class InteractivePlot(MatPlot):
         try:
             for action in self.actions:
                 if action.enabled or event.key == action.enable_key:
-                    action.key_press(event)
+                    action.key_press(event=event)
         except Exception as e:
             logger.error(f'key press: {e}')
 
@@ -228,7 +231,7 @@ class SliderPlot(InteractivePlot):
     def __init__(self, data_array, ndim=2, **kwargs):
         self.ndim = ndim
         self.data_array = data_array
-        super().__init__(**kwargs)
+        super().__init__(actions=[SwitchPlotIdx(self)], **kwargs)
         self.fig.tight_layout(rect=[0, 0.15, 1, 0.95])
 
         results = self.load_data_array(data_array)
@@ -283,8 +286,11 @@ class SliderPlot(InteractivePlot):
         else:
             raise NotImplementedError(f'{self.ndim} dims not supported')
 
-    def update_slider(self, idx, value):
-        if value == self.set_vals[idx][self.plot_idx[idx]]:
+    def update_slider(self, idx, value=None):
+        if value is None:
+            value = self.set_vals[idx][self.plot_idx[idx]]
+            self.sliders[idx].set_val(value)
+        elif value == self.set_vals[idx][self.plot_idx[idx]]:
             self.update()
         else:
             # Check if value is one of the set values
