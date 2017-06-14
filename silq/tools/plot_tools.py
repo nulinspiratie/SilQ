@@ -330,7 +330,7 @@ class Slider2DPlot(InteractivePlot):
     def __init__(self, data_array, **kwargs):
         self.data_array = data_array
         super().__init__(**kwargs)
-        self.fig.tight_layout(rect=[0, 0.1, 1, 0.95])
+        self.fig.tight_layout(rect=[0.1, 0.1, 1, 0.95])
 
         results = self.load_data_array(data_array)
         self.set_arrays = results['set_arrays']
