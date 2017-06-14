@@ -135,8 +135,8 @@ class InteractivePlot(MatPlot):
         super().__init__(*args, **kwargs)
         self.station = Station.default
 
-        if hasattr(self.station, 'layout'):
-            self.layout = self.station.layout
+        self.layout = getattr(self.station, 'layout', None)
+
         self.timeout = timeout
         self.cid = {}
 
