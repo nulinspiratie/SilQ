@@ -460,8 +460,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
                 waveform_2_samples = 0
 
-            waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
-            t_list_2 = np.linspace(waveform_2_start, waveform_2_stop, waveform_2_samples, endpoint=True)
+            # waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
+            t_list_2 = np.linspace(waveform_2_start, self.t_stop, waveform_2_samples, endpoint=True)
 
             waveform_1 = {}
             waveform_2 = {}
@@ -483,7 +483,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                                                                              waveform_data_a=waveform_2_data)
                 waveform_2['cycles'] = 1
                 waveform_2['t_start'] = waveform_2_start
-                waveform_2['t_stop'] = waveform_2_stop
+                waveform_2['t_stop'] = self.t_stop
 
                 waveforms[ch] = [waveform_1, waveform_2]
 
