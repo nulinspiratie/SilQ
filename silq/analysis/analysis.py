@@ -15,6 +15,9 @@ analysis_config = config['analysis']
 
 def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
                   threshold_method='mean'):
+    # Calculate DC (mean) voltage
+    DC_voltage = np.mean(traces)
+
     # Determine threshold method
     if threshold_method == 'config':
         threshold_method = analysis_config.get('threshold_method', 'mean')
@@ -35,7 +38,9 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
             # print('Found {} peaks instead of two, increasing threshold'.format(len(peaks_idx)))
             threshold_peak *= 1.5
         else:
-            return {'low': None, 'high': None, 'threshold_voltage': None,
+            return {'low': None,
+                    'high': None,
+                    'threshold_voltage': None,
                     'voltage_difference': None}
 
     # Find mean voltage, used to determine which points are low/high
@@ -80,7 +85,8 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
     return {'low': low,
             'high': high,
             'threshold_voltage': threshold_voltage,
-            'voltage_difference': voltage_difference}
+            'voltage_difference': voltage_difference,
+            'DC_voltage': DC_voltage}
 
 def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
                  start_point=0):
@@ -136,6 +142,95 @@ def find_up_proportion(traces, threshold_voltage=None, return_mean=True,
     else:
         return traces_up_electron
 
+
+def count_blips(traces, threshold_voltage, sample_rate, t_skip):
+    low_blip_pts, high_blip_pts = [], []
+    start_idx = round(t_skip * 1e-3 * sample_rate)
+
+    for k, trace in enumerate(traces):
+        idx = start_idx
+        while idx < len(trace):
+            if trace[idx] < threshold_voltage:
+                next_idx = np.argmax(trace[idx:] > threshold_voltage)
+                blip_list = low_blip_pts
+            else:
+                next_idx = np.argmax(trace[idx:] < threshold_voltage)
+                blip_list = high_blip_pts
+            if next_idx == 0:
+                blip_list.append(len(trace) - idx)
+                break
+            else:
+                blip_list.append(next_idx)
+                idx += next_idx
+
+    low_blip_duration = np.array(low_blip_pts) / sample_rate * 1e3
+    high_blip_duration = np.array(high_blip_pts) / sample_rate * 1e3
+
+    return {'low_blip_duration': low_blip_duration,
+            'low_blip_duration': high_blip_duration,
+            'mean_low_blip_duration': np.mean(low_blip_duration),
+            'mean_high_blip_duration': np.mean(high_blip_duration)}
+
+
+def analyse_load(traces, filter_empty=True):
+    high_low = find_high_low(traces)
+    threshold_voltage = high_low['threshold_voltage']
+
+    if threshold_voltage is None:
+        # print('Could not find two peaks for empty and load state')
+        return {'up_proportion': 0,
+                'num_traces': 0,
+                'voltage_difference': 0}
+
+    if filter_empty:
+        # Filter data that starts at high conductance (no electron)
+        idx_begin_empty = edge_voltage(traces, edge='begin', state='high',
+                                       threshold_voltage=threshold_voltage)
+        traces = traces[idx_begin_empty]
+
+    if not len(traces):
+        # print('None of the load traces start with an empty state')
+        return {'up_proportion': 0,
+                'num_traces': 0,
+                'voltage_difference': high_low['voltage_difference']}
+
+    idx_end_load = edge_voltage(traces, edge='end', state='low',
+                                threshold_voltage=threshold_voltage)
+
+    return {'up_proportion': sum(idx_end_load) / len(traces),
+            'num_traces': len(traces),
+            'voltage_difference': high_low['voltage_difference']}
+
+
+def analyse_empty(traces, filter_loaded=True):
+    high_low = find_high_low(traces)
+    threshold_voltage = high_low['threshold_voltage']
+
+    if threshold_voltage is None:
+        return {'up_proportion': 0,
+                'num_traces': 0,
+                'voltage_difference': 0}
+
+    if filter_loaded:
+        # Filter data that starts at high conductance (no electron)
+        idx_begin_load = edge_voltage(traces, edge='begin', state='low',
+                                      threshold_voltage=threshold_voltage)
+        traces = traces[idx_begin_load]
+
+    if not len(traces):
+        # print('None of the empty traces start with a loaded state')
+        return {'up_proportion': 0,
+                'num_traces': 0,
+                'threshold_voltage': high_low['threshold_voltage']}
+
+    idx_end_empty = edge_voltage(traces, edge='end', state='high',
+                                 threshold_voltage=threshold_voltage)
+
+    return {'up_proportion': sum(idx_end_empty) / len(traces),
+            'num_traces': len(traces),
+            'voltage_difference': high_low['voltage_difference']}
+
+
 def analyse_read(traces, start_idx=0, threshold_voltage=None,
                  filter_loaded=True):
     if threshold_voltage is None:
@@ -169,84 +264,23 @@ def analyse_read(traces, start_idx=0, threshold_voltage=None,
             'num_traces': len(traces),
             'idx': idx}
 
-def analyse_load(traces, filter_empty=True):
-    threshold_voltage = find_high_low(traces)['threshold_voltage']
 
-    if threshold_voltage is None:
-        # print('Could not find two peaks for empty and load state')
-        return {'up_proportion': 0, 'num_traces': 0}
-
-    if filter_empty:
-        # Filter data that starts at high conductance (no electron)
-        idx_begin_empty = edge_voltage(traces, edge='begin', state='high',
-                                       threshold_voltage=threshold_voltage)
-        traces = traces[idx_begin_empty]
-
-
-    if not len(traces):
-        # print('None of the load traces start with an empty state')
-        return {'up_proportion': 0, 'num_traces': 0}
-
-    idx_end_load = edge_voltage(traces, edge='end', state='low',
-                                threshold_voltage=threshold_voltage)
-
-    return {'up_proportion': sum(idx_end_load) / len(traces),
-            'num_traces': len(traces)}
-
-
-def analyse_empty(traces, filter_loaded=True):
-    threshold_voltage = find_high_low(traces)['threshold_voltage']
-
-    if threshold_voltage is None:
-        return {'up_proportion': 0, 'num_traces': 0}
-
-    if filter_loaded:
-        # Filter data that starts at high conductance (no electron)
-        idx_begin_load = edge_voltage(traces, edge='begin', state='low',
-                                      threshold_voltage=threshold_voltage)
-        traces = traces[idx_begin_load]
-
-    if not len(traces):
-        # print('None of the empty traces start with a loaded state')
-        return {'up_proportion': 0, 'num_traces': 0}
-
-    idx_end_empty = edge_voltage(traces, edge='end', state='high',
-                                 threshold_voltage=threshold_voltage)
-
-    return {'up_proportion': sum(idx_end_empty) / len(traces),
-            'num_traces': len(traces)}
-
-
-def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
-                min_trace_perc=0.5):
+def analyse_read_long(traces, read_pts, sample_rate, min_trace_perc=0.5,
+                      t_skip=0, threshold_method='config'):
     start_idx = round(t_skip * 1e-3 * sample_rate)
-    read_pts = round(t_read * 1e-3 * sample_rate)
 
-    # Analyse empty stage
-    results_empty = analyse_empty(pulse_traces['empty']['output'])
-    fidelity_empty = results_empty['up_proportion']
-
-    # Analyse load stage
-    results_load = analyse_load(pulse_traces['plunge']['output'])
-    fidelity_load = results_load['up_proportion']
-
-    # Analyse read stage
-    read_high_low = find_high_low(pulse_traces['read_long']['output'],
-                                  threshold_method='config')
-    threshold_voltage = read_high_low['threshold_voltage']
-    logger.debug(f'Threshold voltage: {threshold_voltage}')
-    voltage_difference = read_high_low['voltage_difference']
+    high_low = find_high_low(traces, threshold_method=threshold_method)
+    threshold_voltage = high_low['threshold_voltage']
+    logger.debug(f'Read threshold voltage: {threshold_voltage}')
 
     if threshold_voltage is None:
         # Could not find threshold voltage, either too high SNR or no blips
-        return {'contrast': 0,
-                'dark_counts': 0,
-                'voltage_difference': 0,
-                'fidelity_empty': fidelity_empty,
-                'fidelity_load': fidelity_load}
+        contrast = 0
+        dark_counts = 0
+        threshold_voltage = 0
     else:
-        read_segment1 = pulse_traces['read_long']['output'][:, :read_pts]
-        read_segment2 = pulse_traces['read_long']['output'][:, -read_pts:]
+        read_segment1 = traces[:, :read_pts]
+        read_segment2 = traces[:, -read_pts:]
 
         results1 = analyse_read(read_segment1, start_idx=start_idx,
                                 threshold_voltage=threshold_voltage,
@@ -262,11 +296,44 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
         else:
             contrast = up_proportion - dark_counts
 
-        return {'contrast': contrast,
-                'dark_counts': dark_counts,
-                'voltage_difference': voltage_difference,
-                'fidelity_empty': fidelity_empty,
-                'fidelity_load': fidelity_load}
+        blips = count_blips(traces, threshold_voltage=threshold_voltage,
+                            sample_rate=sample_rate, t_skip=t_skip)
+
+    return {'contrast': contrast,
+            'dark_counts': dark_counts,
+            'threshold_voltage': threshold_voltage,
+            'voltage_difference': high_low['voltage_difference'],
+            'DC_voltage': high_low['DC_voltage'],
+            'low_blip_duration': blips['mean_low_blip_duration'],
+            'high_blip_duration': blips['mean_high_blip_duration']}
+
+
+def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
+                min_trace_perc=0.5):
+    # Analyse empty stage
+    results_empty = analyse_empty(pulse_traces['empty']['output'])
+
+    # Analyse plunge stage
+    results_load = analyse_load(pulse_traces['plunge']['output'])
+
+    # Analyse read stage
+    start_idx = round(t_skip * 1e-3 * sample_rate)
+    read_pts = round(t_read * 1e-3 * sample_rate)
+    results_read = analyse_read_long(pulse_traces['read_long']['output'],
+                                     read_pts=read_pts,
+                                     sample_rate=sample_rate,
+                                     t_skip=t_skip,
+                                     min_trace_perc=min_trace_perc)
+
+    return {'fidelity_empty': results_empty['up_proportion'],
+            'voltage_difference_empty': results_empty['voltage_difference'],
+            'fidelity_load': results_load['up_proportion'],
+            'voltage_difference_load': results_load['voltage_difference'],
+            'contrast': results_read['contrast'],
+            'dark_counts': results_read['dark_counts'],
+            'voltage_difference_read': results_read['voltage_difference'],
+            'low_blip_duration': results_read['low_blip_duration'],
+            'high_blip_duration': results_read['high_blip_duration']}
 
 
 def analyse_PR(pulse_traces, sample_rate, t_skip=0, t_read=20,
