@@ -71,8 +71,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         # Set attributes that can also be retrieved from properties_config
         if self.properties_config is not None:
             for attr in self.properties_attrs:
-                setattr(self, attr, self.properties_config.get(attr, None))
-
+                if attr in self.properties_config:
+                    setattr(self, attr, self.properties_config[attr])
+                else:
+                    setattr(self, attr, None)
         self.samples = None
         self.data = None
         self.dataset = None
