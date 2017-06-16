@@ -13,7 +13,7 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 1.	Download and install [Github Desktop](https://desktop.github.com/) and create a [Github account](https://github.com/)
 2.	Give Serwan your account details to add you to the private git repository
 
-### Install SilQ+QCodes
+### Install SilQ
 <span style="color:red">Ensure QCoDeS is not installed on your computer and
 follow below instructions in correct order</span>
 1.	Clone the repository [SilQ](https://github.com/nulinspiratie/SilQ) (includes QCodes) into your hard drive
@@ -25,6 +25,17 @@ follow below instructions in correct order</span>
     3.	Run `python setup.py develop`
     4.	It will likely say that packages are missing
         Install these missing packages like instructed (`pip install {packages}`, where `{packages}` are the packages you want to install separated by spaces)
+
+### Install Experiments repository
+We store our group experiments in the GitHub repository Experiments, which includes our configurations and notebooks, but not our data.
+1. Clone the repository [Experiments](https://github.com/nulinspiratie/experiments) into your hard drive.
+2. Point SilQ to you experiments repository by typing:
+```
+import silq
+silq.set_experiments_folder(r'{experiments_folder}')
+```
+where you should replace `{experiments_folder}` with the absolute path to your Experiments folder.
+Note that you should write the path as a raw string: `r'{experiments_folder}'`.
 
 ## Using SilQ
 The measurement software SilQ and QCodes can be imported as a package, just like any other python packages.
