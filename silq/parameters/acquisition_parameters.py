@@ -722,7 +722,7 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         super().__init__(name='adiabatic_acquisition',
                          names=['contrast', 'dark_counts',
-                                'voltage_difference_read'],
+                                'voltage_difference'],
                          labels=['Contrast', 'Dark counts',
                                  'Voltage difference'],
                          snapshot_value=False,
