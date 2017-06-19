@@ -761,9 +761,9 @@ class DCSweepParameter(AcquisitionParameter):
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'dark_counts', 'voltage_difference',
+                         names=['contrast', 'up_proportion','dark_counts', 'voltage_difference',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'Dark counts',
+                         labels=['Contrast', 'up_proportion', 'Dark counts',
                                  'Voltage difference',
                                  'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
@@ -1011,7 +1011,7 @@ class T1Parameter(AcquisitionParameter):
             else:
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
-            self.store_traces(self.data, subfolder=subfolder)
+            self.store_traces(self.data, subfolder=subfolder, channels=['output', 'DF', 'TGAC'])
 
         if not self.silent:
             self.print_results()
