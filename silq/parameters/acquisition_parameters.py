@@ -673,11 +673,9 @@ class DCSweepParameter(AcquisitionParameter):
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'dark_counts', 'voltage_difference',
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference',
-                                 'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -687,6 +685,14 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'))
+
+    @property
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @labels.setter
+    def labels(self, labels):
+        pass
 
     @clear_single_settings
     def get(self):
@@ -714,7 +720,7 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         super().__init__(name='adiabatic_acquisition',
                          names=['contrast', 'dark_counts',
-                                'voltage_difference'],
+                                'voltage_difference_read'],
                          labels=['Contrast', 'Dark counts',
                                  'Voltage difference'],
                          snapshot_value=False,
