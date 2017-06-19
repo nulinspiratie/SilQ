@@ -437,12 +437,14 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         wave_form_minimum = 15  # the minimum size of a waveform
 
         for ch in channels:
-            period_sample = 1 / sampling_rates[ch]
+            sampling_rate = 100e6/2000 # 50 kHz
+            period_sample = 1 / sampling_rate
 
             period = period_sample * wave_form_minimum
-            cycles = duration // period
+            cycles = int(duration // period)
 
-            n = int(-(-cycles // 2 ** 16))
+            # Waveform cycles must be less than 2 ** 16
+            n = int(np.ceil(cycles / 2** 16))
 
             samples = n * wave_form_minimum
 
@@ -470,10 +472,11 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_1_data)
+            waveform_1['name'] = self.name
             waveform_1['cycles'] = waveform_1_cycles
             waveform_1['t_start'] = self.t_start
             waveform_1['t_stop'] = waveform_2_start
-
+            waveform_1['prescaler'] = 2000
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
             else:
@@ -481,9 +484,12 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
                 waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_2_data)
+
+                waveform_2['name'] = self.name + '_tail'
                 waveform_2['cycles'] = 1
                 waveform_2['t_start'] = waveform_2_start
                 waveform_2['t_stop'] = self.t_stop
+                waveform_2['prescaler'] = 2000
 
                 waveforms[ch] = [waveform_1, waveform_2]
 
@@ -620,21 +626,23 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
         waveforms = {}
 
-        period_sample = 1 / sampling_rates[channel]
+        sampling_rate = 100e6/500
+        period_sample = 1 / sampling_rate
 
         waveform_start = self.t_start
         waveform_samples = wave_form_multiple * round(
             ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
         waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
-        t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
+        t_list = np.linspace(waveform_start, self.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
                     'cycles': 1,
                     't_start': self.t_start,
-                    't_stop': waveform_stop}
+                    't_stop': waveform_stop,
+                    'prescaler': 500}
 
         waveforms[channel] = [waveform]
 
