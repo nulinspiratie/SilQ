@@ -240,6 +240,7 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
     if threshold_voltage is None:
         # Could not find threshold voltage, either too high SNR or no blips
         return {'contrast': 0,
+                'up_proportion': 0,
                 'dark_counts': 0,
                 'voltage_difference': 0,
                 'fidelity_empty': fidelity_empty,
@@ -263,6 +264,7 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
             contrast = up_proportion - dark_counts
 
         return {'contrast': contrast,
+                'up_proportion': up_proportion,
                 'dark_counts': dark_counts,
                 'voltage_difference': voltage_difference,
                 'fidelity_empty': fidelity_empty,
