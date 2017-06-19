@@ -111,32 +111,32 @@ class M3201AInterface(InstrumentInterface):
         # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
         for ch in waveforms:
             waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
-
-            insert_points = []
-            for i, wf in enumerate(waveforms[ch]):
-                if i == 0:
-                    delay_duration = wf['t_start']
-                else:
-                    delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
-
-                delay = int(round(float(delay_duration * 1e9) / 10))
-
-                if delay > 6000:
-                    # create a zero pulse and keep track of where to insert it later
-                    # (as a replacement for the long delay)
-                    zero_waveforms = self.create_zero_waveform(duration=delay_duration,
-                                                               sampling_rate=sampling_rates[ch])
-                    insertion = {'index': i, 'waveforms': zero_waveforms}
-                    insert_points.append(insertion)
-                    wf['delay'] = 0
-                else:
-                    wf['delay'] = delay
-
-            insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
-
-            for insertion in insert_points:
-                i = insertion['index']
-                waveforms[ch][i:i] = insertion['waveforms']
+            #
+            # insert_points = []
+            # for i, wf in enumerate(waveforms[ch]):
+            #     if i == 0:
+            #         delay_duration = wf['t_start']
+            #     else:
+            #         delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
+            #
+            #     delay = int(round(float(delay_duration * 1e9) / 10))
+            #
+            #     if delay > 6000:
+            #         # create a zero pulse and keep track of where to insert it later
+            #         # (as a replacement for the long delay)
+            #         zero_waveforms = self.create_zero_waveform(duration=delay_duration,
+            #                                                    sampling_rate=sampling_rates[ch])
+            #         insertion = {'index': i, 'waveforms': zero_waveforms}
+            #         insert_points.append(insertion)
+            #         wf['delay'] = 0
+            #     else:
+            #         wf['delay'] = delay
+            #
+            # insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
+            #
+            # for insertion in insert_points:
+            #     i = insertion['index']
+            #     waveforms[ch][i:i] = insertion['waveforms']
 
         self.instrument.off()
         self.instrument.flush_waveform()
@@ -158,7 +158,7 @@ class M3201AInterface(InstrumentInterface):
                 #       .format(waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
                 #               trigger_mode))
                 self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
-                                                   int(waveform['delay']), int(waveform['cycles']), prescaler=0)
+                                                   0, int(waveform['cycles']), prescaler=int(waveform['prescaler'] or 0))
                 waveform_counter += 1
                 ch_wf_counter += 1
             # print('starting awg channel {}'.format(self._channels[ch].id))
