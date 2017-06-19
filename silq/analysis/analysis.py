@@ -221,7 +221,7 @@ def analyse_empty(traces, filter_loaded=True):
         # print('None of the empty traces start with a loaded state')
         return {'up_proportion': 0,
                 'num_traces': 0,
-                'threshold_voltage': high_low['threshold_voltage']}
+                'voltage_difference': high_low['voltage_difference']}
 
     idx_end_empty = edge_voltage(traces, edge='end', state='high',
                                  threshold_voltage=threshold_voltage)
@@ -275,9 +275,13 @@ def analyse_read_long(traces, read_pts, sample_rate, min_trace_perc=0.5,
 
     if threshold_voltage is None:
         # Could not find threshold voltage, either too high SNR or no blips
-        contrast = 0
-        dark_counts = 0
-        threshold_voltage = 0
+        return {'contrast': 0,
+                'dark_counts': 0,
+                'threshold_voltage': 0,
+                'voltage_difference': 0,
+                'DC_voltage': 0,
+                'low_blip_duration': 0,
+                'high_blip_duration': 0}
     else:
         read_segment1 = traces[:, :read_pts]
         read_segment2 = traces[:, -read_pts:]
