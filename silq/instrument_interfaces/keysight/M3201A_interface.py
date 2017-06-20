@@ -389,6 +389,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
+            waveform_repeated['name'] = self.full_name,
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
@@ -401,6 +402,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
+                waveform_tail['name'] = self.full_name + '_tail',
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
                 waveform_tail['t_stop'] = waveform_tail_stop
@@ -500,7 +502,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
-            waveform_repeated['name'] = self.name
+            waveform_repeated['name'] = self.full_name
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
@@ -514,7 +516,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
 
-                waveform_tail['name'] = self.name + '_tail'
+                waveform_tail['name'] = self.full_name + '_tail'
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
                 waveform_tail['t_stop'] = self.t_stop
@@ -573,6 +575,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
+                        'name':self.full_name,
                         'cycles': 1,
                         't_start': self.t_start,
                         't_stop': waveform_stop,
@@ -631,6 +634,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
+                        'name': self.full_name,
                         'cycles': 1,
                         't_start': self.t_start,
                         't_stop': waveform_stop,
@@ -673,6 +677,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
+                    'name': self.full_name,
                     'cycles': 1,
                     't_start': self.t_start,
                     't_stop': waveform_stop,
