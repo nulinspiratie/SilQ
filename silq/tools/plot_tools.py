@@ -67,8 +67,8 @@ class SetGates(PlotAction):
     def button_press(self, event):
         super().button_press(event)
 
-        self.txt = f"{self.plot.x_label}({event.xdata:.5f}\n" \
-                   f"{self.plot.y_label}({event.ydata:.5g})\n"
+        self.txt = f"{self.plot.x_label}({event.xdata:.5f})\n" \
+                   f"{self.plot.y_label}({event.ydata:.5g})"
         self.handle_code(self.txt, copy=True, execute=False)
 
 
