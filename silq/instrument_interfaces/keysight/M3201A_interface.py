@@ -225,37 +225,37 @@ class M3201AInterface(InstrumentInterface):
 
         samples = n * wave_form_minimum
 
-        waveform_1_period = period_sample * samples
-        waveform_1_cycles = cycles // n
-        waveform_1_duration = waveform_1_period * waveform_1_cycles
+        waveform_repeated_period = period_sample * samples
+        waveform_repeated_cycles = cycles // n
+        waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-        waveform_2_samples = wave_form_multiple * round(
-            ((duration - waveform_1_duration) / period_sample + 1) / wave_form_multiple)
+        waveform_tail_samples = wave_form_multiple * round(
+            ((duration - waveform_repeated_duration) / period_sample + 1) / wave_form_multiple)
 
-        if waveform_2_samples < wave_form_minimum:
-            waveform_2_samples = 0
+        if waveform_tail_samples < wave_form_minimum:
+            waveform_tail_samples = 0
 
-        waveform_1 = {}
-        waveform_2 = {}
+        waveform_repeated = {}
+        waveform_tail = {}
 
-        waveform_1_data = np.zeros(samples)
+        waveform_repeated_data = np.zeros(samples)
 
-        waveform_1['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
-                                                                          waveform_data_a=waveform_1_data)
-        waveform_1['cycles'] = waveform_1_cycles
-        waveform_1['delay'] = 0
+        waveform_repeated['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
+                                                                          waveform_data_a=waveform_repeated_data)
+        waveform_repeated['cycles'] = waveform_repeated_cycles
+        waveform_repeated['delay'] = 0
 
-        if waveform_2_samples == 0:
-            return [waveform_1]
+        if waveform_tail_samples == 0:
+            return [waveform_repeated]
         else:
-            waveform_2_data = np.zeros(waveform_2_samples)
+            waveform_tail_data = np.zeros(waveform_tail_samples)
 
-            waveform_2['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
-                                                                              waveform_data_a=waveform_2_data)
-            waveform_2['cycles'] = 1
-            waveform_2['delay'] = 0
+            waveform_tail['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
+                                                                              waveform_data_a=waveform_tail_data)
+            waveform_tail['cycles'] = 1
+            waveform_tail['delay'] = 0
 
-            return [waveform_1, waveform_2]
+            return [waveform_repeated, waveform_tail]
 
 
 class SinePulseImplementation(PulseImplementation, SinePulse):
@@ -361,50 +361,51 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                                                            n_min=n_min, n_max=1000,
                                                            sample_points_multiple=wave_form_multiple)
 
-            # the first waveform (waveform_1) is repeated n times
+            # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
-            #   n_cycles * waveform_1 + waveform_2
-            waveform_1_period = period_sample * samples
-            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
+            #   n_cycles * waveform_repeated + waveform_tail
+            # This is done to minimise the number of data points written to the AWG
+            waveform_repeated_period = period_sample * samples
+            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, samples, endpoint=False)
 
-            waveform_1_cycles = cycles // n
-            waveform_1_duration = waveform_1_period * waveform_1_cycles
+            waveform_repeated_cycles = cycles // n
+            waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-            waveform_2_start = self.t_start + waveform_1_duration
-            waveform_2_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
+            waveform_tail_start = self.t_start + waveform_repeated_duration
+            waveform_tail_samples = wave_form_multiple * round(
+                ((self.t_stop - waveform_tail_start) / period_sample + 1) / wave_form_multiple)
 
-            if waveform_2_samples < wave_form_minimum:
-                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
-                waveform_2_samples = 0
+            if waveform_tail_samples < wave_form_minimum:
+                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
+                waveform_tail_samples = 0
 
-            t_list_2 = np.linspace(waveform_2_start, self.t_stop, waveform_2_samples, endpoint=True)
+            t_list_2 = np.linspace(waveform_tail_start, self.t_stop, waveform_tail_samples, endpoint=True)
 
-            waveform_1 = {}
-            waveform_2 = {}
+            waveform_repeated = {}
+            waveform_tail = {}
 
-            waveform_1_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
+            waveform_repeated_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
 
-            waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                         waveform_data_a=waveform_1_data)
-            waveform_1['cycles'] = waveform_1_cycles
-            waveform_1['t_start'] = self.t_start
-            waveform_1['t_stop'] = waveform_2_start
-            waveform_1['prescaler'] = self.prescaler
+            waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                         waveform_data_a=waveform_repeated_data)
+            waveform_repeated['cycles'] = waveform_repeated_cycles
+            waveform_repeated['t_start'] = self.t_start
+            waveform_repeated['t_stop'] = waveform_tail_start
+            waveform_repeated['prescaler'] = self.prescaler
 
             if len(t_list_2) == 0:
-                waveforms[ch] = [waveform_1]
+                waveforms[ch] = [waveform_repeated]
             else:
-                waveform_2_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
+                waveform_tail_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
 
-                waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                             waveform_data_a=waveform_2_data)
-                waveform_2['cycles'] = 1
-                waveform_2['t_start'] = waveform_2_start
-                waveform_2['t_stop'] = waveform_2_stop
-                waveform_2['prescaler'] = self.prescaler
+                waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                             waveform_data_a=waveform_tail_data)
+                waveform_tail['cycles'] = 1
+                waveform_tail['t_start'] = waveform_tail_start
+                waveform_tail['t_stop'] = waveform_tail_stop
+                waveform_tail['prescaler'] = self.prescaler
 
-                waveforms[ch] = [waveform_1, waveform_2]
+                waveforms[ch] = [waveform_repeated, waveform_tail]
 
         return waveforms
 
@@ -465,56 +466,60 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             samples = n * wave_form_minimum
 
-            waveform_1_period = period_sample * samples
-            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
-            waveform_1_cycles = max_cycles // n
-            waveform_1_duration = waveform_1_period * waveform_1_cycles
+            # the first waveform (waveform_repeated) is repeated n times
+            # the second waveform is for the final part of the total wave so the total wave looks like:
+            #   n_cycles * waveform_repeated + waveform_tail
+            # This is done to minimise the number of data points written to the AWG
+            waveform_repeated_period = period_sample * samples
+            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, samples, endpoint=False)
+            waveform_repeated_cycles = max_cycles // n
+            waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
             # print(f'{self.name}')
             # print(f'\tn={n}, samples={samples}')
-            # print(f'\twf1: {self.t_start} to {self.t_start + waveform_1_period} repeated {waveform_1_cycles} times')
+            # print(f'\twf1: {self.t_start} to {self.t_start + waveform_repeated_period} repeated {waveform_repeated_cycles} times')
 
 
-            waveform_2_start = self.t_start + waveform_1_duration
-            waveform_2_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_2_start) / period_sample + 1) / wave_form_multiple)
+            waveform_tail_start = self.t_start + waveform_repeated_duration
+            waveform_tail_samples = wave_form_multiple * round(
+                ((self.t_stop - waveform_tail_start) / period_sample + 1) / wave_form_multiple)
 
-            if waveform_2_samples < wave_form_minimum:
-                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
-                waveform_2_samples = 0
+            if waveform_tail_samples < wave_form_minimum:
+                # print('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
+                waveform_tail_samples = 0
 
-            # waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
-            t_list_2 = np.linspace(waveform_2_start, self.t_stop, waveform_2_samples, endpoint=True)
-            # print(f'\twf2: {waveform_2_start} to {self.t_stop}\n')
+            # waveform_tail_stop = waveform_tail_start + period_sample * (waveform_tail_samples - 1)
+            t_list_2 = np.linspace(waveform_tail_start, self.t_stop, waveform_tail_samples, endpoint=True)
+            # print(f'\twf2: {waveform_tail_start} to {self.t_stop}\n')
 
-            waveform_1 = {}
-            waveform_2 = {}
+            waveform_repeated = {}
+            waveform_tail = {}
 
-            waveform_1_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
+            waveform_repeated_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
 
-            waveform_1['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                         waveform_data_a=waveform_1_data)
-            waveform_1['name'] = self.name
-            waveform_1['cycles'] = waveform_1_cycles
-            waveform_1['t_start'] = self.t_start
-            waveform_1['t_stop'] = waveform_2_start
-            waveform_1['prescaler'] = self.prescaler
+            waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                         waveform_data_a=waveform_repeated_data)
+            waveform_repeated['name'] = self.name
+            waveform_repeated['cycles'] = waveform_repeated_cycles
+            waveform_repeated['t_start'] = self.t_start
+            waveform_repeated['t_stop'] = waveform_tail_start
+            waveform_repeated['prescaler'] = self.prescaler
             # import pdb; pdb.set_trace()
             if len(t_list_2) == 0:
-                waveforms[ch] = [waveform_1]
+                waveforms[ch] = [waveform_repeated]
             else:
-                waveform_2_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
+                waveform_tail_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
 
-                waveform_2['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                             waveform_data_a=waveform_2_data)
+                waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
+                                                                             waveform_data_a=waveform_tail_data)
 
-                waveform_2['name'] = self.name + '_tail'
-                waveform_2['cycles'] = 1
-                waveform_2['t_start'] = waveform_2_start
-                waveform_2['t_stop'] = self.t_stop
-                waveform_2['prescaler'] = self.prescaler
+                waveform_tail['name'] = self.name + '_tail'
+                waveform_tail['cycles'] = 1
+                waveform_tail['t_start'] = waveform_tail_start
+                waveform_tail['t_stop'] = self.t_stop
+                waveform_tail['prescaler'] = self.prescaler
 
-                waveforms[ch] = [waveform_1, waveform_2]
+                waveforms[ch] = [waveform_repeated, waveform_tail]
 
         return waveforms
 
