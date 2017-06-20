@@ -89,6 +89,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.layout = self.layout
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
+
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
 
@@ -193,10 +194,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def print_results(self):
         if self.names is not None:
-            for name, result in zip(self.names, self.results):
-                print('{}: {:.3f}'.format(name, result))
+            for name in self.names:
+                print(f'{name}: {self.results[name]:.3f}')
         else:
-            print('{}: {:.3f}'.format(self.name, self.results))
+            print(f'{self.name}: {self.results[self.name]:.3f}')
 
     def setup(self, start=None, **kwargs):
         # Create a hard copy of pulse sequence. This ensures that pulse
@@ -285,8 +286,8 @@ class DCParameter(AcquisitionParameter):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        self.results = [self.data['read']['output']]
-        return self.results
+        self.results = {'DC_voltage': self.data['read']['output']}
+        return [self.results[name] for name in self.names]
 
 
 class TraceParameter(AcquisitionParameter):
@@ -372,6 +373,7 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         trace, = self.acquire()
 
+        # Note that this is broken, but should be replaced by Mark's PR
         self.results = [trace, np.mean(trace), np.std(trace)]
 
         return self.results
@@ -606,24 +608,25 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.use_ramp:
             if len(self.sweep_parameters) == 1:
-                self.results = [DC_voltages[0]]
+                self.results = {'DC_voltage': DC_voltages[0]}
             elif len(self.sweep_parameters) == 2:
-                self.results = [DC_voltages]
+                self.results = {'DC_voltages': DC_voltages}
         else:
             if len(self.sweep_parameters) == 1:
-                self.results = [DC_voltages]
+                self.results = {'DC_voltages': DC_voltages}
             elif len(self.sweep_parameters) == 2:
-                self.results = [DC_voltages.reshape(self.shapes[0])]
+                self.results = {'DC_voltages':
+                    DC_voltages.reshape(self.shapes[0])}
 
         if self.trace_pulse.enabled:
-            self.results.append(self.data['trace']['output'])
+            self.results['trace_voltage'] = self.data['trace']['output']
 
         return self.results
 
     @clear_single_settings
     def get(self):
         self.acquire()
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class EPRParameter(AcquisitionParameter):
@@ -648,11 +651,10 @@ class EPRParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_EPR(pulse_traces=self.data,
-                                          sample_rate=self.sample_rate,
-                                          t_skip=self.t_skip,
-                                          t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_EPR(pulse_traces=self.data,
+                                            sample_rate=self.sample_rate,
+                                            t_skip=self.t_skip,
+                                            t_read=self.t_read)
 
         if self.save_traces:
             self.store_traces(self.data)
@@ -660,7 +662,7 @@ class EPRParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class AdiabaticParameter(AcquisitionParameter):
@@ -701,11 +703,10 @@ class AdiabaticParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PR(pulse_traces=self.data,
+                                           sample_rate=self.sample_rate,
+                                           t_skip=self.t_skip,
+                                           t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -714,7 +715,7 @@ class AdiabaticParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class RabiParameter(AcquisitionParameter):
@@ -757,11 +758,10 @@ class RabiParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PR(pulse_traces=self.data,
+                                           sample_rate=self.sample_rate,
+                                           t_skip=self.t_skip,
+                                           t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -770,7 +770,7 @@ class RabiParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class RabiDriveParameter(AcquisitionParameter):
@@ -819,11 +819,10 @@ class RabiDriveParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PR(pulse_traces=self.data,
+                                           sample_rate=self.sample_rate,
+                                           t_skip=self.t_skip,
+                                           t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -832,7 +831,7 @@ class RabiDriveParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class T1Parameter(AcquisitionParameter):
@@ -865,11 +864,10 @@ class T1Parameter(AcquisitionParameter):
         self.acquire()
 
         # Analysis
-        fidelities = analysis.analyse_read(
+        self.results = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
             start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
-        self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -884,7 +882,7 @@ class T1Parameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class DarkCountsParameter(AcquisitionParameter):
@@ -927,7 +925,7 @@ class DarkCountsParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class VariableReadParameter(AcquisitionParameter):
@@ -968,7 +966,8 @@ class VariableReadParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        self.results = np.concatenate([self.data['plunge']['output'],
-                                       self.data['read']['output'],
-                                       self.data['empty']['output']])
-        return self.results,
+        self.results = {'read_voltage':
+                            np.concatenate([self.data['plunge']['output'],
+                                            self.data['read']['output'],
+                                            self.data['empty']['output']])}
+        return [self.results[name] for name in self.names]
