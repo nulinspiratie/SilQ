@@ -111,44 +111,49 @@ class M3201AInterface(InstrumentInterface):
         # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
         for ch in waveforms:
             waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
-            #
-            # insert_points = []
-            # for i, wf in enumerate(waveforms[ch]):
-            #     if i == 0:
-            #         delay_duration = wf['t_start']
-            #     else:
-            #         delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
-            #
-            #     delay = int(round(float(delay_duration * 1e9) / 10))
-            #
-            #     if delay > 6000:
-            #         # create a zero pulse and keep track of where to insert it later
-            #         # (as a replacement for the long delay)
-            #         zero_waveforms = self.create_zero_waveform(duration=delay_duration,
-            #                                                    sampling_rate=sampling_rates[ch])
-            #         insertion = {'index': i, 'waveforms': zero_waveforms}
-            #         insert_points.append(insertion)
-            #         wf['delay'] = 0
-            #     else:
-            #         wf['delay'] = delay
-            #
-            # insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
-            #
-            # for insertion in insert_points:
-            #     i = insertion['index']
-            #     waveforms[ch][i:i] = insertion['waveforms']
+
+            insert_points = []
+            for i, wf in enumerate(waveforms[ch]):
+                if i == 0:
+                    delay_duration = wf['t_start']
+                else:
+                    delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
+
+                delay = int(round(float(delay_duration * 1e9) / 10))
+
+                if delay > 6000:
+                    # create a zero pulse and keep track of where to insert it later
+                    # (as a replacement for the long delay)
+                    zero_waveforms = self.create_zero_waveform(duration=delay_duration,
+                                                               sampling_rate=sampling_rates[ch])
+                    insertion = {'index': i, 'waveforms': zero_waveforms}
+                    insert_points.append(insertion)
+                    wf['delay'] = 0
+                else:
+                    wf['delay'] = delay
+
+            insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
+
+            for insertion in insert_points:
+                i = insertion['index']
+                waveforms[ch][i:i] = insertion['waveforms']
 
         self.instrument.off()
         self.instrument.flush_waveform()
+        # print('Loading waveforms onto AWG')
         for ch in waveforms:
             self.instrument.awg_flush(self._channels[ch].id)
             self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=self._channels[ch].id)
             self.instrument.set_channel_amplitude(amplitude=1.5, channel_number=self._channels[ch].id)
             waveform_array = waveforms[ch]
+            # print(waveform_array)
             ch_wf_counter = 0
             for waveform in waveform_array:
                 # print('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
                 #                                                                         waveform_counter))
+                # print(f'{ch}')
+                # for key in waveform.keys():
+                #     print(f'\t{key} : {waveform[key]}')
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 if ch_wf_counter == 0:
                     trigger_mode = 1  # software trigger for first wf
@@ -158,9 +163,10 @@ class M3201AInterface(InstrumentInterface):
                 #       .format(waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
                 #               trigger_mode))
                 self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
-                                                   0, int(waveform['cycles']), prescaler=int(waveform['prescaler'] or 0))
+                                                   0, int(waveform['cycles']), prescaler=int(waveform.get('prescaler', 0)))
                 waveform_counter += 1
                 ch_wf_counter += 1
+
             # print('starting awg channel {}'.format(self._channels[ch].id))
             self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=0)
             self.instrument.awg_start(self._channels[ch].id)
@@ -182,7 +188,7 @@ class M3201AInterface(InstrumentInterface):
         if self.started:
             duration = self.pulse_sequence.duration
             # print(f'pulse sequence duration = {duration}')
-            threading.Timer(3*duration, self.trigger_self).start()
+            threading.Timer(5*duration, self.trigger_self).start()
 
 
     def get_final_additional_pulses(self, **kwargs):
@@ -195,6 +201,10 @@ class M3201AInterface(InstrumentInterface):
         pass
 
     def software_trigger(self):
+        # from time import time
+        # if not hasattr(self, 't_stamp'):
+        #     self.t_stamp = time()
+        # print(f'{(time()-self.t_stamp)*1000}')
         mask = 0
         for c in self._get_active_channel_ids():
             mask |= 1 << c
@@ -450,9 +460,13 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             waveform_1_period = period_sample * samples
             t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
-
             waveform_1_cycles = cycles // n
             waveform_1_duration = waveform_1_period * waveform_1_cycles
+
+            # print(f'{self.name}')
+            # print(f'\tn={n}, samples={samples}')
+            # print(f'\twf1: {self.t_start} to {self.t_start + waveform_1_period} repeated {waveform_1_cycles} times')
+
 
             waveform_2_start = self.t_start + waveform_1_duration
             waveform_2_samples = wave_form_multiple * round(
@@ -464,6 +478,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             # waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
             t_list_2 = np.linspace(waveform_2_start, self.t_stop, waveform_2_samples, endpoint=True)
+            # print(f'\twf2: {waveform_2_start} to {self.t_stop}\n')
 
             waveform_1 = {}
             waveform_2 = {}
@@ -477,6 +492,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             waveform_1['t_start'] = self.t_start
             waveform_1['t_stop'] = waveform_2_start
             waveform_1['prescaler'] = 2000
+            # import pdb; pdb.set_trace()
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
             else:
