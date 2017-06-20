@@ -6,6 +6,8 @@ from qcodes.utils import validators as vals
 # from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
 import numpy as np
 from qcodes import ManualParameter
+import logging
+logger = logging.getLogger(__name__)
 
 class M3300A_DIG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
@@ -92,8 +94,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
     def _acquisition_controller(self):
         return self.acquisition_controllers.get(
             self.acquisition_controller(), None)
-
-    # Make all parameters of the interface transparent to the acquisition controller
 
     def acquisition(self):
         """
@@ -184,7 +184,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
             if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
-                # Trigger already given
+                logger.warning('Trigger manually defined for M3300A digitizer. '
+                               'This is inadvisable as this could limit the responsiveness'
+                               ' of the machine.')
                 return []
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start, duration=1e-5,
@@ -220,9 +222,9 @@ class M3300A_DIG_Interface(InstrumentInterface):
                       self.pulse_sequence.get_pulses(acquire=True))
             t_f = max(pulse.t_stop for pulse in
                   self.pulse_sequence.get_pulses(acquire=True))
-            T = t_f - t_0
+            acquisition_window = t_f - t_0
 
-            duration = self.input_pulse_sequence.duration
+            duration = self.pulse_sequence.duration
 
             controller.sample_rate(int(round((self.sample_rate()))))
             controller.traces_per_acquisition(int(round(self.samples())))
@@ -233,11 +235,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
             controller.trigger_edge(self.trigger_edge())
 
             # Capture maximum number of samples on all channels
-            controller.samples_per_record(int(T * self.sample_rate()))
+            controller.samples_per_record(int(acquisition_window * self.sample_rate()))
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
-            controller.read_timeout(duration * self.samples() * 10)
+            read_timeout = duration * self.samples() * 10
+            logger.info(f'Read timeout is set to {read_timeout}')
+            controller.read_timeout(read_timeout)
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
