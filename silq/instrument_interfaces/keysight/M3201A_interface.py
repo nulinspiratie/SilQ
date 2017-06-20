@@ -178,17 +178,17 @@ class M3201AInterface(InstrumentInterface):
             mask |= 1 << c
         if self.auto_trigger:
             self.started = True
-            self.trigger_self()
+            duration = self.pulse_sequence.duration
+            trigger_period = duration * 5
+            self.trigger_self(trigger_period)
         else:
             self.software_trigger()
 
 
-    def trigger_self(self):
+    def trigger_self(self, trigger_period):
         self.software_trigger()
         if self.started:
-            duration = self.pulse_sequence.duration
-            # print(f'pulse sequence duration = {duration}')
-            threading.Timer(5*duration, self.trigger_self).start()
+            threading.Timer(trigger_period, self.trigger_self).start()
 
 
     def get_final_additional_pulses(self, **kwargs):
