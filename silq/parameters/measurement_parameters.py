@@ -86,10 +86,10 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
     def print_results(self):
         if getattr(self, 'names', None) is not None:
-            for name, result in zip(self.names, self.results):
-                logger.info('{}: {:.3f}'.format(name, result))
+            for name, result in self.results.items():
+                logger.info(f'{name}: {result:.3f}')
         elif hasattr(self, 'results'):
-            logger.info('{}: {:.3f}'.format(self.name, self.results))
+            logger.info(f'{self.name}: {self.results[self.name]:.3f}')
 
 
 class DCMultisweepParameter(MeasurementParameter):
@@ -321,7 +321,8 @@ class SelectFrequencyParameter(MeasurementParameter):
         self.measurement(frequencies)
         self.measurement()
 
-        self.results = getattr(self.measurement.dataset, self.discriminant)
+        self.results = {self.discriminant: getattr(self.measurement.dataset,
+                                                   self.discriminant)}
 
         # Determine optimal frequency and update config entry if needed
         self.condition_result = self.measurement.check_condition_sets()
@@ -334,7 +335,7 @@ class SelectFrequencyParameter(MeasurementParameter):
                 logger.warning("Could not find frequency with high enough "
                                 "contrast")
 
-        self.results += [frequency]
+        self['frequency'] = frequency
 
         self.acquisition_parameter.clear_settings()
 
@@ -342,7 +343,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class TrackPeakParameter(MeasurementParameter):
