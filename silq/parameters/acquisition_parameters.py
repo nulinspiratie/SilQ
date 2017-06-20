@@ -287,7 +287,7 @@ class DCParameter(AcquisitionParameter):
         # must be done once beforehand.
         self.acquire()
         self.results = {'DC_voltage': self.data['read']['output']}
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class TraceParameter(AcquisitionParameter):
@@ -626,7 +626,7 @@ class DCSweepParameter(AcquisitionParameter):
     @clear_single_settings
     def get(self):
         self.acquire()
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class EPRParameter(AcquisitionParameter):
@@ -662,7 +662,7 @@ class EPRParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class AdiabaticParameter(AcquisitionParameter):
@@ -715,7 +715,7 @@ class AdiabaticParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class RabiParameter(AcquisitionParameter):
@@ -770,7 +770,7 @@ class RabiParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class RabiDriveParameter(AcquisitionParameter):
@@ -831,7 +831,7 @@ class RabiDriveParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class T1Parameter(AcquisitionParameter):
@@ -882,7 +882,7 @@ class T1Parameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class DarkCountsParameter(AcquisitionParameter):
@@ -925,7 +925,7 @@ class DarkCountsParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
 
 
 class VariableReadParameter(AcquisitionParameter):
@@ -970,4 +970,4 @@ class VariableReadParameter(AcquisitionParameter):
                             np.concatenate([self.data['plunge']['output'],
                                             self.data['read']['output'],
                                             self.data['empty']['output']])}
-        return [self.results[name] for name in self.names]
+        return tuple(self.results[name] for name in self.names)
