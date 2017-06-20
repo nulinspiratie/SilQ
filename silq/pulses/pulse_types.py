@@ -17,6 +17,8 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average']
 
+valid_average_modes = ['none', 'trace', 'point']
+
 logger = logging.getLogger(__name__)
 
 
@@ -413,6 +415,17 @@ class Pulse:
         if t_stop is not None:
             # Setting duration sends a signal for duration and also t_stop
             self.duration = round(t_stop - self.t_start, 11)
+
+    @property
+    def average(self):
+        return self._average
+
+    @average.setter
+    def average(self, average):
+        if average not in valid_average_modes:
+            raise ValueError(f'{average} is not a valid average mode.')
+        else:
+            self._average = average
 
     def _get_repr(self, properties_str):
         if self.connection:
