@@ -8,7 +8,7 @@ Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseImplementation, PulseMatch
 
-from silq.tools.general_tools import get_truth, SettingsClass
+from silq.tools.general_tools import get_truth, property_ignore_setter
 from silq import config
 
 # Set of valid connection conditions for satisfies_conditions. These are
@@ -809,21 +809,13 @@ class CombinationPulse(Pulse):
         assert isinstance(pulse2, Pulse), 'pulse2 needs to be a Pulse'
         assert relation in ['+', '-', '*'], 'relation has a non-supported value'
 
-    @property
+    @property_ignore_setter
     def t_start(self):
         return min(self.pulse1.t_start, self.pulse2.t_start)
 
-    @t_start.setter
-    def t_start(self, t_start):
-        pass
-
-    @property
+    @property_ignore_setter
     def t_stop(self):
         return max(self.pulse1.t_stop, self.pulse2.t_stop)
-
-    @t_stop.setter
-    def t_stop(self, t_stop):
-        pass
 
     @property
     def combination_string(self):

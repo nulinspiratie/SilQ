@@ -471,3 +471,18 @@ def arreqclose_in_list(myarr, list_arrays):
                  if elem.size == myarr.size
                  and np.allclose(elem, myarr)),
                 None)
+
+
+class property_ignore_setter(object):
+    """
+    Decorator similar to @property that ignores setter
+    """
+    def __init__(self, func, doc=None):
+        self.func = func
+        self.__doc__ = doc if doc is not None else func.__doc__
+
+    def __get__(self, obj, value):
+        return self.func(obj)
+
+    def __set__(self, obj, value):
+        pass
