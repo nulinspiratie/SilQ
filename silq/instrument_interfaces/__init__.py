@@ -7,6 +7,8 @@ def get_instrument_interface(instrument):
                           'class': 'ArbStudio1104Interface'},
         'MockArbStudio': {'module': '.lecroy.ArbStudio1104_interface',
                           'class': 'ArbStudio1104Interface'},
+        'PulseBlasterDDS' : {'module' : '.spincore.PulseBlasterDDS_interface', 
+                             'class' : 'PulseBlasterDDSInterface'},
         'PulseBlasterESRPRO': {'module': '.spincore.PulseBlasterESRPRO_interface',
                                'class': 'PulseBlasterESRPROInterface'},
         'MockPulseBlaster': {'module': '.spincore.PulseBlasterESRPRO_interface',
