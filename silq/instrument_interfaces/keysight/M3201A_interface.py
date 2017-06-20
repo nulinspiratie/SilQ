@@ -259,7 +259,8 @@ class M3201AInterface(InstrumentInterface):
 
 
 class SinePulseImplementation(PulseImplementation, SinePulse):
-    def __init__(self, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
+        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -349,9 +350,11 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         wave_form_minimum = 15  # the minimum size of a waveform
 
         for ch in channels:
-            # TODO: check if sampling rate is indeed something we want to configure on a channel basis
-            period_sample = 1 / sampling_rates[ch]
+            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+            period_sample = 1 / sampling_rate
 
+            # This factor determines the number of points needed in the waveform
+            # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n_min = int(-(-cycles // 2**16))
 
             n, error, samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rates[ch], threshold,
@@ -375,8 +378,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                 # print('tail is too short, removing tail (tail size was: {})'.format(waveform_2_samples))
                 waveform_2_samples = 0
 
-            waveform_2_stop = waveform_2_start + period_sample * (waveform_2_samples - 1)
-            t_list_2 = np.linspace(waveform_2_start, waveform_2_stop, waveform_2_samples, endpoint=True)
+            t_list_2 = np.linspace(waveform_2_start, self.t_stop, waveform_2_samples, endpoint=True)
 
             waveform_1 = {}
             waveform_2 = {}
@@ -388,6 +390,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             waveform_1['cycles'] = waveform_1_cycles
             waveform_1['t_start'] = self.t_start
             waveform_1['t_stop'] = waveform_2_start
+            waveform_1['prescaler'] = self.prescaler
 
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
@@ -399,6 +402,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                 waveform_2['cycles'] = 1
                 waveform_2['t_start'] = waveform_2_start
                 waveform_2['t_stop'] = waveform_2_stop
+                waveform_2['prescaler'] = self.prescaler
 
                 waveforms[ch] = [waveform_1, waveform_2]
 
@@ -406,7 +410,9 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
 
 class DCPulseImplementation(PulseImplementation, DCPulse):
-    def __init__(self, **kwargs):
+    def __init__(self, prescaler=100, **kwargs):
+        # Default sampling rate of 1 MSPS
+        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -447,20 +453,21 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         wave_form_minimum = 15  # the minimum size of a waveform
 
         for ch in channels:
-            sampling_rate = 100e6/2000 # 50 kHz
+            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
             period_sample = 1 / sampling_rate
 
             period = period_sample * wave_form_minimum
-            cycles = int(duration // period)
+            max_cycles = int(duration // period)
 
-            # Waveform cycles must be less than 2 ** 16
-            n = int(np.ceil(cycles / 2** 16))
+            # This factor determines the number of points needed in the waveform
+            # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
+            n = int(np.ceil(max_cycles / 2 ** 16))
 
             samples = n * wave_form_minimum
 
             waveform_1_period = period_sample * samples
             t_list_1 = np.linspace(self.t_start, self.t_start + waveform_1_period, samples, endpoint=False)
-            waveform_1_cycles = cycles // n
+            waveform_1_cycles = max_cycles // n
             waveform_1_duration = waveform_1_period * waveform_1_cycles
 
             # print(f'{self.name}')
@@ -491,7 +498,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             waveform_1['cycles'] = waveform_1_cycles
             waveform_1['t_start'] = self.t_start
             waveform_1['t_stop'] = waveform_2_start
-            waveform_1['prescaler'] = 2000
+            waveform_1['prescaler'] = self.prescaler
             # import pdb; pdb.set_trace()
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_1]
@@ -505,7 +512,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 waveform_2['cycles'] = 1
                 waveform_2['t_start'] = waveform_2_start
                 waveform_2['t_stop'] = self.t_stop
-                waveform_2['prescaler'] = 2000
+                waveform_2['prescaler'] = self.prescaler
 
                 waveforms[ch] = [waveform_1, waveform_2]
 
@@ -513,7 +520,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
 
 class AWGPulseImplementation(PulseImplementation, AWGPulse):
-    def __init__(self, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
+        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -546,8 +554,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
 
         for ch in channels:
-            # TODO: check if sampling rate is indeed something we want to configure on a channel basis
-            period_sample = 1 / sampling_rates[ch]
+            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+            period_sample = 1 / sampling_rate
 
             waveform_start = self.t_start
             waveform_samples = wave_form_multiple * round(
@@ -561,7 +569,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
                                                                         waveform_data_a=waveform_data),
                         'cycles': 1,
                         't_start': self.t_start,
-                        't_stop': waveform_stop}
+                        't_stop': waveform_stop,
+                        'prescaler':self.prescaler}
 
             waveforms[ch] = [waveform]
 
@@ -569,7 +578,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
 
 class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
-    def __init__(self, **kwargs):
+    def __init__(self, prescaler=0 **kwargs):
+        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -602,8 +612,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
 
         for ch in channels:
-            # TODO: check if sampling rate is indeed something we want to configure on a channel basis
-            period_sample = 1 / sampling_rates[ch]
+            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+            period_sample = 1 / sampling_rate
 
             waveform_start = self.t_start
             waveform_samples = wave_form_multiple * round(
@@ -617,7 +627,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
                                                                         waveform_data_a=waveform_data),
                         'cycles': 1,
                         't_start': self.t_start,
-                        't_stop': waveform_stop}
+                        't_stop': waveform_stop,
+                        'prescaler': self.prescaler}
 
             waveforms[ch] = [waveform]
 
@@ -625,7 +636,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
 
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
+    def __init__(self, prescaler = 0, **kwargs):
+        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
     @property
@@ -642,7 +654,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
         waveforms = {}
 
-        sampling_rate = 100e6/500
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
         waveform_start = self.t_start
@@ -658,7 +670,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
                     'cycles': 1,
                     't_start': self.t_start,
                     't_stop': waveform_stop,
-                    'prescaler': 500}
+                    'prescaler': self.prescaler}
 
         waveforms[channel] = [waveform]
 
