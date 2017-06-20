@@ -3,7 +3,7 @@ import logging
 
 import qcodes as qc
 from qcodes import config, BreakIf
-from qcodes.data import io
+from qcodes.data.data_set import DataSet
 
 from silq.tools.parameter_tools import create_set_vals
 from silq.tools.general_tools import SettingsClass, get_truth, \
@@ -242,10 +242,6 @@ class Measurement(SettingsClass):
         return obj
 
     @property
-    def disk_io(self):
-        return io.DiskIO(config['user']['properties']['data_folder'])
-
-    @property
     def loc_provider(self):
         if self.base_folder is None:
             fmt = '{date}/#{counter}_{name}_{time}'
@@ -411,7 +407,7 @@ class Loop0DMeasurement(Measurement):
         self.initialize()
         self.dataset = self.measurement.run(
             name='{self.name}_{self.acquisition_parameter.name}',
-            io=self.disk_io, location=self.loc_provider,
+            io=DataSet.default_io, location=self.loc_provider,
             quiet=True, set_active=set_active)
 
         if self.condition_sets is not None:
