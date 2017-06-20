@@ -1,6 +1,6 @@
 import sys
 import operator
-from functools import partial
+from functools import partial, wraps
 import re
 import numpy as np
 import logging
@@ -8,13 +8,14 @@ import logging.handlers
 import os
 import time
 
-
 from qcodes import config
 from qcodes.config.config import DotDict
 from qcodes.instrument.parameter import Parameter
 
+
 code_labels = {}
 properties_config = config['user'].get('properties', {})
+
 
 def execfile(filename, globals=None, locals=None):
     if globals is None:
@@ -30,6 +31,7 @@ ops = {'>': operator.gt,
        '>=': operator.ge,
        '<=': operator.le,
        '==': operator.eq}
+
 
 def get_truth(test_val, target_val, relation='=='):
     """
@@ -81,9 +83,10 @@ def print_attr(obj, attr):
 class SettingsClass:
     _single_settings = {}
     _temporary_settings = {}
-    def __init__(self, **kwargs):
+    def __init__(self, ignore_if_not_None=[], **kwargs):
         self._temporary_settings = {}
         self._single_settings = {}
+        self._ignore_if_not_None = ignore_if_not_None
 
     def __getattribute__(self, item):
         """
@@ -102,7 +105,10 @@ class SettingsClass:
 
         """
         if item in ['_temporary_settings', '_single_settings',
-                    '__setstate__', '__dict__']:
+                    '_ignore_if_not_None', '__setstate__', '__dict__']:
+            return object.__getattribute__(self, item)
+        elif item in self._ignore_if_not_None and \
+                        object.__getattribute__(self, item) is not None:
             return object.__getattribute__(self, item)
         elif item in self._single_settings:
             return self._single_settings[item]
@@ -199,11 +205,15 @@ def attribute_from_config(item, config=properties_config):
 
 
 def clear_single_settings(f):
+    @wraps(f)
     def clear_single_settings_decorator(self, *args, **kwargs):
-        output = f(self, *args, **kwargs)
-        self._single_settings.clear()
+        try:
+            output = f(self, *args, **kwargs)
+        finally:
+            self._single_settings.clear()
         return output
     return clear_single_settings_decorator
+
 
 def JSONListEncoder(l):
     return_l = []
@@ -215,6 +225,7 @@ def JSONListEncoder(l):
         else:
             return_l.append(repr(element))
     return return_l
+
 
 def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
     return_dict = {}
@@ -268,7 +279,6 @@ def get_exponent(val):
 
 
 def get_first_digit(val):
-    exponent = get_exponent(val)
     first_digit = int(np.floor(val * 10 ** -get_exponent(val)))
     return first_digit
 
@@ -349,7 +359,10 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
         prelen = len(prefix)
         postlen = len(postfix)
         for fileName in fileNames:
-            if fileName[:prelen] == prefix and fileName[-postlen:] == postfix and len(fileName)-postlen > prelen and fileName != newFileName:
+            if fileName[:prelen] == prefix \
+                    and fileName[-postlen:] == postfix \
+                    and len(fileName)-postlen > prelen \
+                    and fileName != newFileName:
                 suffix = fileName[prelen:len(fileName)-postlen]
                 if self.extMatch.match(suffix):
                      result.append(os.path.join(dirName, fileName))
@@ -381,13 +394,16 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
             newRolloverAt = newRolloverAt + self.interval
 
         #If DST changes and midnight or weekly rollover, adjust for this.
-        if (self.when == 'MIDNIGHT' or self.when.startswith('W')) and not self.utc:
+        if (self.when == 'MIDNIGHT' or self.when.startswith('W')) \
+                and not self.utc:
             dstNow = time.localtime(currentTime)[-1]
             dstAtRollover = time.localtime(newRolloverAt)[-1]
             if dstNow != dstAtRollover:
-                if not dstNow:  # DST kicks in before next rollover, so we need to deduct an hour
+                if not dstNow:
+                    # DST kicks in before next rollover, need to deduct an hour
                     newRolloverAt = newRolloverAt - 3600
-                else:           # DST bows out before next rollover, so we need to add an hour
+                else:
+                    # DST bows out before next rollover, need to add an hour
                     newRolloverAt = newRolloverAt + 3600
         self.rolloverAt = newRolloverAt
 
@@ -410,8 +426,9 @@ def convert_setpoints(*args):
         remaining_args = convert_setpoints(*args[1:])
         if remaining_args:
             remaining_args = tuple((arg,) * len(first_arg)
-                                  for arg in remaining_args)
+                                   for arg in remaining_args)
         return (first_arg, ) + remaining_args
+
 
 class Singleton(type):
     _instances = {}
@@ -419,6 +436,7 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
 
 def arreq_in_list(myarr, list_arrays):
     """
@@ -435,6 +453,7 @@ def arreq_in_list(myarr, list_arrays):
     return next((idx for idx, elem in enumerate(list_arrays)
                  if np.array_equal(elem, myarr)),
                 None)
+
 
 def arreqclose_in_list(myarr, list_arrays):
     """
