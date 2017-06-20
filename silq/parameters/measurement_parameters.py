@@ -10,7 +10,7 @@ from qcodes.config.config import DotDict
 
 from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
-    attribute_from_config, convert_setpoints
+    attribute_from_config, convert_setpoints, property_ignore_setter
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet
@@ -76,7 +76,6 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     @discriminant.setter
     def discriminant(self, val):
         self._discriminant = val
-
 
     @property
     def discriminant_idx(self):
@@ -151,24 +150,16 @@ class DCMultisweepParameter(MeasurementParameter):
                            self.y_range[1] - self.y_sweep_range / 2,
                            self.y_sweeps).tolist()
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         return convert_setpoints(np.linspace(self.y_range[0], self.y_range[1],
                                              self.pts * self.y_sweeps),
             np.linspace(self.x_range[0], self.x_range[1],
                         self.pts * self.x_sweeps)),
 
-    @setpoints.setter
-    def setpoints(self, setpoints):
-        pass
-
-    @property
+    @property_ignore_setter
     def shapes(self):
         return (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts),
-
-    @shapes.setter
-    def shapes(self, shapes):
-        pass
 
     def setup(self):
         self.acquisition_parameter.sweep_parameters.clear()
