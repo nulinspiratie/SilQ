@@ -458,6 +458,7 @@ class Pulse:
         Possible relations: '>', '<', '>=', '<=', '=='
         Args:
             t_start:
+            t:
             t_stop:
             duration:
             acquire:
