@@ -82,7 +82,7 @@ class ConditionSet:
                     conditions.
     """
     def __init__(self, *conditions, on_success=None, on_fail=None,
-                 update=None):
+                 update=False):
         self.on_success = on_success
         self.on_fail = on_fail
         self.update = update
@@ -185,7 +185,7 @@ class Measurement(SettingsClass):
                  base_folder=None,
                  set_parameters=None, set_vals=None, step=None,
                  step_percentage=None, points=None,
-                 discriminant=None,update=None, silent=True,
+                 discriminant=None, silent=True,
                  break_if_satisfied=False):
         SettingsClass.__init__(self)
 
@@ -201,7 +201,6 @@ class Measurement(SettingsClass):
         self.condition_sets = [] if condition_sets is None else condition_sets
         self.dataset = None
         self.silent = silent
-        self.update = update
         self.initial_set_vals = None
         self.break_if_satisfied = break_if_satisfied
 
@@ -345,12 +344,9 @@ class Measurement(SettingsClass):
     def update_set_parameters(self, condition_set):
         # Determine if values need to be updated
         if condition_set is None:
-            update = self.update
+            update = False
         elif condition_set.result['is_satisfied']:
-            if condition_set.update:
-                update = True
-            elif condition_set.update is None:
-                update = self.update
+            update = condition_set.update
         else:
             update = False
 
@@ -472,7 +468,7 @@ class Loop1DMeasurement(Measurement):
         self.dataset = self.measurement.run(
             name=f'{self.name}_{self.set_parameter.name}_'
                  f'{self.acquisition_parameter.name}',
-            io=self.disk_io, location=self.loc_provider,
+            io=DataSet.default_io, location=self.loc_provider,
             quiet=True,
             set_active=set_active)
 
@@ -486,8 +482,7 @@ class Loop1DMeasurement(Measurement):
         self.get_optimum(condition_set)
 
         # Update set parameter values, either to optimal values or to initial
-        #  values. This depends on self.condition_set.update or alternatively
-        #  self.update
+        #  values. This depends on condition_set.update
         self.update_set_parameters(condition_set)
 
         return self.dataset
@@ -553,7 +548,7 @@ class Loop2DMeasurement(Measurement):
             name=f'{self.name}_{self.set_parameters[0].name}_'
                  f'{self.set_parameters[1].name}_'
                  f'{self.acquisition_parameter.name}',
-            io=self.disk_io, location=self.loc_provider, quiet=True,
+            io=DataSet.default_io, location=self.loc_provider, quiet=True,
             set_active=set_active)
 
         if self.condition_sets is not None:
@@ -566,8 +561,7 @@ class Loop2DMeasurement(Measurement):
         self.get_optimum(condition_set)
 
         # Update set parameter values, either to optimal values or to initial
-        # values. This depends on self.condition_set.update or alternatively
-        # self.update
+        # values. This depends on condition_set.update
         self.update_set_parameters(condition_set)
 
         return self.dataset
