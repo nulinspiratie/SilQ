@@ -81,12 +81,32 @@ def print_attr(obj, attr):
 
 
 class SettingsClass:
+    """
+    Class used to temporarily override attributes.
+    This can be done through obj.single_settings() and obj.temporary_settings().
+    Any settings specified here will override the actual values of the object 
+    until settings are cleared
+    
+    Settings can be cleared in two ways:
+    Using the decorator @clear_single_settings on a method, which will delete 
+    the single_settings.
+    Using obj.clear_settings(), which will clear both the single settings and 
+    temporary settings.
+    
+    Furthermore, attribute_names can be added to ignore_if_set.
+    If the object's value of that attribute is not equal to None, [], or (), 
+    it cannot be overridden through single or temporary settings.
+    
+    Note that for all attributes, they must be set in the object before they 
+    can be overridden by single/temporary settings
+    """
     _single_settings = {}
     _temporary_settings = {}
-    def __init__(self, ignore_if_not_None=[], **kwargs):
+    _ignore_if_set = {}
+    def __init__(self, ignore_if_set=[], **kwargs):
         self._temporary_settings = {}
         self._single_settings = {}
-        self._ignore_if_not_None = ignore_if_not_None
+        self._ignore_if_set = ignore_if_set
 
     def __getattribute__(self, item):
         """
@@ -105,10 +125,11 @@ class SettingsClass:
 
         """
         if item in ['_temporary_settings', '_single_settings',
-                    '_ignore_if_not_None', '__setstate__', '__dict__']:
+                    '_ignore_if_set', '__setstate__', '__dict__']:
             return object.__getattribute__(self, item)
-        elif item in self._ignore_if_not_None and \
-                        object.__getattribute__(self, item) is not None:
+        elif item in self._ignore_if_set and \
+                        object.__getattribute__(self, item) not in \
+                        (None, [], ()):
             return object.__getattribute__(self, item)
         elif item in self._single_settings:
             return self._single_settings[item]
