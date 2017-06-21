@@ -466,8 +466,20 @@ class Loop1DMeasurement(Measurement):
     def __init__(self, name=None, set_parameter=None,
                  acquisition_parameter=None, set_vals=None, step=None,
                  step_percentage=None, points=None, **kwargs):
+<<<<<<< Updated upstream
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=[set_parameter], set_vals=[set_vals],
+=======
+
+        if set_parameters is None and set_parameter is not None:
+            set_parameters = [set_parameter]
+
+        if set_vals is not None:
+            set_vals = [set_vals]
+
+        super().__init__(name, acquisition_parameter=acquisition_parameter,
+                         set_parameters=set_parameters, set_vals=set_vals,
+>>>>>>> Stashed changes
                          step=step, step_percentage=step_percentage,
                          points=points, **kwargs)
         self.set_parameter = self.set_parameters[0]
@@ -484,21 +496,35 @@ class Loop1DMeasurement(Measurement):
         if idx == -1:
             return {self.set_parameter.name: np.nan}
         else:
-            return {self.set_parameter.name: self.set_vals[0][idx]}
+            # No set vals specified. This means that a dummy loop is
+            # performed, and so set vals must be extracted from dataset
+            return {set_parameter.name: getattr(self.dataset,
+                                                set_parameter.name)[idx]
+                    for set_parameter in self.set_parameters}
 
     @property
     def measurement(self):
-        if self.break_if is False:
-            return qc.Loop(
-                self.set_vals[0]).each(
-                    self.acquisition_parameter)
-        else:
-            return qc.Loop(
-                self.set_vals[0]).each(
-                    self.acquisition_parameter,
-                    BreakIf(partial(self.satisfies_condition_set,
-                                    self.acquisition_parameter,
-                                    action=self.break_if)))
+        # Start with an empty set of actions in the loop
+        actions = []
+
+        if self.set_vals is not None:
+            set_loop = qc.Loop(self.set_vals[0])
+        elif self.points is not None:
+            # No set vals specified, but points are, so create dummy parameter
+            set_loop = qc.Loop(_dummy_parameter[0:self.points:1])
+
+            # Also measure the set_parameters, as we are going to update them
+            actions += self.set_parameters
+
+        # Add measurement of acquisition parameter
+        actions.append(self.acquisition_parameter)
+
+        if self.break_if:
+            actions.append(BreakIf(partial(self.satisfies_condition_set,
+                                           self.acquisition_parameter,
+                                           action=self.break_if)))
+
+        return set_loop.each(*actions)
 
     @clear_single_settings
     def get(self, set_active=True):
