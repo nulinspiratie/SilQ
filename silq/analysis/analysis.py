@@ -41,7 +41,8 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
             return {'low': None,
                     'high': None,
                     'threshold_voltage': None,
-                    'voltage_difference': None}
+                    'voltage_difference': None,
+                    'DC_voltage': DC_voltage}
 
     # Find mean voltage, used to determine which points are low/high
     mean_voltage_idx = int(round(np.mean(peaks_idx)))
