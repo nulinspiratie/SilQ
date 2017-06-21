@@ -471,7 +471,7 @@ class Loop0DMeasurement(Measurement):
 
 
 class Loop1DMeasurement(Measurement):
-    def __init__(self, name=None, set_parameter=None,
+    def __init__(self, name=None, set_parameter=None, set_parameters=None,
                  acquisition_parameter=None, set_vals=None, step=None,
                  step_percentage=None, points=None, **kwargs):
 
