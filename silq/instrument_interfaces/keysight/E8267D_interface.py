@@ -206,4 +206,4 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
 
     def implement(self):
         return {'frequency': (self.frequency_start + self.frequency_stop) / 2,
-                'deviation': abs(self.frequency_stop - self.frequency_start)}
+                'deviation': abs(self.frequency_stop - self.frequency_start)/2}
