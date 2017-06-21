@@ -482,7 +482,7 @@ class Loop1DMeasurement(Measurement):
             set_vals = [set_vals]
 
         super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         set_parameters=set_parameters, set_vals=[set_vals],
+                         set_parameters=set_parameters, set_vals=set_vals,
                          step=step, step_percentage=step_percentage,
                          points=points, **kwargs)
 
