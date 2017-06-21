@@ -1,9 +1,11 @@
 from time import sleep
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 from matplotlib import pyplot as plt
 from blinker import signal
 from functools import partial
+from keras.models import load_model
+import logging
 
 from qcodes.instrument.parameter import MultiParameter
 from qcodes.data import hdf5_format, io
@@ -19,6 +21,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     property_ignore_setter
 
 
+logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
 
 
@@ -610,12 +613,12 @@ class DCSweepParameter(AcquisitionParameter):
             if len(self.sweep_parameters) == 1:
                 self.results = {'DC_voltage': DC_voltages[0]}
             elif len(self.sweep_parameters) == 2:
-                self.results = {'DC_voltages': DC_voltages}
+                self.results = {'DC_voltage': DC_voltages}
         else:
             if len(self.sweep_parameters) == 1:
-                self.results = {'DC_voltages': DC_voltages}
+                self.results = {'DC_voltage': DC_voltages}
             elif len(self.sweep_parameters) == 2:
-                self.results = {'DC_voltages':
+                self.results = {'DC_voltage':
                     DC_voltages.reshape(self.shapes[0])}
 
         if self.trace_pulse.enabled:
@@ -971,3 +974,121 @@ class VariableReadParameter(AcquisitionParameter):
                                             self.data['read']['output'],
                                             self.data['empty']['output']])}
         return tuple(self.results[name] for name in self.names)
+
+
+class NeuralNetworkParameter(AcquisitionParameter):
+    def __init__(self, target_parameter, output_names=None,
+                 model_filepath=None, include_target_output=None, **kwargs):
+
+        self.target_parameter = target_parameter
+        self.include_target_output = include_target_output
+        self.output_names = output_names
+
+        super().__init__(names=self.names, **kwargs)
+
+        if model_filepath is None:
+            model_filepath = self.properties_config.get(
+                f'{self.name}_model_filepath', None)
+        self.model_filepath = model_filepath
+        if self.model_filepath is not None:
+            self.model = load_model(self.model_filepath)
+        else:
+            logger.warning(f'No neural network model loaded for {self}')
+
+    @property_ignore_setter
+    def pulse_sequence(self):
+        return self.target_parameter.pulse_sequence
+
+    @property_ignore_setter
+    def names(self):
+        names = self.output_names
+        if self.include_target_output is True:
+            names = names + self.target_parameter.names
+        elif self.include_target_output is False:
+            pass
+        elif isinstance(self.include_target_output, Iterable):
+            names = names + self.include_target_output
+        return names
+
+    def acquire(self):
+        target_results = self.target_parameter()
+
+        # Convert target results to array
+        target_results_arr = np.array([target_results])
+        neural_network_results = self.model.predict(target_results_arr)[0]
+        # Convert neural network results to tuple
+        self.neural_network_results = {}
+        for output_name, neural_network_result in zip(self.output_names,
+                                                      neural_network_results):
+            self.neural_network_results[output_name] = neural_network_result
+        return self.neural_network_results
+
+    def get(self):
+        self.acquire()
+
+        self.results = dict(**self.neural_network_results)
+
+        if self.include_target_output is True:
+            self.results.update(**self.target_parameter.results)
+        elif isinstance(self.include_target_output, Iterable):
+            for name in self.include_target_output:
+                self.results[name] = self.target_parameter.results[name]
+
+        if not self.silent:
+            self.print_results()
+
+        return [self.results[name] for name in self.names]
+
+
+class NeuralRetuneParameter(NeuralNetworkParameter):
+    def __init__(self, target_parameter, output_parameters,
+                 update=False, **kwargs):
+        self.output_parameters = output_parameters
+        output_names = [f'{output_parameter.name}_delta' for
+                        output_parameter in output_parameters]
+
+        super().__init__(target_parameter=target_parameter,
+                         output_names=output_names, **kwargs)
+
+        self.update = update
+
+    @property_ignore_setter
+    def names(self):
+        names = [f'{output_parameter.name}_optimal' for
+                   output_parameter in self.output_parameters]
+        if self.include_target_output is True:
+            names = names + self.target_parameter.names
+        elif self.include_target_output is False:
+            pass
+        elif isinstance(self.include_target_output, Iterable):
+            names = names + self.include_target_output
+        return names
+
+    def get(self):
+        self.acquire()
+
+        self.results = {}
+        for output_parameter in self.output_parameters:
+            # Get neural network otput (change in output parameter value)
+            result_name = f'{output_parameter.name}_delta'
+            delta_value = self.neural_network_results[result_name]
+
+            optimal_value = output_parameter() + delta_value
+
+            if self.update:
+                # Update parameter to optimal value
+                output_parameter(optimal_value)
+
+            self.results[f'{output_parameter.name}_optimal'] = optimal_value
+
+        if self.include_target_output is True:
+            self.results.update(**self.target_parameter.results)
+        elif isinstance(self.include_target_output, Iterable):
+            for name in self.include_target_output:
+                self.results[name] = self.target_parameter.results[name]
+
+        if not self.silent:
+            self.print_results()
+
+        return [self.results[name] for name in self.names]
+
