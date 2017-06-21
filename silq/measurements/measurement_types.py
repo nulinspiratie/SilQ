@@ -471,12 +471,15 @@ class Loop0DMeasurement(Measurement):
 
 
 class Loop1DMeasurement(Measurement):
-    def __init__(self, name=None, set_parameter=None, set_parameters=None,
+    def __init__(self, name=None, set_parameter=None,
                  acquisition_parameter=None, set_vals=None, step=None,
                  step_percentage=None, points=None, **kwargs):
 
         if set_parameters is None and set_parameter is not None:
             set_parameters = [set_parameter]
+
+        if set_vals is not None:
+            set_vals = [set_vals]
 
         super().__init__(name, acquisition_parameter=acquisition_parameter,
                          set_parameters=set_parameters, set_vals=[set_vals],
@@ -508,7 +511,7 @@ class Loop1DMeasurement(Measurement):
             # No set vals specified. This means that a dummy loop is
             # performed, and so set vals must be extracted from dataset
             return {set_parameter.name: getattr(self.dataset,
-                                                set_parameter)[idx]
+                                                set_parameter.name)[idx]
                     for set_parameter in self.set_parameters}
 
     @property
@@ -523,15 +526,15 @@ class Loop1DMeasurement(Measurement):
             set_loop = qc.Loop(_dummy_parameter[0:self.points:1])
 
             # Also measure the set_parameters, as we are going to update them
-            self.actions += self.set_parameters
+            actions += self.set_parameters
 
         # Add measurement of acquisition parameter
         actions.append(self.acquisition_parameter)
 
         if self.break_if:
-            actions.append(partial(self.satisfies_condition_set,
-                                   self.acquisition_parameter,
-                                   action=self.break_if))
+            actions.append(BreakIf(partial(self.satisfies_condition_set,
+                                           self.acquisition_parameter,
+                                           action=self.break_if)))
 
         return set_loop.each(*actions)
 
