@@ -249,6 +249,8 @@ class MeasurementSequenceParameter(MeasurementParameter):
         result = self.measurement_sequence()
         num_measurements = self.measurement_sequence.num_measurements
 
+        logger.info(f"Measurements performed: {num_measurements}")
+
         if result['action'] == 'success':
             # Retrieve dict of {param.name: val} of optimal set vals
             optimal_set_vals = self.measurement_sequence.optimal_set_vals
