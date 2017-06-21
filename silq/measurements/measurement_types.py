@@ -14,6 +14,8 @@ from silq.tools.general_tools import SettingsClass, get_truth, \
 
 logger = logging.getLogger(__name__)
 
+_dummy_parameter = qc.ManualParameter(name='msmt_idx',
+                                      label='Measurement idx')
 
 class Condition:
     def __init__(self, **kwargs):
@@ -195,7 +197,7 @@ class ConditionSet:
 
 class Measurement(SettingsClass):
     def __init__(self, name=None, base_folder=None, condition_sets=None,
-                 acquisition_parameter=None, reset_parameters=None,
+                 acquisition_parameter=None,
                  set_parameters=None, set_vals=None, step=None,
                  step_percentage=None, points=None,
                  discriminant=None, silent=True,
@@ -208,8 +210,6 @@ class Measurement(SettingsClass):
         self.name = name
         self.base_folder = base_folder
         self.acquisition_parameter = acquisition_parameter
-        self.reset_parameters = [] if reset_parameters is None \
-            else reset_parameters
         self.discriminant = discriminant
         self.step = step
         self.step_percentage = step_percentage
@@ -268,12 +268,17 @@ class Measurement(SettingsClass):
 
     @property
     def set_vals(self):
-        if self._set_vals is None and self.points is not None:
+        if self._set_vals is not None:
+            return self._set_vals
+        elif self.points is not None and (self.step is not None
+                                          or self.step_percentage is not None):
             self._set_vals = create_set_vals(
                 set_parameters=self.set_parameters, step=self.step,
                 step_percentage=self.step_percentage, points=self.points,
                 silent=True)
-        return self._set_vals
+            return self._set_vals
+        else:
+            return None
 
     @set_vals.setter
     def set_vals(self, set_vals):
@@ -397,7 +402,7 @@ class Measurement(SettingsClass):
         else:
             logger.info('Resetting set parameters to initial values: '
                          f'{self.initial_set_vals}')
-            for set_parameter in self.set_parameters + self.reset_parameters:
+            for set_parameter in self.set_parameters:
                 set_parameter(self.initial_set_vals[set_parameter.name])
 
     def initialize(self):
@@ -410,8 +415,11 @@ class Measurement(SettingsClass):
             self._set_vals = None
 
         self.initial_set_vals = {
-            p.name: p() for p in self.set_parameters + self.reset_parameters}
+            p.name: p() for p in self.set_parameters}
         logger.info(f'Initial set values: {self.initial_set_vals}')
+
+    def set_vals_from_idx(self, idx):
+        raise NotImplementedError('Must be implemented in subclass')
 
 
 class Loop0DMeasurement(Measurement):
@@ -463,14 +471,24 @@ class Loop0DMeasurement(Measurement):
 
 
 class Loop1DMeasurement(Measurement):
-    def __init__(self, name=None, set_parameter=None,
+    def __init__(self, name=None, set_parameter=None, set_parameters=None,
                  acquisition_parameter=None, set_vals=None, step=None,
                  step_percentage=None, points=None, **kwargs):
+
+        if set_parameters is None and set_parameter is not None:
+            set_parameters = [set_parameter]
+
         super().__init__(name, acquisition_parameter=acquisition_parameter,
-                         set_parameters=[set_parameter], set_vals=[set_vals],
+                         set_parameters=set_parameters, set_vals=[set_vals],
                          step=step, step_percentage=step_percentage,
                          points=points, **kwargs)
-        self.set_parameter = self.set_parameters[0]
+
+    @property
+    def set_parameter(self):
+        if self.set_vals is not None:
+            return self.set_vals[0].parameter
+        else:
+            return _dummy_parameter
 
     def set_vals_from_idx(self, idx):
         """
@@ -482,23 +500,40 @@ class Loop1DMeasurement(Measurement):
             Dict of set vals (in this case contains one element)
         """
         if idx == -1:
-            return {self.set_parameter.name: np.nan}
-        else:
+            return {set_parameter.name: np.nan
+                    for set_parameter in self.set_parameters}
+        elif self.set_vals is not None:
             return {self.set_parameter.name: self.set_vals[0][idx]}
+        else:
+            # No set vals specified. This means that a dummy loop is
+            # performed, and so set vals must be extracted from dataset
+            return {set_parameter.name: getattr(self.dataset,
+                                                set_parameter)[idx]
+                    for set_parameter in self.set_parameters}
 
     @property
     def measurement(self):
-        if self.break_if is False:
-            return qc.Loop(
-                self.set_vals[0]).each(
-                    self.acquisition_parameter)
-        else:
-            return qc.Loop(
-                self.set_vals[0]).each(
-                    self.acquisition_parameter,
-                    BreakIf(partial(self.satisfies_condition_set,
-                                    self.acquisition_parameter,
-                                    action=self.break_if)))
+        # Start with an empty set of actions in the loop
+        actions = []
+
+        if self.set_vals is not None:
+            set_loop = qc.Loop(self.set_vals[0])
+        elif self.points is not None:
+            # No set vals specified, but points are, so create dummy parameter
+            set_loop = qc.Loop(_dummy_parameter[0:self.points:1])
+
+            # Also measure the set_parameters, as we are going to update them
+            self.actions += self.set_parameters
+
+        # Add measurement of acquisition parameter
+        actions.append(self.acquisition_parameter)
+
+        if self.break_if:
+            actions.append(partial(self.satisfies_condition_set,
+                                   self.acquisition_parameter,
+                                   action=self.break_if))
+
+        return set_loop.each(*actions)
 
     @clear_single_settings
     def get(self, set_active=True):
@@ -512,8 +547,6 @@ class Loop1DMeasurement(Measurement):
         measurement_name = f'{self.name}_{self.set_parameter.name}_' \
                            f'{self.acquisition_parameter.name}'
         logger.info(f'Performing 1D measurement {measurement_name}')
-        logger.info(
-            f'set_vals: {self.set_parameter.name}[{self.set_vals[0][:]}]')
         self.dataset = self.measurement.run(name=measurement_name,
                                             io=DataSet.default_io,
                                             location=self.loc_provider,
