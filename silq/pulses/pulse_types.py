@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-import inspect
+from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
 from functools import partial
@@ -17,13 +17,14 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average']
 
-valid_average_modes = ['none', 'trace', 'point']
-
 logger = logging.getLogger(__name__)
 
 
-class Pulse:
+class Pulse(HasTraits):
+    average = Unicode()
+
     _connected_attrs = {}
+
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
@@ -53,7 +54,6 @@ class Pulse:
             self.properties_config = config[self.environment].properties
         except (KeyError, AttributeError):
             self.properties_config = None
-
 
         ### Setup signals
         # Connect changes in pulse config to handling method
@@ -106,6 +106,14 @@ class Pulse:
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+    @validate('average')
+    def _valid_average(self, proposal):
+        if proposal['value'] in ['none', 'trace', 'point']:
+            return proposal['value']
+        elif 'point_segment' in proposal['value']:
+            return proposal['value']
+        else:
+            return TraitError
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
@@ -415,17 +423,6 @@ class Pulse:
         if t_stop is not None:
             # Setting duration sends a signal for duration and also t_stop
             self.duration = round(t_stop - self.t_start, 11)
-
-    @property
-    def average(self):
-        return self._average
-
-    @average.setter
-    def average(self, average):
-        if average not in valid_average_modes:
-            raise ValueError(f'{average} is not a valid average mode.')
-        else:
-            self._average = average
 
     def _get_repr(self, properties_str):
         if self.connection:
