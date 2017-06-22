@@ -1023,6 +1023,8 @@ class NeuralNetworkParameter(AcquisitionParameter):
         return names
 
     def acquire(self):
+        if self.samples is not None:
+            self.target_parameter.samples = self.samples
         self.target_parameter()
         # Extract target results using input names, because target_parameter.get
         # may provide results in a different order
