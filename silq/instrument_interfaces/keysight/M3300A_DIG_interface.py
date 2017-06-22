@@ -240,7 +240,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
             read_timeout = duration * self.samples() * 10
-            logger.info(f'Read timeout is set to {read_timeout}')
+            logger.info(f'Read timeout is set to {read_timeout:.3f}s.')
             controller.read_timeout(read_timeout)
 
     def start(self):

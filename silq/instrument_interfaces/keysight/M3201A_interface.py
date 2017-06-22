@@ -129,6 +129,7 @@ class M3201AInterface(InstrumentInterface):
                     # (as a replacement for the long delay)
 
                     sampling_rate = 1e6
+                    logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rates[ch])
                     insertion = {'index': i, 'waveforms': zero_waveforms}
@@ -142,6 +143,12 @@ class M3201AInterface(InstrumentInterface):
             for insertion in insert_points:
                 i = insertion['index']
                 waveforms[ch][i:i] = insertion['waveforms']
+
+            logger.debug(f'\n{ch} AWG Waveforms:\n' +
+                         '\n'.join(f'\t{wf["name"]}' \
+                                    f'\tt_start={wf.get("t_start",-1):.3f}' \
+                                    f'\tt_stop={wf.get("t_stop", -1):.3f}' for wf in waveforms[ch]))
+
 
         self.instrument.off()
         self.instrument.flush_waveform()
@@ -162,9 +169,10 @@ class M3201AInterface(InstrumentInterface):
                     trigger_mode = 1  # software trigger for first wf
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
-                logger.debug('queueing waveform {} with id {} to awg channel {} for {} cycles with delay {} and trigger {}'
-                      .format(waveform['name'], waveform_counter, self._channels[ch].id, int(waveform['cycles']), int(waveform['delay']),
-                              trigger_mode))
+                logger.debug('queueing waveform {} with id {} to awg channel {} for {} cycles with prescaler {}, delay {} and trigger {}'
+                      .format(waveform['name'], waveform_counter, self._channels[ch].id,
+                              int(waveform['cycles']), int(waveform['prescaler']),
+                              int(waveform['delay']), trigger_mode))
                 self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
                                                    0, int(waveform['cycles']), prescaler=int(waveform.get('prescaler', 0)))
                 waveform_counter += 1
@@ -249,6 +257,8 @@ class M3201AInterface(InstrumentInterface):
         waveform_repeated['cycles'] = waveform_repeated_cycles
         waveform_repeated['delay'] = 0
         waveform_repeated['prescaler'] = 100
+        logger.debug('Delay waveform attrs: cyc={cycles} len={samples} n={n}'.format(cycles=waveform_repeated_cycles,
+                                                                                      samples=samples, n=n))
         if waveform_tail_samples == 0:
             return [waveform_repeated]
         else:
