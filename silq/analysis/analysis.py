@@ -266,8 +266,16 @@ def analyse_read(traces, start_idx=0, threshold_voltage=None,
             'idx': idx}
 
 
-def analyse_read_long(traces, read_pts, sample_rate, min_trace_perc=0.5,
+def analyse_read_long(t_read, sample_rate, traces=None,
+                      read_segment_begin=None, read_segment_end=None,
+                      min_trace_perc=0.5,
                       t_skip=0, threshold_method='config'):
+    if traces is None and read_segment_begin is None \
+            and read_segment_end is None:
+        raise SyntaxError('Must provide traces (optionally read_segments), '
+                          'or both read_segment_begin and read_segment_end')
+
+    read_pts = round(t_read * 1e-3 * sample_rate)
     start_idx = round(t_skip * 1e-3 * sample_rate)
 
     high_low = find_high_low(traces, threshold_method=threshold_method)
@@ -284,18 +292,22 @@ def analyse_read_long(traces, read_pts, sample_rate, min_trace_perc=0.5,
                 'low_blip_duration': 0,
                 'high_blip_duration': 0}
     else:
-        read_segment1 = traces[:, :read_pts]
-        read_segment2 = traces[:, -read_pts:]
+        if read_segment_begin is None:
+            # read_segment_begin is the start segment of read_long trace
+            read_segment_begin = traces[:, :read_pts]
+        if read_segment_end is None:
+            # read_segment_end is the end segment of read_long trace
+            read_segment_end = traces[:, -read_pts:]
 
-        results1 = analyse_read(read_segment1, start_idx=start_idx,
-                                threshold_voltage=threshold_voltage,
-                                filter_loaded=True)
-        up_proportion = results1['up_proportion']
-        dark_counts = analyse_read(read_segment2, start_idx=start_idx,
+        results_begin = analyse_read(read_segment_begin, start_idx=start_idx,
+                                     threshold_voltage=threshold_voltage,
+                                     filter_loaded=True)
+        up_proportion = results_begin['up_proportion']
+        dark_counts = analyse_read(read_segment_end, start_idx=start_idx,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
 
-        if sum(results1['idx']) < min_trace_perc:
+        if sum(results_begin['idx']) < min_trace_perc:
             # Not enough traces start loaded
             contrast = 0
         else:
@@ -322,10 +334,8 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
     results_load = analyse_load(pulse_traces['plunge']['output'])
 
     # Analyse read stage
-    start_idx = round(t_skip * 1e-3 * sample_rate)
-    read_pts = round(t_read * 1e-3 * sample_rate)
-    results_read = analyse_read_long(pulse_traces['read_long']['output'],
-                                     read_pts=read_pts,
+    results_read = analyse_read_long(traces=pulse_traces['read_long']['output'],
+                                     t_read=t_read,
                                      sample_rate=sample_rate,
                                      t_skip=t_skip,
                                      min_trace_perc=min_trace_perc)
@@ -341,40 +351,55 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
             'high_blip_duration': results_read['high_blip_duration']}
 
 
+def analyse_PREPR(pulse_traces, sample_rate, t_read, t_skip,
+                min_trace_perc=0.5):
+    # Analyse empty stage
+    results_empty = analyse_empty(pulse_traces['empty']['output'])
+
+    # Analyse plunge stage, note that there are two plunges in the PulseSequence
+    results_load = analyse_load(pulse_traces['plunge[1]']['output'])
+
+    # Analyse read stage
+    # Analyse first read (corresponding to ESR pulse). The dark counts from
+    # read_long must be subtracted to get the contrast. That's why we
+    # override segment1
+    results_read_ESR = analyse_read_long(
+        traces=pulse_traces['read_long']['output'],
+        read_segment_begin=pulse_traces['read']['output'],
+        t_read=t_read, sample_rate=sample_rate, t_skip=t_skip,
+        min_trace_perc=min_trace_perc)
+
+    # Analyse read long (which belongs to the EPR part of pulse sequence)
+    results_read_EPR = analyse_read_long(
+        traces=pulse_traces['read_long']['output'],
+        t_read=t_read,
+        sample_rate=sample_rate,
+        t_skip=t_skip,
+        min_trace_perc=min_trace_perc)
+
+    return {'fidelity_empty': results_empty['up_proportion'],
+            'voltage_difference_empty': results_empty['voltage_difference'],
+            'fidelity_load': results_load['up_proportion'],
+            'voltage_difference_load': results_load['voltage_difference'],
+            'contrast_ESR': results_read_ESR['contrast'],
+            'contrast': results_read_EPR['contrast'],
+            'dark_counts': results_read_EPR['dark_counts'],
+            'voltage_difference_read': results_read_EPR['voltage_difference'],
+            'low_blip_duration': results_read_EPR['low_blip_duration'],
+            'high_blip_duration': results_read_EPR['high_blip_duration']}
+
+
 def analyse_PR(pulse_traces, sample_rate, t_skip=0, t_read=20,
                min_trace_perc=0.5):
-    start_idx = round(t_skip * 1e-3 * sample_rate)
-    read_pts = round(t_read * 1e-3 * sample_rate)
+    # Analyse read stage
+    results_read = analyse_read_long(traces=pulse_traces['read_long']['output'],
+                                     t_read=t_read,
+                                     sample_rate=sample_rate,
+                                     t_skip=t_skip,
+                                     min_trace_perc=min_trace_perc)
 
-    read_high_low = find_high_low(pulse_traces['read_long']['output'],
-                                  threshold_method='config')
-    threshold_voltage = read_high_low['threshold_voltage']
-    voltage_difference = read_high_low['voltage_difference']
-
-    if threshold_voltage is None:
-        return {'contrast': 0,
-                'dark_counts': 0,
-                'voltage_difference': 0}
-    else:
-        read_segment1 = pulse_traces['read_long']['output'][:, :read_pts]
-        read_segment2 = pulse_traces['read_long']['output'][:, -read_pts:]
-
-        results1 = analyse_read(read_segment1, start_idx=start_idx,
-                                threshold_voltage=threshold_voltage,
-                                filter_loaded=True)
-        up_proportion = results1['up_proportion']
-
-        results2 = analyse_read(read_segment2, start_idx=start_idx,
-                                threshold_voltage=threshold_voltage,
-                                filter_loaded=False)
-        dark_counts = results2['up_proportion']
-
-        if sum(results1['idx']) < min_trace_perc:
-            # Not enough traces start loaded
-            contrast = 0
-        else:
-            contrast = up_proportion - dark_counts
-
-    return {'contrast': contrast,
-            'dark_counts': dark_counts,
-            'voltage_difference': voltage_difference}
+    return {'contrast': results_read['contrast'],
+            'dark_counts': results_read['dark_counts'],
+            'voltage_difference_read': results_read['voltage_difference'],
+            'low_blip_duration': results_read['low_blip_duration'],
+            'high_blip_duration': results_read['high_blip_duration']}
