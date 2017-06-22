@@ -30,6 +30,9 @@ class MeasurementSequence:
         self.continuous = continuous
         self.base_folder = base_folder
 
+        self.optimal_set_vals = None
+        self.optimal_val = None
+
     def __getitem__(self, index):
         if isinstance(index, int):
             return self.measurements[index]
