@@ -357,8 +357,7 @@ class ScanningPlot(InteractivePlot):
         self.parameter.continuous = auto_start
         if auto_start:
             self.parameter.setup(start=False)
-        self.scan(initialize=True, start=True,
-                  stop=(not auto_start))
+        self.scan(initialize=True, stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -394,11 +393,11 @@ class ScanningPlot(InteractivePlot):
         self.layout.stop()
         self.parameter.continuous = False
 
-    def scan(self, initialize=False, start=False, stop=False):
+    def scan(self, initialize=False, stop=False):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.results = self.parameter.acquire(stop=stop)
         self.update_plot(initialize=initialize)
 
         self.update_idx += 1
