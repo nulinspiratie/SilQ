@@ -70,9 +70,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 active_pulses = self.pulse_sequence.get_pulses(t=t)
 
                 if not active_pulses:
-                    total_channel_value = 0
+                    channel_mask = 0
                 else:
-                    total_channel_value = sum(
+                    channel_mask = sum(
                         [pulse.implement() for pulse in active_pulses])
 
                 # find time of next event
@@ -86,15 +86,15 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # wait duration is too long
                 if wait_cycles < 1e9:
                     self.instrument.send_instruction(
-                        total_channel_value, 'continue', 0, wait_cycles)
+                        channel_mask, 'continue', 0, wait_cycles)
                 else:
                     self.instrument.send_instruction(
-                        total_channel_value, 'continue', 0, 100)
+                        channel_mask, 'continue', 0, 100)
                     duration = round(wait_cycles - 100)
                     divisor = int(np.ceil(duration / 1e9))
                     delay = int(duration / divisor)
                     self.instrument.send_instruction(
-                        total_channel_value, 'long_delay', divisor, delay)
+                        channel_mask, 'long_delay', divisor, delay)
 
                 t = t_next
             else:

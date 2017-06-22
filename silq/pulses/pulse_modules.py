@@ -138,8 +138,7 @@ class PulseSequence:
             return item in self.pulses
 
     def __repr__(self):
-        output = 'PulseSequence with {} pulses, duration: {}\n'.format(
-            len(self.pulses), self.duration)
+        output = str(self) + '\n'
         for pulse in self.enabled_pulses:
             pulse_repr = repr(pulse)
             # Add a tab to each line
@@ -154,6 +153,10 @@ class PulseSequence:
                 pulse_repr = '\t'.join(pulse_repr.splitlines(True))
                 output += '\t' + pulse_repr + '\n'
         return output
+
+    def __str__(self):
+        return f'PulseSequence with {len(self.pulses)} pulses, ' \
+               f'duration: {self.duration}'
 
     def __eq__(self, other):
         """

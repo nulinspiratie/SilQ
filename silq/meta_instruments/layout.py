@@ -1,7 +1,4 @@
-import numpy as np
-from functools import partial
 from collections import OrderedDict as od
-import inspect
 import logging
 
 import silq
@@ -10,7 +7,7 @@ from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument
-from qcodes.instrument.parameter import ManualParameter, MultiParameter
+from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 
@@ -72,8 +69,36 @@ class Layout(Instrument):
                            initial_value=False,
                            vals=vals.Bool())
 
-        self.pulse_sequence = PulseSequence()
+        # Untargeted pulse_sequence, can be set via layout.pulse_sequence
+        self._pulse_sequence = None
+
+        # Targeted pulse sequence, which is generated after targeting
+        # layout.pulse_sequence
+        self.targeted_pulse_sequence = None
+
         self.acquisition_shapes = {}
+
+    @property
+    def pulse_sequence(self):
+        return self._pulse_sequence
+
+    @pulse_sequence.setter
+    def pulse_sequence(self, pulse_sequence):
+        """
+        Set target pulse sequence to layout, which distributes pulses to
+        interfaces
+        Args:
+            pulse_sequence: Pulse sequence to be targeted
+        """
+        assert isinstance(pulse_sequence, PulseSequence), \
+            "Can only set layout.pulse_sequence to a PulseSequence"
+
+        # Target pulse_sequence, distributing pulses to interfaces
+        self._target_pulse_sequence(pulse_sequence)
+
+        # Update pulse sequence
+        self._pulse_sequence = pulse_sequence.copy()
+
 
     @property
     def acquisition_interface(self):
@@ -496,7 +521,7 @@ class Layout(Instrument):
             for additional_pulse in targeted_pulse.additional_pulses:
                 self._target_pulse(additional_pulse)
 
-    def target_pulse_sequence(self, pulse_sequence):
+    def _target_pulse_sequence(self, pulse_sequence):
         """
         Targets a pulse sequence.
         For each of the pulses, it finds the instrument that can output it,
@@ -509,23 +534,23 @@ class Layout(Instrument):
         Returns:
             None
         """
+        logger.info(f'Targeting pulse sequence {pulse_sequence}')
+
         if self.active():
             self.stop()
 
-
-        # targeted_pulse_sequence = pulse_sequence.copy()
-        #
-        # for pulse in targeted_pulse_sequence:
-        #     pulse.connection = self.get_pulse_connection(pulse)
+        # Copy untargeted pulse sequence so none of its attributes are modified
+        self.targeted_pulse_sequence = pulse_sequence.copy()
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
+            logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
             interface.pulse_sequence.duration = pulse_sequence.duration
             interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in pulse_sequence:
+        for pulse in self.targeted_pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
@@ -534,12 +559,9 @@ class Layout(Instrument):
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
             additional_pulses = interface.get_final_additional_pulses(
-                pulse_sequence=pulse_sequence
-            )
+                pulse_sequence=self.targeted_pulse_sequence)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
-
-        self.pulse_sequence = pulse_sequence
 
     def update_flags(self, new_flags):
         """
@@ -589,6 +611,8 @@ class Layout(Instrument):
         Returns:
             None
         """
+        logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+
         if self.active():
             self.stop()
 
@@ -607,10 +631,14 @@ class Layout(Instrument):
                 # Get existing setup flags (if any)
                 instrument_flags = self.flags[interface.instrument_name()]
                 setup_flags = instrument_flags.get('setup', {})
+                if setup_flags:
+                    logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
                 flags = interface.setup(samples=self.samples(),
                                         **setup_flags, **kwargs)
                 if flags:
+                    logger.debug(f'Received setup flags {setup_flags} from '
+                                 f'interface {interface.name}')
                     self.update_flags(flags)
 
         # Create acquisition shapes
@@ -638,7 +666,7 @@ class Layout(Instrument):
                 continue
             elif self.flags[interface.instrument_name()].get('skip_start',
                                                              False):
-                # Interface has a flag to skip start
+                logger.info('Interface {interface.name} has flag to skip start')
                 continue
             elif interface.pulse_sequence:
                 interface.start()
@@ -656,12 +684,11 @@ class Layout(Instrument):
             interface.stop()
         self.active(False)
 
-    def acquisition(self, start=True, stop=True):
+    def acquisition(self, stop=True):
         """
         Performs an acquisition.
         By default this includes starting and stopping of all the instruments.
         Args:
-            start (Bool): Whether to first start instruments (true by default)
             stop (Bool): Whether to stop instruments after finishing
                 measurements (True by default)
 
@@ -669,33 +696,39 @@ class Layout(Instrument):
             data (Dict): Dictionary where every element is of the form
                 acquisition_channel: acquisition_signal.
         """
-        if start:
-            self.start()
+        try:
+            logger.info(f'Performing acquisition, stop when finished: {stop}')
+            if not self.active():
+                self.start()
 
-        # Obtain traces from acquisition interface as dict
-        pulse_traces = self.acquisition_interface.acquisition()
+            # Obtain traces from acquisition interface as dict
+            pulse_traces = self.acquisition_interface.acquisition()
 
-        if stop:
+            if stop:
+                self.stop()
+
+            # current output is pulse_traces[pulse_name][acquisition_channel]
+            # needs to be converted to data[pulse_name][output_label]
+            # where output_label is taken from self.acquisition_channels()
+            data = {}
+            for pulse, channel_traces in pulse_traces.items():
+                data[pulse] = {}
+                for channel, trace in channel_traces.items():
+                    # Find corresponding connection
+                    connection = self.get_connection(
+                        input_channel=channel,
+                        input_instrument=self.acquisition_instrument())
+                    # Get output arg (instrument.channel)
+                    output_arg = connection.output['str']
+                    # Find label corresponding to output arg
+                    output_label = next(
+                        item[1]for item in self.acquisition_outputs()
+                        if item[0] == output_arg)
+                    data[pulse][output_label] = trace
+        except:
+            # If any error occurs, stop all instruments
             self.stop()
-
-        # current output is pulse_traces[pulse_name][acquisition_channel]
-        # needs to be converted to data[pulse_name][output_label]
-        # where output_label is taken from self.acquisition_channels()
-        data = {}
-        for pulse, channel_traces in pulse_traces.items():
-            data[pulse] = {}
-            for channel, trace in channel_traces.items():
-                # Find corresponding connection
-                connection = self.get_connection(
-                    input_channel=channel,
-                    input_instrument=self.acquisition_instrument())
-                # Get output arg (instrument.channel)
-                output_arg = connection.output['str']
-                # Find label corresponding to output arg
-                output_label = next(
-                    item[1]for item in self.acquisition_outputs()
-                    if item[0] == output_arg)
-                data[pulse][output_label] = trace
+            raise
 
         return data
 
