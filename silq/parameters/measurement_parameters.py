@@ -6,14 +6,12 @@ from qcodes.loops import active_loop
 from qcodes.data import hdf5_format, io
 from qcodes import config
 from qcodes.instrument.parameter import MultiParameter
-from qcodes.config.config import DotDict
 
-from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, convert_setpoints, property_ignore_setter
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
-    Loop1DMeasurement, Loop2DMeasurement, ConditionSet
+    Loop1DMeasurement, Loop2DMeasurement, ConditionSet, TruthCondition
 from silq.measurements.measurement_modules import MeasurementSequence
 
 logger = logging.getLogger(__name__)
@@ -246,10 +244,29 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
     @clear_single_settings
     def get(self):
-        if self.start_condition is not None and not self.start_condition():
+        if self.start_condition is None:
+            start_condition_satisfied = True
+        elif isinstance(self.start_condition, TruthCondition):
+            if self.acquisition_parameter.results is None:
+                logger.info('Start TruthCondition satisfied because '
+                            'acquisition parameter has no results')
+                start_condition_satisfied = True
+            else:
+                start_condition_satisfied = \
+                    self.start_condition.check_satisfied(
+                        self.acquisition_parameter.results)[0]
+                logger.info(f'Start Truth condition {self.start_condition} '
+                            f'satisfied: {start_condition_satisfied}')
+        else:
+            start_condition_satisfied = self.start_condition()
+            logger.info(f'Start condition function {self.start_condition} '
+                        f'satisfied: {start_condition_satisfied}')
+
+        if not start_condition_satisfied:
             num_measurements = -1
             optimal_set_vals = [p() for p in self.set_parameters]
             optimal_val = self.measurement_sequence.optimal_val
+            return num_measurements, optimal_set_vals, optimal_val
         else:
             self.measurement_sequence.base_folder = self.base_folder
             result = self.measurement_sequence()
@@ -269,6 +286,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
             optimal_val = self.measurement_sequence.optimal_val
 
         return num_measurements, optimal_set_vals, optimal_val
+
 
 
 class SelectFrequencyParameter(MeasurementParameter):
