@@ -688,33 +688,38 @@ class Layout(Instrument):
             data (Dict): Dictionary where every element is of the form
                 acquisition_channel: acquisition_signal.
         """
-        if start:
-            self.start()
+        try:
+            if start:
+                self.start()
 
-        # Obtain traces from acquisition interface as dict
-        pulse_traces = self.acquisition_interface.acquisition()
+            # Obtain traces from acquisition interface as dict
+            pulse_traces = self.acquisition_interface.acquisition()
 
-        if stop:
+            if stop:
+                self.stop()
+
+            # current output is pulse_traces[pulse_name][acquisition_channel]
+            # needs to be converted to data[pulse_name][output_label]
+            # where output_label is taken from self.acquisition_channels()
+            data = {}
+            for pulse, channel_traces in pulse_traces.items():
+                data[pulse] = {}
+                for channel, trace in channel_traces.items():
+                    # Find corresponding connection
+                    connection = self.get_connection(
+                        input_channel=channel,
+                        input_instrument=self.acquisition_instrument())
+                    # Get output arg (instrument.channel)
+                    output_arg = connection.output['str']
+                    # Find label corresponding to output arg
+                    output_label = next(
+                        item[1]for item in self.acquisition_outputs()
+                        if item[0] == output_arg)
+                    data[pulse][output_label] = trace
+        except:
+            # If any error occurs, stop all instruments
             self.stop()
-
-        # current output is pulse_traces[pulse_name][acquisition_channel]
-        # needs to be converted to data[pulse_name][output_label]
-        # where output_label is taken from self.acquisition_channels()
-        data = {}
-        for pulse, channel_traces in pulse_traces.items():
-            data[pulse] = {}
-            for channel, trace in channel_traces.items():
-                # Find corresponding connection
-                connection = self.get_connection(
-                    input_channel=channel,
-                    input_instrument=self.acquisition_instrument())
-                # Get output arg (instrument.channel)
-                output_arg = connection.output['str']
-                # Find label corresponding to output arg
-                output_label = next(
-                    item[1]for item in self.acquisition_outputs()
-                    if item[0] == output_arg)
-                data[pulse][output_label] = trace
+            raise
 
         return data
 
