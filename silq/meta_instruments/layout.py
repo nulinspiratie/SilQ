@@ -675,12 +675,11 @@ class Layout(Instrument):
             interface.stop()
         self.active(False)
 
-    def acquisition(self, start=True, stop=True):
+    def acquisition(self, stop=True):
         """
         Performs an acquisition.
         By default this includes starting and stopping of all the instruments.
         Args:
-            start (Bool): Whether to first start instruments (true by default)
             stop (Bool): Whether to stop instruments after finishing
                 measurements (True by default)
 
@@ -689,7 +688,7 @@ class Layout(Instrument):
                 acquisition_channel: acquisition_signal.
         """
         try:
-            if start:
+            if not self.active():
                 self.start()
 
             # Obtain traces from acquisition interface as dict
