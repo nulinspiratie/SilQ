@@ -227,7 +227,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             stop = not self.continuous
 
         if setup or (setup is None and
-                     self.layout.pulse_sequence != self.pulse_sequence):
+                     self.layout.pulse_sequence != self.pulse_sequence) or \
+                self.layout.samples != self.samples:
             self.setup()
 
 
