@@ -682,16 +682,19 @@ class AdiabaticParameter(AcquisitionParameter):
         Parameter used to perform an adiabatic sweep
         """
         super().__init__(name='adiabatic_acquisition',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference'],
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            DCPulse('empty', acquire=True, connection_label='stage'),
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'),
@@ -714,10 +717,10 @@ class AdiabaticParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_PR(pulse_traces=self.data,
-                                           sample_rate=self.sample_rate,
-                                           t_skip=self.t_skip,
-                                           t_read=self.t_read)
+        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
+                                              sample_rate=self.sample_rate,
+                                              t_skip=self.t_skip,
+                                              t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -736,9 +739,9 @@ class RabiParameter(AcquisitionParameter):
         """
         super().__init__(name='rabi_acquisition',
                          names=['contrast', 'dark_counts',
-                                'voltage_difference'],
+                                'voltage_difference_read'],
                          labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
+                                'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -791,9 +794,9 @@ class RabiDriveParameter(AcquisitionParameter):
         """
         super().__init__(name='rabi_drive',
                          names=['contrast', 'dark_counts',
-                                'voltage_difference'],
+                                'voltage_difference_read'],
                          labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
+                                'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -985,10 +988,11 @@ class VariableReadParameter(AcquisitionParameter):
 
 
 class NeuralNetworkParameter(AcquisitionParameter):
-    def __init__(self, target_parameter, output_names=None,
+    def __init__(self, target_parameter, input_names, output_names=None,
                  model_filepath=None, include_target_output=None, **kwargs):
 
         self.target_parameter = target_parameter
+        self.input_names = input_names
         self.include_target_output = include_target_output
         self.output_names = output_names
 
@@ -1019,16 +1023,19 @@ class NeuralNetworkParameter(AcquisitionParameter):
         return names
 
     def acquire(self):
-        target_results = self.target_parameter()
+        self.target_parameter()
+        # Extract target results using input names, because target_parameter.get
+        # may provide results in a different order
+        target_results = [self.target_parameter.results[name]
+                          for name in self.input_names]
 
         # Convert target results to array
         target_results_arr = np.array([target_results])
         neural_network_results = self.model.predict(target_results_arr)[0]
-        # Convert neural network results to tuple
-        self.neural_network_results = {}
-        for output_name, neural_network_result in zip(self.output_names,
-                                                      neural_network_results):
-            self.neural_network_results[output_name] = neural_network_result
+
+        # Convert neural network results to dict
+        self.neural_network_results = dict(zip(self.output_names,
+                                               neural_network_results))
         return self.neural_network_results
 
     def get(self):
@@ -1045,17 +1052,23 @@ class NeuralNetworkParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return [self.results[name] for name in self.names]
+        return (self.results[name] for name in self.names)
 
 
 class NeuralRetuneParameter(NeuralNetworkParameter):
-    def __init__(self, target_parameter, output_parameters,
-                 update=False, **kwargs):
+    def __init__(self, target_parameter, output_parameters, update=False,
+                 **kwargs):
         self.output_parameters = output_parameters
         output_names = [f'{output_parameter.name}_delta' for
                         output_parameter in output_parameters]
 
+        input_names = ['contrast', 'dark_counts', 'high_blip_duration',
+                       'fidelity_empty', 'voltage_difference_empty',
+                       'low_blip_duration', 'fidelity_load',
+                       'voltage_difference_load', 'voltage_difference_read']
+
         super().__init__(target_parameter=target_parameter,
+                         input_names=input_names,
                          output_names=output_names, **kwargs)
 
         self.update = update
