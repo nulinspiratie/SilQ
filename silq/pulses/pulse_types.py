@@ -151,7 +151,7 @@ class Pulse:
 
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
-                         '_handle_properties_config_signal']
+                         '_handle_properties_config_signal', '_connected_attrs']
         if isinstance(self, PulseImplementation):
             if isinstance(other, PulseImplementation):
                 # Both pulses are pulse implementations
