@@ -1,7 +1,4 @@
-import numpy as np
-from functools import partial
 from collections import OrderedDict as od
-import inspect
 import logging
 
 import silq
@@ -10,7 +7,7 @@ from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument
-from qcodes.instrument.parameter import ManualParameter, MultiParameter
+from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 
