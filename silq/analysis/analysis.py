@@ -21,8 +21,6 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
     # Determine threshold method
     if threshold_method == 'config':
         threshold_method = analysis_config.get('threshold_method', 'mean')
-        logger.debug(f'using threshold method {threshold_method}')
-
 
     hist, bin_edges = np.histogram(np.ravel(traces), bins=30)
 
