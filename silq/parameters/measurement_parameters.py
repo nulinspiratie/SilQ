@@ -205,7 +205,8 @@ class DCMultisweepParameter(MeasurementParameter):
 
 class MeasurementSequenceParameter(MeasurementParameter):
     def __init__(self, name, measurement_sequence=None,
-                 set_parameters=None, discriminant=None, **kwargs):
+                 set_parameters=None, discriminant=None,
+                 start_condition=None, **kwargs):
         """
 
         Args:
@@ -224,6 +225,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
         self.discriminant = discriminant
         self.set_parameters = set_parameters
+        self.start_condition = start_condition
 
         if isinstance(measurement_sequence, str):
             # Load sequence from dict
@@ -240,27 +242,31 @@ class MeasurementSequenceParameter(MeasurementParameter):
             acquisition_parameter=self.acquisition_parameter,
             **kwargs)
 
-
         self._meta_attrs.extend(['discriminant'])
 
     @clear_single_settings
     def get(self):
-        self.measurement_sequence.base_folder = self.base_folder
-        result = self.measurement_sequence()
-        num_measurements = self.measurement_sequence.num_measurements
-
-        logger.info(f"Measurements performed: {num_measurements}")
-
-        if result['action'] == 'success':
-            # Retrieve dict of {param.name: val} of optimal set vals
-            optimal_set_vals = self.measurement_sequence.optimal_set_vals
-            # Convert dict to list of set vals
-            optimal_set_vals = [optimal_set_vals.get(p.name, p())
-                                for p in self.set_parameters]
-        else:
+        if self.start_condition is not None and not self.start_condition():
+            num_measurements = -1
             optimal_set_vals = [p() for p in self.set_parameters]
+            optimal_val = self.measurement_sequence.optimal_val
+        else:
+            self.measurement_sequence.base_folder = self.base_folder
+            result = self.measurement_sequence()
+            num_measurements = self.measurement_sequence.num_measurements
 
-        optimal_val = self.measurement_sequence.optimal_val
+            logger.info(f"Measurements performed: {num_measurements}")
+
+            if result['action'] == 'success':
+                # Retrieve dict of {param.name: val} of optimal set vals
+                optimal_set_vals = self.measurement_sequence.optimal_set_vals
+                # Convert dict to list of set vals
+                optimal_set_vals = [optimal_set_vals.get(p.name, p())
+                                    for p in self.set_parameters]
+            else:
+                optimal_set_vals = [p() for p in self.set_parameters]
+
+            optimal_val = self.measurement_sequence.optimal_val
 
         return num_measurements, optimal_set_vals, optimal_val
 
