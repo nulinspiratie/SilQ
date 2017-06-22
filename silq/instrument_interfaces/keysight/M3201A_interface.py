@@ -111,7 +111,7 @@ class M3201AInterface(InstrumentInterface):
                     waveforms[ch] = channel_waveforms[ch]
 
         # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
-        for ch in waveforms:
+        for ch in sorted(self._get_active_channels()):
             waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
 
             insert_points = []
@@ -121,11 +121,14 @@ class M3201AInterface(InstrumentInterface):
                 else:
                     delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
 
-                delay = int(round(float(delay_duration * 1e9) / 10))
+                # a waveform delay is expressed in tens of ns
+                delay = int(round((delay_duration * 1e9) / 10))
 
                 if delay > 6000:
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
+
+                    sampling_rate = 1e6
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rates[ch])
                     insertion = {'index': i, 'waveforms': zero_waveforms}
@@ -245,7 +248,7 @@ class M3201AInterface(InstrumentInterface):
                                                                           waveform_data_a=waveform_repeated_data)
         waveform_repeated['cycles'] = waveform_repeated_cycles
         waveform_repeated['delay'] = 0
-
+        waveform_repeated['prescaler'] = 100
         if waveform_tail_samples == 0:
             return [waveform_repeated]
         else:
@@ -255,6 +258,7 @@ class M3201AInterface(InstrumentInterface):
                                                                               waveform_data_a=waveform_tail_data)
             waveform_tail['cycles'] = 1
             waveform_tail['delay'] = 0
+            waveform_tail['prescaler'] = 100
 
             return [waveform_repeated, waveform_tail]
 
