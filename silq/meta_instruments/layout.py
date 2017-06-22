@@ -534,6 +534,8 @@ class Layout(Instrument):
         Returns:
             None
         """
+        logger.info(f'Targeting pulse sequence {pulse_sequence}')
+
         if self.active():
             self.stop()
 
@@ -542,6 +544,7 @@ class Layout(Instrument):
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
+            logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
             interface.pulse_sequence.duration = pulse_sequence.duration
             interface.input_pulse_sequence.duration = pulse_sequence.duration
@@ -608,6 +611,8 @@ class Layout(Instrument):
         Returns:
             None
         """
+        logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+
         if self.active():
             self.stop()
 
@@ -626,10 +631,14 @@ class Layout(Instrument):
                 # Get existing setup flags (if any)
                 instrument_flags = self.flags[interface.instrument_name()]
                 setup_flags = instrument_flags.get('setup', {})
+                if setup_flags:
+                    logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
                 flags = interface.setup(samples=self.samples(),
                                         **setup_flags, **kwargs)
                 if flags:
+                    logger.debug(f'Received setup flags {setup_flags} from '
+                                 f'interface {interface.name}')
                     self.update_flags(flags)
 
         # Create acquisition shapes
@@ -657,7 +666,7 @@ class Layout(Instrument):
                 continue
             elif self.flags[interface.instrument_name()].get('skip_start',
                                                              False):
-                # Interface has a flag to skip start
+                logger.info('Interface {interface.name} has flag to skip start')
                 continue
             elif interface.pulse_sequence:
                 interface.start()
@@ -688,6 +697,7 @@ class Layout(Instrument):
                 acquisition_channel: acquisition_signal.
         """
         try:
+            logger.info(f'Performing acquisition, stop when finished: {stop}')
             if not self.active():
                 self.start()
 
