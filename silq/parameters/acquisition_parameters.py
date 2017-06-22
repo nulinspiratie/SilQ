@@ -234,7 +234,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         if setup or (setup is None and
                      self.layout.pulse_sequence != self.pulse_sequence) or \
-                self.layout.samples != self.samples:
+                self.layout.samples() != self.samples:
             self.setup()
 
 
