@@ -213,7 +213,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         if controller() == 'Triggered':
             # Get trigger connection to determine how to trigger the controller
-            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
             trigger_connection = trigger_pulse.connection
             self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
             self.trigger_edge('rising')
