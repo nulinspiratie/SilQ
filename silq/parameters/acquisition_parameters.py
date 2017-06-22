@@ -203,7 +203,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         # attributes no longer depend on pulse_config, and can therefore be
         # safely transferred to layout.
         pulse_sequence = self.pulse_sequence.copy()
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
         self.layout.setup(samples=samples, **kwargs)

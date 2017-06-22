@@ -72,8 +72,36 @@ class Layout(Instrument):
                            initial_value=False,
                            vals=vals.Bool())
 
-        self.pulse_sequence = PulseSequence()
+        # Untargeted pulse_sequence, can be set via layout.pulse_sequence
+        self._pulse_sequence = None
+
+        # Targeted pulse sequence, which is generated after targeting
+        # layout.pulse_sequence
+        self.targeted_pulse_sequence = None
+
         self.acquisition_shapes = {}
+
+    @property
+    def pulse_sequence(self):
+        return self._pulse_sequence
+
+    @pulse_sequence.setter
+    def pulse_sequence(self, pulse_sequence):
+        """
+        Set target pulse sequence to layout, which distributes pulses to
+        interfaces
+        Args:
+            pulse_sequence: Pulse sequence to be targeted
+        """
+        assert isinstance(pulse_sequence, PulseSequence), \
+            "Can only set layout.pulse_sequence to a PulseSequence"
+
+        # Target pulse_sequence, distributing pulses to interfaces
+        self._target_pulse_sequence(pulse_sequence)
+
+        # Update pulse sequence
+        self._pulse_sequence = pulse_sequence.copy()
+
 
     @property
     def acquisition_interface(self):
@@ -496,7 +524,7 @@ class Layout(Instrument):
             for additional_pulse in targeted_pulse.additional_pulses:
                 self._target_pulse(additional_pulse)
 
-    def target_pulse_sequence(self, pulse_sequence):
+    def _target_pulse_sequence(self, pulse_sequence):
         """
         Targets a pulse sequence.
         For each of the pulses, it finds the instrument that can output it,
@@ -512,11 +540,8 @@ class Layout(Instrument):
         if self.active():
             self.stop()
 
-
-        # targeted_pulse_sequence = pulse_sequence.copy()
-        #
-        # for pulse in targeted_pulse_sequence:
-        #     pulse.connection = self.get_pulse_connection(pulse)
+        # Copy untargeted pulse sequence so none of its attributes are modified
+        self.targeted_pulse_sequence = pulse_sequence.copy()
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -525,7 +550,7 @@ class Layout(Instrument):
             interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in pulse_sequence:
+        for pulse in self.targeted_pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
@@ -534,12 +559,9 @@ class Layout(Instrument):
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
             additional_pulses = interface.get_final_additional_pulses(
-                pulse_sequence=pulse_sequence
-            )
+                pulse_sequence=self.targeted_pulse_sequence)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
-
-        self.pulse_sequence = pulse_sequence
 
     def update_flags(self, new_flags):
         """
