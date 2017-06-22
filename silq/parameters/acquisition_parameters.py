@@ -199,11 +199,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             print('{}: {:.3f}'.format(self.name, self.results))
 
     def setup(self, start=None, **kwargs):
-        # Create a hard copy of pulse sequence. This ensures that pulse
-        # attributes no longer depend on pulse_config, and can therefore be
-        # safely transferred to layout.
-        pulse_sequence = self.pulse_sequence.copy()
-        self.layout.pulse_sequence = pulse_sequence
+        self.layout.pulse_sequence = self.pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
         self.layout.setup(samples=samples, **kwargs)
@@ -215,14 +211,29 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             self.layout.start()
 
     def acquire(self, stop=None, setup=None, **kwargs):
+        """
+        Performs a layout.acquisition. The result is stored in self.data
+        Args:
+            stop (Bool): Whether to stop instruments after acquisition.
+                If not specified, it will stop if self.continuous is False
+            setup (Bool): Whether to setup layout before acquisition.
+                If not specified, it will setup if pulse_sequences are different
+            **kwargs: Additional kwargs to be given to layout.acquisition
+
+        Returns:
+            acquisition output
+        """
         if stop is None:
             stop = not self.continuous
 
-        if setup is None and not self.continuous:
+        if setup or (setup is None and
+                     self.layout.pulse_sequence != self.pulse_sequence):
             self.setup()
+
 
         # Perform acquisition
         self.data = self.layout.acquisition(stop=stop, **kwargs)
+        return self.data
     #
     # def plot_traces(self, channel='output'):
     #     fig, ax = plt.subplots(1,1)
@@ -692,9 +703,6 @@ class AdiabaticParameter(AcquisitionParameter):
     @frequency.setter
     def frequency(self, frequency):
         self.pulse_sequence['adiabatic'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
