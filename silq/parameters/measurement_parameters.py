@@ -192,8 +192,8 @@ class DCMultisweepParameter(MeasurementParameter):
                 self.acquisition_parameter.clear_settings()
 
 
-        arr = np.zeros(
-            (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts))
+        arr = np.zeros((len(self.DC_y_vals) * self.pts,
+                        len(self.DC_x_vals) * self.pts))
         for y_idx in range(len(self.DC_y_vals)):
             for x_idx in range(len(self.DC_x_vals)):
                 DC_data = self.data.DC_voltage[y_idx, x_idx]
