@@ -214,16 +214,15 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, start=None, stop=None, setup=None, **kwargs):
-        if start is None and stop is None:
-            start = not self.continuous
+    def acquire(self, stop=None, setup=None, **kwargs):
+        if stop is None:
             stop = not self.continuous
 
         if setup is None and not self.continuous:
             self.setup()
 
         # Perform acquisition
-        self.data = self.layout.acquisition(start=start, stop=stop, **kwargs)
+        self.data = self.layout.acquisition(stop=stop, **kwargs)
     #
     # def plot_traces(self, channel='output'):
     #     fig, ax = plt.subplots(1,1)
