@@ -4,6 +4,7 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
+from functools import partial
 import threading
 import logging
 logger = logging.getLogger(__name__)
@@ -200,7 +201,7 @@ class M3201AInterface(InstrumentInterface):
     def trigger_self(self, trigger_period):
         self.software_trigger()
         if self.started:
-            threading.Timer(trigger_period, self.trigger_self).start()
+            threading.Timer(trigger_period, partial(self.trigger_self, trigger_period)).start()
 
 
     def get_final_additional_pulses(self, **kwargs):
