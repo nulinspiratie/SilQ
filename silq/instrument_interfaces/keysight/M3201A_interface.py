@@ -132,7 +132,7 @@ class M3201AInterface(InstrumentInterface):
                     sampling_rate = 1e6
                     logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
-                                                               sampling_rate=sampling_rates[ch])
+                                                               sampling_rate=sampling_rate)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
                     insert_points.append(insertion)
                     wf['delay'] = 0
@@ -242,8 +242,8 @@ class M3201AInterface(InstrumentInterface):
         waveform_repeated_cycles = cycles // n
         waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-        waveform_tail_samples = wave_form_multiple * round(
-            ((duration - waveform_repeated_duration) / period_sample + 1) / wave_form_multiple)
+        waveform_tail_samples = wave_form_multiple * int(round(
+            ((duration - waveform_repeated_duration) / period_sample + 1) / wave_form_multiple))
 
         if waveform_tail_samples < wave_form_minimum:
             waveform_tail_samples = 0
