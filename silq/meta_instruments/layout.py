@@ -589,6 +589,9 @@ class Layout(Instrument):
         Returns:
             None
         """
+        if not self.pulse_sequence:
+            raise RuntimeError("Cannot perform setup with an empty PulseSequence.")
+
         if self.active():
             self.stop()
 
