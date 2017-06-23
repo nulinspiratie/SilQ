@@ -191,7 +191,7 @@ class M3201AInterface(InstrumentInterface):
         if self.auto_trigger:
             self.started = True
             duration = self.pulse_sequence.duration
-            trigger_period = duration * 5
+            trigger_period = duration * 1.05
             logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000} ms.')
             self.trigger_self(trigger_period)
         else:
@@ -255,6 +255,7 @@ class M3201AInterface(InstrumentInterface):
 
         waveform_repeated['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
                                                                           waveform_data_a=waveform_repeated_data)
+        waveform_repeated['name'] = 'zero_pulse'
         waveform_repeated['cycles'] = waveform_repeated_cycles
         waveform_repeated['delay'] = 0
         waveform_repeated['prescaler'] = 100
@@ -267,6 +268,7 @@ class M3201AInterface(InstrumentInterface):
 
             waveform_tail['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
                                                                               waveform_data_a=waveform_tail_data)
+            waveform_tail['name'] = 'zero_pulse_tail'
             waveform_tail['cycles'] = 1
             waveform_tail['delay'] = 0
             waveform_tail['prescaler'] = 100
@@ -276,8 +278,8 @@ class M3201AInterface(InstrumentInterface):
 
 class SinePulseImplementation(PulseImplementation, SinePulse):
     def __init__(self, prescaler=0, **kwargs):
-        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+        self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
         logger.debug('targeting SinePulse for M3201A interface {}'.format(interface))
@@ -431,8 +433,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 class DCPulseImplementation(PulseImplementation, DCPulse):
     def __init__(self, prescaler=100, **kwargs):
         # Default sampling rate of 1 MSPS
-        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+        self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
         logger.debug('targeting DCPulse for {}'.format(interface))
@@ -544,8 +546,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
 class AWGPulseImplementation(PulseImplementation, AWGPulse):
     def __init__(self, prescaler=0, **kwargs):
-        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+        self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
         logger.debug('targeting AWGPulse for {}'.format(interface))
@@ -602,9 +604,9 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
 
 class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
-    def __init__(self, prescaler=0 **kwargs):
-        self.prescaler = prescaler
+    def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
+        self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
         logger.debug('targeting CombinationPulse for {}'.format(interface))
@@ -662,8 +664,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
 class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def __init__(self, prescaler = 0, **kwargs):
-        self.prescaler = prescaler
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+        self.prescaler = prescaler
 
     @property
     def amplitude(self):
