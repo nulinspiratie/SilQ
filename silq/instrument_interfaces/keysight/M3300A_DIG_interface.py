@@ -235,12 +235,19 @@ class M3300A_DIG_Interface(InstrumentInterface):
             controller.trigger_edge(self.trigger_edge())
 
             # Capture maximum number of samples on all channels
-            controller.samples_per_record(int(acquisition_window * self.sample_rate()))
+            controller.samples_per_record(int(round(acquisition_window * self.sample_rate())))
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
-            read_timeout = duration * self.samples() * 10
+
+            if int(0xFFFF) < int(round(duration * self.samples()*1.2)*1e3):
+                samples_per_read = max((0xFFFF // int(1e3 * duration) * 100) // 120, 1)
+            else:
+                samples_per_read = self.samples()
+            # read_timeout = duration * samples_per_read * 10
+            read_timeout = 64.0
             logger.info(f'Read timeout is set to {read_timeout:.3f}s.')
+            controller.samples_per_read(samples_per_read)
             controller.read_timeout(read_timeout)
 
     def start(self):
