@@ -36,6 +36,7 @@ class M3201AInterface(InstrumentInterface):
 
         # By default, do not trigger self
         self.auto_trigger = False
+        self.trigger_thread = None
 
         # TODO: how does the power parameter work? How can I set requirements on the amplitude?
         self.pulse_implementations = [
@@ -79,6 +80,11 @@ class M3201AInterface(InstrumentInterface):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.started = False
         self.instrument.off()
+        if (self.trigger_thread != None):
+            logger.debug('Waiting for trigger thread to close...')
+            while(self.trigger_thread.is_alive()):
+                pass
+            logger.debug('Done.')
 
     def setup(self, **kwargs):
         # TODO: figure out how/if we want to configure channel-specific sampling rates
@@ -191,8 +197,8 @@ class M3201AInterface(InstrumentInterface):
         if self.auto_trigger:
             self.started = True
             duration = self.pulse_sequence.duration
-            trigger_period = duration * 1.05
-            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000} ms.')
+            trigger_period = duration * 1.2
+            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
             self.software_trigger()
@@ -201,7 +207,8 @@ class M3201AInterface(InstrumentInterface):
     def trigger_self(self, trigger_period):
         self.software_trigger()
         if self.started:
-            threading.Timer(trigger_period, partial(self.trigger_self, trigger_period)).start()
+            self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
+            self.trigger_thread.start()
 
 
     def get_final_additional_pulses(self, **kwargs):
