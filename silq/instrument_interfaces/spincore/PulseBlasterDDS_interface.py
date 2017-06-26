@@ -1,43 +1,39 @@
 import numpy as np
-import warnings
+import logging
 
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
-from silq.pulses import SinePulse, DCPulse, TriggerPulse, MarkerPulse, \
-    TriggerWaitPulse, PulseImplementation
+from silq.pulses import SinePulse, PulseImplementation
 
-from qcodes.instrument.parameter import ManualParameter
-from qcodes.utils import validators as vals
+
+logger = logging.getLogger(__name__)
 
 RESET_PHASE_FALSE = 0
-RESET_PHASE_TRUE  = 1
+RESET_PHASE_TRUE = 1
 
 RESET_PHASE = RESET_PHASE_FALSE
 
-DEFAULT_CH_INSTR = (0,0,0,0,0)
+DEFAULT_CH_INSTR = (0, 0, 0, 0, 0)
+
 
 class PulseBlasterDDSInterface(InstrumentInterface):
+
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
             # Measured output ranged from -3V to 3 V @ 50 ohm Load.
-            'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
-                                      name='ch{}'.format(k), 
-                                      id=k,
-                                      #output=(-3.0, 3.0)
-                                      output=True
-                                     )
-            for k in [1, 2]
-        }
+            f'ch{k}': Channel(instrument_name=self.instrument_name(),
+                              name=f'ch{k}',
+                              id=k,
+                              #output=(-3.0, 3.0)
+                              output=True)
+            for k in [1, 2]}
 
-        self._used_frequencies = {}
-        self._used_phases      = {}
-        self._used_amplitudes  = {}
-        for ch in sorted(self._output_channels.keys()):
-            self._used_frequencies[ch] = {}
-            self._used_phases[ch]      = {}
-            self._used_amplitudes[ch]  = {}
+        self._used_frequencies = {ch: {} for ch in self._output_channels.keys()}
+        self._used_phases      = {ch: {} for ch in self._output_channels.keys()}
+        self._used_amplitudes  = {ch: {} for ch in self._output_channels.keys()}
 
         self._channels = {
             **self._output_channels,
@@ -46,20 +42,12 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                                         input_trigger=True)}
 
         self.pulse_implementations = [
-#            TriggerPulseImplementation(
-#                pulse_requirements=[]
-#            ),
-#            MarkerPulseImplementation(
-#                pulse_requirements=[]
-#            )
             SinePulseImplementation(
-                pulse_requirements=[]
-            )
-        ]
+                pulse_requirements=[])]
 
     def setup(self, final_instruction='loop', **kwargs):
-        if not self._pulse_sequence:
-            warnings.warn('Cannot setup empty PulseSequence', RuntimeWarning)
+        if not self.pulse_sequence:
+            logger.warning('Cannot setup empty PulseSequence')
             return
 
         # Determine points per time unit
@@ -79,54 +67,54 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         phase_i = [0,0]
         amp_i   = [0,0]
 
-        for ch in sorted(self._output_channels.keys()):
-            ch_num = ch[2:] # Get the numerical channel number
-            for pulse in self._pulse_sequence.get_pulses(output_channel=ch):
-                n = ch_num -1 # NOTE: the driver starts counting from 0
-                if isinstance(pulse, SinePulse):
+        for ch_name, ch in sorted(self._output_channels.items()):
+            for pulse in self.pulse_sequence.get_pulses(output_channel=ch_name):
+                n = ch.idx -1 # NOTE: the driver starts counting from 0
+                if isinstance(pulse, SinePulseImplementation):
                     # TODO: Put error when max number of freqs exceeded
-                    if pulse.frequency not in self._used_frequencies[ch] and \
-                       freq_i < self.instrument.N_FREQ_REGS:
+                    if pulse.frequency not in self._used_frequencies[ch]:
+                        if freq_i >= self.instrument.N_FREQ_REGS:
+                            raise RuntimeError('Too many frequencies')
                         self._used_frequencies[ch][pulse.frequency] = freq_i
                         # Set the instrument parameter
                         self.instrument.parameters[
-                           'frequency_n{}_r{}'.format(n, freq_i)
-                        ].set(pulse.frequency)
-                        freq_i[n] = freq_i[n] + 1
+                           f'frequency_n{n}_r{freq_i}'].set(pulse.frequency)
+                        freq_i[n] += 1
 
-                    if pulse.phase not in self._used_phases[ch] and \
-                       phase_i < self.instrument.N_PHASE_REGS:
+                    if pulse.phase not in self._used_phases[ch]:
+                        if phase_i >= self.instrument.N_PHASE_REGS:
+                            raise RuntimeError('Too many phases')
+
                         self._used_phases[ch][pulse.phase] = phase_i
                         # Set the instrument parameter
                         self.instrument.parameters[
-                           'phase_n{}_r{}'.format(n, phase_i)
-                        ].set(pulse.phase)
-                        phase_i[n] = phase_i[n] + 1
+                            f'phase_n{n}_r{phase_i}'].set(pulse.phase)
+                        phase_i[n] += 1
 
-                    if pulse.amplitude not in self._used_amplitudes[ch] and \
-                       amp_i < self.instrument.N_AMPLITUDE_REGS:
+                    if pulse.amplitude not in self._used_amplitudes[ch]:
+                        if amp_i >= self.instrument.N_AMPLITUDE_REGS:
+                            raise RuntimeError('Too many amplitudes')
                         self._used_amplitudes[ch][pulse.amplitude] = amp_i
                         # Set the instrument parameter
                         self.instrument.parameters[
-                           'amplitude_n{}_r{}'.format(n, amp_i)
-                        ].set(pulse.amplitude)
-                        amp_i[n] = amp_i[n] + 1
+                            f'amplitude_n{n}_r{amp_i}'].set(pulse.amplitude)
+                        amp_i[n] += 1
 
         # Iteratively increase time
         t = 0
-        t_stop_max = max(self._pulse_sequence.t_stop_list)
+        t_stop_max = max(self.pulse_sequence.t_stop_list)
         inst_list = []
         while t < t_stop_max:
             # NOTE: there are no input pulses to the DDS
             #active_input_pulses = [pulse for pulse
-            #                       in self._input_pulse_sequence
+            #                       in self._inputpulse_sequence
             #                       if pulse.t_start == t]
             #for input_pulse in active_input_pulses:
             #    if isinstance(input_pulse,TriggerWaitPulse):
             #        self.instrument.send_instruction(0,'wait', 0, 50)
 
             # find time of next event
-            t_next = min(t_val for t_val in self._pulse_sequence.t_list
+            t_next = min(t_val for t_val in self.pulse_sequence.t_list
                          if t_val > t)
 
             # Send continue instruction until next event
@@ -138,13 +126,13 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             inst = ()
             # for each channel, search for active pulses and implement them
             for ch in sorted(self._output_channels.keys()):
-                pulse = self._pulse_sequence.get_pulse(enabled=True,
+                pulse = self.pulse_sequence.get_pulse(enabled=True,
                                                        t=t,
                                                        output_channel=ch)
                 if pulse is not None:
                     inst = inst + tuple(pulse.implement())
                 else:
-                    inst = inst + tuple(DEFAULT_CH_INST)
+                    inst = inst + tuple(self.DEFAULT_CH_INST)
 
             if delay_cycles < 1e9:
                 inst = inst + (0, 'continue', 0, delay_cycles)
@@ -163,8 +151,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
         # Insert delay until end of pulse sequence
         # NOTE: This will disable all output channels and use default registers
-        delay_duration = max(self._pulse_sequence.duration - t, 0)
-        inst_default = DEFAULT_CH_INST + DEFAULT_CH_INST
+        delay_duration = max(self.pulse_sequence.duration - t, 0)
+        inst_default = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
         if delay_duration:
             delay_cycles = round(delay_duration * ms)
             if delay_cycles < 1e9:
@@ -176,12 +164,12 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                 delay = int(duration / divisor)
                 inst = inst_default + (0, 'long_delay', divisor, delay)
 
-            t += self._pulse_sequence.duration
+            t += self.pulse_sequence.duration
 
         inst_list.append(inst)
         inst = inst_default + (0, 'branch', 0, 50)
         inst_list.append(inst)
-        self.instrument.program_pulse_sequence(inst_list)
+        self.instrument.programpulse_sequence(inst_list)
         #self.instrument.send_instruction(0, 'branch', 0, 50)
 
 
@@ -193,6 +181,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
     def get_final_additional_pulses(self, **kwargs):
         return []
+
 
 class SinePulseImplementation(SinePulse, PulseImplementation):
     def __init__(self, **kwargs):
