@@ -2,12 +2,9 @@ import numpy as np
 
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, TriggerPulse, MarkerPulse, TriggerWaitPulse, \
     PulseImplementation
 
-from qcodes.instrument.parameter import ManualParameter
-from qcodes.utils import validators as vals
 
 class PulseBlasterESRPROInterface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
@@ -15,9 +12,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         self._output_channels = {
             # Measured output TTL is half of 3.3V
-            'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
-                                      name='ch{}'.format(k), id=k,
-                                      output_TTL=(0, 3.3/2))
+            f'ch{k}': Channel(instrument_name=self.instrument_name(),
+                              name=f'ch{k}', id=k - 1, output_TTL=(0, 3.3 / 2))
             for k in [1, 2, 3, 4]}
         self._channels = {
             **self._output_channels,
@@ -25,16 +21,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                                         name='software_trig_in',
                                         input_trigger=True)}
 
-        self.pulse_implementations = [
-            TriggerPulseImplementation(
-                pulse_requirements=[]
-            ),
-            MarkerPulseImplementation(
-                pulse_requirements=[]
-            )
-        ]
+        self.pulse_implementations = [TriggerPulseImplementation(),
+                                      MarkerPulseImplementation()]
 
-    def setup(self, final_instruction='loop', **kwargs):
+    def setup(self, final_instruction='loop', output_connections=[], **kwargs):
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
         # Factor of 2 needed because apparently the core clock is not the same
@@ -49,8 +39,15 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         # Set up instrument, includes counting boards
         self.instrument.setup(initialize=False)
 
-        inactive_channel_mask = sum(2**(ch.id - 1) if ch.invert else 0
-                                    for ch in self._output_channels.values())
+
+        output_channels = [connection.output['channel']
+                           for connection in output_connections]
+        assert len(output_channels) == len(output_connections), \
+            "Number of output channels and connections do not match"
+
+        inactive_channel_mask = sum(2**connection.output['channel'].id
+                                    if connection.input['channel'].invert else 0
+                                    for connection in output_connections)
 
         self.instrument.start_programming()
 
@@ -113,8 +110,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                         self.instrument.send_instruction(
                             inactive_channel_mask, 'long_delay', divisor, delay)
 
-                    t += self.pulse_sequence.duration
-
                 self.instrument.send_instruction(
                     inactive_channel_mask, 'branch', 0, 50)
 
@@ -140,12 +135,13 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
     def implement(self, t):
         output_channel = self.connection.output['channel']
-        channel_value = 2 ** (output_channel.id - 1)
+        input_channel = self.connection.input['channel']
+        channel_value = 2 ** output_channel.id
 
         if t >= self.t_start and t < self.t_stop:
-            return 0 if output_channel.invert else channel_value
+            return 0 if input_channel.invert else channel_value
         else:
-            return channel_value if output_channel.invert else 0
+            return channel_value if input_channel.invert else 0
 
 class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
     def __init__(self, **kwargs):
@@ -157,8 +153,10 @@ class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
 
     def implement(self, t):
         output_channel = self.connection.output['channel']
-        channel_value = 2 ** (output_channel.id - 1)
+        input_channel = self.connection.input['channel']
+        channel_value = 2 ** output_channel.id
+
         if t >= self.t_start and t < self.t_stop:
-            return 0 if output_channel.invert else channel_value
+            return 0 if input_channel.invert else channel_value
         else:
-            return channel_value if output_channel.invert else 0
+            return channel_value if input_channel.invert else 0

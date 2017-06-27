@@ -611,7 +611,13 @@ class Layout(Instrument):
                 instrument_flags = self.flags[interface.instrument_name()]
                 setup_flags = instrument_flags.get('setup', {})
 
+                is_primary = self.primary_instrument() == interface.name
+                output_connections = self.get_connections(
+                    output_interface=interface)
+
                 flags = interface.setup(samples=self.samples(),
+                                        is_primary=is_primary,
+                                        output_connections=output_connections,
                                         **setup_flags, **kwargs)
                 if flags:
                     self.update_flags(flags)
@@ -634,7 +640,6 @@ class Layout(Instrument):
         Returns:
 
         """
-        logger.debug('Layout started')
         self.active(True)
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
@@ -645,8 +650,10 @@ class Layout(Instrument):
                 continue
             elif interface.pulse_sequence:
                 interface.start()
+                logger.debug(f'{interface} started')
             else:
                 pass
+        logger.debug('Layout started')
 
     def stop(self):
         """
@@ -654,10 +661,11 @@ class Layout(Instrument):
         Returns:
             None
         """
-        logger.debug('Layout stopped')
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
+            logger.debug(f'{interface} stopped')
         self.active(False)
+        logger.debug('Layout stopped')
 
     def acquisition(self, start=True, stop=True):
         """
@@ -757,11 +765,11 @@ class Connection:
         instrument/channel args can also be lists of elements. If so,
         condition is satisfied if connection property is in list
         Args:
-            output_interface: Connection must have output_interface
+            output_interface: Connection must have output_interface object
             output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel 
+            output_channel: Connection must have output_channel
                 (either Channel object, or channel name)
-            input_interface: Connection must have input_interface
+            input_interface: Connection must have input_interface object
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
                 (either Channel object, or channel name)
