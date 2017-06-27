@@ -45,8 +45,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         #Initial pulseblaster commands
         self.instrument.stop()
-        self.instrument.detect_boards()
-        self.instrument.select_board(0)
+
+        # Set up instrument, includes counting boards
+        self.instrument.setup(initialize=False)
+
         self.instrument.start_programming()
 
         if self.pulse_sequence:
