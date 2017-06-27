@@ -15,7 +15,8 @@ from silq.pulses import *
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
-    attribute_from_config, UpdateDotDict, convert_setpoints
+    attribute_from_config, UpdateDotDict, convert_setpoints, \
+    property_ignore_setter
 
 
 h5fmt = hdf5_format.HDF5Format()
@@ -338,7 +339,7 @@ class TraceParameter(AcquisitionParameter):
         for pulse in self._pulse_sequence.get_pulses(acquire=True):
             pulse.average = self.average_mode
 
-    @property
+    @property_ignore_setter
     def names(self):
         return [f'trace_{output[1]}'
                 for output in self.layout.acquisition_outputs()]
@@ -370,7 +371,7 @@ class TraceParameter(AcquisitionParameter):
     def shapes(self, _):
         pass
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         # TODO: Create blank regions for non continous acquisition periods
         t_start = min(pulse.t_start for pulse in
@@ -390,11 +391,7 @@ class TraceParameter(AcquisitionParameter):
             setpoints = ((t_list, ), ) * num_traces
         return setpoints
 
-    @setpoints.setter
-    def setpoints(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def setpoint_names(self):
         if self.samples > 1 and self.average_mode == 'none':
             return (('sample', 'time', ), ) * \
@@ -403,21 +400,13 @@ class TraceParameter(AcquisitionParameter):
             return (('time', ), ) * len(self.layout.acquisition_outputs())
 
 
-    @setpoint_names.setter
-    def setpoint_names(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
             return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
         else:
             return (('ms', ), ) * len(self.layout.acquisition_outputs())
 
-
-    @setpoint_units.setter
-    def setpoint_units(self, _):
-        pass
 
     def setup(self, start=None, **kwargs):
         # Ensure that each pulse is average to the parameter specs
@@ -442,29 +431,7 @@ class TraceParameter(AcquisitionParameter):
                 [self.data[pulse.full_name][output] for pulse in
                  self.pulse_sequence.get_pulses(acquire=True)], axis=1
             )
-            # if self.average_mode == 'none':
-            #     if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
-            #         # Data is 2D,
-            #         trace = np.concatenate(
-            #             [self.data[pulse.full_name][output] for pulse in
-            #              self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-            #     else:
-            #         trace = np.concatenate(
-            #             [self.data[pulse.full_name][output] for pulse in
-            #              self.pulse_sequence.get_pulses(acquire=True)])
-            # else:
-            #     trace = (np.concatenate(
-            #         [self.data[pulse.full_name][output] for pulse in
-            #          self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
-            # # print(f'{k}, {output} : {np.shape(trace)}')
 
-            # TODO: This should be done at time of acquisition, fix trace dims
-            # import pdb; pdb.set_trace()
-            # if trace:
-            #     shape = (self.samples, len(self.setpoints[0][1]))
-            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
-            #     trace = (trace, )*self.samples
-            # trace = (trace,) * self.samples
             traces.append(trace)
 
         return traces
@@ -505,7 +472,7 @@ class DCSweepParameter(AcquisitionParameter):
     def __getitem__(self, item):
         return self.sweep_parameters[item]
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         iter_sweep_parameters = iter(self.sweep_parameters.values())
         if len(self.sweep_parameters) == 1:
@@ -536,25 +503,25 @@ class DCSweepParameter(AcquisitionParameter):
             setpoints += (convert_setpoints(trace_setpoints),)
         return setpoints
 
-    @property
+    @property_ignore_setter
     def names(self):
         if self.trace_pulse.enabled:
             return ('DC_voltage', 'trace_voltage')
         else:
             return ('DC_voltage',)
 
-    @property
+    @property_ignore_setter
     def labels(self):
         if self.trace_pulse.enabled:
             return ('DC voltage', 'Trace voltage')
         else:
             return ('DC voltage',)
 
-    @property
+    @property_ignore_setter
     def units(self):
         return ('V', 'V') if self.trace_pulse.enabled else ('V',)
 
-    @property
+    @property_ignore_setter
     def shapes(self):
         iter_sweep_parameters = iter(self.sweep_parameters.values())
         if len(self.sweep_parameters) == 0:
@@ -572,7 +539,7 @@ class DCSweepParameter(AcquisitionParameter):
                 self.trace_pulse.duration * 1e-3 * self.sample_rate),),
         return shapes
 
-    @property
+    @property_ignore_setter
     def setpoint_names(self):
         iter_sweep_parameters = reversed(self.sweep_parameters.keys())
         names = tuple(iter_sweep_parameters),
@@ -580,40 +547,12 @@ class DCSweepParameter(AcquisitionParameter):
             names += (('time',), )
         return names
 
-    @property
+    @property_ignore_setter
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
         if self.trace_pulse.enabled:
             setpoint_units += (('ms',), )
         return setpoint_units
-
-    @setpoints.setter
-    def setpoints(self, _):
-        pass
-
-    @names.setter
-    def names(self, _):
-        pass
-
-    @labels.setter
-    def labels(self, _):
-        pass
-
-    @units.setter
-    def units(self, _):
-        pass
-
-    @shapes.setter
-    def shapes(self, _):
-        pass
-
-    @setpoint_names.setter
-    def setpoint_names(self, _):
-        pass
-
-    @setpoint_units.setter
-    def setpoint_units(self, _):
-        pass
 
     def add_sweep(self, parameter_name, sweep_voltages=None,
                   connection_label=None, offset_parameter=None):
@@ -761,11 +700,9 @@ class DCSweepParameter(AcquisitionParameter):
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'dark_counts', 'voltage_difference',
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference',
-                                 'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -775,6 +712,14 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'))
+
+    @property
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @labels.setter
+    def labels(self, labels):
+        pass
 
     @clear_single_settings
     def get(self):
@@ -816,8 +761,6 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('final', connection_label='stage'),
             FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
 
-        self.pulse_sequence.sort()
-
     @property
     def frequency(self):
         return self.pulse_sequence['adiabatic'].frequency
@@ -855,107 +798,40 @@ class RabiParameter(AcquisitionParameter):
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='rabi_acquisition',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence.sort()
+            # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            DCPulse('empty', acquire=True, connection_label='stage'),
+            DCPulse('plunge', acquire=True, connection_label='stage'),
+            DCPulse('read_long', acquire=True, connection_label='stage'),
+            DCPulse('final', connection_label='stage'),
+            SinePulse('ESR', connection_label='ESR'))
 
     @property
     def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
+        return self.pulse_sequence['ESR'].frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
+        self.pulse_sequence['ESR'].frequency = frequency
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return self.results
-
-
-class RabiDriveParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        """
-        Parameter used to drive Rabi oscillations
-        """
-        super().__init__(name='rabi_drive',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-        self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        self.pulse_sequence.sort()
-
-    @property
-    def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    @property
-    def duration(self):
-        return self.pulse_sequence['rabi'].duration
-
-    @duration.setter
-    def duration(self, duration):
-        self.pulse_sequence['rabi'].duration = duration
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-
-    @clear_single_settings
-    def get(self):
-        self.acquire()
-
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
+                                              sample_rate=self.sample_rate,
+                                              t_skip=self.t_skip,
+                                              t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1084,26 +960,18 @@ class VariableReadParameter(AcquisitionParameter):
             DCPulse(name='final',
                     connection_label='stage'))
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         duration = sum(pulse.duration for pulse in
                        self.pulse_sequence.get_pulses(acquire=True))
         return (tuple(np.linspace(0, duration, self.shapes[0][0])), ),
 
-    @setpoints.setter
-    def setpoints(self, setpoints):
-        pass
-
-    @property
+    @property_ignore_setter
     def shapes(self):
         shapes = self.layout.acquisition_shapes
         pts = sum(shapes[pulse_name]['output'][0]
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
-
-    @shapes.setter
-    def shapes(self, shapes):
-        pass
 
     def get(self):
         self.acquire()
