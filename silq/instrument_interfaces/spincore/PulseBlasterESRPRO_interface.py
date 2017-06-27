@@ -49,6 +49,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         # Set up instrument, includes counting boards
         self.instrument.setup(initialize=False)
 
+        inactive_channel_mask = sum(2**(ch.id - 1) if ch.invert else 0
+                                    for ch in self._output_channels.values())
+
         self.instrument.start_programming()
 
         if self.pulse_sequence:
@@ -56,26 +59,18 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t = 0
             t_stop_max = max(self.pulse_sequence.t_stop_list)
 
-            # Generate pulses once for speedup reasons
-            loop_idx = 0
             while t < t_stop_max:
-                loop_idx += 1
+                channel_mask = sum(pulse.implement(t=t) for pulse in
+                                   self.pulse_sequence)
+
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses
                 active_input_pulses = self.input_pulse_sequence.get_pulses(
                     t_start=t)
-                for input_pulse in active_input_pulses:
-                    if isinstance(input_pulse,TriggerWaitPulse):
-                        self.instrument.send_instruction(0,'wait', 0, 50)
-
-                # Segment remaining pulses into next pulses and others
-                active_pulses = self.pulse_sequence.get_pulses(t=t)
-
-                if not active_pulses:
-                    channel_mask = 0
-                else:
-                    channel_mask = sum(
-                        [pulse.implement() for pulse in active_pulses])
+                if [p for p in active_input_pulses
+                    if isinstance(p, TriggerWaitPulse)]:
+                    self.instrument.send_instruction(inactive_channel_mask,
+                                                     'wait', 0, 50)
 
                 # find time of next event
                 t_next = min(t_val for t_val in self.pulse_sequence.t_list
@@ -84,7 +79,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Send wait instruction until next event
                 wait_duration = t_next - t
                 wait_cycles = round(wait_duration * ms)
-                # Either send continue commandm or long_delay command if the
+                # Either send continue command or long_delay command if the
                 # wait duration is too long
                 if wait_cycles < 1e9:
                     self.instrument.send_instruction(
@@ -108,19 +103,20 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                     wait_cycles = round(wait_duration * ms)
                     if wait_cycles < 1e9:
                         self.instrument.send_instruction(
-                            0, 'continue', 0, wait_cycles)
+                            inactive_channel_mask, 'continue', 0, wait_cycles)
                     else:
                         self.instrument.send_instruction(
-                            0, 'continue', 0, 100)
+                            inactive_channel_mask, 'continue', 0, 100)
                         duration = round(wait_cycles - 100)
                         divisor = int(np.ceil(duration / 1e9))
                         delay = int(duration / divisor)
                         self.instrument.send_instruction(
-                            0, 'long_delay', divisor, delay)
+                            inactive_channel_mask, 'long_delay', divisor, delay)
 
                     t += self.pulse_sequence.duration
 
-                self.instrument.send_instruction(0, 'branch', 0, 50)
+                self.instrument.send_instruction(
+                    inactive_channel_mask, 'branch', 0, 50)
 
         self.instrument.stop_programming()
 
@@ -142,12 +138,14 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
     def amplitude(self):
         return self.connection.output['channel'].output_TTL[1]
 
-    def implement(self):
-        output_channel_name = self.connection.output['channel'].name
-        # Split channel number from string (e.g. "ch3" -> 3)
-        output_channel = int(output_channel_name[2])
-        channel_value = 2**(output_channel-1)
-        return channel_value
+    def implement(self, t):
+        output_channel = self.connection.output['channel']
+        channel_value = 2 ** (output_channel.id - 1)
+
+        if t >= self.t_start and t < self.t_stop:
+            return 0 if output_channel.invert else channel_value
+        else:
+            return channel_value if output_channel.invert else 0
 
 class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
     def __init__(self, **kwargs):
@@ -157,9 +155,10 @@ class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
     def amplitude(self):
         return self.connection.output['channel'].output_TTL[1]
 
-    def implement(self):
-        output_channel_name = self.connection.output['channel'].name
-        # Split channel number from string (e.g. "ch3" -> 3)
-        output_channel = int(output_channel_name[2])
-        channel_value = 2**(output_channel-1)
-        return channel_value
+    def implement(self, t):
+        output_channel = self.connection.output['channel']
+        channel_value = 2 ** (output_channel.id - 1)
+        if t >= self.t_start and t < self.t_stop:
+            return 0 if output_channel.invert else channel_value
+        else:
+            return channel_value if output_channel.invert else 0
