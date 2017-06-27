@@ -39,7 +39,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                                         input_trigger=True),
             'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in',
-                               input_trigger=True)}
+                               input_trigger=True,
+                               invert=True)} # Going from high to low triggers
 
         self.pulse_implementations = [
             SinePulseImplementation(
@@ -63,7 +64,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                 output_channel=channel.short_name)
             for pulse in pulses:
                 if isinstance(pulse, SinePulseImplementation):
-                    frequencies.append(pulse.frequency)
+                    frequencies.append(pulse.frequency) # in MHz
                     phases.append(pulse.phase)
                     amplitudes.append(pulse.amplitude)
                 else:
@@ -173,7 +174,7 @@ class SinePulseImplementation(SinePulse, PulseImplementation):
         channel_name = self.connection.output['channel'].name
         channel = interface.instrument.output_channels[channel_name]
 
-        frequency_idx = channel.frequencies().index(self.frequency)
+        frequency_idx = channel.frequencies().index(self.frequency) # MHz
         phase_idx = channel.phases().index(self.phase)
         amplitude_idx = channel.amplitudes().index(self.amplitude)
 
