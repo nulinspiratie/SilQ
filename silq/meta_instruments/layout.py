@@ -611,7 +611,11 @@ class Layout(Instrument):
         Returns:
             None
         """
+
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+        
+        if not self.pulse_sequence:
+            raise RuntimeError("Cannot perform setup with an empty PulseSequence.")
 
         if self.active():
             self.stop()
