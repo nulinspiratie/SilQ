@@ -640,11 +640,9 @@ class DCSweepParameter(AcquisitionParameter):
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'dark_counts', 'voltage_difference',
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference',
-                                 'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -654,6 +652,14 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'))
+
+    @property
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @labels.setter
+    def labels(self, labels):
+        pass
 
     @clear_single_settings
     def get(self):
@@ -695,8 +701,6 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('final', connection_label='stage'),
             FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
 
-        self.pulse_sequence.sort()
-
     @property
     def frequency(self):
         return self.pulse_sequence['adiabatic'].frequency
@@ -731,107 +735,40 @@ class RabiParameter(AcquisitionParameter):
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='rabi_acquisition',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence.sort()
+            # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            DCPulse('empty', acquire=True, connection_label='stage'),
+            DCPulse('plunge', acquire=True, connection_label='stage'),
+            DCPulse('read_long', acquire=True, connection_label='stage'),
+            DCPulse('final', connection_label='stage'),
+            SinePulse('ESR', connection_label='ESR'))
 
     @property
     def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
+        return self.pulse_sequence['ESR'].frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
+        self.pulse_sequence['ESR'].frequency = frequency
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return self.results
-
-
-class RabiDriveParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        """
-        Parameter used to drive Rabi oscillations
-        """
-        super().__init__(name='rabi_drive',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-        self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        self.pulse_sequence.sort()
-
-    @property
-    def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    @property
-    def duration(self):
-        return self.pulse_sequence['rabi'].duration
-
-    @duration.setter
-    def duration(self, duration):
-        self.pulse_sequence['rabi'].duration = duration
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-
-    @clear_single_settings
-    def get(self):
-        self.acquire()
-
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
+                                              sample_rate=self.sample_rate,
+                                              t_skip=self.t_skip,
+                                              t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
