@@ -22,24 +22,24 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
+
         self._output_channels = {
             # Measured output ranged from -3V to 3 V @ 50 ohm Load.
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}',
-                              id=k,
+                              id=k-1, # id is 0-based due to spinapi DLL
                               #output=(-3.0, 3.0)
                               output=True)
-            for k in [0, 1]}
-
-        self._used_frequencies = {ch: {} for ch in self._output_channels.keys()}
-        self._used_phases      = {ch: {} for ch in self._output_channels.keys()}
-        self._used_amplitudes  = {ch: {} for ch in self._output_channels.keys()}
+            for k in [1, 2]}
 
         self._channels = {
             **self._output_channels,
             'software_trig_in': Channel(instrument_name=self.instrument_name(),
                                         name='software_trig_in',
-                                        input_trigger=True)}
+                                        input_trigger=True),
+            'trig_in': Channel(instrument_name=self.instrument_name(),
+                               name='trig_in',
+                               input_trigger=True)}
 
         self.pulse_implementations = [
             SinePulseImplementation(
@@ -51,28 +51,37 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             return
 
         #Initial pulseblaster commands
-        self.instrument.initialize()
+        self.instrument.setup()
 
         # Set channel registers for frequencies, phases, and amplitudes
         for channel in self.instrument.output_channels:
-            # Channel name is apparently modified to include instrument name
-            channel_name = f'ch{channel.idx}'
-
             frequencies = []
             phases = []
             amplitudes = []
 
-            pulses = self.pulse_sequence.get_pulses(output_channel=channel_name)
+            pulses = self.pulse_sequence.get_pulses(
+                output_channel=channel.short_name)
             for pulse in pulses:
                 if isinstance(pulse, SinePulseImplementation):
                     frequencies.append(pulse.frequency)
                     phases.append(pulse.phase)
                     amplitudes.append(pulse.amplitude)
+                else:
+                    raise NotImplementedError(f'{pulse} not implemented')
 
-            channel.frequencies(set(frequencies))
-            channel.phases(set(phases))
-            channel.amplitudes(set(amplitudes))
+            frequencies = list(set(frequencies))
+            phases = list(set(phases))
+            amplitudes = list(set(amplitudes))
 
+            channel.frequencies(frequencies)
+            channel.phases(phases)
+            channel.amplitudes(amplitudes)
+
+            self.instrument.set_frequencies(frequencies=frequencies,
+                                            channel=channel.idx)
+            self.instrument.set_phases(phases=phases, channel=channel.idx)
+            self.instrument.set_amplitudes(amplitudes=amplitudes,
+                                           channel=channel.idx)
 
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
@@ -104,9 +113,9 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                                                        t=t,
                                                        output_channel=ch)
                 if pulse is not None:
-                    inst = inst + tuple(pulse.implement())
+                    inst = inst + tuple(pulse.implement(self))
                 else:
-                    inst = inst + tuple(self.DEFAULT_CH_INST)
+                    inst = inst + tuple(DEFAULT_CH_INSTR)
 
             if delay_cycles < 1e9:
                 inst = inst + (0, 'continue', 0, delay_cycles)
@@ -143,7 +152,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         inst_list.append(inst)
         inst = inst_default + (0, 'branch', 0, 50)
         inst_list.append(inst)
-        self.instrument.program_pulse_sequence(inst_list)
+        self.instrument.program_instruction_sequence(inst_list)
 
     def start(self):
         self.instrument.start()
@@ -159,51 +168,19 @@ class SinePulseImplementation(SinePulse, PulseImplementation):
     def __init__(self, **kwargs):
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
 
-    @property
-    def amplitude(self):
-        return self.amplitude()
+    def implement(self, interface):
 
-    def implement(self):
+        channel_name = self.connection.output['channel'].name
+        channel = interface.instrument.output_channels[channel_name]
 
-        # TODO: check if the output_channel_name is useful for our hash
-        output_channel_name = self.connection.output['channel'].id
+        frequency_idx = channel.frequencies().index(self.frequency)
+        phase_idx = channel.phases().index(self.phase)
+        amplitude_idx = channel.amplitudes().index(self.amplitude)
+
         inst_slice = (
-            self._used_frequencies[output_channel_name][self.frequency],
-            self._used_phases[output_channel_name][self.phase],
-            self._used_amplitudes[output_channel_name][self.amplitude],
+            frequency_idx,
+            phase_idx,
+            amplitude_idx,
             1, # Enable channel
             RESET_PHASE)
         return inst_slice
-
-#TODO: implement a DC pulse implementation and trigger pulse implementation to
-#      be used in the instruction flags
-
-#class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-#    def __init__(self, **kwargs):
-#        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
-#
-#    @property
-#    def amplitude(self):
-#        return self.connection.output['channel'].output_TTL[1]
-#
-#    def implement(self):
-#        output_channel_name = self.connection.output['channel'].name
-#        # Split channel number from string (e.g. "ch3" -> 3)
-#        output_channel = int(output_channel_name[2])
-#        channel_value = 2**(output_channel-1)
-#        return channel_value
-
-#class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
-#    def __init__(self, **kwargs):
-#        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
-#
-#    @property
-#    def amplitude(self):
-#        return self.connection.output['channel'].output_TTL[1]
-#
-#    def implement(self):
-#        output_channel_name = self.connection.output['channel'].name
-#        # Split channel number from string (e.g. "ch3" -> 3)
-#        output_channel = int(output_channel_name[2])
-#        channel_value = 2**(output_channel-1)
-#        return channel_value
