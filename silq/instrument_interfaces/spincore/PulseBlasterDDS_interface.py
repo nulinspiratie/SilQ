@@ -3,7 +3,7 @@ import logging
 
 from silq.instrument_interfaces \
     import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation
+from silq.pulses import SinePulse, PulseImplementation, TriggerPulse
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ RESET_PHASE_TRUE = 1
 RESET_PHASE = RESET_PHASE_FALSE
 
 DEFAULT_CH_INSTR = (0, 0, 0, 0, 0)
-
+DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
 class PulseBlasterDDSInterface(InstrumentInterface):
 
@@ -46,11 +46,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[])]
 
-    def setup(self, final_instruction='loop', **kwargs):
-        if not self.pulse_sequence:
-            logger.warning('Cannot setup empty PulseSequence')
-            return
-
+    def setup(self, final_instruction='loop', is_primary=True, **kwargs):
         #Initial pulseblaster commands
         self.instrument.setup()
 
@@ -89,13 +85,17 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # Factor of 2 needed because apparently the core clock is not the same
         # as the sampling rate
         # TODO check if this is correct
-        us = 2 * core_clock # points per microsecond
-        ms = us * 1e3 # points per millisecond
+        ms = 150e3 # points per millisecond
 
         # Iteratively increase time
         t = 0
         t_stop_max = max(self.pulse_sequence.t_stop_list)
         inst_list = []
+
+        if not is_primary:
+            # Wait for trigger
+            inst_list.append(DEFAULT_INSTR + (0, 'wait', 0, 50))
+
         while t < t_stop_max:
             # find time of next event
             t_next = min(t_val for t_val in self.pulse_sequence.t_list
@@ -111,8 +111,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             # for each channel, search for active pulses and implement them
             for ch in sorted(self._output_channels.keys()):
                 pulse = self.pulse_sequence.get_pulse(enabled=True,
-                                                       t=t,
-                                                       output_channel=ch)
+                                                      t=t,
+                                                      output_channel=ch)
                 if pulse is not None:
                     inst = inst + tuple(pulse.implement(self))
                 else:
@@ -131,29 +131,30 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             t = t_next
 
-        # Add final instructions
+        if is_primary:
+            # Insert delay until end of pulse sequence
+            # NOTE: This will disable all output channels and use default registers
+            delay_duration = max(self.pulse_sequence.duration - t, 0)
+            if delay_duration:
+                delay_cycles = round(delay_duration * ms)
+                if delay_cycles < 1e9:
+                    inst = DEFAULT_INSTR + (0, 'continue', 0, delay_cycles)
+                else:
+                    # TODO: check to see if a call to long_delay sets the channel registers
+                    duration = round(delay_cycles - 100)
+                    divisor = int(np.ceil(duration / 1e9))
+                    delay = int(duration / divisor)
+                    inst = DEFAULT_INSTR + (0, 'long_delay', divisor, delay)
 
-        # Insert delay until end of pulse sequence
-        # NOTE: This will disable all output channels and use default registers
-        delay_duration = max(self.pulse_sequence.duration - t, 0)
-        inst_default = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
-        if delay_duration:
-            delay_cycles = round(delay_duration * ms)
-            if delay_cycles < 1e9:
-                inst = inst_default + (0, 'continue', 0, delay_cycles)
-            else:
-                # TODO: check to see if a call to long_delay sets the channel registers
-                duration = round(delay_cycles - 100)
-                divisor = int(np.ceil(duration / 1e9))
-                delay = int(duration / divisor)
-                inst = inst_default + (0, 'long_delay', divisor, delay)
+                inst_list.append(inst)
 
-            t += self.pulse_sequence.duration
-
+        # Loop back to beginning (wait if not primary)
+        inst = DEFAULT_INSTR + (0, 'branch', 0, 50)
         inst_list.append(inst)
-        inst = inst_default + (0, 'branch', 0, 50)
-        inst_list.append(inst)
-        self.instrument.program_instruction_sequence(inst_list)
+
+        # Note that this command does not actually send anything to the DDS,
+        # this is done when DDS.start is called
+        self.instrument.instruction_sequence(inst_list)
 
     def start(self):
         self.instrument.start()
@@ -162,7 +163,10 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         self.instrument.stop()
 
     def get_final_additional_pulses(self, **kwargs):
-        return []
+        return [TriggerPulse(t_start=0,
+                             connection_requirements={
+                                 'input_instrument': self.instrument_name(),
+                                 'trigger': True})]
 
 
 class SinePulseImplementation(SinePulse, PulseImplementation):
