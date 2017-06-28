@@ -12,32 +12,44 @@ from qcodes.station import Station
 
 logger = logging.getLogger(__name__)
 
-set_gates_txt = """\
-{x_label}({x_val:.5f})
-{y_label}({y_val:.5g})"""
-measure_single_txt = """\
-{param}_parameter.single_settings(samples={samples_measure}, silent=False)
-qc.Measure({param}_parameter).run(name="{param}_measure", quiet=True)"""
-
 
 class PlotAction:
-    key = None
-    action_keys = []
+    enable_key = None
 
-    def __init__(self, plot, key=None):
-        if key is not None:
-            self.key = key
+    def __init__(self, plot, timeout=None, enable_key=None):
+        self.timeout = timeout
+        self.t_enable_key_pressed = None
+
+        if enable_key is not None:
+            self.enable_key = enable_key
+
         self.plot = plot
+
+    @property
+    def enabled(self):
+        if self.enable_key is None:
+            # No enable key specified, so always enabled
+            return True
+        elif self.t_enable_key_pressed is None:
+            # Enable key never pressed, so disabled
+            return False
+        elif self.timeout is None:
+            # Enable key pressed, and no timeout, so enabled
+            return True
+        else:
+            # Depends on if last enable_key press was within timeout seconds
+            return time() - self.t_enable_key_pressed < self.timeout
 
     def txt_to_clipboard(self, txt):
         pyperclip.copy(txt)
 
     def key_press(self, event):
-        self.plot.copy = (event.key[:4] == 'ctrl')
-        self.plot.execute = (event.key[-1].isupper())
+        if event.key == self.enable_key:
+            logger.debug(f'Enabling action {self}')
+            self.t_enable_key_pressed = time()
 
     def button_press(self, event):
-        raise NotImplementedError
+        pass
 
     def handle_code(self, code, copy=False, execute=False, new_cell=True):
         if copy:
@@ -50,51 +62,38 @@ class PlotAction:
 
 
 class SetGates(PlotAction):
-    key = 'alt+g'
-
-    def __init__(self, plot, key=None):
-        super().__init__(plot=plot, key=key)
-
-    def key_press(self, event):
-        super().key_press(event)
+    enable_key = 'alt+g'
 
     def button_press(self, event):
-        self.txt = set_gates_txt.format(x_label=self.plot.x_label,
-                                        y_label=self.plot.y_label,
-                                        x_val=event.xdata, y_val=event.ydata)
-        self.handle_code(self.txt, copy=self.plot.copy,
-                         execute=self.plot.execute)
+        super().button_press(event)
+
+        self.txt = f"{self.plot.x_label}({event.xdata:.5f})\n" \
+                   f"{self.plot.y_label}({event.ydata:.5g})"
+        self.handle_code(self.txt, copy=True, execute=False)
 
 
 class MeasureSingle(PlotAction):
-    key = 'alt+s'
+    enable_key = 'alt+s'
 
-    def __init__(self, plot, key=None):
-        super().__init__(plot=plot, key=key)
+    def button_press(self, event):
+        super().button_press(event)
+
+        self.txt = f"{self.plot.x_label}({event.xdata:.5f}\n" \
+                   f"{self.plot.y_label}({event.ydata:.5g})\n" \
+                   f"{self.plot.measure_parameter}_parameter.single_settings" \
+                   f"(samples={self.plot.samples_measure}, silent=False)\n"\
+                   f"qc.Measure({param}_parameter).run" \
+                   f"(name='{self.plot.measure_parameter}_measure', quiet=True)"
+        self.handle_code(self.txt, copy=True, execute=False)
+
+
+class MoveGates(PlotAction):
+    enable_key = 'alt+m'
+    delta = 0.001 # step to move when pressing a key
 
     def key_press(self, event):
         super().key_press(event)
 
-    def button_press(self, event):
-        txt = set_gates_txt + '\n\n' + measure_single_txt
-        self.txt = txt.format(x_label=self.plot.x_label,
-                              y_label=self.plot.y_label,
-                              x_val=event.xdata, y_val=event.ydata,
-                              param=self.plot.measure_parameter,
-                              samples_measure=self.plot.samples_measure)
-        self.handle_code(self.txt, copy=self.plot.copy,
-                         execute=self.plot.execute)
-
-
-class MoveGates(PlotAction):
-    key = 'alt+m'
-    action_keys = ['alt+' + key for key in
-                   ['up', 'down', 'left', 'right', '-', '+', '=']]
-    def __init__(self, plot, key=None):
-        self.delta = 0.001
-        super().__init__(plot=plot, key=key)
-
-    def key_press(self, event):
         if event.key == self.key:
             if self.plot.point is None:
                 self.plot.point = self.plot[0].plot(self.plot.x_gate(),
@@ -117,8 +116,12 @@ class MoveGates(PlotAction):
             self.delta /= 1.5
         elif event.key == 'alt+-':
             self.delta *= 1.5
+        else:
+            pass
 
     def button_press(self, event):
+        super().button_press(event)
+
         logger.debug('MoveGates button pressed')
         if event.guiEvent['altKey']:
             logger.debug(f'Moving to gates ({event.xdata}, {event.ydata})')
@@ -130,22 +133,41 @@ class MoveGates(PlotAction):
             logger.info('Alt key not pressed, not moving gates')
 
 
+class SwitchPlotIdx(PlotAction):
+    def key_press(self, event):
+        super().key_press(event)
+
+        plot_idx = list(self.plot.plot_idx)
+        if event.key in ['alt+left', 'alt+right']:
+            set_vals = self.plot.set_vals[0]
+            if event.key == 'alt+left':
+                plot_idx[0] = max(plot_idx[0] - 1, 0)
+            else:
+                plot_idx[0] = min(plot_idx[0] + 1, len(set_vals) - 1)
+            self.plot.plot_idx = tuple(plot_idx)
+            self.plot.update_slider(0)
+        elif event.key in ['alt+down', 'alt+up'] and len(plot_idx) > 1:
+            set_vals = self.plot.set_vals[1]
+            if event.key == 'alt+down':
+                plot_idx[1] = max(plot_idx[1] - 1, 0)
+            else:
+                plot_idx[1] = min(plot_idx[1] + 1, len(set_vals) - 1)
+            self.plot.plot_idx = tuple(plot_idx)
+            self.plot.update_slider(1)
+
+
 class InteractivePlot(MatPlot):
-    def __init__(self, *args, nticks=6, timeout=600, **kwargs):
+    def __init__(self, *args, actions=(), timeout=600, **kwargs):
         super().__init__(*args, **kwargs)
         self.station = Station.default
+        self.layout = getattr(self.station, 'layout', None)
 
-        if hasattr(self.station, 'layout'):
-            self.layout = self.station.layout
+        self.actions = actions
+        # setting timeout sets it for all actions
         self.timeout = timeout
-        self.cid = {}
 
-        self.nticks = nticks
-        self.t_previous = None
-        self.last_key = None
-        self.last_action = None
-        self.copy = False
-        self.execute = False
+        # cid is used to connect specific functions to event handlers
+        self.cid = {}
 
         self._event_key = None
         self._event_button = None
@@ -154,15 +176,14 @@ class InteractivePlot(MatPlot):
         self.connect_event('button_press_event', self.handle_button_press)
 
     @property
-    def t_elapsed(self):
-        if self.t_previous is None:
-            return self.timeout + 1
-        else:
-            return time() - self.t_previous
+    def timeout(self):
+        return self._timeout
 
-    @property
-    def action_keys(self):
-        return {action.key: action for action in self.actions}
+    @timeout.setter
+    def timeout(self, timeout):
+        self._timeout = timeout
+        for action in self.actions:
+            action.timeout = timeout
 
     def load_data_array(self, data_array):
         set_arrays = data_array.set_arrays
@@ -175,25 +196,6 @@ class InteractivePlot(MatPlot):
                 'labels': labels,
                 'gates': gates}
 
-    def get_action(self, key=None):
-        if key is None:
-            if self.last_action is not None and self.t_elapsed < self.timeout:
-                return self.last_action
-            else:
-                return None
-
-        # Ignore shift
-        key = key.lower()
-
-        if key[:4] == 'ctrl':
-            # Ignore ctrl
-            key = key[5:]
-
-        if key in self.action_keys:
-            return self.action_keys[key]
-        else:
-            return None
-
     def connect_event(self, event, action):
         if event in self.cid:
             self.fig.canvas.mpl_disconnect(self.cid[event])
@@ -203,76 +205,61 @@ class InteractivePlot(MatPlot):
 
     def handle_key_press(self, event):
         self._event_key = event
-        if self.get_action(event.key) is not None:
-            self.t_previous = time()
-            self.last_key = event.key
-            action = self.get_action(event.key)
-            logger.debug(f'Enabling action {action} with key {event.key}')
-            try:
-                action.key_press(event)
-            except Exception as e:
-                logger.error(f'Performing action {action}: {e}')
-            self.last_action = action
-        elif self.last_action is not None \
-                and event.key in self.last_action.action_keys:
-
-            logger.debug(f'Using last action {self.last_action} '
-                        f'with key {event.key}')
-            self.t_previous = time()
-            try:
-                self.last_action.key_press(event)
-            except Exception as e:
-                logger.error(f'Performing action {action}: {e}')
-        else:
-            pass
+        logger.debug(f'Key pressed: {event.key}')
+        try:
+            for action in self.actions:
+                if action.enabled or event.key == action.enable_key:
+                    action.key_press(event=event)
+        except Exception as e:
+            logger.error(f'key press: {e}')
 
     def handle_button_press(self, event):
         self._event_button = event
-        logger.debug(f'Clicked (x:{event.xdata:.6}, '
-                     f'y:{event.ydata:.6}), '
-                     f'alt: {event.guiEvent["altKey"]}')
-        action = self.get_action()
-        if action is not None:
-            self.t_previous = time()
-            try:
-                action.button_press(event)
-            except Exception as e:
-                logger.error(f'Button action {action}: {e}')
+        logger.debug(f'Clicked (x:{event.xdata:.6}, y:{event.ydata:.6})')
+        try:
+            for action in self.actions:
+                if action.enabled:
+                    action.button_press(event)
+        except Exception as e:
+            logger.error(f'button press: {e}')
 
 
-class DoubleSlider2DPlot(InteractivePlot):
+class SliderPlot(InteractivePlot):
     """
     Used to slide through 2D images of a 4D dataset
     """
-    def __init__(self, data_array, **kwargs):
+    def __init__(self, data_array, ndim=2, **kwargs):
+        self.ndim = ndim
         self.data_array = data_array
-        super().__init__(**kwargs)
+        super().__init__(actions=[SwitchPlotIdx(self)], **kwargs)
         self.fig.tight_layout(rect=[0, 0.15, 1, 0.95])
 
         results = self.load_data_array(data_array)
         self.set_arrays = results['set_arrays']
 
-        self.plot_idx = (0, 0)
+        self.num_sliders = len(self.set_arrays) - self.ndim
 
-        self.add(self.data_array[self.plot_idx],
-                 **self.plot_kwargs)
+        self.plot_idx = tuple(0 for _ in self.set_arrays[:-self.ndim])
+
+        self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
 
         # Add sliders
-        self.slideraxes = [self.fig.add_axes([0.13, 0.02, 0.6, 0.05],
-                                             facecolor='yellow'),
-                           self.fig.add_axes([0.13, 0.06, 0.6, 0.05],
-                                             facecolor='yellow')]
+        self.slideraxes = [self.fig.add_axes([0.13, 0.02 + 0.04*k, 0.6, 0.05],
+                                             facecolor='yellow')
+                           for k in range(self.num_sliders)]
+
         self.sliders = []
         self.set_vals = []
         for k, sliderax in enumerate(self.slideraxes):
-            set_idx = -3 - k
+            set_idx = -self.ndim - (k + 1)
             set_vals = self.set_arrays[set_idx]
             if set_vals.ndim == 2:
+                # Make more general for > 2D
                 set_vals = set_vals[0]
             slider = mpl.widgets.Slider(ax=sliderax,
                                         label=self.set_arrays[set_idx].name,
-                                        valmin=set_vals[0],
-                                        valmax=set_vals[-1],
+                                        valmin=np.nanmin(set_vals[0]),
+                                        valmax=np.nanmax(set_vals[-1]),
                                         valinit=set_vals[0])
             self.set_vals.append(set_vals)
             slider.on_changed(partial(self.update_slider, k))
@@ -281,105 +268,44 @@ class DoubleSlider2DPlot(InteractivePlot):
 
     @property
     def plot_kwargs(self):
-        return {'x': self.set_arrays[-1][self.plot_idx][0],
-                'y': self.set_arrays[-2][self.plot_idx],
-                'xlabel': self.set_arrays[-1].label,
-                'ylabel': self.set_arrays[-2].label,
-                'zlabel': self.data_array.label,
-                'xunit': self.set_arrays[-1].unit,
-                'yunit': self.set_arrays[-2].unit,
-                'zunit': self.data_array.unit}
+        if self.ndim == 1:
+            return {'x': self.set_arrays[-1][self.plot_idx][0],
+                    'xlabel': self.set_arrays[-1].label,
+                    'ylabel': self.data_array.label,
+                    'xunit': self.set_arrays[-1].unit,
+                    'yunit': self.data_array.unit,}
+        elif self.ndim == 2:
+            return {'x': self.set_arrays[-1][self.plot_idx][0],
+                    'y': self.set_arrays[-2][self.plot_idx],
+                    'xlabel': self.set_arrays[-1].label,
+                    'ylabel': self.set_arrays[-2].label,
+                    'zlabel': self.data_array.label,
+                    'xunit': self.set_arrays[-1].unit,
+                    'yunit': self.set_arrays[-2].unit,
+                    'zunit': self.data_array.unit}
+        else:
+            raise NotImplementedError(f'{self.ndim} dims not supported')
 
     def update_slider(self, idx, value=None):
-        if value is not None:
+        if value is None:
+            value = self.set_vals[idx][self.plot_idx[idx]]
+            self.sliders[idx].set_val(value)
+        elif value == self.set_vals[idx][self.plot_idx[idx]]:
+            self.update()
+        else:
             # Check if value is one of the set values
-            set_idx = -3 - idx
             logger.debug(f'Updating slider {idx} to {value}')
             slider_idx = np.argmin(abs(self.set_vals[idx] - value))
 
-            if idx == 0:
-                self.plot_idx = (slider_idx, self.plot_idx[1])
-            else:
-                self.plot_idx = (self.plot_idx[0], slider_idx)
+            self.plot_idx = tuple(val if k != idx else slider_idx
+                                  for k, val in enumerate(self.plot_idx))
+            value = self.set_vals[idx][self.plot_idx[idx]]
+            self.sliders[idx].set_val(value)
 
-            logger.debug(f'set_idx: {set_idx}, slider_idx: {slider_idx}, '
-                         f'plot_idx: {self.plot_idx}')
-            set_value = self.set_vals[idx][slider_idx]
-            logger.debug(f'val {value} set_value {set_value}')
-
-            if value != set_value:
-                logger.debug(f'val {value} not equal to set_value {set_value}')
-                if not np.isnan(value):
-                    self.sliders[idx].set_val(set_value)
-                return
-
+    def update(self):
         # Update plot
-        logger.debug(f'val {value} equal to set_value {set_value}')
-        self.sliders[idx].valtext.set_text(
-            f'{self.set_arrays[set_idx].name}: {value}')
-
         self[0].clear()
         self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
-        self.update()
-
-
-class Slider2DPlot(InteractivePlot):
-    """
-    Used to slide through 2D images of a 3D dataset
-    """
-    def __init__(self, data_array, **kwargs):
-        self.data_array = data_array
-        super().__init__(**kwargs)
-        self.fig.tight_layout(rect=[0.1, 0.1, 1, 0.95])
-
-        results = self.load_data_array(data_array)
-        self.set_arrays = results['set_arrays']
-
-        self.plot_idx = 0
-
-        self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
-
-        # Add slider
-        self.sliderax = self.fig.add_axes([0.13, 0.02, 0.6, 0.05],
-                                          facecolor='yellow')
-        self.slider = mpl.widgets.Slider(self.sliderax,
-                                         self.set_arrays[-3].name,
-                                         float(np.nanmin(self.set_arrays[-3])),
-                                         float(np.nanmax(self.set_arrays[-3])),
-                                         valinit=self.set_arrays[-3][0])
-        self.slider.on_changed(self.update_slider)
-        self.slider.drawon = False
-
-    @property
-    def plot_kwargs(self):
-        return {'x': self.set_arrays[-1][self.plot_idx,0],
-                'y': self.set_arrays[-2][self.plot_idx],
-                'xlabel': self.set_arrays[-1].label,
-                'ylabel': self.set_arrays[-2].label,
-                'zlabel': self.data_array.label,
-                'xunit': self.set_arrays[-1].unit,
-                'yunit': self.set_arrays[-2].unit,
-                'zunit': self.data_array.unit}
-
-    def update_slider(self, value):
-        try:
-            logger.debug(f'Updating slider to {value}')
-            self.plot_idx = np.nanargmin(abs(self.set_arrays[-3].ndarray -
-                                             value))
-            set_value = self.set_arrays[-3][self.plot_idx]
-
-            if value != set_value:
-                logger.debug(f'val {value} not equal to set_value {set_value}')
-                if not np.isnan(value):
-                    self.slider.set_val(set_value)
-            else:
-                self.slider.valtext.set_text(f'{self.set_arrays[-3].name}: {value}')
-
-                self[0].clear()
-                self[0].add(self.data_array[self.plot_idx], **self.plot_kwargs)
-                self.update()
-        except Exception as e:
-            logger.debug(f'Error: {e}')
 
 
 class CalibrationPlot(InteractivePlot):
@@ -431,8 +357,7 @@ class ScanningPlot(InteractivePlot):
         self.parameter.continuous = auto_start
         if auto_start:
             self.parameter.setup(start=False)
-        self.scan(initialize=True, start=True,
-                  stop=(not auto_start))
+        self.scan(initialize=True, stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -468,11 +393,11 @@ class ScanningPlot(InteractivePlot):
         self.layout.stop()
         self.parameter.continuous = False
 
-    def scan(self, initialize=False, start=False, stop=False):
+    def scan(self, initialize=False, stop=False):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.results = self.parameter.acquire(stop=stop)
         self.update_plot(initialize=initialize)
 
         self.update_idx += 1
