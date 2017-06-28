@@ -203,11 +203,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             print(f'{self.name}: {self.results[self.name]:.3f}')
 
     def setup(self, start=None, **kwargs):
-        # Create a hard copy of pulse sequence. This ensures that pulse
-        # attributes no longer depend on pulse_config, and can therefore be
-        # safely transferred to layout.
-        pulse_sequence = self.pulse_sequence.copy()
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = self.pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
         self.layout.setup(samples=samples, **kwargs)
@@ -218,16 +214,31 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, start=None, stop=None, setup=None, **kwargs):
-        if start is None and stop is None:
-            start = not self.continuous
+    def acquire(self, stop=None, setup=None, **kwargs):
+        """
+        Performs a layout.acquisition. The result is stored in self.data
+        Args:
+            stop (Bool): Whether to stop instruments after acquisition.
+                If not specified, it will stop if self.continuous is False
+            setup (Bool): Whether to setup layout before acquisition.
+                If not specified, it will setup if pulse_sequences are different
+            **kwargs: Additional kwargs to be given to layout.acquisition
+
+        Returns:
+            acquisition output
+        """
+        if stop is None:
             stop = not self.continuous
 
-        if setup is None and not self.continuous:
+        if setup or (setup is None and
+                     self.layout.pulse_sequence != self.pulse_sequence) or \
+                self.layout.samples() != self.samples:
             self.setup()
 
+
         # Perform acquisition
-        self.data = self.layout.acquisition(start=start, stop=stop, **kwargs)
+        self.data = self.layout.acquisition(stop=stop, **kwargs)
+        return self.data
     #
     # def plot_traces(self, channel='output'):
     #     fig, ax = plt.subplots(1,1)
@@ -635,11 +646,9 @@ class DCSweepParameter(AcquisitionParameter):
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'dark_counts', 'voltage_difference',
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference',
-                                 'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -649,6 +658,14 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'))
+
+    @property
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @labels.setter
+    def labels(self, labels):
+        pass
 
     @clear_single_settings
     def get(self):
@@ -692,8 +709,6 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('final', connection_label='stage'),
             FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
 
-        self.pulse_sequence.sort()
-
     @property
     def frequency(self):
         return self.pulse_sequence['adiabatic'].frequency
@@ -701,9 +716,6 @@ class AdiabaticParameter(AcquisitionParameter):
     @frequency.setter
     def frequency(self, frequency):
         self.pulse_sequence['adiabatic'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
 
     @clear_single_settings
     def get(self):
@@ -730,96 +742,31 @@ class RabiParameter(AcquisitionParameter):
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='rabi_acquisition',
-                         names=['contrast', 'dark_counts',
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
                                 'voltage_difference_read'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence.sort()
-
-    @property
-    def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-
-    @clear_single_settings
-    def get(self):
-        self.acquire()
-
-        self.results = analysis.analyse_PR(pulse_traces=self.data,
-                                           sample_rate=self.sample_rate,
-                                           t_skip=self.t_skip,
-                                           t_read=self.t_read)
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return tuple(self.results[name] for name in self.names)
-
-
-class RabiDriveParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        """
-        Parameter used to drive Rabi oscillations
-        """
-        super().__init__(name='rabi_drive',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference_read'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference read'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-        self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        self.pulse_sequence.sort()
+            # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            DCPulse('empty', acquire=True, connection_label='stage'),
+            DCPulse('plunge', acquire=True, connection_label='stage'),
+            DCPulse('read_long', acquire=True, connection_label='stage'),
+            DCPulse('final', connection_label='stage'),
+            SinePulse('ESR', connection_label='ESR'))
 
     @property
     def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
+        return self.pulse_sequence['ESR'].frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    @property
-    def duration(self):
-        return self.pulse_sequence['rabi'].duration
-
-    @duration.setter
-    def duration(self, duration):
-        self.pulse_sequence['rabi'].duration = duration
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
+        self.pulse_sequence['ESR'].frequency = frequency
 
     @clear_single_settings
     def get(self):
