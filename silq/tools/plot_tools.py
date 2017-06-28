@@ -415,7 +415,8 @@ class TracePlot(ScanningPlot):
         # self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
-        for k, result in enumerate(self.results):
+        for k, name in enumerate(self.parameter.names):
+            result = self.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
@@ -478,7 +479,8 @@ class DCSweepPlot(ScanningPlot):
         self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
-        for k, result in enumerate(self.results):
+        for k, name in enumerate(self.parameter.names):
+            result = self.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
