@@ -48,7 +48,7 @@ class MeasurementSequence:
     def __next__(self):
         if self.next_measurement is None:
             if not self.silent:
-                logging.debug('Finished measurements')
+                logger.debug('Finished measurements')
             raise StopIteration
         else:
             self.measurement = self.next_measurement
@@ -58,7 +58,7 @@ class MeasurementSequence:
         # Perfom measurement
         self.num_measurements += 1
         if not self.silent:
-            logging.debug(f'Performing {self.measurement}')
+            logger.debug(f'Performing {self.measurement}')
         self.measurement.silent = self.silent
         # Performing measurement also checks for condition sets, and updates
         # set parameters accordingly
@@ -75,10 +75,15 @@ class MeasurementSequence:
     def __call__(self):
         if self.continuous:
             self.acquisition_parameter.temporary_settings(continuous=True)
-            self.acquisition_parameter.setup(start=True)
 
-        # Perform measurements iteratively, collecting their results
-        self.results = [result for result in self]
+        try:
+            # Perform measurements iteratively, collecting their results
+            self.results = [result for result in self]
+        finally:
+            self.acquisition_parameter.layout.stop()
+            # Clear settings such as continuous=True
+            self.acquisition_parameter.clear_settings()
+
         # Choose last measurement result
         result = self.results[-1]
         if result['action'] is None:
@@ -92,11 +97,6 @@ class MeasurementSequence:
 
         # Optimal vals
         self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
-
-        # Clear settings such as continuous=True
-        self.acquisition_parameter.clear_settings()
-        if self.continuous:
-            self.acquisition_parameter.layout.stop()
 
         #TODO correct return
         return result
