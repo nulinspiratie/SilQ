@@ -44,7 +44,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
         self.pulse_implementations = [
             SinePulseImplementation(
-                pulse_requirements=[])]
+                pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
     def setup(self, final_instruction='loop', is_primary=True, **kwargs):
         #Initial pulseblaster commands
@@ -80,12 +80,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             self.instrument.set_amplitudes(amplitudes=amplitudes,
                                            channel=channel.idx)
 
-        # Determine points per time unit
-        core_clock = self.instrument.core_clock.get_latest()
-        # Factor of 2 needed because apparently the core clock is not the same
-        # as the sampling rate
-        # TODO check if this is correct
-        ms = 150e3 # points per millisecond
+        ms = 1e6 # points per millisecond
 
         # Iteratively increase time
         t = 0
@@ -94,7 +89,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
         if not is_primary:
             # Wait for trigger
-            inst_list.append(DEFAULT_INSTR + (0, 'wait', 0, 50))
+            inst_list.append(DEFAULT_INSTR + (0, 'wait', 0, 100))
 
         while t < t_stop_max:
             # find time of next event
@@ -149,7 +144,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                 inst_list.append(inst)
 
         # Loop back to beginning (wait if not primary)
-        inst = DEFAULT_INSTR + (0, 'branch', 0, 50)
+        inst = DEFAULT_INSTR + (0, 'branch', 0, 100)
         inst_list.append(inst)
 
         # Note that this command does not actually send anything to the DDS,
