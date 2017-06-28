@@ -336,7 +336,8 @@ class TraceParameter(AcquisitionParameter):
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
         self._pulse_sequence = pulse_sequence.copy()
-        for pulse in self._pulse_sequence.get_pulses(acquire=True):
+        for pulse in self._pulse_sequence.get_pulses():
+            pulse.acquire = True
             pulse.average = self.average_mode
 
     @property_ignore_setter
