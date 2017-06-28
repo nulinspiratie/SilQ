@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-import inspect
+from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
 from functools import partial
@@ -20,8 +20,11 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
 logger = logging.getLogger(__name__)
 
 
-class Pulse:
+class Pulse(HasTraits):
+    average = Unicode()
+
     _connected_attrs = {}
+
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
@@ -51,7 +54,6 @@ class Pulse:
             self.properties_config = config[self.environment].properties
         except (KeyError, AttributeError):
             self.properties_config = None
-
 
         ### Setup signals
         # Connect changes in pulse config to handling method
@@ -104,6 +106,14 @@ class Pulse:
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+    @validate('average')
+    def _valid_average(self, proposal):
+        if proposal['value'] in ['none', 'trace', 'point']:
+            return proposal['value']
+        elif 'point_segment' in proposal['value']:
+            return proposal['value']
+        else:
+            return TraitError
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
