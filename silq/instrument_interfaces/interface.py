@@ -107,8 +107,8 @@ class InstrumentInterface(Instrument):
 
 class Channel:
     def __init__(self, instrument_name, name, id=None, input=False,
-                 output=False,
-                 input_trigger=False, input_TTL=False, output_TTL=False):
+                 output=False, input_trigger=False, input_TTL=False,
+                 output_TTL=False, invert=False):
         self.instrument = instrument_name
         self.name = name
         self.id = id
@@ -117,6 +117,7 @@ class Channel:
         self.input_trigger = input_trigger
         self.input_TTL = input_TTL
         self.output_TTL = output_TTL
+        self.invert = invert
 
     def __repr__(self):
         output_str = "Channel {name} (id={id})".format(name=self.name,
@@ -131,6 +132,8 @@ class Channel:
             output_str += ', input_TTL'
         if self.output_TTL is not None:
             output_str += ', output_TTL: {}'.format(self.output_TTL)
+        if self.invert:
+            output_str += ', invert'
         return output_str
 
 
