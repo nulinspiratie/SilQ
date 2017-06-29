@@ -58,25 +58,24 @@ class E8267DInterface(InstrumentInterface):
     def get_final_additional_pulses(self, **kwargs):
         return []
 
-    def setup(self, **kwargs):
+    def setup(self, frequency=None, **kwargs):
         self.instrument.RF_output('off')
-
         self.instrument.phase_modulation('off')
 
-        frequencies = [pulse.implement()['frequency']
-                       for pulse in self.pulse_sequence]
+        frequencies = {pulse.implement()['frequency']
+                       for pulse in self.pulse_sequence}
 
-        powers = [pulse.power for pulse in self.pulse_sequence]
-        assert len(set(frequencies)) == 1, "Cannot handle multiple frequencies"
-        assert len(set(powers)) == 1, "Cannot handle multiple pulse powers"
+        powers = {pulse.power for pulse in self.pulse_sequence}
+        assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
-        if any('deviation' in pulse.implement()
-               for pulse in self.pulse_sequence):
-            deviations = [pulse.implement()['deviation']
-                    for pulse in self.pulse_sequence]
-            assert len(set(deviations)) == 1, "Cannot handle multiple " \
-                                              "deviations"
-            deviation = deviations[0]
+        frequency_deviations = {pulse.implement()['frequency_deviation']
+                                for pulse in self.pulse_sequence
+                                if 'frequency_deviation' in pulse.implement()}
+
+        if len(frequencies) > 1 or frequency_deviations:
+            # Need frequency modulation
+
+            deviation = frequency_deviations[0]
             self.instrument.frequency_deviation(deviation)
             self.instrument.frequency_modulation('on')
             self.instrument.frequency_modulation_source(
@@ -206,4 +205,5 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
 
     def implement(self):
         return {'frequency': (self.frequency_start + self.frequency_stop) / 2,
-                'deviation': abs(self.frequency_stop - self.frequency_start)}
+                'frequency_deviation': abs(self.frequency_stop -
+                                           self.frequency_start)}
