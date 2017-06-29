@@ -75,8 +75,19 @@ class E8267DInterface(InstrumentInterface):
         if len(frequencies) > 1 or frequency_deviations:
             # Need frequency modulation
 
-            deviation = frequency_deviations[0]
-            self.instrument.frequency_deviation(deviation)
+            # Find minimum and maximum frequency
+            min_frequency = min(pulse.implement()['min_frequency']
+                                for pulse in self.pulse_sequence)
+            max_frequency = max(pulse.implement()['max_frequency']
+                                for pulse in self.pulse_sequence)
+
+            if frequency is None:
+                frequency = (min_frequency + max_frequency) / 2
+
+            frequency_deviation = max([frequency - min_frequency,
+                                       max_frequency - frequency])
+
+            self.instrument.frequency_deviation(frequency_deviation)
             self.instrument.frequency_modulation('on')
             self.instrument.frequency_modulation_source(
                 self.modulation_channel())
@@ -122,7 +133,9 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         return targeted_pulse
 
     def implement(self):
-        return {'frequency': self.frequency}
+        return {'frequency': self.frequency,
+                'min_frequency': self.frequency,
+                'max_frequency': self.frequency}
 
 
 class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
@@ -204,6 +217,9 @@ class FrequencyRampPulseImplementation(PulseImplementation, FrequencyRampPulse):
         return targeted_pulse
 
     def implement(self):
-        return {'frequency': (self.frequency_start + self.frequency_stop) / 2,
-                'frequency_deviation': abs(self.frequency_stop -
-                                           self.frequency_start) / 2}
+        frequency = (self.frequency_start + self.frequency_stop) / 2
+        frequency_deviation = abs(self.frequency_stop -self.frequency_start) / 2
+        return {'frequency': frequency,
+                'frequency_deviation': frequency_deviation,
+                'min_frequency': frequency - frequency_deviation,
+                'max_frequency': frequency + frequency_deviation}
