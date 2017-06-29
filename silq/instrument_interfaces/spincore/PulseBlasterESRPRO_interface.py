@@ -128,13 +128,14 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
 
-    @property
-    def amplitude(self):
-        return self.connection.output['channel'].output_TTL[1]
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
+        targeted_pulse.amplitude = amplitude
 
     def implement(self, t):
-        output_channel = self.connection.output['channel']
-        input_channel = self.connection.input['channel']
+        output_channel = self.pulse.connection.output['channel']
+        input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
         if t >= self.t_start and t < self.t_stop:
@@ -145,13 +146,14 @@ class TriggerPulseImplementation(PulseImplementation):
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
 
-    @property
-    def amplitude(self):
-        return self.connection.output['channel'].output_TTL[1]
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
+        targeted_pulse.amplitude = amplitude
 
     def implement(self, t):
-        output_channel = self.connection.output['channel']
-        input_channel = self.connection.input['channel']
+        output_channel = self.pulse.connection.output['channel']
+        input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
         if t >= self.t_start and t < self.t_stop:
