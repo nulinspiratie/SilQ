@@ -162,30 +162,7 @@ class Pulse(HasTraits):
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
                          '_handle_properties_config_signal', '_connected_attrs']
-        if isinstance(self, PulseImplementation):
-            if isinstance(other, PulseImplementation):
-                # Both pulses are pulse implementations
-                # Check if their pulse classes are the same
-                if self.pulse_class != other.pulse_class:
-                    return False
-                # All attributes must match
-                return self._matches_attrs(other, exclude_attrs=exclude_attrs)
-            else:
-                # Only self is a pulse implementation
-                if not isinstance(other, self.pulse_class):
-                    return False
-
-                # self is a pulse implementation, and so it must match all
-                # the attributes of other. The other way around does not
-                # necessarily hold, since a pulse implementation has more attrs
-                if not other._matches_attrs(self, exclude_attrs=exclude_attrs):
-                    return False
-                else:
-                    # Check if self.connections satisfies the connection
-                    # requirements of other
-                    return self.connection.satisfies_conditions(
-                        **other.connection_requirements)
-        elif isinstance(other, PulseImplementation):
+        if isinstance(other, PulseImplementation):
             # Only other is a pulse implementation
             if not isinstance(self, other.pulse_class):
                 return False
@@ -193,12 +170,13 @@ class Pulse(HasTraits):
             # other is a pulse implementation, and so it must match all
             # the attributes of self. The other way around does not
             # necessarily hold, since a pulse implementation has more attrs
-            if not self._matches_attrs(other, exclude_attrs=exclude_attrs):
+            if not self._matches_attrs(other.pulse,
+                                       exclude_attrs=exclude_attrs):
                 return False
             else:
                 # Check if other.connections satisfies the connection
                 # requirements of self
-                return other.connection.satisfies_conditions(
+                return other.pulse.connection.satisfies_conditions(
                     **self.connection_requirements)
         else:
             # Neither self nor other is a pulse implementation
