@@ -262,7 +262,7 @@ class TestLayout(unittest.TestCase):
         for pulse in pulses:
             pulse_sequence.add(pulse)
 
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
         self.layout.setup()
 
         waveforms = self.arbstudio.get_waveforms()
@@ -307,7 +307,7 @@ class TestLayout(unittest.TestCase):
         for pulse in pulses:
             pulse_sequence.add(pulse)
 
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
         self.layout.setup()
 
         self.assertEqual(len(self.pulseblaster.instructions()), 7)
@@ -317,7 +317,7 @@ class TestLayout(unittest.TestCase):
 
         self.pulseblaster.instructions([])
         self.interfaces['pulseblaster'].ignore_first_trigger(True)
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
         self.layout.setup()
 
         self.assertEqual(len(self.pulseblaster.instructions()), 7)
@@ -359,7 +359,7 @@ class TestLayout(unittest.TestCase):
         for pulse in pulses:
             pulse_sequence.add(pulse)
 
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
         self.layout.setup()
 
         # Test Pulseblaster
@@ -440,7 +440,7 @@ class TestLayout(unittest.TestCase):
         for pulse in pulses:
             pulse_sequence.add(pulse)
 
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = pulse_sequence
         self.layout.setup(samples=100)
 
         # Test pulseblaster
