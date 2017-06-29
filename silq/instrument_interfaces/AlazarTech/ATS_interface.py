@@ -479,7 +479,7 @@ class SteeredInitializationImplementation(PulseImplementation):
     pulse_class = SteeredInitialization
 
     def target_pulse(self, pulse, interface, connections, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, **kwargs)
 
         # Add readout connection to targeted pulse
         readout_connection = [connection for connection in connections if
@@ -502,8 +502,8 @@ class SteeredInitializationImplementation(PulseImplementation):
         interface.acquisition_controller('SteeredInitialization')
         return targeted_pulse
 
-    def implement(self):
-        acquisition_controller = self.interface._acquisition_controller
+    def implement(self, interface):
+        acquisition_controller = interface._acquisition_controller
         acquisition_controller.t_max_wait(self.t_max_wait)
         acquisition_controller.t_no_blip(self.t_no_blip)
 
