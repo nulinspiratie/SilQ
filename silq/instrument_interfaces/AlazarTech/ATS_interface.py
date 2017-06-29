@@ -150,7 +150,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, **kwargs):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -158,12 +158,11 @@ class ATSInterface(InstrumentInterface):
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
-            acquisition_pulse = \
+            return [
                 TriggerPulse(t_start=t_start,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
-                                 'trigger': True})
-            return [acquisition_pulse]
+                                 'trigger': True})]
         elif self.acquisition_controller() == 'Continuous':
             raise NotImplementedError("Continuous mode not implemented")
         elif self.acquisition_controller() == 'SteeredInitialization':
@@ -533,7 +532,6 @@ class TriggerWaitPulseImplementation(PulseImplementation):
             raise RuntimeError('ATS interface acquisition controller is not '
                                'SteeredInitialization')
         return super().target_pulse(pulse, interface, **kwargs)
-
 
     def implement(self, **kwargs):
         pass

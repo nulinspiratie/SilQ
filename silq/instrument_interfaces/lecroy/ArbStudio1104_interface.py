@@ -47,48 +47,6 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = list(set(active_channels))
         return active_channels
 
-    def setup(self, **kwargs):
-        # TODO implement setup for modes other than stepped
-
-        # Clear waveforms and sequences
-        for ch in self._output_channels.values():
-            self.instrument._waveforms = [[] for k in range(4)]
-            exec(f'self.instrument.ch{ch.id}_sequence([])')
-
-        # Generate waveforms and sequences
-        self.generate_waveforms_sequences()
-
-        for ch in self.active_channels():
-
-            self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
-            self.instrument.functions[ch + '_clear_waveforms']()
-
-            if self.pulse_sequence.get_pulses(output_channel=ch,
-                                              pulse_class=SinePulse):
-                # TODO better check for when to use burst or stepped mode
-                self.instrument.parameters[ch + '_trigger_mode']('burst')
-            else:
-                self.instrument.parameters[ch + '_trigger_mode']('stepped')
-
-            # Add waveforms to channel
-            for waveform in self.waveforms[ch]:
-                self.instrument.functions[ch + '_add_waveform'](waveform)
-
-            # Add sequence to channel
-            self.instrument.parameters[ch + '_sequence'](self.sequences[ch])
-
-        active_channels_id = [self._channels[channel].id for channel in
-                              self.active_channels()]
-        self.instrument.load_waveforms(channels=active_channels_id)
-        self.instrument.load_sequence(channels=active_channels_id)
-
-    def start(self):
-        self.instrument.run(channels=[self._channels[channel].id for channel in
-                                      self.active_channels()])
-
-    def stop(self):
-        self.instrument.stop()
-
     def get_additional_pulses(self, **kwargs):
 
         # Return empty list if no pulses are in the pulse sequence
@@ -152,6 +110,48 @@ class ArbStudio1104Interface(InstrumentInterface):
             additional_pulses.append(trigger_pulse)
 
         return additional_pulses
+
+    def setup(self, **kwargs):
+        # TODO implement setup for modes other than stepped
+
+        # Clear waveforms and sequences
+        for ch in self._output_channels.values():
+            self.instrument._waveforms = [[] for k in range(4)]
+            exec(f'self.instrument.ch{ch.id}_sequence([])')
+
+        # Generate waveforms and sequences
+        self.generate_waveforms_sequences()
+
+        for ch in self.active_channels():
+
+            self.instrument.parameters[ch + '_trigger_source']('fp_trigger_in')
+            self.instrument.functions[ch + '_clear_waveforms']()
+
+            if self.pulse_sequence.get_pulses(output_channel=ch,
+                                              pulse_class=SinePulse):
+                # TODO better check for when to use burst or stepped mode
+                self.instrument.parameters[ch + '_trigger_mode']('burst')
+            else:
+                self.instrument.parameters[ch + '_trigger_mode']('stepped')
+
+            # Add waveforms to channel
+            for waveform in self.waveforms[ch]:
+                self.instrument.functions[ch + '_add_waveform'](waveform)
+
+            # Add sequence to channel
+            self.instrument.parameters[ch + '_sequence'](self.sequences[ch])
+
+        active_channels_id = [self._channels[channel].id for channel in
+                              self.active_channels()]
+        self.instrument.load_waveforms(channels=active_channels_id)
+        self.instrument.load_sequence(channels=active_channels_id)
+
+    def start(self):
+        self.instrument.run(channels=[self._channels[channel].id for channel in
+                                      self.active_channels()])
+
+    def stop(self):
+        self.instrument.stop()
 
     def get_trigger_pulse(self, t):
         trigger_pulse = TriggerPulse(t_start=t,
@@ -232,7 +232,7 @@ class SinePulseImplementation(PulseImplementation):
         targeted_pulse.final_delay = interface.final_delay()
         return targeted_pulse
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, **kwargs):
         # Check if there are already trigger pulses
         trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
@@ -313,7 +313,7 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
     pts = 4
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, **kwargs):
         # Check if there are already trigger pulses
         trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
@@ -380,7 +380,7 @@ class DCRampPulseImplementation(PulseImplementation):
         targeted_pulse.final_delay = interface.final_delay()
         return targeted_pulse
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, **kwargs):
         # Check if there are already trigger pulses
         trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
@@ -444,7 +444,7 @@ class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
     # TODO add implement method
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, **kwargs):
         if not interface.is_primary():
             return [
                 TriggerPulse(
