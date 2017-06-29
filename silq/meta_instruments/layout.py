@@ -40,13 +40,16 @@ class Layout(Instrument):
         self._interfaces = {interface.instrument_name(): interface
                             for interface in instrument_interfaces}
 
+        # TODO remove this and methods once parameters are improved
+        self._set_primary_instrument = None
+
         self.connections = []
 
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
         self.add_parameter('primary_instrument',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
+                           get_cmd=lambda: self._primary_instrument,
+                           set_cmd=self._set_primary_instrument,
                            vals=vals.Enum(*self._interfaces.keys()))
 
         self.add_parameter('acquisition_instrument',
@@ -98,7 +101,6 @@ class Layout(Instrument):
 
         # Update pulse sequence
         self._pulse_sequence = pulse_sequence.copy()
-
 
     @property
     def acquisition_interface(self):
@@ -328,6 +330,11 @@ class Layout(Instrument):
                 f"instead of one satisfying {conditions}"
             return connections[0]
 
+    def _set_primary_instrument(self, primary_instrument):
+        # TODO remove once parameters are improved
+        for instrument_name, interface in self._interfaces:
+            interface.is_primary(instrument_name==primary_instrument)
+
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
         Determines the hierarchy for instruments, ensuring that instruments
@@ -496,8 +503,6 @@ class Layout(Instrument):
         connection = self.get_pulse_connection(pulse)
         interface = self._interfaces[connection.output['instrument']]
 
-        is_primary = self.primary_instrument() == interface.instrument_name()
-
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
@@ -508,7 +513,7 @@ class Layout(Instrument):
 
         for pulse in pulses:
             targeted_pulse = interface.get_pulse_implementation(
-                pulse, is_primary=is_primary, connections=self.connections)
+                pulse, connections=self.connections)
 
             self.targeted_pulse_sequence.add(targeted_pulse)
 

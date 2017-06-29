@@ -217,9 +217,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         return self.waveforms
 
 
-class SinePulseImplementation(PulseImplementation, SinePulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(self, pulse,
@@ -302,9 +301,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
 class DCPulseImplementation(PulseImplementation, DCPulse):
     # Number of points in a waveform (must be at least 4)
+    pulse_class = DCPulse
     pts = 4
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(self, pulse,
@@ -363,9 +361,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         return waveforms, sequences
 
 
-class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
+class DCRampPulseImplementation(PulseImplementation):
+    pulse_class = DCRampPulse
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(self, pulse,
@@ -430,10 +427,9 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
         return waveforms, sequences
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
     # TODO add implement method
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
 
     def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(self, pulse,

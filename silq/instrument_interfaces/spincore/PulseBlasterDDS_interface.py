@@ -194,9 +194,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     def get_additional_pulses(self, **kwargs):
         return []
 
-class SinePulseImplementation(SinePulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
 
     @property
     def amplitude(self):

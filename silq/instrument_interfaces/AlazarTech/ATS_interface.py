@@ -475,11 +475,8 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_settings.update(**acquisition_settings)
 
 
-class SteeredInitializationImplementation(SteeredInitialization,
-                                          PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SteeredInitialization,
-                                     **kwargs)
+class SteeredInitializationImplementation(PulseImplementation):
+    pulse_class = SteeredInitialization
 
     def target_pulse(self, pulse, interface, connections, **kwargs):
         targeted_pulse = PulseImplementation.target_pulse(
@@ -528,20 +525,16 @@ class SteeredInitializationImplementation(SteeredInitialization,
             trigger_threshold_voltage)
 
 
-class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerWaitPulse,
-                                     **kwargs)
+class TriggerWaitPulseImplementation(PulseImplementation):
+    pulse_class = TriggerWaitPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
         # Verify that acquisition controller is SteeredInitialization
         if not interface.acquisition_controller() == 'SteeredInitialization':
             raise RuntimeError('ATS interface acquisition controller is not '
                                'SteeredInitialization')
-        return targeted_pulse
+        return super().target_pulse(pulse, interface, **kwargs)
+
 
     def implement(self, interface, **kwargs):
         pass

@@ -489,12 +489,16 @@ class PulseSequence:
 
         return shapes
 
+
 class PulseImplementation:
     pulse_config = None
-    def __init__(self, pulse_class, pulse_requirements=[]):
+    pulse_class = None
+
+    def __init__(self, pulse_requirements=[]):
         self.signal = Signal()
         self._connected_attrs = {}
-        self.pulse_class = pulse_class
+        self.pulse = None
+        self.interface = None
 
         # List of conditions that a pulse must satisfy to be targeted
         self.pulse_requirements = [PulseRequirement(property, condition) for
@@ -516,24 +520,20 @@ class PulseImplementation:
             return np.all([pulse_requirements.satisfies(pulse)
                            for pulse_requirements in self.pulse_requirements])
 
-    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
-        '''
+    def target_pulse(self, pulse, interface, **kwargs):
+        """
         This tailors a PulseImplementation to a specific pulse.
-        This is useful for reasons such as adding pulse_requirements such as a
-        triggering pulse
-        Args:
-            pulse: pulse to target
-            interface: instrument interface of targeted
-            is_primary: whether or not the instrument is the primary instrument
-        Returns:
-            Copy of pulse implementation, targeted to specific pulse
-        '''
-        # First create a copy of this pulse implementation
-        targeted_pulse = self.copy()
-        # Copy over all attributes from the pulse
-        for attr, val in vars(pulse).items():
-            setattr(targeted_pulse, attr, copy.deepcopy(val))
-        return targeted_pulse
+        """
+        if not isinstance(pulse, self.pulse_class):
+            raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
+        else:
+            self.pulse = pulse.copy()
+        self.interface = interface
+        return self.pulse
+
+    def get_additional_pulses(self):
+        raise NotImplementedError(
+            'This method should be implemented in a subclass')
 
     def implement(self):
         raise NotImplementedError(
