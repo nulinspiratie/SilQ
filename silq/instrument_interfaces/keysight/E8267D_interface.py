@@ -112,13 +112,11 @@ class SinePulseImplementation(PulseImplementation):
 
     def get_additional_pulses(self):
         # Add an envelope pulse
-        return [
-            MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
-                        connection_requirements={
-                            'input_instrument':
-                                self.interface.instrument_name(),
-                            'input_channel': 'trig_in'})]
-
+        return [MarkerPulse(
+            t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
+            connection_requirements={
+                'input_instrument': self.interface.instrument_name(),
+                'input_channel': 'trig_in'})]
 
     def implement(self):
         return {'frequency': self.frequency}

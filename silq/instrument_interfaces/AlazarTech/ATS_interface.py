@@ -321,7 +321,7 @@ class ATSInterface(InstrumentInterface):
                                  allocated_buffers=allocated_buffers)
 
             # Setup acquisition controller settings through initialization pulse
-            initialization.implement(interface=self)
+            initialization.implement()
             for channel in [initialization.trigger_channel,
                             initialization.readout_channel]:
                 assert channel.name in self.acquisition_channels(), \
@@ -502,8 +502,8 @@ class SteeredInitializationImplementation(PulseImplementation):
         interface.acquisition_controller('SteeredInitialization')
         return targeted_pulse
 
-    def implement(self, interface):
-        acquisition_controller = interface._acquisition_controller
+    def implement(self):
+        acquisition_controller = self.interface._acquisition_controller
         acquisition_controller.t_max_wait(self.t_max_wait)
         acquisition_controller.t_no_blip(self.t_no_blip)
 
@@ -535,6 +535,6 @@ class TriggerWaitPulseImplementation(PulseImplementation):
         return super().target_pulse(pulse, interface, **kwargs)
 
 
-    def implement(self, interface, **kwargs):
+    def implement(self, **kwargs):
         pass
 
