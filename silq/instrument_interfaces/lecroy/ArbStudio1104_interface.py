@@ -226,7 +226,7 @@ class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
@@ -374,7 +374,7 @@ class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
