@@ -1,12 +1,12 @@
 import numpy as np
 import copy
-import inspect
+from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
 from functools import partial
 Signal.__deepcopy__ = lambda self, memo: Signal()
 
-from .pulse_modules import PulseImplementation, PulseMatch
+from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter
 from silq import config
@@ -20,8 +20,11 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
 logger = logging.getLogger(__name__)
 
 
-class Pulse:
+class Pulse(HasTraits):
+    average = Unicode()
+    signal = Signal()
     _connected_attrs = {}
+
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
                  connection=None, enabled=True, average='none',
@@ -51,7 +54,6 @@ class Pulse:
             self.properties_config = config[self.environment].properties
         except (KeyError, AttributeError):
             self.properties_config = None
-
 
         ### Setup signals
         # Connect changes in pulse config to handling method
@@ -99,11 +101,22 @@ class Pulse:
         self.connection = connection
         self.average = average
 
+        # Pulses can have a PulseImplementation after targeting
+        self.implementation = None
+
         # List of potential connection requirements.
         # These can be set so that the pulse can only be sent to connections
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+    @validate('average')
+    def _valid_average(self, proposal):
+        if proposal['value'] in ['none', 'trace', 'point']:
+            return proposal['value']
+        elif 'point_segment' in proposal['value']:
+            return proposal['value']
+        else:
+            return TraitError
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
@@ -152,18 +165,17 @@ class Pulse:
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
                          '_handle_properties_config_signal', '_connected_attrs']
-        if isinstance(self, PulseImplementation):
-            if isinstance(other, PulseImplementation):
-                # Both pulses are pulse implementations
-                # Check if their pulse classes are the same
-                if self.pulse_class != other.pulse_class:
-                    return False
+
+        if not isinstance(other, self.__class__):
+            return False
+
+        if self.implementation is not None:
+            if other.implementation is not None:
+                # Both pulses have pulse implementations
                 # All attributes must match
                 return self._matches_attrs(other, exclude_attrs=exclude_attrs)
             else:
-                # Only self is a pulse implementation
-                if not isinstance(other, self.pulse_class):
-                    return False
+                # Only self has a pulse implementation
 
                 # self is a pulse implementation, and so it must match all
                 # the attributes of other. The other way around does not
@@ -175,10 +187,8 @@ class Pulse:
                     # requirements of other
                     return self.connection.satisfies_conditions(
                         **other.connection_requirements)
-        elif isinstance(other, PulseImplementation):
-            # Only other is a pulse implementation
-            if not isinstance(self, other.pulse_class):
-                return False
+        elif other.implementation is not None:
+            # Only other has a pulse implementation
 
             # other is a pulse implementation, and so it must match all
             # the attributes of self. The other way around does not
@@ -191,9 +201,7 @@ class Pulse:
                 return other.connection.satisfies_conditions(
                     **self.connection_requirements)
         else:
-            # Neither self nor other is a pulse implementation
-            if not isinstance(other, self.__class__):
-                return False
+            # Neither self nor other has a pulse implementation
             # All attributes must match
             return self._matches_attrs(other, exclude_attrs=exclude_attrs)
 

@@ -40,13 +40,16 @@ class Layout(Instrument):
         self._interfaces = {interface.instrument_name(): interface
                             for interface in instrument_interfaces}
 
+        # TODO remove this and methods once parameters are improved
+        self._primary_instrument = None
+
         self.connections = []
 
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
         self.add_parameter('primary_instrument',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
+                           get_cmd=lambda: self._primary_instrument,
+                           set_cmd=self._set_primary_instrument,
                            vals=vals.Enum(*self._interfaces.keys()))
 
         self.add_parameter('acquisition_instrument',
@@ -98,7 +101,6 @@ class Layout(Instrument):
 
         # Update pulse sequence
         self._pulse_sequence = pulse_sequence.copy()
-
 
     @property
     def acquisition_interface(self):
@@ -328,6 +330,11 @@ class Layout(Instrument):
                 f"instead of one satisfying {conditions}"
             return connections[0]
 
+    def _set_primary_instrument(self, primary_instrument):
+        # TODO remove once parameters are improved
+        for instrument_name, interface in self._interfaces.items():
+            interface.is_primary(instrument_name==primary_instrument)
+
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
         Determines the hierarchy for instruments, ensuring that instruments
@@ -496,8 +503,6 @@ class Layout(Instrument):
         connection = self.get_pulse_connection(pulse)
         interface = self._interfaces[connection.output['instrument']]
 
-        is_primary = self.primary_instrument() == interface.instrument_name()
-
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
@@ -508,7 +513,9 @@ class Layout(Instrument):
 
         for pulse in pulses:
             targeted_pulse = interface.get_pulse_implementation(
-                pulse, is_primary=is_primary, connections=self.connections)
+                pulse, connections=self.connections)
+
+            self.targeted_pulse_sequence.add(targeted_pulse)
 
             interface.pulse_sequence.add(targeted_pulse)
 
@@ -516,10 +523,6 @@ class Layout(Instrument):
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence.add(targeted_pulse)
-
-            # Also target pulses that are in additional_pulses, such as triggers
-            for additional_pulse in targeted_pulse.additional_pulses:
-                self._target_pulse(additional_pulse)
 
     def _target_pulse_sequence(self, pulse_sequence):
         """
@@ -540,7 +543,8 @@ class Layout(Instrument):
             self.stop()
 
         # Copy untargeted pulse sequence so none of its attributes are modified
-        self.targeted_pulse_sequence = pulse_sequence.copy()
+        self.targeted_pulse_sequence = PulseSequence()
+        self.targeted_pulse_sequence.duration = pulse_sequence.duration
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -558,8 +562,7 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_final_additional_pulses(
-                pulse_sequence=self.targeted_pulse_sequence)
+            additional_pulses = interface.get_additional_pulses()
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
@@ -612,8 +615,9 @@ class Layout(Instrument):
             None
         """
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+        
         if not self.pulse_sequence:
-            raise RuntimeError("Cannot perform setup with an empty PulseSequence.")
+            raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
         if self.active():
             self.stop()
