@@ -149,7 +149,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
 
         # Add an envelope pulse with some padding on both sides.
-        self.pulse.additional_pulses.extend((
+        additional_pulses = [
             MarkerPulse(
                 t_start=self.pulse.t_start-self.interface.envelope_padding()/2,
                 t_stop=self.pulse.t_stop+self.interface.envelope_padding()/2,
@@ -167,11 +167,11 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     'input_instrument': self.interface.instrument_name(),
                     'input_channel': self.interface.modulation_channel()}
             )
-        ))
+        ]
 
         if self.interface.envelope_padding() > 0:
             # Add padding DC pulses at start and end
-            self.pulse.additional_pulses.extend((
+            additional_pulses.extend((
                 DCPulse(
                     t_start=self.pulse.t_start-self.interface.envelope_padding(),
                     t_stop=self.pulse.t_start,
@@ -191,7 +191,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             ))
 
         if self.pulse.frequency_sideband is not None:
-            self.pulse.additional_pulses.append(
+            additional_pulses.append(
                 SinePulse(
                     t_start=self.pulse.t_start,
                     t_stop=self.pulse.t_stop,
@@ -203,7 +203,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     })
             )
 
-        return self.pulse
+        return additional_pulses
 
     def implement(self):
         return {'frequency': (self.frequency_start + self.frequency_stop) / 2,
