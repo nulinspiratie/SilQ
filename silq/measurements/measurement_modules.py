@@ -50,8 +50,7 @@ class MeasurementSequence:
 
     def __next__(self):
         if self.next_measurement is None:
-            if not self.silent:
-                logger.debug('Finished measurements')
+            logger.debug('Finished measurements')
             raise StopIteration
         else:
             self.measurement = self.next_measurement
@@ -60,12 +59,11 @@ class MeasurementSequence:
 
         # Perfom measurement
         self.num_measurements += 1
-        logger.debug(f'Performing {self.measurement}')
         self.measurement.silent = self.silent
         # Performing measurement also checks for condition sets, and updates
         # set parameters accordingly
         self.measurement.single_settings(condition_sets=self.condition_sets)
-        logging.info(f'Performing measurement {self.measurement}')
+        logger.info(f'Performing measurement {self.measurement}')
         dataset, self.result = self.measurement.get(set_active=self.set_active)
         self.datasets.append(dataset)
 

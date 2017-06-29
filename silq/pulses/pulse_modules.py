@@ -288,10 +288,10 @@ class PulseSequence:
                     'Pulse 1: {}\n\nPulse2: {}'.format(
                         pulse, [p for p in self.enabled_pulses
                                 if self.pulses_overlap(pulse, p)]))
-            elif not isinstance(pulse, PulseImplementation) and \
+            elif pulse.implementation is None and \
                     not self.allow_untargeted_pulses:
                 raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
-            elif isinstance(pulse, PulseImplementation) and \
+            elif pulse.implementation is not None and \
                     not self.allow_targeted_pulses:
                 raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
             elif pulse.duration is None:
@@ -489,22 +489,33 @@ class PulseSequence:
 
         return shapes
 
+
 class PulseImplementation:
     pulse_config = None
-    def __init__(self, pulse_class, pulse_requirements=[]):
+    pulse_class = None
+
+    def __init__(self, pulse_requirements=[]):
         self.signal = Signal()
         self._connected_attrs = {}
-        self.pulse_class = pulse_class
+        self.pulse = None
+        self.interface = None
 
         # List of conditions that a pulse must satisfy to be targeted
         self.pulse_requirements = [PulseRequirement(property, condition) for
                                  (property, condition) in pulse_requirements]
 
-        # List of pulses that need to be implemented along with this pulse.
-        # An example is a triggering pulse. Each pulse has requirements in
-        # pulse.connection_requirements, such as that the pulse must be provided
-        # from the triggering instrument
-        self.additional_pulses = []
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
+        for attr in list(vars(self)):
+            if attr in exclude_attrs:
+                continue
+            elif not hasattr(other_pulse, attr) \
+                    or getattr(self, attr) != getattr(other_pulse, attr):
+                return False
+        else:
+            return True
 
     def add_pulse_requirement(self, property, requirement):
         self.pulse_requirements += [PulseRequirement(property, requirement)]
@@ -516,24 +527,20 @@ class PulseImplementation:
             return np.all([pulse_requirements.satisfies(pulse)
                            for pulse_requirements in self.pulse_requirements])
 
-    def target_pulse(self, pulse, interface, is_primary=False, **kwargs):
-        '''
+    def target_pulse(self, pulse, interface, **kwargs):
+        """
         This tailors a PulseImplementation to a specific pulse.
-        This is useful for reasons such as adding pulse_requirements such as a
-        triggering pulse
-        Args:
-            pulse: pulse to target
-            interface: instrument interface of targeted
-            is_primary: whether or not the instrument is the primary instrument
-        Returns:
-            Copy of pulse implementation, targeted to specific pulse
-        '''
-        # First create a copy of this pulse implementation
-        targeted_pulse = self.copy()
-        # Copy over all attributes from the pulse
-        for attr, val in vars(pulse).items():
-            setattr(targeted_pulse, attr, copy.deepcopy(val))
-        return targeted_pulse
+        """
+        if not isinstance(pulse, self.pulse_class):
+            raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
+
+        self.pulse = pulse.copy()
+        self.pulse.implementation = self
+        self.interface = interface
+        return self.pulse
+
+    def get_additional_pulses(self):
+        return []
 
     def implement(self):
         raise NotImplementedError(

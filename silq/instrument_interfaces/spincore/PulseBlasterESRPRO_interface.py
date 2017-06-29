@@ -57,8 +57,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t_stop_max = max(self.pulse_sequence.t_stop_list)
 
             while t < t_stop_max:
-                channel_mask = sum(pulse.implement(t=t) for pulse in
-                                   self.pulse_sequence)
+                channel_mask = sum(pulse.implementation.implement(t=t)
+                                   for pulse in self.pulse_sequence)
 
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses
@@ -121,13 +121,12 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
     @property
     def amplitude(self):
@@ -143,9 +142,8 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         else:
             return channel_value if input_channel.invert else 0
 
-class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
 
     @property
     def amplitude(self):
