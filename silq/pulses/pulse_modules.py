@@ -537,7 +537,7 @@ class PulseImplementation:
         self.pulse.implementation = self
         return self.pulse
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, interface):
         return []
 
     def implement(self):
