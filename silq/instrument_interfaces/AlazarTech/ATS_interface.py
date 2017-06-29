@@ -150,7 +150,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, interface):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -479,7 +479,7 @@ class SteeredInitializationImplementation(PulseImplementation):
     pulse_class = SteeredInitialization
 
     def target_pulse(self, pulse, interface, connections, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Add readout connection to targeted pulse
         readout_connection = [connection for connection in connections if
