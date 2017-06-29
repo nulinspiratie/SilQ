@@ -90,11 +90,14 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.stop()
 
     def get_additional_pulses(self, **kwargs):
-        final_pulses = []
 
         # Return empty list if no pulses are in the pulse sequence
         if not self.pulse_sequence:
-            return final_pulses
+            return []
+
+        additional_pulses = []
+        for pulse in self.pulse_sequence:
+            additional_pulses += pulse.get_additional_pulses()
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
@@ -115,8 +118,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                     # Check if trigger pulse is necessary.
                     if dc_pulse.additional_pulses:
                         trigger_pulse = dc_pulse.additional_pulses[0]
-                        if trigger_pulse not in final_pulses:
-                            final_pulses.append(trigger_pulse)
+                        if trigger_pulse not in additional_pulses:
+                            additional_pulses.append(trigger_pulse)
 
                     t = self.pulse_sequence.duration
                 else:
@@ -136,18 +139,18 @@ class ArbStudio1104Interface(InstrumentInterface):
                         # when t > 0 (first trigger occurs at the end)
                         if dc_pulse.additional_pulses:
                             trigger_pulse = dc_pulse.additional_pulses[0]
-                            if trigger_pulse not in final_pulses:
-                                final_pulses.append(trigger_pulse)
+                            if trigger_pulse not in additional_pulses:
+                                additional_pulses.append(trigger_pulse)
 
                     # Set time to t_stop of next pulse
                     t = pulse_next.t_stop
 
         # Add a trigger pulse at the end if it does not yet exist
         trigger_pulse = self.get_trigger_pulse(self.pulse_sequence.duration)
-        if trigger_pulse not in self.input_pulse_sequence and trigger_pulse not in final_pulses:
-            final_pulses.append(trigger_pulse)
+        if trigger_pulse not in self.input_pulse_sequence and trigger_pulse not in additional_pulses:
+            additional_pulses.append(trigger_pulse)
 
-        return final_pulses
+        return additional_pulses
 
     def get_trigger_pulse(self, t):
         trigger_pulse = TriggerPulse(t_start=t,
