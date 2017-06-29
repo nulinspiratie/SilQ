@@ -132,6 +132,7 @@ class TriggerPulseImplementation(PulseImplementation):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
         amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
         targeted_pulse.amplitude = amplitude
+        return targeted_pulse
 
     def implement(self, t):
         output_channel = self.pulse.connection.output['channel']
@@ -150,6 +151,7 @@ class MarkerPulseImplementation(PulseImplementation):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
         amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
         targeted_pulse.amplitude = amplitude
+        return targeted_pulse
 
     def implement(self, t):
         output_channel = self.pulse.connection.output['channel']
