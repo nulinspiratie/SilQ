@@ -62,7 +62,7 @@ class InstrumentInterface(Instrument):
         for pulse_implementation in self.pulse_implementations:
             if pulse_implementation.satisfies_requirements(pulse):
                 return pulse_implementation.target_pulse(
-                    pulse, self, connections=connections)
+                    pulse, interface=self, connections=connections)
         else:
             return None
 
@@ -95,7 +95,7 @@ class InstrumentInterface(Instrument):
         self.pulse_sequence.clear()
         self.input_pulse_sequence.clear()
 
-    def setup(self):
+    def setup(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
