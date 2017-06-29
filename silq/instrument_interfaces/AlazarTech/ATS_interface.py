@@ -150,7 +150,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_final_additional_pulses(self, pulse_sequence):
+    def get_additional_pulses(self, pulse_sequence):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []

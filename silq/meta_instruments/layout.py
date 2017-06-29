@@ -554,7 +554,7 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_final_additional_pulses(
+            additional_pulses = interface.get_additional_pulses(
                 pulse_sequence=self.targeted_pulse_sequence)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
