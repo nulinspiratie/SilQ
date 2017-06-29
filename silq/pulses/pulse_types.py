@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class Pulse(HasTraits):
     average = Unicode()
-
+    signal = Signal()
     _connected_attrs = {}
 
     def __init__(self, name=None, id=None, environment='default', t_start=None,
