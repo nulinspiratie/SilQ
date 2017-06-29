@@ -4,7 +4,6 @@ from collections import OrderedDict, Iterable
 from matplotlib import pyplot as plt
 from blinker import signal
 from functools import partial
-from keras.models import load_model
 import logging
 
 from qcodes.instrument.parameter import MultiParameter
@@ -929,6 +928,8 @@ class VariableReadParameter(AcquisitionParameter):
 class NeuralNetworkParameter(AcquisitionParameter):
     def __init__(self, target_parameter, input_names, output_names=None,
                  model_filepath=None, include_target_output=None, **kwargs):
+        # Load model here because it takes quite a while to load
+        from keras.models import load_model
 
         self.target_parameter = target_parameter
         self.input_names = input_names
