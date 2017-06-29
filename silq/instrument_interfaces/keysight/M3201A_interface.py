@@ -188,7 +188,7 @@ class M3201AInterface(InstrumentInterface):
             self.instrument.awg_start_multiple(mask)
             self.instrument.awg_trigger_multiple(mask)
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
     def write_raw(self, cmd):
