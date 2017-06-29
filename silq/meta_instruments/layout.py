@@ -41,7 +41,7 @@ class Layout(Instrument):
                             for interface in instrument_interfaces}
 
         # TODO remove this and methods once parameters are improved
-        self._set_primary_instrument = None
+        self._primary_instrument = None
 
         self.connections = []
 
@@ -332,7 +332,7 @@ class Layout(Instrument):
 
     def _set_primary_instrument(self, primary_instrument):
         # TODO remove once parameters are improved
-        for instrument_name, interface in self._interfaces:
+        for instrument_name, interface in self._interfaces.items():
             interface.is_primary(instrument_name==primary_instrument)
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
