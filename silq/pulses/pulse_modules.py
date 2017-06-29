@@ -504,12 +504,6 @@ class PulseImplementation:
         self.pulse_requirements = [PulseRequirement(property, condition) for
                                  (property, condition) in pulse_requirements]
 
-        # List of pulses that need to be implemented along with this pulse.
-        # An example is a triggering pulse. Each pulse has requirements in
-        # pulse.connection_requirements, such as that the pulse must be provided
-        # from the triggering instrument
-        self.additional_pulses = []
-
     def add_pulse_requirement(self, property, requirement):
         self.pulse_requirements += [PulseRequirement(property, requirement)]
 
