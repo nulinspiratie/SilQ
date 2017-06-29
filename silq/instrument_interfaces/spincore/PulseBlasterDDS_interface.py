@@ -58,7 +58,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             pulses = self.pulse_sequence.get_pulses(
                 output_channel=channel.short_name)
             for pulse in pulses:
-                if isinstance(pulse, SinePulseImplementation):
+                if isinstance(pulse, SinePulse):
                     frequencies.append(pulse.frequency) # in MHz
                     phases.append(pulse.phase)
                     amplitudes.append(pulse.amplitude)
@@ -108,7 +108,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                                                       t=t,
                                                       output_channel=ch)
                 if pulse is not None:
-                    inst = inst + tuple(pulse.implement(self))
+                    inst = inst + tuple(pulse.implementation.implement(self))
                 else:
                     inst = inst + tuple(DEFAULT_CH_INSTR)
 

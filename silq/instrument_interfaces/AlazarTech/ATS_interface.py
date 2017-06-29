@@ -150,7 +150,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_additional_pulses(self, pulse_sequence):
+    def get_additional_pulses(self):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -183,7 +183,7 @@ class ATSInterface(InstrumentInterface):
                 connection_requirements={
                     'connection': initialization.trigger_connection})
             trigger_wait_pulse = TriggerWaitPulse(
-                t_start=pulse_sequence.duration,
+                t_start=self.pulse_sequence.duration,
                 connection_requirements={
                     'output_arg': 'ATS.software_trig_out'})
 

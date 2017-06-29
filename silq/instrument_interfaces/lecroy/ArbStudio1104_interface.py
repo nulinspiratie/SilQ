@@ -97,7 +97,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         additional_pulses = []
         for pulse in self.pulse_sequence:
-            additional_pulses += pulse.get_additional_pulses()
+            additional_pulses += pulse.implementation.get_additional_pulses()
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
@@ -176,9 +176,10 @@ class ArbStudio1104Interface(InstrumentInterface):
 
             # For each channel, obtain list of waverforms, and the sequence
             # in which to perform the waveforms
-            channels_waveforms, channels_sequence = pulse.implement(
-                sampling_rates=sampling_rates,
-                input_pulse_sequence=self.input_pulse_sequence)
+            channels_waveforms, channels_sequence = \
+                pulse.implementation.implement(
+                    sampling_rates=sampling_rates,
+                    input_pulse_sequence=self.input_pulse_sequence)
 
             for ch in channels_waveforms:
                 # Ensure that the start of this pulse corresponds to the end of
@@ -228,6 +229,7 @@ class SinePulseImplementation(PulseImplementation):
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
+        return targeted_pulse
 
     def get_additional_pulses(self):
         # Check if there are already trigger pulses
@@ -375,6 +377,7 @@ class DCRampPulseImplementation(PulseImplementation):
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
+        return targeted_pulse
 
     def get_additional_pulses(self):
         # Check if there are already trigger pulses

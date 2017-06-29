@@ -520,8 +520,9 @@ class PulseImplementation:
         """
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
-        else:
-            self.pulse = pulse.copy()
+
+        self.pulse = pulse.copy()
+        self.pulse.implementation = self
         self.interface = interface
         return self.pulse
 
