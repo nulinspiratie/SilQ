@@ -57,8 +57,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t_stop_max = max(self.pulse_sequence.t_stop_list)
 
             while t < t_stop_max:
-                channel_mask = sum(pulse.implement(t=t) for pulse in
-                                   self.pulse_sequence)
+                channel_mask = sum(pulse.implementation.implement(t=t)
+                                   for pulse in self.pulse_sequence)
 
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses

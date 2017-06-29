@@ -101,6 +101,9 @@ class Pulse(HasTraits):
         self.connection = connection
         self.average = average
 
+        # Pulses can have a PulseImplementation after targeting
+        self.implementation = None
+
         # List of potential connection requirements.
         # These can be set so that the pulse can only be sent to connections
         # matching these requirements
