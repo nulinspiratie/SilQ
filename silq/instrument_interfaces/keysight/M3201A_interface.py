@@ -361,47 +361,52 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
             raise Exception('No implementation for connection {}'.format(
                 self.connection))
 
-        assert self.frequency < min(sampling_rates[ch] for ch in channels) / 2, \
-            'Sine frequency is higher than the Nyquist frequency ' \
-            'for channels {}'.format(channels)
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+        period_sample = 1 / sampling_rate
+
+        assert self.frequency < sampling_rate / 2, \
+            f'Sine frequency {self.frequency} is too high for' \
+            f'the sampling frequency {sampling_rate}'
 
         waveforms = {}
 
         # channel independent parameters
-        duration = self.t_stop - self.t_start
+        duration = self.duration
         period = 1 / self.frequency
         cycles = duration // period
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
-        wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
-        wave_form_minimum = 15  # the minimum size of a waveform
+        waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_minimum = 15  # the minimum size of a waveform
+
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+        period_sample = 1 / sampling_rate
 
         for ch in channels:
-            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-            period_sample = 1 / sampling_rate
-
             # This factor determines the number of points needed in the waveform
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n_min = int(-(-cycles // 2**16))
 
-            n, error, samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rates[ch], threshold,
+            n, error, waveform_samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rate, threshold,
                                                            n_min=n_min, n_max=1000,
-                                                           sample_points_multiple=wave_form_multiple)
+                                                           sample_points_multiple=waveform_multiple)
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
             #   n_cycles * waveform_repeated + waveform_tail
             # This is done to minimise the number of data points written to the AWG
-            waveform_repeated_period = period_sample * samples
-            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, samples, endpoint=False)
+            waveform_repeated_period = period_sample * waveform_samples
+            t_list_1 = np.linspace(self.t_start,
+                                   self.t_start + waveform_repeated_period,
+                                   waveform_samples, endpoint=False)
 
             waveform_repeated_cycles = cycles // n
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
             waveform_tail_start = self.t_start + waveform_repeated_duration
-            waveform_tail_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_tail_start) / period_sample + 1) / wave_form_multiple)
+            waveform_tail_samples = waveform_multiple * round(
+                ((self.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
 
-            if waveform_tail_samples < wave_form_minimum:
+            if waveform_tail_samples < waveform_minimum:
                 # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
                 waveform_tail_samples = 0
 
@@ -478,28 +483,27 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
         # channel independent parameters
         duration = self.t_stop - self.t_start
-        wave_form_multiple = 5
-        wave_form_minimum = 15  # the minimum size of a waveform
+        waveform_multiple = 5
+        waveform_minimum = 15  # the minimum size of a waveform
+
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+        period_sample = 1 / sampling_rate
 
         for ch in channels:
-            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-            period_sample = 1 / sampling_rate
-
-            period = period_sample * wave_form_minimum
+            period = period_sample * waveform_minimum
             max_cycles = int(duration // period)
 
             # This factor determines the number of points needed in the waveform
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n = int(np.ceil(max_cycles / 2 ** 16))
 
-            samples = n * wave_form_minimum
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
             #   n_cycles * waveform_repeated + waveform_tail
             # This is done to minimise the number of data points written to the AWG
-            waveform_repeated_period = period_sample * samples
-            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, samples, endpoint=False)
+            waveform_repeated_period = period_sample * waveform_samples
+            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, waveform_samples, endpoint=False)
             waveform_repeated_cycles = max_cycles // n
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
@@ -509,10 +513,10 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
 
             waveform_tail_start = self.t_start + waveform_repeated_duration
-            waveform_tail_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_tail_start) / period_sample + 1) / wave_form_multiple)
+            waveform_tail_samples = waveform_multiple * round(
+                ((self.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
 
-            if waveform_tail_samples < wave_form_minimum:
+            if waveform_tail_samples < waveform_minimum:
                 # print('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
                 waveform_tail_samples = 0
 
@@ -532,7 +536,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             waveform_repeated['t_start'] = self.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
             waveform_repeated['prescaler'] = self.prescaler
-            # import pdb; pdb.set_trace()
+
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_repeated]
             else:
@@ -656,17 +660,17 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
         waveforms = {}
 
-        wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_minimum = 15
 
         for ch in channels:
             sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
             period_sample = 1 / sampling_rate
 
-            waveform_start = self.t_start
-            waveform_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
-            waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
-            t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
+
+            waveform_samples = waveform_multiple * round(
+                (self.duration / period_sample + 1) / waveform_multiple)
+            t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
             waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
@@ -675,7 +679,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
                         'name':self.full_name,
                         'cycles': 1,
                         't_start': self.t_start,
-                        't_stop': waveform_stop,
+                        't_stop': self.t_start,
                         'prescaler':self.prescaler}
 
             waveforms[ch] = [waveform]
@@ -715,17 +719,18 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
         waveforms = {}
 
-        wave_form_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_minimum = 15
 
         for ch in channels:
             sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
             period_sample = 1 / sampling_rate
 
-            waveform_start = self.t_start
-            waveform_samples = wave_form_multiple * round(
-                ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
-            waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
-            t_list = np.linspace(waveform_start, waveform_stop, waveform_samples, endpoint=True)
+
+            waveform_samples = waveform_multiple * round(
+                (self.duration/ period_sample + 1) / waveform_multiple)
+
+            t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
             waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
 
@@ -734,7 +739,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
                         'name': self.full_name,
                         'cycles': 1,
                         't_start': self.t_start,
-                        't_stop': waveform_stop,
+                        't_stop': self.t_stop,
                         'prescaler': self.prescaler}
 
             waveforms[ch] = [waveform]
@@ -742,7 +747,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         return waveforms
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
+class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
     def __init__(self, prescaler = 0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
         self.prescaler = prescaler
@@ -757,18 +762,17 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         else:
             raise Exception('No implementation for connection {}'.format(self.connection))
 
-        wave_form_multiple = 5
+        waveform_multiple = 5
+        waveform_minimum = 15
 
         waveforms = {}
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
-        waveform_start = self.t_start
-        waveform_samples = wave_form_multiple * round(
-            ((self.t_stop - waveform_start) / period_sample + 1) / wave_form_multiple)
-        waveform_stop = waveform_start + period_sample * (waveform_samples - 1)
-        t_list = np.linspace(waveform_start, self.t_stop, waveform_samples, endpoint=True)
+        waveform_samples = waveform_multiple * round(
+            (self.duration / period_sample + 1) / waveform_multiple)
+        t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
 
@@ -777,7 +781,7 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
                     'name': self.full_name,
                     'cycles': 1,
                     't_start': self.t_start,
-                    't_stop': waveform_stop,
+                    't_stop': self.t_stop,
                     'prescaler': self.prescaler}
 
         waveforms[channel] = [waveform]
