@@ -57,7 +57,10 @@ class E8267DInterface(InstrumentInterface):
 
     def get_additional_pulses(self, **kwargs):
         # TODO (additional_pulses) handle, pass along amplitudes
-        return []
+        additional_pulses = []
+        for pulse in self.pulse_sequence:
+            additional_pulses += pulse.get_additional_pulses()
+        return additional_pulses
 
     def setup(self, **kwargs):
         self.instrument.RF_output('off')
