@@ -128,7 +128,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
 

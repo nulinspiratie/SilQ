@@ -79,7 +79,7 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
