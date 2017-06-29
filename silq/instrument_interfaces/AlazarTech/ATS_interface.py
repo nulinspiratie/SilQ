@@ -479,8 +479,7 @@ class SteeredInitializationImplementation(PulseImplementation):
     pulse_class = SteeredInitialization
 
     def target_pulse(self, pulse, interface, connections, **kwargs):
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Add readout connection to targeted pulse
         readout_connection = [connection for connection in connections if
