@@ -55,7 +55,7 @@ class E8267DInterface(InstrumentInterface):
                            initial_value='ext1',
                            vals=vals.Enum(*self._input_channels))
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
     def setup(self, **kwargs):
