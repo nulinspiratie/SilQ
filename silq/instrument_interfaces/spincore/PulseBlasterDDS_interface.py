@@ -18,7 +18,6 @@ DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
 class PulseBlasterDDSInterface(InstrumentInterface):
 
-
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -59,7 +58,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             pulses = self.pulse_sequence.get_pulses(
                 output_channel=channel.short_name)
             for pulse in pulses:
-                if isinstance(pulse, SinePulseImplementation):
+                if isinstance(pulse, SinePulse):
                     frequencies.append(pulse.frequency) # in MHz
                     phases.append(pulse.phase)
                     amplitudes.append(pulse.amplitude)
@@ -109,7 +108,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
                                                       t=t,
                                                       output_channel=ch)
                 if pulse is not None:
-                    inst = inst + tuple(pulse.implement(self))
+                    inst = inst + tuple(pulse.implementation.implement(self))
                 else:
                     inst = inst + tuple(DEFAULT_CH_INSTR)
 
@@ -157,21 +156,24 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self, **kwargs):
-        return [TriggerPulse(t_start=0,
-                             connection_requirements={
-                                 'input_instrument': self.instrument_name(),
-                                 'trigger': True})]
+    def get_additional_pulses(self, **kwargs):
+        # Request one trigger at the start if not primary
+        # TODO test if this works
+        if not self.is_primary():
+            return [TriggerPulse(t_start=0,
+                                 connection_requirements={
+                                     'input_instrument': self.instrument_name(),
+                                     'trigger': True})]
+        else:
+            return []
 
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
 
-class SinePulseImplementation(SinePulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
-
-    def implement(self, interface):
+    def implement(self):
 
         channel_name = self.connection.output['channel'].name
-        channel = interface.instrument.output_channels[channel_name]
+        channel = self.interface.instrument.output_channels[channel_name]
 
         frequency_idx = channel.frequencies().index(self.frequency) # MHz
         phase_idx = channel.phases().index(self.phase)
