@@ -498,7 +498,6 @@ class PulseImplementation:
         self.signal = Signal()
         self._connected_attrs = {}
         self.pulse = None
-        self.interface = None
 
         # List of conditions that a pulse must satisfy to be targeted
         self.pulse_requirements = [PulseRequirement(property, condition) for
@@ -527,7 +526,7 @@ class PulseImplementation:
             return np.all([pulse_requirements.satisfies(pulse)
                            for pulse_requirements in self.pulse_requirements])
 
-    def target_pulse(self, pulse, interface, **kwargs):
+    def target_pulse(self, pulse, **kwargs):
         """
         This tailors a PulseImplementation to a specific pulse.
         """
@@ -536,7 +535,6 @@ class PulseImplementation:
 
         self.pulse = pulse.copy()
         self.pulse.implementation = self
-        self.interface = interface
         return self.pulse
 
     def get_additional_pulses(self):

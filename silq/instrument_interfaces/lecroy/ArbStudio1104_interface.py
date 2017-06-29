@@ -97,7 +97,8 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         additional_pulses = []
         for pulse in self.pulse_sequence:
-            additional_pulses += pulse.implementation.get_additional_pulses()
+            additional_pulses += pulse.implementation.get_additional_pulses(
+                interface=self)
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
@@ -225,25 +226,25 @@ class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, **kwargs)
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
         return targeted_pulse
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, interface):
         # Check if there are already trigger pulses
-        trigger_pulses = self.interface.input_pulse_sequence.get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
 
-        if not (self.interface.is_primary() or trigger_pulses or
+        if not (interface.is_primary() or trigger_pulses or
                 self.pulse.t_start == 0):
             return [
                 TriggerPulse(
                     t_start=self.pulse.t_start,
-                    duration=self.interface.trigger_in_duration() * 1e-3,
+                    duration=interface.trigger_in_duration() * 1e-3,
                     connection_requirements={
-                        'input_instrument': self.interface.instrument_name(),
+                        'input_instrument': interface.instrument_name(),
                         'trigger': True})]
         else:
             return []
@@ -312,19 +313,19 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
     pts = 4
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, interface):
         # Check if there are already trigger pulses
-        trigger_pulses = self.interface.input_pulse_sequence.get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
 
-        if not (self.interface.is_primary() or trigger_pulses or
+        if not (interface.is_primary() or trigger_pulses or
                 self.pulse.t_start == 0):
             return [
                 TriggerPulse(
                     t_start=self.pulse.t_start,
-                    duration=self.interface.trigger_in_duration() * 1e-3,
+                    duration=interface.trigger_in_duration() * 1e-3,
                     connection_requirements={
-                        'input_instrument': self.interface.instrument_name(),
+                        'input_instrument': interface.instrument_name(),
                         'trigger': True})]
         else:
             return []
@@ -373,25 +374,25 @@ class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, **kwargs)
 
         # Set final delay from interface parameter
         targeted_pulse.final_delay = interface.final_delay()
         return targeted_pulse
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, interface):
         # Check if there are already trigger pulses
-        trigger_pulses = self.interface.input_pulse_sequence.get_pulses(
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
             t_start=self.pulse.t_start, trigger=True)
 
-        if not (self.interface.is_primary() or trigger_pulses or
+        if not (interface.is_primary() or trigger_pulses or
                         self.pulse.t_start == 0):
             return [
                 TriggerPulse(
                     t_start=self.pulse.t_start,
-                    duration=self.interface.trigger_in_duration() * 1e-3,
+                    duration=interface.trigger_in_duration() * 1e-3,
                     connection_requirements={
-                        'input_instrument': self.interface.instrument_name(),
+                        'input_instrument': interface.instrument_name(),
                         'trigger': True})]
         else:
             return []
@@ -443,14 +444,14 @@ class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
     # TODO add implement method
 
-    def get_additional_pulses(self):
-        if not self.interface.is_primary():
+    def get_additional_pulses(self, interface):
+        if not interface.is_primary():
             return [
                 TriggerPulse(
                     t_start=self.pulse.t_start,
-                    duration=self.interface.trigger_in_duration() * 1e-3,
+                    duration=interface.trigger_in_duration() * 1e-3,
                     connection_requirements={
-                        'input_instrument': self.interface.instrument_name(),
+                        'input_instrument': interface.instrument_name(),
                         'trigger': True})]
         else:
             return []
