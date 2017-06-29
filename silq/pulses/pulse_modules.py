@@ -288,10 +288,10 @@ class PulseSequence:
                     'Pulse 1: {}\n\nPulse2: {}'.format(
                         pulse, [p for p in self.enabled_pulses
                                 if self.pulses_overlap(pulse, p)]))
-            elif not isinstance(pulse, PulseImplementation) and \
+            elif pulse.implementation is None and \
                     not self.allow_untargeted_pulses:
                 raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
-            elif isinstance(pulse, PulseImplementation) and \
+            elif pulse.implementation is not None and \
                     not self.allow_targeted_pulses:
                 raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
             elif pulse.duration is None:
@@ -503,34 +503,6 @@ class PulseImplementation:
         # List of conditions that a pulse must satisfy to be targeted
         self.pulse_requirements = [PulseRequirement(property, condition) for
                                  (property, condition) in pulse_requirements]
-
-    def __eq__(self, other):
-        exclude_attrs = ['connection', 'connection_requirements', 'signal',
-                         '_handle_properties_config_signal', '_connected_attrs']
-        if isinstance(other, PulseImplementation):
-            # Both pulses are pulse implementations
-            # Check if their pulse classes are the same
-            if self.pulse_class != other.pulse_class:
-                return False
-            # All attributes must match
-            return self.pulse._matches_attrs(other.pulse,
-                                             exclude_attrs=exclude_attrs)
-        else:
-            # Only self is a pulse implementation
-            if not isinstance(other, self.pulse_class):
-                return False
-
-            # self is a pulse implementation, and so it must match all
-            # the attributes of other. The other way around does not
-            # necessarily hold, since a pulse implementation has more attrs
-            if not other._matches_attrs(self.pulse,
-                                        exclude_attrs=exclude_attrs):
-                return False
-            else:
-                # Check if self.connections satisfies the connection
-                # requirements of other
-                return self.pulse.connection.satisfies_conditions(
-                    **other.connection_requirements)
 
     def __ne__(self, other):
         return not self.__eq__(other)
