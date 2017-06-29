@@ -526,8 +526,7 @@ class PulseImplementation:
         return self.pulse
 
     def get_additional_pulses(self):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
+        return []
 
     def implement(self):
         raise NotImplementedError(
