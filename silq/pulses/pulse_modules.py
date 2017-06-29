@@ -504,6 +504,47 @@ class PulseImplementation:
         self.pulse_requirements = [PulseRequirement(property, condition) for
                                  (property, condition) in pulse_requirements]
 
+    def __eq__(self, other):
+        exclude_attrs = ['connection', 'connection_requirements', 'signal',
+                         '_handle_properties_config_signal', '_connected_attrs']
+        if isinstance(other, PulseImplementation):
+            # Both pulses are pulse implementations
+            # Check if their pulse classes are the same
+            if self.pulse_class != other.pulse_class:
+                return False
+            # All attributes must match
+            return self.pulse._matches_attrs(other.pulse,
+                                             exclude_attrs=exclude_attrs)
+        else:
+            # Only self is a pulse implementation
+            if not isinstance(other, self.pulse_class):
+                return False
+
+            # self is a pulse implementation, and so it must match all
+            # the attributes of other. The other way around does not
+            # necessarily hold, since a pulse implementation has more attrs
+            if not other._matches_attrs(self.pulse,
+                                        exclude_attrs=exclude_attrs):
+                return False
+            else:
+                # Check if self.connections satisfies the connection
+                # requirements of other
+                return self.pulse.connection.satisfies_conditions(
+                    **other.connection_requirements)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
+        for attr in list(vars(self)):
+            if attr in exclude_attrs:
+                continue
+            elif not hasattr(other_pulse, attr) \
+                    or getattr(self, attr) != getattr(other_pulse, attr):
+                return False
+        else:
+            return True
+
     def add_pulse_requirement(self, property, requirement):
         self.pulse_requirements += [PulseRequirement(property, requirement)]
 
