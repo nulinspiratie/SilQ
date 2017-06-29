@@ -45,6 +45,17 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
+    def get_additional_pulses(self, **kwargs):
+        # Request one trigger at the start if not primary
+        # TODO test if this works
+        if not self.is_primary():
+            return [TriggerPulse(t_start=0,
+                                 connection_requirements={
+                                     'input_instrument': self.instrument_name(),
+                                     'trigger': True})]
+        else:
+            return []
+
     def setup(self, final_instruction='loop', is_primary=True, **kwargs):
         #Initial pulseblaster commands
         self.instrument.setup()
@@ -156,16 +167,6 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_additional_pulses(self, **kwargs):
-        # Request one trigger at the start if not primary
-        # TODO test if this works
-        if not self.is_primary():
-            return [TriggerPulse(t_start=0,
-                                 connection_requirements={
-                                     'input_instrument': self.instrument_name(),
-                                     'trigger': True})]
-        else:
-            return []
 
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
