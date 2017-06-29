@@ -517,10 +517,6 @@ class Layout(Instrument):
                 pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence.add(targeted_pulse)
 
-            # Also target pulses that are in additional_pulses, such as triggers
-            for additional_pulse in targeted_pulse.additional_pulses:
-                self._target_pulse(additional_pulse)
-
     def _target_pulse_sequence(self, pulse_sequence):
         """
         Targets a pulse sequence.
