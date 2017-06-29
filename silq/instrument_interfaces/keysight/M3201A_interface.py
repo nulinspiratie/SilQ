@@ -390,6 +390,12 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                                                            n_min=n_min, n_max=1000,
                                                            sample_points_multiple=waveform_multiple)
 
+            if waveform_samples < waveform_minimum:
+                raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+
+
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
             #   n_cycles * waveform_repeated + waveform_tail
@@ -497,6 +503,11 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n = int(np.ceil(max_cycles / 2 ** 16))
 
+            waveform_samples = n * waveform_minimum
+            if waveform_samples < waveform_minimum:
+                raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
@@ -730,6 +741,11 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
             waveform_samples = waveform_multiple * round(
                 (self.duration/ period_sample + 1) / waveform_multiple)
 
+            if waveform_samples < waveform_minimum:
+                raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                               f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                               f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+
             t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
             waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
@@ -772,6 +788,10 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
 
         waveform_samples = waveform_multiple * round(
             (self.duration / period_sample + 1) / waveform_multiple)
+        if waveform_samples < waveform_minimum:
+            raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
