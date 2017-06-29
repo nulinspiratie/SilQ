@@ -132,9 +132,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         return []
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
     @property
     def amplitude(self):
@@ -147,9 +146,8 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
         channel_value = 2**(output_channel-1)
         return channel_value
 
-class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
 
     @property
     def amplitude(self):
