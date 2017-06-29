@@ -18,7 +18,6 @@ DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
 class PulseBlasterDDSInterface(InstrumentInterface):
 
-
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
