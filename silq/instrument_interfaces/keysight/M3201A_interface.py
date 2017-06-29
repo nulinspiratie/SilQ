@@ -1,7 +1,8 @@
 import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
+from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse,\
+                        CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from functools import partial
@@ -551,6 +552,78 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         return waveforms
 
 
+class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
+    def __init__(self, prescaler=100, **kwargs):
+        # Default sampling rate of 1 MSPS
+        PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
+        self.prescaler = prescaler
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        logger.debug('targeting DCRampPulse for {}'.format(interface))
+        is_primary = kwargs.pop('is_primary', False)
+        # Target the generic pulse to this specific interface
+        targeted_pulse = PulseImplementation.target_pulse(
+            self, pulse, interface=interface, **kwargs)
+
+        # Check if there are already trigger pulses
+        trigger_pulses = interface.input_pulse_sequence.get_pulses(
+            t_start=pulse.t_start, trigger=True
+        )
+
+        # Add a trigger requirement, which is sent back to the Layout
+        if (not is_primary) and targeted_pulse.t_start == 0 and not trigger_pulses:
+            targeted_pulse.additional_pulses.append(
+                TriggerPulse(t_start=pulse.t_start,
+                             duration=1e-5,
+                             connection_requirements={
+                                 'input_instrument': interface.instrument_name(),
+                                 'trigger': True}))
+
+        return targeted_pulse
+
+    def implement(self, instrument, sampling_rates, threshold):
+        if isinstance(self.connection, SingleConnection):
+            channels = [self.connection.output['channel'].name]
+        else:
+            raise Exception('No implementation for connection {}'.format(
+                self.connection))
+
+        waveforms = {}
+
+        # channel independent parameters
+        waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_minimum = 15
+
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+        period_sample = 1 / sampling_rate
+
+        for ch in channels:
+            waveform_samples = waveform_multiple * round(
+                (self.duration / period_sample + 1) / waveform_multiple)
+            t_list = np.linspace(self.t_start, self.t_stop,
+                                 waveform_samples, endpoint=True)
+
+            if waveform_samples < waveform_minimum:
+                raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+            waveform_data = [voltage / 1.5 for voltage in
+                             self.get_voltage(t_list)]
+
+            waveform = {
+                'waveform': instrument.new_waveform_from_double(waveform_type=0,
+                                                                waveform_data_a=waveform_data),
+                'name': self.full_name,
+                'cycles': 1,
+                't_start': self.t_start,
+                't_stop': self.t_stop,
+                'prescaler': self.prescaler}
+
+            waveforms[ch] = [waveform]
+
+        return waveforms
+
+
 class AWGPulseImplementation(PulseImplementation, AWGPulse):
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
@@ -711,3 +784,50 @@ class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
 
         return waveforms
 
+
+class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
+    def __init__(self, prescaler = 0, **kwargs):
+        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+        self.prescaler = prescaler
+
+    @property
+    def amplitude(self):
+        return 1.0
+
+    def implement(self, instrument, sampling_rates, threshold):
+        if isinstance(self.connection, SingleConnection):
+            channel = self.connection.output['channel'].name
+        else:
+            raise Exception('No implementation for connection {}'.format(self.connection))
+
+        waveform_multiple = 5
+        waveform_minimum = 15
+
+        waveforms = {}
+
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
+        period_sample = 1 / sampling_rate
+
+
+        # Waveform must have at least wave_form_multiple samples
+        waveform_samples = waveform_multiple * round(
+            (self.duration / period_sample + 1) / waveform_multiple)
+        if waveform_samples < waveform_minimum:
+            raise RuntimeError(f'Waveform too short for {self.full_name}: '
+                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
+                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+        t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
+
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
+
+        waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
+                                                                    waveform_data_a=waveform_data),
+                    'name': self.full_name,
+                    'cycles': 1,
+                    't_start': self.t_start,
+                    't_stop': self.t_stop,
+                    'prescaler': self.prescaler}
+
+        waveforms[channel] = [waveform]
+
+        return waveforms
