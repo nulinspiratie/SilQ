@@ -158,18 +158,23 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         self.instrument.stop()
 
     def get_additional_pulses(self, **kwargs):
-        return [TriggerPulse(t_start=0,
-                             connection_requirements={
-                                 'input_instrument': self.instrument_name(),
-                                 'trigger': True})]
+        # Request one trigger at the start if not primary
+        # TODO test if this works
+        if not self.is_primary():
+            return [TriggerPulse(t_start=0,
+                                 connection_requirements={
+                                     'input_instrument': self.instrument_name(),
+                                     'trigger': True})]
+        else:
+            return []
 
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
-    def implement(self, interface):
+    def implement(self):
 
         channel_name = self.connection.output['channel'].name
-        channel = interface.instrument.output_channels[channel_name]
+        channel = self.interface.instrument.output_channels[channel_name]
 
         frequency_idx = channel.frequencies().index(self.frequency) # MHz
         phase_idx = channel.phases().index(self.phase)
