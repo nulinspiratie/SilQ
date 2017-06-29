@@ -247,9 +247,8 @@ class M3201AInterface(InstrumentInterface):
             return [waveform_1, waveform_2]
 
 
-class SinePulseImplementation(PulseImplementation, SinePulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting SinePulse for M3201A interface {}'.format(interface))
@@ -394,9 +393,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         return waveforms
 
 
-class DCPulseImplementation(PulseImplementation, DCPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+class DCPulseImplementation(PulseImplementation):
+    pulse_class = DCPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting DCPulse for {}'.format(interface))
@@ -489,9 +487,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         return waveforms
 
 
-class AWGPulseImplementation(PulseImplementation, AWGPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting AWGPulse for {}'.format(interface))
@@ -545,9 +542,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         return waveforms
 
 
-class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
+class CombinationPulseImplementation(PulseImplementation):
+    pulse_class = CombinationPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting CombinationPulse for {}'.format(interface))
@@ -601,9 +597,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         return waveforms
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
     @property
     def amplitude(self):
