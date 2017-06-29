@@ -460,7 +460,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         if (not is_primary) and targeted_pulse.t_start == 0 and not trigger_pulses:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-3,
+                             duration=1e-5,
                              connection_requirements={
                                  'input_instrument': interface.instrument_name(),
                                  'trigger': True}))
@@ -640,7 +640,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         if (not is_primary) and targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-3,
+                             duration=1e-5,
                              connection_requirements={
                                  'input_instrument': interface.instrument_name(),
                                  'trigger': True}))
@@ -699,7 +699,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         if (not is_primary) and targeted_pulse.t_start == 0:
             targeted_pulse.additional_pulses.append(
                 TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-3,
+                             duration=1e-5,
                              connection_requirements={
                                  'input_instrument': interface.instrument_name(),
                                  'trigger': True}))
