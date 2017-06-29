@@ -112,7 +112,7 @@ class SinePulseImplementation(PulseImplementation):
 
     def target_pulse(self, pulse, interface, **kwargs):
         assert pulse.power is not None, "Pulse must have power defined"
-        return super().target_pulse(pulse, **kwargs)
+        return super().target_pulse(pulse, interface, **kwargs)
 
     def get_additional_pulses(self, interface):
         # Add an envelope pulse
@@ -131,7 +131,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
     def target_pulse(self, pulse, interface, **kwargs):
         assert pulse.power is not None, "Pulse must have power defined"
-        return super().target_pulse(pulse, **kwargs)
+        return super().target_pulse(pulse, interface, **kwargs)
 
     def get_additional_pulses(self, interface, **kwargs):
         # TODO (additional_pulses) correct amplitudes
