@@ -510,6 +510,8 @@ class Layout(Instrument):
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, is_primary=is_primary, connections=self.connections)
 
+            self.targeted_pulse_sequence.add(targeted_pulse)
+
             interface.pulse_sequence.add(targeted_pulse)
 
             # Also add pulse to input interface pulse sequence
@@ -536,7 +538,8 @@ class Layout(Instrument):
             self.stop()
 
         # Copy untargeted pulse sequence so none of its attributes are modified
-        self.targeted_pulse_sequence = pulse_sequence.copy()
+        self.targeted_pulse_sequence = PulseSequence()
+        self.targeted_pulse_sequence.duration = pulse_sequence.duration
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -611,7 +614,7 @@ class Layout(Instrument):
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
         
         if not self.pulse_sequence:
-            raise RuntimeError("Cannot perform setup with an empty PulseSequence.")
+            raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
         if self.active():
             self.stop()
