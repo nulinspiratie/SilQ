@@ -83,9 +83,8 @@ class InstrumentInterface(Instrument):
             return None
 
     def get_additional_pulses(self, **kwargs):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
-
+        return []
+    
     def initialize(self):
         """
         This method gets called at the start of targeting a pulse sequence
