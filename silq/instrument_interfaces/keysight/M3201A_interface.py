@@ -95,6 +95,7 @@ class M3201AInterface(InstrumentInterface):
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
         # flush the onboard RAM and reset waveform counter
+        sampling_rate = 1e6
         self.instrument.flush_waveform()
         waveform_counter = 0
 
@@ -136,7 +137,6 @@ class M3201AInterface(InstrumentInterface):
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
 
-                    sampling_rate = 1e6
                     logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rate)
@@ -145,6 +145,13 @@ class M3201AInterface(InstrumentInterface):
                     wf['delay'] = 0
                 else:
                     wf['delay'] = delay
+
+            # Add final waveform, should fill in space to the end of the whole pulse sequence.
+            zero_waveforms = self.create_zero_waveform(
+                    duration=self.pulse_sequence.duration - wf['t_stop'],
+                    sampling_rate=sampling_rate)
+            insertion = {'index': i+1, 'waveforms': zero_waveforms}
+            insert_points.append(insertion)
 
             insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
 
