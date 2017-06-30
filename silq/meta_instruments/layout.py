@@ -40,13 +40,16 @@ class Layout(Instrument):
         self._interfaces = {interface.instrument_name(): interface
                             for interface in instrument_interfaces}
 
+        # TODO remove this and methods once parameters are improved
+        self._primary_instrument = None
+
         self.connections = []
 
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
         self.add_parameter('primary_instrument',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
+                           get_cmd=lambda: self._primary_instrument,
+                           set_cmd=self._set_primary_instrument,
                            vals=vals.Enum(*self._interfaces.keys()))
 
         self.add_parameter('acquisition_instrument',
@@ -98,7 +101,6 @@ class Layout(Instrument):
 
         # Update pulse sequence
         self._pulse_sequence = pulse_sequence.copy()
-
 
     @property
     def acquisition_interface(self):
@@ -328,6 +330,11 @@ class Layout(Instrument):
                 f"instead of one satisfying {conditions}"
             return connections[0]
 
+    def _set_primary_instrument(self, primary_instrument):
+        # TODO remove once parameters are improved
+        for instrument_name, interface in self._interfaces.items():
+            interface.is_primary(instrument_name==primary_instrument)
+
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
         Determines the hierarchy for instruments, ensuring that instruments
@@ -355,21 +362,23 @@ class Layout(Instrument):
             return sorted_interfaces
 
         for instrument, interface in remaining_interfaces.items():
-            trigger_connections = self.get_connections(
-                 output_interface=interface, trigger=True)
+            output_connections = self.get_connections(
+                output_interface=interface)
 
-            # Find instruments that are triggered by interface
-            trigger_instruments = set(connection.input['instrument']
-                                      for connection in trigger_connections)
+            # Find instruments that have this instrument as an input
+            input_instruments = {connection.input['instrument']
+                                 for connection in output_connections
+                                 if 'instrument' in connection.input}
+
             # Add interface to sorted interface if it does not trigger any of
             # the remaining interfaces
             if all(instrument not in remaining_interfaces
-                   for instrument in trigger_instruments):
+                   for instrument in input_instruments):
                 sorted_interfaces.append(interface)
 
         # Ensure that we are not in an infinite loop
-        if not any(interface in sorted_interfaces for interface in
-                   remaining_interfaces.values()):
+        if not any(interface in sorted_interfaces
+                   for interface in remaining_interfaces.values()):
             raise RecursionError("Could not find hierarchy for instruments."
                                  " This likely means that instruments are "
                                  "triggering each other")
@@ -496,8 +505,6 @@ class Layout(Instrument):
         connection = self.get_pulse_connection(pulse)
         interface = self._interfaces[connection.output['instrument']]
 
-        is_primary = self.primary_instrument() == interface.instrument_name()
-
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
@@ -508,7 +515,9 @@ class Layout(Instrument):
 
         for pulse in pulses:
             targeted_pulse = interface.get_pulse_implementation(
-                pulse, is_primary=is_primary, connections=self.connections)
+                pulse, connections=self.connections)
+
+            self.targeted_pulse_sequence.add(targeted_pulse)
 
             interface.pulse_sequence.add(targeted_pulse)
 
@@ -516,10 +525,6 @@ class Layout(Instrument):
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence.add(targeted_pulse)
-
-            # Also target pulses that are in additional_pulses, such as triggers
-            for additional_pulse in targeted_pulse.additional_pulses:
-                self._target_pulse(additional_pulse)
 
     def _target_pulse_sequence(self, pulse_sequence):
         """
@@ -540,7 +545,8 @@ class Layout(Instrument):
             self.stop()
 
         # Copy untargeted pulse sequence so none of its attributes are modified
-        self.targeted_pulse_sequence = pulse_sequence.copy()
+        self.targeted_pulse_sequence = PulseSequence()
+        self.targeted_pulse_sequence.duration = pulse_sequence.duration
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -550,7 +556,7 @@ class Layout(Instrument):
             interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in self.targeted_pulse_sequence:
+        for pulse in pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
@@ -558,8 +564,7 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_final_additional_pulses(
-                pulse_sequence=self.targeted_pulse_sequence)
+            additional_pulses = interface.get_additional_pulses(interface=self)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
@@ -615,7 +620,7 @@ class Layout(Instrument):
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
         
         if not self.pulse_sequence:
-            raise RuntimeError("Cannot perform setup with an empty PulseSequence.")
+            raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
         if self.active():
             self.stop()
@@ -638,7 +643,13 @@ class Layout(Instrument):
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
+                is_primary = self.primary_instrument() == interface.name
+                output_connections = self.get_connections(
+                    output_interface=interface)
+
                 flags = interface.setup(samples=self.samples(),
+                                        is_primary=is_primary,
+                                        output_connections=output_connections,
                                         **setup_flags, **kwargs)
                 if flags:
                     logger.debug(f'Received setup flags {setup_flags} from '
@@ -663,7 +674,6 @@ class Layout(Instrument):
         Returns:
 
         """
-        logger.debug('Layout started')
         self.active(True)
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
@@ -674,8 +684,10 @@ class Layout(Instrument):
                 continue
             elif interface.pulse_sequence:
                 interface.start()
+                logger.debug(f'{interface} started')
             else:
                 pass
+        logger.debug('Layout started')
 
     def stop(self):
         """
@@ -683,10 +695,11 @@ class Layout(Instrument):
         Returns:
             None
         """
-        logger.debug('Layout stopped')
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
+            logger.debug(f'{interface} stopped')
         self.active(False)
+        logger.debug('Layout stopped')
 
     def acquisition(self, stop=True):
         """
@@ -791,11 +804,11 @@ class Connection:
         instrument/channel args can also be lists of elements. If so,
         condition is satisfied if connection property is in list
         Args:
-            output_interface: Connection must have output_interface
+            output_interface: Connection must have output_interface object
             output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel 
+            output_channel: Connection must have output_channel
                 (either Channel object, or channel name)
-            input_interface: Connection must have input_interface
+            input_interface: Connection must have input_interface object
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
                 (either Channel object, or channel name)
