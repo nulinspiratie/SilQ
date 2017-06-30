@@ -362,21 +362,22 @@ class Layout(Instrument):
             return sorted_interfaces
 
         for instrument, interface in remaining_interfaces.items():
-            trigger_connections = self.get_connections(
-                 output_interface=interface, trigger=True)
+            output_connections = self.get_connections(
+                output_interface=interface)
 
-            # Find instruments that are triggered by interface
-            trigger_instruments = set(connection.input['instrument']
-                                      for connection in trigger_connections)
+            # Find instruments that have this instrument as an input
+            input_instruments = {connection.input['instrument']
+                                 for connection in output_connections}
+
             # Add interface to sorted interface if it does not trigger any of
             # the remaining interfaces
             if all(instrument not in remaining_interfaces
-                   for instrument in trigger_instruments):
+                   for instrument in input_instruments):
                 sorted_interfaces.append(interface)
 
         # Ensure that we are not in an infinite loop
-        if not any(interface in sorted_interfaces for interface in
-                   remaining_interfaces.values()):
+        if not any(interface in sorted_interfaces
+                   for interface in remaining_interfaces.values()):
             raise RecursionError("Could not find hierarchy for instruments."
                                  " This likely means that instruments are "
                                  "triggering each other")
