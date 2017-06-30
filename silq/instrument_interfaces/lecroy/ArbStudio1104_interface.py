@@ -50,13 +50,21 @@ class ArbStudio1104Interface(InstrumentInterface):
     def get_additional_pulses(self, **kwargs):
 
         # Return empty list if no pulses are in the pulse sequence
-        if not self.pulse_sequence:
+        if not self.pulse_sequence or self.is_primary():
             return []
 
         additional_pulses = []
-        for pulse in self.pulse_sequence:
-            additional_pulses += pulse.implementation.get_additional_pulses(
-                interface=self)
+
+        # Get current trigger pulse times. Even though there probably isn't a
+        # trigger pulse in the input_pulse_sequence yet, add these anyway
+        t_trigger_pulses = [pulse.t_start for pulse in self.input_pulse_sequence
+                            if isinstance(pulse, TriggerPulse)]
+        for t_start in self.pulse_sequence.t_start_list:
+            if t_start == 0:
+                # No trigger at t=0 since the first waveform plays immediately
+                continue
+            additional_pulses.append(self._get_trigger_pulse(t_start))
+            t_trigger_pulses.append(t_start)
 
         # Loop over channels ensuring that all channels are programmed for each
         # trigger segment
@@ -75,10 +83,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                     self.pulse_sequence.add(dc_pulse)
 
                     # Check if trigger pulse is necessary.
-                    if dc_pulse.additional_pulses:
-                        trigger_pulse = dc_pulse.additional_pulses[0]
-                        if trigger_pulse not in additional_pulses:
-                            additional_pulses.append(trigger_pulse)
+                    if t > 0 and t not in t_trigger_pulses:
+                        additional_pulses.append(self._get_trigger_pulse(t))
 
                     t = self.pulse_sequence.duration
                 else:
@@ -93,20 +99,16 @@ class ArbStudio1104Interface(InstrumentInterface):
                                     connection=connection))
                         self.pulse_sequence.add(dc_pulse)
 
-                        # Check if trigger pulse is necessary. Only the case when
-                        #  no trigger pulse already exists at the same time,
-                        # when t > 0 (first trigger occurs at the end)
-                        if dc_pulse.additional_pulses:
-                            trigger_pulse = dc_pulse.additional_pulses[0]
-                            if trigger_pulse not in additional_pulses:
-                                additional_pulses.append(trigger_pulse)
+                        # Check if trigger pulse is necessary.
+                        if t > 0 and t not in t_trigger_pulses:
+                            additional_pulses.append(self._get_trigger_pulse(t))
 
                     # Set time to t_stop of next pulse
                     t = pulse_next.t_stop
 
         # Add a trigger pulse at the end if it does not yet exist
-        trigger_pulse = self.get_trigger_pulse(self.pulse_sequence.duration)
-        if trigger_pulse not in self.input_pulse_sequence and trigger_pulse not in additional_pulses:
+        if self.pulse_sequence.duration not in t_trigger_pulses:
+            trigger_pulse = self._get_trigger_pulse(self.pulse_sequence.duration)
             additional_pulses.append(trigger_pulse)
 
         return additional_pulses
@@ -153,7 +155,7 @@ class ArbStudio1104Interface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_trigger_pulse(self, t):
+    def _get_trigger_pulse(self, t):
         trigger_pulse = TriggerPulse(t_start=t,
             duration=self.trigger_in_duration() * 1e-3,
             connection_requirements={'input_instrument': self.instrument_name(),

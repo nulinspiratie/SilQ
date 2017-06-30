@@ -554,7 +554,7 @@ class Layout(Instrument):
             interface.input_pulse_sequence.duration = pulse_sequence.duration
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in self.targeted_pulse_sequence:
+        for pulse in pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
