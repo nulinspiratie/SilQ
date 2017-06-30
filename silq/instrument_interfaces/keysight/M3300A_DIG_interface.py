@@ -237,11 +237,15 @@ class M3300A_DIG_Interface(InstrumentInterface):
             # Capture maximum number of samples on all channels
             controller.samples_per_record(int(round(acquisition_window * self.sample_rate())))
 
-            # Set an acquisition timeout to be 10% after the last pulse finishes.
-            # NOTE: time is defined in seconds
 
-            if int(0xFFFF) < int(round(duration * self.samples()*1.2)*1e3):
-                samples_per_read = max((0xFFFF // int(1e3 * duration) * 100) // 120, 1)
+            #TODO : This is all low-level, should figure out a way to shift this
+            #TODO : to the acquisition controller.
+            max_timeout = np.iinfo(np.uint16).max
+            # Separate reads to ensure the total read can be contained within a
+            # single timeout. Note a 20% overhead is assumed. At the driver level
+            # timeout is measured in ms.
+            if int(max_timeout) < int(round(duration * self.samples()*1.2)*1e3):
+                samples_per_read = max((max_timeout// int(1e3 * duration) * 100) // 120, 1)
             else:
                 samples_per_read = self.samples()
             # read_timeout = duration * samples_per_read * 10
