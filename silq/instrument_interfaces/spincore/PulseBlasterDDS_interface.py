@@ -115,13 +115,19 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             inst = ()
             # for each channel, search for active pulses and implement them
             for ch in sorted(self._output_channels.keys()):
+                instrument_channel = self.instrument.output_channels[ch]
+
                 pulse = self.pulse_sequence.get_pulse(enabled=True,
                                                       t=t,
                                                       output_channel=ch)
                 if pulse is not None:
-                    inst = inst + tuple(pulse.implementation.implement(self))
+                    pulse_implementation = pulse.implementation.implement(
+                        frequencies=instrument_channel.frequencies(),
+                        phases=instrument_channel.phases(),
+                        amplitudes=instrument_channel.amplitudes())
+                    inst = inst + pulse_implementation
                 else:
-                    inst = inst + tuple(DEFAULT_CH_INSTR)
+                    inst = inst + DEFAULT_CH_INSTR
 
             if delay_cycles < 1e9:
                 inst = inst + (0, 'continue', 0, delay_cycles)
@@ -171,14 +177,10 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
-    def implement(self):
-
-        channel_name = self.connection.output['channel'].name
-        channel = self.interface.instrument.output_channels[channel_name]
-
-        frequency_idx = channel.frequencies().index(self.frequency) # MHz
-        phase_idx = channel.phases().index(self.phase)
-        amplitude_idx = channel.amplitudes().index(self.amplitude)
+    def implement(self, frequencies, phases, amplitudes):
+        frequency_idx = frequencies.index(self.pulse.frequency) # MHz
+        phase_idx = phases.index(self.pulse.phase)
+        amplitude_idx = amplitudes.index(self.pulse.amplitude)
 
         inst_slice = (
             frequency_idx,
