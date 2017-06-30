@@ -720,10 +720,9 @@ class AdiabaticParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
-                                              sample_rate=self.sample_rate,
-                                              t_skip=self.t_skip,
-                                              t_read=self.t_read)
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data, sample_rate=self.sample_rate,
+            t_skip=self.t_skip, t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
