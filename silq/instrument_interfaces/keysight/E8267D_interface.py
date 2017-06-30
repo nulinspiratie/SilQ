@@ -123,7 +123,7 @@ class SinePulseImplementation(PulseImplementation):
                 'input_channel': 'trig_in'})]
 
     def implement(self):
-        return {'frequency': self.frequency}
+        return {'frequency': self.pulse.frequency}
 
 
 class FrequencyRampPulseImplementation(PulseImplementation):
@@ -131,6 +131,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
     def target_pulse(self, pulse, interface, **kwargs):
         assert pulse.power is not None, "Pulse must have power defined"
+        assert pulse.frequency_start != pulse.frequency_stop, \
+            f"Pulse frequency_start must differ from frequency_stop {pulse}"
         return super().target_pulse(pulse, interface, **kwargs)
 
     def get_additional_pulses(self, interface, **kwargs):
@@ -142,12 +144,9 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
         # Determine the corresponding final amplitude from final frequency
         # Amplitude slope is dA/df
-        amplitude_slope = \
-            (amplitude_stop - amplitude_start) / \
-            (self.pulse.frequency_stop - self.pulse.frequency_start)
-        amplitude_final = \
-            amplitude_start + amplitude_slope * \
-            (self.pulse.frequency_final - self.pulse.frequency_start)
+        frequency_difference = self.pulse.frequency_stop - self.pulse.frequency_start
+        amplitude_slope = (amplitude_stop - amplitude_start) / frequency_difference
+        amplitude_final = amplitude_start + amplitude_slope * frequency_difference
 
 
         # Add an envelope pulse with some padding on both sides.
@@ -175,7 +174,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             # Add padding DC pulses at start and end
             additional_pulses.extend((
                 DCPulse(
-                    t_start=self.pulse.t_start-interface.envelope_padding(),
+                    t_start=self.pulse.t_start - interface.envelope_padding(),
                     t_stop=self.pulse.t_start,
                     amplitude=amplitude_start,
                     connection_requirements={
@@ -208,5 +207,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         return additional_pulses
 
     def implement(self):
-        return {'frequency': (self.frequency_start + self.frequency_stop) / 2,
-                'deviation': abs(self.frequency_stop - self.frequency_start)}
+        return {'frequency': (self.pulse.frequency_start +
+                              self.pulse.frequency_stop)/ 2,
+                'deviation': abs(self.pulse.frequency_stop -
+                                 self.pulse.frequency_start)}
