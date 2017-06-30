@@ -107,11 +107,13 @@ class E8267DInterface(InstrumentInterface):
                 interface=self, frequency=self.frequency(),
                 frequency_deviation=self.frequency_deviation())
 
+        return additional_pulses
+
     def setup(self, **kwargs):
         self.instrument.RF_output('off')
         self.instrument.phase_modulation('off')
 
-        powers = {pulse.power for pulse in self.pulse_sequence}
+        powers = list({pulse.power for pulse in self.pulse_sequence})
         assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
         self.instrument.frequency(self.frequency())
