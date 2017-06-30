@@ -727,6 +727,13 @@ class AdiabaticParameter(AcquisitionParameter):
 
         self._names = names
 
+    @property_ignore_setter
+    def shapes(self):
+        return ((), ) * len(self.names)
+
+    @property_ignore_setter
+    def units(self):
+        return ('', ) * len(self.names)
 
     @property_ignore_setter
     def labels(self):
