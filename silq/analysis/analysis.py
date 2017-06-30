@@ -354,8 +354,10 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
     # Analyse empty stage
     results_empty = analyse_empty(pulse_traces['empty']['output'])
 
-    # Analyse plunge stage, note that there are two plunges in the PulseSequence
-    results_load = analyse_load(pulse_traces['plunge[1]']['output'])
+    # Analyse plunge stage, there are mulitple plunges in the PulseSequence
+    plunge_trace = [val for key, val in pulse_traces.items()
+                    if 'plunge' in key][0]
+    results_load = analyse_load(plunge_trace['output'])
 
     # Analyse read traces
     # Analyse first read (corresponding to ESR pulse). The dark counts from
@@ -399,10 +401,10 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
         results[read_segment_names[0]] = read_contrast
     else:
         for read_segment_name in read_segment_names:
+            read_contrast = results_read[read_segment_name]['contrast']
             read_segment_name = read_segment_name.replace('[', '')
             read_segment_name = read_segment_name.replace(']', '')
-            read_contrast = results_read[read_segment_name]['contrast']
-            results[read_segment_name] = read_contrast
+            results[f'contrast_{read_segment_name}'] = read_contrast
 
     return results
 

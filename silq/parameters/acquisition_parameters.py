@@ -32,11 +32,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  properties_attrs=[], **kwargs):
         SettingsClass.__init__(self)
 
+        self.pulse_sequence = PulseSequence()
+        """Pulse sequence of acquisition parameter"""
+
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
-        self.pulse_sequence = PulseSequence()
-        """Pulse sequence of acquisition parameter"""
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -685,6 +686,8 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         Parameter used to perform an adiabatic sweep
         """
+        self._names = []
+
         super().__init__(name='adiabatic_acquisition',
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
@@ -701,7 +704,7 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'),
-            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
+            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR', id=0))
 
         # Update names to include contrast_read
         self.names = self.names
@@ -716,7 +719,8 @@ class AdiabaticParameter(AcquisitionParameter):
         if len(self.frequencies) == 1:
             ESR_names = [f'contrast_read']
         else:
-            ESR_names = [f'contrast_read{k}' for k in range(self.frequencies)]
+            ESR_names = [f'contrast_read{k}'
+                         for k in range(len(self.frequencies))]
         names = ESR_names + list(names)
 
         self._names = names
@@ -731,6 +735,7 @@ class AdiabaticParameter(AcquisitionParameter):
         adiabatic_pulses = self.pulse_sequence.get_pulses(name='adiabatic_ESR')
         return [pulse.frequency for pulse in adiabatic_pulses]
 
+    @frequencies.setter
     def frequencies(self, frequencies):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence()
@@ -749,12 +754,13 @@ class AdiabaticParameter(AcquisitionParameter):
 
         for k, frequency in enumerate(frequencies):
             plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            self.pulse_sequence.add(FrequencyRampPulse(
+            adiabatic_pulse = FrequencyRampPulse(
                 'adiabatic_ESR',
                 t_start=PulseMatch(plunge_pulse, 't_start',
                                    delay=self.ESR_delay),
-                frequency=frequency,
-                connection_label='ESR'))
+                connection_label='ESR')
+            adiabatic_pulse.frequency = frequency
+            self.pulse_sequence.add(adiabatic_pulse)
 
         # update names
         self.names = [name for name in self.names
@@ -775,7 +781,7 @@ class AdiabaticParameter(AcquisitionParameter):
             adiabatic_pulse = self.pulse_sequence.get_pulse(
                 name='adiabatic_ESR', id=k)
             adiabatic_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                 delay=ESR_delay),
+                                                 delay=ESR_delay)
 
     @clear_single_settings
     def get(self):
