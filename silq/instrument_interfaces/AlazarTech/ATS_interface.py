@@ -485,8 +485,8 @@ class SteeredInitializationImplementation(PulseImplementation):
                               connection.satisfies_conditions(
                                   output_arg='chip.output')]
         assert len(readout_connection) == 1, \
-            "No unique readout connection: {}".format(readout_connection)
-        targeted_pulse.readout_connection = readout_connection[0]
+            f"No unique readout connection: {readout_connection}"
+        targeted_pulse.implementation.readout_connection = readout_connection[0]
 
         # Add trigger connection to targeted pulse
         trigger_connection = [connection for connection in connections if
@@ -494,8 +494,8 @@ class SteeredInitializationImplementation(PulseImplementation):
                                   input_channel=['chA', 'chB', 'chC', 'chD'],
                                   trigger=True)]
         assert len(trigger_connection) == 1, \
-            "No unique triggerconnection: {}".format(trigger_connection)
-        targeted_pulse.trigger_connection = trigger_connection[0]
+            f"No unique trigger connection: {trigger_connection}"
+        targeted_pulse.implementation.trigger_connection = trigger_connection[0]
 
         # Force ATS acquisition mode to be continuous
         interface.acquisition_controller('SteeredInitialization')
@@ -503,14 +503,14 @@ class SteeredInitializationImplementation(PulseImplementation):
 
     def implement(self, interface):
         acquisition_controller = interface._acquisition_controller
-        acquisition_controller.t_max_wait(self.t_max_wait)
-        acquisition_controller.t_no_blip(self.t_no_blip)
+        acquisition_controller.t_max_wait(self.pulse.t_max_wait)
+        acquisition_controller.t_no_blip(self.pulse.t_no_blip)
 
         # Setup readout channel and threshold voltage
         self.readout_channel = self.readout_connection.input['channel']
         acquisition_controller.readout_channel(self.readout_channel.id)
         acquisition_controller.readout_threshold_voltage(
-            self.readout_threshold_voltage)
+            self.pulse.readout_threshold_voltage)
 
         # Setup trigger channel and threshold voltage
         self.trigger_output_channel = self.trigger_connection.output['channel']
