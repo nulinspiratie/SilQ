@@ -367,7 +367,8 @@ class Layout(Instrument):
 
             # Find instruments that have this instrument as an input
             input_instruments = {connection.input['instrument']
-                                 for connection in output_connections}
+                                 for connection in output_connections
+                                 if 'instrument' in connection.input}
 
             # Add interface to sorted interface if it does not trigger any of
             # the remaining interfaces
