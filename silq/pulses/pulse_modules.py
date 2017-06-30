@@ -533,9 +533,11 @@ class PulseImplementation:
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
-        self.pulse = pulse.copy()
-        self.pulse.implementation = self
-        return self.pulse
+        targeted_pulse = pulse.copy()
+        pulse_implementation = copy(self)
+        targeted_pulse.implementation = pulse_implementation
+        pulse_implementation.pulse = targeted_pulse
+        return targeted_pulse
 
     def get_additional_pulses(self, interface):
         return []
