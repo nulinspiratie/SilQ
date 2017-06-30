@@ -26,6 +26,3 @@ class ChipInterface(InstrumentInterface):
 
     def stop(self):
         pass
-
-    def get_additional_pulses(self, **kwargs):
-        return []
