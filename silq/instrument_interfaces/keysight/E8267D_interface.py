@@ -55,45 +55,73 @@ class E8267DInterface(InstrumentInterface):
                            initial_value='ext1',
                            vals=vals.Enum(*self._input_channels))
 
+        self.add_parameter('fix_frequency',
+                           parameter_class=ManualParameter,
+                           initial_value=False,
+                           vals=vals.Bool())
+        self.add_parameter('fix_frequency_deviation',
+                           parameter_class=ManualParameter,
+                           initial_value=False,
+                           vals=vals.Bool())
+        self.add_parameter('frequency',
+                           unit='Hz',
+                           parameter_class=ManualParameter,
+                           initial_value=None)
+        self.add_parameter('frequency_deviation',
+                           unit='Hz',
+                           parameter_class=ManualParameter,
+                           initial_value=None)
+
     def get_additional_pulses(self, **kwargs):
-        # TODO (additional_pulses) handle, pass along amplitudes
+
+        frequencies = {pulse.frequency for pulse in self.pulse_sequence}
+
+        frequency_deviations = {pulse.frequency_deviation
+                                for pulse in self.pulse_sequence
+                                if hasattr(pulse, 'frequency_deviation')}
+
+        if len(frequencies) > 1 or frequency_deviations:
+            # Find minimum and maximum frequency
+            min_frequency = min(pulse.frequency - pulse.frequency_deviation
+                                if hasattr(pulse, 'frequency_deviation')
+                                else pulse.frequency
+                                for pulse in self.pulse_sequence)
+            max_frequency = max(pulse.frequency + pulse.frequency_deviation
+                                if hasattr(pulse, 'frequency_deviation')
+                                else pulse.frequency
+                                for pulse in self.pulse_sequence)
+
+            if not self.fix_frequency():
+                self.frequency((min_frequency + max_frequency) / 2)
+
+            if not self.fix_frequency_deviation():
+                self.frequency_deviation(max(max_frequency - self.frequency(),
+                                             self.frequency() - min_frequency))
+        else:
+            self.frequency(frequencies[0])
+            self.frequency_deviation(0)
+
         additional_pulses = []
         for pulse in self.pulse_sequence:
             additional_pulses += pulse.implementation.get_additional_pulses(
-                interface=self)
-        return additional_pulses
+                interface=self, frequency=self.frequency(),
+                frequency_deviation=self.frequency_deviation())
 
     def setup(self, **kwargs):
         self.instrument.RF_output('off')
-
         self.instrument.phase_modulation('off')
 
-        frequencies = [pulse.implementation.implement()['frequency']
-                       for pulse in self.pulse_sequence]
+        powers = {pulse.power for pulse in self.pulse_sequence}
+        assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
-        powers = [pulse.power for pulse in self.pulse_sequence]
-        assert len(set(frequencies)) == 1, "Cannot handle multiple frequencies"
-        assert len(set(powers)) == 1, "Cannot handle multiple pulse powers"
+        self.instrument.frequency(self.frequency())
+        self.instrument.power(powers[0])
 
-        if any('deviation' in pulse.implementation.implement()
-               for pulse in self.pulse_sequence):
-            deviations = [pulse.implementation.implement()['deviation']
-                    for pulse in self.pulse_sequence]
-            assert len(set(deviations)) == 1, "Cannot handle multiple " \
-                                              "deviations"
-            deviation = deviations[0]
-            self.instrument.frequency_deviation(deviation)
+        self.instrument.frequency_deviation(self.frequency_deviation())
+        if self.frequency_deviation() > 0:
             self.instrument.frequency_modulation('on')
-            self.instrument.frequency_modulation_source(
-                self.modulation_channel())
         else:
-            self.instrument.frequency_deviation(0)
             self.instrument.frequency_modulation('off')
-
-        frequency = frequencies[0]
-        power = powers[0]
-        self.instrument.frequency(frequency)
-        self.instrument.power(power)
 
         self.instrument.pulse_modulation('on')
         self.instrument.pulse_modulation_source('ext')
@@ -106,7 +134,6 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.RF_output('off')
 
 
-
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
@@ -114,17 +141,28 @@ class SinePulseImplementation(PulseImplementation):
         assert pulse.power is not None, "Pulse must have power defined"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface):
+    def get_additional_pulses(self, interface, frequency, frequency_deviation):
         # Add an envelope pulse
-        return [MarkerPulse(
-            t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
-            connection_requirements={
-                'input_instrument': interface.instrument_name(),
-                'input_channel': 'trig_in'})]
+        additional_pulses = [
+            MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': 'trig_in'})]
 
-    def implement(self):
-        return {'frequency': self.pulse.frequency}
+        if frequency_deviation > 0:
+            amplitude = (self.pulse.frequency - frequency) / frequency_deviation
+            assert abs(amplitude) < 1, \
+                f'amplitude {amplitude} cannot be higher than 1'
 
+            additional_pulses.append(
+                DCPulse(
+                    t_start=self.pulse.t_start - interface.envelope_padding(),
+                    t_stop=self.pulse.t_start + interface.envelope_padding(),
+                    amplitude=amplitude,
+                    connection_requirements={
+                        'input_instrument': interface.instrument_name(),
+                        'input_channel': interface.modulation_channel()}))
+        return additional_pulses
 
 class FrequencyRampPulseImplementation(PulseImplementation):
     pulse_class = FrequencyRampPulse
@@ -135,12 +173,13 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             f"Pulse frequency_start must differ from frequency_stop {pulse}"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface, **kwargs):
+    def get_additional_pulses(self, interface, frequency, frequency_deviation):
         # TODO (additional_pulses) correct amplitudes
-        if self.pulse.frequency_start < self.pulse.frequency_stop:
-            amplitude_start, amplitude_stop = -1, 1
-        else:
-            amplitude_start, amplitude_stop = 1, -1
+
+        amplitude_start = (self.pulse.frequency_start - frequency) / \
+                          frequency_deviation
+        amplitude_stop = (self.pulse.frequency_stop - frequency) / \
+                          frequency_deviation
 
         # Determine the corresponding final amplitude from final frequency
         # Amplitude slope is dA/df
@@ -205,9 +244,3 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             )
 
         return additional_pulses
-
-    def implement(self):
-        return {'frequency': (self.pulse.frequency_start +
-                              self.pulse.frequency_stop) / 2,
-                'deviation': abs(self.pulse.frequency_stop -
-                                 self.pulse.frequency_start) / 2}
