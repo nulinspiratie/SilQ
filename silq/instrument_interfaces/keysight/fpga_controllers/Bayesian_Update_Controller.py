@@ -1,4 +1,6 @@
 from qcodes.instrument_drivers.keysight.SD_common.SD_FPGA import SD_FPGA
+from qcodes.utils.validators import Ints
+import numpy as np
 
 class Bayesian_Update_FPGA(SD_FPGA):
     """
@@ -24,18 +26,20 @@ class Bayesian_Update_FPGA(SD_FPGA):
         self.add_parameter(
             'blip_threshold',
             set_cmd=self._set_blip_threshold,
-            docstring='The blip threshold in range [-0x8000, 0x7FFF].'
+            validator=Ints(-0x8000, 0x7FFF),
+            docstring='The blip threshold in the range of [-0x8000, 0x7FFF].'
         )
         self.add_parameter(
             'blip_timeout',
             set_cmd=self._set_blip_timeout,
+            validator=Ints(0, 0xFFFFFFFF),
             docstring='The blip timeout in samples.'
         )
         self.add_parameter(
             'trace_select',
             set_cmd=self._set_trace_select,
-            docstring='A mask for the channel trace you want to process. '
-                      'Bit 0 is channel 0, bit 1 is channel 1, etc.'
+            validator=Ints(0,7),
+            docstring='The channel you want to select from 0 to 7.'
         )
 
     def _set_blip_threshold(self, threshold):
