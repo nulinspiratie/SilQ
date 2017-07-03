@@ -697,15 +697,19 @@ class AdiabaticParameter(AcquisitionParameter):
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
+        self.pre_pulses = []
 
-        self.pulse_sequence.add(
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
+        self.post_pulses = [
             DCPulse('empty', acquire=True, connection_label='stage'),
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
+            DCPulse('final', connection_label='stage')]
+
+        self.pulse_sequence.add(
+            *self.pre_pulses,
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            *self.post_pulses,
             FrequencyRampPulse('adiabatic_ESR', connection_label='ESR', id=0))
 
         # Update names to include contrast_read
@@ -747,7 +751,7 @@ class AdiabaticParameter(AcquisitionParameter):
     @frequencies.setter
     def frequencies(self, frequencies):
         # Initialize pulse sequence
-        self.pulse_sequence = PulseSequence()
+        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
         plunge_pulse = DCPulse('plunge', connection_label='stage')
         read_pulse = DCPulse('read', acquire=True, connection_label='stage')
@@ -755,11 +759,7 @@ class AdiabaticParameter(AcquisitionParameter):
             # Add a plunge and read pulse for each frequency
             self.pulse_sequence.add(plunge_pulse, read_pulse)
 
-        self.pulse_sequence.add(
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+        self.pulse_sequence.add(*self.post_pulses)
 
         for k, frequency in enumerate(frequencies):
             plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)

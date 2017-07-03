@@ -398,7 +398,7 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
     # Add read results
     if len(read_segment_names) == 1:
         read_contrast = results_read[read_segment_names[0]]['contrast']
-        results[read_segment_names[0]] = read_contrast
+        results[f'contrast_{read_segment_names[0]}'] = read_contrast
     else:
         for read_segment_name in read_segment_names:
             read_contrast = results_read[read_segment_name]['contrast']
