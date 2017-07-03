@@ -126,7 +126,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
 
         def implement(self, instrument, sampling_rates, threshold):
             if isinstance(self.connection, SingleConnection):
-                channel = self.connection.output['channel'].name
+                channel = self.connection.output['channel'].id
             else:
                 raise Exception('No implementation for connection {}'.format(
                     self.connection))
