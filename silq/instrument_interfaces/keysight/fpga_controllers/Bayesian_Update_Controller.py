@@ -10,6 +10,7 @@ class Bayesian_Update_FPGA(SD_FPGA):
 
     def __init__(self, name, chassis, slot, **kwargs):
         super().__init__(name, chassis, slot, **kwargs)
+        self.port = 0
 
         self.write_port_signals = {
             "reset":            {"address": 0x0, 'width': 1, 'type':bool},
@@ -44,34 +45,34 @@ class Bayesian_Update_FPGA(SD_FPGA):
 
     def _set_blip_threshold(self, threshold):
         """ Sets the blip threshold to reset the Bayesian update timer. """
-        self.set_fpga_pc_port(0, [threshold],
+        self.set_fpga_pc_port(self.port, [threshold],
                               self.write_port_signals['blip_threshold']['address'], 1, 1)
 
     def _set_blip_timeout(self, timeout):
         """ Sets the blip timeout for the trigger of the Bayesian update module. """
-        self.set_fpga_pc_port(0, [timeout],
+        self.set_fpga_pc_port(self.port, [timeout],
                               self.write_port_signals['blip_timeout']['address'], 1, 1)
 
     def _set_trace_select(self, trace_sel):
-        self.set_fpga_pc_port(0, [trace_sel],
+        self.set_fpga_pc_port(self.port, [trace_sel],
                               self.write_port_signals['trace_sel']['address'], 1, 1)
 
     def _get_counter_value(self):
-        return self.get_fpga_pc_port(0, 1,
+        return self.get_fpga_pc_port(self.port, 1,
                                      self.read_port_signals['counter']['address'], 1, 1)
 
     def start(self):
         """ Starts the currently loaded FPGA firmware. """
         # Also pulls module out of reset
-        self.set_fpga_pc_port(0, [0, 1],
+        self.set_fpga_pc_port(self.port, [0, 1],
                               self.write_port_signals['reset']['address'], 1, 1)
 
     def stop(self):
         """ Stops the currently loaded FPGA firmware. """
-        self.set_fpga_pc_port(0, [0],
+        self.set_fpga_pc_port(self.port, [0],
                               self.write_port_signals['enable']['address'], 1, 1)
 
     def reset(self):
         """ Resets the currently loaded FPGA firmware. """
-        self.set_fpga_pc_port(0, [1],
+        self.set_fpga_pc_port(self.port, [1],
                               self.write_port_signals['reset']['address'], 1, 1)
