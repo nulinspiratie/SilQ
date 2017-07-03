@@ -1,6 +1,6 @@
 from silq.instrument_interfaces import InstrumentInterface
 from qcodes import ManualParameter
-from qcodes.utils.validators import Numbers
+from qcodes.utils.validators as vals
 import logging
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,13 @@ class Bayesian_Update_Interface(InstrumentInterface):
         )
 
         self.add_parameter(
+            'pxi_select',
+            parameter_class=ManualParameter,
+            validator=vals.Ints(0,7),
+            docstring='The PXI channel the trigger will be output on.'
+        )
+
+        self.add_parameter(
             'sample_rate',
             parameter_class=ManualParameter,
             vals=vals.Numbers(),
@@ -85,9 +92,12 @@ class Bayesian_Update_Interface(InstrumentInterface):
         ctrl = self.fpga_controller
         ctrl.reset()
 
-        # Implement each pulse, does nothing really
+        # Implement each pulse, sets the PXI trigger
         for pulse in self.pulse_sequence:
-            pulse.implement()
+            self.pxi_select(pulse.implement())
+
+        # Set the PXI trigger
+        ctrl.pxi_select(self.pxi_select)
 
         # Set the trace_select
         ctrl.trace_select(self.trace_select())

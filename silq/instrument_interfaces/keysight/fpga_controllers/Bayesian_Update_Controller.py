@@ -17,7 +17,8 @@ class Bayesian_Update_FPGA(SD_FPGA):
             "enable":           {"address": 0x1, 'width': 1, 'type':bool},
             "blip_threshold":   {"address": 0x2, 'width': 1, 'type':np.int16},
             "blip_timeout":     {"address": 0x3, 'width': 1, 'type':np.uint32},
-            "trace_sel":        {"address": 0x4, 'width': 1, 'type':np.uint8}
+            "trace_sel":        {"address": 0x4, 'width': 1, 'type':np.uint8},
+            "pxi_sel":          {"address": 0x5, 'width': 1, 'type':np.uint8}
         }
 
         self.read_port_signals = {
@@ -43,6 +44,13 @@ class Bayesian_Update_FPGA(SD_FPGA):
             docstring='The channel you want to select from 0 to 7.'
         )
 
+        self.add_parameter(
+            'pxi_select',
+            set_cmd=self._set_pxi_select,
+            validator=Ints(0,7),
+            docstring='The PXI channel the trigger will be output on, from 0 to 7.'
+        )
+
     def _set_blip_threshold(self, threshold):
         """ Sets the blip threshold to reset the Bayesian update timer. """
         self.set_fpga_pc_port(self.port, [threshold],
@@ -56,6 +64,10 @@ class Bayesian_Update_FPGA(SD_FPGA):
     def _set_trace_select(self, trace_sel):
         self.set_fpga_pc_port(self.port, [trace_sel],
                               self.write_port_signals['trace_sel']['address'], 1, 1)
+
+    def _set_pxi_select(self, pxi_sel):
+        self.set_fpga_pc_port(self.port, [pxi_sel],
+                              self.write_port_signals['pxi_sel']['address'], 1, 1)
 
     def _get_counter_value(self):
         return self.get_fpga_pc_port(self.port, 1,
