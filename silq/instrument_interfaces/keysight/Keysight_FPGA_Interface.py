@@ -33,37 +33,35 @@ class Bayesian_Update_Interface(InstrumentInterface):
             'blip_threshold',
             parameter_class=ManualParameter,
             set_cmd=self._set_blip_threshold,
-            validator=Numbers(),
+            validator=vals.Numbers(),
             docstring='The blip threshold in the range of [-0x8000, 0x7FFF].'
         )
 
         self.add_parameter(
             'full_scale_range',
             parameter_class=ManualParameter,
-            validator=Numbers(),
+            validator=vals.Numbers(),
             docstring='The full scale range of the trace channel.'
         )
 
         self.add_parameter(
             'channel_offset',
             parameter_class=ManualParameter,
-            validator=Numbers(),
+            validator=vals.Numbers(),
             docstring='The voltage offset of the trace channel.'
         )
 
         self.add_parameter(
             'blip_timeout',
             parameter_class=ManualParameter,
-            set_cmd=self._set_blip_timeout,
-            validator=Numbers(),
+            validator=vals.Numbers(),
             docstring='The blip timeout in seconds.'
         )
 
         self.add_parameter(
             'trace_select',
             parameter_class=ManualParameter,
-            set_cmd=self._set_trace_select,
-            validator=Ints(0, 7),
+            validator=vals.Ints(0, 7),
             docstring='The channel you want to select from 0 to 7.'
         )
 
