@@ -12,15 +12,15 @@ class Bayesian_Update_FPGA(SD_FPGA):
         super().__init__(name, chassis, slot, **kwargs)
 
         self.write_port_signals = {
-            "reset":            {"address": 0x0, 'width': 1},
-            "enable":           {"address": 0x1, 'width': 1},
-            "blip_threshold":   {"address": 0x2, 'width': 1},
-            "blip_timeout":     {"address": 0x3, 'width': 1},
-            "trace_sel":        {"address": 0x4, 'width': 1},
+            "reset":            {"address": 0x0, 'width': 1, 'type':bool},
+            "enable":           {"address": 0x1, 'width': 1, 'type':bool},
+            "blip_threshold":   {"address": 0x2, 'width': 1, 'type':np.int16},
+            "blip_timeout":     {"address": 0x3, 'width': 1, 'type':np.uint32},
+            "trace_sel":        {"address": 0x4, 'width': 1, 'type':np.uint8}
         }
 
         self.read_port_signals = {
-            "counter": {"address": 0, 'width': 1},
+            "counter": {"address": 0, 'width': 1, 'type':np.uint32},
         }
 
         self.add_parameter(
