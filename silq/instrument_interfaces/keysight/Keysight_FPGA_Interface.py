@@ -1,4 +1,5 @@
 from silq.instrument_interfaces import InstrumentInterface
+from silq.pulses.pulse_types import TriggerPulse
 from qcodes import ManualParameter
 from qcodes.utils.validators as vals
 import logging
