@@ -101,7 +101,8 @@ class M3201AInterface(InstrumentInterface):
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
         # flush the onboard RAM and reset waveform counter
-        sampling_rate = 1e6
+        prescaler = 0
+        sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
         self.instrument.flush_waveform()
         waveform_counter = 0
 
@@ -145,7 +146,7 @@ class M3201AInterface(InstrumentInterface):
 
                     logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
-                                                               sampling_rate=sampling_rate)
+                                                               prescaler=prescaler)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
                     insert_points.append(insertion)
                     wf['delay'] = 0
@@ -155,6 +156,7 @@ class M3201AInterface(InstrumentInterface):
             # Add final waveform, should fill in space to the end of the whole pulse sequence.
             zero_waveforms = self.create_zero_waveform(
                     duration=self.pulse_sequence.duration - wf['t_stop'],
+                    prescaler=prescaler)
             # Only insert when a waveform is needed
             if zero_waveforms is not None:
                 zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
@@ -250,9 +252,11 @@ class M3201AInterface(InstrumentInterface):
         self.instrument.awg_start_multiple(mask)
         self.instrument.awg_trigger_multiple(mask)
 
-    def create_zero_waveform(self, duration, sampling_rate):
+    def create_zero_waveform(self, duration, prescaler):
         wave_form_multiple = 5
         wave_form_minimum = 15  # the minimum size of a waveform
+
+        sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
 
         period_sample = 1 / sampling_rate
 
