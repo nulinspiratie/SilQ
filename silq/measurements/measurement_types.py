@@ -615,13 +615,16 @@ class Loop2DMeasurement(Measurement):
                     self.set_vals[1]).each(
                         self.acquisition_parameter)
         else:
+            break_action = BreakIf(partial(self.satisfies_condition_set,
+                                           self.acquisition_parameter,
+                                           action=self.break_if))
             return qc.Loop(
-                self.set_vals[0]).loop(
-                    self.set_vals[1]).each(
+                self.set_vals[0]).each(
+                    qc.Loop(
+                        self.set_vals[1]).each(
                         self.acquisition_parameter,
-                        BreakIf(partial(self.satisfies_condition_set,
-                                        self.acquisition_parameter,
-                                        action=self.break_if)))
+                        break_action),
+                    break_action)
 
     @clear_single_settings
     def get(self, set_active=True):
