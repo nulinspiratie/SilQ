@@ -54,7 +54,13 @@ class M3201AInterface(InstrumentInterface):
             DCPulseImplementation(
                 pulse_requirements=[('amplitude', {'min': -1.5, 'max': 1.5})]
             ),
+            DCRampPulseImplementation(
+                pulse_requirements=[]
+            ),
             TriggerPulseImplementation(
+                pulse_requirements=[]
+            ),
+            MarkerPulseImplementation(
                 pulse_requirements=[]
             )
         ]
