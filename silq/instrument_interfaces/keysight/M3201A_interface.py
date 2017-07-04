@@ -35,8 +35,8 @@ class M3201AInterface(InstrumentInterface):
             'trig_out': Channel(instrument_name=self.instrument_name(),
                                 name='trig_out', output_TTL=(0, 3.3))}
 
-        # By default, do not trigger self
-        self.auto_trigger = False
+        # By default run in cyclic mode
+        self.cyclic_mode = True
         self.trigger_thread = None
 
         # TODO: how does the power parameter work? How can I set requirements on the amplitude?
@@ -155,9 +155,14 @@ class M3201AInterface(InstrumentInterface):
             # Add final waveform, should fill in space to the end of the whole pulse sequence.
             zero_waveforms = self.create_zero_waveform(
                     duration=self.pulse_sequence.duration - wf['t_stop'],
-                    sampling_rate=sampling_rate)
-            insertion = {'index': i+1, 'waveforms': zero_waveforms}
-            insert_points.append(insertion)
+            # Only insert when a waveform is needed
+            if zero_waveforms is not None:
+                zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
+                duration = self.pulse_sequence.duration - wf['t_stop']
+                logger.info(f'Adding a final delay waveform to {ch} for ' \
+                            f'{self.pulse_sequence.duration - wf["t_stop"]}s')
+                insertion = {'index': i+1, 'waveforms': zero_waveforms}
+                insert_points.append(insertion)
 
             insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
 
@@ -187,7 +192,8 @@ class M3201AInterface(InstrumentInterface):
 
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 if ch_wf_counter == 0:
-                    trigger_mode = 1  # software trigger for first wf
+                    # await software trigger for first wf if not in cyclic mode
+                    trigger_mode = not self.cyclic_mode
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
                 logger.debug('queueing waveform {} with id {} to awg channel {} for {} cycles with prescaler {}, delay {} and trigger {}'
@@ -200,7 +206,7 @@ class M3201AInterface(InstrumentInterface):
                 ch_wf_counter += 1
 
             # print('starting awg channel {}'.format(self._channels[ch].id))
-            self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=0)
+            self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=self.cyclic_mode)
             self.instrument.awg_start(self._channels[ch].id)
         pass
 
@@ -208,22 +214,20 @@ class M3201AInterface(InstrumentInterface):
         mask = 0
         for c in self._get_active_channel_ids():
             mask |= 1 << c
-        if self.auto_trigger:
+        if not self.cyclic_mode:
             self.started = True
             duration = self.pulse_sequence.duration
-            trigger_period = duration * 1.2
-            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000:.3f}ms.')
+            trigger_period = duration * 1.1
+            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
             self.software_trigger()
-
 
     def trigger_self(self, trigger_period):
         self.software_trigger()
         if self.started:
             self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
             self.trigger_thread.start()
-
 
     def get_final_additional_pulses(self, **kwargs):
         return []
