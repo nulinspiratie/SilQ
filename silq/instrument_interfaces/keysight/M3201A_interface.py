@@ -136,7 +136,7 @@ class M3201AInterface(InstrumentInterface):
                     # (as a replacement for the long delay)
 
                     sampling_rate = 1e6
-                    logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
+                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rate)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
@@ -197,8 +197,8 @@ class M3201AInterface(InstrumentInterface):
         if self.auto_trigger:
             self.started = True
             duration = self.pulse_sequence.duration
-            trigger_period = duration * 1.2
-            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000:.3f}ms.')
+            trigger_period = duration * 1.1
+            logger.debug(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
             self.software_trigger()
