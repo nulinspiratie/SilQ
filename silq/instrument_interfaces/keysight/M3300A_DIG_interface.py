@@ -246,7 +246,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
                 samples_per_read = self.samples()
             # read_timeout = duration * samples_per_read * 10
             read_timeout = 64.0
-            logger.info(f'Read timeout is set to {read_timeout:.3f}s.')
+            logger.debug(f'Read timeout is set to {read_timeout:.3f}s.')
             controller.samples_per_read(samples_per_read)
             controller.read_timeout(read_timeout)
 
