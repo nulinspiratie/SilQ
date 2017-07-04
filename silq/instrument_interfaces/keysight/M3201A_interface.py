@@ -400,6 +400,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         # channel independent parameters
         duration = self.duration
         period = 1 / self.frequency
@@ -421,9 +423,9 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
                                                            sample_points_multiple=waveform_multiple)
 
             if waveform_samples < waveform_minimum:
-                raise RuntimeError(f'Waveform too short for {self.full_name}: '
                                    f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                raise RuntimeError(f'Waveform too short for {full_name}: '
 
 
             # the first waveform (waveform_repeated) is repeated n times
@@ -455,7 +457,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
-            waveform_repeated['name'] = self.full_name,
+            waveform_repeated['name'] = full_name,
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
@@ -468,7 +470,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
-                waveform_tail['name'] = self.full_name + '_tail',
+                waveform_tail['name'] = full_name + '_tail',
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
                 waveform_tail['t_stop'] = waveform_tail_stop
@@ -517,6 +519,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         # channel independent parameters
         duration = self.t_stop - self.t_start
         waveform_multiple = 5
@@ -535,9 +539,9 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             waveform_samples = n * waveform_minimum
             if waveform_samples < waveform_minimum:
-                raise RuntimeError(f'Waveform too short for {self.full_name}: '
                                    f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                raise RuntimeError(f'Waveform too short for {full_name}: '
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
@@ -572,7 +576,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
-            waveform_repeated['name'] = self.full_name
+            waveform_repeated['name'] = full_name
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
@@ -586,7 +590,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
 
-                waveform_tail['name'] = self.full_name + '_tail'
+                waveform_tail['name'] = full_name + '_tail'
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
                 waveform_tail['t_stop'] = self.t_stop
@@ -635,6 +639,8 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         # channel independent parameters
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
@@ -649,16 +655,16 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
                                  waveform_samples, endpoint=True)
 
             if waveform_samples < waveform_minimum:
-                raise RuntimeError(f'Waveform too short for {self.full_name}: '
                                    f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                raise RuntimeError(f'Waveform too short for {full_name}: '
             waveform_data = [voltage / 1.5 for voltage in
                              self.get_voltage(t_list)]
 
             waveform = {
                 'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                 waveform_data_a=waveform_data),
-                'name': self.full_name,
+                'name': full_name,
                 'cycles': 1,
                 't_start': self.t_start,
                 't_stop': self.t_stop,
@@ -701,6 +707,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
 
@@ -717,7 +725,7 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
-                        'name':self.full_name,
+                        'name':full_name,
                         'cycles': 1,
                         't_start': self.t_start,
                         't_stop': self.t_start,
@@ -760,6 +768,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
 
@@ -772,9 +782,9 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
                 (self.duration/ period_sample + 1) / waveform_multiple)
 
             if waveform_samples < waveform_minimum:
-                raise RuntimeError(f'Waveform too short for {self.full_name}: '
                                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                raise RuntimeError(f'Waveform too short for {full_name}: '
 
             t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
@@ -782,7 +792,7 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
-                        'name': self.full_name,
+                        'name': full_name,
                         'cycles': 1,
                         't_start': self.t_start,
                         't_stop': self.t_stop,
@@ -813,22 +823,24 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
         waveform_samples = waveform_multiple * round(
             (self.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:
-            raise RuntimeError(f'Waveform too short for {self.full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+            raise RuntimeError(f'Waveform too short for {full_name}: '
         t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
-                    'name': self.full_name,
+                    'name': full_name,
                     'cycles': 1,
                     't_start': self.t_start,
                     't_stop': self.t_stop,
@@ -859,24 +871,25 @@ class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
 
         waveforms = {}
 
+        full_name = self.full_name or 'none'
+
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
-
 
         # Waveform must have at least wave_form_multiple samples
         waveform_samples = waveform_multiple * round(
             (self.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:
-            raise RuntimeError(f'Waveform too short for {self.full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+            raise RuntimeError(f'Waveform too short for {full_name}: '
         t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
-                    'name': self.full_name,
+                    'name': full_name,
                     'cycles': 1,
                     't_start': self.t_start,
                     't_stop': self.t_stop,
