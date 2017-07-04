@@ -482,7 +482,7 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
 
 class DCPulseImplementation(PulseImplementation, DCPulse):
-    def __init__(self, prescaler=100, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
         # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
         self.prescaler = prescaler
@@ -602,7 +602,7 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
 
 class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
-    def __init__(self, prescaler=100, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
         # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
         self.prescaler = prescaler
