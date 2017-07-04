@@ -824,7 +824,7 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
 
 class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
     def __init__(self, prescaler = 0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
         self.prescaler = prescaler
 
     @property
