@@ -258,17 +258,25 @@ class M3201AInterface(InstrumentInterface):
 
         sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
 
+        if (duration < wave_form_minimum / sampling_rate):
+            return None
+
         period_sample = 1 / sampling_rate
 
-        period = period_sample * wave_form_minimum
+        period = period_sample * wave_form_multiple
+
         cycles = duration // period
+        if (cycles < 1):
+            return None
 
         n = int(-(-cycles // 2 ** 16))
 
-        samples = n * wave_form_minimum
+        samples = n * wave_form_multiple
+        samples = max(samples, wave_form_minimum)
+        cycles = int(duration // (period_sample * samples))
 
         waveform_repeated_period = period_sample * samples
-        waveform_repeated_cycles = cycles // n
+        waveform_repeated_cycles = cycles
         waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
         waveform_tail_samples = wave_form_multiple * int(round(
@@ -286,8 +294,9 @@ class M3201AInterface(InstrumentInterface):
                                                                           waveform_data_a=waveform_repeated_data)
         waveform_repeated['name'] = 'zero_pulse'
         waveform_repeated['cycles'] = waveform_repeated_cycles
+        waveform_repeated['samples'] = samples
         waveform_repeated['delay'] = 0
-        waveform_repeated['prescaler'] = 100
+        waveform_repeated['prescaler'] = prescaler
         logger.debug('Delay waveform attrs: cyc={cycles} len={samples} n={n}'.format(cycles=waveform_repeated_cycles,
                                                                                       samples=samples, n=n))
         if waveform_tail_samples == 0:
@@ -300,7 +309,7 @@ class M3201AInterface(InstrumentInterface):
             waveform_tail['name'] = 'zero_pulse_tail'
             waveform_tail['cycles'] = 1
             waveform_tail['delay'] = 0
-            waveform_tail['prescaler'] = 100
+            waveform_tail['prescaler'] = prescaler
 
             return [waveform_repeated, waveform_tail]
 
