@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 import qcodes as qc
-from qcodes.loops import active_loop
+from qcodes.loops import active_data_set
 from qcodes.data import hdf5_format, io
 from qcodes import config
 from qcodes.instrument.parameter import MultiParameter
@@ -58,10 +58,10 @@ class MeasurementParameter(SettingsClass, MultiParameter):
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        if active_loop() is None:
+        dataset = active_data_set()
+        if dataset is None:
             return None
         else:
-            dataset = active_loop().get_data_set()
             return dataset.location
 
     @property
