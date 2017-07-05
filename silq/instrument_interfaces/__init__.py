@@ -21,10 +21,10 @@ def get_instrument_interface(instrument):
                     'class': 'ATSInterface'},
         'Keysight_E8267D': {'module': '.keysight',
                             'class': 'E8267DInterface'},
-        'Keysight_M3201A': {'module': '.keysight',
-                            'class': 'M3201AInterface'},
-        'M3300A_DIG': {'module': '.keysight',
-                       'class': 'M3300A_DIG_Interface'}
+        'Keysight_M3201A_AWG': {'module': '.keysight',
+                            'class': 'Keysight_SD_AWG_Interface'},
+        'Keysight_M3300A_DIG': {'module': '.keysight',
+                       'class': 'Keysight_SD_DIG_Interface'}
     }
 
     instrument_class = instrument.__class__.__name__
