@@ -829,10 +829,8 @@ class RabiParameter(AcquisitionParameter):
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='rabi_acquisition',
-                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                         names=['contrast_read', 'contrast', 'dark_counts',
                                 'voltage_difference_read'],
-                         labels=['ESR contrast', 'Contrast', 'Dark counts',
-                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -859,10 +857,11 @@ class RabiParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
-                                              sample_rate=self.sample_rate,
-                                              t_skip=self.t_skip,
-                                              t_read=self.t_read)
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data,
+            sample_rate=self.sample_rate,
+            t_skip=self.t_skip,
+            t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
