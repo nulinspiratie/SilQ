@@ -314,7 +314,11 @@ class PulseSequence:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
                         # the previous_pulse.t_stop will be used as t_start
-                        pulse_copy.t_start = PulseMatch(self[-1], 't_stop')
+                        t_stop_max = max(self.t_stop_list)
+                        last_pulse = self.get_pulses(t_stop=t_stop_max,
+                                                     enabled=True)[-1]
+
+                        pulse_copy.t_start = PulseMatch(last_pulse, 't_stop')
                     else:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
