@@ -345,19 +345,11 @@ class TraceParameter(AcquisitionParameter):
         return [f'trace_{output[1]}'
                 for output in self.layout.acquisition_outputs()]
 
-    @names.setter
-    def names(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def units(self):
         return ['V'] * len(self.layout.acquisition_outputs())
 
-    @units.setter
-    def units(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def shapes(self):
         t_start = min((pulse.t_start for pulse in
                      self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
@@ -368,9 +360,6 @@ class TraceParameter(AcquisitionParameter):
 
         return ((self.samples, pts),) * len(self.layout.acquisition_outputs())
 
-    @shapes.setter
-    def shapes(self, _):
-        pass
 
     @property_ignore_setter
     def setpoints(self):
