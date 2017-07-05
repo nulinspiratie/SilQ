@@ -289,10 +289,8 @@ class DCParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='point',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True, average='point'),
+            DCPulse(name='final'))
 
     @clear_single_settings
     def get(self):
@@ -316,10 +314,8 @@ class TraceParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='final'))
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
@@ -653,10 +649,10 @@ class EPRParameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add(
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'))
 
     @property
     def labels(self):
@@ -700,13 +696,13 @@ class AdiabaticParameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
-            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'),
+            FrequencyRampPulse('adiabatic_ESR'))
 
     @property
     def frequency(self):
@@ -751,13 +747,13 @@ class RabiParameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
-            SinePulse('ESR', connection_label='ESR'))
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'),
+            SinePulse('ESR'))
 
     @property
     def frequency(self):
@@ -797,10 +793,10 @@ class T1Parameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('empty', connection_label='stage'),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty'),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('final'))
             # FrequencyRampPulse('adiabatic_ESR'))
 
         self.readout_threshold_voltage = None
@@ -893,14 +889,10 @@ class VariableReadParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add(
-            DCPulse(name='plunge', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='empty', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='plunge', acquire=True, average='trace'),
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='empty', acquire=True, average='trace'),
+            DCPulse(name='final'))
 
     @property_ignore_setter
     def setpoints(self):
