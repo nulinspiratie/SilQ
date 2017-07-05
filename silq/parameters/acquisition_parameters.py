@@ -348,15 +348,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def shapes(self):
-        t_start = min((pulse.t_start for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
-        t_stop = max((pulse.t_stop for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
-        duration = t_stop - t_start
-        pts = int(duration * self.sample_rate)
-
-        return ((self.samples, pts),) * len(self.layout.acquisition_outputs())
-
+        return self.pulse_sequence.get_trace_shapes(self.layout.sample_rate, self.samples)['trace_pulse']
 
     @property_ignore_setter
     def setpoints(self):
