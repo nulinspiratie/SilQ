@@ -408,8 +408,7 @@ class TraceParameter(AcquisitionParameter):
     def acquire(self, **kwargs):
         """Acquires the number of traces defined in self.samples
 
-            :param kwargs: Passed to AcquisitionParameter acquire()
-            :return: A tuple of data points. e.g.
+           return:  A tuple of data points. e.g.
                     ((data_for_1st_output), (data_for_2nd_output), ...)
         """
         super().acquire(**kwargs)
