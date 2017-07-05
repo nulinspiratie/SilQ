@@ -6,8 +6,7 @@ from qcodes import ManualParameter
 import numpy as np
 
 class Keysight_SD_DIG_interface(InstrumentInterface):
-    def __init__(self, instrument_name, acquisition_channels=8, pxi_channels=8,
-                 acquisition_controller_names=[], **kwargs):
+    def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
         self.pulse_sequence.allow_pulse_overlap = True
@@ -16,7 +15,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         self._acquisition_channels  = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
                                       name='ch{}'.format(k), id=k, input=True)
-            for k in range(acquisition_channels)
+            for k in range(self.instrument.n_channels)
             }
 
         self._pxi_channels = {
@@ -24,7 +23,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
                         input_trigger=True, output=True, input=True) for k in
-        range(pxi_channels)}
+        range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._acquisition_channels ,
@@ -180,7 +179,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             be done in the configure_driver and get_final_additional_pulses
             functions.
         """
-        for k in range(len(self._acquisition_channels)):
+        for k in range(self.instrument.n_channels):
             self.instrument.parameters['impedance_{}'.format(k)].set(1) # 50 Ohm impedance
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
