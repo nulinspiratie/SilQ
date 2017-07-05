@@ -8,20 +8,22 @@ import numpy as np
 
 
 class Keysight_SD_AWG_Interface(InstrumentInterface):
-    def __init__(self, instrument_name, output_channels=4, pxi_channels=8, **kwargs):
+    def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
             'ch{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='ch{}'.format(k), id=k,
-                        output=True) for k in range(output_channels)}
+                        output=True)
+            for k in range(self.instrument.n_channels)}
 
         self._pxi_channels = {
             'pxi{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
-                        input_trigger=True, output=True, input=True) for k in range(pxi_channels)}
+                        input_trigger=True, output=True, input=True)
+            for k in range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._output_channels,
