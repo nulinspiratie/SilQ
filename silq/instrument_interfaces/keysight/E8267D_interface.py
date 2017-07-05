@@ -76,7 +76,7 @@ class E8267DInterface(InstrumentInterface):
         if not self.pulse_sequence:
             return []
 
-        frequencies = {pulse.frequency for pulse in self.pulse_sequence}
+        frequencies = list({pulse.frequency for pulse in self.pulse_sequence})
 
         frequency_deviations = {pulse.frequency_deviation
                                 for pulse in self.pulse_sequence
