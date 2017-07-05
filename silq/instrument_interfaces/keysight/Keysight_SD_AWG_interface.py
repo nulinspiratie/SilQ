@@ -1,27 +1,27 @@
-import numpy as np
-
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
+
 import threading
+import numpy as np
 
 
-class M3201AInterface(InstrumentInterface):
-    def __init__(self, instrument_name, **kwargs):
+class Keysight_SD_AWG_Interface(InstrumentInterface):
+    def __init__(self, instrument_name, output_channels=4, pxi_channels=8, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
             'ch{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='ch{}'.format(k), id=k,
-                        output=True) for k in range(4)}
+                        output=True) for k in range(output_channels)}
 
         self._pxi_channels = {
             'pxi{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
-                        input_trigger=True, output=True, input=True) for k in range(8)}
+                        input_trigger=True, output=True, input=True) for k in range(pxi_channels)}
 
         self._channels = {
             **self._output_channels,
