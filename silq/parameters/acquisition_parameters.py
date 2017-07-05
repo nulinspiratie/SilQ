@@ -868,6 +868,86 @@ class RabiParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
+
+class NMRParameter(AcquisitionParameter):
+    def __init__(self, **kwargs):
+        """
+        Parameter used to determine the Rabi frequency
+        """
+        super().__init__(name='NMR',
+                         names=['contrast_read', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
+                         **kwargs)
+
+        self.shots_per_frequency = 1
+
+        self.pre_pulses = []
+        self.NMR_pulse = SinePulse('NMR', connection_label='DDS')
+        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR',
+                                            connection_label='ESR')
+        self.post_pulses = []
+
+        # This initializes the pulse sequence
+        self._ESR_frequencies = []
+        self.ESR_frequencies = [self.ESR_pulse.frequency]
+
+    @property
+    def ESR_frequencies(self):
+        return self._ESR_frequencies
+
+    @ESR_frequencies.setter
+    def ESR_frequencies(self, frequencies):
+        # Initialize pulse sequence
+        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
+
+        plunge_pulse = DCPulse('plunge', connection_label='stage')
+        read_pulse = DCPulse('read', acquire=True, connection_label='stage')
+
+        # Add NMR pulse
+
+
+        for frequency in frequencies:
+            # Add a plunge and read pulse for each frequency
+            self.pulse_sequence.add(plunge_pulse, read_pulse)
+
+        self.pulse_sequence.add(*self.post_pulses)
+
+        for k, frequency in enumerate(frequencies):
+            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
+            adiabatic_pulse = FrequencyRampPulse(
+                'adiabatic_ESR',
+                t_start=PulseMatch(plunge_pulse, 't_start',
+                                   delay=self.ESR_delay),
+                connection_label='ESR')
+            adiabatic_pulse.frequency = frequency
+            self.pulse_sequence.add(adiabatic_pulse)
+
+        # update names
+        self.names = [name for name in self.names
+                      if 'contrast_read' not in name]
+
+    @clear_single_settings
+    def get(self):
+        self.acquire()
+
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data,
+            sample_rate=self.sample_rate,
+            t_skip=self.t_skip,
+            t_read=self.t_read)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            self.store_traces(self.data, subfolder=self.subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return tuple(self.results[name] for name in self.names)
+
+
 class T1Parameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='T1_acquisition',
@@ -901,7 +981,8 @@ class T1Parameter(AcquisitionParameter):
         self.results = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -949,7 +1030,8 @@ class DarkCountsParameter(AcquisitionParameter):
         fidelities = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
         self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
