@@ -189,7 +189,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
                                ' of the machine.')
                 return []
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start, duration=1e-5,
+                TriggerPulse(t_start=t_start, duration=15e-6,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True
