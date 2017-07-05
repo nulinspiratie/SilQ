@@ -279,6 +279,8 @@ class PulseSequence:
         Returns:
             None
         """
+        added_pulses = []
+
         for pulse in pulses:
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p)
@@ -323,12 +325,15 @@ class PulseSequence:
                         pulse_copy.t_start = 0
                 self.pulses.append(pulse_copy)
                 pulse_copy.signal.connect(self._handle_signal)
+                added_pulses.append(pulse_copy)
 
                 if pulse_copy.enabled:
                     self.enabled_pulses.append(pulse_copy)
                 else:
                     self.disabled_pulses.append(pulse_copy)
         self.sort()
+
+        return added_pulses
 
     def remove(self, *pulses):
         """
