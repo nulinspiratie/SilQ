@@ -431,8 +431,8 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = [[trace, np.mean(trace), np.std(trace)]
-                        for trace in traces]
+        self.results = {self.names[k] : (trace, np.mean(trace), np.std(trace))
+                        for k, trace in enumerate(traces)}
 
         return self.results
 
