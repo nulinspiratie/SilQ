@@ -664,7 +664,7 @@ class DCPulse(Pulse):
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        if isinstance(t, collections.iterable):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -725,7 +725,7 @@ class TriggerPulse(Pulse):
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        if isinstance(t, collections.iterable):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -750,7 +750,7 @@ class MarkerPulse(Pulse):
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        if isinstance(t, collections.iterable):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
