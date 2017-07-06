@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from blinker import signal
 from functools import partial
 import logging
+from traitlets import HasTraits, List, Int, Float, Instance, observe
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(SettingsClass, MultiParameter):
+class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
 
@@ -211,11 +212,13 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset.finalize()
 
     def print_results(self):
-        if self.names is not None:
-            for name in self.names:
-                print(f'{name}: {self.results[name]:.3f}')
-        else:
-            print(f'{self.name}: {self.results[self.name]:.3f}')
+        names = self.names if self.names is not None else [self.name]
+        for name in names:
+            value = self.results[name]
+            if isinstance(value, (int, float)):
+                print(f'{name}: {value:.3f}')
+            else:
+                print(f'{name}: {value}')
 
     def setup(self, start=None, **kwargs):
         self.layout.pulse_sequence = self.pulse_sequence
@@ -723,7 +726,7 @@ class AdiabaticParameter(AcquisitionParameter):
 
         # Update names to include contrast_read
         self.names = self.names
-        self.ESR_delay = 0.5
+        self.pulse_delay = 5
 
     @property
     def names(self):
@@ -731,11 +734,11 @@ class AdiabaticParameter(AcquisitionParameter):
 
     @names.setter
     def names(self, names):
-        if len(self.frequencies) == 1:
+        if len(self.ESR_frequencies) == 1:
             ESR_names = [f'contrast_read']
         else:
             ESR_names = [f'contrast_read{k}'
-                         for k in range(len(self.frequencies))]
+                         for k in range(len(self.ESR_frequencies))]
         names = ESR_names + list(names)
 
         self._names = names
@@ -753,52 +756,42 @@ class AdiabaticParameter(AcquisitionParameter):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
     @property
-    def frequencies(self):
+    def ESR_frequencies(self):
         adiabatic_pulses = self.pulse_sequence.get_pulses(name='adiabatic_ESR')
         return [pulse.frequency for pulse in adiabatic_pulses]
 
-    @frequencies.setter
-    def frequencies(self, frequencies):
+    @ESR_frequencies.setter
+    def ESR_frequencies(self, ESR_frequencies):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        plunge_pulse = DCPulse('plunge')
-        read_pulse = DCPulse('read', acquire=True)
-        for frequency in frequencies:
+        for frequency in ESR_frequencies:
             # Add a plunge and read pulse for each frequency
-            self.pulse_sequence.add(plunge_pulse, read_pulse)
+            plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
+            self.pulse_sequence.add(FrequencyRampPulse(
+                'adiabatic_ESR',
+                frequency=frequency,
+                t_start=PulseMatch(plunge_pulse, 't_start',
+                                   delay=self.pulse_delay)))
+            self.pulse_sequence.add(DCPulse('read', acquire=True))
 
         self.pulse_sequence.add(*self.post_pulses)
-
-        for k, frequency in enumerate(frequencies):
-            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            adiabatic_pulse = FrequencyRampPulse(
-                'adiabatic_ESR',
-                t_start=PulseMatch(plunge_pulse, 't_start',
-                                   delay=self.ESR_delay))
-            adiabatic_pulse.frequency = frequency
-            self.pulse_sequence.add(adiabatic_pulse)
 
         # update names
         self.names = [name for name in self.names
                       if 'contrast_read' not in name]
 
     @property
-    def ESR_delay(self):
+    def pulse_delay(self):
         # Delay between start of plunge and ESR pulse
-        return self._ESR_delay
+        return self._pulse_delay
 
-    @ESR_delay.setter
-    def ESR_delay(self, ESR_delay):
-        self._ESR_delay = ESR_delay
+    @pulse_delay.setter
+    def pulse_delay(self, pulse_delay):
+        self._pulse_delay = pulse_delay
 
-        # Update ESR delays
-        for k, frequency in enumerate(self.frequencies):
-            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            adiabatic_pulse = self.pulse_sequence.get_pulse(
-                name='adiabatic_ESR', id=k)
-            adiabatic_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                 delay=ESR_delay)
+        # This updates the pulse sequence
+        self.ESR_frequencies = self.ESR_frequencies
 
     @clear_single_settings
     def get(self):
@@ -868,75 +861,114 @@ class RabiParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
-
 class NMRParameter(AcquisitionParameter):
+    ESR_frequencies = List(default_value=[])
+    shots_per_frequency = Int(default_value=1)
+    pulse_delay = Float(default_value=5)
+    pre_pulses = List()
+    NMR_pulse = Instance(klass=Pulse)
+    NMR_stage_pulse = Instance(klass=Pulse)
+    ESR_pulse = Instance(klass=Pulse)
+    post_pulses = List()
+
     def __init__(self, **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='NMR',
-                         names=['contrast_read', 'contrast', 'dark_counts',
-                                'voltage_difference_read'],
+                         names=self.names,
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
+                         properties_attrs=['t_skip', 'threshold_up_proportion'],
                          **kwargs)
 
-        self.shots_per_frequency = 1
+        # Set initialized to False so the pulse sequence is not generated
+        self._initialized = False
 
         self.pre_pulses = []
-        self.NMR_pulse = SinePulse('NMR', connection_label='DDS')
-        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR',
-                                            connection_label='ESR')
+        self.NMR_pulse = SinePulse('NMR')
+        self.NMR_stage_pulse = DCPulse('empty')
+        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
         self.post_pulses = []
 
-        # This initializes the pulse sequence
-        self._ESR_frequencies = []
         self.ESR_frequencies = [self.ESR_pulse.frequency]
 
-    @property
-    def ESR_frequencies(self):
-        return self._ESR_frequencies
+        # This initializes the pulse sequence
+        self._initialized = True
+        self.update_pulse_sequence()
 
-    @ESR_frequencies.setter
-    def ESR_frequencies(self, frequencies):
+    @property_ignore_setter
+    def names(self):
+        names = []
+        if len(self.ESR_frequencies) == 1:
+            names += ['flips', 'up_proportions']
+        else:
+            for k, _ in enumerate(self.ESR_frequencies):
+                names += [f'flips_{k}', f'up_proportions_{k}']
+        return names
+
+    @property_ignore_setter
+    def shapes(self):
+        return ((), (self.samples, )) * len(self.ESR_frequencies)
+
+    @property_ignore_setter
+    def units(self):
+        return ('', ) * len(self.names)
+
+    @property_ignore_setter
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @observe('ESR_frequencies', 'shots_per_frequency', 'pulse_delay' 
+             'NMR_pulse', 'NMR_stage_pulse','ESR_pulse',
+             'pre_pulses', 'post_pulses')
+    def update_pulse_sequence(self, change=None):
+        """
+        Updates the pulse sequence
+        Args:
+            change: change of attribute, passed by traitlets 
+
+        Returns:
+            None
+        """
+        if not self._initialized:
+            return
+
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        plunge_pulse = DCPulse('plunge', connection_label='stage')
-        read_pulse = DCPulse('read', acquire=True, connection_label='stage')
-
         # Add NMR pulse
+        NMR_stage_pulse, = self.pulse_sequence.add(self.NMR_stage_pulse)
+        NMR_pulse, = self.pulse_sequence.add(self.NMR_pulse)
+        NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
+                                       delay=self.pulse_delay)
 
-
-        for frequency in frequencies:
-            # Add a plunge and read pulse for each frequency
-            self.pulse_sequence.add(plunge_pulse, read_pulse)
+        # Add ESR pulses
+        for frequency in self.ESR_frequencies:
+            for _ in range(self.shots_per_frequency):
+                # Add a plunge and read pulse for each frequency
+                plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
+                ESR_pulse, = self.pulse_sequence.add(self.ESR_pulse)
+                ESR_pulse.frequency = frequency
+                ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
+                                               delay=self.pulse_delay)
+                self.pulse_sequence.add(DCPulse('read', acquire=True))
 
         self.pulse_sequence.add(*self.post_pulses)
 
-        for k, frequency in enumerate(frequencies):
-            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            adiabatic_pulse = FrequencyRampPulse(
-                'adiabatic_ESR',
-                t_start=PulseMatch(plunge_pulse, 't_start',
-                                   delay=self.ESR_delay),
-                connection_label='ESR')
-            adiabatic_pulse.frequency = frequency
-            self.pulse_sequence.add(adiabatic_pulse)
-
-        # update names
-        self.names = [name for name in self.names
-                      if 'contrast_read' not in name]
+        # # update names
+        # self.names = [name for name in self.names
+        #               if 'contrast_read' not in name]
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_multi_read_EPR(
+        self.results = analysis.analyse_NMR(
             pulse_traces=self.data,
+            threshold_up_proportion=self.threshold_up_proportion,
+            shots_per_read=self.shots_per_frequency,
             sample_rate=self.sample_rate,
-            t_skip=self.t_skip,
-            t_read=self.t_read)
+            t_skip=self.t_skip)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:

@@ -428,46 +428,58 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
 
 def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
-                shots_per_read=1, min_trace_perc=0.5, threshold_voltage=None):
+                shots_per_read=1, min_trace_perc=0.5,
+                threshold_voltage=None, threshold_method='config'):
     # Find names of all read segments unless they are read_long
     # (for dark counts)
     read_segment_names = [key for key in pulse_traces
                           if key != 'read_long' and 'read' in key]
     reads_per_trace = len(read_segment_names) // shots_per_read
 
-    samples = len(pulse_traces[read_segment_names[0]])
-
     results = {}
 
     # Get shape of single read segment (samples * points_per_segment
-    read_segment_shape = pulse_traces[read_segment_names[0]].shape
+    read_segment_shape = pulse_traces[read_segment_names[0]]['output'].shape
+    samples, points_per_segment = read_segment_shape
 
-    read_traces = np.zeros(reads_per_trace, shots_per_read, *read_segment_shape)
+
+    read_traces = np.zeros((reads_per_trace, shots_per_read,
+                           samples, points_per_segment))
     for k, read_segment_name in enumerate(read_segment_names):
         read_idx = k // shots_per_read
         shot_idx = k % shots_per_read
-        read_traces[read_idx, shot_idx] = pulse_traces[read_segment_name]
+        shot_traces = pulse_traces[read_segment_name]['output']
+        read_traces[read_idx, shot_idx] = shot_traces
+
+    if threshold_voltage is None:
+        high_low = find_high_low(np.ravel(read_traces),
+                                 threshold_method=threshold_method)
+        threshold_voltage = high_low['threshold_voltage']
+
 
     # Populate the up proportions
-    for k, read_idx in enumerate(range(reads_per_trace)):
+    for read_idx in range(reads_per_trace):
         # Create read_traces array
-        read_traces = np.zeros(shots_per_read, *read_segment_shape)
-        names = read_segment_names[k*shots_per_read:(k+1)*shots_per_read]
-        for shot_idx, read_segment_name in enumerate(names):
-            read_traces[shot_idx] = pulse_traces[read_segment_name]
 
         up_proportions = np.zeros(samples)
         for sample in range(samples):
-            results_read = analyse_read(read_traces, t_skip=t_skip,
+            sample_traces = read_traces[read_idx, :, sample]
+            results_read = analyse_read(sample_traces,
+                                        t_skip=t_skip,
                                         sample_rate=sample_rate,
                                         threshold_voltage=threshold_voltage)
             up_proportions[sample] = results_read['up_proportion']
 
-        results[f'up_proportions_{read_idx}'] = up_proportions
 
         # Determine number of flips
         has_high_contrast = up_proportions > threshold_up_proportion
-        results[f'flips_{read_idx}'] = sum(abs(np.diff(has_high_contrast)))
+
+        if reads_per_trace == 1:
+            results['up_proportions'] = up_proportions
+            results['flips'] = sum(abs(np.diff(has_high_contrast)))
+        else:
+            results[f'up_proportions_{read_idx}'] = up_proportions
+            results[f'flips_{read_idx}'] = sum(abs(np.diff(has_high_contrast)))
 
     return results
 
