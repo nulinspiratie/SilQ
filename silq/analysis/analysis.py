@@ -349,23 +349,32 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
             'high_blip_duration': results_read['high_blip_duration']}
 
 
-def analyse_PREPR(pulse_traces, sample_rate, t_read, t_skip,
-                min_trace_perc=0.5):
+def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
+                           min_trace_perc=0.5, read_segment_names=None):
     # Analyse empty stage
     results_empty = analyse_empty(pulse_traces['empty']['output'])
 
-    # Analyse plunge stage, note that there are two plunges in the PulseSequence
-    results_load = analyse_load(pulse_traces['plunge[1]']['output'])
+    # Analyse plunge stage, there are mulitple plunges in the PulseSequence
+    plunge_trace = [val for key, val in pulse_traces.items()
+                    if 'plunge' in key][0]
+    results_load = analyse_load(plunge_trace['output'])
 
-    # Analyse read stage
+    # Analyse read traces
     # Analyse first read (corresponding to ESR pulse). The dark counts from
     # read_long must be subtracted to get the contrast. That's why we
     # override segment1
-    results_read_ESR = analyse_read_long(
-        traces=pulse_traces['read_long']['output'],
-        read_segment_begin=pulse_traces['read']['output'],
-        t_read=t_read, sample_rate=sample_rate, t_skip=t_skip,
-        min_trace_perc=min_trace_perc)
+    if read_segment_names is None:
+        # Get all read traces (except final read_long)
+        read_segment_names = [key for key in pulse_traces
+                              if key != 'read_long' and 'read' in key]
+
+    results_read = {}
+    for read_segment_name in read_segment_names:
+        results_read[read_segment_name] = analyse_read_long(
+            traces=pulse_traces['read_long']['output'],
+            read_segment_begin=pulse_traces[read_segment_name]['output'],
+            t_read=t_read, sample_rate=sample_rate, t_skip=t_skip,
+            min_trace_perc=min_trace_perc)
 
     # Analyse read long (which belongs to the EPR part of pulse sequence)
     results_read_EPR = analyse_read_long(
@@ -375,17 +384,29 @@ def analyse_PREPR(pulse_traces, sample_rate, t_read, t_skip,
         t_skip=t_skip,
         min_trace_perc=min_trace_perc)
 
-    return {'fidelity_empty': results_empty['up_proportion'],
-            'voltage_difference_empty': results_empty['voltage_difference'],
-            'fidelity_load': results_load['up_proportion'],
-            'voltage_difference_load': results_load['voltage_difference'],
-            'contrast_ESR': results_read_ESR['contrast'],
-            'contrast': results_read_EPR['contrast'],
-            'dark_counts': results_read_EPR['dark_counts'],
-            'voltage_difference_read': results_read_EPR['voltage_difference'],
-            'low_blip_duration': results_read_EPR['low_blip_duration'],
-            'high_blip_duration': results_read_EPR['high_blip_duration']}
+    results =  {
+        'fidelity_empty': results_empty['up_proportion'],
+        'voltage_difference_empty': results_empty['voltage_difference'],
+        'fidelity_load': results_load['up_proportion'],
+        'voltage_difference_load': results_load['voltage_difference'],
+        'contrast': results_read_EPR['contrast'],
+        'dark_counts': results_read_EPR['dark_counts'],
+        'voltage_difference_read': results_read_EPR['voltage_difference'],
+        'low_blip_duration': results_read_EPR['low_blip_duration'],
+        'high_blip_duration': results_read_EPR['high_blip_duration']}
 
+    # Add read results
+    if len(read_segment_names) == 1:
+        read_contrast = results_read[read_segment_names[0]]['contrast']
+        results[f'contrast_{read_segment_names[0]}'] = read_contrast
+    else:
+        for read_segment_name in read_segment_names:
+            read_contrast = results_read[read_segment_name]['contrast']
+            read_segment_name = read_segment_name.replace('[', '')
+            read_segment_name = read_segment_name.replace(']', '')
+            results[f'contrast_{read_segment_name}'] = read_contrast
+
+    return results
 
 def analyse_PR(pulse_traces, sample_rate, t_skip=0, t_read=20,
                min_trace_perc=0.5):
