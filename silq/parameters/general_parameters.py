@@ -1,6 +1,3 @@
-__all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
-           'AttributeParameter', 'ConfigPulseAttribute']
-
 from time import sleep
 import numpy as np
 
@@ -10,6 +7,9 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
+
+__all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
+           'AttributeParameter', 'ConfigPulseAttribute']
 
 properties_config = config['user'].get('properties', {})
 pulse_config = config['user'].get('pulses', {})
