@@ -26,6 +26,7 @@ h5fmt = hdf5_format.HDF5Format()
 class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
+    store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
                  properties_attrs=[], **kwargs):
@@ -126,7 +127,10 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=['output'], setpoints=False):
+                     channels=None, setpoints=False):
+
+        if channels is None:
+            channels = self.store_trace_channels
 
         # Store raw traces
         if base_folder is None:
@@ -296,8 +300,8 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
-    def __init__(self, **kwargs):
-        super().__init__(name='DC_acquisition',
+    def __init__(self, name='DC', **kwargs):
+        super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
                          units=['V'],
@@ -408,14 +412,14 @@ class TraceParameter(AcquisitionParameter):
 
 
 class DCSweepParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='DC_sweep', **kwargs):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
         self.trace_pulse = DCPulse(name='trace', duration=100, enabled=False,
                                    acquire=True, average='trace', amplitude=0)
 
-        super().__init__(name='DC_acquisition', names=['DC_voltage'],
+        super().__init__(name=name, names=['DC_voltage'],
                          labels=['DC voltage'], units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
@@ -658,8 +662,8 @@ class DCSweepParameter(AcquisitionParameter):
 
 
 class EPRParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        super().__init__(name='EPR_acquisition',
+    def __init__(self, name='EPR', **kwargs):
+        super().__init__(name=name,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
@@ -696,13 +700,13 @@ class EPRParameter(AcquisitionParameter):
 
 
 class AdiabaticParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='adiabatic_ESR', **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
         self._names = []
 
-        super().__init__(name='adiabatic_acquisition',
+        super().__init__(name=name,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          snapshot_value=False,
@@ -812,11 +816,11 @@ class AdiabaticParameter(AcquisitionParameter):
 
 
 class RabiParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='rabi_ESR', **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
-        super().__init__(name='rabi_acquisition',
+        super().__init__(name=name,
                          names=['contrast_read', 'contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          snapshot_value=False,
@@ -871,11 +875,11 @@ class NMRParameter(AcquisitionParameter):
     ESR_pulse = Instance(klass=Pulse)
     post_pulses = List()
 
-    def __init__(self, **kwargs):
+    def __init__(self, name='NMR', **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
-        super().__init__(name='NMR',
+        super().__init__(name=name,
                          names=self.names,
                          snapshot_value=False,
                          properties_attrs=['t_skip', 'threshold_up_proportion'],
@@ -981,8 +985,8 @@ class NMRParameter(AcquisitionParameter):
 
 
 class T1Parameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        super().__init__(name='T1_acquisition',
+    def __init__(self, name='T1', **kwargs):
+        super().__init__(name=name,
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
@@ -1033,11 +1037,11 @@ class T1Parameter(AcquisitionParameter):
 
 
 class DarkCountsParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='dark_counts', **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
-        super().__init__(name='dark_counts_acquisition',
+        super().__init__(name=name,
                          names=['dark_counts'],
                          labels=['Dark counts'],
                          snapshot_value=False,
@@ -1077,8 +1081,8 @@ class DarkCountsParameter(AcquisitionParameter):
 
 
 class VariableReadParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        super().__init__(name='variable_read_acquisition',
+    def __init__(self, name='variable_read', **kwargs):
+        super().__init__(name=name,
                          names=('read_voltage',),
                          labels=('Read voltage',),
                          units=('V',),
