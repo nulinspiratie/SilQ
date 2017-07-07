@@ -1,10 +1,12 @@
-import os
-from time import time, sleep
+__all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
+           'AttributeParameter', 'ConfigPulseAttribute']
+
+from time import sleep
 import numpy as np
 
 import qcodes as qc
 from qcodes import config
-from qcodes.instrument.parameter import Parameter, ManualParameter
+from qcodes.instrument.parameter import Parameter
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from silq.tools import data_tools
@@ -154,6 +156,7 @@ class AttributeParameter(Parameter):
         self._save_val(value)
         return value
 
+
 class ConfigPulseAttribute(Parameter):
     def __init__(self, pulse_name, attribute, **kwargs):
         """
@@ -177,4 +180,3 @@ class ConfigPulseAttribute(Parameter):
         value = pulse_config[self.pulse_name][self.attribute]
         self._save_val(value)
         return value
-
