@@ -57,8 +57,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             t_stop_max = max(self.pulse_sequence.t_stop_list)
 
             while t < t_stop_max:
-                channel_mask = sum(pulse.implement(t=t) for pulse in
-                                   self.pulse_sequence)
+                channel_mask = sum(pulse.implementation.implement(t=t)
+                                   for pulse in self.pulse_sequence)
 
                 # Check for input pulses, such as waiting for software trigger
                 # TODO check for better way to check active input pulses
@@ -121,42 +121,44 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         self.instrument.stop()
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
-    @property
-    def amplitude(self):
-        return self.connection.output['channel'].output_TTL[1]
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
+        targeted_pulse.amplitude = amplitude
+        return targeted_pulse
 
     def implement(self, t):
-        output_channel = self.connection.output['channel']
-        input_channel = self.connection.input['channel']
+        output_channel = self.pulse.connection.output['channel']
+        input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
-        if t >= self.t_start and t < self.t_stop:
+        if t >= self.pulse.t_start and t < self.pulse.t_stop:
             return 0 if input_channel.invert else channel_value
         else:
             return channel_value if input_channel.invert else 0
 
-class MarkerPulseImplementation(MarkerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
 
-    @property
-    def amplitude(self):
-        return self.connection.output['channel'].output_TTL[1]
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
+        targeted_pulse.amplitude = amplitude
+        return targeted_pulse
 
     def implement(self, t):
-        output_channel = self.connection.output['channel']
-        input_channel = self.connection.input['channel']
+        output_channel = self.pulse.connection.output['channel']
+        input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
-        if t >= self.t_start and t < self.t_stop:
+        if t >= self.pulse.t_start and t < self.pulse.t_stop:
             return 0 if input_channel.invert else channel_value
         else:
             return channel_value if input_channel.invert else 0

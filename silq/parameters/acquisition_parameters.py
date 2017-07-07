@@ -32,11 +32,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  properties_attrs=[], **kwargs):
         SettingsClass.__init__(self)
 
+        self.pulse_sequence = PulseSequence()
+        """Pulse sequence of acquisition parameter"""
+
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
-        self.pulse_sequence = PulseSequence()
-        """Pulse sequence of acquisition parameter"""
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -658,13 +659,9 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True, connection_label='stage'),
             DCPulse('final', connection_label='stage'))
 
-    @property
+    @property_ignore_setter
     def labels(self):
         return [name.replace('_', ' ').capitalize() for name in self.names]
-
-    @labels.setter
-    def labels(self, labels):
-        pass
 
     @clear_single_settings
     def get(self):
@@ -689,41 +686,117 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         Parameter used to perform an adiabatic sweep
         """
+        self._names = []
+
         super().__init__(name='adiabatic_acquisition',
-                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                         names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
-                         labels=['ESR contrast', 'Contrast', 'Dark counts',
-                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
-        self.pulse_sequence.add(
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
+        self.pre_pulses = []
+
+        self.post_pulses = [
             DCPulse('empty', acquire=True, connection_label='stage'),
             DCPulse('plunge', acquire=True, connection_label='stage'),
             DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
-            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
+            DCPulse('final', connection_label='stage')]
+
+        self.pulse_sequence.add(
+            *self.pre_pulses,
+            DCPulse('plunge', connection_label='stage'),
+            DCPulse('read', acquire=True, connection_label='stage'),
+            *self.post_pulses,
+            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR', id=0))
+
+        # Update names to include contrast_read
+        self.names = self.names
+        self.ESR_delay = 0.5
 
     @property
-    def frequency(self):
-        return self.pulse_sequence['adiabatic'].frequency
+    def names(self):
+        return self._names
 
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['adiabatic'].frequency = frequency
+    @names.setter
+    def names(self, names):
+        if len(self.frequencies) == 1:
+            ESR_names = [f'contrast_read']
+        else:
+            ESR_names = [f'contrast_read{k}'
+                         for k in range(len(self.frequencies))]
+        names = ESR_names + list(names)
+
+        self._names = names
+
+    @property_ignore_setter
+    def shapes(self):
+        return ((), ) * len(self.names)
+
+    @property_ignore_setter
+    def units(self):
+        return ('', ) * len(self.names)
+
+    @property_ignore_setter
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @property
+    def frequencies(self):
+        adiabatic_pulses = self.pulse_sequence.get_pulses(name='adiabatic_ESR')
+        return [pulse.frequency for pulse in adiabatic_pulses]
+
+    @frequencies.setter
+    def frequencies(self, frequencies):
+        # Initialize pulse sequence
+        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
+
+        plunge_pulse = DCPulse('plunge', connection_label='stage')
+        read_pulse = DCPulse('read', acquire=True, connection_label='stage')
+        for frequency in frequencies:
+            # Add a plunge and read pulse for each frequency
+            self.pulse_sequence.add(plunge_pulse, read_pulse)
+
+        self.pulse_sequence.add(*self.post_pulses)
+
+        for k, frequency in enumerate(frequencies):
+            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
+            adiabatic_pulse = FrequencyRampPulse(
+                'adiabatic_ESR',
+                t_start=PulseMatch(plunge_pulse, 't_start',
+                                   delay=self.ESR_delay),
+                connection_label='ESR')
+            adiabatic_pulse.frequency = frequency
+            self.pulse_sequence.add(adiabatic_pulse)
+
+        # update names
+        self.names = [name for name in self.names
+                      if 'contrast_read' not in name]
+
+    @property
+    def ESR_delay(self):
+        # Delay between start of plunge and ESR pulse
+        return self._ESR_delay
+
+    @ESR_delay.setter
+    def ESR_delay(self, ESR_delay):
+        self._ESR_delay = ESR_delay
+
+        # Update ESR delays
+        for k, frequency in enumerate(self.frequencies):
+            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
+            adiabatic_pulse = self.pulse_sequence.get_pulse(
+                name='adiabatic_ESR', id=k)
+            adiabatic_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
+                                                 delay=ESR_delay)
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_PREPR(pulse_traces=self.data,
-                                              sample_rate=self.sample_rate,
-                                              t_skip=self.t_skip,
-                                              t_read=self.t_read)
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data, sample_rate=self.sample_rate,
+            t_skip=self.t_skip, t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
