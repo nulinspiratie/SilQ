@@ -194,7 +194,7 @@ class DictConfig(SubConfig, DotDict):
             # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
 
-    def get(self, key, default=None):
+    def get(self, key, **kwargs):
         """
         Override dictionary get, because it otherwise does not call __getitem__
         Args:
@@ -204,10 +204,13 @@ class DictConfig(SubConfig, DotDict):
         Returns:
             value of key if in dictionary, else default value.
         """
-        if key in self:
+        try:
             return self[key]
-        else:
-            return None
+        except KeyError:
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise
 
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
