@@ -258,8 +258,8 @@ class SliderPlot(InteractivePlot):
                 set_vals = set_vals[0]
             slider = mpl.widgets.Slider(ax=sliderax,
                                         label=self.set_arrays[set_idx].name,
-                                        valmin=np.nanmin(set_vals[0]),
-                                        valmax=np.nanmax(set_vals[-1]),
+                                        valmin=np.nanmin(set_vals),
+                                        valmax=np.nanmax(set_vals),
                                         valinit=set_vals[0])
             self.set_vals.append(set_vals)
             slider.on_changed(partial(self.update_slider, k))
@@ -295,7 +295,7 @@ class SliderPlot(InteractivePlot):
         else:
             # Check if value is one of the set values
             logger.debug(f'Updating slider {idx} to {value}')
-            slider_idx = np.argmin(abs(self.set_vals[idx] - value))
+            slider_idx = np.nanargmin(abs(self.set_vals[idx] - value))
 
             self.plot_idx = tuple(val if k != idx else slider_idx
                                   for k, val in enumerate(self.plot_idx))
