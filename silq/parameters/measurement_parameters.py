@@ -1,9 +1,13 @@
+__all__ = ['MeasurementParameter', 'DCMultisweepParameter',
+           'MeasurementSequenceParameter', 'SelectFrequencyParameter',
+           'TrackPeakParameter']
+
 import numpy as np
 import logging
 
 import qcodes as qc
 from qcodes.loops import active_data_set
-from qcodes.data import hdf5_format, io
+from qcodes.data import hdf5_format
 from qcodes import config
 from qcodes.instrument.parameter import MultiParameter
 
@@ -200,7 +204,6 @@ class DCMultisweepParameter(MeasurementParameter):
         return arr,
 
 
-
 class MeasurementSequenceParameter(MeasurementParameter):
     def __init__(self, name, measurement_sequence=None,
                  set_parameters=None, discriminant=None,
@@ -286,7 +289,6 @@ class MeasurementSequenceParameter(MeasurementParameter):
             optimal_val = self.measurement_sequence.optimal_val
 
         return num_measurements, optimal_set_vals, optimal_val
-
 
 
 class SelectFrequencyParameter(MeasurementParameter):
