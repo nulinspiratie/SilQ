@@ -1,18 +1,14 @@
 import os
-import numpy as np
 from dateutil.parser import parse
-from collections import Iterable
 import logging
-
-
-logger = logging.getLogger(__name__)
-
 
 import qcodes as qc
 from silq import config
-from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataSet
-from qcodes.data.data_array import DataArray
+from qcodes.data.data_set import new_data
+
+__all__ = ['create_data_set', 'store_data', 'get_data_folder']
+
+logger = logging.getLogger(__name__)
 
 
 def create_data_set(name, base_folder, subfolder=None, formatter=None):
