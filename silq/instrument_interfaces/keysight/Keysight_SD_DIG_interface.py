@@ -176,7 +176,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
     def initialize_driver(self):
         """
             Puts driver into a known initial state. Further configuration will
-            be done in the configure_driver and get_final_additional_pulses
+            be done in the configure_driver and get_additional_pulses
             functions.
         """
         for k in range(self.instrument.n_channels):
@@ -184,7 +184,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
