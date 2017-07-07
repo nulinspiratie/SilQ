@@ -1,9 +1,3 @@
-__all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
-           'DCSweepParameter', 'EPRParameter', 'AdiabaticParameter',
-           'RabiParameter', 'T1Parameter', 'DarkCountsParameter',
-           'VariableReadParameter', 'NeuralNetworkParameter',
-           'NeuralRetuneParameter']
-
 from time import sleep
 import numpy as np
 from collections import OrderedDict, Iterable
@@ -25,6 +19,11 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
     property_ignore_setter
 
+__all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
+           'DCSweepParameter', 'EPRParameter', 'AdiabaticParameter',
+           'RabiParameter', 'T1Parameter', 'DarkCountsParameter',
+           'VariableReadParameter', 'NeuralNetworkParameter',
+           'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()

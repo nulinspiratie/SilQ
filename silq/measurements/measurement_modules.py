@@ -1,8 +1,9 @@
 import logging
 from qcodes import config
 
-from silq.measurements.measurement_types import *
 from silq.tools.general_tools import JSONEncoder
+
+__all__ = ['MeasurementSequence']
 
 logger = logging.getLogger(__name__)
 

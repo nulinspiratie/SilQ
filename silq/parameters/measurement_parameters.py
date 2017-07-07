@@ -1,7 +1,3 @@
-__all__ = ['MeasurementParameter', 'DCMultisweepParameter',
-           'MeasurementSequenceParameter', 'SelectFrequencyParameter',
-           'TrackPeakParameter']
-
 import numpy as np
 import logging
 
@@ -17,6 +13,10 @@ from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet, TruthCondition
 from silq.measurements.measurement_modules import MeasurementSequence
+
+__all__ = ['MeasurementParameter', 'DCMultisweepParameter',
+           'MeasurementSequenceParameter', 'SelectFrequencyParameter',
+           'TrackPeakParameter']
 
 logger = logging.getLogger(__name__)
 

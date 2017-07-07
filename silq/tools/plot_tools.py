@@ -10,6 +10,10 @@ from winsound import Beep
 
 from qcodes.station import Station
 
+__all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
+           'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
+           'DCPlot', 'ScanningPlot', 'TracePlot', 'DCSweepPlot']
+
 logger = logging.getLogger(__name__)
 
 
