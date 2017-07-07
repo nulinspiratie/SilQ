@@ -23,6 +23,8 @@ def get_instrument_interface(instrument):
                             'class': 'E8267DInterface'},
         'Keysight_M3201A_AWG': {'module': '.keysight',
                             'class': 'Keysight_SD_AWG_Interface'},
+        'Keysight_M3300A_AWG': {'module': '.keysight',
+                                'class': 'Keysight_SD_AWG_Interface'},
         'Keysight_M3300A_DIG': {'module': '.keysight',
                        'class': 'Keysight_SD_DIG_Interface'}
     }
