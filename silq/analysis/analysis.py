@@ -370,9 +370,12 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
     """
     # Analyse empty stage
-    results_empty = analyse_empty(pulse_traces['empty']['output'])
+    # Analyse empty stage, there are multiple empties in the PulseSequence
+    empty_trace = [val for key, val in pulse_traces.items()
+                    if 'empty' in key][0]
+    results_empty = analyse_empty(empty_trace['output'])
 
-    # Analyse plunge stage, there are mulitple plunges in the PulseSequence
+    # Analyse plunge stage, there are multiple plunges in the PulseSequence
     plunge_trace = [val for key, val in pulse_traces.items()
                     if 'plunge' in key][0]
     results_load = analyse_load(plunge_trace['output'])
@@ -416,7 +419,7 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
     # Add read results
     if len(read_segment_names) == 1:
         read_contrast = results_read[read_segment_names[0]]['contrast']
-        results[f'contrast_{read_segment_names[0]}'] = read_contrast
+        results[f'contrast_read'] = read_contrast
     else:
         for read_segment_name in read_segment_names:
             read_contrast = results_read[read_segment_name]['contrast']
