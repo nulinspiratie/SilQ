@@ -303,9 +303,9 @@ class Layout(Instrument):
                     environment, connection_label = connection_label.split('.')
                 else:
                     # Use default environment defined in config
-                    assert 'default_environment' in config.user, \
+                    assert 'default_environment' in config.properties, \
                         "No environment nor default environment provided"
-                    environment = config.user.default_environment
+                    environment = config.properties.default_environment
 
             # Obtain list of connections from environment
             environment_connections = config[environment].connections
