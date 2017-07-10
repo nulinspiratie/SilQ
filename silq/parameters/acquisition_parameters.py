@@ -349,7 +349,15 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def shapes(self):
         if self.trace_pulse in self.pulse_sequence:
-            return self.pulse_sequence.get_trace_shapes(self.layout.sample_rate, self.samples)[self.trace_pulse]
+            trace_shapes = self.pulse_sequence.get_trace_shapes(
+                self.layout.sample_rate, self.samples)
+            trace_pulse_shape = tuple(trace_shapes[self.trace_pulse])
+            if self.samples > 1 and self.average_mode == 'none':
+                return ((trace_pulse_shape,),) * \
+                       len(self.layout.acquisition_outputs())
+            else:
+                return ((trace_pulse_shape[1], ), ) * \
+                        len(self.layout.acquisition_outputs())
         else:
             return ((1,),) * len(self.layout.acquisition_outputs())
 
