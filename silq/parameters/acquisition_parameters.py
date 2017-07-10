@@ -339,12 +339,12 @@ class TraceParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def names(self):
-        return [self.trace_pulse + f'_{output[1]}'
-                for output in self.layout.acquisition_outputs()]
+        return tuple(self.trace_pulse + f'_{output[1]}'
+                for output in self.layout.acquisition_outputs())
 
     @property_ignore_setter
     def units(self):
-        return ['V'] * len(self.layout.acquisition_outputs())
+        return ('V', ) * len(self.layout.acquisition_outputs())
 
     @property_ignore_setter
     def shapes(self):
