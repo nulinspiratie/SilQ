@@ -379,7 +379,7 @@ class TraceParameter(AcquisitionParameter):
             return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('time', ), ) * len(self.layout.acquisition_outputs())
+            return (('Time', ), ) * len(self.layout.acquisition_outputs())
 
 
     @property_ignore_setter
