@@ -397,10 +397,13 @@ class TraceParameter(AcquisitionParameter):
         then acquires only this pulse.
         """
 
+        acquired_pulses = self.pulse_sequence.get_pulses(acquire=True)
+        if len(acquired_pulses) == 0:
+            raise RuntimeError('PulseSequence has no pulses to acquire.')
         if self.trace_pulse not in self.pulse_sequence:
             # Find the start and stop times for all acquired pulses
-            t_start = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses())
-            t_stop = max(pulse.t_stop for pulse in self.pulse_sequence.get_pulses())
+            t_start = min(pulse.t_start for pulse in acquired_pulses)
+            t_stop = max(pulse.t_stop for pulse in acquired_pulses)
 
             # Ensure that each pulse is not acquired as this could cause
             # overlapping issues
