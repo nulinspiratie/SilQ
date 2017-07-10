@@ -437,10 +437,10 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = {self.names[k] : (trace, np.mean(trace), np.std(trace))
+        self.results = {self.names[k] : trace
                         for k, trace in enumerate(traces)}
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class DCSweepParameter(AcquisitionParameter):
