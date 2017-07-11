@@ -6,10 +6,8 @@ from blinker import signal
 from functools import partial
 import logging
 
-from qcodes.instrument.parameter import MultiParameter
-from qcodes.data import hdf5_format, io
-from qcodes.data.data_array import DataArray
-from qcodes.loops import active_loop
+from qcodes import DataSet, DataArray, MultiParameter, active_data_set
+from qcodes.data import hdf5_format
 
 from silq import config
 from silq.pulses import *
@@ -82,6 +80,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset = None
         self.results = None
 
+        self.base_folder = None
         self.subfolder = None
 
         self.continuous = continuous
@@ -124,22 +123,29 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=['output']):
+                     channels=['output'], setpoints=False):
+
         # Store raw traces
         if base_folder is None:
             # Extract base_folder from dataset of currently active loop
-            active_dataset = active_loop().get_data_set()
-            if active_dataset.location:
+            active_dataset = active_data_set()
+            if self.base_folder is not None:
+                base_folder = self.base_folder
+            elif getattr(active_dataset, 'location', None):
                 base_folder = active_dataset.location
             elif hasattr(active_dataset, '_location'):
                 base_folder = active_dataset._location
+
+            if subfolder is None and base_folder is not None:
+                subfolder = f'traces_{self.name}'
+            else:
+                base_folder = DataSet.location_provider(DataSet.default_io)
+
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
                                                   subfolder=subfolder,
                                                   formatter=self.formatter)
 
-        # Create dictionary of set arrays
-        set_arrs = {}
         traces_dict = {}
         for pulse_name, channel_traces in pulse_traces.items():
             for channel in channels:
@@ -147,42 +153,49 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 traces = channel_traces[channel]
                 traces_dict[traces_name] = traces
 
+        if setpoints:
+            # Create dictionary of set arrays
+            set_arrs = {}
+            for traces_name, traces in traces_dict.items():
                 number_of_traces, points_per_trace = traces.shape
 
                 if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate * 1e3
-                    t_list = np.arange(0, points_per_trace * time_step, time_step)
-                    t_list_arr = DataArray(name='time',
-                                           array_id='time',
-                                           label=' Time',
-                                           unit='ms',
-                                           shape=traces.shape,
-                                           preset_data=np.full(traces.shape,
-                                                               t_list),
-                                           is_setpoint=True)
+                    time_step = 1 / self.sample_rate
+                    t_list = np.arange(0, points_per_trace * time_step,
+                                       time_step)
+                    t_list_arr = DataArray(
+                        name='time',
+                        array_id='time',
+                        label=' Time',
+                        unit='s',
+                        shape=traces.shape,
+                        preset_data=np.full(traces.shape, t_list),
+                        is_setpoint=True)
 
-                    trace_num_arr = DataArray(name='trace_num',
-                                              array_id='trace_num',
-                                              label='Trace',
-                                              unit='num',
-                                              shape=(number_of_traces, ),
-                                              preset_data=np.arange(
-                                                  number_of_traces, dtype=np.float64),
-                                              is_setpoint=True)
+                    trace_num_arr = DataArray(
+                        name='trace_num',
+                        array_id='trace_num',
+                        label='Trace',
+                        unit='num',
+                        shape=(number_of_traces, ),
+                        preset_data=np.arange(number_of_traces,
+                                              dtype=np.float64),
+                        is_setpoint=True)
                     set_arrs[traces.shape] = (trace_num_arr, t_list_arr)
 
-        # Add set arrays to dataset
-        for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
-            for arr in (t_list_arr, trace_num_arr):
-                if len(set_arrs) > 1:
-                    # Need to give individual array_ids to each of the set arrays
-                    arr.array_id += '_{}'.format(k)
-                self.dataset.add_array(arr)
+            # Add set arrays to dataset
+            for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
+                for arr in (t_list_arr, trace_num_arr):
+                    if len(set_arrs) > 1:
+                        # Need to give individual array_ids to each of the set arrays
+                        arr.array_id += '_{}'.format(k)
+                    self.dataset.add_array(arr)
+            set_arrays = (t_list_arr, trace_num_arr)
+        else:
+            set_arrays = ()
 
         # Add trace arrs to dataset
         for traces_name, traces in traces_dict.items():
-            t_list_arr, trace_num_arr = set_arrs[traces.shape]
-
             # Must transpose traces array
             trace_arr = DataArray(name=traces_name,
                                   array_id=traces_name,
@@ -190,7 +203,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                   unit='V',
                                   shape=traces.shape,
                                   preset_data=traces,
-                                  set_arrays=(t_list_arr, trace_num_arr))
+                                  set_arrays=set_arrays)
             self.dataset.add_array(trace_arr)
 
         self.dataset.finalize()
@@ -1097,6 +1110,14 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
         elif isinstance(self.include_target_output, Iterable):
             names = names + self.include_target_output
         return names
+
+    @property
+    def base_folder(self):
+        return self.target_parameter.base_folder
+
+    @base_folder.setter
+    def base_folder(self, base_folder):
+        self.target_parameter.base_folder = base_folder
 
     def get(self):
         self.acquire()
