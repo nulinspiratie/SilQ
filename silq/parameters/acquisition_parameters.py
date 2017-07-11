@@ -300,8 +300,7 @@ class TraceParameter(AcquisitionParameter):
         parameter.pulse_sequence = my_pulse_sequence
 
     Note that for the above example, all pulses in my_pulse_sequence will be
-    copied and then their 'average' attribute will be set to the parameter's
-    'average_mode' attribute.
+    copied.
 
     """
     def __init__(self, average_mode='none', **kwargs):
