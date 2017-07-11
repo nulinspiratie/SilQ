@@ -65,6 +65,24 @@ class TruthCondition(Condition):
     def __repr__(self):
         return f'({self.attribute} {self.relation} {self.target_val})'
 
+
+    class ModCondition(Condition):
+        def __init__(self, num, start=False, **kwargs):
+            super().__init__(**kwargs)
+            self.num = num
+
+            if start:
+                self.idx = 0
+            else:
+                self.idx = 1
+
+        def check_satisfied(self, *args, **kwargs):
+            return (not self.idx % self.num),
+
+        def __repr__(self):
+            return f'(idx: {self.idx} % {self.num} == 0)'
+
+
 class ConditionSet:
     """
     A ConditionSet represents a set of conditions that a dataset can be
