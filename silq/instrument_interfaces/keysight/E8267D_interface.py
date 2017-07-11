@@ -73,8 +73,10 @@ class E8267DInterface(InstrumentInterface):
                            initial_value=None)
 
     def get_additional_pulses(self, **kwargs):
+        if not self.pulse_sequence:
+            return []
 
-        frequencies = {pulse.frequency for pulse in self.pulse_sequence}
+        frequencies = list({pulse.frequency for pulse in self.pulse_sequence})
 
         frequency_deviations = {pulse.frequency_deviation
                                 for pulse in self.pulse_sequence
