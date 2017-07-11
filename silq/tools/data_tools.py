@@ -1,25 +1,21 @@
 import os
 import numpy as np
 from dateutil.parser import parse
-from collections import Iterable
 import logging
-
-
-logger = logging.getLogger(__name__)
-
 
 import qcodes as qc
 from silq import config
-from qcodes.instrument.parameter import Parameter, ManualParameter
-from qcodes.data.data_set import new_data, DataSet
-from qcodes.data.data_array import DataArray
+from qcodes.data.data_set import new_data
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_data_set(name, base_folder, subfolder=None, formatter=None):
     location_string = '{base_folder}/'
     if subfolder is not None:
         location_string += '{subfolder}/'
-    location_string += '#{{counter}}_{name}'
+    location_string += '#{{counter}}_{{name}}_{{time}}'
 
     location = qc.data.location.FormatLocation(
         fmt=location_string.format(base_folder=base_folder, name=name,
