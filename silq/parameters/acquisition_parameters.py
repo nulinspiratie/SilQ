@@ -6,10 +6,8 @@ from blinker import signal
 from functools import partial
 import logging
 
-from qcodes.instrument.parameter import MultiParameter
-from qcodes.data import hdf5_format, io
-from qcodes.data.data_array import DataArray
-from qcodes.loops import active_loop
+from qcodes import DataSet, DataArray, MultiParameter, active_data_set
+from qcodes.data import hdf5_format
 
 from silq import config
 from silq.pulses import *
@@ -54,6 +52,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.data = None
         self.dataset = None
         self.results = None
+        self.base_folder = None
         self.subfolder = None
 
         # Change attribute data_manager from class attribute to instance
@@ -146,22 +145,29 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=['output']):
+                     channels=['output'], setpoints=False):
+
         # Store raw traces
         if base_folder is None:
             # Extract base_folder from dataset of currently active loop
-            active_dataset = active_loop().get_data_set()
-            if active_dataset.location:
+            active_dataset = active_data_set()
+            if self.base_folder is not None:
+                base_folder = self.base_folder
+            elif getattr(active_dataset, 'location', None):
                 base_folder = active_dataset.location
             elif hasattr(active_dataset, '_location'):
                 base_folder = active_dataset._location
+
+            if subfolder is None and base_folder is not None:
+                subfolder = f'traces_{self.name}'
+            else:
+                base_folder = DataSet.location_provider(DataSet.default_io)
+
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
                                                   subfolder=subfolder,
                                                   formatter=self.formatter)
 
-        # Create dictionary of set arrays
-        set_arrs = {}
         traces_dict = {}
         for pulse_name, channel_traces in pulse_traces.items():
             for channel in channels:
@@ -169,42 +175,49 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 traces = channel_traces[channel]
                 traces_dict[traces_name] = traces
 
+        if setpoints:
+            # Create dictionary of set arrays
+            set_arrs = {}
+            for traces_name, traces in traces_dict.items():
                 number_of_traces, points_per_trace = traces.shape
 
                 if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate * 1e3
-                    t_list = np.arange(0, points_per_trace * time_step, time_step)
-                    t_list_arr = DataArray(name='time',
-                                           array_id='time',
-                                           label=' Time',
-                                           unit='ms',
-                                           shape=traces.shape,
-                                           preset_data=np.full(traces.shape,
-                                                               t_list),
-                                           is_setpoint=True)
+                    time_step = 1 / self.sample_rate
+                    t_list = np.arange(0, points_per_trace * time_step,
+                                       time_step)
+                    t_list_arr = DataArray(
+                        name='time',
+                        array_id='time',
+                        label=' Time',
+                        unit='s',
+                        shape=traces.shape,
+                        preset_data=np.full(traces.shape, t_list),
+                        is_setpoint=True)
 
-                    trace_num_arr = DataArray(name='trace_num',
-                                              array_id='trace_num',
-                                              label='Trace',
-                                              unit='num',
-                                              shape=(number_of_traces, ),
-                                              preset_data=np.arange(
-                                                  number_of_traces, dtype=np.float64),
-                                              is_setpoint=True)
+                    trace_num_arr = DataArray(
+                        name='trace_num',
+                        array_id='trace_num',
+                        label='Trace',
+                        unit='num',
+                        shape=(number_of_traces, ),
+                        preset_data=np.arange(number_of_traces,
+                                              dtype=np.float64),
+                        is_setpoint=True)
                     set_arrs[traces.shape] = (trace_num_arr, t_list_arr)
 
-        # Add set arrays to dataset
-        for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
-            for arr in (t_list_arr, trace_num_arr):
-                if len(set_arrs) > 1:
-                    # Need to give individual array_ids to each of the set arrays
-                    arr.array_id += '_{}'.format(k)
-                self.dataset.add_array(arr)
+            # Add set arrays to dataset
+            for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
+                for arr in (t_list_arr, trace_num_arr):
+                    if len(set_arrs) > 1:
+                        # Need to give individual array_ids to each of the set arrays
+                        arr.array_id += '_{}'.format(k)
+                    self.dataset.add_array(arr)
+            set_arrays = (t_list_arr, trace_num_arr)
+        else:
+            set_arrays = ()
 
         # Add trace arrs to dataset
         for traces_name, traces in traces_dict.items():
-            t_list_arr, trace_num_arr = set_arrs[traces.shape]
-
             # Must transpose traces array
             trace_arr = DataArray(name=traces_name,
                                   array_id=traces_name,
@@ -212,7 +225,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                   unit='V',
                                   shape=traces.shape,
                                   preset_data=traces,
-                                  set_arrays=(t_list_arr, trace_num_arr))
+                                  set_arrays=set_arrays)
             self.dataset.add_array(trace_arr)
 
         self.dataset.finalize()
@@ -312,10 +325,8 @@ class DCParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='point',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True, average='point'),
+            DCPulse(name='final'))
 
     @clear_single_settings
     def get(self):
@@ -339,10 +350,8 @@ class TraceParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='final'))
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
@@ -676,10 +685,10 @@ class EPRParameter(AcquisitionParameter):
                          **kwargs)
 
         self.pulse_sequence.add(
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'))
 
     @property_ignore_setter
     def labels(self):
@@ -720,17 +729,17 @@ class AdiabaticParameter(AcquisitionParameter):
         self.pre_pulses = []
 
         self.post_pulses = [
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage')]
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final')]
 
         self.pulse_sequence.add(
             *self.pre_pulses,
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
             *self.post_pulses,
-            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR', id=0))
+            FrequencyRampPulse('adiabatic_ESR', id=0))
 
         # Update names to include contrast_read
         self.names = self.names
@@ -773,8 +782,8 @@ class AdiabaticParameter(AcquisitionParameter):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        plunge_pulse = DCPulse('plunge', connection_label='stage')
-        read_pulse = DCPulse('read', acquire=True, connection_label='stage')
+        plunge_pulse = DCPulse('plunge')
+        read_pulse = DCPulse('read', acquire=True)
         for frequency in frequencies:
             # Add a plunge and read pulse for each frequency
             self.pulse_sequence.add(plunge_pulse, read_pulse)
@@ -786,8 +795,7 @@ class AdiabaticParameter(AcquisitionParameter):
             adiabatic_pulse = FrequencyRampPulse(
                 'adiabatic_ESR',
                 t_start=PulseMatch(plunge_pulse, 't_start',
-                                   delay=self.ESR_delay),
-                connection_label='ESR')
+                                   delay=self.ESR_delay))
             adiabatic_pulse.frequency = frequency
             self.pulse_sequence.add(adiabatic_pulse)
 
@@ -846,13 +854,13 @@ class RabiParameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
-            SinePulse('ESR', connection_label='ESR'))
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'),
+            SinePulse('ESR'))
 
     @property
     def frequency(self):
@@ -892,10 +900,10 @@ class T1Parameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('empty', connection_label='stage'),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty'),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('final'))
             # FrequencyRampPulse('adiabatic_ESR'))
 
         self.readout_threshold_voltage = None
@@ -988,14 +996,10 @@ class VariableReadParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add(
-            DCPulse(name='plunge', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='empty', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='plunge', acquire=True, average='trace'),
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='empty', acquire=True, average='trace'),
+            DCPulse(name='final'))
 
     @property_ignore_setter
     def setpoints(self):
@@ -1119,6 +1123,14 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
         elif isinstance(self.include_target_output, Iterable):
             names = names + self.include_target_output
         return names
+
+    @property
+    def base_folder(self):
+        return self.target_parameter.base_folder
+
+    @base_folder.setter
+    def base_folder(self, base_folder):
+        self.target_parameter.base_folder = base_folder
 
     def get(self):
         self.acquire()
