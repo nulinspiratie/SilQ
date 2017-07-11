@@ -159,14 +159,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 number_of_traces, points_per_trace = traces.shape
 
                 if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate * 1e3
+                    time_step = 1 / self.sample_rate
                     t_list = np.arange(0, points_per_trace * time_step,
                                        time_step)
                     t_list_arr = DataArray(
                         name='time',
                         array_id='time',
                         label=' Time',
-                        unit='ms',
+                        unit='s',
                         shape=traces.shape,
                         preset_data=np.full(traces.shape, t_list),
                         is_setpoint=True)
