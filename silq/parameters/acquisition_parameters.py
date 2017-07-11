@@ -167,14 +167,14 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
                 number_of_traces, points_per_trace = traces.shape
 
                 if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate * 1e3
+                    time_step = 1 / self.sample_rate
                     t_list = np.arange(0, points_per_trace * time_step,
                                        time_step)
                     t_list_arr = DataArray(
                         name='time',
                         array_id='time',
                         label=' Time',
-                        unit='ms',
+                        unit='s',
                         shape=traces.shape,
                         preset_data=np.full(traces.shape, t_list),
                         is_setpoint=True)
@@ -728,8 +728,6 @@ class AdiabaticParameter(AcquisitionParameter):
             *self.post_pulses,
             FrequencyRampPulse('adiabatic_ESR', id=0))
 
-        # Update names to include contrast_read
-        self.names = self.names
         self.pulse_delay = 5
 
     @property
@@ -739,12 +737,12 @@ class AdiabaticParameter(AcquisitionParameter):
     @names.setter
     def names(self, names):
         if len(self.ESR_frequencies) == 1:
-            ESR_names = [f'contrast_read']
+            ESR_names = [f'contrast_read', 'up_proportion_read']
         else:
-            ESR_names = [f'contrast_read{k}'
-                         for k in range(len(self.ESR_frequencies))]
+            ESR_names = [f'{attr}_read{k}'
+                         for k in range(len(self.ESR_frequencies))
+                         for attr in ['contrast', 'up_proportion']]
         names = ESR_names + list(names)
-
         self._names = names
 
     @property_ignore_setter
@@ -783,7 +781,8 @@ class AdiabaticParameter(AcquisitionParameter):
 
         # update names
         self.names = [name for name in self.names
-                      if 'contrast_read' not in name]
+                      if 'contrast_read' not in name
+                      and 'up_proportion_read' not in name]
 
     @property
     def pulse_delay(self):

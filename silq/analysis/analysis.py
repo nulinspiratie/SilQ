@@ -14,7 +14,7 @@ if 'analysis' not in config:
 analysis_config = config['analysis']
 
 def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
-                  threshold_method='mean'):
+                  threshold_method='mean', min_SNR=None):
     # Calculate DC (mean) voltage
     DC_voltage = np.mean(traces)
 
@@ -68,8 +68,10 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
         threshold_voltage = high['mean'] - factor * high['std']
 
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
-    if SNR < 2:
-        # print('Signal to noise ratio {} is too low'.format(SNR))
+    if min_SNR is None:
+        min_SNR = analysis_config.min_SNR
+    if SNR < min_SNR:
+        logger.info(f'Signal to noise ratio {SNR} is too low')
         threshold_voltage = None
 
     # Plotting
@@ -85,6 +87,7 @@ def find_high_low(traces, plot=False, threshold_peak=0.02, attempts=8,
             'high': high,
             'threshold_voltage': threshold_voltage,
             'voltage_difference': voltage_difference,
+            'SNR': SNR,
             'DC_voltage': DC_voltage}
 
 def edge_voltage(traces, edge, state, threshold_voltage=None, points=5,
@@ -282,7 +285,8 @@ def analyse_read_long(t_read, sample_rate, traces=None,
 
     if threshold_voltage is None:
         # Could not find threshold voltage, either too high SNR or no blips
-        return {'contrast': 0,
+        return {'up_proportion': 0,
+                'contrast': 0,
                 'dark_counts': 0,
                 'threshold_voltage': 0,
                 'voltage_difference': 0,
@@ -309,7 +313,7 @@ def analyse_read_long(t_read, sample_rate, traces=None,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
 
-        if sum(results_begin['idx']) < min_trace_perc:
+        if results_begin['num_traces'] / len(traces) < min_trace_perc:
             # Not enough traces start loaded
             contrast = 0
         else:
@@ -318,7 +322,8 @@ def analyse_read_long(t_read, sample_rate, traces=None,
         blips = count_blips(traces, threshold_voltage=threshold_voltage,
                             sample_rate=sample_rate, t_skip=t_skip)
 
-    return {'contrast': contrast,
+    return {'up_proportion': up_proportion,
+            'contrast': contrast,
             'dark_counts': dark_counts,
             'threshold_voltage': threshold_voltage,
             'voltage_difference': high_low['voltage_difference'],
@@ -346,6 +351,7 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
             'voltage_difference_empty': results_empty['voltage_difference'],
             'fidelity_load': results_load['up_proportion'],
             'voltage_difference_load': results_load['voltage_difference'],
+            'up_proportion': results_read['up_proportion'],
             'contrast': results_read['contrast'],
             'dark_counts': results_read['dark_counts'],
             'voltage_difference_read': results_read['voltage_difference'],
@@ -418,14 +424,20 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
     # Add read results
     if len(read_segment_names) == 1:
-        read_contrast = results_read[read_segment_names[0]]['contrast']
-        results[f'contrast_read'] = read_contrast
+        segment_results = results_read[read_segment_names[0]]
+        results[f'contrast_read'] = segment_results['contrast']
+        results[f'up_proportion_read'] = segment_results['up_proportion']
     else:
         for read_segment_name in read_segment_names:
-            read_contrast = results_read[read_segment_name]['contrast']
+            segment_results = results_read[read_segment_name]
+
             read_segment_name = read_segment_name.replace('[', '')
             read_segment_name = read_segment_name.replace(']', '')
+
+            read_contrast = segment_results['contrast']
             results[f'contrast_{read_segment_name}'] = read_contrast
+            up_proportion = segment_results['up_proportion']
+            results[f'up_proportion_{read_segment_name}'] = up_proportion
 
     return results
 
