@@ -308,7 +308,8 @@ class TraceParameter(AcquisitionParameter):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
         self.samples = 1
-        self.trace_pulse = 'trace_pulse'
+        self.trace_pulse = MeasurementPulse('trace_pulse', duration=1,
+                                            acquire=True, average=self.average_mode)
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
@@ -326,8 +327,8 @@ class TraceParameter(AcquisitionParameter):
     def average_mode(self, mode):
         if (self._average_mode != mode):
             self._average_mode = mode
-            if self.trace_pulse in self.pulse_sequence:
-                self.pulse_sequence[self.trace_pulse].average = mode
+            if self.trace_pulse is not None:
+                self.trace_pulse.average = mode
 
     @property
     def pulse_sequence(self):
@@ -339,7 +340,7 @@ class TraceParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def names(self):
-        return tuple(self.trace_pulse + f'_{output[1]}'
+        return tuple(self.trace_pulse.full_name + f'_{output[1]}'
                 for output in self.layout.acquisition_outputs())
 
     @property_ignore_setter
@@ -351,7 +352,7 @@ class TraceParameter(AcquisitionParameter):
         if self.trace_pulse in self.pulse_sequence:
             trace_shapes = self.pulse_sequence.get_trace_shapes(
                 self.layout.sample_rate, self.samples)
-            trace_pulse_shape = tuple(trace_shapes[self.trace_pulse])
+            trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
             if self.samples > 1 and self.average_mode == 'none':
                 return ((trace_pulse_shape,),) * \
                        len(self.layout.acquisition_outputs())
@@ -365,7 +366,7 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def setpoints(self):
         if self.trace_pulse in self.pulse_sequence:
-            duration = self.pulse_sequence[self.trace_pulse].duration
+            duration = self.trace_pulse.duration
         else:
             return ((1,),) * len(self.layout.acquisition_outputs())
 
@@ -406,22 +407,26 @@ class TraceParameter(AcquisitionParameter):
         """
 
         acquired_pulses = self.pulse_sequence.get_pulses(acquire=True)
-        if len(acquired_pulses) == 0:
+
+        if not acquired_pulses:
             raise RuntimeError('PulseSequence has no pulses to acquire.')
+
+        # Find the start and stop times for all acquired pulses
+        t_start = min(pulse.t_start for pulse in acquired_pulses)
+        t_stop = max(pulse.t_stop for pulse in acquired_pulses)
+
+        self.trace_pulse.t_start = t_start
+        self.trace_pulse.t_stop = t_stop
+
+        # Ensure that each pulse is not acquired as this could cause
+        # overlapping issues
+        for pulse in self.pulse_sequence.get_pulses():
+            if pulse is self.trace_pulse:
+                continue
+            pulse.acquire = False
+
         if self.trace_pulse not in self.pulse_sequence:
-            # Find the start and stop times for all acquired pulses
-            t_start = min(pulse.t_start for pulse in acquired_pulses)
-            t_stop = max(pulse.t_stop for pulse in acquired_pulses)
-
-            # Ensure that each pulse is not acquired as this could cause
-            # overlapping issues
-            for pulse in self.pulse_sequence.get_pulses():
-                pulse.acquire = False
-
-            # Create a new single pulse to acquire with t_start and t_stop
-            self.pulse_sequence.add(MeasurementPulse(self.trace_pulse, t_start=t_start,
-                                                     t_stop=t_stop, acquire=True,
-                                                     average=self.average_mode))
+            self.pulse_sequence.add(self.trace_pulse)
 
         super().setup(start=start, **kwargs)
 
@@ -433,12 +438,9 @@ class TraceParameter(AcquisitionParameter):
                  ((data_for_1st_output), (data_for_2nd_output), ...)
         """
         super().acquire(**kwargs)
-        traces = []
 
-        # Merge all pulses together for a single acquisition channel
-        for k, (_, output) in enumerate(self.layout.acquisition_outputs()):
-            trace = self.data[self.trace_pulse][output]
-            traces.append(trace)
+        traces = [self.data[self.trace_pulse.full_name][output] for _, output in
+                  self.layout.acquisition_outputs()]
 
         return traces
 
