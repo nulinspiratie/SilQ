@@ -87,7 +87,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def _attach_to_config(self, path, select_attrs=None):
         """
         Attach parameter to a subconfig (within silq config).
-        This means that whenever an item in the subconfig is updated,
+        This mean
+        s that whenever an item in the subconfig is updated,
         the parameter attribute will also be updated to this value.
 
         Notification of config updates is handled through blinker signals.
@@ -105,7 +106,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         # TODO special handling of pulse_sequence attr, etc.
         try:
             # Get subconfig from silq config
-            subconfig = config.get(path)
+            subconfig = config[path]
         except (KeyError, AttributeError):
             # No subconfig exists, not attaching
             return None
@@ -119,7 +120,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             signal_handler = self._handle_config_signal
 
         # Connect changes in subconfig to handling function
-        signal(f'config:{path}').connect(signal_handler)
+        signal(f'config:{path}').connect(signal_handler, weak=False)
 
         # Set attributes that are present in subconfig
         for attr, val in subconfig.items():
