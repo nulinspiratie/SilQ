@@ -246,26 +246,26 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         self.instrument.awg_trigger_multiple(mask)
 
     def create_zero_waveform(self, duration, sampling_rate):
-        wave_form_multiple = 5
-        wave_form_minimum = 15  # the minimum size of a waveform
+        waveform_multiple = 5
+        waveform_minimum = 15  # the minimum size of a waveform
 
         period_sample = 1 / sampling_rate
 
-        period = period_sample * wave_form_minimum
+        period = period_sample * waveform_minimum
         cycles = duration // period
 
         n = int(-(-cycles // 2 ** 16))
 
-        samples = n * wave_form_minimum
+        samples = n * waveform_minimum
 
         waveform_repeated_period = period_sample * samples
         waveform_repeated_cycles = cycles // n
         waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-        waveform_tail_samples = wave_form_multiple * int(round(
-            ((duration - waveform_repeated_duration) / period_sample + 1) / wave_form_multiple))
+        waveform_tail_samples = waveform_multiple * int(round(
+            ((duration - waveform_repeated_duration) / period_sample + 1) / waveform_multiple))
 
-        if waveform_tail_samples < wave_form_minimum:
+        if waveform_tail_samples < waveform_minimum:
             waveform_tail_samples = 0
 
         waveform_repeated = {}
@@ -851,7 +851,7 @@ class MarkerPulseImplementation(PulseImplementation):
         period_sample = 1 / sampling_rate
 
 
-        # Waveform must have at least wave_form_multiple samples
+        # Waveform must have at least waveform_multiple samples
         waveform_samples = waveform_multiple * round(
             (self.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:
