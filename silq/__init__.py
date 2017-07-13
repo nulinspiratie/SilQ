@@ -5,12 +5,28 @@ import logging
 import json
 from .tools.config import DictConfig, ListConfig
 
+import qcodes as qc
 
 logger = logging.getLogger(__name__)
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
+
+
+# Add saving of config to qcodes DataSet
+def _save_config(self, location=None):
+    try:
+        if location is None:
+            location = self.location
+
+        if not os.path.isabs(location):
+            location = os.path.join(qc.DataSet.default_io.base_location, location)
+        config.save(location)
+    except Exception as e:
+        logger.error(f'Datasaving error: {e.args}')
+
+qc.DataSet.save_config = _save_config
 
 
 def get_silq_folder():
@@ -151,3 +167,16 @@ def initialize(name=None, mode=None, select=None, ignore=None):
     if 'default_environment' not in config.properties:
         warnings.warn("'default_environment' should be specified "
                       "in silq.config.properties")
+
+    if 'data_folder' in config.properties:
+        logger.debug(f'using config data folder: '
+                     f'{config.properties.data_folder}')
+        qc.data.data_set.DataSet.default_io.base_location = \
+            config.properties.data_folder
+
+        location_provider = qc.data.data_set.DataSet.location_provider
+        if os.path.split(config.properties.data_folder)[-1] == 'data' and \
+                (location_provider.fmt ==
+                     'data/{date}/#{counter}_{name}_{time}'):
+            logger.debug('Removing duplicate "data" from location provider')
+            location_provider.fmt = '{date}/#{counter}_{name}_{time}'

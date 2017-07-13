@@ -2,18 +2,16 @@ import numpy as np
 import logging
 
 import qcodes as qc
-from qcodes.loops import active_loop
+from qcodes.loops import active_data_set
 from qcodes.data import hdf5_format, io
 from qcodes import config
 from qcodes.instrument.parameter import MultiParameter
-from qcodes.config.config import DotDict
 
-from silq.tools import data_tools, general_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
-    attribute_from_config
+    attribute_from_config, convert_setpoints, property_ignore_setter
 from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
-    Loop1DMeasurement, Loop2DMeasurement, ConditionSet
+    Loop1DMeasurement, Loop2DMeasurement, ConditionSet, TruthCondition
 from silq.measurements.measurement_modules import MeasurementSequence
 
 logger = logging.getLogger(__name__)
@@ -24,6 +22,7 @@ measurement_config = qc.config['user'].get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
+
     def __init__(self, name, acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
@@ -59,10 +58,10 @@ class MeasurementParameter(SettingsClass, MultiParameter):
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        if active_loop() is None:
+        dataset = active_data_set()
+        if dataset is None:
             return None
         else:
-            dataset = active_loop().get_data_set()
             return dataset.location
 
     @property
@@ -76,7 +75,6 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def discriminant(self, val):
         self._discriminant = val
 
-
     @property
     def discriminant_idx(self):
         if self.acquisition_parameter.name is not None:
@@ -86,15 +84,127 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
     def print_results(self):
         if getattr(self, 'names', None) is not None:
-            for name, result in zip(self.names, self.results):
-                logger.info('{}: {:.3f}'.format(name, result))
+            for name, result in self.results.items():
+                logger.info(f'{name}: {result:.3f}')
         elif hasattr(self, 'results'):
-            logger.info('{}: {:.3f}'.format(self.name, self.results))
+            logger.info(f'{self.name}: {self.results[self.name]:.3f}')
+
+
+class DCMultisweepParameter(MeasurementParameter):
+    def __init__(self, name, acquisition_parameter, x_gate, y_gate, **kwargs):
+        super().__init__(name=name, names=['DC_voltage'], labels=['DC voltage'],
+                         units=['V'], shapes=((1, 1),),
+                         setpoint_names=((y_gate.name, x_gate.name),),
+                         setpoint_units=(('V', 'V'),),
+                         acquisition_parameter=acquisition_parameter)
+
+        self.x_gate = x_gate
+        self.y_gate = y_gate
+
+        self.x_range = None
+        self.y_range = None
+
+        self.AC_range = 0.2
+        self.pts = 120
+
+        self.continuous = False
+
+    @property
+    def x_sweeps(self):
+        return np.ceil((self.x_range[1] - self.x_range[0]) / self.AC_range)
+
+    @property
+    def y_sweeps(self):
+        return np.ceil((self.y_range[1] - self.y_range[0]) / self.AC_range)
+
+    @property
+    def x_sweep_range(self):
+        return (self.x_range[1] - self.x_range[0]) / self.x_sweeps
+
+    @property
+    def y_sweep_range(self):
+        return (self.y_range[1] - self.y_range[0]) / self.y_sweeps
+
+    @property
+    def AC_x_vals(self):
+        return np.linspace(-self.x_sweep_range / 2, self.x_sweep_range / 2,
+                           self.pts + 1)[:-1]
+
+
+    @property
+    def AC_y_vals(self):
+        return np.linspace(-self.y_sweep_range / 2, self.y_sweep_range / 2,
+                           self.pts + 1)[:-1]
+
+    @property
+    def DC_x_vals(self):
+        return np.linspace(self.x_range[0] + self.x_sweep_range / 2,
+                           self.x_range[1] - self.x_sweep_range / 2,
+                           self.x_sweeps).tolist()
+
+    @property
+    def DC_y_vals(self):
+        return np.linspace(self.y_range[0] + self.y_sweep_range / 2,
+                           self.y_range[1] - self.y_sweep_range / 2,
+                           self.y_sweeps).tolist()
+
+    @property_ignore_setter
+    def setpoints(self):
+        return convert_setpoints(np.linspace(self.y_range[0], self.y_range[1],
+                                             self.pts * self.y_sweeps),
+            np.linspace(self.x_range[0], self.x_range[1],
+                        self.pts * self.x_sweeps)),
+
+    @property_ignore_setter
+    def shapes(self):
+        return (len(self.DC_y_vals) * self.pts, len(self.DC_x_vals) * self.pts),
+
+    def setup(self):
+        self.acquisition_parameter.sweep_parameters.clear()
+        self.acquisition_parameter.add_sweep(self.x_gate.name, self.AC_x_vals,
+                                             connection_label=self.x_gate.name,
+                                             offset_parameter=self.x_gate)
+        self.acquisition_parameter.add_sweep(self.y_gate.name, self.AC_y_vals,
+                                             connection_label=self.y_gate.name,
+                                             offset_parameter=self.y_gate)
+        self.acquisition_parameter.setup()
+
+    def get(self):
+        self.loop = qc.Loop(self.y_gate[self.DC_y_vals]).loop(
+            self.x_gate[self.DC_x_vals]).each(self.acquisition_parameter)
+
+        self.acquisition_parameter.temporary_settings(continuous=True)
+        try:
+            if not self.continuous:
+                self.setup()
+            self.data = self.loop.run(name=f'multi_2D_scan')
+        # except:
+        #     logger.debug('except stopping')
+        #     self.layout.stop()
+        #     self.acquisition_parameter.clear_settings()
+        #     raise
+        finally:
+            if not self.continuous:
+                logger.debug('finally stopping')
+                self.layout.stop()
+                self.acquisition_parameter.clear_settings()
+
+
+        arr = np.zeros((len(self.DC_y_vals) * self.pts,
+                        len(self.DC_x_vals) * self.pts))
+        for y_idx in range(len(self.DC_y_vals)):
+            for x_idx in range(len(self.DC_x_vals)):
+                DC_data = self.data.DC_voltage[y_idx, x_idx]
+                arr[y_idx * self.pts:(y_idx + 1) * self.pts,
+                x_idx * self.pts:(x_idx + 1) * self.pts] = DC_data
+        return arr,
+
 
 
 class MeasurementSequenceParameter(MeasurementParameter):
     def __init__(self, name, measurement_sequence=None,
-                 set_parameters=None, discriminant=None, **kwargs):
+                 set_parameters=None, discriminant=None,
+                 start_condition=None, **kwargs):
         """
 
         Args:
@@ -113,6 +223,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
         self.discriminant = discriminant
         self.set_parameters = set_parameters
+        self.start_condition = start_condition
 
         if isinstance(measurement_sequence, str):
             # Load sequence from dict
@@ -129,27 +240,53 @@ class MeasurementSequenceParameter(MeasurementParameter):
             acquisition_parameter=self.acquisition_parameter,
             **kwargs)
 
-
         self._meta_attrs.extend(['discriminant'])
 
     @clear_single_settings
     def get(self):
-        self.measurement_sequence.base_folder = self.base_folder
-        result = self.measurement_sequence()
-        num_measurements = self.measurement_sequence.num_measurements
-
-        if result['action'] == 'success':
-            # Retrieve dict of {param.name: val} of optimal set vals
-            optimal_set_vals = self.measurement_sequence.optimal_set_vals
-            # Convert dict to list of set vals
-            optimal_set_vals = [optimal_set_vals.get(p.name, p())
-                                for p in self.set_parameters]
+        if self.start_condition is None:
+            start_condition_satisfied = True
+        elif isinstance(self.start_condition, TruthCondition):
+            if self.acquisition_parameter.results is None:
+                logger.info('Start TruthCondition satisfied because '
+                            'acquisition parameter has no results')
+                start_condition_satisfied = True
+            else:
+                start_condition_satisfied = \
+                    self.start_condition.check_satisfied(
+                        self.acquisition_parameter.results)[0]
+                logger.info(f'Start Truth condition {self.start_condition} '
+                            f'satisfied: {start_condition_satisfied}')
         else:
-            optimal_set_vals = [p() for p in self.set_parameters]
+            start_condition_satisfied = self.start_condition()
+            logger.info(f'Start condition function {self.start_condition} '
+                        f'satisfied: {start_condition_satisfied}')
 
-        optimal_val = self.measurement_sequence.optimal_val
+        if not start_condition_satisfied:
+            num_measurements = -1
+            optimal_set_vals = [p() for p in self.set_parameters]
+            optimal_val = self.measurement_sequence.optimal_val
+            return num_measurements, optimal_set_vals, optimal_val
+        else:
+            self.measurement_sequence.base_folder = self.base_folder
+            result = self.measurement_sequence()
+            num_measurements = self.measurement_sequence.num_measurements
+
+            logger.info(f"Measurements performed: {num_measurements}")
+
+            if result['action'] == 'success':
+                # Retrieve dict of {param.name: val} of optimal set vals
+                optimal_set_vals = self.measurement_sequence.optimal_set_vals
+                # Convert dict to list of set vals
+                optimal_set_vals = [optimal_set_vals.get(p.name, p())
+                                    for p in self.set_parameters]
+            else:
+                optimal_set_vals = [p() for p in self.set_parameters]
+
+            optimal_val = self.measurement_sequence.optimal_val
 
         return num_measurements, optimal_set_vals, optimal_val
+
 
 
 class SelectFrequencyParameter(MeasurementParameter):
@@ -210,7 +347,8 @@ class SelectFrequencyParameter(MeasurementParameter):
         self.measurement(frequencies)
         self.measurement()
 
-        self.results = getattr(self.measurement.dataset, self.discriminant)
+        self.results = {self.discriminant: getattr(self.measurement.dataset,
+                                                   self.discriminant)}
 
         # Determine optimal frequency and update config entry if needed
         self.condition_result = self.measurement.check_condition_sets()
@@ -223,7 +361,7 @@ class SelectFrequencyParameter(MeasurementParameter):
                 logger.warning("Could not find frequency with high enough "
                                 "contrast")
 
-        self.results += [frequency]
+        self['frequency'] = frequency
 
         self.acquisition_parameter.clear_settings()
 
@@ -231,7 +369,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return [self.results[name] for name in self.names]
 
 
 class TrackPeakParameter(MeasurementParameter):

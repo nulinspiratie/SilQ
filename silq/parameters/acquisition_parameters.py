@@ -1,23 +1,24 @@
 from time import sleep
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 from matplotlib import pyplot as plt
 from blinker import signal
 from functools import partial
+import logging
 
-from qcodes.instrument.parameter import MultiParameter
-from qcodes.data import hdf5_format, io
-from qcodes.data.data_array import DataArray
-from qcodes.loops import active_loop
+from qcodes import DataSet, DataArray, MultiParameter, active_data_set
+from qcodes.data import hdf5_format
 
 from silq import config
 from silq.pulses import *
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
-    attribute_from_config, UpdateDotDict, convert_setpoints
+    attribute_from_config, UpdateDotDict, convert_setpoints, \
+    property_ignore_setter
 
 
+logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
 
 
@@ -29,11 +30,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  properties_attrs=[], **kwargs):
         SettingsClass.__init__(self)
 
+        self.pulse_sequence = PulseSequence()
+        """Pulse sequence of acquisition parameter"""
+
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
-        self.pulse_sequence = PulseSequence()
-        """Pulse sequence of acquisition parameter"""
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -78,6 +80,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset = None
         self.results = None
 
+        self.base_folder = None
         self.subfolder = None
 
         self.continuous = continuous
@@ -88,6 +91,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.layout = self.layout
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
+
     def __repr__(self):
         return '{} acquisition parameter'.format(self.name)
 
@@ -119,22 +123,29 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=['output']):
+                     channels=['output'], setpoints=False):
+
         # Store raw traces
         if base_folder is None:
             # Extract base_folder from dataset of currently active loop
-            active_dataset = active_loop().get_data_set()
-            if active_dataset.location:
+            active_dataset = active_data_set()
+            if self.base_folder is not None:
+                base_folder = self.base_folder
+            elif getattr(active_dataset, 'location', None):
                 base_folder = active_dataset.location
             elif hasattr(active_dataset, '_location'):
                 base_folder = active_dataset._location
+
+            if subfolder is None and base_folder is not None:
+                subfolder = f'traces_{self.name}'
+            else:
+                base_folder = DataSet.location_provider(DataSet.default_io)
+
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
                                                   subfolder=subfolder,
                                                   formatter=self.formatter)
 
-        # Create dictionary of set arrays
-        set_arrs = {}
         traces_dict = {}
         for pulse_name, channel_traces in pulse_traces.items():
             for channel in channels:
@@ -142,42 +153,49 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 traces = channel_traces[channel]
                 traces_dict[traces_name] = traces
 
+        if setpoints:
+            # Create dictionary of set arrays
+            set_arrs = {}
+            for traces_name, traces in traces_dict.items():
                 number_of_traces, points_per_trace = traces.shape
 
                 if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate * 1e3
-                    t_list = np.arange(0, points_per_trace * time_step, time_step)
-                    t_list_arr = DataArray(name='time',
-                                           array_id='time',
-                                           label=' Time',
-                                           unit='ms',
-                                           shape=traces.shape,
-                                           preset_data=np.full(traces.shape,
-                                                               t_list),
-                                           is_setpoint=True)
+                    time_step = 1 / self.sample_rate
+                    t_list = np.arange(0, points_per_trace * time_step,
+                                       time_step)
+                    t_list_arr = DataArray(
+                        name='time',
+                        array_id='time',
+                        label=' Time',
+                        unit='s',
+                        shape=traces.shape,
+                        preset_data=np.full(traces.shape, t_list),
+                        is_setpoint=True)
 
-                    trace_num_arr = DataArray(name='trace_num',
-                                              array_id='trace_num',
-                                              label='Trace',
-                                              unit='num',
-                                              shape=(number_of_traces, ),
-                                              preset_data=np.arange(
-                                                  number_of_traces, dtype=np.float64),
-                                              is_setpoint=True)
+                    trace_num_arr = DataArray(
+                        name='trace_num',
+                        array_id='trace_num',
+                        label='Trace',
+                        unit='num',
+                        shape=(number_of_traces, ),
+                        preset_data=np.arange(number_of_traces,
+                                              dtype=np.float64),
+                        is_setpoint=True)
                     set_arrs[traces.shape] = (trace_num_arr, t_list_arr)
 
-        # Add set arrays to dataset
-        for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
-            for arr in (t_list_arr, trace_num_arr):
-                if len(set_arrs) > 1:
-                    # Need to give individual array_ids to each of the set arrays
-                    arr.array_id += '_{}'.format(k)
-                self.dataset.add_array(arr)
+            # Add set arrays to dataset
+            for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
+                for arr in (t_list_arr, trace_num_arr):
+                    if len(set_arrs) > 1:
+                        # Need to give individual array_ids to each of the set arrays
+                        arr.array_id += '_{}'.format(k)
+                    self.dataset.add_array(arr)
+            set_arrays = (t_list_arr, trace_num_arr)
+        else:
+            set_arrays = ()
 
         # Add trace arrs to dataset
         for traces_name, traces in traces_dict.items():
-            t_list_arr, trace_num_arr = set_arrs[traces.shape]
-
             # Must transpose traces array
             trace_arr = DataArray(name=traces_name,
                                   array_id=traces_name,
@@ -185,24 +203,20 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                   unit='V',
                                   shape=traces.shape,
                                   preset_data=traces,
-                                  set_arrays=(t_list_arr, trace_num_arr))
+                                  set_arrays=set_arrays)
             self.dataset.add_array(trace_arr)
 
         self.dataset.finalize()
 
     def print_results(self):
         if self.names is not None:
-            for name, result in zip(self.names, self.results):
-                print('{}: {:.3f}'.format(name, result))
+            for name in self.names:
+                print(f'{name}: {self.results[name]:.3f}')
         else:
-            print('{}: {:.3f}'.format(self.name, self.results))
+            print(f'{self.name}: {self.results[self.name]:.3f}')
 
     def setup(self, start=None, **kwargs):
-        # Create a hard copy of pulse sequence. This ensures that pulse
-        # attributes no longer depend on pulse_config, and can therefore be
-        # safely transferred to layout.
-        pulse_sequence = self.pulse_sequence.copy()
-        self.layout.target_pulse_sequence(pulse_sequence)
+        self.layout.pulse_sequence = self.pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
         self.layout.setup(samples=samples, **kwargs)
@@ -213,16 +227,31 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, start=None, stop=None, setup=None, **kwargs):
-        if start is None and stop is None:
-            start = not self.continuous
+    def acquire(self, stop=None, setup=None, **kwargs):
+        """
+        Performs a layout.acquisition. The result is stored in self.data
+        Args:
+            stop (Bool): Whether to stop instruments after acquisition.
+                If not specified, it will stop if self.continuous is False
+            setup (Bool): Whether to setup layout before acquisition.
+                If not specified, it will setup if pulse_sequences are different
+            **kwargs: Additional kwargs to be given to layout.acquisition
+
+        Returns:
+            acquisition output
+        """
+        if stop is None:
             stop = not self.continuous
 
-        if setup is None and not self.continuous:
+        if setup or (setup is None and
+                     self.layout.pulse_sequence != self.pulse_sequence) or \
+                self.layout.samples() != self.samples:
             self.setup()
 
+
         # Perform acquisition
-        self.data = self.layout.acquisition(start=start, stop=stop, **kwargs)
+        self.data = self.layout.acquisition(stop=stop, **kwargs)
+        return self.data
     #
     # def plot_traces(self, channel='output'):
     #     fig, ax = plt.subplots(1,1)
@@ -274,18 +303,16 @@ class DCParameter(AcquisitionParameter):
         self.samples = 1
 
         self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='point',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='read', acquire=True, average='point'),
+            DCPulse(name='final'))
 
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        self.results = [self.data['read']['output']]
-        return self.results
+        self.results = {'DC_voltage': self.data['read']['output']}
+        return tuple(self.results[name] for name in self.names)
 
 
 class TraceParameter(AcquisitionParameter):
@@ -299,14 +326,15 @@ class TraceParameter(AcquisitionParameter):
         parameter.pulse_sequence = my_pulse_sequence
 
     Note that for the above example, all pulses in my_pulse_sequence will be
-    copied and then their 'average' attribute will be set to the parameter's
-    'average_mode' attribute.
+    copied.
 
     """
     def __init__(self, average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
         self.samples = 1
+        self.trace_pulse = MeasurementPulse('trace_pulse', duration=1,
+                                            acquire=True, average=self.average_mode)
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
@@ -324,9 +352,8 @@ class TraceParameter(AcquisitionParameter):
     def average_mode(self, mode):
         if (self._average_mode != mode):
             self._average_mode = mode
-            # This line will ensure that the pulse sequence is recreated
-            # with the correct averaging mode
-            self.pulse_sequence = self.pulse_sequence
+            if self.trace_pulse is not None:
+                self.trace_pulse.average = mode
 
     @property
     def pulse_sequence(self):
@@ -335,53 +362,43 @@ class TraceParameter(AcquisitionParameter):
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
         self._pulse_sequence = pulse_sequence.copy()
-        for pulse in self._pulse_sequence.get_pulses(acquire=True):
-            pulse.average = self.average_mode
 
-    @property
+    @property_ignore_setter
     def names(self):
-        return [f'trace_{output[1]}'
-                for output in self.layout.acquisition_outputs()]
+        return tuple(self.trace_pulse.full_name + f'_{output[1]}'
+                for output in self.layout.acquisition_outputs())
 
-    @names.setter
-    def names(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def units(self):
-        return ['V'] * len(self.layout.acquisition_outputs())
+        return ('V', ) * len(self.layout.acquisition_outputs())
 
-    @units.setter
-    def units(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def shapes(self):
-        t_start = min((pulse.t_start for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
-        t_stop = max((pulse.t_stop for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True)), default=0.0)
-        duration = t_stop - t_start
-        pts = int(duration * self.sample_rate)
+        if self.trace_pulse in self.pulse_sequence:
+            trace_shapes = self.pulse_sequence.get_trace_shapes(
+                self.layout.sample_rate, self.samples)
+            trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
+            if self.samples > 1 and self.average_mode == 'none':
+                return ((trace_pulse_shape,),) * \
+                       len(self.layout.acquisition_outputs())
+            else:
+                return ((trace_pulse_shape[1], ), ) * \
+                        len(self.layout.acquisition_outputs())
+        else:
+            return ((1,),) * len(self.layout.acquisition_outputs())
 
-        return ((self.samples, pts),) * len(self.layout.acquisition_outputs())
 
-    @shapes.setter
-    def shapes(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def setpoints(self):
-        # TODO: Create blank regions for non continous acquisition periods
-        t_start = min(pulse.t_start for pulse in
-                      self.pulse_sequence.get_pulses(acquire=True))
-        t_stop = max(pulse.t_stop for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True))
-        duration = t_stop - t_start
+        if self.trace_pulse in self.pulse_sequence:
+            duration = self.trace_pulse.duration
+        else:
+            return ((1,),) * len(self.layout.acquisition_outputs())
+
         num_traces = len(self.layout.acquisition_outputs())
 
         pts = duration * self.sample_rate
-        t_list = np.linspace(0, duration, pts + 1)[0:-1] * 1e3
+        t_list = np.linspace(0, duration, pts, endpoint=True)
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
@@ -390,24 +407,16 @@ class TraceParameter(AcquisitionParameter):
             setpoints = ((t_list, ), ) * num_traces
         return setpoints
 
-    @setpoints.setter
-    def setpoints(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def setpoint_names(self):
         if self.samples > 1 and self.average_mode == 'none':
             return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('time', ), ) * len(self.layout.acquisition_outputs())
+            return (('Time', ), ) * len(self.layout.acquisition_outputs())
 
 
-    @setpoint_names.setter
-    def setpoint_names(self, _):
-        pass
-
-    @property
+    @property_ignore_setter
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
             return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
@@ -415,57 +424,48 @@ class TraceParameter(AcquisitionParameter):
             return (('ms', ), ) * len(self.layout.acquisition_outputs())
 
 
-    @setpoint_units.setter
-    def setpoint_units(self, _):
-        pass
-
     def setup(self, start=None, **kwargs):
-        # Ensure that each pulse is average to the parameter specs
-        for pulse in self.pulse_sequence.get_pulses(acquire=True):
-            pulse.average_mode = self.average_mode
+        """
+        Modifies provided pulse sequence by creating a single
+        pulse which overlaps all other pulses with acquire=True and
+        then acquires only this pulse.
+        """
+
+        acquired_pulses = self.pulse_sequence.get_pulses(acquire=True)
+
+        if not acquired_pulses:
+            raise RuntimeError('PulseSequence has no pulses to acquire.')
+
+        # Find the start and stop times for all acquired pulses
+        t_start = min(pulse.t_start for pulse in acquired_pulses)
+        t_stop = max(pulse.t_stop for pulse in acquired_pulses)
+
+        self.trace_pulse.t_start = t_start
+        self.trace_pulse.t_stop = t_stop
+
+        # Ensure that each pulse is not acquired as this could cause
+        # overlapping issues
+        for pulse in self.pulse_sequence.get_pulses():
+            if pulse is self.trace_pulse:
+                continue
+            pulse.acquire = False
+
+        if self.trace_pulse not in self.pulse_sequence:
+            self.pulse_sequence.add(self.trace_pulse)
 
         super().setup(start=start, **kwargs)
 
     def acquire(self, **kwargs):
-        """Acquires the number of traces defined in self.samples
+        """
+        Acquires the number of traces defined in self.samples
 
-            :param kwargs: Passed to AcquisitionParameter acquire()
-            :return: A tuple of data points. e.g.
-                    ((data_for_1st_output), (data_for_2nd_output), ...)
+        return:  A tuple of data points. e.g.
+                 ((data_for_1st_output), (data_for_2nd_output), ...)
         """
         super().acquire(**kwargs)
-        traces = []
-        # Merge all pulses together for a single acquisition channel
 
-        for k, (_, output) in enumerate(self.layout.acquisition_outputs()):
-            trace = np.concatenate(
-                [self.data[pulse.full_name][output] for pulse in
-                 self.pulse_sequence.get_pulses(acquire=True)], axis=1
-            )
-            # if self.average_mode == 'none':
-            #     if len(self.pulse_sequence.get_pulses(acquire=True)) > 1:
-            #         # Data is 2D,
-            #         trace = np.concatenate(
-            #             [self.data[pulse.full_name][output] for pulse in
-            #              self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-            #     else:
-            #         trace = np.concatenate(
-            #             [self.data[pulse.full_name][output] for pulse in
-            #              self.pulse_sequence.get_pulses(acquire=True)])
-            # else:
-            #     trace = (np.concatenate(
-            #         [self.data[pulse.full_name][output] for pulse in
-            #          self.pulse_sequence.get_pulses(acquire=True)], axis=0),)
-            # # print(f'{k}, {output} : {np.shape(trace)}')
-
-            # TODO: This should be done at time of acquisition, fix trace dims
-            # import pdb; pdb.set_trace()
-            # if trace:
-            #     shape = (self.samples, len(self.setpoints[0][1]))
-            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
-            #     trace = (trace, )*self.samples
-            # trace = (trace,) * self.samples
-            traces.append(trace)
+        traces = [self.data[self.trace_pulse.full_name][output] for _, output in
+                  self.layout.acquisition_outputs()]
 
         return traces
 
@@ -475,10 +475,10 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = [[trace, np.mean(trace), np.std(trace)]
-                        for trace in traces]
+        self.results = {self.names[k] : trace
+                        for k, trace in enumerate(traces)}
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class DCSweepParameter(AcquisitionParameter):
@@ -505,7 +505,7 @@ class DCSweepParameter(AcquisitionParameter):
     def __getitem__(self, item):
         return self.sweep_parameters[item]
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         iter_sweep_parameters = iter(self.sweep_parameters.values())
         if len(self.sweep_parameters) == 1:
@@ -536,25 +536,25 @@ class DCSweepParameter(AcquisitionParameter):
             setpoints += (convert_setpoints(trace_setpoints),)
         return setpoints
 
-    @property
+    @property_ignore_setter
     def names(self):
         if self.trace_pulse.enabled:
             return ('DC_voltage', 'trace_voltage')
         else:
             return ('DC_voltage',)
 
-    @property
+    @property_ignore_setter
     def labels(self):
         if self.trace_pulse.enabled:
             return ('DC voltage', 'Trace voltage')
         else:
             return ('DC voltage',)
 
-    @property
+    @property_ignore_setter
     def units(self):
         return ('V', 'V') if self.trace_pulse.enabled else ('V',)
 
-    @property
+    @property_ignore_setter
     def shapes(self):
         iter_sweep_parameters = iter(self.sweep_parameters.values())
         if len(self.sweep_parameters) == 0:
@@ -572,7 +572,7 @@ class DCSweepParameter(AcquisitionParameter):
                 self.trace_pulse.duration * 1e-3 * self.sample_rate),),
         return shapes
 
-    @property
+    @property_ignore_setter
     def setpoint_names(self):
         iter_sweep_parameters = reversed(self.sweep_parameters.keys())
         names = tuple(iter_sweep_parameters),
@@ -580,40 +580,12 @@ class DCSweepParameter(AcquisitionParameter):
             names += (('time',), )
         return names
 
-    @property
+    @property_ignore_setter
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
         if self.trace_pulse.enabled:
             setpoint_units += (('ms',), )
         return setpoint_units
-
-    @setpoints.setter
-    def setpoints(self, _):
-        pass
-
-    @names.setter
-    def names(self, _):
-        pass
-
-    @labels.setter
-    def labels(self, _):
-        pass
-
-    @units.setter
-    def units(self, _):
-        pass
-
-    @shapes.setter
-    def shapes(self, _):
-        pass
-
-    @setpoint_names.setter
-    def setpoint_names(self, _):
-        pass
-
-    @setpoint_units.setter
-    def setpoint_units(self, _):
-        pass
 
     def add_sweep(self, parameter_name, sweep_voltages=None,
                   connection_label=None, offset_parameter=None):
@@ -738,53 +710,55 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.use_ramp:
             if len(self.sweep_parameters) == 1:
-                self.results = [DC_voltages[0]]
+                self.results = {'DC_voltage': DC_voltages[0]}
             elif len(self.sweep_parameters) == 2:
-                self.results = [DC_voltages]
+                self.results = {'DC_voltage': DC_voltages}
         else:
             if len(self.sweep_parameters) == 1:
-                self.results = [DC_voltages]
+                self.results = {'DC_voltage': DC_voltages}
             elif len(self.sweep_parameters) == 2:
-                self.results = [DC_voltages.reshape(self.shapes[0])]
+                self.results = {'DC_voltage':
+                    DC_voltages.reshape(self.shapes[0])}
 
         if self.trace_pulse.enabled:
-            self.results.append(self.data['trace']['output'])
+            self.results['trace_voltage'] = self.data['trace']['output']
 
         return self.results
 
     @clear_single_settings
     def get(self):
         self.acquire()
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class EPRParameter(AcquisitionParameter):
     def __init__(self, **kwargs):
         super().__init__(name='EPR_acquisition',
-                         names=['contrast', 'up_proportion','dark_counts', 'voltage_difference',
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
-                         labels=['Contrast', 'up_proportion', 'Dark counts',
-                                 'Voltage difference',
-                                 'Fidelity empty', 'Fidelity load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
-            DCPulse('empty', acquire=True, connection_label='stage'),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final'))
+
+    @property_ignore_setter
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_EPR(pulse_traces=self.data,
-                                          sample_rate=self.sample_rate,
-                                          t_skip=self.t_skip,
-                                          t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_EPR(pulse_traces=self.data,
+                                            sample_rate=self.sample_rate,
+                                            t_skip=self.t_skip,
+                                            t_read=self.t_read)
 
         if self.save_traces:
             self.store_traces(self.data)
@@ -792,7 +766,7 @@ class EPRParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class AdiabaticParameter(AcquisitionParameter):
@@ -800,44 +774,116 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         Parameter used to perform an adiabatic sweep
         """
+        self._names = []
+
         super().__init__(name='adiabatic_acquisition',
                          names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                 'Voltage difference'],
+                                'voltage_difference_read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
-        self.pulse_sequence.add(
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True, connection_label='stage'),
-            DCPulse('read_long', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'),
-            FrequencyRampPulse('adiabatic_ESR', connection_label='ESR'))
+        self.pre_pulses = []
 
-        self.pulse_sequence.sort()
+        self.post_pulses = [
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final')]
+
+        self.pulse_sequence.add(
+            *self.pre_pulses,
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            *self.post_pulses,
+            FrequencyRampPulse('adiabatic_ESR', id=0))
+
+        # Update names to include contrast_read
+        self.names = self.names
+        self.ESR_delay = 0.5
 
     @property
-    def frequency(self):
-        return self.pulse_sequence['adiabatic'].frequency
+    def names(self):
+        return self._names
 
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['adiabatic'].frequency = frequency
+    @names.setter
+    def names(self, names):
+        if len(self.frequencies) == 1:
+            ESR_names = [f'contrast_read']
+        else:
+            ESR_names = [f'contrast_read{k}'
+                         for k in range(len(self.frequencies))]
+        names = ESR_names + list(names)
 
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
+        self._names = names
+
+    @property_ignore_setter
+    def shapes(self):
+        return ((), ) * len(self.names)
+
+    @property_ignore_setter
+    def units(self):
+        return ('', ) * len(self.names)
+
+    @property_ignore_setter
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @property
+    def frequencies(self):
+        adiabatic_pulses = self.pulse_sequence.get_pulses(name='adiabatic_ESR')
+        return [pulse.frequency for pulse in adiabatic_pulses]
+
+    @frequencies.setter
+    def frequencies(self, frequencies):
+        # Initialize pulse sequence
+        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
+
+        plunge_pulse = DCPulse('plunge')
+        read_pulse = DCPulse('read', acquire=True)
+        for frequency in frequencies:
+            # Add a plunge and read pulse for each frequency
+            self.pulse_sequence.add(plunge_pulse, read_pulse)
+
+        self.pulse_sequence.add(*self.post_pulses)
+
+        for k, frequency in enumerate(frequencies):
+            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
+            adiabatic_pulse = FrequencyRampPulse(
+                'adiabatic_ESR',
+                t_start=PulseMatch(plunge_pulse, 't_start',
+                                   delay=self.ESR_delay))
+            adiabatic_pulse.frequency = frequency
+            self.pulse_sequence.add(adiabatic_pulse)
+
+        # update names
+        self.names = [name for name in self.names
+                      if 'contrast_read' not in name]
+
+    @property
+    def ESR_delay(self):
+        # Delay between start of plunge and ESR pulse
+        return self._ESR_delay
+
+    @ESR_delay.setter
+    def ESR_delay(self, ESR_delay):
+        self._ESR_delay = ESR_delay
+
+        # Update ESR delays
+        for k, frequency in enumerate(self.frequencies):
+            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
+            adiabatic_pulse = self.pulse_sequence.get_pulse(
+                name='adiabatic_ESR', id=k)
+            adiabatic_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
+                                                 delay=ESR_delay)
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data, sample_rate=self.sample_rate,
+            t_skip=self.t_skip, t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -846,7 +892,7 @@ class AdiabaticParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class RabiParameter(AcquisitionParameter):
@@ -855,45 +901,40 @@ class RabiParameter(AcquisitionParameter):
         Parameter used to determine the Rabi frequency
         """
         super().__init__(name='rabi_acquisition',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
         self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
+            # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('plunge'),
             DCPulse('read', acquire=True),
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
             DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        # Disable previous pulse for sine pulse, since it would
-        # otherwise be after 'final' pulse
-        self.pulse_sequence.sort()
+            SinePulse('ESR'))
 
     @property
     def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
+        return self.pulse_sequence['ESR'].frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
+        self.pulse_sequence['ESR'].frequency = frequency
 
     @clear_single_settings
     def get(self):
         self.acquire()
 
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
+        self.results = analysis.analyse_PR(pulse_traces=self.data,
+                                           sample_rate=self.sample_rate,
+                                           t_skip=self.t_skip,
+                                           t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -902,69 +943,7 @@ class RabiParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
-
-
-class RabiDriveParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
-        """
-        Parameter used to drive Rabi oscillations
-        """
-        super().__init__(name='rabi_drive',
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference'],
-                         labels=['Contrast', 'Dark counts',
-                                'Voltage difference'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-        self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read', acquire=True),
-            DCPulse('final'),
-            SinePulse('rabi_ESR', duration=0.1))
-
-        self.pulse_sequence.sort()
-
-    @property
-    def frequency(self):
-        return self.pulse_sequence['rabi'].frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self.pulse_sequence['rabi'].frequency = frequency
-
-    @property
-    def duration(self):
-        return self.pulse_sequence['rabi'].duration
-
-    @duration.setter
-    def duration(self, duration):
-        self.pulse_sequence['rabi'].duration = duration
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-
-    @clear_single_settings
-    def get(self):
-        self.acquire()
-
-        fidelities = analysis.analyse_PR(pulse_traces=self.data,
-                                         sample_rate=self.sample_rate,
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
-        self.results = [fidelities[name] for name in self.names]
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class T1Parameter(AcquisitionParameter):
@@ -978,10 +957,10 @@ class T1Parameter(AcquisitionParameter):
 
         self.pulse_sequence.add(
             # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('empty', connection_label='stage'),
-            DCPulse('plunge', connection_label='stage'),
-            DCPulse('read', acquire=True, connection_label='stage'),
-            DCPulse('final', connection_label='stage'))
+            DCPulse('empty'),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('final'))
             # FrequencyRampPulse('adiabatic_ESR'))
 
         self.readout_threshold_voltage = None
@@ -997,11 +976,10 @@ class T1Parameter(AcquisitionParameter):
         self.acquire()
 
         # Analysis
-        fidelities = analysis.analyse_read(
+        self.results = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
             start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
-        self.results = [fidelities[name] for name in self.names]
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1011,12 +989,12 @@ class T1Parameter(AcquisitionParameter):
             else:
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
-            self.store_traces(self.data, subfolder=subfolder, channels=['output', 'DF', 'TGAC'])
+            self.store_traces(self.data, subfolder=subfolder)
 
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class DarkCountsParameter(AcquisitionParameter):
@@ -1059,7 +1037,7 @@ class DarkCountsParameter(AcquisitionParameter):
         if not self.silent:
             self.print_results()
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class VariableReadParameter(AcquisitionParameter):
@@ -1075,40 +1053,167 @@ class VariableReadParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
         self.pulse_sequence.add(
-            DCPulse(name='plunge', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='read', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='empty', acquire=True, average='trace',
-                    connection_label='stage'),
-            DCPulse(name='final',
-                    connection_label='stage'))
+            DCPulse(name='plunge', acquire=True, average='trace'),
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='empty', acquire=True, average='trace'),
+            DCPulse(name='final'))
 
-    @property
+    @property_ignore_setter
     def setpoints(self):
         duration = sum(pulse.duration for pulse in
                        self.pulse_sequence.get_pulses(acquire=True))
         return (tuple(np.linspace(0, duration, self.shapes[0][0])), ),
 
-    @setpoints.setter
-    def setpoints(self, setpoints):
-        pass
-
-    @property
+    @property_ignore_setter
     def shapes(self):
         shapes = self.layout.acquisition_shapes
         pts = sum(shapes[pulse_name]['output'][0]
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
 
-    @shapes.setter
-    def shapes(self, shapes):
-        pass
+    def get(self):
+        self.acquire()
+
+        self.results = {'read_voltage':
+                            np.concatenate([self.data['plunge']['output'],
+                                            self.data['read']['output'],
+                                            self.data['empty']['output']])}
+        return tuple(self.results[name] for name in self.names)
+
+
+class NeuralNetworkParameter(AcquisitionParameter):
+    def __init__(self, target_parameter, input_names, output_names=None,
+                 model_filepath=None, include_target_output=None, **kwargs):
+        # Load model here because it takes quite a while to load
+        from keras.models import load_model
+
+        self.target_parameter = target_parameter
+        self.input_names = input_names
+        self.include_target_output = include_target_output
+        self.output_names = output_names
+
+        super().__init__(names=self.names, **kwargs)
+
+        if model_filepath is None:
+            model_filepath = self.properties_config.get(
+                f'{self.name}_model_filepath', None)
+        self.model_filepath = model_filepath
+        if self.model_filepath is not None:
+            self.model = load_model(self.model_filepath)
+        else:
+            logger.warning(f'No neural network model loaded for {self}')
+
+    @property_ignore_setter
+    def pulse_sequence(self):
+        return self.target_parameter.pulse_sequence
+
+    @property_ignore_setter
+    def names(self):
+        names = self.output_names
+        if self.include_target_output is True:
+            names = names + self.target_parameter.names
+        elif self.include_target_output is False:
+            pass
+        elif isinstance(self.include_target_output, Iterable):
+            names = names + self.include_target_output
+        return names
+
+    def acquire(self):
+        self.target_parameter()
+        # Extract target results using input names, because target_parameter.get
+        # may provide results in a different order
+        target_results = [self.target_parameter.results[name]
+                          for name in self.input_names]
+
+        # Convert target results to array
+        target_results_arr = np.array([target_results])
+        neural_network_results = self.model.predict(target_results_arr)[0]
+
+        # Convert neural network results to dict
+        self.neural_network_results = dict(zip(self.output_names,
+                                               neural_network_results))
+        return self.neural_network_results
 
     def get(self):
         self.acquire()
 
-        self.results = np.concatenate([self.data['plunge']['output'],
-                                       self.data['read']['output'],
-                                       self.data['empty']['output']])
-        return self.results,
+        self.results = dict(**self.neural_network_results)
+
+        if self.include_target_output is True:
+            self.results.update(**self.target_parameter.results)
+        elif isinstance(self.include_target_output, Iterable):
+            for name in self.include_target_output:
+                self.results[name] = self.target_parameter.results[name]
+
+        if not self.silent:
+            self.print_results()
+
+        return (self.results[name] for name in self.names)
+
+
+class NeuralRetuneParameter(NeuralNetworkParameter):
+    def __init__(self, target_parameter, output_parameters, update=False,
+                 **kwargs):
+        self.output_parameters = output_parameters
+        output_names = [f'{output_parameter.name}_delta' for
+                        output_parameter in output_parameters]
+
+        input_names = ['contrast', 'dark_counts', 'high_blip_duration',
+                       'fidelity_empty', 'voltage_difference_empty',
+                       'low_blip_duration', 'fidelity_load',
+                       'voltage_difference_load', 'voltage_difference_read']
+
+        super().__init__(target_parameter=target_parameter,
+                         input_names=input_names,
+                         output_names=output_names, **kwargs)
+
+        self.update = update
+
+    @property_ignore_setter
+    def names(self):
+        names = [f'{output_parameter.name}_optimal' for
+                   output_parameter in self.output_parameters]
+        if self.include_target_output is True:
+            names = names + self.target_parameter.names
+        elif self.include_target_output is False:
+            pass
+        elif isinstance(self.include_target_output, Iterable):
+            names = names + self.include_target_output
+        return names
+
+    @property
+    def base_folder(self):
+        return self.target_parameter.base_folder
+
+    @base_folder.setter
+    def base_folder(self, base_folder):
+        self.target_parameter.base_folder = base_folder
+
+    def get(self):
+        self.acquire()
+
+        self.results = {}
+        for output_parameter in self.output_parameters:
+            # Get neural network otput (change in output parameter value)
+            result_name = f'{output_parameter.name}_delta'
+            delta_value = self.neural_network_results[result_name]
+
+            optimal_value = output_parameter() + delta_value
+
+            if self.update:
+                # Update parameter to optimal value
+                output_parameter(optimal_value)
+
+            self.results[f'{output_parameter.name}_optimal'] = optimal_value
+
+        if self.include_target_output is True:
+            self.results.update(**self.target_parameter.results)
+        elif isinstance(self.include_target_output, Iterable):
+            for name in self.include_target_output:
+                self.results[name] = self.target_parameter.results[name]
+
+        if not self.silent:
+            self.print_results()
+
+        return [self.results[name] for name in self.names]
+
