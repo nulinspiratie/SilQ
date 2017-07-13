@@ -1,13 +1,13 @@
-import numpy as np
-
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse, CombinationPulse, DCPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
+
 import threading
+import numpy as np
 
 
-class M3201AInterface(InstrumentInterface):
+class Keysight_SD_AWG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -15,13 +15,15 @@ class M3201AInterface(InstrumentInterface):
             'ch{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='ch{}'.format(k), id=k,
-                        output=True) for k in range(4)}
+                        output=True)
+            for k in range(self.instrument.n_channels)}
 
         self._pxi_channels = {
             'pxi{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
-                        input_trigger=True, output=True, input=True) for k in range(8)}
+                        input_trigger=True, output=True, input=True)
+            for k in range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._output_channels,
@@ -187,7 +189,7 @@ class M3201AInterface(InstrumentInterface):
             # print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
             self.software_trigger()
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
     def write_raw(self, cmd):
@@ -248,9 +250,8 @@ class M3201AInterface(InstrumentInterface):
             return [waveform_1, waveform_2]
 
 
-class SinePulseImplementation(PulseImplementation, SinePulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting SinePulse for M3201A interface {}'.format(interface))
@@ -395,9 +396,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
         return waveforms
 
 
-class DCPulseImplementation(PulseImplementation, DCPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+class DCPulseImplementation(PulseImplementation):
+    pulse_class = DCPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting DCPulse for {}'.format(interface))
@@ -490,9 +490,8 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
         return waveforms
 
 
-class AWGPulseImplementation(PulseImplementation, AWGPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting AWGPulse for {}'.format(interface))
@@ -546,9 +545,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
         return waveforms
 
 
-class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
+class CombinationPulseImplementation(PulseImplementation):
+    pulse_class = CombinationPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         # print('targeting CombinationPulse for {}'.format(interface))
@@ -602,9 +600,8 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
         return waveforms
 
 
-class TriggerPulseImplementation(TriggerPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
     @property
     def amplitude(self):
