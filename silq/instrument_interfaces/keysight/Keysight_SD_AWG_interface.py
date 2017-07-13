@@ -323,15 +323,6 @@ class SinePulseImplementation(PulseImplementation):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
-        # Add a trigger requirement, which is sent back to the Layout
-        if (not is_primary) and targeted_pulse.t_start == 0:
-            targeted_pulse.additional_pulses.append(
-                TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-3,
-                             connection_requirements={
-                                 'input_instrument': interface.instrument_name(),
-                                 'trigger': True}))
-
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
@@ -490,20 +481,6 @@ class DCPulseImplementation(PulseImplementation):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
-        # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence.get_pulses(
-            t_start=pulse.t_start, trigger=True
-        )
-
-        # Add a trigger requirement, which is sent back to the Layout
-        if (not is_primary) and targeted_pulse.t_start == 0 and not trigger_pulses:
-            targeted_pulse.additional_pulses.append(
-                TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-5,
-                             connection_requirements={
-                                 'input_instrument': interface.instrument_name(),
-                                 'trigger': True}))
-
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
@@ -610,20 +587,6 @@ class DCRampPulseImplementation(PulseImplementation):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
-        # Check if there are already trigger pulses
-        trigger_pulses = interface.input_pulse_sequence.get_pulses(
-            t_start=pulse.t_start, trigger=True
-        )
-
-        # Add a trigger requirement, which is sent back to the Layout
-        if (not is_primary) and targeted_pulse.t_start == 0 and not trigger_pulses:
-            targeted_pulse.additional_pulses.append(
-                TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-5,
-                             connection_requirements={
-                                 'input_instrument': interface.instrument_name(),
-                                 'trigger': True}))
-
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
@@ -683,15 +646,6 @@ class AWGPulseImplementation(PulseImplementation):
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
 
-        # Add a trigger requirement, which is sent back to the Layout
-        if (not is_primary) and targeted_pulse.t_start == 0:
-            targeted_pulse.additional_pulses.append(
-                TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-5,
-                             connection_requirements={
-                                 'input_instrument': interface.instrument_name(),
-                                 'trigger': True}))
-
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
@@ -743,15 +697,6 @@ class CombinationPulseImplementation(PulseImplementation):
         # Target the generic pulse to this specific interface
         targeted_pulse = PulseImplementation.target_pulse(
             self, pulse, interface=interface, **kwargs)
-
-        # Add a trigger requirement, which is sent back to the Layout
-        if (not is_primary) and targeted_pulse.t_start == 0:
-            targeted_pulse.additional_pulses.append(
-                TriggerPulse(t_start=pulse.t_start,
-                             duration=1e-5,
-                             connection_requirements={
-                                 'input_instrument': interface.instrument_name(),
-                                 'trigger': True}))
 
         return targeted_pulse
 
