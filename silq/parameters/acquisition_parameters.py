@@ -464,8 +464,8 @@ class TraceParameter(AcquisitionParameter):
         """
         super().acquire(**kwargs)
 
-        traces = [self.data[self.trace_pulse.full_name][output] for _, output in
-                  self.layout.acquisition_outputs()]
+        traces = {self.trace_pulse.full_name + '_' + output: self.data[self.trace_pulse.full_name][output]
+                  for _, output in self.layout.acquisition_outputs()}
 
         return traces
 
