@@ -258,8 +258,8 @@ class SliderPlot(InteractivePlot):
                 set_vals = set_vals[0]
             slider = mpl.widgets.Slider(ax=sliderax,
                                         label=self.set_arrays[set_idx].name,
-                                        valmin=np.nanmin(set_vals[0]),
-                                        valmax=np.nanmax(set_vals[-1]),
+                                        valmin=np.nanmin(set_vals),
+                                        valmax=np.nanmax(set_vals),
                                         valinit=set_vals[0])
             self.set_vals.append(set_vals)
             slider.on_changed(partial(self.update_slider, k))
@@ -295,7 +295,7 @@ class SliderPlot(InteractivePlot):
         else:
             # Check if value is one of the set values
             logger.debug(f'Updating slider {idx} to {value}')
-            slider_idx = np.argmin(abs(self.set_vals[idx] - value))
+            slider_idx = np.nanargmin(abs(self.set_vals[idx] - value))
 
             self.plot_idx = tuple(val if k != idx else slider_idx
                                   for k, val in enumerate(self.plot_idx))
@@ -357,8 +357,7 @@ class ScanningPlot(InteractivePlot):
         self.parameter.continuous = auto_start
         if auto_start:
             self.parameter.setup(start=False)
-        self.scan(initialize=True, start=True,
-                  stop=(not auto_start))
+        self.scan(initialize=True, stop=(not auto_start))
 
         if auto_start:
             # Already started during acquire
@@ -394,11 +393,11 @@ class ScanningPlot(InteractivePlot):
         self.layout.stop()
         self.parameter.continuous = False
 
-    def scan(self, initialize=False, start=False, stop=False):
+    def scan(self, initialize=False, stop=False):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.results = self.parameter.acquire(start=start, stop=stop)
+        self.results = self.parameter.acquire(stop=stop)
         self.update_plot(initialize=initialize)
 
         self.update_idx += 1
@@ -417,7 +416,8 @@ class TracePlot(ScanningPlot):
         # self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
-        for k, result in enumerate(self.results):
+        for k, name in enumerate(self.parameter.names):
+            result = self.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
@@ -480,7 +480,8 @@ class DCSweepPlot(ScanningPlot):
         self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
-        for k, result in enumerate(self.results):
+        for k, name in enumerate(self.parameter.names):
+            result = self.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
