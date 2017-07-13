@@ -57,7 +57,7 @@ def create_set_vals(num_parameters=None, step=None, step_percentage=None,
         # Get default parameters from station
         # the parameters to use depend on num_parameters
         station = qc.station.Station.default
-        set_parameter_names = parameter_config[str(num_parameters)]
+        set_parameter_names = parameter_config['labels'][str(num_parameters)]
         set_parameters = [getattr(station, name) for name in
                           set_parameter_names]
 
