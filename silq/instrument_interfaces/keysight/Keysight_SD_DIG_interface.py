@@ -2,6 +2,8 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses.pulse_types import TriggerPulse
 from qcodes.utils import validators as vals
 from qcodes import ManualParameter
+import logging
+logger = logging.getLogger(__name__)
 
 import numpy as np
 
@@ -99,8 +101,6 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         return self.acquisition_controllers.get(
             self.acquisition_controller(), None)
 
-    # Make all parameters of the interface transparent to the acquisition controller
-
     def acquisition(self):
         """
         Perform acquisition
@@ -190,7 +190,9 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
             if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
-                # Trigger already given
+                logger.warning('Trigger manually defined for M3300A digitizer. '
+                               'This is inadvisable as this could limit the responsiveness'
+                               ' of the machine.')
                 return []
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start, duration=1e-5,
@@ -217,12 +219,18 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
 
         if controller() == 'Triggered':
             # Get trigger connection to determine how to trigger the controller
-            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
             trigger_connection = trigger_pulse.connection
             self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
             self.trigger_edge('rising')
 
-            T = self.input_pulse_sequence.duration
+            t_0 = min(pulse.t_start for pulse in
+                      self.pulse_sequence.get_pulses(acquire=True))
+            t_f = max(pulse.t_stop for pulse in
+                  self.pulse_sequence.get_pulses(acquire=True))
+            acquisition_window = t_f - t_0
+
+            duration = self.pulse_sequence.duration
 
             controller.sample_rate(int(round((self.sample_rate()))))
             controller.traces_per_acquisition(int(round(self.samples())))
@@ -233,11 +241,20 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             controller.trigger_edge(self.trigger_edge())
 
             # Capture maximum number of samples on all channels
-            controller.samples_per_record(int(T * self.sample_rate()))
+            controller.samples_per_record(int(round(acquisition_window * self.sample_rate())))
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
-            controller.read_timeout(T * self.samples() * 10)
+
+            if int(0xFFFF) < int(round(duration * self.samples()*1.2)*1e3):
+                samples_per_read = max((0xFFFF // int(1e3 * duration) * 100) // 120, 1)
+            else:
+                samples_per_read = self.samples()
+            # read_timeout = duration * samples_per_read * 10
+            read_timeout = 64.0
+            logger.debug(f'Read timeout is set to {read_timeout:.3f}s.')
+            controller.samples_per_read(samples_per_read)
+            controller.read_timeout(read_timeout)
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
