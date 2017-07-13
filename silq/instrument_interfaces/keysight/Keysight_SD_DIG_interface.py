@@ -1,15 +1,13 @@
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses.pulse_types import TriggerPulse
-
 from qcodes.utils import validators as vals
-# from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
-import numpy as np
 from qcodes import ManualParameter
 import logging
 logger = logging.getLogger(__name__)
 
-class M3300A_DIG_Interface(InstrumentInterface):
+import numpy as np
+
+class Keysight_SD_DIG_interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
@@ -19,11 +17,19 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self._acquisition_channels  = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
                                       name='ch{}'.format(k), id=k, input=True)
-            for k in range(8)
+            for k in range(self.instrument.n_channels)
             }
+
+        self._pxi_channels = {
+            'pxi{}'.format(k):
+                Channel(instrument_name=self.instrument_name(),
+                        name='pxi{}'.format(k), id=4000 + k,
+                        input_trigger=True, output=True, input=True) for k in
+        range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._acquisition_channels ,
+            **self._pxi_channels,
             'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in', input=True),
         }
@@ -167,15 +173,15 @@ class M3300A_DIG_Interface(InstrumentInterface):
     def initialize_driver(self):
         """
             Puts driver into a known initial state. Further configuration will
-            be done in the configure_driver and get_final_additional_pulses
+            be done in the configure_driver and get_additional_pulses
             functions.
         """
-        for k in range(8):
+        for k in range(self.instrument.n_channels):
             self.instrument.parameters['impedance_{}'.format(k)].set(1) # 50 Ohm impedance
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -250,7 +256,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
                 samples_per_read = self.samples()
             # read_timeout = duration * samples_per_read * 10
             read_timeout = 64.0
-            logger.info(f'Read timeout is set to {read_timeout:.3f}s.')
+            logger.debug(f'Read timeout is set to {read_timeout:.3f}s.')
             controller.samples_per_read(samples_per_read)
             controller.read_timeout(read_timeout)
 
