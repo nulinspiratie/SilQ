@@ -107,6 +107,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         """
         self.start()
         data = {}
+        self._acquisition_controller.pre_acquire()
         acq_data = self._acquisition_controller.acquire()
         acq_data = self._acquisition_controller.post_acquire(acq_data)
 
@@ -140,10 +141,6 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                     # Further average the pulse data
                     if pulse.average == 'point':
                         data[name][ch_name] = np.mean(data[name][ch_name])
-
-        # For instrument safety, stop all acquisition after we are done
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
 
         return data
 
@@ -192,7 +189,9 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
-
+            if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
+                # Trigger already given
+                return []
             acquisition_pulse = \
                 TriggerPulse(t_start=t_start, duration=1e-5,
                              connection_requirements={
@@ -223,13 +222,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
             self.trigger_edge('rising')
 
-            t_start = min(pulse.t_start for pulse in
-                          self.input_pulse_sequence.get_pulses(acquire=True))
-            t_stop = max(pulse.t_stop for pulse in
-                         self.input_pulse_sequence.get_pulses(acquire=True))
-            t_final = max(self.input_pulse_sequence.t_stop_list)
-
-            T = t_stop - t_start
+            T = self.input_pulse_sequence.duration
 
             controller.sample_rate(int(round((self.sample_rate()))))
             controller.traces_per_acquisition(int(round(self.samples())))
@@ -244,14 +237,14 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
 
             # Set an acquisition timeout to be 10% after the last pulse finishes.
             # NOTE: time is defined in seconds
-            controller.read_timeout(t_final * 1.1)
+            controller.read_timeout(T * self.samples() * 10)
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
         self._acquisition_controller.start()
 
     def stop(self):
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
+        # Stop all DAQs
+        self.instrument.daq_stop_multiple((1 << 8) - 1)
 
 

@@ -179,16 +179,15 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     def trigger_self(self):
         if self.started:
-            threading.Timer(0.25, self.trigger_self).start()
+            duration = self.pulse_sequence.duration
+            # print(f'pulse sequence duration = {duration}')
+            threading.Timer(3*duration, self.trigger_self).start()
 
             mask = 0
             for c in self._get_active_channel_ids():
                 mask |= 1 << c
             # print('Starting infinite triggers on chs : {:04b} ...'.format(mask))
-
-            self.instrument.awg_stop_multiple(mask)
-            self.instrument.awg_start_multiple(mask)
-            self.instrument.awg_trigger_multiple(mask)
+            self.software_trigger()
 
     def get_additional_pulses(self, **kwargs):
         return []
@@ -201,6 +200,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     def software_trigger(self):
         for c in self._get_active_channel_ids():
+            self.instrument.awg_stop(c)
+            self.instrument.awg_start(c)
             self.instrument.awg_trigger(c)
 
     def create_zero_waveform(self, duration, sampling_rate):
