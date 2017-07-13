@@ -1,5 +1,3 @@
-import numpy as np
-
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse,\
                         CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
@@ -11,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class M3201AInterface(InstrumentInterface):
+class Keysight_SD_AWG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -19,13 +17,15 @@ class M3201AInterface(InstrumentInterface):
             'ch{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='ch{}'.format(k), id=k,
-                        output=True) for k in range(4)}
+                        output=True)
+            for k in range(self.instrument.n_channels)}
 
         self._pxi_channels = {
             'pxi{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
-                        input_trigger=True, output=True, input=True) for k in range(8)}
+                        input_trigger=True, output=True, input=True)
+            for k in range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._output_channels,
@@ -143,7 +143,12 @@ class M3201AInterface(InstrumentInterface):
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
 
+<<<<<<< HEAD:silq/instrument_interfaces/keysight/M3201A_interface.py
                     logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
+=======
+                    sampling_rate = 1e6
+                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
+>>>>>>> master:silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.py
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rate)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
@@ -211,8 +216,8 @@ class M3201AInterface(InstrumentInterface):
         if self.auto_trigger:
             self.started = True
             duration = self.pulse_sequence.duration
-            trigger_period = duration * 1.2
-            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1000:.3f}ms.')
+            trigger_period = duration * 1.1
+            logger.debug(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
             self.software_trigger()
@@ -225,7 +230,7 @@ class M3201AInterface(InstrumentInterface):
             self.trigger_thread.start()
 
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
     def write_raw(self, cmd):
@@ -296,8 +301,8 @@ class M3201AInterface(InstrumentInterface):
 
             return [waveform_repeated, waveform_tail]
 
-
-class SinePulseImplementation(PulseImplementation, SinePulse):
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
         self.prescaler = prescaler
@@ -461,8 +466,8 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
         return waveforms
 
-
-class DCPulseImplementation(PulseImplementation, DCPulse):
+class DCPulseImplementation(PulseImplementation):
+    pulse_class = DCPulse
     def __init__(self, prescaler=100, **kwargs):
         # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
@@ -579,8 +584,12 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
         return waveforms
 
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
 
-class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
+class DCRampPulseImplementation(PulseImplementation):
+    pulse_class = DCRampPulse
+
     def __init__(self, prescaler=100, **kwargs):
         # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
@@ -651,8 +660,8 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
 
         return waveforms
 
-
-class AWGPulseImplementation(PulseImplementation, AWGPulse):
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
         self.prescaler = prescaler
@@ -710,8 +719,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
         return waveforms
 
-
-class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
+class CombinationPulseImplementation(PulseImplementation):
+    pulse_class = CombinationPulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
         self.prescaler = prescaler
@@ -775,9 +784,10 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
         return waveforms
 
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
-class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
-    def __init__(self, prescaler = 0, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
         self.prescaler = prescaler
 
@@ -822,7 +832,8 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
         return waveforms
 
 
-class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
     def __init__(self, prescaler = 0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
         self.prescaler = prescaler
