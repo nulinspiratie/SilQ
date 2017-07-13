@@ -833,7 +833,9 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list[:-1])] + [0]
+        assert len(waveform_data) == waveform_samples, 'Waveform data length' \
+                    f'{len(waveform_data)} does not match needed samples {waveform_samples}'
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
@@ -882,7 +884,9 @@ class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)] + [0]
+        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list[:-1])] + [0]
+        assert len(waveform_data) == waveform_samples, f'Waveform data length' \
+                    f'{len(waveform_data)} does not match needed samples {waveform_samples}'
 
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
