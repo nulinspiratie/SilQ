@@ -25,6 +25,10 @@ class InstrumentInterface(Instrument):
                            parameter_class=ManualParameter,
                            initial_value=instrument_name,
                            vals=vals.Anything())
+        self.add_parameter('is_primary',
+                           parameter_class=ManualParameter,
+                           initial_value=False,
+                           vals=vals.Bool())
 
         self.pulse_implementations = []
 
@@ -43,8 +47,7 @@ class InstrumentInterface(Instrument):
 
         return self._channels[channel_name]
 
-    def get_pulse_implementation(self, pulse, connections=None,
-                                 is_primary=False):
+    def get_pulse_implementation(self, pulse, connections=None):
         """
         Get a target implementation of a pulse if the instrument is capable
         of implementing the pulse. Whether or not it is capable depends on if
@@ -59,7 +62,7 @@ class InstrumentInterface(Instrument):
         for pulse_implementation in self.pulse_implementations:
             if pulse_implementation.satisfies_requirements(pulse):
                 return pulse_implementation.target_pulse(
-                    pulse, self, connections=connections, is_primary=is_primary)
+                    pulse, interface=self, connections=connections)
         else:
             return None
 
@@ -79,10 +82,9 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def get_final_additional_pulses(self, **kwargs):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
-
+    def get_additional_pulses(self, **kwargs):
+        return []
+    
     def initialize(self):
         """
         This method gets called at the start of targeting a pulse sequence
@@ -92,7 +94,7 @@ class InstrumentInterface(Instrument):
         self.pulse_sequence.clear()
         self.input_pulse_sequence.clear()
 
-    def setup(self):
+    def setup(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
@@ -107,8 +109,8 @@ class InstrumentInterface(Instrument):
 
 class Channel:
     def __init__(self, instrument_name, name, id=None, input=False,
-                 output=False,
-                 input_trigger=False, input_TTL=False, output_TTL=False):
+                 output=False, input_trigger=False, input_TTL=False,
+                 output_TTL=False, invert=False):
         self.instrument = instrument_name
         self.name = name
         self.id = id
@@ -117,6 +119,7 @@ class Channel:
         self.input_trigger = input_trigger
         self.input_TTL = input_TTL
         self.output_TTL = output_TTL
+        self.invert = invert
 
     def __repr__(self):
         output_str = "Channel {name} (id={id})".format(name=self.name,
@@ -131,6 +134,8 @@ class Channel:
             output_str += ', input_TTL'
         if self.output_TTL is not None:
             output_str += ', output_TTL: {}'.format(self.output_TTL)
+        if self.invert:
+            output_str += ', invert'
         return output_str
 
 
