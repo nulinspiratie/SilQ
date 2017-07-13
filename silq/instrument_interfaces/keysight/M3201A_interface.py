@@ -195,7 +195,7 @@ class M3201AInterface(InstrumentInterface):
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 if ch_wf_counter == 0:
                     # await software trigger for first wf if not in cyclic mode
-                    trigger_mode = not self.cyclic_mode
+                    trigger_mode = 0 if self.cyclic_mode else 1
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
                 logger.debug('queueing waveform {} with id {} to awg channel {} for {} cycles with prescaler {}, delay {} and trigger {}'
@@ -213,9 +213,6 @@ class M3201AInterface(InstrumentInterface):
         pass
 
     def start(self):
-        mask = 0
-        for c in self._get_active_channel_ids():
-            mask |= 1 << c
         if not self.cyclic_mode:
             self.started = True
             duration = self.pulse_sequence.duration
