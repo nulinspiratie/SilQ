@@ -316,90 +316,169 @@ class DCParameter(AcquisitionParameter):
 
 
 class TraceParameter(AcquisitionParameter):
-    # TODO implement continuous acquisition
-    def __init__(self, **kwargs):
+    """An acquisition parameter for obtaining a trace or multiple traces
+    of a given PulseSequence.
+
+    A generic initial PulseSequence is defined, but can be redefined at
+    run-time.
+    e.g.
+        parameter.average_mode = 'none'
+        parameter.pulse_sequence = my_pulse_sequence
+
+    Note that for the above example, all pulses in my_pulse_sequence will be
+    copied.
+
+    """
+    def __init__(self, average_mode='none', **kwargs):
+        self._average_mode = average_mode
+        self._pulse_sequence = PulseSequence()
+        self.samples = 1
+        self.trace_pulse = MeasurementPulse('trace_pulse', duration=1,
+                                            acquire=True, average=self.average_mode)
+
         super().__init__(name='Trace_acquisition',
                          names=self.names,
                          labels=self.names,
-                         units=['V', 'V', 'V'],
+                         units=self.units,
+                         shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
 
-        self.samples = 1
+    @property
+    def average_mode(self):
+        return self._average_mode
 
-        self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='final'))
+    @average_mode.setter
+    def average_mode(self, mode):
+        if (self._average_mode != mode):
+            self._average_mode = mode
+            if self.trace_pulse is not None:
+                self.trace_pulse.average = mode
 
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-        # Grab the actual output name from the list of acquisition outputs
-        outputs = [output[1] for output in self.layout.acquisition_outputs()]
-        traces = []
-        # Merge all pulses together for a single acquisition channel
+    @property
+    def pulse_sequence(self):
+        return self._pulse_sequence
 
-        for k, output in enumerate(outputs):
-
-            if (len(self.pulse_sequence.get_pulses(acquire=True)) > 1):
-                # Data is 2D,
-                trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                self.pulse_sequence.get_pulses(acquire=True)], axis=1)
-            else:
-                trace = np.concatenate([self.data[pulse.name][output] for pulse in
-                                self.pulse_sequence.get_pulses(acquire=True)])
-            # print(f'{k}, {output} : {np.shape(trace)}')
-
-            # TODO: This should be done at time of acquisition, fix dimensions of trace
-            # import pdb; pdb.set_trace()
-            # if trace:
-            #     shape = (self.samples, len(self.setpoints[0][1]))
-            #     print(f'shapes dont match {np.shape(trace)} : {shape}')
-            #     trace = (trace, )*self.samples
-            # trace = (trace,) * self.samples
-            traces.append(trace)
-
-        return traces
+    @pulse_sequence.setter
+    def pulse_sequence(self, pulse_sequence):
+        self._pulse_sequence = pulse_sequence.copy()
 
     @property_ignore_setter
     def names(self):
-        return [output[1] for output in self.layout.acquisition_outputs()]
+        return tuple(self.trace_pulse.full_name + f'_{output[1]}'
+                for output in self.layout.acquisition_outputs())
+
+    @property_ignore_setter
+    def units(self):
+        return ('V', ) * len(self.layout.acquisition_outputs())
+
+    @property_ignore_setter
+    def shapes(self):
+        if self.trace_pulse in self.pulse_sequence:
+            trace_shapes = self.pulse_sequence.get_trace_shapes(
+                self.layout.sample_rate, self.samples)
+            trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
+            if self.samples > 1 and self.average_mode == 'none':
+                return ((trace_pulse_shape,),) * \
+                       len(self.layout.acquisition_outputs())
+            else:
+                return ((trace_pulse_shape[1], ), ) * \
+                        len(self.layout.acquisition_outputs())
+        else:
+            return ((1,),) * len(self.layout.acquisition_outputs())
+
 
     @property_ignore_setter
     def setpoints(self):
-        # TODO: Create blank regions for non continous acquisition periods
-        t_start = min([pulse.t_start for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True)])
-        t_stop = max([pulse.t_stop for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True)])
-        duration = t_stop - t_start
-        # duration = self.pulse_sequence.get_pulse(name='read').duration
-        num_traces = len(self.layout.acquisition_outputs())
-        if self.samples > 1:
-            setpoints = ((tuple(np.arange(self.samples, dtype=float)),
-                           1e3*np.linspace(0, duration, duration*self.sample_rate + 1)[0:-1]),) * num_traces
+        if self.trace_pulse in self.pulse_sequence:
+            duration = self.trace_pulse.duration
         else:
-            setpoints = ((1e3*np.linspace(0, duration,
-                                          duration*self.sample_rate + 1)[0:-1],),)*num_traces
+            return ((1,),) * len(self.layout.acquisition_outputs())
+
+        num_traces = len(self.layout.acquisition_outputs())
+
+        pts = duration * self.sample_rate
+        t_list = np.linspace(0, duration, pts, endpoint=True)
+
+        if self.samples > 1 and self.average_mode == 'none':
+            setpoints = ((tuple(np.arange(self.samples, dtype=float)),
+                          t_list), ) * num_traces
+        else:
+            setpoints = ((t_list, ), ) * num_traces
         return setpoints
 
     @property_ignore_setter
     def setpoint_names(self):
-        return (('Sample','Time',),)* len(self.layout.acquisition_outputs())
+        if self.samples > 1 and self.average_mode == 'none':
+            return (('sample', 'time', ), ) * \
+                   len(self.layout.acquisition_outputs())
+        else:
+            return (('Time', ), ) * len(self.layout.acquisition_outputs())
+
 
     @property_ignore_setter
     def setpoint_units(self):
-        return ((None,'ms',),) * len(self.layout.acquisition_outputs())
+        if self.samples > 1 and self.average_mode == 'none':
+            return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
+        else:
+            return (('ms', ), ) * len(self.layout.acquisition_outputs())
+
+
+    def setup(self, start=None, **kwargs):
+        """
+        Modifies provided pulse sequence by creating a single
+        pulse which overlaps all other pulses with acquire=True and
+        then acquires only this pulse.
+        """
+
+        acquired_pulses = self.pulse_sequence.get_pulses(acquire=True)
+
+        if not acquired_pulses:
+            raise RuntimeError('PulseSequence has no pulses to acquire.')
+
+        # Find the start and stop times for all acquired pulses
+        t_start = min(pulse.t_start for pulse in acquired_pulses)
+        t_stop = max(pulse.t_stop for pulse in acquired_pulses)
+
+        self.trace_pulse.t_start = t_start
+        self.trace_pulse.t_stop = t_stop
+
+        # Ensure that each pulse is not acquired as this could cause
+        # overlapping issues
+        for pulse in self.pulse_sequence.get_pulses():
+            if pulse is self.trace_pulse:
+                continue
+            pulse.acquire = False
+
+        if self.trace_pulse not in self.pulse_sequence:
+            self.pulse_sequence.add(self.trace_pulse)
+
+        super().setup(start=start, **kwargs)
+
+    def acquire(self, **kwargs):
+        """
+        Acquires the number of traces defined in self.samples
+
+        return:  A tuple of data points. e.g.
+                 ((data_for_1st_output), (data_for_2nd_output), ...)
+        """
+        super().acquire(**kwargs)
+
+        traces = [self.data[self.trace_pulse.full_name][output] for _, output in
+                  self.layout.acquisition_outputs()]
+
+        return traces
 
     @clear_single_settings
     def get(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
-        trace, = self.acquire()
+        traces = self.acquire()
 
-        # Note that this is broken, but should be replaced by Mark's PR
-        self.results = [trace, np.mean(trace), np.std(trace)]
+        self.results = {self.names[k] : trace
+                        for k, trace in enumerate(traces)}
 
-        return self.results
+        return tuple(self.results[name] for name in self.names)
 
 
 class DCSweepParameter(AcquisitionParameter):
