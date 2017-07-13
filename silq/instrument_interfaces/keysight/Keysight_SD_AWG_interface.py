@@ -142,13 +142,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 if delay > 6000:
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
-
-<<<<<<< HEAD:silq/instrument_interfaces/keysight/M3201A_interface.py
-                    logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
-=======
-                    sampling_rate = 1e6
                     logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
->>>>>>> master:silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.py
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                sampling_rate=sampling_rate)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
