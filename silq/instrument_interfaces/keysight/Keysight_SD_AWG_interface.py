@@ -4,6 +4,8 @@ from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse,\
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from functools import partial
+import numpy as np
+
 import threading
 import logging
 logger = logging.getLogger(__name__)
@@ -116,7 +118,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         waveforms = dict()
 
         for pulse in self.pulse_sequence:
-            channel_waveforms = pulse.implement(instrument=self.instrument,
+            channel_waveforms = pulse.implementation.implement(instrument=self.instrument,
                                                 sampling_rates=sampling_rates,
                                                 threshold=error_threshold)
 
@@ -254,7 +256,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
 
-        if (duration < wave_form_minimum / sampling_rate):
+        if (duration < waveform_minimum / sampling_rate):
             return None
 
         period_sample = 1 / sampling_rate
@@ -380,11 +382,11 @@ class SinePulseImplementation(PulseImplementation):
         # use t_start, t_stop, sampling_rate, ... to make a waveform object that can be queued in interface.setup()
         # basically, each implement in all PulseImplementations will be a waveform factory
 
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception('No implementation for connection {}'.format(
-                self.connection))
+                self.pulse.connection))
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
         period_sample = 1 / sampling_rate
@@ -395,10 +397,10 @@ class SinePulseImplementation(PulseImplementation):
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         # channel independent parameters
-        duration = self.duration
+        duration = self.pulse.duration
         period = 1 / self.frequency
         cycles = duration // period
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
@@ -428,40 +430,40 @@ class SinePulseImplementation(PulseImplementation):
             #   n_cycles * waveform_repeated + waveform_tail
             # This is done to minimise the number of data points written to the AWG
             waveform_repeated_period = period_sample * waveform_samples
-            t_list_1 = np.linspace(self.t_start,
-                                   self.t_start + waveform_repeated_period,
+            t_list_1 = np.linspace(self.pulse.t_start,
+                                   self.pulse.t_start + waveform_repeated_period,
                                    waveform_samples, endpoint=False)
 
             waveform_repeated_cycles = cycles // n
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-            waveform_tail_start = self.t_start + waveform_repeated_duration
+            waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
             waveform_tail_samples = waveform_multiple * round(
-                ((self.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
+                ((self.pulse.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
 
             if waveform_tail_samples < waveform_minimum:
                 # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
                 waveform_tail_samples = 0
 
-            t_list_2 = np.linspace(waveform_tail_start, self.t_stop, waveform_tail_samples, endpoint=True)
+            t_list_2 = np.linspace(waveform_tail_start, self.pulse.t_stop, waveform_tail_samples, endpoint=True)
 
             waveform_repeated = {}
             waveform_tail = {}
 
-            waveform_repeated_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
+            waveform_repeated_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_1)]
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
             waveform_repeated['name'] = full_name,
             waveform_repeated['cycles'] = waveform_repeated_cycles
-            waveform_repeated['t_start'] = self.t_start
+            waveform_repeated['t_start'] = self.pulse.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
             waveform_repeated['prescaler'] = self.prescaler
 
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_repeated]
             else:
-                waveform_tail_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
+                waveform_tail_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_2)]
 
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
@@ -505,18 +507,18 @@ class DCPulseImplementation(PulseImplementation):
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception('No implementation for connection {}'.format(
-                self.connection))
+                self.pulse.connection))
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         # channel independent parameters
-        duration = self.t_stop - self.t_start
+        duration = self.pulse.t_stop - self.pulse.t_start
         waveform_multiple = 5
         waveform_minimum = 15  # the minimum size of a waveform
 
@@ -542,44 +544,44 @@ class DCPulseImplementation(PulseImplementation):
             #   n_cycles * waveform_repeated + waveform_tail
             # This is done to minimise the number of data points written to the AWG
             waveform_repeated_period = period_sample * waveform_samples
-            t_list_1 = np.linspace(self.t_start, self.t_start + waveform_repeated_period, waveform_samples, endpoint=False)
+            t_list_1 = np.linspace(self.pulse.t_start, self.pulse.t_start + waveform_repeated_period, waveform_samples, endpoint=False)
             waveform_repeated_cycles = max_cycles // n
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
             # print(f'{self.name}')
             # print(f'\tn={n}, samples={samples}')
-            # print(f'\twf1: {self.t_start} to {self.t_start + waveform_repeated_period} repeated {waveform_repeated_cycles} times')
+            # print(f'\twf1: {self.pulse.t_start} to {self.pulse.t_start + waveform_repeated_period} repeated {waveform_repeated_cycles} times')
 
 
-            waveform_tail_start = self.t_start + waveform_repeated_duration
+            waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
             waveform_tail_samples = waveform_multiple * round(
-                ((self.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
+                ((self.pulse.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
 
             if waveform_tail_samples < waveform_minimum:
                 # print('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
                 waveform_tail_samples = 0
 
             # waveform_tail_stop = waveform_tail_start + period_sample * (waveform_tail_samples - 1)
-            t_list_2 = np.linspace(waveform_tail_start, self.t_stop, waveform_tail_samples, endpoint=True)
-            # print(f'\twf2: {waveform_tail_start} to {self.t_stop}\n')
+            t_list_2 = np.linspace(waveform_tail_start, self.pulse.t_stop, waveform_tail_samples, endpoint=True)
+            # print(f'\twf2: {waveform_tail_start} to {self.pulse.t_stop}\n')
 
             waveform_repeated = {}
             waveform_tail = {}
 
-            waveform_repeated_data = [voltage/1.5 for voltage in self.get_voltage(t_list_1)]
+            waveform_repeated_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_1)]
 
             waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                          waveform_data_a=waveform_repeated_data)
             waveform_repeated['name'] = full_name
             waveform_repeated['cycles'] = waveform_repeated_cycles
-            waveform_repeated['t_start'] = self.t_start
+            waveform_repeated['t_start'] = self.pulse.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
             waveform_repeated['prescaler'] = self.prescaler
 
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_repeated]
             else:
-                waveform_tail_data = [voltage/1.5 for voltage in self.get_voltage(t_list_2)]
+                waveform_tail_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_2)]
 
                 waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
                                                                              waveform_data_a=waveform_tail_data)
@@ -587,7 +589,7 @@ class DCPulseImplementation(PulseImplementation):
                 waveform_tail['name'] = full_name + '_tail'
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
-                waveform_tail['t_stop'] = self.t_stop
+                waveform_tail['t_stop'] = self.pulse.t_stop
                 waveform_tail['prescaler'] = self.prescaler
 
                 waveforms[ch] = [waveform_repeated, waveform_tail]
@@ -625,15 +627,15 @@ class DCRampPulseImplementation(PulseImplementation):
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception('No implementation for connection {}'.format(
-                self.connection))
+                self.pulse.connection))
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         # channel independent parameters
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
@@ -644,8 +646,8 @@ class DCRampPulseImplementation(PulseImplementation):
 
         for ch in channels:
             waveform_samples = waveform_multiple * round(
-                (self.duration / period_sample + 1) / waveform_multiple)
-            t_list = np.linspace(self.t_start, self.t_stop,
+                (self.pulse.duration / period_sample + 1) / waveform_multiple)
+            t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop,
                                  waveform_samples, endpoint=True)
 
             if waveform_samples < waveform_minimum:
@@ -653,15 +655,15 @@ class DCRampPulseImplementation(PulseImplementation):
                                    f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
             waveform_data = [voltage / 1.5 for voltage in
-                             self.get_voltage(t_list)]
+                             self.pulse.get_voltage(t_list)]
 
             waveform = {
                 'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                 waveform_data_a=waveform_data),
                 'name': full_name,
                 'cycles': 1,
-                't_start': self.t_start,
-                't_stop': self.t_stop,
+                't_start': self.pulse.t_start,
+                't_stop': self.pulse.t_stop,
                 'prescaler': self.prescaler}
 
             waveforms[ch] = [waveform]
@@ -693,15 +695,15 @@ class AWGPulseImplementation(PulseImplementation):
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception('No implementation for connection {}'.format(
-                self.connection))
+                self.pulse.connection))
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
@@ -712,17 +714,17 @@ class AWGPulseImplementation(PulseImplementation):
 
 
             waveform_samples = waveform_multiple * round(
-                (self.duration / period_sample + 1) / waveform_multiple)
-            t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
+                (self.pulse.duration / period_sample + 1) / waveform_multiple)
+            t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-            waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
+            waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list)]
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
                         'name':full_name,
                         'cycles': 1,
-                        't_start': self.t_start,
-                        't_stop': self.t_start,
+                        't_start': self.pulse.t_start,
+                        't_stop': self.pulse.t_start,
                         'prescaler':self.prescaler}
 
             waveforms[ch] = [waveform]
@@ -754,15 +756,15 @@ class CombinationPulseImplementation(PulseImplementation):
         return targeted_pulse
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception('No implementation for connection {}'.format(
-                self.connection))
+                self.pulse.connection))
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
@@ -773,23 +775,23 @@ class CombinationPulseImplementation(PulseImplementation):
 
 
             waveform_samples = waveform_multiple * round(
-                (self.duration/ period_sample + 1) / waveform_multiple)
+                (self.pulse.duration/ period_sample + 1) / waveform_multiple)
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
 
-            t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
+            t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-            waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list)]
+            waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list)]
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
                         'name': full_name,
                         'cycles': 1,
-                        't_start': self.t_start,
-                        't_stop': self.t_stop,
+                        't_start': self.pulse.t_start,
+                        't_stop': self.pulse.t_stop,
                         'prescaler': self.prescaler}
 
             waveforms[ch] = [waveform]
@@ -808,30 +810,30 @@ class TriggerPulseImplementation(PulseImplementation):
         return 1.0
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channel = self.connection.output['channel'].name
+        if isinstance(self.pulse.connection, SingleConnection):
+            channel = self.pulse.connection.output['channel'].name
         else:
-            raise Exception('No implementation for connection {}'.format(self.connection))
+            raise Exception('No implementation for connection {}'.format(self.pulse.connection))
 
         waveform_multiple = 5
         waveform_minimum = 15
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
         waveform_samples = waveform_multiple * round(
-            (self.duration / period_sample + 1) / waveform_multiple)
+            (self.pulse.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
-        t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
+        t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list[:-1])] + [0]
+        waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
         assert len(waveform_data) == waveform_samples, 'Waveform data length' \
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
 
@@ -839,8 +841,8 @@ class TriggerPulseImplementation(PulseImplementation):
                                                                     waveform_data_a=waveform_data),
                     'name': full_name,
                     'cycles': 1,
-                    't_start': self.t_start,
-                    't_stop': self.t_stop,
+                    't_start': self.pulse.t_start,
+                    't_stop': self.pulse.t_stop,
                     'prescaler': self.prescaler}
 
         waveforms[channel] = [waveform]
@@ -859,31 +861,31 @@ class MarkerPulseImplementation(PulseImplementation):
         return 1.0
 
     def implement(self, instrument, sampling_rates, threshold):
-        if isinstance(self.connection, SingleConnection):
-            channel = self.connection.output['channel'].name
+        if isinstance(self.pulse.connection, SingleConnection):
+            channel = self.pulse.connection.output['channel'].name
         else:
-            raise Exception('No implementation for connection {}'.format(self.connection))
+            raise Exception('No implementation for connection {}'.format(self.pulse.connection))
 
         waveform_multiple = 5
         waveform_minimum = 15
 
         waveforms = {}
 
-        full_name = self.full_name or 'none'
+        full_name = self.pulse.full_name or 'none'
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
         # Waveform must have at least waveform_multiple samples
         waveform_samples = waveform_multiple * round(
-            (self.duration / period_sample + 1) / waveform_multiple)
+            (self.pulse.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
-        t_list = np.linspace(self.t_start, self.t_stop, waveform_samples, endpoint=True)
+        t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.get_voltage(t_list[:-1])] + [0]
+        waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
         assert len(waveform_data) == waveform_samples, f'Waveform data length' \
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
 
@@ -891,8 +893,8 @@ class MarkerPulseImplementation(PulseImplementation):
                                                                     waveform_data_a=waveform_data),
                     'name': full_name,
                     'cycles': 1,
-                    't_start': self.t_start,
-                    't_stop': self.t_stop,
+                    't_start': self.pulse.t_start,
+                    't_stop': self.pulse.t_stop,
                     'prescaler': self.prescaler}
 
         waveforms[channel] = [waveform]
