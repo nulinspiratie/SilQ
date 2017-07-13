@@ -5,7 +5,7 @@ from qcodes.instrument.parameter import Parameter
 from qcodes import config
 from qcodes.data.io import DiskIO
 
-from silq.tools.data_tools import get_latest_data_folder
+from silq.tools.data_tools import get_data_folder
 
 class TestValParameter(Parameter):
     def __init__(self, name, **kwargs):
@@ -35,7 +35,7 @@ class TestLoopParameter(Parameter):
     def get(self):
         if 'data_folder' in config['user']:
             print('data folder: {}'.format(config['user']['data_folder']))
-        print('latest folder: {}'.format(get_latest_data_folder()))
+        print('latest folder: {}'.format(get_data_folder()))
         return self.param()
 
 

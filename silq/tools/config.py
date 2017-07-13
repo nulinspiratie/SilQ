@@ -194,6 +194,22 @@ class DictConfig(SubConfig, DotDict):
             # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
 
+    def get(self, key, default=None):
+        """
+        Override dictionary get, because it otherwise does not call __getitem__
+        Args:
+            key: key to get
+            default: default value if key not found. None by default
+
+        Returns:
+            value of key if in dictionary, else default value.
+        """
+        if key in self:
+            return self[key]
+        else:
+            return None
+
+
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """
         Sends signal when 'listened' property of dependent property is updated.
