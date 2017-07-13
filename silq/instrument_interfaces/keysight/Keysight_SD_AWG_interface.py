@@ -1,5 +1,3 @@
-import numpy as np
-
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse,\
                         CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
@@ -11,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class M3201AInterface(InstrumentInterface):
+class Keysight_SD_AWG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -19,13 +17,15 @@ class M3201AInterface(InstrumentInterface):
             'ch{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='ch{}'.format(k), id=k,
-                        output=True) for k in range(4)}
+                        output=True)
+            for k in range(self.instrument.n_channels)}
 
         self._pxi_channels = {
             'pxi{}'.format(k):
                 Channel(instrument_name=self.instrument_name(),
                         name='pxi{}'.format(k), id=4000 + k,
-                        input_trigger=True, output=True, input=True) for k in range(8)}
+                        input_trigger=True, output=True, input=True)
+            for k in range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._output_channels,
@@ -143,8 +143,7 @@ class M3201AInterface(InstrumentInterface):
                 if delay > 6000:
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
-
-                    logger.info('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
+                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                prescaler=prescaler)
                     insertion = {'index': i, 'waveforms': zero_waveforms}
@@ -217,7 +216,7 @@ class M3201AInterface(InstrumentInterface):
             self.started = True
             duration = self.pulse_sequence.duration
             trigger_period = duration * 1.1
-            logger.info(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
+            logger.debug(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
             self.software_trigger()
@@ -228,7 +227,7 @@ class M3201AInterface(InstrumentInterface):
             self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
             self.trigger_thread.start()
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         return []
 
     def write_raw(self, cmd):
@@ -250,8 +249,8 @@ class M3201AInterface(InstrumentInterface):
         self.instrument.awg_trigger_multiple(mask)
 
     def create_zero_waveform(self, duration, prescaler):
-        wave_form_multiple = 5
-        wave_form_minimum = 15  # the minimum size of a waveform
+        waveform_multiple = 5
+        waveform_minimum = 15  # the minimum size of a waveform
 
         sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
 
@@ -260,26 +259,25 @@ class M3201AInterface(InstrumentInterface):
 
         period_sample = 1 / sampling_rate
 
-        period = period_sample * wave_form_multiple
-
+        period = period_sample * waveform_minimum
         cycles = duration // period
         if (cycles < 1):
             return None
 
         n = int(-(-cycles // 2 ** 16))
 
-        samples = n * wave_form_multiple
-        samples = max(samples, wave_form_minimum)
+        samples = n * waveform_multiple
+        samples = max(samples, waveform_minimum)
         cycles = int(duration // (period_sample * samples))
 
         waveform_repeated_period = period_sample * samples
         waveform_repeated_cycles = cycles
         waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-        waveform_tail_samples = wave_form_multiple * int(round(
-            ((duration - waveform_repeated_duration) / period_sample + 1) / wave_form_multiple))
+        waveform_tail_samples = waveform_multiple * int(round(
+            ((duration - waveform_repeated_duration) / period_sample + 1) / waveform_multiple))
 
-        if waveform_tail_samples < wave_form_minimum:
+        if waveform_tail_samples < waveform_minimum:
             waveform_tail_samples = 0
 
         waveform_repeated = {}
@@ -310,8 +308,8 @@ class M3201AInterface(InstrumentInterface):
 
             return [waveform_repeated, waveform_tail]
 
-
-class SinePulseImplementation(PulseImplementation, SinePulse):
+class SinePulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
         self.prescaler = prescaler
@@ -477,10 +475,9 @@ class SinePulseImplementation(PulseImplementation, SinePulse):
 
         return waveforms
 
-
-class DCPulseImplementation(PulseImplementation, DCPulse):
+class DCPulseImplementation(PulseImplementation):
+    pulse_class = DCPulse
     def __init__(self, prescaler=0, **kwargs):
-        # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
         self.prescaler = prescaler
 
@@ -597,8 +594,12 @@ class DCPulseImplementation(PulseImplementation, DCPulse):
 
         return waveforms
 
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
 
-class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
+class DCRampPulseImplementation(PulseImplementation):
+    pulse_class = DCRampPulse
+
     def __init__(self, prescaler=0, **kwargs):
         # Default sampling rate of 1 MSPS
         PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
@@ -671,8 +672,8 @@ class DCRampPulseImplementation(PulseImplementation, DCRampPulse):
 
         return waveforms
 
-
-class AWGPulseImplementation(PulseImplementation, AWGPulse):
+class AWGPulseImplementation(PulseImplementation):
+    pulse_class = AWGPulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
         self.prescaler = prescaler
@@ -732,8 +733,8 @@ class AWGPulseImplementation(PulseImplementation, AWGPulse):
 
         return waveforms
 
-
-class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
+class CombinationPulseImplementation(PulseImplementation):
+    pulse_class = CombinationPulse
     def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
         self.prescaler = prescaler
@@ -799,9 +800,10 @@ class CombinationPulseImplementation(PulseImplementation, CombinationPulse):
 
         return waveforms
 
+class TriggerPulseImplementation(PulseImplementation):
+    pulse_class = TriggerPulse
 
-class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
-    def __init__(self, prescaler = 0, **kwargs):
+    def __init__(self, prescaler=0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
         self.prescaler = prescaler
 
@@ -850,7 +852,8 @@ class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
         return waveforms
 
 
-class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
     def __init__(self, prescaler = 0, **kwargs):
         PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
         self.prescaler = prescaler
@@ -875,7 +878,7 @@ class MarkerPulseImplementation(PulseImplementation, MarkerPulse):
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
-        # Waveform must have at least wave_form_multiple samples
+        # Waveform must have at least waveform_multiple samples
         waveform_samples = waveform_multiple * round(
             (self.duration / period_sample + 1) / waveform_multiple)
         if waveform_samples < waveform_minimum:

@@ -30,6 +30,9 @@ class MeasurementSequence:
         self.continuous = continuous
         self.base_folder = base_folder
 
+        self.optimal_set_vals = None
+        self.optimal_val = None
+
     def __getitem__(self, index):
         if isinstance(index, int):
             return self.measurements[index]
@@ -47,8 +50,7 @@ class MeasurementSequence:
 
     def __next__(self):
         if self.next_measurement is None:
-            if not self.silent:
-                logging.debug('Finished measurements')
+            logger.debug('Finished measurements')
             raise StopIteration
         else:
             self.measurement = self.next_measurement
@@ -57,46 +59,51 @@ class MeasurementSequence:
 
         # Perfom measurement
         self.num_measurements += 1
-        if not self.silent:
-            logging.debug(f'Performing {self.measurement}')
         self.measurement.silent = self.silent
         # Performing measurement also checks for condition sets, and updates
         # set parameters accordingly
-        dataset = self.measurement.get(condition_sets=self.condition_sets,
-                                       set_active=self.set_active)
+        self.measurement.single_settings(condition_sets=self.condition_sets)
+        logger.info(f'Performing measurement {self.measurement}')
+        dataset, self.result = self.measurement.get(set_active=self.set_active)
         self.datasets.append(dataset)
 
         # Return result of the final condition set
         # Either this was the first successful condition, or if none were
         # successful, this would be the final condition set
-        self.result = self.measurement.condition_set.result
         return self.result
 
     def __call__(self):
         if self.continuous:
             self.acquisition_parameter.temporary_settings(continuous=True)
-            self.acquisition_parameter.setup(start=True)
 
-        # Perform measurements iteratively, collecting their results
-        self.results = [result for result in self]
+        try:
+            # Perform measurements iteratively, collecting their results
+            self.results = [result for result in self]
+            logger.info(f'Consecutive measurement actions: '
+                        f'{[result["action"] for result in self.results]}')
+        finally:
+            self.acquisition_parameter.layout.stop()
+            # Clear settings such as continuous=True
+            self.acquisition_parameter.clear_settings()
+
         # Choose last measurement result
         result = self.results[-1]
         if result['action'] is None:
             # TODO better way to discern success from fail
             result['action'] = 'success' if result['is_satisfied'] else 'fail'
+            logger.info(f'Final action is None,  but since "is_satisfied" is '
+                        f'{result["is_satisfied"]}, '
+                        f'action is {result["action"]}')
         elif result['action'][:4] == 'next':
             # Action is of form 'next_{cmd}, meaning that if there is a next
             # measurement, it would have performed that measurement.
             # However, since this is the last measurement, action should be cmd.
+            logger.info(f"Final action is {result['action']}, so this becomes "
+                        f"{result['action'][5:]}")
             result['action'] = result['action'][5:]
 
         # Optimal vals
         self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
-
-        # Clear settings such as continuous=True
-        self.acquisition_parameter.clear_settings()
-        if self.continuous:
-            self.acquisition_parameter.layout.stop()
 
         #TODO correct return
         return result
