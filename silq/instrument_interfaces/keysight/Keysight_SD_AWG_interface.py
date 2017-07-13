@@ -311,7 +311,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
     def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SinePulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -478,7 +478,7 @@ class SinePulseImplementation(PulseImplementation):
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
     def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=DCPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -594,15 +594,11 @@ class DCPulseImplementation(PulseImplementation):
 
         return waveforms
 
-class AWGPulseImplementation(PulseImplementation):
-    pulse_class = AWGPulse
-
 class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
     def __init__(self, prescaler=0, **kwargs):
-        # Default sampling rate of 1 MSPS
-        PulseImplementation.__init__(self, pulse_class=DCRampPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -675,7 +671,7 @@ class DCRampPulseImplementation(PulseImplementation):
 class AWGPulseImplementation(PulseImplementation):
     pulse_class = AWGPulse
     def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=AWGPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -736,7 +732,7 @@ class AWGPulseImplementation(PulseImplementation):
 class CombinationPulseImplementation(PulseImplementation):
     pulse_class = CombinationPulse
     def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=CombinationPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     def target_pulse(self, pulse, interface, **kwargs):
@@ -804,7 +800,7 @@ class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
 
     def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     @property
@@ -855,7 +851,7 @@ class TriggerPulseImplementation(PulseImplementation):
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
     def __init__(self, prescaler = 0, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=MarkerPulse, **kwargs)
+        PulseImplementation.__init__(self, **kwargs)
         self.prescaler = prescaler
 
     @property
