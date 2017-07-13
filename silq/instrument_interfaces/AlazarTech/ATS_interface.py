@@ -150,7 +150,7 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller._vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
-    def get_final_additional_pulses(self, pulse_sequence):
+    def get_additional_pulses(self, interface, **kwargs):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -158,12 +158,11 @@ class ATSInterface(InstrumentInterface):
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
-            acquisition_pulse = \
+            return [
                 TriggerPulse(t_start=t_start,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
-                                 'trigger': True})
-            return [acquisition_pulse]
+                                 'trigger': True})]
         elif self.acquisition_controller() == 'Continuous':
             raise NotImplementedError("Continuous mode not implemented")
         elif self.acquisition_controller() == 'SteeredInitialization':
@@ -183,7 +182,7 @@ class ATSInterface(InstrumentInterface):
                 connection_requirements={
                     'connection': initialization.trigger_connection})
             trigger_wait_pulse = TriggerWaitPulse(
-                t_start=pulse_sequence.duration,
+                t_start=self.pulse_sequence.duration,
                 connection_requirements={
                     'output_arg': 'ATS.software_trig_out'})
 
@@ -321,7 +320,7 @@ class ATSInterface(InstrumentInterface):
                                  allocated_buffers=allocated_buffers)
 
             # Setup acquisition controller settings through initialization pulse
-            initialization.implement(interface=self)
+            initialization.implement()
             for channel in [initialization.trigger_channel,
                             initialization.readout_channel]:
                 assert channel.name in self.acquisition_channels(), \
@@ -475,23 +474,19 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_settings.update(**acquisition_settings)
 
 
-class SteeredInitializationImplementation(SteeredInitialization,
-                                          PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=SteeredInitialization,
-                                     **kwargs)
+class SteeredInitializationImplementation(PulseImplementation):
+    pulse_class = SteeredInitialization
 
     def target_pulse(self, pulse, interface, connections, **kwargs):
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Add readout connection to targeted pulse
         readout_connection = [connection for connection in connections if
                               connection.satisfies_conditions(
                                   output_arg='chip.output')]
         assert len(readout_connection) == 1, \
-            "No unique readout connection: {}".format(readout_connection)
-        targeted_pulse.readout_connection = readout_connection[0]
+            f"No unique readout connection: {readout_connection}"
+        targeted_pulse.implementation.readout_connection = readout_connection[0]
 
         # Add trigger connection to targeted pulse
         trigger_connection = [connection for connection in connections if
@@ -499,8 +494,8 @@ class SteeredInitializationImplementation(SteeredInitialization,
                                   input_channel=['chA', 'chB', 'chC', 'chD'],
                                   trigger=True)]
         assert len(trigger_connection) == 1, \
-            "No unique triggerconnection: {}".format(trigger_connection)
-        targeted_pulse.trigger_connection = trigger_connection[0]
+            f"No unique trigger connection: {trigger_connection}"
+        targeted_pulse.implementation.trigger_connection = trigger_connection[0]
 
         # Force ATS acquisition mode to be continuous
         interface.acquisition_controller('SteeredInitialization')
@@ -508,14 +503,14 @@ class SteeredInitializationImplementation(SteeredInitialization,
 
     def implement(self, interface):
         acquisition_controller = interface._acquisition_controller
-        acquisition_controller.t_max_wait(self.t_max_wait)
-        acquisition_controller.t_no_blip(self.t_no_blip)
+        acquisition_controller.t_max_wait(self.pulse.t_max_wait)
+        acquisition_controller.t_no_blip(self.pulse.t_no_blip)
 
         # Setup readout channel and threshold voltage
         self.readout_channel = self.readout_connection.input['channel']
         acquisition_controller.readout_channel(self.readout_channel.id)
         acquisition_controller.readout_threshold_voltage(
-            self.readout_threshold_voltage)
+            self.pulse.readout_threshold_voltage)
 
         # Setup trigger channel and threshold voltage
         self.trigger_output_channel = self.trigger_connection.output['channel']
@@ -528,21 +523,16 @@ class SteeredInitializationImplementation(SteeredInitialization,
             trigger_threshold_voltage)
 
 
-class TriggerWaitPulseImplementation(TriggerWaitPulse, PulseImplementation):
-    def __init__(self, **kwargs):
-        PulseImplementation.__init__(self, pulse_class=TriggerWaitPulse,
-                                     **kwargs)
+class TriggerWaitPulseImplementation(PulseImplementation):
+    pulse_class = TriggerWaitPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
         # Verify that acquisition controller is SteeredInitialization
         if not interface.acquisition_controller() == 'SteeredInitialization':
             raise RuntimeError('ATS interface acquisition controller is not '
                                'SteeredInitialization')
-        return targeted_pulse
+        return super().target_pulse(pulse, interface, **kwargs)
 
-    def implement(self, interface, **kwargs):
+    def implement(self, **kwargs):
         pass
 
