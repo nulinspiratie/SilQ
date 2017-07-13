@@ -707,6 +707,7 @@ class TriggerPulse(Pulse):
         if name is None:
             name = 'trigger'
         super().__init__(name=name, duration=duration, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
@@ -732,6 +733,7 @@ class TriggerPulse(Pulse):
 class MarkerPulse(Pulse):
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
