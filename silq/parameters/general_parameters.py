@@ -2,17 +2,18 @@ from time import sleep
 import numpy as np
 
 import qcodes as qc
-from qcodes import config
 from qcodes.instrument.parameter import Parameter
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
+
+from silq import config
 from silq.tools import data_tools
 
+properties_config = config.get('properties', {})
+pulse_config = config.get('pulses', {})
 __all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
            'AttributeParameter', 'ConfigPulseAttribute']
 
-properties_config = config['user'].get('properties', {})
-pulse_config = config['user'].get('pulses', {})
 
 
 class CombinedParameter(Parameter):
