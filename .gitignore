@@ -9,3 +9,4 @@ data
 *.egg-info
 experiments_folder.txt
 *.zargo~
+*NI_voltages*
