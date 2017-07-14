@@ -7,6 +7,7 @@ from functools import partial
 import qcodes as qc
 from qcodes.config.config import DotDict
 
+__all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update']
 
 class SubConfig:
     def __init__(self, name, folder=None, parent=None, save_as_dir=None):
