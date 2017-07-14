@@ -7,6 +7,7 @@ from functools import partial
 import qcodes as qc
 from qcodes.config.config import DotDict
 
+__all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update']
 
 class SubConfig:
     def __init__(self, name, folder=None, parent=None, save_as_dir=None):
@@ -193,6 +194,27 @@ class DictConfig(SubConfig, DotDict):
             get_val = self[key]
             # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
+
+    def values(self):
+        return [self[key] for key in self.keys()]
+
+    def items(self):
+        return {key: self[key] for key in self.keys()}.items()
+
+    def get(self, key, default=None):
+        """
+        Override dictionary get, because it otherwise does not call __getitem__
+        Args:
+            key: key to get
+            default: default value if key not found. None by default
+
+        Returns:
+            value of key if in dictionary, else default value.
+        """
+        try:
+            return self[key]
+        except KeyError:
+            return None
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """

@@ -1,13 +1,13 @@
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses.pulse_types import TriggerPulse
-
 from qcodes.utils import validators as vals
-# from qcodes.instrument_drivers.keysight.SD_common.SD_acquisition_controller import *
-import numpy as np
 from qcodes import ManualParameter
+import logging
+logger = logging.getLogger(__name__)
 
-class M3300A_DIG_Interface(InstrumentInterface):
+import numpy as np
+
+class Keysight_SD_DIG_interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
@@ -17,11 +17,19 @@ class M3300A_DIG_Interface(InstrumentInterface):
         self._acquisition_channels  = {
             'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
                                       name='ch{}'.format(k), id=k, input=True)
-            for k in range(8)
+            for k in range(self.instrument.n_channels)
             }
+
+        self._pxi_channels = {
+            'pxi{}'.format(k):
+                Channel(instrument_name=self.instrument_name(),
+                        name='pxi{}'.format(k), id=4000 + k,
+                        input_trigger=True, output=True, input=True) for k in
+        range(self.instrument.n_triggers)}
 
         self._channels = {
             **self._acquisition_channels ,
+            **self._pxi_channels,
             'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in', input=True),
         }
@@ -93,14 +101,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
         return self.acquisition_controllers.get(
             self.acquisition_controller(), None)
 
-    # Make all parameters of the interface transparent to the acquisition controller
-
     def acquisition(self):
         """
         Perform acquisition
         """
         self.start()
         data = {}
+        self._acquisition_controller.pre_acquire()
         acq_data = self._acquisition_controller.acquire()
         acq_data = self._acquisition_controller.post_acquire(acq_data)
 
@@ -118,7 +125,7 @@ class M3300A_DIG_Interface(InstrumentInterface):
                 ch_data = acq_data[ch]
                 ch_name = 'ch{}'.format(ch)
                 ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
-                sample_range = [int(t * self.sample_rate()) for t in ts]
+                sample_range = [int(round(t * self.sample_rate())) for t in ts]
 
                 # Extract pulse data from the channel data
                 if acquisition_average_mode == 'none':
@@ -134,10 +141,6 @@ class M3300A_DIG_Interface(InstrumentInterface):
                     # Further average the pulse data
                     if pulse.average == 'point':
                         data[name][ch_name] = np.mean(data[name][ch_name])
-
-        # For instrument safety, stop all acquisition after we are done
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
 
         return data
 
@@ -170,15 +173,15 @@ class M3300A_DIG_Interface(InstrumentInterface):
     def initialize_driver(self):
         """
             Puts driver into a known initial state. Further configuration will
-            be done in the configure_driver and get_final_additional_pulses
+            be done in the configure_driver and get_additional_pulses
             functions.
         """
-        for k in range(8):
+        for k in range(self.instrument.n_channels):
             self.instrument.parameters['impedance_{}'.format(k)].set(1) # 50 Ohm impedance
             self.instrument.parameters['coupling_{}'.format(k)].set(0)  # DC Coupled
             self.instrument.parameters['full_scale_{}'.format(k)].set(3.0)  # 3.0 Volts
 
-    def get_final_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, **kwargs):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
@@ -186,9 +189,13 @@ class M3300A_DIG_Interface(InstrumentInterface):
             # Add a single trigger pulse when starting acquisition
             t_start = min(pulse.t_start for pulse in
                           self.pulse_sequence.get_pulses(acquire=True))
-
+            if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
+                logger.warning('Trigger manually defined for M3300A digitizer. '
+                               'This is inadvisable as this could limit the responsiveness'
+                               ' of the machine.')
+                return []
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start, duration=1e-5,
+                TriggerPulse(t_start=t_start, duration=15e-6,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True
@@ -212,18 +219,18 @@ class M3300A_DIG_Interface(InstrumentInterface):
 
         if controller() == 'Triggered':
             # Get trigger connection to determine how to trigger the controller
-            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
             trigger_connection = trigger_pulse.connection
             self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
             self.trigger_edge('rising')
 
-            t_start = min(pulse.t_start for pulse in
-                          self.input_pulse_sequence.get_pulses(acquire=True))
-            t_stop = max(pulse.t_stop for pulse in
-                         self.input_pulse_sequence.get_pulses(acquire=True))
-            t_final = max(self.input_pulse_sequence.t_stop_list)
+            t_0 = min(pulse.t_start for pulse in
+                      self.pulse_sequence.get_pulses(acquire=True))
+            t_f = max(pulse.t_stop for pulse in
+                  self.pulse_sequence.get_pulses(acquire=True))
+            acquisition_window = t_f - t_0
 
-            T = t_stop - t_start
+            duration = self.pulse_sequence.duration
 
             controller.sample_rate(int(round((self.sample_rate()))))
             controller.traces_per_acquisition(int(round(self.samples())))
@@ -234,18 +241,31 @@ class M3300A_DIG_Interface(InstrumentInterface):
             controller.trigger_edge(self.trigger_edge())
 
             # Capture maximum number of samples on all channels
-            controller.samples_per_record(int(T * self.sample_rate()))
+            controller.samples_per_record(int(round(acquisition_window * self.sample_rate())))
 
-            # Set an acquisition timeout to be 10% after the last pulse finishes.
-            # NOTE: time is defined in seconds
-            controller.read_timeout(t_final * 1.1)
+
+            #TODO : This is all low-level, should figure out a way to shift this
+            #TODO : to the acquisition controller.
+            max_timeout = np.iinfo(np.uint16).max
+            # Separate reads to ensure the total read can be contained within a
+            # single timeout. Note a 20% overhead is assumed. At the driver level
+            # timeout is measured in ms.
+            if int(max_timeout) < int(round(duration * self.samples()*1.2)*1e3):
+                samples_per_read = max((max_timeout// int(1e3 * duration) * 100) // 120, 1)
+            else:
+                samples_per_read = self.samples()
+            # read_timeout = duration * samples_per_read * 10
+            read_timeout = 64.0
+            logger.debug(f'Read timeout is set to {read_timeout:.3f}s.')
+            controller.samples_per_read(samples_per_read)
+            controller.read_timeout(read_timeout)
 
     def start(self):
         self._acquisition_controller.pre_start_capture()
         self._acquisition_controller.start()
 
     def stop(self):
-        self.instrument.daq_stop_multiple(self._acquisition_controller._ch_array_to_mask( \
-            self._acquisition_controller.channel_selection))
+        # Stop all DAQs
+        self.instrument.daq_stop_multiple((1 << 8) - 1)
 
 
