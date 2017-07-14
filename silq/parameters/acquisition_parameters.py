@@ -900,12 +900,6 @@ class NMRParameter(AcquisitionParameter):
         """
         Parameter used to determine the Rabi frequency
         """
-        super().__init__(name=name,
-                         names=self.names,
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 'threshold_up_proportion'],
-                         **kwargs)
-
         # Set initialized to False so the pulse sequence is not generated
         self._initialized = False
 
@@ -916,6 +910,12 @@ class NMRParameter(AcquisitionParameter):
         self.post_pulses = []
 
         self.ESR_frequencies = [self.ESR_pulse.frequency]
+
+        super().__init__(name=name,
+                         names=self.names,
+                         snapshot_value=False,
+                         properties_attrs=['t_skip', 'threshold_up_proportion'],
+                         **kwargs)
 
         # This initializes the pulse sequence
         self._initialized = True
