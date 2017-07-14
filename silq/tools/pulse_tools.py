@@ -1,3 +1,5 @@
+__all__ = ['pulse_to_waveform_sequence']
+
 def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_min=1, n_max=1000, sample_points_multiple=1):
     """
     This method can be used when generating a periodic signal with an AWG device. Given a frequency and duration of the
