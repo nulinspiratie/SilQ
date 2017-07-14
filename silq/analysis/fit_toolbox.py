@@ -1,6 +1,8 @@
 import numpy as np
 from lmfit import Parameters, report_fit, Model
 
+__all__ = ['Fit', 'ExponentialFit']
+
 class Fit(Model):
     def __init__(self):
         super().__init__(self.fit_function)

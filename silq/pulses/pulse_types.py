@@ -5,12 +5,16 @@ from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
 from functools import partial
-Signal.__deepcopy__ = lambda self, memo: Signal()
 
 from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter
 from silq import config
+
+__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
+           'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
+           'TriggerWaitPulse', 'MeasurementPulse', 'CombinationPulse',
+           'AWGPulse', 'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -18,6 +22,7 @@ pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average']
 
+Signal.__deepcopy__ = lambda self, memo: Signal()
 logger = logging.getLogger(__name__)
 
 
@@ -707,6 +712,7 @@ class TriggerPulse(Pulse):
         if name is None:
             name = 'trigger'
         super().__init__(name=name, duration=duration, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
@@ -732,6 +738,7 @@ class TriggerPulse(Pulse):
 class MarkerPulse(Pulse):
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:

@@ -1,12 +1,16 @@
 import numpy as np
 import qcodes as qc
-from silq import config
+import silq
 
 parameter_config = config.get('parameters', {})
+__all__ = ['create_set_vals']
+
 
 def create_set_vals(num_parameters=None, step=None, step_percentage=None,
                     points=None, window=None, set_parameters=None, silent=True,
                     center_val=None, min_val=None, max_val=None, reverse=False):
+    parameter_config = silq.config.get('parameters')
+
     def calculate_step(min_step, max_step, percentage, round_vals=True):
         val = min_step * (max_step / min_step) ** (percentage / 100)
         if round_vals:
