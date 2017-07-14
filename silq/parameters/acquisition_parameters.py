@@ -865,31 +865,26 @@ class AdiabaticParameter(AcquisitionParameter):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
     @property
-    def frequencies(self):
+    def ESR_frequencies(self):
         adiabatic_pulses = self.pulse_sequence.get_pulses(name='adiabatic_ESR')
         return [pulse.frequency for pulse in adiabatic_pulses]
 
-    @frequencies.setter
-    def frequencies(self, frequencies):
+    @ESR_frequencies.setter
+    def ESR_frequencies(self, ESR_frequencies):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        plunge_pulse = DCPulse('plunge')
-        read_pulse = DCPulse('read', acquire=True)
-        for frequency in frequencies:
+        for frequency in ESR_frequencies:
             # Add a plunge and read pulse for each frequency
-            self.pulse_sequence.add(plunge_pulse, read_pulse)
+            plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
+            self.pulse_sequence.add(FrequencyRampPulse(
+                'adiabatic_ESR',
+                frequency=frequency,
+                t_start=PulseMatch(plunge_pulse, 't_start',
+                                   delay=self.pulse_delay)))
+            self.pulse_sequence.add(DCPulse('read', acquire=True))
 
         self.pulse_sequence.add(*self.post_pulses)
-
-        for k, frequency in enumerate(frequencies):
-            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            adiabatic_pulse = FrequencyRampPulse(
-                'adiabatic_ESR',
-                t_start=PulseMatch(plunge_pulse, 't_start',
-                                   delay=self.ESR_delay))
-            adiabatic_pulse.frequency = frequency
-            self.pulse_sequence.add(adiabatic_pulse)
 
         # update names
         self.names = [name for name in self.names
@@ -897,21 +892,16 @@ class AdiabaticParameter(AcquisitionParameter):
                       and 'up_proportion_read' not in name]
 
     @property
-    def ESR_delay(self):
+    def pulse_delay(self):
         # Delay between start of plunge and ESR pulse
-        return self._ESR_delay
+        return self._pulse_delay
 
-    @ESR_delay.setter
-    def ESR_delay(self, ESR_delay):
-        self._ESR_delay = ESR_delay
+    @pulse_delay.setter
+    def pulse_delay(self, pulse_delay):
+        self._pulse_delay = pulse_delay
 
-        # Update ESR delays
-        for k, frequency in enumerate(self.frequencies):
-            plunge_pulse = self.pulse_sequence.get_pulse(name='plunge', id=k)
-            adiabatic_pulse = self.pulse_sequence.get_pulse(
-                name='adiabatic_ESR', id=k)
-            adiabatic_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                 delay=ESR_delay)
+        # This updates the pulse sequence
+        self.ESR_frequencies = self.ESR_frequencies
 
     @clear_single_settings
     def get(self):
