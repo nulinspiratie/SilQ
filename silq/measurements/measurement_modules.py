@@ -106,7 +106,7 @@ class MeasurementSequence:
         # Optimal vals
         self.optimal_set_vals, self.optimal_val = self.measurement.get_optimum()
 
-        #TODO correct return
+        # TODO correct return
         return result
 
     def _JSONEncoder(self):
