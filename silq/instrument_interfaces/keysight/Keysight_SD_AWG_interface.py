@@ -518,8 +518,8 @@ class DCPulseImplementation(PulseImplementation):
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n = int(np.ceil(max_cycles / 2 ** 16))
 
-            waveform_samples = n * waveform_minimum
-            if waveform_samples < waveform_minimum:
+            waveform_samples = n * waveform_multiple
+            if duration + threshold < waveform_minimum * period_sample:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                    f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
@@ -607,6 +607,7 @@ class DCRampPulseImplementation(PulseImplementation):
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
 
+        duration = self.pulse.duration
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
         period_sample = 1 / sampling_rate
 
@@ -616,7 +617,7 @@ class DCRampPulseImplementation(PulseImplementation):
             t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop,
                                  waveform_samples, endpoint=True)
 
-            if waveform_samples < waveform_minimum:
+            if duration + threshold < waveform_minimum * period_sample:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                    f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
@@ -717,15 +718,15 @@ class CombinationPulseImplementation(PulseImplementation):
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
 
+        duration = self.pulse.duration
+        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
+        period_sample = 1 / sampling_rate
+
         for ch in channels:
-            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-            period_sample = 1 / sampling_rate
-
-
             waveform_samples = waveform_multiple * round(
-                (self.pulse.duration/ period_sample) / waveform_multiple)
+                (duration/ period_sample) / waveform_multiple)
 
-            if waveform_samples < waveform_minimum:
+            if duration + threshold < waveform_minimum * period_sample:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
@@ -769,13 +770,15 @@ class TriggerPulseImplementation(PulseImplementation):
         waveforms = {}
 
         full_name = self.pulse.full_name or 'none'
+        duration = self.pulse.duration
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
 
         waveform_samples = waveform_multiple * round(
             (self.pulse.duration / period_sample ) / waveform_multiple)
-        if waveform_samples < waveform_minimum:
+
+        if duration + threshold < waveform_minimum * period_sample:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
@@ -821,6 +824,7 @@ class MarkerPulseImplementation(PulseImplementation):
         waveforms = {}
 
         full_name = self.pulse.full_name or 'none'
+        duration = self.pulse.duration
 
         sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
         period_sample = 1 / sampling_rate
@@ -828,7 +832,7 @@ class MarkerPulseImplementation(PulseImplementation):
         # Waveform must have at least waveform_multiple samples
         waveform_samples = waveform_multiple * round(
             (self.pulse.duration / period_sample) / waveform_multiple)
-        if waveform_samples < waveform_minimum:
+        if duration + threshold < waveform_minimum * period_sample:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
