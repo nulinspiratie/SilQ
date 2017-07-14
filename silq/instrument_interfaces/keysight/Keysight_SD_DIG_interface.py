@@ -125,7 +125,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 ch_data = acq_data[ch]
                 ch_name = 'ch{}'.format(ch)
                 ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
-                sample_range = [int(t * self.sample_rate()) for t in ts]
+                sample_range = [int(round(t * self.sample_rate())) for t in ts]
 
                 # Extract pulse data from the channel data
                 if acquisition_average_mode == 'none':
@@ -195,7 +195,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                ' of the machine.')
                 return []
             acquisition_pulse = \
-                TriggerPulse(t_start=t_start, duration=1e-5,
+                TriggerPulse(t_start=t_start, duration=15e-6,
                              connection_requirements={
                                  'input_instrument': self.instrument_name(),
                                  'trigger': True
