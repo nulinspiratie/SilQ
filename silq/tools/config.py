@@ -211,9 +211,9 @@ class DictConfig(SubConfig, DotDict):
         Returns:
             value of key if in dictionary, else default value.
         """
-        if key in self:
+        try:
             return self[key]
-        else:
+        except KeyError:
             return None
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
