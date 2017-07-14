@@ -3,10 +3,10 @@ import logging
 
 import qcodes as qc
 from qcodes.loops import active_data_set
-from qcodes.data import hdf5_format, io
-from qcodes import config
+from qcodes.data import hdf5_format
 from qcodes.instrument.parameter import MultiParameter
 
+from silq import config
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, convert_setpoints, property_ignore_setter
 from silq.tools.parameter_tools import create_set_vals
@@ -16,9 +16,9 @@ from silq.measurements.measurement_modules import MeasurementSequence
 
 logger = logging.getLogger(__name__)
 
-properties_config = config['user'].get('properties', {})
-parameter_config = qc.config['user']['properties'].get('parameters', {})
-measurement_config = qc.config['user'].get('measurements', {})
+properties_config = config.get('properties', {})
+parameter_config = config.properties.get('parameters', {})
+measurement_config = config.get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):

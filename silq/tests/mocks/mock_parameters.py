@@ -7,6 +7,7 @@ from qcodes.data.io import DiskIO
 
 from silq.tools.data_tools import get_data_folder
 
+
 class TestValParameter(Parameter):
     def __init__(self, name, **kwargs):
         self.val = 0

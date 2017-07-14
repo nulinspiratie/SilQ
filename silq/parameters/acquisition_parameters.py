@@ -29,7 +29,7 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
     store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
-                 properties_attrs=[], **kwargs):
+                 properties_attrs=None, **kwargs):
         SettingsClass.__init__(self)
 
         self.pulse_sequence = PulseSequence()
@@ -37,7 +37,6 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, **kwargs)
-
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -49,50 +48,27 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
             environment = config.properties.get('default_environment',
                                                 'default')
         self.environment = environment
+        self.continuous = continuous
 
-        # Setup properties config. If pulse requires additional
-        # properties_attrs, place them before calling Pulse.__init__,
-        # else they are not added to attrs.
-        # Make sure that self.properties_attrs is never replaced, only appended.
-        # Else it is no longer used for self._handle_properties_config_signal.
-        try:
-            # Set properties_config from SilQ environment config
-            self.properties_config = config[self.environment].properties
-        except (KeyError, AttributeError):
-            self.properties_config = None
-
-        self.properties_attrs = properties_attrs
-
-        # Set handler that only uses attributes in properties_attrs
-        self._handle_properties_config_signal = partial(
-            self._handle_config_signal,
-            select=self.properties_attrs)
-        # Connect changes in properties config to handling method
-        # If environment has no properties key, this will never be called.
-        signal(f'config:{self.environment}.properties').connect(
-            self._handle_properties_config_signal)
-
-        # Set attributes that can also be retrieved from properties_config
-        if self.properties_config is not None:
-            for attr in self.properties_attrs:
-                if attr in self.properties_config:
-                    setattr(self, attr, self.properties_config[attr])
-                else:
-                    setattr(self, attr, None)
         self.samples = None
         self.data = None
         self.dataset = None
         self.results = None
-
         self.base_folder = None
         self.subfolder = None
-
-        self.continuous = continuous
 
         # Change attribute data_manager from class attribute to instance
         # attribute. This is necessary to ensure that the data_manager is
         # passed along when the parameter is spawned from a new process
         self.layout = self.layout
+
+        # Attach to properties and parameter configs
+        self.properties_attrs = properties_attrs
+        self.properties_config = self._attach_to_config(
+            path=f'{self.environment}.properties',
+            select_attrs=self.properties_attrs)
+        self.parameter_config = self._attach_to_config(
+            path=f'{self.environment}.parameters.{self.name}')
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
 
@@ -109,6 +85,51 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
     def sample_rate(self):
         """ Acquisition sample rate """
         return self.layout.sample_rate
+
+    def _attach_to_config(self, path, select_attrs=None):
+        """
+        Attach parameter to a subconfig (within silq config).
+        This mean
+        s that whenever an item in the subconfig is updated,
+        the parameter attribute will also be updated to this value.
+
+        Notification of config updates is handled through blinker signals.
+
+        After successfully attaching to a config, the parameter attributes
+        that are present in the config are also updated.
+
+        Args:
+            path: subconfig path
+            select_attrs: if specified, only update attributes in this list
+
+        Returns:
+            subconfig that the parameter is attached to
+        """
+        # TODO special handling of pulse_sequence attr, etc.
+        try:
+            # Get subconfig from silq config
+            subconfig = config[path]
+        except (KeyError, AttributeError):
+            # No subconfig exists, not attaching
+            return None
+
+        # Get signal handling function
+        if select_attrs is not None:
+            # Only update attributes in select_attrs
+            signal_handler = partial(self._handle_config_signal,
+                                     select=select_attrs)
+        else:
+            signal_handler = self._handle_config_signal
+
+        # Connect changes in subconfig to handling function
+        signal(f'config:{path}').connect(signal_handler, weak=False)
+
+        # Set attributes that are present in subconfig
+        for attr, val in subconfig.items():
+            if select_attrs is None or attr in select_attrs:
+                setattr(self, attr, val)
+
+        return subconfig
 
     def _handle_config_signal(self, _, select=None, **kwargs):
         """
