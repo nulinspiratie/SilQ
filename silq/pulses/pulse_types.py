@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
@@ -666,7 +667,7 @@ class DCPulse(Pulse):
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        if hasattr(t, '__len__'):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -693,7 +694,7 @@ class DCRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
 
@@ -711,6 +712,7 @@ class TriggerPulse(Pulse):
         if name is None:
             name = 'trigger'
         super().__init__(name=name, duration=duration, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
@@ -727,7 +729,7 @@ class TriggerPulse(Pulse):
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        if hasattr(t, '__len__'):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -736,6 +738,7 @@ class TriggerPulse(Pulse):
 class MarkerPulse(Pulse):
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
+        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
@@ -746,13 +749,16 @@ class MarkerPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        return self.amplitude
+        if isinstance(t, collections.Iterable):
+            return np.ones(len(t))*self.amplitude
+        else:
+            return self.amplitude
 
 
 class TriggerWaitPulse(Pulse):

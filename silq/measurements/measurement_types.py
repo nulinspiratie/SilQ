@@ -69,6 +69,23 @@ class TruthCondition(Condition):
         return f'({self.attribute} {self.relation} {self.target_val})'
 
 
+    class ModCondition(Condition):
+        def __init__(self, num, start=False, **kwargs):
+            super().__init__(**kwargs)
+            self.num = num
+
+            if start:
+                self.idx = 0
+            else:
+                self.idx = 1
+
+        def check_satisfied(self, *args, **kwargs):
+            return (not self.idx % self.num),
+
+        def __repr__(self):
+            return f'(idx: {self.idx} % {self.num} == 0)'
+
+
 class ConditionSet:
     """
     A ConditionSet represents a set of conditions that a dataset can be
@@ -226,6 +243,7 @@ class Measurement(SettingsClass):
         self.silent = silent
         self.initial_set_vals = None
         self.break_if = break_if
+        self.measurement = None
 
     def __repr__(self):
         return f'{self.name} measurement'
@@ -401,7 +419,7 @@ class Measurement(SettingsClass):
 
         if update:
             logger.info('Updating set parameters to optimal values: '
-                         f'{self.optimal_set_vals}')
+                       f'{self.optimal_set_vals}')
             for set_parameter in self.set_parameters:
                 set_parameter(self.optimal_set_vals[set_parameter.name])
         else:
@@ -409,6 +427,9 @@ class Measurement(SettingsClass):
                          f'{self.initial_set_vals}')
             for set_parameter in self.set_parameters:
                 set_parameter(self.initial_set_vals[set_parameter.name])
+
+    def initialize_measurement(self):
+        raise NotImplementedError('Must be implemented in subclass')
 
     def initialize(self):
         for condition_set in self.condition_sets:
@@ -422,6 +443,16 @@ class Measurement(SettingsClass):
         self.initial_set_vals = {
             p.name: p() for p in self.set_parameters}
         logger.info(f'Initial set values: {self.initial_set_vals}')
+
+        self.measurement = self.initialize_measurement()
+
+        # Create dataset
+        self.dataset = self.measurement.get_data_set(
+            name=self.measurement_name,
+            io=DataSet.default_io,
+            location=self.loc_provider)
+
+        self.acquisition_parameter.base_folder = self.dataset.location
 
     def set_vals_from_idx(self, idx):
         raise NotImplementedError('Must be implemented in subclass')
@@ -445,9 +476,13 @@ class Loop0DMeasurement(Measurement):
         """
         return {}
 
+    def initialize_measurement(self):
+        self.measurement = qc.Measure(self.acquisition_parameter)
+        return self.measurement
+
     @property
-    def measurement(self):
-        return qc.Measure(self.acquisition_parameter)
+    def measurement_name(self):
+        return f'{self.name}_{self.acquisition_parameter.name}'
 
     @clear_single_settings
     def get(self, set_active=True):
@@ -458,12 +493,12 @@ class Loop0DMeasurement(Measurement):
         """
         self.initialize()
 
-        measurement_name = f'{self.name}_{self.acquisition_parameter.name}'
-        logger.info(f'Performing 0D measurement {measurement_name}')
-        self.dataset = self.measurement.run(name=measurement_name,
-                                            io=DataSet.default_io,
-                                            location=self.loc_provider,
-                                            quiet=True, set_active=set_active)
+        logger.info(f'Performing 0D measurement {self.measurement_name}')
+        try:
+            self.measurement.run(quiet=True, set_active=set_active)
+        finally:
+            self.acquisition_parameter.base_folder = None
+
 
         # Test condition sets until a condition_set is found that has an action
         condition_set = self.check_condition_sets(self.dataset,
@@ -519,8 +554,7 @@ class Loop1DMeasurement(Measurement):
                                                 set_parameter.name)[idx]
                     for set_parameter in self.set_parameters}
 
-    @property
-    def measurement(self):
+    def initialize_measurement(self):
         # Start with an empty set of actions in the loop
         actions = []
 
@@ -532,6 +566,8 @@ class Loop1DMeasurement(Measurement):
 
             # Also measure the set_parameters, as we are going to update them
             actions += self.set_parameters
+        else:
+            raise RuntimeError('Either set_vals or point must be defined')
 
         # Add measurement of acquisition parameter
         actions.append(self.acquisition_parameter)
@@ -541,7 +577,13 @@ class Loop1DMeasurement(Measurement):
                                            self.acquisition_parameter,
                                            action=self.break_if)))
 
-        return set_loop.each(*actions)
+        self.measurement = set_loop.each(*actions)
+        return self.measurement
+
+    @property
+    def measurement_name(self):
+        return f'{self.name}_{self.set_parameter.name}_' \
+               f'{self.acquisition_parameter.name}'
 
     @clear_single_settings
     def get(self, set_active=True):
@@ -552,13 +594,11 @@ class Loop1DMeasurement(Measurement):
         """
         self.initialize()
 
-        measurement_name = f'{self.name}_{self.set_parameter.name}_' \
-                           f'{self.acquisition_parameter.name}'
-        logger.info(f'Performing 1D measurement {measurement_name}')
-        self.dataset = self.measurement.run(name=measurement_name,
-                                            io=DataSet.default_io,
-                                            location=self.loc_provider,
-                                            quiet=True, set_active=set_active)
+        logger.info(f'Performing 1D measurement {self.measurement_name}')
+        try:
+            self.measurement.run(quiet=True, set_active=set_active)
+        finally:
+            self.acquisition_parameter.base_folder = None
 
         # Test condition sets until a condition_set is found that has an action
         condition_set = self.check_condition_sets(self.dataset,
@@ -612,10 +652,9 @@ class Loop2DMeasurement(Measurement):
             return {self.set_parameters[0].name: self.set_vals[0][idxs[0]],
                     self.set_parameters[1].name: self.set_vals[1][idxs[1]]}
 
-    @property
-    def measurement(self):
+    def initialize_measurement(self):
         if self.break_if is False:
-            return qc.Loop(
+            self.measurement = qc.Loop(
                 self.set_vals[0]).loop(
                     self.set_vals[1]).each(
                         self.acquisition_parameter)
@@ -623,13 +662,20 @@ class Loop2DMeasurement(Measurement):
             break_action = BreakIf(partial(self.satisfies_condition_set,
                                            self.acquisition_parameter,
                                            action=self.break_if))
-            return qc.Loop(
+            self.measurement = qc.Loop(
                 self.set_vals[0]).each(
                     qc.Loop(
                         self.set_vals[1]).each(
                         self.acquisition_parameter,
                         break_action),
                     break_action)
+        return self.measurement
+
+    @property
+    def measurement_name(self):
+        return f'{self.name}_{self.set_parameters[0].name}_' \
+               f'{self.set_parameters[1].name}_' \
+               f'{self.acquisition_parameter.name}'
 
     @clear_single_settings
     def get(self, set_active=True):
@@ -640,17 +686,15 @@ class Loop2DMeasurement(Measurement):
         """
         self.initialize()
 
-        measurement_name = f'{self.name}_{self.set_parameters[0].name}_' \
-                           f'{self.set_parameters[1].name}_' \
-                           f'{self.acquisition_parameter.name}'
-        logger.info(f'Performing 2D measurement {measurement_name} ')
+        logger.info(f'Performing 2D measurement {self.measurement_name} ')
         logger.info(
             f'set_vals: {self.set_parameters[0].name}[{self.set_vals[0][:]}], '
             f'{self.set_parameters[1].name}[{self.set_vals[1][:]}')
-        self.dataset = self.measurement.run(name=measurement_name,
-                                            io=DataSet.default_io,
-                                            location=self.loc_provider,
-                                            quiet=True, set_active=set_active)
+
+        try:
+            self.measurement.run(quiet=True, set_active=set_active)
+        finally:
+            self.acquisition_parameter.base_folder = None
 
         # Test condition sets until a condition_set is found that has an action
         condition_set = self.check_condition_sets(self.dataset,
