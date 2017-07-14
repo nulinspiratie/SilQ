@@ -66,7 +66,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             path=f'{self.environment}.properties',
             select_attrs=self.properties_attrs)
         self.parameter_config = self._attach_to_config(
-            path=f'{self.environment}.parameters.{self.name}')
+            path=f'parameters.{self.name}')
 
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
 
