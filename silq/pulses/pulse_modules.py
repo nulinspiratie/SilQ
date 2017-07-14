@@ -1,7 +1,9 @@
 import numpy as np
 import copy
-import inspect
 from blinker import Signal
+
+__all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
+           'PulseImplementation']
 
 
 class PulseMatch():
