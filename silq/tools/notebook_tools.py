@@ -1,5 +1,7 @@
 from IPython.display import display_javascript
 
+__all__ = ['create_cell']
+
 
 def create_cell(text, location='below', execute=False, select=True):
     text = text.replace('\n', '\\n')
