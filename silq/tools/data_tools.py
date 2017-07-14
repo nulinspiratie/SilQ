@@ -1,12 +1,12 @@
 import os
-import numpy as np
 from dateutil.parser import parse
 import logging
 
 import qcodes as qc
-from silq import config
+import silq
 from qcodes.data.data_set import new_data
 
+__all__ = ['create_data_set', 'store_data', 'get_data_folder']
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def get_data_folder(path_str='', subfolder=None, newest_date=None):
 
     path_str = path_str.replace('\\', '/')
 
-    base_path = config.properties.data_folder
+    base_path = silq.config.properties.data_folder
     base_path = base_path.replace('\\', '/')
 
     logger.debug(f'Dirs: {os.listdir(base_path)}')
