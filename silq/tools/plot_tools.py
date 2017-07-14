@@ -410,7 +410,8 @@ class ScanningPlot(InteractivePlot):
 class TracePlot(ScanningPlot):
     def __init__(self, parameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
-        if parameter.samples > 1:
+        average_mode = getattr(parameter, 'average_mode', 'none')
+        if parameter.samples > 1 and average_mode == 'none':
             subplots = (len(self.layout.acquisition_outputs()), 1)
         else:
             subplots = 1
