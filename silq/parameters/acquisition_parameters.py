@@ -32,7 +32,8 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
                  properties_attrs=None, **kwargs):
         SettingsClass.__init__(self)
 
-        self.pulse_sequence = PulseSequence()
+        if not hasattr(self, 'pulse_sequence'):
+            self.pulse_sequence = PulseSequence()
         """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
@@ -322,6 +323,12 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, name='DC', **kwargs):
+        self.samples = 1
+
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name='read', acquire=True, average='point'),
+            DCPulse(name='final')])
+
         super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
@@ -329,12 +336,6 @@ class DCParameter(AcquisitionParameter):
                          snapshot_value=False,
                          continuous = True,
                          **kwargs)
-
-        self.samples = 1
-
-        self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='point'),
-            DCPulse(name='final'))
 
     @clear_single_settings
     def get(self):
@@ -348,18 +349,18 @@ class DCParameter(AcquisitionParameter):
 class TraceParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, **kwargs):
+        self.samples = 1
+
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='final')])
+
         super().__init__(name='Trace_acquisition',
                          names=self.names,
                          labels=self.names,
                          units=['V', 'V', 'V'],
                          snapshot_value=False,
                          **kwargs)
-
-        self.samples = 1
-
-        self.pulse_sequence.add(
-            DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='final'))
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
@@ -440,11 +441,6 @@ class DCSweepParameter(AcquisitionParameter):
         self.trace_pulse = DCPulse(name='trace', duration=100, enabled=False,
                                    acquire=True, average='trace', amplitude=0)
 
-        super().__init__(name=name, names=['DC_voltage'],
-                         labels=['DC voltage'], units=['V'],
-                         snapshot_value=False, setpoint_names=(('None',),),
-                         shapes=((1,),), **kwargs)
-
         self.pulse_duration = 1
         self.final_delay = 120
         self.inter_delay = 0.2
@@ -452,6 +448,11 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.additional_pulses = []
         self.samples = 1
+
+        super().__init__(name=name, names=['DC_voltage'],
+                         labels=['DC voltage'], units=['V'],
+                         snapshot_value=False, setpoint_names=(('None',),),
+                         shapes=((1,),), **kwargs)
 
     def __getitem__(self, item):
         return self.sweep_parameters[item]
@@ -684,6 +685,12 @@ class DCSweepParameter(AcquisitionParameter):
 
 class EPRParameter(AcquisitionParameter):
     def __init__(self, name='EPR', **kwargs):
+        self.pulse_sequence = PulseSequence([
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final')])
+
         super().__init__(name=name,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read',
@@ -691,12 +698,6 @@ class EPRParameter(AcquisitionParameter):
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
-
-        self.pulse_sequence.add(
-            DCPulse('empty', acquire=True),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True),
-            DCPulse('final'))
 
     @property_ignore_setter
     def labels(self):
@@ -727,13 +728,6 @@ class AdiabaticParameter(AcquisitionParameter):
         """
         self._names = []
 
-        super().__init__(name=name,
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference_read'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
         self.pre_pulses = []
 
         self.post_pulses = [
@@ -742,14 +736,21 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True),
             DCPulse('final')]
 
-        self.pulse_sequence.add(
+        self.pulse_sequence = PulseSequence([
             *self.pre_pulses,
             DCPulse('plunge'),
             DCPulse('read', acquire=True),
             *self.post_pulses,
-            FrequencyRampPulse('adiabatic_ESR', id=0))
+            FrequencyRampPulse('adiabatic_ESR', id=0)])
 
         self.pulse_delay = 5
+
+        super().__init__(name=name,
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
+                         **kwargs)
 
     @property
     def names(self):
@@ -840,14 +841,7 @@ class RabiParameter(AcquisitionParameter):
         """
         Parameter used to determine the Rabi frequency
         """
-        super().__init__(name=name,
-                         names=['contrast_read', 'contrast', 'dark_counts',
-                                'voltage_difference_read'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-        self.pulse_sequence.add(
+        self.pulse_sequence.add([
             # SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('plunge'),
             DCPulse('read', acquire=True),
@@ -855,7 +849,14 @@ class RabiParameter(AcquisitionParameter):
             DCPulse('plunge', acquire=True),
             DCPulse('read_long', acquire=True),
             DCPulse('final'),
-            SinePulse('ESR'))
+            SinePulse('ESR')])
+
+        super().__init__(name=name,
+                         names=['contrast_ESR', 'contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read'],
+                         **kwargs)
 
     @property
     def frequency(self):
@@ -1006,24 +1007,24 @@ class NMRParameter(AcquisitionParameter):
 
 class T1Parameter(AcquisitionParameter):
     def __init__(self, name='T1', **kwargs):
+        self.pulse_sequence = PulseSequence([
+            # SteeredInitialization('steered_initialization', enabled=False),
+            DCPulse('empty'),
+            DCPulse('plunge'),
+            DCPulse('read', acquire=True),
+            DCPulse('final')])
+            # FrequencyRampPulse('adiabatic_ESR'))
+
+        self.readout_threshold_voltage = None
+
+        self._meta_attrs.append('readout_threshold_voltage')
+
         super().__init__(name=name,
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
                          properties_attrs=['t_skip'],
                          **kwargs)
-
-        self.pulse_sequence.add(
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('empty'),
-            DCPulse('plunge'),
-            DCPulse('read', acquire=True),
-            DCPulse('final'))
-            # FrequencyRampPulse('adiabatic_ESR'))
-
-        self.readout_threshold_voltage = None
-
-        self._meta_attrs.append('readout_threshold_voltage')
 
     @property
     def wait_time(self):
@@ -1061,20 +1062,20 @@ class DarkCountsParameter(AcquisitionParameter):
         """
         Parameter used to perform an adiabatic sweep
         """
+        self.pulse_sequence = PulseSequence([
+            SteeredInitialization('steered_initialization', enabled=True),
+            DCPulse('read', acquire=True)])
+
+        self.readout_threshold_voltage = None
+
+        self._meta_attrs.append('readout_threshold_voltage')
+
         super().__init__(name=name,
                          names=['dark_counts'],
                          labels=['Dark counts'],
                          snapshot_value=False,
                          properties_attrs=['t_skip'],
                          **kwargs)
-
-        self.pulse_sequence.add(
-            SteeredInitialization('steered_initialization', enabled=True),
-            DCPulse('read', acquire=True))
-
-        self.readout_threshold_voltage = None
-
-        self._meta_attrs.append('readout_threshold_voltage')
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
@@ -1102,6 +1103,12 @@ class DarkCountsParameter(AcquisitionParameter):
 
 class VariableReadParameter(AcquisitionParameter):
     def __init__(self, name='variable_read', **kwargs):
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name='plunge', acquire=True, average='trace'),
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='empty', acquire=True, average='trace'),
+            DCPulse(name='final')])
+
         super().__init__(name=name,
                          names=('read_voltage',),
                          labels=('Read voltage',),
@@ -1112,11 +1119,6 @@ class VariableReadParameter(AcquisitionParameter):
                          setpoint_units=(('ms',),),
                          snapshot_value=False,
                          **kwargs)
-        self.pulse_sequence.add(
-            DCPulse(name='plunge', acquire=True, average='trace'),
-            DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='empty', acquire=True, average='trace'),
-            DCPulse(name='final'))
 
     @property_ignore_setter
     def setpoints(self):
@@ -1152,8 +1154,6 @@ class NeuralNetworkParameter(AcquisitionParameter):
         self.include_target_output = include_target_output
         self.output_names = output_names
 
-        super().__init__(names=self.names, **kwargs)
-
         if model_filepath is None:
             model_filepath = self.properties_config.get(
                 f'{self.name}_model_filepath', None)
@@ -1162,6 +1162,8 @@ class NeuralNetworkParameter(AcquisitionParameter):
             self.model = load_model(self.model_filepath)
         else:
             logger.warning(f'No neural network model loaded for {self}')
+
+        super().__init__(names=self.names, **kwargs)
 
     @property_ignore_setter
     def pulse_sequence(self):
@@ -1225,11 +1227,11 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
                        'low_blip_duration', 'fidelity_load',
                        'voltage_difference_load', 'voltage_difference_read']
 
+        self.update = update
+
         super().__init__(target_parameter=target_parameter,
                          input_names=input_names,
                          output_names=output_names, **kwargs)
-
-        self.update = update
 
     @property_ignore_setter
     def names(self):
