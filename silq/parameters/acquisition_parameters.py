@@ -903,14 +903,14 @@ class T1Parameter(AcquisitionParameter):
 
         self.readout_threshold_voltage = None
 
-        self._meta_attrs.append('readout_threshold_voltage')
-
         super().__init__(name=name,
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
                          properties_attrs=['t_skip'],
                          **kwargs)
+
+        self._meta_attrs.append('readout_threshold_voltage')
 
     @property
     def wait_time(self):
@@ -953,14 +953,14 @@ class DarkCountsParameter(AcquisitionParameter):
 
         self.readout_threshold_voltage = None
 
-        self._meta_attrs.append('readout_threshold_voltage')
-
         super().__init__(name=name,
                          names=['dark_counts'],
                          labels=['Dark counts'],
                          snapshot_value=False,
                          properties_attrs=['t_skip'],
                          **kwargs)
+
+        self._meta_attrs.append('readout_threshold_voltage')
 
     def acquire(self, **kwargs):
         super().acquire(**kwargs)
