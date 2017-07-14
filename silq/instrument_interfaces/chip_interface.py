@@ -1,6 +1,7 @@
-from silq.instrument_interfaces \
-    import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
+from silq.instrument_interfaces import InstrumentInterface, Channel
+from silq.pulses.pulse_modules import  PulseImplementation
+from silq.pulses.pulse_types import MeasurementPulse
+
 
 
 class ChipInterface(InstrumentInterface):
@@ -18,6 +19,12 @@ class ChipInterface(InstrumentInterface):
                                for channel_name in self.instrument.channels()}
         self._channels = {**self._input_channels, **self._output_channels}
 
+        self.pulse_implementations = [
+            MeasurementPulseImplementation(
+                pulse_requirements=[]
+            )
+        ]
+
     def setup(self, **kwargs):
         pass
 
@@ -26,3 +33,11 @@ class ChipInterface(InstrumentInterface):
 
     def stop(self):
         pass
+
+class MeasurementPulseImplementation(PulseImplementation):
+    pulse_class = MeasurementPulse
+
+
+    def implement(self, instrument, sampling_rates, threshold):
+        pass
+

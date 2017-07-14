@@ -1,5 +1,4 @@
 import os
-import numpy as np
 from dateutil.parser import parse
 import logging
 
@@ -7,6 +6,7 @@ import qcodes as qc
 from silq import config
 from qcodes.data.data_set import new_data
 
+__all__ = ['create_data_set', 'store_data', 'get_data_folder']
 
 logger = logging.getLogger(__name__)
 

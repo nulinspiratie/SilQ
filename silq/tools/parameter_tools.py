@@ -3,6 +3,8 @@ import qcodes as qc
 from silq import config
 
 parameter_config = config.get('parameters', {})
+__all__ = ['create_set_vals']
+
 
 def create_set_vals(num_parameters=None, step=None, step_percentage=None,
                     points=None, window=None, set_parameters=None, silent=True,
