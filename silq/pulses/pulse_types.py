@@ -1,12 +1,13 @@
 import numpy as np
 import copy
+import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
 from functools import partial
 Signal.__deepcopy__ = lambda self, memo: Signal()
 
-from .pulse_modules import PulseImplementation, PulseMatch
+from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter
 from silq import config
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class Pulse(HasTraits):
     average = Unicode()
-
+    signal = Signal()
     _connected_attrs = {}
 
     def __init__(self, name=None, id=None, environment='default', t_start=None,
@@ -101,6 +102,9 @@ class Pulse(HasTraits):
         self.connection = connection
         self.average = average
 
+        # Pulses can have a PulseImplementation after targeting
+        self.implementation = None
+
         # List of potential connection requirements.
         # These can be set so that the pulse can only be sent to connections
         # matching these requirements
@@ -162,18 +166,17 @@ class Pulse(HasTraits):
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
                          '_handle_properties_config_signal', '_connected_attrs']
-        if isinstance(self, PulseImplementation):
-            if isinstance(other, PulseImplementation):
-                # Both pulses are pulse implementations
-                # Check if their pulse classes are the same
-                if self.pulse_class != other.pulse_class:
-                    return False
+
+        if not isinstance(other, self.__class__):
+            return False
+
+        if self.implementation is not None:
+            if other.implementation is not None:
+                # Both pulses have pulse implementations
                 # All attributes must match
                 return self._matches_attrs(other, exclude_attrs=exclude_attrs)
             else:
-                # Only self is a pulse implementation
-                if not isinstance(other, self.pulse_class):
-                    return False
+                # Only self has a pulse implementation
 
                 # self is a pulse implementation, and so it must match all
                 # the attributes of other. The other way around does not
@@ -185,10 +188,8 @@ class Pulse(HasTraits):
                     # requirements of other
                     return self.connection.satisfies_conditions(
                         **other.connection_requirements)
-        elif isinstance(other, PulseImplementation):
-            # Only other is a pulse implementation
-            if not isinstance(self, other.pulse_class):
-                return False
+        elif other.implementation is not None:
+            # Only other has a pulse implementation
 
             # other is a pulse implementation, and so it must match all
             # the attributes of self. The other way around does not
@@ -201,9 +202,7 @@ class Pulse(HasTraits):
                 return other.connection.satisfies_conditions(
                     **self.connection_requirements)
         else:
-            # Neither self nor other is a pulse implementation
-            if not isinstance(other, self.__class__):
-                return False
+            # Neither self nor other has a pulse implementation
             # All attributes must match
             return self._matches_attrs(other, exclude_attrs=exclude_attrs)
 
@@ -663,7 +662,7 @@ class DCPulse(Pulse):
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
-        if hasattr(t, '__len__'):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -690,7 +689,7 @@ class DCRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert (self.t_start <= min(t)) and (max(t) <= self.t_stop), \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
 
@@ -724,7 +723,7 @@ class TriggerPulse(Pulse):
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        if hasattr(t, '__len__'):
+        if isinstance(t, collections.Iterable):
             return np.ones(len(t))*self.amplitude
         else:
             return self.amplitude
@@ -743,13 +742,16 @@ class MarkerPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= t <= self.t_stop, \
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
-        return self.amplitude
+        if isinstance(t, collections.Iterable):
+            return np.ones(len(t))*self.amplitude
+        else:
+            return self.amplitude
 
 
 class TriggerWaitPulse(Pulse):
