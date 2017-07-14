@@ -265,15 +265,14 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         period_sample = 1 / sampling_rate
 
-        period = period_sample * waveform_minimum
-        cycles = duration // period
+        period = period_sample * waveform_multiple
+        cycles = int(duration // period)
         if (cycles < 1):
             return None
 
-        n = int(-(-cycles // 2 ** 16))
+        n = int(np.ceil(cycles / 2 ** 16))
 
         samples = n * waveform_multiple
-        samples = max(samples, waveform_minimum)
         cycles = int(duration // (period_sample * samples))
 
         waveform_repeated_period = period_sample * samples
@@ -410,7 +409,7 @@ class SinePulseImplementation(PulseImplementation):
         for ch in channels:
             # This factor determines the number of points needed in the waveform
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
-            n_min = int(-(-cycles // 2**16))
+            n_min = int(np.ceil(cycles / 2**16))
 
             n, error, waveform_samples = pulse_to_waveform_sequence(duration, self.frequency, sampling_rate, threshold,
                                                            n_min=n_min, n_max=1000,
@@ -418,8 +417,8 @@ class SinePulseImplementation(PulseImplementation):
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
-                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                                   f'{waveform_sample/sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
 
             # the first waveform (waveform_repeated) is repeated n times
@@ -509,7 +508,7 @@ class DCPulseImplementation(PulseImplementation):
         period_sample = 1 / sampling_rate
 
         for ch in channels:
-            period = period_sample * waveform_minimum
+            period = period_sample * waveform_multiple
             max_cycles = int(duration // period)
 
             # This factor determines the number of points needed in the waveform
@@ -519,8 +518,8 @@ class DCPulseImplementation(PulseImplementation):
             waveform_samples = n * waveform_minimum
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
-                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                                   f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
@@ -555,7 +554,7 @@ class DCPulseImplementation(PulseImplementation):
             waveform_repeated['prescaler'] = self.prescaler
 
             if waveform_tail_samples == 0:
-                waveform_repeated['t_stop'] = self.t_stop
+                waveform_repeated['t_stop'] = self.pulse.t_stop
                 waveforms[ch] = [waveform_repeated]
             else:
                 waveform_tail_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_2)]
@@ -616,8 +615,8 @@ class DCRampPulseImplementation(PulseImplementation):
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
-                                   f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                                   f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                                   f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
             waveform_data = [voltage / 1.5 for voltage in
                              self.pulse.get_voltage(t_list)]
 
@@ -725,8 +724,8 @@ class CombinationPulseImplementation(PulseImplementation):
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
-                               f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                               f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                               f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                               f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
             t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
@@ -775,8 +774,8 @@ class TriggerPulseImplementation(PulseImplementation):
             (self.pulse.duration / period_sample ) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
-                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
@@ -828,8 +827,8 @@ class MarkerPulseImplementation(PulseImplementation):
             (self.pulse.duration / period_sample) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
-                f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
-                f'{waveform_minimum*sampling_rate*1e3:.3f}ms')
+                f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
         waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
