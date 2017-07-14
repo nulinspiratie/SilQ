@@ -315,14 +315,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
-    def __init__(self, **kwargs):
+    def __init__(self, name='DC', **kwargs):
         self.samples = 1
 
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
             DCPulse(name='final')])
 
-        super().__init__(name='DC_acquisition',
+        super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
                          units=['V'],
@@ -427,7 +427,7 @@ class TraceParameter(AcquisitionParameter):
 
 
 class DCSweepParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='DC_sweep', **kwargs):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
@@ -442,7 +442,7 @@ class DCSweepParameter(AcquisitionParameter):
         self.additional_pulses = []
         self.samples = 1
 
-        super().__init__(name='DC_acquisition', names=['DC_voltage'],
+        super().__init__(name=name, names=['DC_voltage'],
                          labels=['DC voltage'], units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
@@ -677,14 +677,14 @@ class DCSweepParameter(AcquisitionParameter):
 
 
 class EPRParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='EPR', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
             DCPulse('read_long', acquire=True),
             DCPulse('final')])
 
-        super().__init__(name='EPR_acquisition',
+        super().__init__(name=name,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
@@ -715,7 +715,7 @@ class EPRParameter(AcquisitionParameter):
 
 
 class AdiabaticParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='adiabatic_ESR', **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
@@ -740,7 +740,7 @@ class AdiabaticParameter(AcquisitionParameter):
         self.names = self.names
         self.ESR_delay = 0.5
 
-        super().__init__(name='adiabatic_acquisition',
+        super().__init__(name=name,
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          snapshot_value=False,
@@ -841,7 +841,7 @@ class AdiabaticParameter(AcquisitionParameter):
 
 
 class RabiParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='rabi_ESR', **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
@@ -855,7 +855,7 @@ class RabiParameter(AcquisitionParameter):
             DCPulse('final'),
             SinePulse('ESR')])
 
-        super().__init__(name='rabi_acquisition',
+        super().__init__(name=name,
                          names=['contrast_ESR', 'contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          labels=['ESR contrast', 'Contrast', 'Dark counts',
@@ -892,7 +892,7 @@ class RabiParameter(AcquisitionParameter):
 
 
 class T1Parameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='T1', **kwargs):
         self.pulse_sequence = PulseSequence([
             # SteeredInitialization('steered_initialization', enabled=False),
             DCPulse('empty'),
@@ -905,7 +905,7 @@ class T1Parameter(AcquisitionParameter):
 
         self._meta_attrs.append('readout_threshold_voltage')
 
-        super().__init__(name='T1_acquisition',
+        super().__init__(name=name,
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
@@ -943,7 +943,7 @@ class T1Parameter(AcquisitionParameter):
 
 
 class DarkCountsParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='dark_counts', **kwargs):
         """
         Parameter used to perform an adiabatic sweep
         """
@@ -955,7 +955,7 @@ class DarkCountsParameter(AcquisitionParameter):
 
         self._meta_attrs.append('readout_threshold_voltage')
 
-        super().__init__(name='dark_counts_acquisition',
+        super().__init__(name=name,
                          names=['dark_counts'],
                          labels=['Dark counts'],
                          snapshot_value=False,
@@ -986,14 +986,14 @@ class DarkCountsParameter(AcquisitionParameter):
 
 
 class VariableReadParameter(AcquisitionParameter):
-    def __init__(self, **kwargs):
+    def __init__(self, name='variable_read', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='plunge', acquire=True, average='trace'),
             DCPulse(name='read', acquire=True, average='trace'),
             DCPulse(name='empty', acquire=True, average='trace'),
             DCPulse(name='final')])
 
-        super().__init__(name='variable_read_acquisition',
+        super().__init__(name=name,
                          names=('read_voltage',),
                          labels=('Read voltage',),
                          units=('V',),
