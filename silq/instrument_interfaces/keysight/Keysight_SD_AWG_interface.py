@@ -281,7 +281,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
         waveform_tail_samples = waveform_multiple * int(round(
-            ((duration - waveform_repeated_duration) / period_sample + 1) / waveform_multiple))
+            ((duration - waveform_repeated_duration) / period_sample) / waveform_multiple))
 
         if waveform_tail_samples < waveform_minimum:
             waveform_tail_samples = 0
@@ -436,7 +436,7 @@ class SinePulseImplementation(PulseImplementation):
 
             waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
             waveform_tail_samples = waveform_multiple * round(
-                ((self.pulse.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
+                ((self.pulse.t_stop - waveform_tail_start) / period_sample) / waveform_multiple)
 
             if waveform_tail_samples < waveform_minimum:
                 # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
@@ -528,12 +528,12 @@ class DCPulseImplementation(PulseImplementation):
             # This is done to minimise the number of data points written to the AWG
             waveform_repeated_period = period_sample * waveform_samples
             t_list_1 = np.linspace(self.pulse.t_start, self.pulse.t_start + waveform_repeated_period, waveform_samples, endpoint=False)
-            waveform_repeated_cycles = max_cycles // n
+            waveform_repeated_cycles = int(max_cycles // n)
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
             waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
             waveform_tail_samples = waveform_multiple * round(
-                ((self.pulse.t_stop - waveform_tail_start) / period_sample + 1) / waveform_multiple)
+                ((self.pulse.t_stop - waveform_tail_start) / period_sample) / waveform_multiple)
 
             if waveform_tail_samples < waveform_minimum:
                 waveform_tail_samples = 0
@@ -610,7 +610,7 @@ class DCRampPulseImplementation(PulseImplementation):
 
         for ch in channels:
             waveform_samples = waveform_multiple * round(
-                (self.pulse.duration / period_sample + 1) / waveform_multiple)
+                (self.pulse.duration / period_sample) / waveform_multiple)
             t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop,
                                  waveform_samples, endpoint=True)
 
@@ -669,7 +669,7 @@ class AWGPulseImplementation(PulseImplementation):
 
 
             waveform_samples = waveform_multiple * round(
-                (self.pulse.duration / period_sample + 1) / waveform_multiple)
+                (self.pulse.duration / period_sample) / waveform_multiple)
             t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
             waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list)]
@@ -721,7 +721,7 @@ class CombinationPulseImplementation(PulseImplementation):
 
 
             waveform_samples = waveform_multiple * round(
-                (self.pulse.duration/ period_sample + 1) / waveform_multiple)
+                (self.pulse.duration/ period_sample) / waveform_multiple)
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
@@ -772,7 +772,7 @@ class TriggerPulseImplementation(PulseImplementation):
         period_sample = 1 / sampling_rate
 
         waveform_samples = waveform_multiple * round(
-            (self.pulse.duration / period_sample + 1) / waveform_multiple)
+            (self.pulse.duration / period_sample ) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
@@ -825,7 +825,7 @@ class MarkerPulseImplementation(PulseImplementation):
 
         # Waveform must have at least waveform_multiple samples
         waveform_samples = waveform_multiple * round(
-            (self.pulse.duration / period_sample + 1) / waveform_multiple)
+            (self.pulse.duration / period_sample) / waveform_multiple)
         if waveform_samples < waveform_minimum:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples*sampling_rate*1e3:.3f}ms < '
