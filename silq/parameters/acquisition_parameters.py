@@ -338,7 +338,7 @@ class TraceParameter(AcquisitionParameter):
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
-                         labels=self.names,
+                         labels=self.labels,
                          units=self.units,
                          shapes=self.shapes,
                          snapshot_value=False,
@@ -366,6 +366,11 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def names(self):
         return tuple(self.trace_pulse.full_name + f'_{output[1]}'
+                for output in self.layout.acquisition_outputs())
+
+    @property_ignore_setter
+    def labels(self):
+        return tuple(f'{output[1]} Trace'
                 for output in self.layout.acquisition_outputs())
 
     @property_ignore_setter
