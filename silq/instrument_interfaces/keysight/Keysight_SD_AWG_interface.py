@@ -229,7 +229,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             logger.debug(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
             self.trigger_self(trigger_period)
         else:
-            self.software_trigger()
+            mask = 0
+            for c in self._get_active_channel_ids():
+                mask |= 1 << c
+            self.instrument.awg_start_multiple(mask)
 
     def trigger_self(self, trigger_period):
         self.software_trigger()
