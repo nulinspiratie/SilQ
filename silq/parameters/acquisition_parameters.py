@@ -402,8 +402,8 @@ class TraceParameter(AcquisitionParameter):
 
         num_traces = len(self.layout.acquisition_outputs())
 
-        pts = duration * self.sample_rate
-        t_list = np.linspace(0, duration, pts, endpoint=True)
+        pts = int(round(duration * self.sample_rate))
+        t_list = tuple(np.linspace(0, duration, pts, endpoint=True))
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
@@ -455,8 +455,9 @@ class TraceParameter(AcquisitionParameter):
                 continue
             pulse.acquire = False
 
-        if self.trace_pulse not in self.pulse_sequence:
-            self.pulse_sequence.add(self.trace_pulse)
+        if self.trace_pulse.full_name in self.pulse_sequence:
+            self.pulse_sequence.remove(self.trace_pulse.full_name)
+        self.pulse_sequence.add(self.trace_pulse)
 
         super().setup(start=start, **kwargs)
 
@@ -480,8 +481,8 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = {self.names[k] : trace
-                        for k, trace in enumerate(traces)}
+        self.results = {self.names[k] : traces[name].tolist()[0]
+                        for k, name in enumerate(traces)}
 
         return tuple(self.results[name] for name in self.names)
 
