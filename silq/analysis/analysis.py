@@ -291,8 +291,9 @@ def analyse_empty(traces, filter_loaded=True):
             'voltage_difference': high_low['voltage_difference']}
 
 
-def analyse_read(traces, start_idx=0, threshold_voltage=None,
+def analyse_read(traces, sample_rate, t_skip=0, threshold_voltage=None,
                  filter_loaded=True):
+    start_idx = round(t_skip * 1e-3 * sample_rate)
     if threshold_voltage is None:
         threshold_voltage = find_high_low(traces)['threshold_voltage']
 
@@ -335,7 +336,6 @@ def analyse_read_long(t_read, sample_rate, traces=None,
                           'or both read_segment_begin and read_segment_end')
 
     read_pts = round(t_read * 1e-3 * sample_rate)
-    start_idx = round(t_skip * 1e-3 * sample_rate)
 
     high_low = find_high_low(traces, threshold_method=threshold_method)
     threshold_voltage = high_low['threshold_voltage']
@@ -359,11 +359,15 @@ def analyse_read_long(t_read, sample_rate, traces=None,
             # read_segment_end is the end segment of read_long trace
             read_segment_end = traces[:, -read_pts:]
 
-        results_begin = analyse_read(read_segment_begin, start_idx=start_idx,
+        results_begin = analyse_read(read_segment_begin,
+                                     t_skip=t_skip,
+                                     sample_rate=sample_rate,
                                      threshold_voltage=threshold_voltage,
                                      filter_loaded=True)
         up_proportion = results_begin['up_proportion']
-        dark_counts = analyse_read(read_segment_end, start_idx=start_idx,
+        dark_counts = analyse_read(read_segment_end,
+                                   t_skip=t_skip,
+                                   sample_rate=sample_rate,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
 
@@ -415,10 +419,27 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
 def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
                            min_trace_perc=0.5, read_segment_names=None):
-    # Analyse empty stage
-    results_empty = analyse_empty(pulse_traces['empty']['output'])
+    """
+    Analysis where there are read pulses in addition to read_long.
+    The dark counts at the end of read_long are also used for other read traces
+    Args:
+        pulse_traces:
+        sample_rate:
+        t_read:
+        t_skip:
+        min_trace_perc:
+        read_segment_names:
 
-    # Analyse plunge stage, there are mulitple plunges in the PulseSequence
+    Returns:
+
+    """
+    # Analyse empty stage
+    # Analyse empty stage, there are multiple empties in the PulseSequence
+    empty_trace = [val for key, val in pulse_traces.items()
+                    if 'empty' in key][0]
+    results_empty = analyse_empty(empty_trace['output'])
+
+    # Analyse plunge stage, there are multiple plunges in the PulseSequence
     plunge_trace = [val for key, val in pulse_traces.items()
                     if 'plunge' in key][0]
     results_load = analyse_load(plunge_trace['output'])
@@ -475,6 +496,63 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
             results[f'contrast_{read_segment_name}'] = read_contrast
             up_proportion = segment_results['up_proportion']
             results[f'up_proportion_{read_segment_name}'] = up_proportion
+
+    return results
+
+
+def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
+                shots_per_read=1, min_trace_perc=0.5,
+                threshold_voltage=None, threshold_method='config'):
+    # Find names of all read segments unless they are read_long
+    # (for dark counts)
+    read_segment_names = [key for key in pulse_traces
+                          if key != 'read_long' and 'read' in key]
+    reads_per_trace = len(read_segment_names) // shots_per_read
+
+    results = {}
+
+    # Get shape of single read segment (samples * points_per_segment
+    read_segment_shape = pulse_traces[read_segment_names[0]]['output'].shape
+    samples, points_per_segment = read_segment_shape
+
+
+    read_traces = np.zeros((reads_per_trace, shots_per_read,
+                           samples, points_per_segment))
+    for k, read_segment_name in enumerate(read_segment_names):
+        read_idx = k // shots_per_read
+        shot_idx = k % shots_per_read
+        shot_traces = pulse_traces[read_segment_name]['output']
+        read_traces[read_idx, shot_idx] = shot_traces
+
+    if threshold_voltage is None:
+        high_low = find_high_low(np.ravel(read_traces),
+                                 threshold_method=threshold_method)
+        threshold_voltage = high_low['threshold_voltage']
+
+
+    # Populate the up proportions
+    for read_idx in range(reads_per_trace):
+        # Create read_traces array
+
+        up_proportions = np.zeros(samples)
+        for sample in range(samples):
+            sample_traces = read_traces[read_idx, :, sample]
+            results_read = analyse_read(sample_traces,
+                                        t_skip=t_skip,
+                                        sample_rate=sample_rate,
+                                        threshold_voltage=threshold_voltage)
+            up_proportions[sample] = results_read['up_proportion']
+
+
+        # Determine number of flips
+        has_high_contrast = up_proportions > threshold_up_proportion
+
+        if reads_per_trace == 1:
+            results['up_proportions'] = up_proportions
+            results['flips'] = sum(abs(np.diff(has_high_contrast)))
+        else:
+            results[f'up_proportions_{read_idx}'] = up_proportions
+            results[f'flips_{read_idx}'] = sum(abs(np.diff(has_high_contrast)))
 
     return results
 
