@@ -338,7 +338,7 @@ class TraceParameter(AcquisitionParameter):
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
-                         labels=self.names,
+                         labels=self.labels,
                          units=self.units,
                          shapes=self.shapes,
                          snapshot_value=False,
@@ -366,6 +366,11 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def names(self):
         return tuple(self.trace_pulse.full_name + f'_{output[1]}'
+                for output in self.layout.acquisition_outputs())
+
+    @property_ignore_setter
+    def labels(self):
+        return tuple(f'{output[1]} Trace'
                 for output in self.layout.acquisition_outputs())
 
     @property_ignore_setter
@@ -397,8 +402,8 @@ class TraceParameter(AcquisitionParameter):
 
         num_traces = len(self.layout.acquisition_outputs())
 
-        pts = duration * self.sample_rate
-        t_list = np.linspace(0, duration, pts, endpoint=True)
+        pts = int(round(duration * self.sample_rate))
+        t_list = tuple(np.linspace(0, duration, pts, endpoint=True))
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
@@ -450,8 +455,9 @@ class TraceParameter(AcquisitionParameter):
                 continue
             pulse.acquire = False
 
-        if self.trace_pulse not in self.pulse_sequence:
-            self.pulse_sequence.add(self.trace_pulse)
+        if self.trace_pulse.full_name in self.pulse_sequence:
+            self.pulse_sequence.remove(self.trace_pulse.full_name)
+        self.pulse_sequence.add(self.trace_pulse)
 
         super().setup(start=start, **kwargs)
 
@@ -464,8 +470,8 @@ class TraceParameter(AcquisitionParameter):
         """
         super().acquire(**kwargs)
 
-        traces = [self.data[self.trace_pulse.full_name][output] for _, output in
-                  self.layout.acquisition_outputs()]
+        traces = {self.trace_pulse.full_name + '_' + output: self.data[self.trace_pulse.full_name][output]
+                  for _, output in self.layout.acquisition_outputs()}
 
         return traces
 
@@ -475,8 +481,8 @@ class TraceParameter(AcquisitionParameter):
         # must be done once beforehand.
         traces = self.acquire()
 
-        self.results = {self.names[k] : trace
-                        for k, trace in enumerate(traces)}
+        self.results = {self.names[k] : traces[name].tolist()[0]
+                        for k, name in enumerate(traces)}
 
         return tuple(self.results[name] for name in self.names)
 
