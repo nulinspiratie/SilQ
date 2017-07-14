@@ -2,8 +2,8 @@ import numpy as np
 import qcodes as qc
 import silq
 
+parameter_config = config.get('parameters', {})
 __all__ = ['create_set_vals']
-
 
 
 def create_set_vals(num_parameters=None, step=None, step_percentage=None,
