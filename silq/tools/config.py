@@ -194,6 +194,12 @@ class DictConfig(SubConfig, DotDict):
             # print(f'cfg: sending {(key, val)} to {self.config_path}')
             signal(self.config_path).send(self, **{key: get_val})
 
+    def values(self):
+        return [self[key] for key in self.keys()]
+
+    def items(self):
+        return {key: self[key] for key in self.keys()}.items()
+
     def get(self, key, default=None):
         """
         Override dictionary get, because it otherwise does not call __getitem__
@@ -208,7 +214,6 @@ class DictConfig(SubConfig, DotDict):
             return self[key]
         except KeyError:
             return None
-
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """
