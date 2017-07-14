@@ -12,6 +12,13 @@ from qcodes import config
 from qcodes.config.config import DotDict
 from qcodes.instrument.parameter import Parameter
 
+__all__ = ['execfile', 'get_truth', 'get_memory_usage', 'partial_from_attr',
+           'print_attr', 'SettingsClass', 'UpdateDotDict',
+           'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
+           'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
+           'ParallelTimedRotatingFileHandler', 'convert_setpoints',
+           'Singleton', 'arreq_in_list', 'arreqclose_in_list',
+           'property_ignore_setter']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
