@@ -1,7 +1,8 @@
 from silq.instrument_interfaces import InstrumentInterface
+from silq.pulses.pulse_modules import PulseImplementation
 from silq.pulses.pulse_types import TriggerPulse
 from qcodes import ManualParameter
-from qcodes.utils.validators as vals
+import qcodes.utils.validators as vals
 import logging
 logger = logging.getLogger(__name__)
 
@@ -119,17 +120,17 @@ class Bayesian_Update_Interface(InstrumentInterface):
         self.instrument.reset()
 
 
-    class TriggerPulseImplementation(PulseImplementation, TriggerPulse):
+    class TriggerPulseImplementation(PulseImplementation):
+        pulse_class = TriggerPulse
         def __init__(self, **kwargs):
-            PulseImplementation.__init__(self, pulse_class=TriggerPulse,
-                                         **kwargs)
+            PulseImplementation.__init__(self, **kwargs)
 
         def implement(self, instrument, sampling_rates, threshold):
-            if isinstance(self.connection, SingleConnection):
-                channel = self.connection.output['channel'].id
+            if isinstance(self.pulse.connection, SingleConnection):
+                channel = self.pulse.connection.output['channel'].id
             else:
                 raise Exception('No implementation for connection {}'.format(
-                    self.connection))
+                    self.pulse.connection))
 
             return channel
 
