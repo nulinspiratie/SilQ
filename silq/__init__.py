@@ -14,6 +14,21 @@ config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
 
 
+# Add saving of config to qcodes DataSet
+def _save_config(self, location=None):
+    try:
+        if location is None:
+            location = self.location
+
+        if not os.path.isabs(location):
+            location = os.path.join(qc.DataSet.default_io.base_location, location)
+        config.save(location)
+    except Exception as e:
+        logger.error(f'Datasaving error: {e.args}')
+
+qc.DataSet.save_config = _save_config
+
+
 def get_silq_folder():
     return os.path.split(__file__)[0]
 
