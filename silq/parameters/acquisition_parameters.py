@@ -809,9 +809,7 @@ class AdiabaticParameter(AcquisitionParameter):
             *self.post_pulses,
             FrequencyRampPulse('adiabatic_ESR', id=0))
 
-        # Update names to include contrast_read
-        self.names = self.names
-        self.ESR_delay = 0.5
+        self.pulse_delay = 5
 
     @property
     def names(self):
@@ -819,13 +817,13 @@ class AdiabaticParameter(AcquisitionParameter):
 
     @names.setter
     def names(self, names):
-        if len(self.frequencies) == 1:
-            ESR_names = [f'contrast_read']
+        if len(self.ESR_frequencies) == 1:
+            ESR_names = [f'contrast_read', 'up_proportion_read']
         else:
-            ESR_names = [f'contrast_read{k}'
-                         for k in range(len(self.frequencies))]
+            ESR_names = [f'{attr}_read{k}'
+                         for k in range(len(self.ESR_frequencies))
+                         for attr in ['contrast', 'up_proportion']]
         names = ESR_names + list(names)
-
         self._names = names
 
     @property_ignore_setter
@@ -869,7 +867,8 @@ class AdiabaticParameter(AcquisitionParameter):
 
         # update names
         self.names = [name for name in self.names
-                      if 'contrast_read' not in name]
+                      if 'contrast_read' not in name
+                      and 'up_proportion_read' not in name]
 
     @property
     def ESR_delay(self):
