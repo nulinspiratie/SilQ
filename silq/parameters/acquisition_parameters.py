@@ -1042,7 +1042,7 @@ class NMRParameter(AcquisitionParameter):
         """
         Updates the pulse sequence
         Args:
-            change: change of attribute, passed by traitlets 
+            change: change of attribute, passed by traitlets
 
         Returns:
             None

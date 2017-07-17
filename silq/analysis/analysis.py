@@ -423,12 +423,12 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
     Analysis where there are read pulses in addition to read_long.
     The dark counts at the end of read_long are also used for other read traces
     Args:
-        pulse_traces: 
-        sample_rate: 
-        t_read: 
-        t_skip: 
-        min_trace_perc: 
-        read_segment_names: 
+        pulse_traces:
+        sample_rate:
+        t_read:
+        t_skip:
+        min_trace_perc:
+        read_segment_names:
 
     Returns:
 
