@@ -2,7 +2,6 @@ import numpy as np
 import qcodes as qc
 import silq
 
-parameter_config = config.get('parameters', {})
 __all__ = ['create_set_vals']
 
 
