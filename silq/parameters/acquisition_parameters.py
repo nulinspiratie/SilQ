@@ -879,7 +879,7 @@ class ESRParameter(AcquisitionParameter):
         for frequency in self.ESR_frequencies:
             # Add a plunge and read pulse for each frequency
             plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
-            ESR_pulse = self.pulse_sequence.add(self.ESR_pulse)
+            ESR_pulse, = self.pulse_sequence.add(self.ESR_pulse)
             ESR_pulse.frequency = frequency
             ESR_pulse.t_start=PulseMatch(plunge_pulse, 't_start',
                                          delay=self.pulse_delay)
