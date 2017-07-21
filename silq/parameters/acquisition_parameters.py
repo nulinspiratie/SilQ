@@ -813,10 +813,10 @@ class EPRParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
-class AdiabaticParameter(AcquisitionParameter):
-    def __init__(self, name='adiabatic_ESR', **kwargs):
+class ESRParameter(AcquisitionParameter):
+    def __init__(self, name='ESR', **kwargs):
         """
-        Parameter used to perform an adiabatic sweep
+        Parameter used to perform electron spin resonance (ESR)
         """
         self._names = []
 
@@ -828,14 +828,8 @@ class AdiabaticParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True),
             DCPulse('final')]
 
-        self.pulse_sequence = PulseSequence([
-            *self.pre_pulses,
-            DCPulse('plunge'),
-            DCPulse('read', acquire=True),
-            *self.post_pulses,
-            FrequencyRampPulse('adiabatic_ESR', id=0)])
-
-        self.ESR_frequencies = [self.pulse_sequence['adiabatic_ESR'].frequency]
+        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
+        self.ESR_frequencies = [self.ESR_pulse.frequency]
 
         self.pulse_delay = 5
 
@@ -847,6 +841,8 @@ class AdiabaticParameter(AcquisitionParameter):
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
+
+        self.update_pulse_sequence()
 
     @property
     def names(self):
