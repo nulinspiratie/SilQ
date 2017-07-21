@@ -19,8 +19,8 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     property_ignore_setter
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
-           'DCSweepParameter', 'EPRParameter', 'AdiabaticParameter',
-           'RabiParameter', 'NMRParameter', 'T1Parameter',
+           'DCSweepParameter', 'EPRParameter', 'ESRParameter',
+           'NMRParameter', 'T1Parameter',
            'DarkCountsParameter', 'VariableReadParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
