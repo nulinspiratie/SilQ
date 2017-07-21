@@ -958,6 +958,9 @@ class NMRParameter(AcquisitionParameter):
 
         self.ESR_frequencies = [self.ESR_pulse.frequency]
 
+        self.pulse_delay = 5
+        self.inter_pulse_delay = 1
+
         super().__init__(name=name,
                          names=self.names,
                          snapshot_value=False,
@@ -989,14 +992,9 @@ class NMRParameter(AcquisitionParameter):
     def labels(self):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
-    def update_pulse_sequence(self, change=None):
+    def update_pulse_sequence(self):
         """
         Updates the pulse sequence
-        Args:
-            change: change of attribute, passed by traitlets
-
-        Returns:
-            None
         """
 
         # Initialize pulse sequence
@@ -1009,14 +1007,24 @@ class NMRParameter(AcquisitionParameter):
                                        delay=self.pulse_delay)
 
         # Add ESR pulses
-        for frequency in self.ESR_frequencies:
-            for _ in range(self.shots_per_frequency):
+        for _ in range(self.shots_per_frequency):
+            for ESR_frequencies in self.ESR_frequencies:
                 # Add a plunge and read pulse for each frequency
+
+                if not isinstance(ESR_frequencies, Iterable):
+                    # Treat frequency as list, as one could add multiple ESR
+                    # pulses
+                    ESR_frequencies = [ESR_frequencies]
+
                 plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
-                ESR_pulse, = self.pulse_sequence.add(self.ESR_pulse)
-                ESR_pulse.frequency = frequency
-                ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                               delay=self.pulse_delay)
+                for k, ESR_frequency in enumerate(ESR_frequencies):
+                    ESR_pulse, = self.pulse_sequence.add(self.ESR_pulse)
+                    ESR_pulse.frequency = ESR_frequency
+
+                    # Delay also depends on any previous ESR pulses
+                    delay = self.pulse_delay + k * self.inter_pulse_delay
+                    ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
+                                                   delay=delay)
                 self.pulse_sequence.add(DCPulse('read', acquire=True))
 
         self.pulse_sequence.add(*self.post_pulses)
