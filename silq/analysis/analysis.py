@@ -526,8 +526,8 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
         shot_traces = pulse_traces[read_segment_name]['output']
         # For each shot, all frequencies are looped over.
         # Therefore read_idx is inner loop, and shot_idx outer loop
-        read_idx = k % shots_per_read
-        shot_idx = k // shots_per_read
+        read_idx = k % distinct_reads_per_trace
+        shot_idx = k // distinct_reads_per_trace
         read_traces[read_idx, shot_idx] = shot_traces
 
     # Find threshold voltage if not provided
