@@ -507,32 +507,37 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
     # (for dark counts)
     read_segment_names = [key for key in pulse_traces
                           if key != 'read_long' and 'read' in key]
-    reads_per_trace = len(read_segment_names) // shots_per_read
+    # Number of distinct reads in a trace (i.e. with different ESR frequency)
+    distinct_reads_per_trace = len(read_segment_names) // shots_per_read
 
     results = {}
 
     # Get shape of single read segment (samples * points_per_segment
-    read_segment_shape = pulse_traces[read_segment_names[0]]['output'].shape
-    samples, points_per_segment = read_segment_shape
+    single_read_segment = pulse_traces[read_segment_names[0]]['output']
+    samples, points_per_segment = single_read_segment.shape
 
-
-    read_traces = np.zeros((reads_per_trace, shots_per_read,
-                           samples, points_per_segment))
+    # Create 4D array of all read segments
+    read_traces = np.zeros((distinct_reads_per_trace, # Distinct ESR frequencies
+                            shots_per_read, # Repetitions of each ESR frequency
+                            samples, # Samples (= max_flips + 1)
+                            points_per_segment # sampling points within segment
+                            ))
     for k, read_segment_name in enumerate(read_segment_names):
-        read_idx = k // shots_per_read
-        shot_idx = k % shots_per_read
         shot_traces = pulse_traces[read_segment_name]['output']
+        # For each shot, all frequencies are looped over.
+        # Therefore read_idx is inner loop, and shot_idx outer loop
+        read_idx = k % shots_per_read
+        shot_idx = k // shots_per_read
         read_traces[read_idx, shot_idx] = shot_traces
 
+    # Find threshold voltage if not provided
     if threshold_voltage is None:
         high_low = find_high_low(np.ravel(read_traces),
                                  threshold_method=threshold_method)
         threshold_voltage = high_low['threshold_voltage']
 
-
     # Populate the up proportions
-    for read_idx in range(reads_per_trace):
-        # Create read_traces array
+    for read_idx in range(distinct_reads_per_trace):
 
         up_proportions = np.zeros(samples)
         for sample in range(samples):
@@ -543,11 +548,10 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
                                         threshold_voltage=threshold_voltage)
             up_proportions[sample] = results_read['up_proportion']
 
-
         # Determine number of flips
         has_high_contrast = up_proportions > threshold_up_proportion
 
-        if reads_per_trace == 1:
+        if distinct_reads_per_trace == 1:
             results['up_proportions'] = up_proportions
             results['flips'] = sum(abs(np.diff(has_high_contrast)))
         else:
