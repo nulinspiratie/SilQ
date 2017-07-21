@@ -30,7 +30,7 @@ of issues and implementation.
 
 Nesting PulseSequence within another PulseSequence
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ability to nesting a PulseSequence in another PulseSequence allows a
+The ability to nest a PulseSequence in another PulseSequence allows a
 natural way to break up a complex measurement into different layers.
 For example, a PulseSequence could consists of three stages:
 
