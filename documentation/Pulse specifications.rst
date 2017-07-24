@@ -6,7 +6,8 @@ In a measurement, a PulseSequence is composed of Pulses. Each of these Pulses
 can either be untargeted (generic) or targeted (specific to a connection and
 interface). The user is supposed to write untargeted pulses, which then are
 converted to targeted pulses through the Layout. Currently, the Layout tries
-to figure out which Pulse should be sent to which specific connection.
+to match each Pulse to a specific connection by searching through the
+available interfaces and their PulseImplementations.
 However, there are situations where you want a pulse to be directed to a
 specific connection, in which case the Layout fails. A solution is proposed
 in `Layout targeting strategy`, where each Pulse has an associated
@@ -15,6 +16,9 @@ in the config, which contains among others a dictionary of
 `connection_label: connection` pairs. This way, a pulse gets sent to a
 specific connection depending on the environment it is using.
 
+You can think of the `environment` as something that gives context to the
+pulse from which the pulse can gather environment-specific information and
+properties.
 
 Desired attributes
 ******************
