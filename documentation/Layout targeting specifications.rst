@@ -2,7 +2,7 @@
 Layout targeting specifications
 ===============================
 When the Layout receives an abstract PulseSequence (usually setup-independent),
-it needs to targeted the PulseSequence to the experimental setup. It does
+it needs to target each pulse in the PulseSequence to the experimental setup. It does
 this by distributing the pulses over the interfaces. Each interface then
 implements the pulses it has received on its associated instrument, such that
 the PulseSequence is played once the acquisition is started.
@@ -12,22 +12,22 @@ Current targeting scheme
 Currently, targeting of an abstract PulseSequence is performed as follows.
 Once the Layout receives the PulseSequence, it will loop over the pulses.
 
-#. For each pulse, it will check ``interface.pulse_implementations`` to see
+-. For each pulse, it will check ``interface.pulse_implementations`` to see
    which of the interfaces can output a given pulse. Exactly one interface
    must be able to handle a given pulse, or it will raise an error.
-#. If a unique interface is found, it checks which connections can be used to
+-. If a unique interface is found, it checks which connections can be used to
    output a pulse. If more than one connection is found, it will check if any
    of them have attribute ``connection.default = True``. If this is the case,
    or only one connection is found, it will choose this connection, else it
    will raise an error.
-#. If a unique connection is found, the connection will first target the pulse.
+-. If a unique connection is found, the connection will first target the pulse.
    This consists of creating a copy of the pulse (needed to keep the original
    pulse abstract), and attaching itself to ``pulse.connection``. It can
    further perform operations, such as modifying ``pulse.amplitude`` by
    ``connection.scale``. If the connection is a CombinedConnection, this will
    furthermore result in several pulses, targeted to each of the underlying
    connections.
-#. Next the interface transforms the pulses into PulseImplementations that
+-. Next the interface transforms the pulses into PulseImplementations that
    are specific to the interface. First, a PulseImplementation is created,
    after which properties from the pulse are copied over to the
    PulseImplementation. At this stage, the PulseImplementation can require
@@ -36,7 +36,7 @@ Once the Layout receives the PulseSequence, it will loop over the pulses.
    method ``PulseImplementation.implement()``, which implements the pulse for
    a specific interface. The PulseImplementation is then added to
    ``interface.pulse_sequence``.
-#. Any additional pulses are also targeted in the same way before looping to
+-. Any additional pulses are also targeted in the same way before looping to
    the next pulse.
 
 Desired features
@@ -74,9 +74,9 @@ should go to, we look at a multi-qubit system. In this case, pulses are
 usually directed to one qubit, each of which has its own associated connections.
 If you could therefore connect a pulse to a qubit, you would be able to go
 through its connections to extract the connection it should be targeted to.
-Having some sort of label/tag associated to a pulse
-This label can furthermore be used to extract other parameters, such as the
-ESR frequency etc.
+Having some sort of label/tag associated to a pulse would allow this.
+This label can furthermore be used to extract sample/setup-dependent
+parameters such as the ESR frequency.
 
 
 Targeting strategy
@@ -122,7 +122,7 @@ containing these additional pulses. When the Layout reaches interfaces that
 need to implement these additional pulses, it will add these pulses to the
 original PulseSequence skeleton.
 
-This strategy allows straightforward implementation the desired features
+This strategy allows straightforward implementation of the desired features
 mentioned above. First of all, nested PulseSequences are also passed along,
 as they are part of the PulseSequence skeleton. The same holds for logic
 operations and PulseSequences with repetitions, as these also belong to the
