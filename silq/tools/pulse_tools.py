@@ -1,18 +1,24 @@
 __all__ = ['pulse_to_waveform_sequence']
 
-def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_min=1, n_max=1000, sample_points_multiple=1):
+def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold,
+                               n_min=1, n_max=1000, sample_points_multiple=1):
     """
-    This method can be used when generating a periodic signal with an AWG device. Given a frequency and duration of the
-    desired signal, a general AWG can produce that signal by repeating one waveform (waveform_1) for a number of times
-    (cycles) and ending with a second waveform (waveform_2). This is a practical way of generating periodic signals that
+    This method can be used when generating a periodic signal with an AWG device.
+    Given a frequency and duration of the desired signal, a general AWG can
+    produce that signal by repeating one waveform (waveform_1) for a number of
+    times (cycles) and ending with a second waveform (waveform_2).
+    This is a practical way of generating periodic signals that
     are long in duration without using a lot of the available RAM of the AWG.
 
-    Because of the finite sampling rate and restrictions on amount of sample points (which must generally be a multiple
-    of a certain number), there will be an error in the period of the generated signal. This error goes down with the
-    number of periods (n) that one cycle of the repeated waveform contains.
+    Because of the finite sampling rate and restrictions on amount of sample
+    points (which must generally be a multiple of a certain number),
+    there will be an error in the period of the generated signal.
+    This error goes down with the number of periods (n) that one cycle of
+    the repeated waveform contains.
 
-    This function calculates the minimum number n for which the error threshold is satisfied. Therefore minimizing the
-    total amount of sample points that need to be stored by the AWG.
+    This function calculates the minimum number n for which the error threshold
+    is satisfied. Therefore minimizing the total amount of sample points
+    that need to be stored by the AWG.
 
         Args:
             duration (float): duration of the signal in seconds
@@ -24,10 +30,9 @@ def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_
             sample_points_multiple (int): the number of samples must be a multiple of
 
         Returns:
-            (tuple):
-                n (int):        number of signal periods that are in one cycle of the repeating waveform
-                error (float):  relative error in the signal period
-                samples (int):  number of samples in one cycle of the repeating waveform
+            n (int):        number of signal periods that are in one cycle of the repeating waveform
+            error (float):  relative error in the signal period
+            samples (int):  number of samples in one cycle of the repeating waveform
 
     """
     period = 1 / frequency
