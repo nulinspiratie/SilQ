@@ -63,12 +63,22 @@ class Keysight81180AInterface(InstrumentInterface):
             instrument_channel.trigger_source('external')
             instrument_channel.trigger_mode('override')
 
-            pulses = self.pulse_sequence.get_pulses(input_channel=ch_name)
+        self.generate_waveforms_sequences()
+
+    def generate_waveforms_sequences(self):
+        self.waveforms = {ch: [] for ch in self.active_channels()}
+        self.sequences = {ch: [] for ch in self.active_channels()}
+
+        for ch_name in self.active_channels():
+            pulse_sequence = self.pulse_sequence(input_channel=ch_name)
 
             # Add empty waveform, with minimum points (320)
-            empty_segment = self.instrument.add_waveform(np.zeros(320))
+            empty_segment = np.zeros(320)
+            self.waveforms[ch_name].append(empty_segment)
 
-
+            for pulse in pulse_sequence:
+                if not pulse.is_marker:
+        pass
 
     def start(self):
         for ch_name in self.active_channels():
@@ -81,12 +91,14 @@ class Keysight81180AInterface(InstrumentInterface):
 
     class SinePulseImplementation(PulseImplementation):
         pulse_class = SinePulse
+        is_marker = False
 
         def implement(self):
             pass
 
     class MarkerPulseImplementation(PulseImplementation):
         pulse_class = MarkerPulse
+        is_marker = True
 
         def implement(self):
             pass
