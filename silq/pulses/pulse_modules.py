@@ -181,6 +181,22 @@ class PulseSequence:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __call__(self, **conditions):
+        """
+        Return filtered copy of pulse sequence satisfying conditions
+        Args:
+            **conditions: Conditions that any pulses must satisfy
+
+        Returns:
+            Copy of pulse sequence containing pulses that meet conditions
+        """
+        return PulseSequence(
+            pulses=self.get_pulses(**conditions),
+            allow_untargeted_pulses=self.allow_untargeted_pulses,
+            allow_targeted_pulses=self.allow_targeted_pulses,
+            allow_pulse_overlap=self.allow_pulse_overlap,
+            final_delay=self.final_delay)
+
     def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
             for attr in vars(self):
                 if attr in exclude_attrs:
