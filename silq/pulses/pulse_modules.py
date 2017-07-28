@@ -423,12 +423,6 @@ class PulseSequence:
 
     def get_pulses(self, enabled=True, **conditions):
         pulses = self.pulses
-        # Filter pulses by pulse conditions
-        pulse_conditions = {k: v for k, v in conditions.items()
-                            if k in self.pulse_conditions + ['pulse_class']}
-        pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(
-                    enabled=enabled, **pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
@@ -439,6 +433,12 @@ class PulseSequence:
                       pulse.connection.satisfies_conditions(
                           **connection_conditions)]
 
+        # Filter pulses by pulse conditions
+        pulse_conditions = {k: v for k, v in conditions.items()
+                            if k not in self.connection_conditions}
+        pulses = [pulse for pulse in pulses
+                  if pulse.satisfies_conditions(
+                    enabled=enabled, **pulse_conditions)]
         return pulses
 
     def get_pulse(self, **conditions):
