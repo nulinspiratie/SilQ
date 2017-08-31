@@ -218,6 +218,10 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             controller.average_mode('trace')
 
         if controller() == 'Triggered':
+            if self.input_pulse_sequence.get_pulses(name='Bayes'):
+                bayesian_pulse = self.input_pulse_sequence.get_pulses(name='Bayes')[0]
+                for ch in range(8):
+                    self.instrument.parameters[f'DAQ_trigger_delay_{ch}'].set(int(bayesian_pulse.t_start*2*self.sample_rate()))
             # Get trigger connection to determine how to trigger the controller
             trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
             trigger_connection = trigger_pulse.connection
