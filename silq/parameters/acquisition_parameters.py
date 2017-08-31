@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 from blinker import signal
 from functools import partial
 import logging
-from traitlets import HasTraits, List, Int, Float, Instance, observe
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
@@ -28,10 +27,9 @@ logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
 
 
-class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
+class AcquisitionParameter(SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
-    store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
                  properties_attrs=None, **kwargs):
@@ -142,8 +140,8 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
         Update attr when attr in pulse config is modified
         Args:
             _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set. 
-                Will update any attribute if not specified. 
+            select (Optional(List(str): list of attrs that can be set.
+                Will update any attribute if not specified.
             **kwargs: {attr: new_val}
 
         Returns:
@@ -154,10 +152,7 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=None, setpoints=False):
-
-        if channels is None:
-            channels = self.store_trace_channels
+                     channels=['output'], setpoints=False):
 
         # Store raw traces
         if base_folder is None:
@@ -243,13 +238,11 @@ class AcquisitionParameter(HasTraits, SettingsClass, MultiParameter):
         self.dataset.finalize()
 
     def print_results(self):
-        names = self.names if self.names is not None else [self.name]
-        for name in names:
-            value = self.results[name]
-            if isinstance(value, (int, float)):
-                print(f'{name}: {value:.3f}')
-            else:
-                print(f'{name}: {value}')
+        if self.names is not None:
+            for name in self.names:
+                print(f'{name}: {self.results[name]:.3f}')
+        else:
+            print(f'{self.name}: {self.results[self.name]:.3f}')
 
     def setup(self, start=None, **kwargs):
         self.layout.pulse_sequence = self.pulse_sequence
@@ -946,6 +939,8 @@ class RabiParameter(AcquisitionParameter):
         super().__init__(name=name,
                          names=['contrast_ESR', 'contrast', 'dark_counts',
                                 'voltage_difference_read'],
+                         labels=['ESR contrast', 'Contrast', 'Dark counts',
+                                 'Voltage difference read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
@@ -962,130 +957,10 @@ class RabiParameter(AcquisitionParameter):
     def get(self):
         self.acquire()
 
-        self.results = analysis.analyse_multi_read_EPR(
-            pulse_traces=self.data,
-            sample_rate=self.sample_rate,
-            t_skip=self.t_skip,
-            t_read=self.t_read)
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return tuple(self.results[name] for name in self.names)
-
-
-class NMRParameter(AcquisitionParameter):
-    ESR_frequencies = List(default_value=[])
-    shots_per_frequency = Int(default_value=1)
-    pulse_delay = Float(default_value=5)
-    pre_pulses = List()
-    NMR_pulse = Instance(klass=Pulse)
-    NMR_stage_pulse = Instance(klass=Pulse)
-    ESR_pulse = Instance(klass=Pulse)
-    post_pulses = List()
-
-    def __init__(self, name='NMR', **kwargs):
-        """
-        Parameter used to determine the Rabi frequency
-        """
-        # Set initialized to False so the pulse sequence is not generated
-        self._initialized = False
-
-        self.pre_pulses = []
-        self.NMR_pulse = SinePulse('NMR')
-        self.NMR_stage_pulse = DCPulse('empty')
-        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
-        self.post_pulses = []
-
-        self.ESR_frequencies = [self.ESR_pulse.frequency]
-
-        super().__init__(name=name,
-                         names=self.names,
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 'threshold_up_proportion'],
-                         **kwargs)
-
-        # This initializes the pulse sequence
-        self._initialized = True
-        self.update_pulse_sequence()
-
-    @property_ignore_setter
-    def names(self):
-        names = []
-        if len(self.ESR_frequencies) == 1:
-            names += ['flips', 'up_proportions']
-        else:
-            for k, _ in enumerate(self.ESR_frequencies):
-                names += [f'flips_{k}', f'up_proportions_{k}']
-        return names
-
-    @property_ignore_setter
-    def shapes(self):
-        return ((), (self.samples, )) * len(self.ESR_frequencies)
-
-    @property_ignore_setter
-    def units(self):
-        return ('', ) * len(self.names)
-
-    @property_ignore_setter
-    def labels(self):
-        return [name.replace('_', ' ').capitalize() for name in self.names]
-
-    @observe('ESR_frequencies', 'shots_per_frequency', 'pulse_delay' 
-             'NMR_pulse', 'NMR_stage_pulse','ESR_pulse',
-             'pre_pulses', 'post_pulses')
-    def update_pulse_sequence(self, change=None):
-        """
-        Updates the pulse sequence
-        Args:
-            change: change of attribute, passed by traitlets
-
-        Returns:
-            None
-        """
-        if not self._initialized:
-            return
-
-        # Initialize pulse sequence
-        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
-
-        # Add NMR pulse
-        NMR_stage_pulse, = self.pulse_sequence.add(self.NMR_stage_pulse)
-        NMR_pulse, = self.pulse_sequence.add(self.NMR_pulse)
-        NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                       delay=self.pulse_delay)
-
-        # Add ESR pulses
-        for frequency in self.ESR_frequencies:
-            for _ in range(self.shots_per_frequency):
-                # Add a plunge and read pulse for each frequency
-                plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
-                ESR_pulse, = self.pulse_sequence.add(self.ESR_pulse)
-                ESR_pulse.frequency = frequency
-                ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                               delay=self.pulse_delay)
-                self.pulse_sequence.add(DCPulse('read', acquire=True))
-
-        self.pulse_sequence.add(*self.post_pulses)
-
-        # # update names
-        # self.names = [name for name in self.names
-        #               if 'contrast_read' not in name]
-
-    @clear_single_settings
-    def get(self):
-        self.acquire()
-
-        self.results = analysis.analyse_NMR(
-            pulse_traces=self.data,
-            threshold_up_proportion=self.threshold_up_proportion,
-            shots_per_read=self.shots_per_frequency,
-            sample_rate=self.sample_rate,
-            t_skip=self.t_skip)
+        self.results = analysis.analyse_PR(pulse_traces=self.data,
+                                           sample_rate=self.sample_rate,
+                                           t_skip=self.t_skip,
+                                           t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1130,8 +1005,7 @@ class T1Parameter(AcquisitionParameter):
         self.results = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            t_skip=self.t_skip,
-            sample_rate=self.sample_rate)
+            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1179,8 +1053,7 @@ class DarkCountsParameter(AcquisitionParameter):
         fidelities = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            t_skip=self.t_skip,
-            sample_rate=self.sample_rate)
+            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
         self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
@@ -1273,8 +1146,6 @@ class NeuralNetworkParameter(AcquisitionParameter):
         return names
 
     def acquire(self):
-        if self.samples is not None:
-            self.target_parameter.samples = self.samples
         self.target_parameter()
         # Extract target results using input names, because target_parameter.get
         # may provide results in a different order
