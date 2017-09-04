@@ -87,6 +87,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                     # Check if trigger pulse is necessary.
                     if t > 0 and t not in t_trigger_pulses:
                         additional_pulses.append(self._get_trigger_pulse(t))
+                        t_trigger_pulses.append(t)
 
                     t = self.pulse_sequence.duration
                 else:
@@ -104,6 +105,7 @@ class ArbStudio1104Interface(InstrumentInterface):
                         # Check if trigger pulse is necessary.
                         if t > 0 and t not in t_trigger_pulses:
                             additional_pulses.append(self._get_trigger_pulse(t))
+                            t_trigger_pulses.append(t)
 
                     # Set time to t_stop of next pulse
                     t = pulse_next.t_stop
@@ -112,6 +114,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         if self.pulse_sequence.duration not in t_trigger_pulses:
             trigger_pulse = self._get_trigger_pulse(self.pulse_sequence.duration)
             additional_pulses.append(trigger_pulse)
+            t_trigger_pulses.append(self.pulse_sequence.duration)
 
         return additional_pulses
 
