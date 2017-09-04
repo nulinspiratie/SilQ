@@ -1052,6 +1052,7 @@ class NMRParameter(AcquisitionParameter):
         NMR_pulse, = self.pulse_sequence.add(self.NMR_pulse)
         NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
                                        delay=self.pulse_delay)
+        self.pulse_sequence.add(DCPulse('initialize_down'))
 
         # Add ESR pulses
         for _ in range(self.shots_per_frequency):
