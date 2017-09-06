@@ -13,6 +13,17 @@ logger = logging.getLogger(__name__)
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
 
+if 'ipykernel' in sys.modules:
+    # Load iPython magic (configured via qc.config.core.register_magic)
+    from qcodes.utils.magic import register_magic_class
+
+    register_magic = qc.config.core.get('register_magic', False)
+    if register_magic is not False:
+        from silq.tools.notebook_tools import SilQMagics
+
+        register_magic_class(cls=SilQMagics,
+                             magic_commands=register_magic)
+
 
 # Add saving of config to qcodes DataSet
 def _save_config(self, location=None):
