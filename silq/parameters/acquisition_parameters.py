@@ -1,5 +1,5 @@
-from time import sleep
 import numpy as np
+from copy import copy
 from collections import OrderedDict, Iterable
 from matplotlib import pyplot as plt
 from blinker import signal
@@ -398,7 +398,7 @@ class TraceParameter(AcquisitionParameter):
 
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
-        self._pulse_sequence = pulse_sequence.copy()
+        self._pulse_sequence = copy(pulse_sequence)
 
     @property_ignore_setter
     def names(self):
