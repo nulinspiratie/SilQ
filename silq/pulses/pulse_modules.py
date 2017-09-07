@@ -181,6 +181,11 @@ class PulseSequence:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
+    def __copy__(self, *args):
+        return copy.deepcopy(self)
+
+
     def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
             for attr in vars(self):
                 if attr in exclude_attrs:
@@ -379,9 +384,6 @@ class PulseSequence:
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-
-    def copy(self):
-        return copy.deepcopy(self)
 
     def pulses_overlap(self, pulse1, pulse2):
         """
