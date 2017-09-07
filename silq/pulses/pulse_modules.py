@@ -181,10 +181,8 @@ class PulseSequence:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-
     def __copy__(self, *args):
         return deepcopy(self)
-
 
     def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
             for attr in vars(self):
