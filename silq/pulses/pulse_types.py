@@ -385,10 +385,10 @@ class Pulse(HasTraits):
             Copy of pulse
         """
         # Temporary remove __deepcopy__ to use deepcopy default method
-        _deepcopy = self.__class__.__deepcopy__
-        del self.__class__.__deepcopy__
+        _deepcopy = Pulse.__deepcopy__
+        del Pulse.__deepcopy__
         pulse_copy = deepcopy(self)
-        self.__class__.__deepcopy__ = _deepcopy
+        Pulse.__deepcopy__ = _deepcopy
 
         # Add receiver for config signals
         if hasattr(self, 'environment'):
