@@ -376,7 +376,7 @@ class Pulse(HasTraits):
         name = 'CombinationPulse_{}'.format(id(self)+id(other))
         return CombinationPulse(name, self, other, '*')
 
-    def __copy__(self, *args):
+    def __deepcopy__(self, *args):
         """
         Creates a copy of a pulse.
         Args:
@@ -384,8 +384,11 @@ class Pulse(HasTraits):
         Returns:
             Copy of pulse
         """
-        # temporarily remove signal because it takes time copying
+        # Temporary remove __deepcopy__ to use deepcopy default method
+        _deepcopy = self.__class__.__deepcopy__
+        del self.__class__.__deepcopy__
         pulse_copy = deepcopy(self)
+        self.__class__.__deepcopy__ = _deepcopy
 
         # Add receiver for config signals
         if hasattr(self, 'environment'):
@@ -397,7 +400,7 @@ class Pulse(HasTraits):
                 pulse_copy._handle_properties_config_signal)
         return pulse_copy
 
-    __deepcopy__ = __copy__
+    __copy__ = __deepcopy__
 
     def _JSONEncoder(self):
         """
