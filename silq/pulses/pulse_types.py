@@ -384,11 +384,19 @@ class Pulse(HasTraits):
         Returns:
             Copy of pulse
         """
+
+        # Temporarily empty _connected_attrs as it may reference other pulses
+        _connected_attrs, self._connected_attrs = self._connected_attrs, {}
+
         # Temporary remove __deepcopy__ to use deepcopy default method
         _deepcopy = Pulse.__deepcopy__
         del Pulse.__deepcopy__
+
         pulse_copy = deepcopy(self)
+
+        # restore __deepcopy__ and _connected_attrs
         Pulse.__deepcopy__ = _deepcopy
+        self._connected_attrs = _connected_attrs
 
         # Add receiver for config signals
         if hasattr(self, 'environment'):
