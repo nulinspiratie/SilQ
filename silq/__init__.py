@@ -194,6 +194,6 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
         return SweepFixedValues(self, start=start, stop=stop,
                                 step=step, num=num)
     else:
-        create_set_vals(set_parameters=self, step=step,
-                        step_percentage=step_percentage, points=num)
+        return create_set_vals(set_parameters=self, step=step,
+                                 step_percentage=step_percentage, points=num)
 qc.Parameter.sweep = _sweep
