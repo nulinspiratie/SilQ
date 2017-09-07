@@ -1,5 +1,5 @@
 import numpy as np
-import copy
+from copy import deepcopy
 import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
@@ -385,7 +385,7 @@ class Pulse(HasTraits):
             Copy of pulse
         """
         # temporarily remove signal because it takes time copying
-        pulse_copy = copy.deepcopy(self)
+        pulse_copy = deepcopy(self)
 
         # Add receiver for config signals
         if hasattr(self, 'environment'):
