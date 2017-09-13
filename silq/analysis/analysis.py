@@ -5,7 +5,7 @@ import logging
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_load', 'analyse_empty', 'analyse_read',
            'analyse_read_long', 'analyse_EPR', 'analyse_multi_read_EPR',
-           'analyse_PR']
+           'analyse_PR', 'analyse_NMR']
 
 logger = logging.getLogger(__name__)
 
@@ -501,7 +501,7 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
 
 def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
-                shots_per_read=1, min_trace_perc=0.5,
+                shots_per_read=1, min_trace_perc=0.5, t_read=None,
                 threshold_voltage=None, threshold_method='config'):
     # Find names of all read segments unless they are read_long
     # (for dark counts)
@@ -514,16 +514,19 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
 
     # Get shape of single read segment (samples * points_per_segment
     single_read_segment = pulse_traces[read_segment_names[0]]['output']
-    samples, points_per_segment = single_read_segment.shape
+    samples, read_pts = single_read_segment.shape
+
+    if t_read is not None:
+        read_pts = round(t_read * 1e-3 * sample_rate)
 
     # Create 4D array of all read segments
     read_traces = np.zeros((distinct_reads_per_trace, # Distinct ESR frequencies
                             shots_per_read, # Repetitions of each ESR frequency
                             samples, # Samples (= max_flips + 1)
-                            points_per_segment # sampling points within segment
+                            read_pts # sampling points within segment
                             ))
     for k, read_segment_name in enumerate(read_segment_names):
-        shot_traces = pulse_traces[read_segment_name]['output']
+        shot_traces = pulse_traces[read_segment_name]['output'][:, :read_pts]
         # For each shot, all frequencies are looped over.
         # Therefore read_idx is inner loop, and shot_idx outer loop
         read_idx = k % distinct_reads_per_trace

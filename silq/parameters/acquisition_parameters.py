@@ -967,9 +967,11 @@ class NMRParameter(AcquisitionParameter):
         self.NMR_pulse = SinePulse('NMR')
         self.NMR_stage_pulse = DCPulse('empty')
         self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
+        self.read_pulse = DCPulse('read_initialize', acquire=True)
         self.ESR_pulses = [self.ESR_pulse]
         self.post_pulses = []
 
+        self.t_read = None
         self.pulse_delay = 5
         self.inter_pulse_delay = 1
 
@@ -1036,7 +1038,7 @@ class NMRParameter(AcquisitionParameter):
                     delay = self.pulse_delay + k * self.inter_pulse_delay
                     ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
                                                    delay=delay)
-                self.pulse_sequence.add(DCPulse('read', acquire=True))
+                self.pulse_sequence.add(self.read_pulse)
 
         self.pulse_sequence.add(*self.post_pulses)
 
@@ -1088,7 +1090,8 @@ class NMRParameter(AcquisitionParameter):
             threshold_up_proportion=self.threshold_up_proportion,
             shots_per_read=self.shots_per_frequency,
             sample_rate=self.sample_rate,
-            t_skip=self.t_skip)
+            t_skip=self.t_skip,
+            t_read=self.t_read)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
