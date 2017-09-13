@@ -1,5 +1,5 @@
 import numpy as np
-import copy
+from copy import copy, deepcopy
 from blinker import Signal
 
 __all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
@@ -181,6 +181,9 @@ class PulseSequence:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __copy__(self, *args):
+        return deepcopy(self)
+
     def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
             for attr in vars(self):
                 if attr in exclude_attrs:
@@ -262,7 +265,7 @@ class PulseSequence:
         """
         # Copy over all attributes from the pulse
         for attr, val in vars(pulse_sequence).items():
-            setattr(self, attr, copy.deepcopy(val))
+            setattr(self, attr, deepcopy(val))
 
     def add(self, *pulses):
         """
@@ -313,7 +316,7 @@ class PulseSequence:
                             max_id = max(p.id for p in pulses_same_name)
                             pulse.id = max_id + 1
 
-                pulse_copy = pulse.copy()
+                pulse_copy = copy(pulse)
                 if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
@@ -379,9 +382,6 @@ class PulseSequence:
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-
-    def copy(self):
-        return copy.deepcopy(self)
 
     def pulses_overlap(self, pulse1, pulse2):
         """
@@ -544,8 +544,8 @@ class PulseImplementation:
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
-        targeted_pulse = pulse.copy()
-        pulse_implementation = copy.deepcopy(self)
+        targeted_pulse = copy(pulse)
+        pulse_implementation = deepcopy(self)
         targeted_pulse.implementation = pulse_implementation
         pulse_implementation.pulse = targeted_pulse
         return targeted_pulse
