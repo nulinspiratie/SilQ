@@ -1,5 +1,5 @@
 import numpy as np
-import copy
+from copy import deepcopy
 import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
@@ -376,6 +376,40 @@ class Pulse(HasTraits):
         name = 'CombinationPulse_{}'.format(id(self)+id(other))
         return CombinationPulse(name, self, other, '*')
 
+    def __deepcopy__(self, *args):
+        """
+        Creates a copy of a pulse.
+        Args:
+
+        Returns:
+            Copy of pulse
+        """
+
+        # Temporarily empty _connected_attrs as it may reference other pulses
+        _connected_attrs, self._connected_attrs = self._connected_attrs, {}
+
+        # Temporary remove __deepcopy__ to use deepcopy default method
+        _deepcopy = Pulse.__deepcopy__
+        del Pulse.__deepcopy__
+
+        pulse_copy = deepcopy(self)
+
+        # restore __deepcopy__ and _connected_attrs
+        Pulse.__deepcopy__ = _deepcopy
+        self._connected_attrs = _connected_attrs
+
+        # Add receiver for config signals
+        if hasattr(self, 'environment'):
+            # For PulseImplementation
+            signal(f'config:{pulse_copy.environment}.pulses.'
+                   f'{pulse_copy.name}').connect(
+                pulse_copy._handle_config_signal)
+            signal(f'config:{pulse_copy.environment}.properties').connect(
+                pulse_copy._handle_properties_config_signal)
+        return pulse_copy
+
+    __copy__ = __deepcopy__
+
     def _JSONEncoder(self):
         """
         Converts to JSON encoder for saving metadata
@@ -442,27 +476,6 @@ class Pulse(HasTraits):
 
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
-
-    def copy(self):
-        """
-        Creates a copy of a pulse.
-        Args:
-
-        Returns:
-            Copy of pulse
-        """
-        # temporarily remove signal because it takes time copying
-        pulse_copy = copy.deepcopy(self)
-
-        # Add receiver for config signals
-        if hasattr(self, 'environment'):
-            # For PulseImplementation
-            signal(f'config:{pulse_copy.environment}.pulses.'
-                   f'{pulse_copy.name}').connect(
-                pulse_copy._handle_config_signal)
-            signal(f'config:{pulse_copy.environment}.properties').connect(
-                pulse_copy._handle_properties_config_signal)
-        return pulse_copy
 
     def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
         """
