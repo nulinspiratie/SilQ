@@ -1,5 +1,6 @@
 from collections import OrderedDict as od
 import logging
+from copy import copy
 
 import silq
 from silq import config
@@ -99,7 +100,7 @@ class Layout(Instrument):
         self._target_pulse_sequence(pulse_sequence)
 
         # Update pulse sequence
-        self._pulse_sequence = pulse_sequence.copy()
+        self._pulse_sequence = copy(pulse_sequence)
 
     @property
     def acquisition_interface(self):
@@ -929,7 +930,7 @@ class SingleConnection(Connection):
             Targeted (copy of) pulse
         """
         if copy_pulse:
-            targeted_pulse = pulse.copy()
+            targeted_pulse = copy(pulse)
         else:
             targeted_pulse = pulse
         targeted_pulse.connection = self
@@ -1045,7 +1046,7 @@ class CombinedConnection(Connection):
         """
         pulses = []
         for k, connection in enumerate(self.connections):
-            targeted_pulse = pulse.copy()
+            targeted_pulse = copy(pulse)
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)

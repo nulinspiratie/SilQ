@@ -5,7 +5,7 @@ import logging
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_load', 'analyse_empty', 'analyse_read',
            'analyse_read_long', 'analyse_EPR', 'analyse_multi_read_EPR',
-           'analyse_PR']
+           'analyse_PR', 'analyse_NMR']
 
 logger = logging.getLogger(__name__)
 
@@ -475,6 +475,70 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
             results[f'contrast_{read_segment_name}'] = read_contrast
             up_proportion = segment_results['up_proportion']
             results[f'up_proportion_{read_segment_name}'] = up_proportion
+
+    return results
+
+
+def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
+                shots_per_read=1, min_trace_perc=0.5, t_read=None,
+                threshold_voltage=None, threshold_method='config'):
+    # Find names of all read segments unless they are read_long
+    # (for dark counts)
+    read_segment_names = [key for key in pulse_traces
+                          if key != 'read_long' and 'read' in key]
+    # Number of distinct reads in a trace (i.e. with different ESR frequency)
+    distinct_reads_per_trace = len(read_segment_names) // shots_per_read
+
+    results = {}
+
+    # Get shape of single read segment (samples * points_per_segment
+    single_read_segment = pulse_traces[read_segment_names[0]]['output']
+    samples, read_pts = single_read_segment.shape
+
+    if t_read is not None:
+        read_pts = round(t_read * 1e-3 * sample_rate)
+
+    # Create 4D array of all read segments
+    read_traces = np.zeros((distinct_reads_per_trace, # Distinct ESR frequencies
+                            shots_per_read, # Repetitions of each ESR frequency
+                            samples, # Samples (= max_flips + 1)
+                            read_pts # sampling points within segment
+                            ))
+    for k, read_segment_name in enumerate(read_segment_names):
+        shot_traces = pulse_traces[read_segment_name]['output'][:, :read_pts]
+        # For each shot, all frequencies are looped over.
+        # Therefore read_idx is inner loop, and shot_idx outer loop
+        read_idx = k % distinct_reads_per_trace
+        shot_idx = k // distinct_reads_per_trace
+        read_traces[read_idx, shot_idx] = shot_traces
+
+    # Find threshold voltage if not provided
+    if threshold_voltage is None:
+        high_low = find_high_low(np.ravel(read_traces),
+                                 threshold_method=threshold_method)
+        threshold_voltage = high_low['threshold_voltage']
+
+    # Populate the up proportions
+    for read_idx in range(distinct_reads_per_trace):
+
+        up_proportions = np.zeros(samples)
+        for sample in range(samples):
+            sample_traces = read_traces[read_idx, :, sample]
+            results_read = analyse_read(sample_traces,
+                                        t_skip=t_skip,
+                                        sample_rate=sample_rate,
+                                        threshold_voltage=threshold_voltage)
+            up_proportions[sample] = results_read['up_proportion']
+
+        # Determine number of flips
+        has_high_contrast = up_proportions > threshold_up_proportion
+
+        if distinct_reads_per_trace == 1:
+            results['up_proportions'] = up_proportions
+            results['flips'] = sum(abs(np.diff(has_high_contrast)))
+        else:
+            results[f'up_proportions_{read_idx}'] = up_proportions
+            results[f'flips_{read_idx}'] = sum(abs(np.diff(has_high_contrast)))
 
     return results
 
