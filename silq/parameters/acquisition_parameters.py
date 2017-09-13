@@ -933,69 +933,6 @@ class ESRParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
-class RabiParameter(AcquisitionParameter):
-    def __init__(self, name='rabi_ESR', **kwargs):
-        """
-        Parameter used to determine the Rabi frequency
-        """
-        self.pulse_sequence.add([
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('plunge'),
-            DCPulse('read', acquire=True),
-            DCPulse('empty', acquire=True),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True),
-            DCPulse('final'),
-            SinePulse('ESR')])
-
-        super().__init__(name=name,
-                         names=['contrast_ESR', 'contrast', 'dark_counts',
-                                'voltage_difference_read'],
-                         labels=['ESR contrast', 'Contrast', 'Dark counts',
-                                 'Voltage difference read'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
-                         **kwargs)
-
-    @property
-    def ESR_frequencies(self):
-        return [pulse.frequency for pulse in self.ESR_pulses]
-
-    @ESR_frequencies.setter
-    def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR_pulses):
-            logger.warning('Different number of frequencies. '
-                           'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR_pulses = [copy(self.ESR_pulse)
-                               for _ in range(len(ESR_frequencies))]
-        for pulse, ESR_frequency in zip(self.ESR_pulses, ESR_frequencies):
-            pulse.frequency = ESR_frequency
-
-    @clear_single_settings
-    def get(self):
-        if not self._matches_pulse_sequence_attrs():
-            self.update_pulse_sequence()
-
-        self.acquire()
-
-        self.results = analysis.analyse_PR(pulse_traces=self.data,
-                                           sample_rate=self.sample_rate,
-                                           t_skip=self.t_skip,
-                                           t_read=self.t_read)
-        self.results = analysis.analyse_multi_read_EPR(
-            pulse_traces=self.data, sample_rate=self.sample_rate,
-            t_skip=self.t_skip, t_read=self.t_read)
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return tuple(self.results[name] for name in self.names)
-
-
 class NMRParameter(AcquisitionParameter):
 
     def __init__(self, name='NMR', **kwargs):
