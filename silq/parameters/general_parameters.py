@@ -129,29 +129,38 @@ class StoreParameter(Parameter):
 
 
 class AttributeParameter(Parameter):
-    def __init__(self, object, attribute, scale=None, **kwargs):
+    def __init__(self, object, attribute, name=None, scale=None, is_key=None,
+                 **kwargs):
         """
         Creates a parameter that can set/get an attribute from an object
         Args:
             object: object whose attribute to set/get
             attribute: attribute to set/get
+            is_key: whether the attribute is a key in a dictionary
             **kwargs: Other parameter kwargs
         """
-        name = kwargs.pop('name', attribute)
+        name = name if name is not None else attribute
         super().__init__(name=name, **kwargs)
 
         self.object = object
         self.attribute = attribute
         self.scale = scale
+        self.is_key = isinstance(object, dict) if is_key is None else is_key
 
     def set(self, value):
         if self.scale is not None:
             value = tuple(value / scale for scale in self.scale)
-        setattr(self.object, self.attribute, value)
+        if not self.is_key:
+            setattr(self.object, self.attribute, value)
+        else:
+            self.object[self.attribute] = value
         self._save_val(value)
 
     def get(self):
-        value =  getattr(self.object, self.attribute)
+        if not self.is_key:
+            value =  getattr(self.object, self.attribute)
+        else:
+            value = self.object[self.attribute]
         if self.scale is not None:
             value = value[0] * self.scale[0]
         self._save_val(value)
