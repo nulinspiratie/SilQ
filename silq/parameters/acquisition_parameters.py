@@ -958,15 +958,18 @@ class ESRParameter(AcquisitionParameter):
 
 class NMRParameter(AcquisitionParameter):
 
-    def __init__(self, name='NMR', update_pulse_sequence=True, **kwargs):
+    def __init__(self, name='NMR', update_pulse_sequence=False, **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
 
         self.pre_pulses = []
         self.NMR = {'stage_pulse': DCPulse('empty'),
-                    'pulse': SinePulse('NMR'),
-                    'pulse_delay': 5}
+                    'NMR_pulse': SinePulse('NMR'),
+                    'pulses': ['NMR_pulse'],
+                    'pre_delay': 5,
+                    'inter_delay': 1,
+                    'post_delay': 2}
         self.ESR = {'pulse': FrequencyRampPulse('adiabatic_ESR'),
                     'plunge_pulse': DCPulse('plunge'),
                     'read_pulse': DCPulse('read_initialize', acquire=True),
@@ -1011,6 +1014,7 @@ class NMRParameter(AcquisitionParameter):
 
     def update_NMR_pulse_sequence(self, pulse_sequence):
         NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
+
         NMR_pulses = []
         for pulse in self.NMR['pulses']:
             if isinstance(pulse, str):
@@ -1123,43 +1127,6 @@ class NMRParameter(AcquisitionParameter):
             self.print_results()
 
         return tuple(self.results[name] for name in self.names)
-
-
-class NMRRamseyParameter(NMRParameter):
-    def __init__(self, name='NMR_Ramsey', **kwargs):
-        super().__init__(name=name, update_pulse_sequence=False, **kwargs)
-        self.NMR = {'stage': DCPulse('empty'),
-                    'NMR_piHalf': SinePulse('NMR_piHalf'),
-                    'pre_delay': 5,
-                    'inter_delay': 10,
-                    'post_delay': 2}
-        self.update_pulse_sequence()
-
-    @property
-    def tau(self):
-        return self.NMR['inter_delay']
-
-    @tau.setter
-    def tau(self, tau):
-        self.NMR['inter_delay'] = tau
-
-    def update_NMR_pulse_sequence(self, pulse_sequence):
-        NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage'])
-        NMR_pulse_1, = pulse_sequence.add(self.NMR['NMR_piHalf'])
-        NMR_pulse_1.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                         delay=self.NMR['pre_delay'])
-
-        NMR_pulse_2, = pulse_sequence.add(self.NMR['NMR_piHalf'])
-        NMR_pulse_2.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                         delay=self.NMR['pre_delay'] +
-                                               self.NMR['inter_delay'] +
-                                                self.NMR['NMR_piHalf'].duration)
-
-        NMR_stage_pulse.duration = self.NMR['pre_delay'] + \
-                                   self.NMR['inter_delay'] + \
-                                   self.NMR['post_delay'] + \
-                                   2 * self.NMR['NMR_piHalf'].duration
-        return pulse_sequence
 
 
 class T1Parameter(AcquisitionParameter):
