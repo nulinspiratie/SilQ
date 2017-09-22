@@ -20,7 +20,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'NMRRamseyParameter', 'T1Parameter',
+           'NMRParameter', 'T1Parameter',
            'DarkCountsParameter', 'VariableReadParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
@@ -1011,9 +1011,26 @@ class NMRParameter(AcquisitionParameter):
 
     def update_NMR_pulse_sequence(self, pulse_sequence):
         NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
-        NMR_pulse, = pulse_sequence.add(self.NMR['pulse'])
-        NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                       delay=self.ESR['pulse_delay'])
+        NMR_pulses = []
+        for pulse in self.NMR['pulses']:
+            if isinstance(pulse, str):
+                # Pulse is a reference to some pulse in self.NMR
+                pulse = self.NMR[pulse]
+            NMR_pulse, = pulse_sequence.add(pulse)
+
+            if not NMR_pulses:
+                NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
+                                               delay=self.NMR['pre_delay'])
+            else:
+                NMR_pulse.t_start = PulseMatch(NMR_pulses[-1], 't_stop',
+                                               delay=self.NMR['inter_delay'])
+            NMR_pulses.append(NMR_pulse)
+
+        NMR_stage_pulse.duration = (
+            self.NMR['pre_delay']
+            + (len(NMR_pulses) - 1) * self.NMR['inter_delay']
+            + sum(pulse.duration for pulse in NMR_pulses)
+            + self.NMR['post_delay'])
         return pulse_sequence
 
     def update_ESR_pulse_sequence(self, pulse_sequence):
