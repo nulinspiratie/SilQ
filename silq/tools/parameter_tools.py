@@ -64,17 +64,18 @@ def create_set_vals(num_parameters=None, step=None, step_percentage=None,
         set_parameters = [getattr(station, name) for name in
                           set_parameter_names]
 
-    set_vals = []
+
     if isinstance(set_parameters, list):
+        set_vals = []
         for k, set_parameter in enumerate(set_parameters):
             vals = create_vals(set_parameter, points=points, window=window,
                                center_val=center_val, min_val=min_val,
                                max_val=max_val)
             set_vals.append(set_parameter[vals])
+        return set_vals
     else:
         # Set_parameters is a single parameter
         vals = create_vals(set_parameters, points=points, window=window,
                            center_val=center_val, min_val=min_val,
                            max_val=max_val)
-        set_vals = set_parameters[vals]
-    return set_vals
+        return set_parameters[vals]
