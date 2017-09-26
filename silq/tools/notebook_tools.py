@@ -1,5 +1,5 @@
 from IPython.display import display_javascript
-from IPython.core.magic import Magics, magics_class, line_magic
+from IPython.core.magic import Magics, magics_class, line_magic, line_cell_magic
 import logging
 
 from .data_tools import get_data_folder
@@ -66,8 +66,8 @@ class SilQMagics(Magics):
         layout.stop()
         print(f'Succesfully stopped Layout')
 
-    @line_magic
-    def data(self, line):
+    @line_cell_magic
+    def data(self, line, cell=None):
         opts, args = self.parse_options(line, 'xprs:')
         logger.debug(f'opts: {opts}, args: {args}')
 
@@ -78,13 +78,16 @@ class SilQMagics(Magics):
         contents = f"data = load_data(r'{data_path}')"
         if 'p' in opts:
             contents += '\nprint(data)'
-        if 'r' not in opts:
+        if 'r' not in opts and cell is None:
             data_folder = data_path.rsplit('/')[-1]
             logger.debug(f'data folder is {data_folder}')
             for handler, handle_str in data_handlers.items():
                 if handler in data_folder:
                     contents += f'\n{handle_str}'
                     break
+
+        if cell is not None:
+            contents += f'\n{cell}'
 
         # Update cell
         self.shell.set_next_input(contents, replace=True)
