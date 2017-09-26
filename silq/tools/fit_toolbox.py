@@ -74,8 +74,8 @@ class SineFit(Fit):
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
-        fft_flips_abs = np.split(np.abs(fft_flips), 2)[0]
-        fft_freqs = np.split(np.fft.fftfreq(len(fft_flips), dt), 2)[0]
+        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips)/2)]
+        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(fft_flips)/2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
         if 'frequency' not in initial_parameters:
