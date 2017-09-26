@@ -64,7 +64,6 @@ def create_set_vals(num_parameters=None, step=None, step_percentage=None,
         set_parameters = [getattr(station, name) for name in
                           set_parameter_names]
 
-
     if isinstance(set_parameters, list):
         set_vals = []
         for k, set_parameter in enumerate(set_parameters):
