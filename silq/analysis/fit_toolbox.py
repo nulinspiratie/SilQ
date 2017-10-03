@@ -2,7 +2,7 @@ import numpy as np
 from lmfit import Parameters, Model
 from matplotlib import pyplot as plt
 
-__all__ = ['Fit', 'ExponentialFit']
+__all__ = ['Fit', 'ExponentialFit', 'SineFit']
 
 class Fit():
     def __init__(self):
