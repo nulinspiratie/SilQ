@@ -72,7 +72,7 @@ class SilQMagics(Magics):
         logger.debug(f'opts: {opts}, args: {args}')
 
         # Include subfolder if provided by -s
-        data_path = get_data_folder(args, subfolder=opts.get('s', None))
+        data_path = get_data_folder(*args.split(' '))
 
         # Create contents
         contents = f"data = load_data(r'{data_path}')"
