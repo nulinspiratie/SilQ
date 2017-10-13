@@ -4,6 +4,7 @@ import warnings
 import logging
 import json
 from .tools.config import DictConfig, ListConfig
+from .tools.parameter_tools import create_set_vals
 
 import qcodes as qc
 
@@ -12,6 +13,17 @@ logger = logging.getLogger(__name__)
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
+
+if 'ipykernel' in sys.modules:
+    # Load iPython magic (configured via qc.config.core.register_magic)
+    from qcodes.utils.magic import register_magic_class
+
+    register_magic = qc.config.core.get('register_magic', False)
+    if register_magic is not False:
+        from silq.tools.notebook_tools import SilQMagics
+
+        register_magic_class(cls=SilQMagics,
+                             magic_commands=register_magic)
 
 
 # Add saving of config to qcodes DataSet
@@ -180,3 +192,19 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                      'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
             location_provider.fmt = '{date}/#{counter}_{name}_{time}'
+
+
+### Override QCoDeS functions
+# parameter.sweep
+def _sweep(self, start=None, stop=None, step=None, num=None,
+          step_percentage=None):
+    if step_percentage is None:
+        if start is None or stop is None:
+            raise RuntimeError('Must provide start and stop')
+        from qcodes.instrument.sweep_values import SweepFixedValues
+        return SweepFixedValues(self, start=start, stop=stop,
+                                step=step, num=num)
+    else:
+        return create_set_vals(set_parameters=self, step=step,
+                                 step_percentage=step_percentage, points=num)
+qc.Parameter.sweep = _sweep
