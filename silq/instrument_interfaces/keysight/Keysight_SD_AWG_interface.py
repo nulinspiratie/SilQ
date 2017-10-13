@@ -176,7 +176,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             insert_points = []
             for i, wf in enumerate(waveforms[ch]):
                 if i == 0:
-                    delay_duration = wf['t_start'] - global_t_start
+                    # delay_duration = wf['t_start'] - global_t_start
+                    delay_duration = wf['t_start']
                     # print(wf['name'], wf['t_start'])
                     # print('global_t_start', global_t_start)
                 else:
@@ -312,7 +313,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
     def start(self):
         mask = 0
         for c in self._get_active_channel_ids():
+            self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=c)
             mask |= 1 << c
+
         self.instrument.awg_start_multiple(mask)
         if self.trigger_mode() == 'software':
             self.started = True
@@ -981,7 +984,6 @@ class MarkerPulseImplementation(PulseImplementation):
         waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
         assert len(waveform_data) == waveform_samples, f'Waveform data length' \
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
-
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
                     'name': full_name,
