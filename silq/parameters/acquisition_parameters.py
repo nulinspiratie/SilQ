@@ -31,6 +31,7 @@ h5fmt = hdf5_format.HDF5Format()
 class AcquisitionParameter(SettingsClass, MultiParameter):
     layout = None
     formatter = h5fmt
+    store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
                  properties_attrs=None, **kwargs):
@@ -153,7 +154,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=['output'], setpoints=False):
+                     channels=None, setpoints=False):
+
+        if channels is None:
+            channels = self.store_trace_channels
 
         # Store raw traces
         if base_folder is None:
@@ -239,11 +243,13 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset.finalize()
 
     def print_results(self):
-        if self.names is not None:
-            for name in self.names:
-                print(f'{name}: {self.results[name]:.3f}')
-        else:
-            print(f'{self.name}: {self.results[self.name]:.3f}')
+        names = self.names if self.names is not None else [self.name]
+        for name in names:
+            value = self.results[name]
+            if isinstance(value, (int, float)):
+                print(f'{name}: {value:.3f}')
+            else:
+                print(f'{name}: {value}')
 
     def setup(self, start=None, **kwargs):
         self.layout.pulse_sequence = self.pulse_sequence
@@ -915,8 +921,25 @@ class ESRParameter(AcquisitionParameter):
         # This updates the pulse sequence
         self.ESR_frequencies = self.ESR_frequencies
 
+    @property
+    def ESR_frequencies(self):
+        return [pulse.frequency for pulse in self.ESR_pulses]
+
+    @ESR_frequencies.setter
+    def ESR_frequencies(self, ESR_frequencies):
+        if len(ESR_frequencies) != len(self.ESR_pulses):
+            logger.warning('Different number of frequencies. '
+                           'Reprogramming ESR pulses to default ESR_pulse')
+            self.ESR_pulses = [copy(self.ESR_pulse)
+                               for _ in range(len(ESR_frequencies))]
+        for pulse, ESR_frequency in zip(self.ESR_pulses, ESR_frequencies):
+            pulse.frequency = ESR_frequency
+
     @clear_single_settings
     def get(self):
+        if not self._matches_pulse_sequence_attrs():
+            self.update_pulse_sequence()
+
         self.acquire()
 
         self.results = analysis.analyse_multi_read_EPR(
@@ -1147,7 +1170,8 @@ class T1Parameter(AcquisitionParameter):
         self.results = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1195,7 +1219,8 @@ class DarkCountsParameter(AcquisitionParameter):
         fidelities = analysis.analyse_read(
             traces=self.data['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
-            start_idx=round(self.t_skip * 1e-3 * self.sample_rate))
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
         self.results = [fidelities['up_proportion']]
 
         # Store raw traces if self.save_traces is True
@@ -1288,6 +1313,8 @@ class NeuralNetworkParameter(AcquisitionParameter):
         return names
 
     def acquire(self):
+        if self.samples is not None:
+            self.target_parameter.samples = self.samples
         self.target_parameter()
         # Extract target results using input names, because target_parameter.get
         # may provide results in a different order
