@@ -18,7 +18,7 @@ __all__ = ['execfile', 'get_truth', 'get_memory_usage', 'partial_from_attr',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
            'Singleton', 'arreq_in_list', 'arreqclose_in_list',
-           'property_ignore_setter']
+           'property_ignore_setter', 'freq_to_str']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
@@ -514,3 +514,16 @@ class property_ignore_setter(object):
 
     def __set__(self, obj, value):
         pass
+
+
+def freq_to_str(frequency, fmt='{:.3f}'):
+    if frequency > 1e9:
+        frequency_string = fmt.format(frequency/1e9) + ' GHz'
+    elif frequency > 1e6:
+        frequency_string = fmt.format(frequency/1e6) + ' MHz'
+    elif frequency > 1e3:
+        frequency_string = fmt.format(frequency/1e3) + ' kHz'
+    else:
+        frequency_string = fmt.format(frequency) + ' Hz'
+
+    return frequency_string

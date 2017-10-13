@@ -8,7 +8,7 @@ from functools import partial
 
 from .pulse_modules import PulseMatch
 
-from silq.tools.general_tools import get_truth, property_ignore_setter
+from silq.tools.general_tools import get_truth, property_ignore_setter, freq_to_str
 from silq import config
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
@@ -390,13 +390,13 @@ class Pulse(HasTraits):
 
         # Temporary remove __deepcopy__ to use deepcopy default method
         _deepcopy = Pulse.__deepcopy__
-        del Pulse.__deepcopy__
-
-        pulse_copy = deepcopy(self)
-
-        # restore __deepcopy__ and _connected_attrs
-        Pulse.__deepcopy__ = _deepcopy
-        self._connected_attrs = _connected_attrs
+        try:
+            del Pulse.__deepcopy__
+            pulse_copy = deepcopy(self)
+        finally:
+            # restore __deepcopy__ and _connected_attrs
+            Pulse.__deepcopy__ = _deepcopy
+            self._connected_attrs = _connected_attrs
 
         # Add receiver for config signals
         if hasattr(self, 'environment'):
@@ -546,12 +546,13 @@ class SteeredInitialization(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = \
-                't_no_blip={} ms, t_max_wait={}, t_buffer={}, V_th={}'.format(
-                    self.t_no_blip, self.t_max_wait, self.t_buffer,
-                    self.readout_threshold_voltage)
+            properties_str = (f't_no_blip={self.t_no_blip} ms, ' +
+                              f't_max_wait={self.t_max_wait}, ' +
+                              f't_buffer={self.t_buffer}, ' +
+                              f'V_th={self.readout_threshold_voltage}')
         except:
             properties_str = ''
+
         return super()._get_repr(properties_str)
 
 
@@ -566,12 +567,19 @@ class SinePulse(Pulse):
         self.amplitude = self._value_or_config('amplitude', amplitude)
 
     def __repr__(self):
+        properties_str = ''
         try:
-            properties_str = 'f={:.2f} MHz, power={}, t_start={}, ' \
-                             't_stop={}'.format(
-                self.frequency/1e6, self.power, self.t_start, self.t_stop)
+            properties_str = f'f={freq_to_str(self.frequency)}'
+            if self.power is not None:
+                properties_str += f', power={self.power} dBm'
+
+            if self.amplitude is not None:
+                properties_str += f', A={self.amplitude} V'
+
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
         except:
-            properties_str = ''
+            pass
 
         return super()._get_repr(properties_str)
 
@@ -642,17 +650,18 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
 
     def __repr__(self):
+        properties_str = ''
         try:
-            properties_str = 'frequency={:.2f} MHz, frequency_deviation={:.2f}, ' \
-                             'power={}, t_start={}, t_stop={}'.format(
-                self.frequency/1e6, self.frequency_deviation/1e6,
-                self.power, self.t_start, self.t_stop)
-
+            properties_str = f'={freq_to_str(self.frequency)}'
+            properties_str += f', f_dev={freq_to_str(self.frequency_deviation)}'
             if self.frequency_sideband is not None:
-                properties_str += ', f_sb={}'.format(
-                    self.frequency_sideband)
+                properties_str += ', f_sb={freq_to_str(self.frequency_sideband)}'
+            properties_str += f', power={self.power}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
         except:
-            properties_str = ''
+            pass
+
         return super()._get_repr(properties_str)
 
 
@@ -666,11 +675,13 @@ class DCPulse(Pulse):
                                  "'amplitude'".format(self.__class__.__name__))
 
     def __repr__(self):
+        properties_str = ''
         try:
-            properties_str = 'A={}, t_start={}, t_stop={}'.format(
-                self.amplitude, self.t_start, self.t_stop)
+            properties_str += f'A={self.amplitude}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
         except:
-            properties_str = ''
+            pass
 
         return super()._get_repr(properties_str)
 
@@ -697,12 +708,14 @@ class DCRampPulse(Pulse):
                                                     amplitude_stop)
 
     def __repr__(self):
+        properties_str = ''
         try:
-            properties_str = f'A_start={self.amplitude_start}, ' \
-                             f'A_stop={self.amplitude_stop}, ' \
-                             f't_start={self.t_start}, t_stop={self.t_stop}'
+            properties_str = f'A_start={self.amplitude_start}'
+            properties_str += f', A_stop={self.amplitude_stop}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
         except:
-            properties_str = ''
+            pass
 
         return super()._get_repr(properties_str)
 
@@ -755,8 +768,7 @@ class MarkerPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 't_start={}, duration={}'.format(
-                self.t_start, self.duration)
+            properties_str = 't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)
@@ -780,8 +792,7 @@ class TriggerWaitPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 't_start={}'.format(
-                self.t_start, self.duration)
+            properties_str = 't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
 
@@ -794,8 +805,7 @@ class MeasurementPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 't_start={}, duration={}'.format(
-                self.t_start, self.duration)
+            properties_str = 't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)
@@ -879,8 +889,15 @@ class CombinationPulse(Pulse):
         return pulse1_details + pulse2_details
 
     def __repr__(self):
-        return 'CombinationPulse of: {combination} with\n{details}'.format(combination=self.combination_string,
-                                                                           details=self.pulse_details)
+        properties_str = ''
+        try:
+            properties_str = 'combination: {self.combination}'
+            properties_str += ', {self.pulse_details}'
+        except:
+            pass
+
+        return super()._get_repr(properties_str)
+
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -958,10 +975,16 @@ class AWGPulse(Pulse):
         return cls(fun=function, **kwargs)
 
     def __repr__(self):
-        if self.from_function:
-            properties_str = 'function:{}, t_start={}, t_stop={}'.format(self.function, self.t_start, self.t_stop)
-        else:
-            properties_str = 'array:{}, t_start={}, t_stop={}'.format(self.array.shape, self.t_start, self.t_stop)
+        properties_str = ''
+        try:
+            if self.from_function:
+                properties_str = f'function:{self.function}'
+            else:
+                properties_str = f'array:{self.array.shape}'
+            properties_str += ', t_start={self.t_start}'
+            properties_str += ', duration={self.duration}'
+        except:
+            pass
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):

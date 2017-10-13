@@ -935,22 +935,27 @@ class ESRParameter(AcquisitionParameter):
 
 class NMRParameter(AcquisitionParameter):
 
-    def __init__(self, name='NMR', **kwargs):
+    def __init__(self, name='NMR', update_pulse_sequence=False, **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
 
         self.pre_pulses = []
-        self.NMR_pulse = SinePulse('NMR')
-        self.NMR_stage_pulse = DCPulse('empty')
-        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
-        self.read_pulse = DCPulse('read_initialize', acquire=True)
-        self.ESR_pulses = [self.ESR_pulse]
+        self.NMR = {'stage_pulse': DCPulse('empty'),
+                    'NMR_pulse': SinePulse('NMR'),
+                    'pulses': ['NMR_pulse'],
+                    'pre_delay': 5,
+                    'inter_delay': 1,
+                    'post_delay': 2}
+        self.ESR = {'pulse': FrequencyRampPulse('adiabatic_ESR'),
+                    'plunge_pulse': DCPulse('plunge'),
+                    'read_pulse': DCPulse('read_initialize', acquire=True),
+                    'pulse_delay': 5, 'inter_pulse_delay': 1,
+                    'shots_per_frequency': 25}
+        self.ESR['pulses'] = ['pulse']
         self.post_pulses = []
 
         self.t_read = None
-        self.pulse_delay = 5
-        self.inter_pulse_delay = 1
 
         super().__init__(name=name,
                          names=self.names,
@@ -959,7 +964,8 @@ class NMRParameter(AcquisitionParameter):
                          **kwargs)
 
         # This initializes the pulse sequence
-        self.update_pulse_sequence()
+        if update_pulse_sequence:
+            self.update_pulse_sequence()
 
     @property_ignore_setter
     def names(self):
@@ -983,6 +989,57 @@ class NMRParameter(AcquisitionParameter):
     def labels(self):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
+    def update_NMR_pulse_sequence(self, pulse_sequence):
+        NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
+
+        NMR_pulses = []
+        for pulse in self.NMR['pulses']:
+            if isinstance(pulse, str):
+                # Pulse is a reference to some pulse in self.NMR
+                pulse = self.NMR[pulse]
+            NMR_pulse, = pulse_sequence.add(pulse)
+
+            if not NMR_pulses:
+                NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
+                                               delay=self.NMR['pre_delay'])
+            else:
+                NMR_pulse.t_start = PulseMatch(NMR_pulses[-1], 't_stop',
+                                               delay=self.NMR['inter_delay'])
+            NMR_pulses.append(NMR_pulse)
+
+        NMR_stage_pulse.duration = (
+            self.NMR['pre_delay']
+            + (len(NMR_pulses) - 1) * self.NMR['inter_delay']
+            + sum(pulse.duration for pulse in NMR_pulses)
+            + self.NMR['post_delay'])
+        return pulse_sequence
+
+    def update_ESR_pulse_sequence(self, pulse_sequence):
+        for _ in range(self.ESR['shots_per_frequency']):
+            for ESR_pulses in self.ESR['pulses']:
+                # Add a plunge and read pulse for each frequency
+
+                if not isinstance(ESR_pulses, Iterable):
+                    # Treat frequency as list, as one could add multiple ESR
+                    # pulses
+                    ESR_pulses = [ESR_pulses]
+
+                plunge_pulse, = pulse_sequence.add(self.ESR['plunge_pulse'])
+                for k, ESR_pulse in enumerate(ESR_pulses):
+
+                    if isinstance(ESR_pulse, str):
+                        # Pulse is a reference to some pulse in self.ESR
+                        ESR_pulse = self.ESR[ESR_pulse]
+
+                    ESR_pulse, = pulse_sequence.add(ESR_pulse)
+
+                    # Delay also depends on any previous ESR pulses
+                    delay = self.ESR['pulse_delay'] + \
+                            k * self.ESR['inter_pulse_delay']
+                    ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
+                                                   delay=delay)
+                self.pulse_sequence.add(self.ESR['read_pulse'])
+
     def update_pulse_sequence(self):
         """
         Updates the pulse sequence
@@ -991,41 +1048,17 @@ class NMRParameter(AcquisitionParameter):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        # Add NMR pulse
-        NMR_stage_pulse, = self.pulse_sequence.add(self.NMR_stage_pulse)
-        NMR_pulse, = self.pulse_sequence.add(self.NMR_pulse)
-        NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                       delay=self.pulse_delay)
+        self.update_NMR_pulse_sequence(self.pulse_sequence)
 
-        # Add ESR pulses
-        for _ in range(self.shots_per_frequency):
-            for ESR_pulses in self.ESR_pulses:
-                # Add a plunge and read pulse for each frequency
-
-                if not isinstance(ESR_pulses, Iterable):
-                    # Treat frequency as list, as one could add multiple ESR
-                    # pulses
-                    ESR_pulses = [ESR_pulses]
-
-                plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
-                for k, ESR_pulse in enumerate(ESR_pulses):
-                    ESR_pulse, = self.pulse_sequence.add(ESR_pulse)
-
-                    # Delay also depends on any previous ESR pulses
-                    delay = self.pulse_delay + k * self.inter_pulse_delay
-                    ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                   delay=delay)
-                self.pulse_sequence.add(self.read_pulse)
+        self.update_ESR_pulse_sequence(self.pulse_sequence)
 
         self.pulse_sequence.add(*self.post_pulses)
 
         self._pulse_sequence_attributes = {
             'pre_pulses': deepcopy(self.pre_pulses),
             'post_pulses': deepcopy(self.post_pulses),
-            'ESR_pulses': deepcopy(self.ESR_pulses),
-            'shots_per_frequency': self.shots_per_frequency,
-            'NMR_pulse': copy(self.NMR_pulse),
-            'pulse_delay': self.pulse_delay
+            'NMR_sequence': deepcopy(self.NMR),
+            'ESR_sequence': deepcopy(self.ESR),
         }
 
     def _matches_pulse_sequence_attrs(self):
@@ -1033,26 +1066,27 @@ class NMRParameter(AcquisitionParameter):
         pulse_sequence_attributes = {
             'pre_pulses': self.pre_pulses,
             'post_pulses': self.post_pulses,
-            'ESR_pulses': self.ESR_pulses,
-            'shots_per_frequency': self.shots_per_frequency,
-            'NMR_pulse': self.NMR_pulse,
-            'pulse_delay': self.pulse_delay
+            'NMR_sequence': self.NMR,
+            'ESR_sequence': self.ESR
         }
         # Compare to attributes when pulse sequence was created
         return pulse_sequence_attributes == self._pulse_sequence_attributes
 
     @property
     def ESR_frequencies(self):
-        return [pulse.frequency for pulse in self.ESR_pulses]
+        return [pulse.frequency if isinstance(pulse, Pulse) else None
+                for pulse in self.ESR['pulses']]
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR_pulses):
+        if len(ESR_frequencies) != len(self.ESR['pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR_pulses = [copy(self.ESR_pulse)
-                               for _ in range(len(ESR_frequencies))]
-        for pulse, ESR_frequency in zip(self.ESR_pulses, ESR_frequencies):
+            self.ESR['pulses']= [copy(self.ESR['pulse'])
+                                 for _ in range(len(ESR_frequencies))]
+        self.ESR['pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
+                              for p in self.ESR['pulses']]
+        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
             pulse.frequency = ESR_frequency
 
     @clear_single_settings
@@ -1065,7 +1099,7 @@ class NMRParameter(AcquisitionParameter):
         self.results = analysis.analyse_NMR(
             pulse_traces=self.data,
             threshold_up_proportion=self.threshold_up_proportion,
-            shots_per_read=self.shots_per_frequency,
+            shots_per_read=self.ESR['shots_per_frequency'],
             sample_rate=self.sample_rate,
             t_skip=self.t_skip,
             t_read=self.t_read)
