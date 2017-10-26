@@ -12,17 +12,17 @@ logger = logging.getLogger()
 
 
 def create_cell(text, location='below', execute=False, select=True):
- = ''
+    text = text.replace('\n', '\\n')
+    text = text.replace("'", '"')
+
+    code = ''
     # Create cell at specified location
     if location == 'below':
         code += """
         var current_cell = Jupyter.notebook.get_selected_cell();
         var current_index = Jupyter.notebook.find_cell_index(current_cell);
         var new_cell = Jupyter.notebook.insert_cell_below('code', current_index);
-        """    text = text.replace('\n', '\\n')
-    text = text.replace("'", '"')
-
-    code
+        """
     elif location == 'bottom':
         code += """
         var current_cell = Jupyter.notebook.get_selected_cell();
