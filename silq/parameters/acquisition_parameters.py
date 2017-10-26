@@ -828,10 +828,11 @@ class ESRParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True),
             DCPulse('final')]
 
-        self.ESR_pulse = FrequencyRampPulse('adiabatic_ESR')
-        self.ESR_pulses = [self.ESR_pulse]
-
-        self.pulse_delay = 5
+        self.ESR = {'pulse': FrequencyRampPulse('adiabatic_ESR'),
+                    'plunge_pulse': DCPulse('plunge'),
+                    'read_pulse': DCPulse('read_initialize', acquire=True),
+                    'pulse_delay': 5}
+        self.ESR['pulses'] = ['pulse']
 
         self._pulse_sequence_attributes = None
 
@@ -846,18 +847,20 @@ class ESRParameter(AcquisitionParameter):
 
     @property
     def names(self):
-        return self._names
+        names = copy(self._names)
+        if len(self.ESR_frequencies) == 1:
+            names += [f'contrast_ESR', 'up_proportion_ESR']
+        else:
+            names += [f'{attr}_ESR{k}'
+                      for k in range(len(self.ESR_frequencies))
+                      for attr in ['contrast', 'up_proportion']]
+        return names
 
     @names.setter
     def names(self, names):
-        if len(self.ESR_frequencies) == 1:
-            ESR_names = [f'contrast_read', 'up_proportion_read']
-        else:
-            ESR_names = [f'{attr}_read{k}'
-                         for k in range(len(self.ESR_frequencies))
-                         for attr in ['contrast', 'up_proportion']]
-        names = ESR_names + list(names)
-        self._names = names
+        self._names = [name for name in names
+                       if not 'contrast_ESR' in name
+                       and not 'up_proportion_ESR' in name]
 
     @property_ignore_setter
     def shapes(self):
@@ -869,20 +872,35 @@ class ESRParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def labels(self):
-        return [name.replace('_', ' ').capitalize() for name in self.names]
+        labels = [name.replace('_', ' ').capitalize() for name in self.names
+                  if 'contrast_ESR' not in name
+                  and 'up_proportion_ESR' not in name]
+        if len(self.ESR_frequencies) == 1:
+            f_ESR = self.ESR_frequencies[0]
+            labels += [f'Contrast ESR {f_ESR/1e9:.2f} GHz',
+                       f'Up proportion ESR {f_ESR/1e9:.2f} GHz']
+        else:
+            for k, f_ESR in enumerate(self.ESR_frequencies):
+                labels += [f'Contrast ESR{k} {f_ESR/1e9:.2f} GHz',
+                           f'Up proportion ESR{k} {f_ESR/1e9:.2f} GHz']
+        return labels
 
     def update_pulse_sequence(self):
 
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        for ESR_pulse in self.ESR_pulses:
+        for ESR_pulse in self.ESR['pulses']:
+            if isinstance(ESR_pulse, str):
+                # Pulse is a reference to some pulse in self.ESR
+                ESR_pulse = self.ESR[ESR_pulse]
+
             # Add a plunge and read pulse for each frequency
-            plunge_pulse, = self.pulse_sequence.add(DCPulse('plunge'))
+            plunge_pulse, = self.pulse_sequence.add(self.ESR['plunge_pulse'])
             ESR_pulse, = self.pulse_sequence.add(ESR_pulse)
             ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                           delay=self.pulse_delay)
-            self.pulse_sequence.add(DCPulse('read', acquire=True))
+                                           delay=self.ESR['pulse_delay'])
+            self.pulse_sequence.add(self.ESR['read_pulse'])
 
         self.pulse_sequence.add(*self.post_pulses)
 
@@ -894,8 +912,7 @@ class ESRParameter(AcquisitionParameter):
         self._pulse_sequence_attributes = {
             'pre_pulses': deepcopy(self.pre_pulses),
             'post_pulses': deepcopy(self.post_pulses),
-            'ESR_pulses': deepcopy(self.ESR_pulses),
-            'pulse_delay': self.pulse_delay
+            'ESR': deepcopy(self.ESR)
         }
 
     def _matches_pulse_sequence_attrs(self):
@@ -903,36 +920,30 @@ class ESRParameter(AcquisitionParameter):
         pulse_sequence_attributes = {
             'pre_pulses': self.pre_pulses,
             'post_pulses': self.post_pulses,
-            'ESR_pulses': self.ESR_pulses,
-            'pulse_delay': self.pulse_delay
+            'ESR': self.ESR,
         }
         # Compare to attributes when pulse sequence was created
         return pulse_sequence_attributes == self._pulse_sequence_attributes
 
     @property
-    def pulse_delay(self):
-        # Delay between start of plunge and ESR pulse
-        return self._pulse_delay
-
-    @pulse_delay.setter
-    def pulse_delay(self, pulse_delay):
-        self._pulse_delay = pulse_delay
-
-        # This updates the pulse sequence
-        self.ESR_frequencies = self.ESR_frequencies
-
-    @property
     def ESR_frequencies(self):
-        return [pulse.frequency for pulse in self.ESR_pulses]
+        return [pulse.frequency if isinstance(pulse, Pulse)
+                else self.ESR[pulse].frequency
+                for pulse in self.ESR['pulses']]
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR_pulses):
+        if len(ESR_frequencies) != len(self.ESR['pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR_pulses = [copy(self.ESR_pulse)
-                               for _ in range(len(ESR_frequencies))]
-        for pulse, ESR_frequency in zip(self.ESR_pulses, ESR_frequencies):
+            self.ESR['pulses'] = [copy(self.ESR['pulse'])
+                                  for _ in range(len(ESR_frequencies))]
+
+        # Convert any pulse strings to pulses if necessary
+        self.ESR['pulses'] = [self.ESR[p] if isinstance(p, str) else p
+                              for p in self.ESR['pulses']]
+
+        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
             pulse.frequency = ESR_frequency
 
     @clear_single_settings
@@ -942,9 +953,15 @@ class ESRParameter(AcquisitionParameter):
 
         self.acquire()
 
+        if len(self.ESR_frequencies) == 1:
+            label_mapping = {self.ESR['read_pulse'].name: 'ESR'}
+        else:
+            label_mapping = {f'{self.ESR["read_pulse"].name}{k}': f'ESR{k}'
+                             for k in range(len(self.ESR_frequencies))}
         self.results = analysis.analyse_multi_read_EPR(
             pulse_traces=self.data, sample_rate=self.sample_rate,
-            t_skip=self.t_skip, t_read=self.t_read)
+            t_skip=self.t_skip, t_read=self.t_read,
+            label_mapping=label_mapping)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1097,7 +1114,8 @@ class NMRParameter(AcquisitionParameter):
 
     @property
     def ESR_frequencies(self):
-        return [pulse.frequency if isinstance(pulse, Pulse) else None
+        return [pulse.frequency if isinstance(pulse, Pulse)
+                else self.ESR[pulse].frequency
                 for pulse in self.ESR['pulses']]
 
     @ESR_frequencies.setter
