@@ -170,6 +170,7 @@ class SettingsClass:
                 self._temporary_settings[item] = value
             else:
                 raise ValueError('Setting {} not found'.format(item))
+        return self
 
     def single_settings(self, **kwargs):
         """
@@ -184,6 +185,7 @@ class SettingsClass:
                 self._single_settings[item] = value
             else:
                 raise ValueError('Setting {} not found'.format(item))
+        return self
 
     def clear_settings(self):
         """
