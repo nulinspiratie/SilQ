@@ -368,7 +368,6 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, name='trace_pulse', average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
-        self.samples = 1
         self.trace_pulse = MeasurementPulse(name=name, duration=1,
                                             acquire=True,
                                             average=self.average_mode)
@@ -380,6 +379,7 @@ class TraceParameter(AcquisitionParameter):
                          shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
+        self.samples = 1
 
     @property
     def average_mode(self):
@@ -440,7 +440,7 @@ class TraceParameter(AcquisitionParameter):
         num_traces = len(self.layout.acquisition_outputs())
 
         pts = int(round(duration * self.sample_rate))
-        t_list = tuple(np.linspace(0, duration, pts, endpoint=True))
+        t_list = tuple(np.linspace(0, duration* 1e3, pts, endpoint=True))
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
