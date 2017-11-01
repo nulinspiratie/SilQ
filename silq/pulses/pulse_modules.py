@@ -287,6 +287,7 @@ class PulseSequence:
         added_pulses = []
 
         for pulse in pulses:
+
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p)
                         for p in self.enabled_pulses):
@@ -305,18 +306,19 @@ class PulseSequence:
                 raise SyntaxError(f'Pulse {pulse} duration must be specified')
             else:
                 # Check if pulse with same name exists
+                pulse_copy = copy(pulse)
+                pulse_copy.id = None # Remove any pre-existing pulse id
                 if pulse.name is not None:
                     pulses_same_name = self.get_pulses(name=pulse.name)
                     if pulses_same_name:
                         # Ensure id is unique
                         if pulses_same_name[0].id is None:
                             pulses_same_name[0].id = 0
-                            pulse.id = 1
+                            pulse_copy.id = 1
                         else:
                             max_id = max(p.id for p in pulses_same_name)
-                            pulse.id = max_id + 1
+                            pulse_copy.id = max_id + 1
 
-                pulse_copy = copy(pulse)
                 if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse

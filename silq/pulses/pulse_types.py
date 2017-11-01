@@ -652,7 +652,7 @@ class FrequencyRampPulse(Pulse):
     def __repr__(self):
         properties_str = ''
         try:
-            properties_str = f'={freq_to_str(self.frequency)}'
+            properties_str = f'f={freq_to_str(self.frequency)}'
             properties_str += f', f_dev={freq_to_str(self.frequency_deviation)}'
             if self.frequency_sideband is not None:
                 properties_str += ', f_sb={freq_to_str(self.frequency_sideband)}'
