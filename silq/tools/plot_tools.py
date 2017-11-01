@@ -476,6 +476,8 @@ class DCSweepPlot(ScanningPlot):
             kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
+
+        self.point = None
         super().__init__(parameter, subplots=subplots, **kwargs)
 
         if parameter.trace_pulse.enabled:
