@@ -330,12 +330,14 @@ def analyse_read_long(t_read, sample_rate, traces=None,
                       read_segment_begin=None, read_segment_end=None,
                       min_trace_perc=0.5,
                       t_skip=0, threshold_method='config'):
-    if traces is None and read_segment_begin is None \
-            and read_segment_end is None:
-        raise SyntaxError('Must provide traces (optionally read_segments), '
-                          'or both read_segment_begin and read_segment_end')
+    if traces is None:
+        if read_segment_begin is None or read_segment_end is None:
+            raise SyntaxError('Must provide traces (optionally read_segments), '
+                              'or both read_segment_begin and read_segment_end')
+        else:
+            traces = np.hstack([read_segment_begin, read_segment_end])
 
-    read_pts = round(t_read * 1e-3 * sample_rate)
+    read_pts = int(round(t_read * 1e-3 * sample_rate))
 
     high_low = find_high_low(traces, threshold_method=threshold_method)
     threshold_voltage = high_low['threshold_voltage']
@@ -354,10 +356,12 @@ def analyse_read_long(t_read, sample_rate, traces=None,
     else:
         if read_segment_begin is None:
             # read_segment_begin is the start segment of read_long trace
-            read_segment_begin = traces[:, :read_pts]
+            read_segment_begin = traces
+        read_segment_begin = read_segment_begin[:, :read_pts]
         if read_segment_end is None:
             # read_segment_end is the end segment of read_long trace
-            read_segment_end = traces[:, -read_pts:]
+            read_segment_end = traces
+        read_segment_end = read_segment_end[:, -read_pts:]
 
         results_begin = analyse_read(read_segment_begin,
                                      t_skip=t_skip,
@@ -371,7 +375,9 @@ def analyse_read_long(t_read, sample_rate, traces=None,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
 
-        if results_begin['num_traces'] / len(traces) < min_trace_perc:
+        loaded_traces_percentage = results_begin['num_traces'] / len(traces)
+        logger.debug(f'Loaded traces percentage: {loaded_traces_percentage}')
+        if loaded_traces_percentage < min_trace_perc:
             # Not enough traces start loaded
             contrast = 0
         else:
@@ -418,7 +424,8 @@ def analyse_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
 
 def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
-                           min_trace_perc=0.5, read_segment_names=None):
+                           min_trace_perc=0.5, read_segment_names=None,
+                           label_mapping=None):
     """
     Analysis where there are read pulses in addition to read_long.
     The dark counts at the end of read_long are also used for other read traces
@@ -475,6 +482,7 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
         'fidelity_load': results_load['up_proportion'],
         'voltage_difference_load': results_load['voltage_difference'],
         'contrast': results_read_EPR['contrast'],
+        'up_proportion': results_read_EPR['up_proportion'],
         'dark_counts': results_read_EPR['dark_counts'],
         'voltage_difference_read': results_read_EPR['voltage_difference'],
         'low_blip_duration': results_read_EPR['low_blip_duration'],
@@ -483,8 +491,8 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
     # Add read results
     if len(read_segment_names) == 1:
         segment_results = results_read[read_segment_names[0]]
-        results[f'contrast_read'] = segment_results['contrast']
-        results[f'up_proportion_read'] = segment_results['up_proportion']
+        results[f'contrast_ESR'] = segment_results['contrast']
+        results[f'up_proportion_ESR'] = segment_results['up_proportion']
     else:
         for read_segment_name in read_segment_names:
             segment_results = results_read[read_segment_name]
@@ -493,6 +501,10 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
             read_segment_name = read_segment_name.replace(']', '')
 
             read_contrast = segment_results['contrast']
+
+            if label_mapping is not None:
+                read_segment_name = label_mapping[read_segment_name]
+
             results[f'contrast_{read_segment_name}'] = read_contrast
             up_proportion = segment_results['up_proportion']
             results[f'up_proportion_{read_segment_name}'] = up_proportion
