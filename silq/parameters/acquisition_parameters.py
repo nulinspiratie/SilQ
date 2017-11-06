@@ -9,6 +9,7 @@ import logging
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
+from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
@@ -37,12 +38,15 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  properties_attrs=None, **kwargs):
         SettingsClass.__init__(self)
 
+        if self.layout is None:
+            AcquisitionParameter.layout = Instrument.find_instrument('layout')
+
         if not hasattr(self, 'pulse_sequence'):
             self.pulse_sequence = PulseSequence()
         """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
-        MultiParameter.__init__(self, shapes=shapes, **kwargs)
+        MultiParameter.__init__(self, shapes=shapes, wrap_set=False, **kwargs)
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -324,6 +328,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     #                 axes[k].plot([threshold_voltage] * len(trace), 'r')
     #             axes[k].locator_params(nbins=2)
 
+    def set(self, **kwargs):
+        return self.single_settings(**kwargs)()
+
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
@@ -343,7 +350,7 @@ class DCParameter(AcquisitionParameter):
                          **kwargs)
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
@@ -514,7 +521,7 @@ class TraceParameter(AcquisitionParameter):
         return traces
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         traces = self.acquire()
@@ -770,7 +777,7 @@ class DCSweepParameter(AcquisitionParameter):
         return self.results
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
         return tuple(self.results[name] for name in self.names)
 
@@ -796,7 +803,7 @@ class EPRParameter(AcquisitionParameter):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         self.results = analysis.analyse_EPR(pulse_traces=self.data,
@@ -833,7 +840,7 @@ class ESRParameter(AcquisitionParameter):
 
         self.pulse_delay = 5
 
-        self._pulse_sequence_attributes = None
+        self._pulse_sequence_attributes = {}
 
         super().__init__(name=name,
                          names=['contrast', 'dark_counts',
@@ -936,7 +943,7 @@ class ESRParameter(AcquisitionParameter):
             pulse.frequency = ESR_frequency
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         if not self._matches_pulse_sequence_attrs():
             self.update_pulse_sequence()
 
@@ -1113,7 +1120,7 @@ class NMRParameter(AcquisitionParameter):
             pulse.frequency = ESR_frequency
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         if not self._matches_pulse_sequence_attrs():
             self.update_pulse_sequence()
 
@@ -1163,7 +1170,7 @@ class T1Parameter(AcquisitionParameter):
         return self.pulse_sequence['plunge'].duration
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         # Analysis
@@ -1213,7 +1220,7 @@ class DarkCountsParameter(AcquisitionParameter):
         super().acquire(**kwargs)
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         fidelities = analysis.analyse_read(
@@ -1265,7 +1272,8 @@ class VariableReadParameter(AcquisitionParameter):
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = {'read_voltage':
@@ -1330,7 +1338,8 @@ class NeuralNetworkParameter(AcquisitionParameter):
                                                neural_network_results))
         return self.neural_network_results
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = dict(**self.neural_network_results)
@@ -1385,7 +1394,8 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
     def base_folder(self, base_folder):
         self.target_parameter.base_folder = base_folder
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = {}
@@ -1413,3 +1423,307 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
 
         return [self.results[name] for name in self.names]
 
+
+# class CompensationFactorParameter(AcquisitionParameter):
+#     """
+#     Performs a scan to find the compensation factor
+#     """
+#
+#     def __init__(self, name='compensation_factor', compensation_factor=None,
+#                  **kwargs):
+#         self.pulse_settings = {
+#             'sweep_duration': 20,
+#             'ramp_pulse': DCRampPulse('ramp', acquire=True),
+#             'DC_pulse': DCPulse(name='DC'),
+#             'DC_values': range(-0.02, 0.06, 0.01),
+#             'ramp_range': [-0.05, 0.05],
+#             'ramp_points': 80
+#         }
+#
+#         self.compensation_factor = compensation_factor # DC/ramp
+#
+#         super().__init__(name=name, names=['compensation_factor'], '**kwargs)
+#
+#     def update_pulse_sequence(self):
+#         pulses = []
+#         t = 0
+#         for DC_value in self.pulse_settings['DC_values']:
+#             DC_pulse = copy(self.pulse_settings['DC_pulse'])
+#             DC_pulse.t_start = t
+#             DC_pulse.duration = self.pulse_settings['sweep_duration']
+#             DC_pulse.amplitude = DC_value
+#             pulses.append(DC_pulse)
+#
+#             ramp_pulse = copy(self.pulse_settings['ramp_pulse'])
+#             ramp_pulse.t_start = t
+#             ramp_pulse.duration = self.pulse_settings['sweep_duration']
+#
+#             ramp_offset = DC_value / self.compensation_factor
+#             ramp_pulse.amplitude_start = self.pulse_settings['ramp_range'][0] \
+#                                          + ramp_offset
+#             ramp_pulse.amplitude_stop = self.pulse_settings['ramp_range'][1] \
+#                                          + ramp_offset
+#             pulses.append(ramp_pulse)
+#         self.pulse_sequence = PulseSequence(pulses)
+#
+#         self._pulse_sequence_attributes = deepcopy(self.pulse_settings)
+#
+#     def _matches_pulse_sequence_attrs(self):
+#         # Compare to attributes when pulse sequence was created
+#         return self.pulse_settings == self._pulse_sequence_attributes
+#
+#     @clear_single_settings
+#     def get_raw(self):
+#         if not self._matches_pulse_sequence_attrs():
+#             self.update_pulse_sequence()
+#
+#         self.acquire()
+#
+#         self.results = analysis.analyse_compensation_factor(
+#             pulse_traces=self.data,
+#             ramp_values=self.ramp_values,
+#             DC_values=self.pulse_settings['DC_values'])
+#
+#         # Store raw traces if self.save_traces is True
+#         if self.save_traces:
+#             self.store_traces(self.data, subfolder=self.subfolder)
+#
+#         if not self.silent:
+#             self.print_results()
+#
+#         return tuple(self.results[name] for name in self.names)
+
+
+
+class TransitionParameter(AcquisitionParameter):
+    """
+    Performs a scan to find the donor transition
+    """
+
+    def __init__(self, name='compensation_factor',
+                 gates=[],
+                 compensation_factor=None,
+                 **kwargs):
+        self.pulse_settings = {
+            'sweep_duration': 20,
+            'ramp_pulse': DCRampPulse('ramp', average='point_segment:80',
+                                      acquire=True),
+            'DC_offsets': np.arange(-0.02, 0.06, 0.01),
+            'offset_index': 0,
+            'ramp_range': [0.02, 0.02],
+            'compensation_factor': compensation_factor
+
+        }
+        self.gates = gates
+
+        self._pulse_sequence_attributes = {}
+
+        self.samples = 1
+
+        super().__init__(name=name, names=['DC_voltage'],
+                         setpoint_names=(('DC_offset', 'ramp_voltage'),),
+                         setpoint_units=(('V', 'V'),),
+                         shapes=((1,1),),
+                         **kwargs)
+
+    @property_ignore_setter
+    def names(self):
+        return [gate.name for gate in self.gates] + ['DC_voltage']
+
+    @property_ignore_setter
+    def setpoints(self):
+        DC_offsets = self.pulse_settings['DC_offsets']
+        ramp_range = self.pulse_settings['ramp_range']
+        ramp_range_2D = np.tile(ramp_range, [len(DC_offsets), 1])
+        return convert_setpoints(ramp_range, ramp_range_2D)
+
+    def update_pulse_sequence(self):
+        pulses = []
+        for DC_offset in self.pulse_settings['DC_offsets']:
+
+            ramp_pulse = copy(self.pulse_settings['ramp_pulse'])
+            ramp_pulse.duration = self.pulse_settings['sweep_duration']
+
+            ramp_range = self.pulse_settings['ramp_range']
+            ramp_pulse.amplitude_start = [ramp_range[0]] * 2
+            ramp_pulse.amplitude_stop = [ramp_range[1]] * 2
+
+            compensation_factor = self.pulse_settings['compensation_factor']
+            ramp_pulse.amplitude_start[1] *= compensation_factor
+            ramp_pulse.amplitude_stop[1] *= compensation_factor
+
+            offset_index = self.pulse_settings['offset_index']
+            ramp_pulse.amplitude_start[offset_index] += DC_offset
+            ramp_pulse.amplitude_stop[offset_index] += DC_offset
+
+            pulses.append(ramp_pulse)
+        self.pulse_sequence = PulseSequence(pulses)
+
+        self._pulse_sequence_attributes = deepcopy(self.pulse_settings)
+
+    def _matches_pulse_sequence_attrs(self):
+        # Compare to attributes when pulse sequence was created
+        if len(self.pulse_settings) != len(self._pulse_sequence_attributes):
+            return False
+        else:
+            for k, v in self._pulse_sequence_attributes.items():
+                if (isinstance(v, np.ndarray) or
+                    isinstance(self.pulse_settings[k], np.ndarray)):
+                    if not np.array_equal(self.pulse_settings[k], v):
+                        return False
+                elif not v == self.pulse_settings[k]:
+                    return False
+        return True
+
+    @clear_single_settings
+    def get_raw(self):
+        if not self._matches_pulse_sequence_attrs():
+            self.update_pulse_sequence()
+
+        self.acquire()
+
+        traces = np.array([self.data[p.full_name]['output']
+                           for p in self.pulse_sequence])
+        return traces,
+
+        # self.results = analysis.analyse_compensation_factor(
+        #     pulse_traces=self.data,
+        #     ramp_values=self.ramp_values,
+        #     DC_values=self.pulse_settings['DC_values'])
+        # self.results = {'DC_voltage': self.data['']
+        #
+        # # Store raw traces if self.save_traces is True
+        # if self.save_traces:
+        #     self.store_traces(self.data, subfolder=self.subfolder)
+        #
+        # if not self.silent:
+        #     self.print_results()
+        #
+        # return tuple(self.results[name] for name in self.names)
+
+class Transition2Parameter(AcquisitionParameter):
+    """
+    Performs a scan to find the donor transition
+    """
+
+    def __init__(self, name='compensation_factor',
+                 **kwargs):
+        self.pulse_settings = {
+            'sweep_duration': 3,
+            'peak_pulse': DCRampPulse('peak_ramp', average='point_segment:80',
+                                      acquire=True),
+            'compensation_pulse': DCRampPulse('compensation_ramp',
+                                              average='point_segment:80',
+                                              acquire=True),
+            'read_pulse': DCPulse('read_long', acquire=True),
+            'peak_range': [-0.02, 0.02],
+            'peak_offset': -0.01,
+            'peak_index': 0,
+            'compensation_range': [-0.02, 0],
+            'compensation_factor': -1,
+            'compensation_factors': []
+        }
+
+        self._pulse_sequence_attributes = {}
+
+        self.samples = 1
+
+        super().__init__(name=name, names=['DC_voltage'],
+                         setpoint_names=(('DC_offset', 'ramp_voltage'),),
+                         setpoint_units=(('V', 'V'),),
+                         shapes=((1, 1),),
+                         **kwargs)
+
+    @property_ignore_setter
+    def names(self):
+        return ['DC_voltage']
+
+    @property_ignore_setter
+    def setpoints(self):
+        DC_offsets = self.pulse_settings['DC_offsets']
+        ramp_range = self.pulse_settings['ramp_range']
+        ramp_range_2D = np.tile(ramp_range, [len(DC_offsets), 1])
+        return convert_setpoints(ramp_range, ramp_range_2D)
+
+    def update_pulse_sequence(self):
+        pulses = []
+
+        # Add horizontal ramp pulse
+        peak_pulse = copy(self.pulse_settings['peak_pulse'])
+        compensation_factor = self.pulse_settings['compensation_factor']
+        peak_offset = self.pulse_settings['peak_offset']
+        amplitude_start = [peak_offset, peak_offset * compensation_factor]
+        amplitude_stop = [peak_offset, peak_offset * compensation_factor]
+
+        peak_range = self.pulse_settings['peak_range']
+        peak_index = self.pulse_settings['peak_index']
+        amplitude_start[peak_index] += peak_range[0]
+        amplitude_stop[peak_index] += peak_range[1]
+
+        peak_pulse.amplitude_start = amplitude_start
+        peak_pulse.amplitude_stop = amplitude_stop
+        peak_pulse.duration = self.pulse_settings['sweep_duration']
+
+        pulses.append(peak_pulse)
+
+        # Add compensation pulses
+        compensation_pulse = copy(self.pulse_settings['compensation_pulse'])
+        compensation_pulse.duration = self.pulse_settings['sweep_duration']
+        compensation_factors = self.pulse_settings['compensation_factors']
+        compensation_range = self.pulse_settings['compensation_range']
+        for compensation_factor in compensation_factors:
+            compensation_pulse.amplitude_start = (
+                compensation_range[0],
+                compensation_range[0] * compensation_factor)
+            compensation_pulse.amplitude_stop = (
+                compensation_range[1],
+                compensation_range[1] * compensation_factor)
+
+            pulses.append(copy(compensation_pulse))
+
+        # Add read pulse
+        pulses.append(copy(self.pulse_settings['read_pulse']))
+
+        self.pulse_sequence = PulseSequence(pulses)
+
+        self._pulse_sequence_attributes = deepcopy(self.pulse_settings)
+
+    def _matches_pulse_sequence_attrs(self):
+        # Compare to attributes when pulse sequence was created
+        if len(self.pulse_settings) != len(self._pulse_sequence_attributes):
+            return False
+        else:
+            for k, v in self._pulse_sequence_attributes.items():
+                if (isinstance(v, np.ndarray) or
+                        isinstance(self.pulse_settings[k], np.ndarray)):
+                    if not np.array_equal(self.pulse_settings[k], v):
+                        return False
+                elif not v == self.pulse_settings[k]:
+                    return False
+        return True
+
+    @clear_single_settings
+    def get_raw(self):
+        if not self._matches_pulse_sequence_attrs():
+            self.update_pulse_sequence()
+
+        self.acquire()
+
+        traces = np.array([self.data[p.full_name]['output']
+                           for p in self.pulse_sequence])
+        return traces,
+
+        # self.results = analysis.analyse_compensation_factor(
+        #     pulse_traces=self.data,
+        #     ramp_values=self.ramp_values,
+        #     DC_values=self.pulse_settings['DC_values'])
+        # self.results = {'DC_voltage': self.data['']
+        #
+        # # Store raw traces if self.save_traces is True
+        # if self.save_traces:
+        #     self.store_traces(self.data, subfolder=self.subfolder)
+        #
+        # if not self.silent:
+        #     self.print_results()
+        #
+        # return tuple(self.results[name] for name in self.names)
