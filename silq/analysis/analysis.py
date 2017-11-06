@@ -2,7 +2,7 @@ import numpy as np
 import peakutils
 import logging
 
-__all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
+__all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_load', 'analyse_empty', 'analyse_read',
            'analyse_read_long', 'analyse_EPR', 'analyse_multi_read_EPR',
            'analyse_PR', 'analyse_NMR']
