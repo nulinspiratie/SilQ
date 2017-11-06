@@ -1,16 +1,17 @@
+import os
 from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
+import pickle
 
 import silq
 from silq import config
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
-from qcodes import Instrument
-from qcodes.instrument.parameter import ManualParameter
+from qcodes import Instrument, FormatLocation, Parameter
 from qcodes.utils import validators as vals
-
+from qcodes.data.io import DiskIO
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ class Layout(Instrument):
 
     shared_kwargs = ['instrument_interfaces']
 
-    def __init__(self, name, instrument_interfaces, **kwargs):
+    def __init__(self, name, instrument_interfaces,
+                 store_pulse_sequences_folder=None, **kwargs):
         """
         The layout meta-instrument defines the experimental setup and
         controls its instruments via interfaces.
@@ -33,6 +35,10 @@ class Layout(Instrument):
         Args:
             name: Name of Layout instrument
             instrument_interfaces: list of all instrument interfaces
+            store_pulse_sequences_folder: folder in which to store a copy of 
+                any pulse sequence that is targeted. Pulse sequences are 
+                stored as pickles, and can be used to trace back measurement 
+                parameters 
             **kwargs:
         """
         super().__init__(name, **kwargs)
@@ -54,22 +60,22 @@ class Layout(Instrument):
                            vals=vals.Enum(*self._interfaces.keys()))
 
         self.add_parameter('acquisition_instrument',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
         self.add_parameter('acquisition_outputs',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=([('chip.output', 'output')]
                                           if 'chip' in self._interfaces.keys()
                                           else []),
                            vals=vals.Anything())
 
         self.add_parameter(name='samples',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=1)
 
         self.add_parameter(name='active',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
 
@@ -79,6 +85,16 @@ class Layout(Instrument):
         # Targeted pulse sequence, which is generated after targeting
         # layout.pulse_sequence
         self.targeted_pulse_sequence = None
+
+        # Handle saving of pulse sequence
+        if store_pulse_sequences_folder is not None:
+            self.store_pulse_sequences_folder = store_pulse_sequences_folder
+        elif config.properties.get('store_pulse_sequences_folder') is not None:
+            self.store_pulse_sequences_folder = \
+                config.properties.store_pulse_sequences_folder
+        else:
+            self.store_pulse_sequences_folder = None
+        self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
 
         self.acquisition_shapes = {}
 
@@ -100,8 +116,6 @@ class Layout(Instrument):
         # Target pulse_sequence, distributing pulses to interfaces
         self._target_pulse_sequence(pulse_sequence)
 
-        # Update pulse sequence
-        self._pulse_sequence = copy(pulse_sequence)
 
     @property
     def acquisition_interface(self):
@@ -568,6 +582,29 @@ class Layout(Instrument):
             additional_pulses = interface.get_additional_pulses(interface=self)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
+
+        # Update pulse sequence
+        self._pulse_sequence = copy(pulse_sequence)
+
+        # Store pulse sequence
+        if self.store_pulse_sequences_folder:
+            logger.debug('Storing pulse sequence to')
+            try:
+                self._pulse_sequences_folder_io.base_location = \
+                    self.store_pulse_sequences_folder
+                location = FormatLocation()(self._pulse_sequences_folder_io,
+                                            {"name": 'pulse_sequence'})
+                location += '.pickle'
+
+                filepath = self._pulse_sequences_folder_io.to_path(location)
+
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+                logger.debug(f'Storing pulse sequence to {filepath}')
+                with open(filepath, 'wb') as f:
+                    pickle.dump(self._pulse_sequence, f)
+            except:
+                logger.exception('Could not save pulse sequence')
 
     def update_flags(self, new_flags):
         """
