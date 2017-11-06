@@ -119,7 +119,8 @@ class Pulse(HasTraits):
     def _valid_average(self, proposal):
         if proposal['value'] in ['none', 'trace', 'point']:
             return proposal['value']
-        elif 'point_segment' in proposal['value']:
+        elif ('point_segment' in proposal['value'] or
+                      'trace_segment' in proposal['value']):
             return proposal['value']
         else:
             return TraitError
