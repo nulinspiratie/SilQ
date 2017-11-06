@@ -1,4 +1,4 @@
-from collections import OrderedDict as od
+from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
 
@@ -618,7 +618,7 @@ class Layout(Instrument):
             None
         """
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
-        
+
         if not self.pulse_sequence:
             raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
@@ -1051,8 +1051,8 @@ class CombinedConnection(Connection):
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
-                    if isinstance(val, tuple):
-                        if k < len(pulse.amplitude):
+                    if isinstance(val, Iterable):
+                        if k < len(getattr(pulse, attr)):
                             setattr(targeted_pulse, attr, val[k])
                         else:
                             setattr(targeted_pulse, attr, val[0])
