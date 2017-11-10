@@ -38,15 +38,18 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  properties_attrs=None, **kwargs):
         SettingsClass.__init__(self)
 
-        if self.layout is None:
-            AcquisitionParameter.layout = Instrument.find_instrument('layout')
-
         if not hasattr(self, 'pulse_sequence'):
             self.pulse_sequence = PulseSequence()
         """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, wrap_set=False, **kwargs)
+
+        if self.layout is None:
+            try:
+                AcquisitionParameter.layout = Instrument.find_instrument('layout')
+            except KeyError:
+                logger.warning(f'No layout found for {self}')
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -850,6 +853,7 @@ class ESRParameter(AcquisitionParameter):
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
+        self._update_pulse_sequence_attributes()
         self.update_pulse_sequence()
 
     @property
@@ -897,11 +901,12 @@ class ESRParameter(AcquisitionParameter):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        for ESR_pulse in self.ESR['pulses']:
-            if isinstance(ESR_pulse, str):
-                # Pulse is a reference to some pulse in self.ESR
-                ESR_pulse = self.ESR[ESR_pulse]
+        # Update self.ESR['pulses']. Converts any pulses that are strings to
+        # actual pulses, and sets correct frequencies
+        # Also updates self._pulse_sequence_attributes
+        self.update_ESR_pulse_sequence()
 
+        for ESR_pulse in self.ESR['pulses']:
             # Add a plunge and read pulse for each frequency
             plunge_pulse, = self.pulse_sequence.add(self.ESR['plunge_pulse'])
             ESR_pulse, = self.pulse_sequence.add(ESR_pulse)
@@ -916,11 +921,34 @@ class ESRParameter(AcquisitionParameter):
                       if 'contrast_read' not in name
                       and 'up_proportion_read' not in name]
 
+        self._update_pulse_sequence_attributes()
+
+    def _update_pulse_sequence_attributes(self):
         self._pulse_sequence_attributes = {
             'pre_pulses': deepcopy(self.pre_pulses),
             'post_pulses': deepcopy(self.post_pulses),
             'ESR': deepcopy(self.ESR)
         }
+
+    def update_ESR_pulse_sequence(self, ESR_frequencies=None):
+        if ESR_frequencies is None:
+            ESR_frequencies = self.ESR_frequencies
+
+        if (self.ESR['pulse'] != self._pulse_sequence_attributes['ESR']['pulse']) \
+                or (len(ESR_frequencies) != len(self.ESR['pulses'])):
+            # Resetting ESR pulses
+            self.ESR['pulses'] = [copy(self.ESR['pulse'])
+                                  for _ in range(len(ESR_frequencies))]
+        else:
+            # Convert any pulse strings to pulses if necessary
+            self.ESR['pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
+                                  for p in self.ESR['pulses']]
+
+        # Make sure all pulses have proper ESR frequency
+        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
+            pulse.frequency = ESR_frequency
+
+        self._update_pulse_sequence_attributes()
 
     def _matches_pulse_sequence_attrs(self):
         # Create dict of current pulse sequence attributes
@@ -943,15 +971,8 @@ class ESRParameter(AcquisitionParameter):
         if len(ESR_frequencies) != len(self.ESR['pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR['pulses'] = [copy(self.ESR['pulse'])
-                                  for _ in range(len(ESR_frequencies))]
 
-        # Convert any pulse strings to pulses if necessary
-        self.ESR['pulses'] = [self.ESR[p] if isinstance(p, str) else p
-                              for p in self.ESR['pulses']]
-
-        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
-            pulse.frequency = ESR_frequency
+        self.update_ESR_pulse_sequence(ESR_frequencies=ESR_frequencies)
 
     @clear_single_settings
     def get_raw(self):
