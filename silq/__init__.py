@@ -141,11 +141,18 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 name = name
                 break
 
-    if mode is not None:
-        select = configurations[name]['modes'][mode].get('select', None)
-        ignore = configurations[name]['modes'][mode].get('ignore', None)
+    try:
+        configuration = next(val for key, val in get_configurations().items()
+                             if key.lower() == name.lower())
+    except StopIteration:
+        raise NameError(f'Configuration {name} not found. Allowed '
+                        f'configurations are {get_configurations().keys()}')
 
-    folder = os.path.join(experiments_folder, configurations[name]['folder'])
+    if mode is not None:
+        select = configuration['modes'][mode].get('select', None)
+        ignore = configuration['modes'][mode].get('ignore', None)
+
+    folder = os.path.join(experiments_folder, configuration['folder'])
     config.__dict__['folder'] = os.path.join(experiments_folder, folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
