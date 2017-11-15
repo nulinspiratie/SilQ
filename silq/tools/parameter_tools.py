@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 import qcodes as qc
 import silq
 from qcodes.instrument.sweep_values import SweepValues
@@ -106,6 +107,7 @@ class SweepDependentValues(SweepValues):
 def create_set_vals(num_parameters=None, step=None, step_percentage=None,
                     points=None, window=None, set_parameters=None, silent=True,
                     center_val=None, min_val=None, max_val=None, reverse=False):
+    warnings.warn('create_set_vals is deprecated, please use parameter.sweep()')
     parameter_config = silq.config.get('parameters')
 
     def calculate_step(min_step, max_step, percentage, round_vals=True):
