@@ -4,7 +4,7 @@ import warnings
 import logging
 import json
 from .tools.config import DictConfig, ListConfig
-from .tools.parameter_tools import create_set_vals
+from .tools.parameter_tools import SweepDependentValues
 
 import qcodes as qc
 
@@ -212,6 +212,6 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
         return SweepFixedValues(self, start=start, stop=stop,
                                 step=step, num=num)
     else:
-        return create_set_vals(set_parameters=self, step=step,
-                                 step_percentage=step_percentage, points=num)
+        return SweepDependentValues(parameter=self, step=step,
+                                    step_percentage=step_percentage, num=num)
 qc.Parameter.sweep = _sweep
