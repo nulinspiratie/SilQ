@@ -31,6 +31,9 @@ def _save_config(self, location=None):
     try:
         if location is None:
             location = self.location
+        if not location and hasattr(self, '_location'):
+            # Location is False, dataset created in qc.Measure, ignore
+            return
 
         if not os.path.isabs(location):
             location = os.path.join(qc.DataSet.default_io.base_location, location)
