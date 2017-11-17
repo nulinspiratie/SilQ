@@ -176,11 +176,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 base_folder = active_dataset.location
             elif hasattr(active_dataset, '_location'):
                 base_folder = active_dataset._location
-
-            if subfolder is None and base_folder is not None:
-                subfolder = f'traces_{self.name}'
             else:
                 base_folder = DataSet.location_provider(DataSet.default_io)
+                subfolder = None
+
+        if subfolder is None and base_folder is not None:
+                subfolder = f'traces_{self.name}'
 
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
