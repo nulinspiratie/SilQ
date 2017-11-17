@@ -1039,15 +1039,17 @@ class NMRParameter(AcquisitionParameter):
     def names(self):
         names = []
         if len(self.ESR_frequencies) == 1:
-            names += ['flips', 'up_proportions']
+            names += ['flips', 'flip_probability', 'up_proportions']
         else:
             for k, _ in enumerate(self.ESR_frequencies):
-                names += [f'flips_{k}', f'up_proportions_{k}']
+                names += [f'flips_{k}',
+                          f'flip_probability_{k}',
+                          f'up_proportions_{k}']
         return names
 
     @property_ignore_setter
     def shapes(self):
-        return ((), (self.samples, )) * len(self.ESR_frequencies)
+        return ((), (), (self.samples, )) * len(self.ESR_frequencies)
 
     @property_ignore_setter
     def units(self):
