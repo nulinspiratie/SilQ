@@ -51,6 +51,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         self.instrument.start_programming()
 
+        instructions = []
         if self.pulse_sequence:
             # Iteratively increase time
             t = 0
@@ -66,8 +67,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                     t_start=t)
                 if [p for p in active_input_pulses
                     if isinstance(p, TriggerWaitPulse)]:
-                    self.instrument.send_instruction(inactive_channel_mask,
-                                                     'wait', 0, 50)
+                    instructions.append((inactive_channel_mask, 'wait', 0, 50))
 
                 # find time of next event
                 t_next = min(t_val for t_val in self.pulse_sequence.t_list
@@ -79,16 +79,13 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 # Either send continue command or long_delay command if the
                 # wait duration is too long
                 if wait_cycles < 1e9:
-                    self.instrument.send_instruction(
-                        channel_mask, 'continue', 0, wait_cycles)
+                    instructions.append((channel_mask, 'continue', 0, wait_cycles))
                 else:
-                    self.instrument.send_instruction(
-                        channel_mask, 'continue', 0, 100)
+                    instructions.append((channel_mask, 'continue', 0, 100))
                     duration = round(wait_cycles - 100)
                     divisor = int(np.ceil(duration / 1e9))
                     delay = int(duration / divisor)
-                    self.instrument.send_instruction(
-                        channel_mask, 'long_delay', divisor, delay)
+                    instructions.append((channel_mask, 'long_delay', divisor, delay))
 
                 t = t_next
             else:
@@ -99,20 +96,17 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 if wait_duration:
                     wait_cycles = round(wait_duration * ms)
                     if wait_cycles < 1e9:
-                        self.instrument.send_instruction(
-                            inactive_channel_mask, 'continue', 0, wait_cycles)
+                        instructions.append((inactive_channel_mask, 'continue', 0, wait_cycles))
                     else:
-                        self.instrument.send_instruction(
-                            inactive_channel_mask, 'continue', 0, 100)
+                        instructions.append((inactive_channel_mask, 'continue', 0, 100))
                         duration = round(wait_cycles - 100)
                         divisor = int(np.ceil(duration / 1e9))
                         delay = int(duration / divisor)
-                        self.instrument.send_instruction(
-                            inactive_channel_mask, 'long_delay', divisor, delay)
+                        instructions.append((inactive_channel_mask, 'long_delay', divisor, delay))
 
-                self.instrument.send_instruction(
-                    inactive_channel_mask, 'branch', 0, 50)
+                instructions.append((inactive_channel_mask, 'branch', 0, 50))
 
+        self.instrument.send_instructions(*instructions)
         self.instrument.stop_programming()
 
     def start(self):
