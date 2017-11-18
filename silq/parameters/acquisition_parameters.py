@@ -662,13 +662,13 @@ class DCSweepParameter(AcquisitionParameter):
             connection_label = parameter_name
 
         self.sweep_parameters[parameter_name] = UpdateDotDict(
-            update_function=self.generate_pulse_sequence, name=parameter_name,
+            update_function=self.generate, name=parameter_name,
             sweep_voltages=sweep_voltages, connection_label=connection_label,
             offset_parameter=offset_parameter)
 
-        self.generate_pulse_sequence()
+        self.generate()
 
-    def generate_pulse_sequence(self):
+    def generate(self):
         self.pulse_sequence.clear()
 
         iter_sweep_parameters = iter(self.sweep_parameters.items())
@@ -937,13 +937,13 @@ class ESRParameter(AcquisitionParameter):
 
 class NMRParameter(AcquisitionParameter):
 
-    def __init__(self, name='NMR', update_pulse_sequence=False, **kwargs):
+    def __init__(self, name='NMR', **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
         self.pulse_sequence = NMRPulseSequence()
         self.NMR = self.pulse_sequence.NMR
-        self.NMR = self.pulse_sequence.NMR
+        self.ESR = self.pulse_sequence.ESR
         self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
         self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
 
