@@ -9,6 +9,16 @@ class PulseSequenceGenerator(PulseSequence):
         self.pulse_settings = {}
         self._latest_pulse_settings = None
 
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
+        # Update value in pulse settings if it exists
+        try:
+            if key in self.pulse_settings:
+                self.pulse_settings[key] = value
+        except AttributeError:
+            pass
+
     def generate(self):
         raise NotImplementedError('Needs to be implemented in subclass')
 
@@ -19,9 +29,9 @@ class PulseSequenceGenerator(PulseSequence):
 
 class ESRPulseSequence(PulseSequenceGenerator):
     def __init__(self, pulses=[], **kwargs):
-        super().__init__(self, pulses=pulses, **kwargs)
+        super().__init__(pulses=pulses, **kwargs)
 
-        self.pulse_settings['pre_pulses'] = []
+        self.pulse_settings['pre_pulses'] = self.pre_pulses = []
 
         self.pulse_settings['ESR'] = self.ESR = {
             'pulse': FrequencyRampPulse('adiabatic_ESR'),
@@ -30,19 +40,20 @@ class ESRPulseSequence(PulseSequenceGenerator):
             'pulse_delay': 5,
             'pulses': ['pulse']}
 
-        self.pulse_settings['post_pulses'] = [
+        self.pulse_settings['post_pulses'] = self.post_pulses = [
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
             DCPulse('read_long', acquire=True),
             DCPulse('final')]
 
-    def update_ESR_pulses(self, ESR_frequencies=None):
+    def add_ESR_pulses(self, ESR_frequencies=None):
         if ESR_frequencies is None:
             ESR_frequencies = [pulse.frequency if isinstance(pulse, Pulse)
                                else self.ESR[pulse].frequency
                                for pulse in self.ESR['pulses']]
 
-        if (self.ESR['pulse'] != self._latest_pulse_settings['ESR']['pulse']) \
+        if self._latest_pulse_settings is None or \
+                (self.ESR['pulse'] != self._latest_pulse_settings['ESR']['pulse']) \
                 or (len(ESR_frequencies) != len(self.ESR['pulses'])):
             # Resetting ESR pulses
             self.ESR['pulses'] = [deepcopy(self.ESR['pulse'])
@@ -65,27 +76,22 @@ class ESRPulseSequence(PulseSequenceGenerator):
                                            delay=self.ESR['pulse_delay'])
             self.add(self.ESR['read_pulse'])
 
-        def generate(self, ESR_frequencies=None):
-            self.clear()
-            self.add(*self.pulse_settings['pre_pulses'])
+    def generate(self, ESR_frequencies=None):
+        self.clear()
+        self.add(*self.pulse_settings['pre_pulses'])
 
-            # Update self.ESR['pulses']. Converts any pulses that are strings to
-            # actual pulses, and sets correct frequencies
-            self.add_ESR_pulses(ESR_frequencies=ESR_frequencies)
+        # Update self.ESR['pulses']. Converts any pulses that are strings to
+        # actual pulses, and sets correct frequencies
+        self.add_ESR_pulses(ESR_frequencies=ESR_frequencies)
 
-            self.pulse_sequence.add(*self.post_pulses)
+        self.add(*self.post_pulses)
 
-            # update names
-            self.names = [name for name in self.names
-                          if 'contrast_read' not in name
-                          and 'up_proportion_read' not in name]
-
-            self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
 
 class NMRPulseSequence(PulseSequenceGenerator):
     def __init__(self, pulses=[], **kwargs):
-        super().__init__(self, pulses=pulses, **kwargs)
+        super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings['NMR'] = self.NMR = {
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
@@ -100,10 +106,10 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'read_pulse': DCPulse('read_initialize', acquire=True),
             'pulse_delay': 5, 'inter_pulse_delay': 1,
             'shots_per_frequency': 25}
-        self.pulse_settings['pre_pulses'] = []
-        self.pulse_settings['post_pulses'] = []
+        self.pulse_settings['pre_pulses'] = self.pre_pulses = []
+        self.pulse_settings['post_pulses'] = self.post_pulses = []
 
-        self.generate_pulse_sequence()
+        self.generate()
 
     def add_NMR_pulses(self, pulse_sequence=None):
         if pulse_sequence is None:
@@ -141,7 +147,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
             for ESR_pulses in self.ESR['pulses']:
                 # Add a plunge and read pulse for each frequency
 
-                if not isinstance(ESR_pulses, Iterable):
+                if not isinstance(ESR_pulses, list):
                     # Treat frequency as list, as one could add multiple ESR
                     # pulses
                     ESR_pulses = [ESR_pulses]
