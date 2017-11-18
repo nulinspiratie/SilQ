@@ -298,6 +298,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if stop is None:
             stop = not self.continuous
 
+        if not self.pulse_sequence.up_to_date():
+            self.pulse_sequence.generate()
+
         if setup or (setup is None and
                      self.layout.pulse_sequence != self.pulse_sequence) or \
                 self.layout.samples() != self.samples:
@@ -910,9 +913,6 @@ class ESRParameter(AcquisitionParameter):
 
     @clear_single_settings
     def get_raw(self):
-        if not self.pulse_sequence.up_to_date():
-            self.pulse_sequence.generate()
-
         self.acquire()
 
         if len(self.ESR_frequencies) == 1:
@@ -999,9 +999,6 @@ class NMRParameter(AcquisitionParameter):
 
     @clear_single_settings
     def get_raw(self):
-        if not self.pulse_sequence.up_to_date():
-            self.pulse_sequence.generate()
-
         self.acquire()
 
         self.results = analysis.analyse_NMR(
