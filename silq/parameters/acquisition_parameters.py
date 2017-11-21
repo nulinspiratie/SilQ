@@ -35,7 +35,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, **kwargs):
+                 properties_attrs=None, wrap_set=False, **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
@@ -43,7 +43,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
-        MultiParameter.__init__(self, shapes=shapes, wrap_set=False, **kwargs)
+        MultiParameter.__init__(self, shapes=shapes, wrap_set=wrap_set, **kwargs)
 
         if self.layout is None:
             try:
@@ -1024,12 +1024,10 @@ class NMRParameter(AcquisitionParameter):
         self.ESR['pulses'] = ['pulse']
         self.post_pulses = []
 
-        self.t_read = None
-
         super().__init__(name=name,
                          names=self.names,
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 'threshold_up_proportion'],
+                         properties_attrs=['t_read', 't_skip', 'threshold_up_proportion'],
                          **kwargs)
 
         # This initializes the pulse sequence
