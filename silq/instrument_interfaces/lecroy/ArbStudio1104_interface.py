@@ -10,6 +10,8 @@ from silq.tools.general_tools import arreqclose_in_list
 from qcodes.instrument.parameter import ManualParameter
 
 
+logger = logging.getLogger(__name__)
+
 class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
@@ -119,8 +121,11 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         return additional_pulses
 
-    def setup(self, **kwargs):
+    def setup(self, is_primary=False, **kwargs):
         # TODO implement setup for modes other than stepped
+
+        if is_primary:
+            logger.warning('Arbstudio not programmed as primary instrument')
 
         # Clear waveforms and sequences
         for ch in self._output_channels.values():
