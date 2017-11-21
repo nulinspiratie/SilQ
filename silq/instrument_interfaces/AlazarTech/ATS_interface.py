@@ -211,7 +211,7 @@ class ATSInterface(InstrumentInterface):
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
             target_instrument = self._acquisition_controller.target_instrument()
-            return {target_instrument: {'skip_start': True}}
+            return {'skip_start': target_instrument}
 
     def setup_trigger(self):
         if self.acquisition_controller() == 'Triggered':
