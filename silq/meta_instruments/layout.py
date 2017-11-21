@@ -3,6 +3,7 @@ from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
 import pickle
+from time import sleep
 
 import silq
 from silq import config
@@ -617,28 +618,40 @@ class Layout(Instrument):
         Returns:
             None
         """
-        for instrument, new_instrument_flags in new_flags.items():
-            instrument_flags = self.flags[instrument]
-            for flag, val in new_instrument_flags.items():
-                if flag not in instrument_flags:
-                    # New instrument flag is not yet in existing flags,
-                    # add it to the existing flags
-                    instrument_flags[flag] = val
-                elif type(val) is dict:
-                    # New instrument flag is already in existing flags,
-                    # but the value is a dict. Update existing flag dict with
-                    #  new dict
-                    instrument_flags[flag].update(val)
-                elif not instrument_flags[flag] == val:
-                    raise RuntimeError(
-                        "Instrument {} flag {} already exists, but val {} does "
-                        "not match existing val {}".format(
-                            instrument, val, instrument_flags[flag]))
-                else:
-                    # Instrument Flag exists, and values match
-                    pass
+        if 'skip_start' in new_flags:
+            self.flags['skip_start'].add(new_flags['skip_start'])
 
-    def setup(self, samples=None, **kwargs):
+        if 'post_start_actions' in new_flags:
+            self.flags['post_start_actions'] += new_flags['post_start_actions']
+
+        if 'start_last' in new_flags:
+            self.flags['start_last'].add(new_flags['start_last'])
+
+        if 'setup' in new_flags:
+            for instrument_name, new_instrument_flags in new_flags['setup'].items():
+                instrument_flags = self.flags['setup'].get(instrument_name, {})
+                for flag, val in new_instrument_flags.items():
+                    if flag not in instrument_flags:
+                        # New instrument flag is not yet in existing flags,
+                        # add it to the existing flags
+                        instrument_flags[flag] = val
+                    elif type(val) is dict:
+                        # New instrument flag is already in existing flags,
+                        # but the value is a dict. Update existing flag dict with
+                        #  new dict
+                        instrument_flags[flag].update(val)
+                    elif not instrument_flags[flag] == val:
+                        raise RuntimeError(
+                            f"Instrument {instrument_name} flag {flag} already "
+                            f"exists, but val {val} does not match existing "
+                            f"val {instrument_flags[flag]}")
+                    else:
+                        # Instrument Flag exists, and values match
+                        pass
+                # Set dict since it may not have existed previously
+                self.flags['setup'][instrument_name] = instrument_flags
+
+    def setup(self, samples=None, repeat=True,**kwargs):
         """
         Sets up all the instruments after having targeted a pulse sequence.
         Instruments are setup through their respective interfaces, and only
@@ -649,6 +662,7 @@ class Layout(Instrument):
         and applied at this stage.
         Args:
             samples: Number of samples (by default uses previous value)
+            repeat: Whether to repeat pulse sequence indefinitely or stop at end
             **kwargs: additional kwargs sent to all interfaces being setup.
 
         Returns:
@@ -663,7 +677,11 @@ class Layout(Instrument):
             self.stop()
 
         # Initialize with empty flags, used for instructions between interfaces
-        self.flags = {instrument: {} for instrument in self.instruments()}
+        self.flags = {'setup': {},
+                      'skip_start': set(),
+                      'post_start_actions': [],
+                      'start_last': set(),
+                      'auto_stop': None}
 
         if samples is not None:
             self.samples(samples)
@@ -675,8 +693,7 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence:
                 # Get existing setup flags (if any)
-                instrument_flags = self.flags[interface.instrument_name()]
-                setup_flags = instrument_flags.get('setup', {})
+                setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
@@ -687,11 +704,16 @@ class Layout(Instrument):
                 flags = interface.setup(samples=self.samples(),
                                         is_primary=is_primary,
                                         output_connections=output_connections,
+                                        repeat=repeat,
                                         **setup_flags, **kwargs)
                 if flags:
-                    logger.debug(f'Received setup flags {setup_flags} from '
-                                 f'interface {interface.name}')
+                    logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
+
+        if self.flags['auto_stop'] is None:
+            # auto_stop flag hasn't been specified.
+            # Set to True if the pulse sequence doesn't repeat, False otherwise
+            self.flags['auto_stop'] = not repeat
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
@@ -702,7 +724,7 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self):
+    def start(self, auto_stop=None):
         """
         Starts all the instruments except the acquisition instrument
         The interface start order is by hierarchy, i.e. instruments that trigger
@@ -715,16 +737,42 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
                 continue
-            elif self.flags[interface.instrument_name()].get('skip_start',
-                                                             False):
-                logger.info('Interface {interface.name} has flag to skip start')
+            elif interface.instrument_name() in self.flags['skip_start']:
+                logger.info('Skipping starting {interface.name} (flag skip_start)')
+                continue
+            elif interface in self.flags['start_last']:
+                logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
                 interface.start()
                 logger.debug(f'{interface} started')
             else:
-                pass
+                logger.debug(f'Skipping starting {interface} (no pulse sequence)')
+
+        for interface in self.flags['start_last']:
+            interface.start()
+            logger.debug(f'Started {interface} after others (flag start_last)')
+
+        for action in self.flags['post_start_actions']:
+            action()
+            logger.debug(f'Called post_start_action {action}')
+
         logger.debug('Layout started')
+
+        if auto_stop is None:
+            auto_stop = self.flags['auto_stop']
+
+        if auto_stop is not False:
+            if auto_stop is True:
+                # Wait for three times the duration of the pulse sequence, then stop instruments
+                sleep(self.pulse_sequence.duration * 3 / 1000)
+            elif isinstance(auto_stop, (int, float)):
+                # Wait for duration specified in auto_stop
+                sleep(auto_stop)
+            else:
+                raise SyntaxError('auto_stop must be either True or a number')
+                self.stop()
+
 
     def stop(self):
         """
