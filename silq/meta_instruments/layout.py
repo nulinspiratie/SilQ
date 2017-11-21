@@ -660,6 +660,18 @@ class Layout(Instrument):
         other instruments are never setup before the triggered instruments.
         Any flags, such as to skip starting an instrument, are also collected
         and applied at this stage.
+        
+        Interfaces can return a dict of flags. The following flags are accepted:
+        - setup (dict): key (instrument_name) value setup_flags
+            When the interface with instrument_name (key) is setup, the 
+            setup flags (value) will be passed along
+        - skip_start (str): instrument name that should be skipped when 
+            calling layout.start()
+        - post_start_actions (list(callable)): callables to perform after all 
+            interfaces are started
+        - start_last (interface) interface that should be started after others
+        
+        
         Args:
             samples: Number of samples (by default uses previous value)
             repeat: Whether to repeat pulse sequence indefinitely or stop at end
