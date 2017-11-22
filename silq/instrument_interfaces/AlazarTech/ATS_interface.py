@@ -211,7 +211,7 @@ class ATSInterface(InstrumentInterface):
         if self.acquisition_controller() == 'SteeredInitialization':
             # Add instruction for target instrument setup and to skip start
             target_instrument = self._acquisition_controller.target_instrument()
-            return {target_instrument: {'skip_start': True}}
+            return {'skip_start': target_instrument}
 
     def setup_trigger(self):
         if self.acquisition_controller() == 'Triggered':
@@ -393,6 +393,16 @@ class ATSInterface(InstrumentInterface):
                     for k in range(segments):
                         pulse_traces[pulse.full_name][ch][k] = np.mean(
                             pulse_trace[:, segments_idx[k]:segments_idx[k + 1]])
+                elif 'trace_segment' in pulse.average:
+                    segments = int(pulse.average.split(':')[1])
+
+                    segments_idx = [int(round(pts * idx / segments))
+                                    for idx in np.arange(segments + 1)]
+
+                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
+                    for k in range(segments):
+                        pulse_traces[pulse.full_name][ch][k] = \
+                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]]
                 elif pulse.average == 'none':
                     pulse_traces[pulse.full_name][ch] = pulse_trace
                 else:

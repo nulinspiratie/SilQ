@@ -9,6 +9,7 @@ import logging
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
+from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
@@ -34,7 +35,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, **kwargs):
+                 properties_attrs=None, wrap_set=False, **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
@@ -42,7 +43,13 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
-        MultiParameter.__init__(self, shapes=shapes, **kwargs)
+        MultiParameter.__init__(self, shapes=shapes, wrap_set=wrap_set, **kwargs)
+
+        if self.layout is None:
+            try:
+                AcquisitionParameter.layout = Instrument.find_instrument('layout')
+            except KeyError:
+                logger.warning(f'No layout found for {self}')
 
         self.silent = True
         """Do not print results after acquisition"""
@@ -169,11 +176,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 base_folder = active_dataset.location
             elif hasattr(active_dataset, '_location'):
                 base_folder = active_dataset._location
-
-            if subfolder is None and base_folder is not None:
-                subfolder = f'traces_{self.name}'
             else:
                 base_folder = DataSet.location_provider(DataSet.default_io)
+                subfolder = None
+
+        if subfolder is None and base_folder is not None:
+                subfolder = f'traces_{self.name}'
 
         self.dataset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
@@ -324,6 +332,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     #                 axes[k].plot([threshold_voltage] * len(trace), 'r')
     #             axes[k].locator_params(nbins=2)
 
+    def set(self, **kwargs):
+        return self.single_settings(**kwargs)()
+
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
@@ -343,7 +354,7 @@ class DCParameter(AcquisitionParameter):
                          **kwargs)
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
@@ -514,7 +525,7 @@ class TraceParameter(AcquisitionParameter):
         return traces
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         traces = self.acquire()
@@ -770,7 +781,7 @@ class DCSweepParameter(AcquisitionParameter):
         return self.results
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
         return tuple(self.results[name] for name in self.names)
 
@@ -796,7 +807,7 @@ class EPRParameter(AcquisitionParameter):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         self.results = analysis.analyse_EPR(pulse_traces=self.data,
@@ -834,7 +845,7 @@ class ESRParameter(AcquisitionParameter):
                     'pulse_delay': 5}
         self.ESR['pulses'] = ['pulse']
 
-        self._pulse_sequence_attributes = None
+        self._pulse_sequence_attributes = {}
 
         super().__init__(name=name,
                          names=['contrast', 'dark_counts',
@@ -843,6 +854,7 @@ class ESRParameter(AcquisitionParameter):
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
 
+        self._update_pulse_sequence_attributes()
         self.update_pulse_sequence()
 
     @property
@@ -890,11 +902,12 @@ class ESRParameter(AcquisitionParameter):
         # Initialize pulse sequence
         self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
 
-        for ESR_pulse in self.ESR['pulses']:
-            if isinstance(ESR_pulse, str):
-                # Pulse is a reference to some pulse in self.ESR
-                ESR_pulse = self.ESR[ESR_pulse]
+        # Update self.ESR['pulses']. Converts any pulses that are strings to
+        # actual pulses, and sets correct frequencies
+        # Also updates self._pulse_sequence_attributes
+        self.update_ESR_pulse_sequence()
 
+        for ESR_pulse in self.ESR['pulses']:
             # Add a plunge and read pulse for each frequency
             plunge_pulse, = self.pulse_sequence.add(self.ESR['plunge_pulse'])
             ESR_pulse, = self.pulse_sequence.add(ESR_pulse)
@@ -909,11 +922,34 @@ class ESRParameter(AcquisitionParameter):
                       if 'contrast_read' not in name
                       and 'up_proportion_read' not in name]
 
+        self._update_pulse_sequence_attributes()
+
+    def _update_pulse_sequence_attributes(self):
         self._pulse_sequence_attributes = {
             'pre_pulses': deepcopy(self.pre_pulses),
             'post_pulses': deepcopy(self.post_pulses),
             'ESR': deepcopy(self.ESR)
         }
+
+    def update_ESR_pulse_sequence(self, ESR_frequencies=None):
+        if ESR_frequencies is None:
+            ESR_frequencies = self.ESR_frequencies
+
+        if (self.ESR['pulse'] != self._pulse_sequence_attributes['ESR']['pulse']) \
+                or (len(ESR_frequencies) != len(self.ESR['pulses'])):
+            # Resetting ESR pulses
+            self.ESR['pulses'] = [copy(self.ESR['pulse'])
+                                  for _ in range(len(ESR_frequencies))]
+        else:
+            # Convert any pulse strings to pulses if necessary
+            self.ESR['pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
+                                  for p in self.ESR['pulses']]
+
+        # Make sure all pulses have proper ESR frequency
+        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
+            pulse.frequency = ESR_frequency
+
+        self._update_pulse_sequence_attributes()
 
     def _matches_pulse_sequence_attrs(self):
         # Create dict of current pulse sequence attributes
@@ -936,18 +972,11 @@ class ESRParameter(AcquisitionParameter):
         if len(ESR_frequencies) != len(self.ESR['pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR['pulses'] = [copy(self.ESR['pulse'])
-                                  for _ in range(len(ESR_frequencies))]
 
-        # Convert any pulse strings to pulses if necessary
-        self.ESR['pulses'] = [self.ESR[p] if isinstance(p, str) else p
-                              for p in self.ESR['pulses']]
-
-        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
-            pulse.frequency = ESR_frequency
+        self.update_ESR_pulse_sequence(ESR_frequencies=ESR_frequencies)
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         if not self._matches_pulse_sequence_attrs():
             self.update_pulse_sequence()
 
@@ -995,12 +1024,10 @@ class NMRParameter(AcquisitionParameter):
         self.ESR['pulses'] = ['pulse']
         self.post_pulses = []
 
-        self.t_read = None
-
         super().__init__(name=name,
                          names=self.names,
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 'threshold_up_proportion'],
+                         properties_attrs=['t_read', 't_skip', 'threshold_up_proportion'],
                          **kwargs)
 
         # This initializes the pulse sequence
@@ -1011,15 +1038,17 @@ class NMRParameter(AcquisitionParameter):
     def names(self):
         names = []
         if len(self.ESR_frequencies) == 1:
-            names += ['flips', 'up_proportions']
+            names += ['flips', 'flip_probability', 'up_proportions']
         else:
             for k, _ in enumerate(self.ESR_frequencies):
-                names += [f'flips_{k}', f'up_proportions_{k}']
+                names += [f'flips_{k}',
+                          f'flip_probability_{k}',
+                          f'up_proportions_{k}']
         return names
 
     @property_ignore_setter
     def shapes(self):
-        return ((), (self.samples, )) * len(self.ESR_frequencies)
+        return ((), (), (self.samples, )) * len(self.ESR_frequencies)
 
     @property_ignore_setter
     def units(self):
@@ -1131,7 +1160,7 @@ class NMRParameter(AcquisitionParameter):
             pulse.frequency = ESR_frequency
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         if not self._matches_pulse_sequence_attrs():
             self.update_pulse_sequence()
 
@@ -1181,7 +1210,7 @@ class T1Parameter(AcquisitionParameter):
         return self.pulse_sequence['plunge'].duration
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         # Analysis
@@ -1231,7 +1260,7 @@ class DarkCountsParameter(AcquisitionParameter):
         super().acquire(**kwargs)
 
     @clear_single_settings
-    def get(self):
+    def get_raw(self):
         self.acquire()
 
         fidelities = analysis.analyse_read(
@@ -1283,7 +1312,8 @@ class VariableReadParameter(AcquisitionParameter):
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = {'read_voltage':
@@ -1348,7 +1378,8 @@ class NeuralNetworkParameter(AcquisitionParameter):
                                                neural_network_results))
         return self.neural_network_results
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = dict(**self.neural_network_results)
@@ -1403,7 +1434,8 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
     def base_folder(self, base_folder):
         self.target_parameter.base_folder = base_folder
 
-    def get(self):
+    @clear_single_settings
+    def get_raw(self):
         self.acquire()
 
         self.results = {}
@@ -1430,4 +1462,3 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
             self.print_results()
 
         return [self.results[name] for name in self.names]
-
