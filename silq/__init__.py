@@ -4,7 +4,7 @@ import warnings
 import logging
 import json
 from .tools.config import DictConfig, ListConfig
-from .tools.parameter_tools import create_set_vals
+from .tools.parameter_tools import SweepDependentValues
 
 import qcodes as qc
 
@@ -31,6 +31,9 @@ def _save_config(self, location=None):
     try:
         if location is None:
             location = self.location
+        if not location and hasattr(self, '_location'):
+            # Location is False, dataset created in qc.Measure, ignore
+            return
 
         if not os.path.isabs(location):
             location = os.path.join(qc.DataSet.default_io.base_location, location)
@@ -141,11 +144,18 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 name = name
                 break
 
-    if mode is not None:
-        select = configurations[name]['modes'][mode].get('select', None)
-        ignore = configurations[name]['modes'][mode].get('ignore', None)
+    try:
+        configuration = next(val for key, val in get_configurations().items()
+                             if key.lower() == name.lower())
+    except StopIteration:
+        raise NameError(f'Configuration {name} not found. Allowed '
+                        f'configurations are {get_configurations().keys()}')
 
-    folder = os.path.join(experiments_folder, configurations[name]['folder'])
+    if mode is not None:
+        select = configuration['modes'][mode].get('select', None)
+        ignore = configuration['modes'][mode].get('ignore', None)
+
+    folder = os.path.join(experiments_folder, configuration['folder'])
     config.__dict__['folder'] = os.path.join(experiments_folder, folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
@@ -205,6 +215,36 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
         return SweepFixedValues(self, start=start, stop=stop,
                                 step=step, num=num)
     else:
-        return create_set_vals(set_parameters=self, step=step,
-                                 step_percentage=step_percentage, points=num)
+        return SweepDependentValues(parameter=self, step=step,
+                                    step_percentage=step_percentage, num=num)
 qc.Parameter.sweep = _sweep
+
+
+# Override ActiveLoop._run_wrapper to stop the layout and clear settings of
+# any accquisition parameters in the loop after the loop has completed.
+_qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
+def _run_wrapper(self, set_active=True, *args, **kwargs):
+
+    def clear_all_acquisition_parameter_settings(loop):
+        from silq.parameters import AcquisitionParameter
+
+        for action in loop:
+            if isinstance(action, qc.loops.ActiveLoop):
+                clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, AcquisitionParameter):
+                logger.info(f'End-of-loop: clearing settings for {action}')
+                action.clear_settings()
+
+    try:
+        _qc_run_wrapper(self, set_active=set_active, *args, **kwargs)
+    finally:
+        try:
+            layout = qc.Instrument.find_instrument('layout')
+            layout.stop()
+            logger.info('Stopped layout at end of loop')
+        except KeyError:
+            logger.warning(f'No layout found to stop')
+
+        # Clear all settings for any acquisition parameters in the loop
+        clear_all_acquisition_parameter_settings(self)
+qc.loops.ActiveLoop._run_wrapper = _run_wrapper

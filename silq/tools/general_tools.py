@@ -518,7 +518,7 @@ class property_ignore_setter(object):
         pass
 
 
-def freq_to_str(frequency, fmt='{:.3f}'):
+def freq_to_str(frequency, fmt='{:.15g}'):
     if frequency > 1e9:
         frequency_string = fmt.format(frequency/1e9) + ' GHz'
     elif frequency > 1e6:

@@ -56,7 +56,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         else:
             return []
 
-    def setup(self, final_instruction='loop', is_primary=True, **kwargs):
+    def setup(self, final_instruction='loop', is_primary=True, repeat=True,
+              **kwargs):
         #Initial pulseblaster commands
         self.instrument.setup()
 
@@ -159,13 +160,25 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
                 inst_list.append(inst)
 
-        # Loop back to beginning (wait if not primary)
-        inst = DEFAULT_INSTR + (0, 'branch', 0, 100)
-        inst_list.append(inst)
+        if repeat:
+            # Loop back to beginning (wait if not primary)
+            inst_list.append(DEFAULT_INSTR + (0, 'branch', 0, 100))
+        else:
+            # Stop pulse sequence
+            inst_list.append(DEFAULT_INSTR + (0, 'stop', 0, 100))
+
 
         # Note that this command does not actually send anything to the DDS,
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
+
+        if not is_primary:
+            # Return flag to ensure this instrument is started after its
+            # triggering instrument. This is because it is triggered when its
+            # trigger voltage reaches below a threshold, meaning that the triggering
+            # voltage must be high when this instrument is started.
+            return {'start_last': self}
+
 
     def start(self):
         self.instrument.start()

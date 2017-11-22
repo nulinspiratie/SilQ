@@ -119,7 +119,8 @@ class Pulse(HasTraits):
     def _valid_average(self, proposal):
         if proposal['value'] in ['none', 'trace', 'point']:
             return proposal['value']
-        elif 'point_segment' in proposal['value']:
+        elif ('point_segment' in proposal['value'] or
+                      'trace_segment' in proposal['value']):
             return proposal['value']
         else:
             return TraitError
@@ -170,7 +171,8 @@ class Pulse(HasTraits):
 
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
-                         '_handle_properties_config_signal', '_connected_attrs']
+                         '_handle_properties_config_signal', '_connected_attrs',
+                         'properties_config', 'pulse_config']
 
         if not isinstance(other, self.__class__):
             return False
@@ -601,13 +603,15 @@ class FrequencyRampPulse(Pulse):
         if frequency_start is not None and frequency_stop is not None:
             self.frequency = (frequency_start + frequency_stop) / 2
             self.frequency_deviation = (frequency_stop - frequency_start)
-        elif frequency is not None and frequency_deviation is not None:
-            self.frequency = frequency
-            self.frequency_deviation = frequency_deviation
         else:
-            self.frequency = self.pulse_config.get('frequency', None)
-            self.frequency_deviation = self.pulse_config.get(
-                'frequency_deviation', None)
+            self.frequency = frequency
+            if self.frequency is None:
+                self.frequency = self.pulse_config.get('frequency', None)
+
+            self.frequency_deviation = frequency_deviation
+            if self.frequency_deviation is  None:
+                self.frequency_deviation = self.pulse_config.get(
+                    'frequency_deviation', None)
 
         self._frequency_final = frequency_final
         self.frequency_sideband = self._value_or_config('frequency_sideband',

@@ -2,7 +2,7 @@ import numpy as np
 import peakutils
 import logging
 
-__all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
+__all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_load', 'analyse_empty', 'analyse_read',
            'analyse_read_long', 'analyse_EPR', 'analyse_multi_read_EPR',
            'analyse_PR', 'analyse_NMR']
@@ -559,12 +559,15 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
         # Determine number of flips
         has_high_contrast = up_proportions > threshold_up_proportion
 
+        flips = sum(abs(np.diff(has_high_contrast)))
         if distinct_reads_per_trace == 1:
             results['up_proportions'] = up_proportions
-            results['flips'] = sum(abs(np.diff(has_high_contrast)))
+            results['flips'] = flips
+            results['flip_probability'] = flips / (samples - 1)
         else:
             results[f'up_proportions_{read_idx}'] = up_proportions
-            results[f'flips_{read_idx}'] = sum(abs(np.diff(has_high_contrast)))
+            results[f'flips_{read_idx}'] = flips
+            results[f'flip_probability_{read_idx}'] = flips / (samples - 1)
 
     return results
 
