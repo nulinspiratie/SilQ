@@ -155,7 +155,7 @@ class SinePulseImplementation(PulseImplementation):
 
         if frequency_deviation > 0:
             amplitude = (self.pulse.frequency - frequency) / frequency_deviation
-            assert abs(amplitude) < 1, \
+            assert abs(amplitude) < 1 + 1e-13, \
                 f'amplitude {amplitude} cannot be higher than 1'
 
             additional_pulses.append(

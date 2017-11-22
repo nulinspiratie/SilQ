@@ -3,6 +3,7 @@ import collections
 from blinker import signal
 import json
 from functools import partial
+import copy
 
 import qcodes as qc
 from qcodes.config.config import DotDict
@@ -239,6 +240,20 @@ class DictConfig(SubConfig, DotDict):
         config = super().load(folder=folder)
         update(self, config)
 
+    def to_dict(self):
+        d = {}
+        for key, val in self.items():
+            if isinstance(val, DictConfig):
+                d[key] = val.to_dict()
+            elif isinstance(val, ListConfig):
+                d[key] = val.to_list()
+            else:
+                d[key] = val
+        return d
+
+    def __deepcopy__(self, memo):
+        return copy.deepcopy(self.to_dict())
+
 
 class ListConfig(SubConfig, list):
     def __init__(self, name, folder=None, parent=None, config=None, **kwargs):
@@ -255,6 +270,19 @@ class ListConfig(SubConfig, list):
         config = super().load(folder=folder)
         self += config
 
+    def to_list(self):
+        l = []
+        for val in self:
+            if isinstance(val, DictConfig):
+                l.append(val.to_dict())
+            elif isinstance(val, ListConfig):
+                l.append(val.to_list())
+            else:
+                l.append(val)
+        return l
+
+    def __deepcopy__(self, memo):
+        return copy.deepcopy(self.to_list())
 
 def update(d, u):
     """ 
