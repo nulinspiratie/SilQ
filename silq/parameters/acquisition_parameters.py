@@ -1323,6 +1323,47 @@ class VariableReadParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
+class BlipsParameter(AcquisitionParameter):
+    def __init__(self, name='count_blips', duration=None, **kwargs):
+
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name='read', acquire=True, average='none')])
+
+        super().__init__(name=name,
+                         names=['blips',
+                                'blips_per_second',
+                                'mean_low_blip_duration',
+                                'mean_high_blip_duration'],
+                         units=['', '1/s', 'ms', 'ms'],
+                         shapes=((), (), (),()),
+                         snapshot_value=False,
+                         continuous = True,
+                         **kwargs)
+        self.samples = 1
+        self.duration = duration
+
+    @property
+    def duration(self):
+        return self.pulse_sequence['read'].duration
+
+    @duration.setter
+    def duration(self, duration):
+        self.pulse_sequence['read'].duration = duration
+
+    @clear_single_settings
+    def get_raw(self):
+        self.acquire()
+        self.results = analysis.count_blips(traces=self.data['read']['output'],
+                                            t_skip=0,
+                                            sample_rate=500e3,
+                                            threshold_voltage=0.3)
+
+        if not self.silent:
+            self.print_results()
+
+        return tuple(self.results[name] for name in self.names)
+
+
 class NeuralNetworkParameter(AcquisitionParameter):
     def __init__(self, target_parameter, input_names, output_names=None,
                  model_filepath=None, include_target_output=None, **kwargs):
