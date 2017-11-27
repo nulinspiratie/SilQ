@@ -1,8 +1,9 @@
 import numpy as np
 import logging
+from collections import Iterable
 
 import qcodes as qc
-from qcodes.loops import active_data_set
+from qcodes.loops import active_data_set, Loop, BreakIf
 from qcodes.data import hdf5_format
 from qcodes.instrument.parameter import MultiParameter
 
@@ -13,6 +14,7 @@ from silq.tools.parameter_tools import create_set_vals
 from silq.measurements.measurement_types import Loop0DMeasurement, \
     Loop1DMeasurement, Loop2DMeasurement, ConditionSet, TruthCondition
 from silq.measurements.measurement_modules import MeasurementSequence
+from silq.parameters import DCParameter, CombinedParameter
 
 __all__ = ['MeasurementParameter', 'DCMultisweepParameter',
            'MeasurementSequenceParameter', 'SelectFrequencyParameter',
@@ -37,8 +39,6 @@ class MeasurementParameter(SettingsClass, MultiParameter):
         self.silent = silent
         self.acquisition_parameter = acquisition_parameter
 
-        self.loc_provider = qc.data.location.FormatLocation(
-            fmt='#{counter}_{name}_{time}')
         self._meta_attrs.extend(['acquisition_parameter_name'])
 
     def __repr__(self):
@@ -51,22 +51,32 @@ class MeasurementParameter(SettingsClass, MultiParameter):
             return attribute_from_config(item)
 
     @property
+    def loc_provider(self):
+        if self.base_folder is None:
+            fmt = '{date}/#{counter}_{name}_{time}'
+        else:
+            fmt = self.base_folder + '/#{counter}_{name}_{time}'
+        return qc.data.location.FormatLocation(fmt=fmt)
+
+    @property
     def acquisition_parameter_name(self):
         return self.acquisition_parameter.name
 
     @property
     def base_folder(self):
         """
-        Obtain measurement base folder (if any). 
+        Obtain measurement base folder (if any).
         Returns:
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        dataset = active_data_set()
-        if dataset is None:
+        active_dataset = active_data_set()
+        if active_dataset is None:
             return None
-        else:
-            return dataset.location
+        elif getattr(active_dataset, 'location', None):
+            return active_dataset.location
+        elif hasattr(active_dataset, '_location'):
+            return active_dataset._location
 
     @property
     def discriminant(self):
@@ -89,9 +99,308 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in self.results.items():
-                logger.info(f'{name}: {result:.3f}')
+                print(f'{name}: {result:.3f}')
         elif hasattr(self, 'results'):
-            logger.info(f'{self.name}: {self.results[self.name]:.3f}')
+            print(f'{self.name}: {self.results[self.name]:.3f}')
+
+
+class RetuneBlipsParameter(MeasurementParameter):
+    def __init__(self,
+                 name='retune_blips',
+                 coulomb_peak_parameter=None,
+                 blips_parameter=None,
+                 sweep_parameter=None,
+                 sweep_vals=None,
+                 tune_to_coulomb_peak=True,
+                 tune_to_optimum=True,
+                 model_filepath=None,
+                 voltage_limit=None,
+                 **kwargs):
+        # Load model here because it takes quite a while to load
+        from keras.models import load_model
+
+        super().__init__(name=name,
+                         names=['optimal_vals', 'offsets'],
+                         units=['mV', 'mV'],
+                         shapes=((), ()),
+                         **kwargs)
+
+        self.sweep_parameter = sweep_parameter
+        self.coulomb_peak_parameter = coulomb_peak_parameter
+        self.blips_parameter = blips_parameter
+        self.sweep_vals = sweep_vals
+        self.tune_to_coulomb_peak = tune_to_coulomb_peak
+        self.tune_to_optimum = tune_to_optimum
+
+        self.initial_offsets = None
+        self.voltage_limit = voltage_limit
+
+        self.model_filepath = model_filepath
+        if model_filepath is not None:
+            self.model = self.model = load_model(self.model_filepath)
+        else:
+            logger.warning(f'No neural network model loaded for {self}')
+            self.model = None
+
+        self.continuous = True
+        self.results = {}
+
+        # Tools to only execute every nth call
+        self.every_nth = None
+        self.idx = 0
+
+        self._meta_attrs.extend(['sweep_vals',
+                                 'tune_to_coulomb_peak',
+                                 'tune_to_optimum',
+                                 'initial_offsets',
+                                 'voltage_limit',
+                                 'every_nth'])
+
+    @property_ignore_setter
+    def shapes(self):
+        if isinstance(self.sweep_parameter, CombinedParameter):
+            shape = (len(self.sweep_parameter.parameters), )
+        else:
+            shape = ()
+        return (shape,) * len(self.names)
+
+    def create_loop(self):
+        loop = Loop(self.sweep_parameter[self.sweep_vals]).each(
+            self.blips_parameter)
+        return loop
+
+    def calculate_optimum(self):
+        if self.model is None:
+            logger.warning('No Neural network model provided. skipping retune')
+            return None
+
+        blips_per_second = self.data.blips_per_second.ndarray
+        mean_low_blip_duration = self.data.mean_low_blip_duration.ndarray
+        mean_high_blip_duration = self.data.mean_high_blip_duration.ndarray
+
+        if len(blips_per_second) != 21:
+            raise RuntimeError(f'Must have 21 sweep vals, not {len(blips_per_second)}')
+
+        data = np.zeros((len(blips_per_second), 3))
+
+        # normalize data
+        # Blips per second gets a gaussian normalization
+        data[:,0] = (blips_per_second - np.mean(blips_per_second)) / np.std(blips_per_second)
+
+        # blip durations get a logarithmic normalization, since the region
+        # of interest has a low value
+        log_offset = 1 # add offset since otherwise log(0) raises an error
+        data[:,1] = np.log10(mean_low_blip_duration + log_offset)
+        data[:,2] = np.log10(mean_high_blip_duration + log_offset)
+
+        data = np.nan_to_num(data)
+        data = np.expand_dims(data, 0)
+
+        # Predict optimum value
+        self.neural_network_results = self.model.predict(data)[0, 0]
+
+        # Scale results
+        # Neural network output is between -1 (sweep_vals[0]) and +1 (sweep_vals[-1])
+        scale_factor = (self.sweep_vals[-1] - self.sweep_vals[0]) / 2
+        self.optimal_val =  self.neural_network_results * scale_factor
+
+        return self.optimal_val
+
+
+    @clear_single_settings
+    def get_raw(self):
+        self.idx += 1
+        if (self.every_nth is not None
+            and (self.idx - 1) % self.every_nth != 0
+            and self.results is not None):
+            logger.debug(f'skipping iteration {self.idx} % {self.every_nth}')
+            # Skip this iteration, return old results
+            return [self.results[name] for name in self.names]
+
+
+        initial_set_val = self.sweep_parameter()
+        initial_offsets = self.sweep_parameter.offsets
+
+        if self.initial_offsets is None:
+            # Set initial offsets to ensure tuning does not reach out of bounds
+            self.initial_offsets = initial_offsets
+
+        # Get Coulomb peak
+        if self.tune_to_coulomb_peak:
+            self.coulomb_peak_parameter()
+
+        self.loop = self.create_loop()
+        self.data = self.loop.get_data_set(name='count_blips',
+                                           location=self.loc_provider)
+
+        try:
+            self.loop.run(set_active=False, quiet=(active_data_set() is not None))
+        finally:
+            self.sweep_parameter(initial_set_val)
+
+        if self.model_filepath is not None:
+            optimum = self.calculate_optimum()
+
+            if optimum is not None and self.tune_to_optimum:
+                if self.voltage_limit is not None:
+                    optimum_vals = self.sweep_parameter.calculate_individual_values(optimum)
+                    voltage_differences = np.array(self.initial_offsets) - optimum_vals
+                    if max(abs(voltage_differences)) > self.voltage_limit:
+                        logging.warning(f'tune voltage {optimum_vals} outside '
+                                        f'range, tuning back to initial value')
+                        self.sweep_parameter.offsets = self.initial_offsets
+                        self.sweep_parameter(0)
+                    else:
+                        self.sweep_parameter(optimum)
+                        self.sweep_parameter.zero_offset()
+                else:
+                    self.sweep_parameter(optimum)
+                    self.sweep_parameter.zero_offset()
+
+        self.results = {
+            'optimal_vals': self.sweep_parameter.offsets,
+            'offsets': [offset - initial_offset for offset, initial_offset in
+                        zip(self.sweep_parameter.offsets, initial_offsets)]
+        }
+
+        return [self.results[name] for name in self.names]
+
+
+class CoulombPeakParameter(MeasurementParameter):
+    def __init__(self,
+                 name='coulomb_peak',
+                 sweep_parameter=None,
+                 acquisition_parameter=None,
+                 combined_set_parameter=None,
+                 DC_peak_offset=None,
+                 tune_to_peak=True,
+                 min_voltage=0.5,
+                 **kwargs):
+
+        if acquisition_parameter is None:
+            acquisition_parameter = DCParameter()
+
+        self.sweep_parameter = sweep_parameter
+        self.sweep = {'range': [],
+                      'step_percentage': None,
+                      'num': None}
+        self.min_voltage = min_voltage
+
+        self.combined_set_parameter = combined_set_parameter
+        self.DC_peak_offset = DC_peak_offset
+
+        self.tune_to_peak = tune_to_peak
+
+        self.results = {}
+
+        super().__init__(name=name,
+                         names=['optimum', 'max_voltage', 'DC_voltage'],
+                         units=['V', 'V', 'V'],
+                         shapes=((), (), ()),
+                         acquisition_parameter=acquisition_parameter,
+                         wrap_set=False, **kwargs)
+
+        self._meta_attrs += ['min_voltage']
+
+    def calculate_sweep_vals(self):
+        if self.sweep_parameter is None:
+            return None
+        elif self.sweep['range']:
+            return self.sweep_parameter[self.sweep['range']]
+        elif self.sweep['step_percentage'] and self.sweep['num']:
+            return self.sweep_parameter.sweep(
+                step_percentage=self.sweep['step_percentage'],
+            num=self.sweep['num'])
+        else:
+            return None
+
+    @property_ignore_setter
+    def names(self):
+        sweep_vals = self.calculate_sweep_vals()
+        if sweep_vals is not None:
+            sweep_parameter = sweep_vals.parameter
+            return [f'{sweep_parameter.name}_optimum', 'max_voltage', 'DC_voltage']
+        else:
+            return ['optimum', 'max_voltage', 'DC_voltage']
+
+    @property_ignore_setter
+    def shapes(self):
+        sweep_vals = self.calculate_sweep_vals()
+        if sweep_vals is not None:
+            return ((), (), (len(sweep_vals),))
+        else:
+            return ((), (), ())
+
+    def create_loop(self, sweep_vals):
+        if sweep_vals is None:
+            raise RuntimeError('Must define self.sweep_vals')
+
+        loop = Loop(sweep_vals).each(self.acquisition_parameter)
+        return loop
+
+    @clear_single_settings
+    def get_raw(self):
+        if self.DC_peak_offset is not None:
+            if self.combined_set_parameter is None:
+                raise RuntimeError('Must specify combined_set_parameter')
+
+            # Add DC offset
+            self.combined_set_parameter(self.DC_peak_offset)
+
+        #  Calculate sweep vals
+        initial_set_val = self.sweep_parameter()
+        sweep_vals = self.calculate_sweep_vals()
+
+        self.loop = self.create_loop(sweep_vals=sweep_vals)
+
+        self.data = self.loop.get_data_set(name=self.name,
+                                           location=self.loc_provider)
+
+        self.acquisition_parameter.setup()
+
+        try:
+            self.loop.run(set_active=False, quiet=(active_data_set() is not None))
+        except:
+            if self.DC_peak_offset is None:
+                self.sweep_parameter(initial_set_val)
+            else:
+                self.combined_set_parameter(0)
+                raise
+
+        if self.min_voltage is not None and np.max(self.data.DC_voltage) < self.min_voltage:
+            # Could not find coulomb peak
+            self.results[self.names[0]] = np.nan
+
+            # Tune back to original position
+            if self.DC_peak_offset is None:
+                self.sweep_parameter(initial_set_val)
+            else:
+                self.combined_set_parameter(0)
+        else:
+            # Found coulomb peak
+            max_idx = np.argmax(self.data.DC_voltage)
+            max_set_val = sweep_vals[max_idx]
+            self.results[self.names[0]] = max_set_val
+
+            if self.tune_to_peak:
+                if self.DC_peak_offset is None:
+                    self.sweep_parameter(max_set_val)
+                else:
+                    # Update combined_set_parameter offset
+                    peak_offset = max_set_val - initial_set_val
+
+                    sweep_parameter_idx = next(
+                        index for index, item in enumerate(self.combined_set_parameter.parameters)
+                        if item is self.sweep_parameter)
+
+                    self.combined_set_parameter.offsets[sweep_parameter_idx] += peak_offset
+
+                    self.combined_set_parameter(0)
+
+        self.results['max_voltage'] = np.max(self.data.DC_voltage)
+        self.results['DC_voltage'] = self.data.DC_voltage
+
+        return [self.results[name] for name in self.names]
 
 
 class DCMultisweepParameter(MeasurementParameter):
