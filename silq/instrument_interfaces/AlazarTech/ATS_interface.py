@@ -3,7 +3,6 @@ import inspect
 import logging
 from functools import partial
 
-from qcodes.instrument.parameter import ManualParameter, StandardParameter
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
     ATSAcquisitionParameter
@@ -75,41 +74,40 @@ class ATSInterface(InstrumentInterface):
                            parameter_class=ATSAcquisitionParameter)
 
         self.add_parameter(name='default_acquisition_controller',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value='None',
                            vals=vals.Enum(None,
                                'None', *self.acquisition_controllers.keys()))
 
         self.add_parameter(name='acquisition_controller',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            vals=vals.Enum(
                                'None', *self.acquisition_controllers.keys()))
 
         # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=[],
                            vals=vals.Anything())
 
         self.add_parameter(name='samples',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=1)
 
         self.add_parameter(name='trigger_channel',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value='trig_in',
                            vals=vals.Enum('trig_in', 'disable',
                                           *self._acquisition_channels.keys()))
         self.add_parameter(name='trigger_slope',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            vals=vals.Enum('positive', 'negative'))
         self.add_parameter(name='trigger_threshold',
                            unit='V',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            vals=vals.Numbers())
         self.add_parameter(name='sample_rate',
                            unit='samples/sec',
-                           parameter_class=StandardParameter,
                            get_cmd=partial(self.setting, 'sample_rate'),
                            set_cmd=lambda x:self.update_settings(sample_rate=x),
                            vals=vals.Numbers())
@@ -145,9 +143,9 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controllers[cls_name] = acquisition_controller
 
         # Update possible values for (default) acquisition controller
-        self.default_acquisition_controller._vals = vals.Enum(
+        self.default_acquisition_controller.vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
-        self.acquisition_controller._vals = vals.Enum(
+        self.acquisition_controller.vals = vals.Enum(
             'None', *self.acquisition_controllers.keys())
 
     def get_additional_pulses(self, interface, **kwargs):
