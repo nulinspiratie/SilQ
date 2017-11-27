@@ -5,6 +5,7 @@ import logging
 import json
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
+from .tools.general_tools import SettingsClass
 
 import qcodes as qc
 
@@ -231,7 +232,7 @@ def _run_wrapper(self, set_active=True, *args, **kwargs):
         for action in loop:
             if isinstance(action, qc.loops.ActiveLoop):
                 clear_all_acquisition_parameter_settings(action)
-            elif isinstance(action, AcquisitionParameter):
+            elif isinstance(action, SettingsClass):
                 logger.info(f'End-of-loop: clearing settings for {action}')
                 action.clear_settings()
 
