@@ -1,7 +1,6 @@
 from functools import partial
 
 from qcodes import Instrument
-from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 from silq.pulses import PulseSequence
@@ -22,11 +21,11 @@ class InstrumentInterface(Instrument):
         self.input_pulse_sequence = PulseSequence(
             allow_untargeted_pulses=False, allow_pulse_overlap=False)
         self.add_parameter('instrument_name',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=instrument_name,
                            vals=vals.Anything())
         self.add_parameter('is_primary',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
 
@@ -84,7 +83,7 @@ class InstrumentInterface(Instrument):
 
     def get_additional_pulses(self, **kwargs):
         return []
-    
+
     def initialize(self):
         """
         This method gets called at the start of targeting a pulse sequence

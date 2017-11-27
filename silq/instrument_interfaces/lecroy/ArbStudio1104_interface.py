@@ -7,8 +7,6 @@ from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation
 from silq.tools.general_tools import arreqclose_in_list
 
-from qcodes.instrument.parameter import ManualParameter
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +33,8 @@ class ArbStudio1104Interface(InstrumentInterface):
             TriggerPulseImplementation(pulse_requirements=[])]
 
         self.add_parameter('trigger_in_duration',
-                           parameter_class=ManualParameter, unit='us',
+                           set_cmd=None,
+                           unit='us',
                            initial_value=0.1)
         self.add_parameter('final_delay',
                            set_cmd=None,
