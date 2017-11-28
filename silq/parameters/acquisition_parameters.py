@@ -23,6 +23,7 @@ __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'T1Parameter',
            'DarkCountsParameter', 'VariableReadParameter',
+           'BlipsParameter'
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)

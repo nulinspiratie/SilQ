@@ -16,7 +16,8 @@ from silq.measurements.measurement_types import Loop0DMeasurement, \
 from silq.measurements.measurement_modules import MeasurementSequence
 from silq.parameters import DCParameter, CombinedParameter
 
-__all__ = ['MeasurementParameter', 'DCMultisweepParameter',
+__all__ = ['MeasurementParameter', 'RetuneBlipsParameter',
+           'CoulombPeakParameter', 'DCMultisweepParameter',
            'MeasurementSequenceParameter', 'SelectFrequencyParameter',
            'TrackPeakParameter']
 
