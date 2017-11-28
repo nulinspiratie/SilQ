@@ -339,7 +339,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, name='DC', **kwargs):
-        self.samples = 1
 
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
@@ -352,6 +351,7 @@ class DCParameter(AcquisitionParameter):
                          snapshot_value=False,
                          continuous = True,
                          **kwargs)
+        self.samples = 1
 
     @clear_single_settings
     def get_raw(self):
