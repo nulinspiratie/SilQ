@@ -34,7 +34,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
 
         self.pulse_settings['ESR'] = self.ESR = {
-            'pulse': FrequencyRampPulse('adiabatic_ESR'),
+            'pulse': FrequencyRampPulse('ESR'),
             'plunge_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
             'pulse_delay': 5,
