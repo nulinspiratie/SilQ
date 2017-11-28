@@ -348,9 +348,10 @@ class CoulombPeakParameter(MeasurementParameter):
         self.results = {}
 
         super().__init__(name=name,
-                         names=['optimum', 'max_voltage', 'DC_voltage'],
-                         units=['V', 'V', 'V'],
-                         shapes=((), (), ()),
+                         names=['peak_optimum', 'peak_offset',
+                                'max_voltage', 'DC_voltage'],
+                         units=['V', 'V', 'V', 'V'],
+                         shapes=((), (), (), ()),
                          acquisition_parameter=acquisition_parameter,
                          wrap_set=False, **kwargs)
 
@@ -373,17 +374,19 @@ class CoulombPeakParameter(MeasurementParameter):
         sweep_vals = self.calculate_sweep_vals()
         if sweep_vals is not None:
             sweep_parameter = sweep_vals.parameter
-            return [f'{sweep_parameter.name}_optimum', 'max_voltage', 'DC_voltage']
+            return [f'{sweep_parameter.name}_optimum',
+                    f'{sweep_parameter.name}_offset',
+                    'max_voltage', 'DC_voltage']
         else:
-            return ['optimum', 'max_voltage', 'DC_voltage']
+            return ['peak_optimum', 'peak_offset', 'max_voltage', 'DC_voltage']
 
     @property_ignore_setter
     def shapes(self):
         sweep_vals = self.calculate_sweep_vals()
         if sweep_vals is not None:
-            return ((), (), (len(sweep_vals),))
+            return ((), (), (), (len(sweep_vals),))
         else:
-            return ((), (), ())
+            return ((), (), (), ())
 
     def create_loop(self, sweep_vals):
         if sweep_vals is None:
@@ -424,6 +427,7 @@ class CoulombPeakParameter(MeasurementParameter):
         if self.min_voltage is not None and np.max(self.data.DC_voltage) < self.min_voltage:
             # Could not find coulomb peak
             self.results[self.names[0]] = np.nan
+            self.results[self.names[1]] = np.nan
 
             # Tune back to original position
             if self.DC_peak_offset is None:
@@ -435,6 +439,7 @@ class CoulombPeakParameter(MeasurementParameter):
             max_idx = np.argmax(self.data.DC_voltage)
             max_set_val = sweep_vals[max_idx]
             self.results[self.names[0]] = max_set_val
+            self.results[self.names[1]] = max_set_val - initial_set_val
 
             if self.tune_to_peak:
                 if self.DC_peak_offset is None:
