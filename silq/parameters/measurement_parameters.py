@@ -105,6 +105,26 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
 
 class RetuneBlipsParameter(MeasurementParameter):
+    """
+    Parameter that retunes to a transition by analysing blips in a neural network
+    
+    The first (optional) stage is to use a CoulombPeakParameter to find the
+    center of the Coulomb peak.
+    
+    Second, a sweep parameter is varied for a range of sweep values. For each 
+    sweep point, a trace is acquired, and its blips measured in a BlipsParameter.
+    This information is then analysed by a neural network, from which the
+    optimal tuning position is predicted.
+    
+    The Neural network is a Keras model that needs to be pre-trained with data.
+    More info: Experiments/personal/Serwan/Neural networks/Retune blips.ipynb
+    The following Neural Network seems to produce decent results:
+    
+    model = Sequential()
+    model.add(Dense(3, activation='linear', input_shape=(21,3)))
+    model.add(Flatten())
+    model.add(Dense(1, activation='linear'))
+    """
     def __init__(self,
                  name='retune_blips',
                  coulomb_peak_parameter=None,
@@ -116,6 +136,37 @@ class RetuneBlipsParameter(MeasurementParameter):
                  model_filepath=None,
                  voltage_limit=None,
                  **kwargs):
+        """
+        
+        Args:
+            name: name of parameter (default `retune_blips`)
+            coulomb_peak_parameter: CoulombPeakParameter that tunes to the
+                center of the Coulomb peak. Should have all its settings
+                predefined, including sweep_range, and DC_offset
+            blips_parameter: BlipsParameter that measures blips properties from
+                a trace, to be analysed by a neural network. Should have all its
+                settings predefined, including duration
+            sweep_parameter: sweep CombinedParameter with scales defined to
+                remain compensated on the Coulomb peak. The offsets must be set
+                such that zero approximately corresponds to the tuning position.
+            sweep_vals: Range of sweep values to sweep the sweep_parameter and
+                measure blips_parameter. It is important that both the number of
+                sweep values and distance between sweep points is the same as
+                in the training data.
+            tune_to_coulomb_peak: Whether to use the coulomb_peak_parameter.
+                Otherwise, it will always assume the system remains on the
+                Coulomb peak
+            tune_to_optimum: Tune to optimum values predicted by neural network.
+                If True, the offsets of the sweep parameter are also zeroed
+            model_filepath: Filepath of Keras neural network (.h5 extension).
+            voltage_limit: Maximum voltage difference from initial offsets to
+                avoid the system .
+                The first time this parameter is called, the sweep parameter's
+                initial offsets are stored. If one of the optimal values is more
+                than voltage_limit away from its initial offset, a warning is
+                raised and the gates are returned to the initial offsets.
+            **kwargs: 
+        """
         # Load model here because it takes quite a while to load
         from keras.models import load_model
 
@@ -267,6 +318,9 @@ class RetuneBlipsParameter(MeasurementParameter):
 
 
 class CoulombPeakParameter(MeasurementParameter):
+    """
+    Parameter that finds Coulomb peak and can tune to it
+    """
     def __init__(self,
                  name='coulomb_peak',
                  sweep_parameter=None,
