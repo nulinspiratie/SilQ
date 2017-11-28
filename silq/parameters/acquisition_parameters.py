@@ -1324,10 +1324,23 @@ class VariableReadParameter(AcquisitionParameter):
 
 
 class BlipsParameter(AcquisitionParameter):
-    def __init__(self, name='count_blips', duration=None, **kwargs):
+    """
+    Parameter that measures properties of blips in a trace
+    """
+    def __init__(self, name='count_blips', duration=None, pulse_name='read',
+                 **kwargs):
+        """
+        
+        Args:
+            name: parameter name (default `count_blips`)
+            duration: duration of tracepulse
+            pulse_name: name of trace pulse (default `read`)
+            **kwargs: kwargs passed to AcquisitionParameter
+        """
+        self.pulse_name = pulse_name
 
         self.pulse_sequence = PulseSequence([
-            DCPulse(name='read', acquire=True, average='none')])
+            DCPulse(name=pulse_name, acquire=True, average='none')])
 
         super().__init__(name=name,
                          names=['blips',
@@ -1341,6 +1354,7 @@ class BlipsParameter(AcquisitionParameter):
                          **kwargs)
         self.samples = 1
         self.duration = duration
+        self.threshold_voltage = 0.3
 
     @property
     def duration(self):
@@ -1353,10 +1367,11 @@ class BlipsParameter(AcquisitionParameter):
     @clear_single_settings
     def get_raw(self):
         self.acquire()
-        self.results = analysis.count_blips(traces=self.data['read']['output'],
-                                            t_skip=0,
-                                            sample_rate=500e3,
-                                            threshold_voltage=0.3)
+        self.results = analysis.count_blips(
+            traces=self.data[self.pulse_name]['output'],
+            t_skip=0,
+            sample_rate=self.sample_rate,
+            threshold_voltage=self.threshold_voltage)
 
         if not self.silent:
             self.print_results()

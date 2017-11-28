@@ -137,7 +137,6 @@ class RetuneBlipsParameter(MeasurementParameter):
                  voltage_limit=None,
                  **kwargs):
         """
-        
         Args:
             name: name of parameter (default `retune_blips`)
             coulomb_peak_parameter: CoulombPeakParameter that tunes to the
@@ -165,7 +164,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                 initial offsets are stored. If one of the optimal values is more
                 than voltage_limit away from its initial offset, a warning is
                 raised and the gates are returned to the initial offsets.
-            **kwargs: 
+            **kwargs: kwargs passed to MeasurementParameter
         """
         # Load model here because it takes quite a while to load
         from keras.models import load_model
@@ -216,11 +215,21 @@ class RetuneBlipsParameter(MeasurementParameter):
         return (shape,) * len(self.names)
 
     def create_loop(self):
+        """
+        Create loop that sweep sweep_parameter over sweep_vals and measures 
+        blips_parameter at each sweep point.
+        Returns: loop
+
+        """
         loop = Loop(self.sweep_parameter[self.sweep_vals]).each(
             self.blips_parameter)
         return loop
 
     def calculate_optimum(self):
+        """
+        Calculate optimum of dataset from neural network
+        Returns: optimal voltage of combined set parameter
+        """
         if self.model is None:
             logger.warning('No Neural network model provided. skipping retune')
             return None
@@ -256,7 +265,6 @@ class RetuneBlipsParameter(MeasurementParameter):
         self.optimal_val =  self.neural_network_results * scale_factor
 
         return self.optimal_val
-
 
     @clear_single_settings
     def get_raw(self):
@@ -319,7 +327,9 @@ class RetuneBlipsParameter(MeasurementParameter):
 
 class CoulombPeakParameter(MeasurementParameter):
     """
-    Parameter that finds Coulomb peak and can tune to it
+    Parameter that finds Coulomb peak and can tune to it.
+    Finding the Coulomb peak is done by sweeping a gate and measuring the DC
+    voltage at each point.
     """
     def __init__(self,
                  name='coulomb_peak',
@@ -330,6 +340,29 @@ class CoulombPeakParameter(MeasurementParameter):
                  tune_to_peak=True,
                  min_voltage=0.5,
                  **kwargs):
+        """
+        Args:
+            name: name of parameter (default coulomb_peak)
+            sweep_parameter: gate parameter to sweep over Coulomb peak
+            acquisition_parameter: parameter that measures DC voltage.
+                If not provided, a default DCParameter is created.
+            combined_set_parameter: CombinedParameter of gate parameters whose
+                scale must be set to remain compensated on the Coulomb peak.
+                Only needed if a DC_peak_offset is provided.
+                Offsets must be set such that DC_peak_offset is relative to
+                zero.
+            DC_peak_offset: Any DC peak offset to set the combined_set_parameter
+                to. Useful if you want to tune away from the transition when
+                performing Coulomb peak scan.
+            tune_to_peak: Tune to peak after scan is complete.
+                If a combined_set_parameter and DC_peak_offset is provided,
+                the offsets are zeroed after the scan.
+                Otherwise, sweep_parameter is set to optimum
+            min_voltage: Minimum voltage that Coulomb peak must have.
+                If not satisfied, measurement has failed, and system is reset to
+                initial value.
+            **kwargs: kwargs passed to MeasurementParameter
+        """
 
         if acquisition_parameter is None:
             acquisition_parameter = DCParameter()
@@ -413,17 +446,19 @@ class CoulombPeakParameter(MeasurementParameter):
         self.data = self.loop.get_data_set(name=self.name,
                                            location=self.loc_provider)
 
+        # Perform measurement
         self.acquisition_parameter.setup()
-
         try:
             self.loop.run(set_active=False, quiet=(active_data_set() is not None))
         except:
+            # Error occurred, reset to initial values and raise error
             if self.DC_peak_offset is None:
                 self.sweep_parameter(initial_set_val)
             else:
                 self.combined_set_parameter(0)
-                raise
+            raise
 
+        # Analyse measurement results
         if self.min_voltage is not None and np.max(self.data.DC_voltage) < self.min_voltage:
             # Could not find coulomb peak
             self.results[self.names[0]] = np.nan
@@ -442,6 +477,7 @@ class CoulombPeakParameter(MeasurementParameter):
             self.results[self.names[1]] = max_set_val - initial_set_val
 
             if self.tune_to_peak:
+                # Update parameter values
                 if self.DC_peak_offset is None:
                     self.sweep_parameter(max_set_val)
                 else:
