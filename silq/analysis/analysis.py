@@ -467,7 +467,7 @@ def analyse_traces(traces, sample_rate, filter=None, min_trace_perc=0.5,
         # Only use a time segment of each trace
         read_pts = int(round(t_read * 1e-3 * sample_rate))
         if segment == 'begin':
-            segmented_filtered_traces = filtered_traces[:, read_pts:]
+            segmented_filtered_traces = filtered_traces[:, :read_pts]
         else:
             segmented_filtered_traces = filtered_traces[:, -read_pts:]
     else:
