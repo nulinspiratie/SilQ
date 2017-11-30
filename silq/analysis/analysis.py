@@ -19,12 +19,12 @@ def smooth(x, window_len=11, window='hanning'):
     """smooth the data using a window with requested size.
 
     This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal 
+    The signal is prepared by introducing reflected copies of the signal
     (with the window size) in both ends so that transient parts are minimized
     in the begining and end part of the output signal.
 
     input:
-        x: the input signal 
+        x: the input signal
         window_len: the dimension of the smoothing window; should be an odd integer
         window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
             flat window will produce a moving average smoothing.
@@ -38,7 +38,7 @@ def smooth(x, window_len=11, window='hanning'):
     x=sin(t)+randn(len(t))*0.1
     y=smooth(x)
 
-    see also: 
+    see also:
 
     numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
     scipy.signal.lfilter
@@ -234,6 +234,70 @@ def count_blips(traces, threshold_voltage, sample_rate, t_skip):
             'mean_low_blip_duration': np.mean(low_blip_duration),
             'mean_high_blip_duration': np.mean(high_blip_duration)}
 
+
+def analyse_traces(traces, sample_rate, filter=None, min_trace_perc=0.5,
+                   t_skip=0, t_read=None, segment='begin',
+                   threshold_voltage=None, threshold_method='config'):
+    if filter not in [None, 'low', 'high']:
+        raise SyntaxError('filter must be either None, `low`, or `high`')
+
+    if segment not in ['begin', 'end']:
+        raise
+
+    # Initialize all results to None
+    results = {'up_proportion': None,
+               'num_traces': None,
+               'filtered_traces_idx': None,
+               'voltage_difference': None,
+               'average_voltage': np.mean(traces),
+               'threshold_voltage': None}
+
+    if threshold_voltage is None:
+        # Calculate threshold voltage by
+        high_low_results = find_high_low(traces,
+                                         threshold_method=threshold_method)
+        threshold_voltage = high_low_results['threshold_voltage']
+
+    results['threshold_voltage'] = threshold_voltage
+
+    if threshold_voltage is None:
+        logger.debug('Could not determine threshold voltage')
+        return results
+
+    # minimum trace idx to include (to discard initial capacitor spike)
+    start_idx = round(t_skip * 1e-3 * sample_rate)
+
+    if filter == 'low':
+        # Filter all traces that do not start with low voltage
+        filtered_traces_idx = edge_voltage(traces, edge='begin', state='low',
+                                           start_point=start_idx,
+                                           threshold_voltage=threshold_voltage)
+    elif filter == 'high':
+        # Filter all traces that do not start with high voltage
+        filtered_traces_idx = edge_voltage(traces, edge='begin', state='high',
+                                           start_point=start_idx,
+                                           threshold_voltage=threshold_voltage)
+    else:
+        filtered_traces_idx = np.ones(len(traces), dtype=bool)
+
+    results['filtered_traces_idx'] = filtered_traces_idx
+    filtered_traces = traces[filtered_traces_idx]
+    results['num_traces'] = len(filtered_traces)
+
+    if len(filtered_traces) / len(traces) < min_trace_perc:
+        logger.debug(f'Not enough traces start {filter}')
+        return results
+
+    if t_read is not None:
+        read_pts = int(round(t_read * 1e-3 * sample_rate))
+        segmented_filtered_traces = filtered_traces[:,read_pts:]
+
+    up_proportion = find_up_proportion(traces,
+                                       start_point=start_idx,
+                                       threshold_voltage=threshold_voltage)
+    results['up_proportion'] = up_proportion
+
+    return results
 
 def analyse_load(traces, filter_empty=True):
     high_low = find_high_low(traces)
@@ -500,17 +564,13 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
         for read_segment_name in read_segment_names:
             segment_results = results_read[read_segment_name]
 
-            read_segment_name = read_segment_name.replace('[', '')
-            read_segment_name = read_segment_name.replace(']', '')
-
-            read_contrast = segment_results['contrast']
+            read_segment_name = read_segment_name.replace('[', '').replace(']', '')
 
             if label_mapping is not None:
                 read_segment_name = label_mapping[read_segment_name]
 
-            results[f'contrast_{read_segment_name}'] = read_contrast
-            up_proportion = segment_results['up_proportion']
-            results[f'up_proportion_{read_segment_name}'] = up_proportion
+            results[f'contrast_{read_segment_name}'] = segment_results['contrast']
+            results[f'up_proportion_{read_segment_name}'] = segment_results['up_proportion']
 
     return results
 
