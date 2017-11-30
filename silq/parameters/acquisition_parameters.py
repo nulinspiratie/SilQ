@@ -855,6 +855,7 @@ class ESRParameter(AcquisitionParameter):
 
         self.pulse_sequence = ESRPulseSequence()
         self.ESR = self.pulse_sequence.ESR
+        self.EPR = self.pulse_sequence.EPR
         self.pre_pulses = self.pulse_sequence.pre_pulses
         self.post_pulses = self.pulse_sequence.post_pulses
 
