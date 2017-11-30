@@ -868,20 +868,35 @@ class ESRParameter(AcquisitionParameter):
 
     @property
     def names(self):
-        names = copy(self._names)
-        if len(self.ESR_frequencies) == 1:
-            names += [f'contrast_ESR', 'up_proportion_ESR']
+        if self.EPR['enabled']:
+            names = copy(self._names)
         else:
-            names += [f'{attr}_ESR{k}'
-                      for k in range(len(self.ESR_frequencies))
-                      for attr in ['contrast', 'up_proportion']]
+            # Ignore all names, only add the ESR up proportions
+            names = []
+
+        ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
+                           for pulse in self.ESR['pulses']]
+
+        for pulse in self.ESR['pulses']:
+            pulse_name = pulse if isinstance(pulse, str) else pulse.name
+
+            if ESR_pulse_names.count(pulse_name) == 1:
+                # Ignore suffix
+                name = pulse_name
+            else:
+                suffix= len([name for name in names
+                             if f'up_proportion_{pulse_name}' in name])
+                name = f'{pulse_name}{suffix}'
+            names.append(f'up_proportion_{name}')
+            if self.EPR['enabled']:
+                names.append(f'contrast_{name}')
         return names
 
     @names.setter
     def names(self, names):
         self._names = [name for name in names
-                       if not 'contrast_ESR' in name
-                       and not 'up_proportion_ESR' in name]
+                       if not 'contrast_' in name
+                       and not 'up_proportion_' in name]
 
     @property_ignore_setter
     def shapes(self):
@@ -893,18 +908,8 @@ class ESRParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def labels(self):
-        labels = [name.replace('_', ' ').capitalize() for name in self.names
-                  if 'contrast_ESR' not in name
-                  and 'up_proportion_ESR' not in name]
-        if len(self.ESR_frequencies) == 1:
-            f_ESR = self.ESR_frequencies[0]
-            labels += [f'Contrast ESR {f_ESR/1e9:.2f} GHz',
-                       f'Up proportion ESR {f_ESR/1e9:.2f} GHz']
-        else:
-            for k, f_ESR in enumerate(self.ESR_frequencies):
-                labels += [f'Contrast ESR{k} {f_ESR/1e9:.2f} GHz',
-                           f'Up proportion ESR{k} {f_ESR/1e9:.2f} GHz']
-        return labels
+        return [name[0].capitalize() + name[1:].replace('_', ' ').capitalize()
+                for name in self.names]
 
     @property
     def ESR_frequencies(self):
@@ -930,26 +935,36 @@ class ESRParameter(AcquisitionParameter):
                 sample_rate=self.sample_rate,
                 min_trace_perc=self.min_trace_perc,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
-                t_read=self.t_read,
-                segment='end')
+                t_read=self.t_read)
         else:
             results = {}
 
-        for pulse in self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"]):
-            read_traces = self.traces[pulse.full_name]['output']
+        ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
+                           for pulse in self.ESR['pulses']]
+        read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
+        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
+            read_traces = self.traces[read_pulse.full_name]['output']
             ESR_results = analyse_traces(traces=read_traces,
                                          sample_rate=self.sample_rate,
                                          filter='low',
                                          t_skip=self.t_skip,
                                          t_read=self.t_read)
 
-            # Add ESR_results to results
-            suffix = '' if pulse.id is None else pulse.id
-            results['up_proportion_ESR' + suffix] = ESR_results['up_proportion']
+            # Extract ESR pulse labels
+            if ESR_pulse_names.count(ESR_pulse.name) == 1:
+                # Ignore suffix
+                pulse_label = ESR_pulse.name
+            else:
+                suffix = len([name for name in results
+                              if f'up_proportion_{ESR_pulse.name}' in name])
+                pulse_label = f'{ESR_pulse.name}{suffix}'
+
+            # Add up proportion and dark counts
+            results[f'up_proportion_{pulse_label}'] = ESR_results['up_proportion']
             if self.EPR['enabled']:
                 # Add contrast obtained by subtracting EPR dark counts
                 contrast = ESR_results['up_proportion'] - results['dark_counts']
-                results['contrast_ESR' + suffix] = contrast
+                results[f'contrast_{pulse_label}'] = contrast
 
         self.results = results
         return results

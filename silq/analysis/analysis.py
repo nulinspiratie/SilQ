@@ -414,8 +414,8 @@ def analyse_traces(traces, sample_rate, filter=None, min_trace_perc=0.5,
                'average_voltage': np.mean(traces),
                'threshold_voltage': None,
                'blips': None,
-               'mean_low_blips_duration': None,
-               'mean_high_blips_duration': None}
+               'mean_low_blip_duration': None,
+               'mean_high_blip_duration': None}
 
     # Histogram trace voltages to find two peaks corresponding to high and low
     high_low_results = find_high_low(traces, threshold_method=threshold_method)
@@ -436,8 +436,8 @@ def analyse_traces(traces, sample_rate, filter=None, min_trace_perc=0.5,
                                 threshold_voltage=threshold_voltage,
                                 t_skip=t_skip)
     results['blips'] = blips_results['blips']
-    results['mean_low_blips_duration'] = blips_results['mean_low_blips_duration']
-    results['mean_high_blips_duration'] = blips_results['mean_high_blips_duration']
+    results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
+    results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = round(t_skip * 1e-3 * sample_rate)
@@ -545,8 +545,8 @@ def analyse_EPR(empty_traces, plunge_traces, read_traces,
 
             'voltage_difference_read': results_read['voltage_difference'],
             'blips': results_read['blips'],
-            'low_blip_duration': results_read['low_blip_duration'],
-            'high_blip_duration': results_read['high_blip_duration']}
+            'mean_low_blip_duration': results_read['mean_low_blip_duration'],
+            'mean_high_blip_duration': results_read['mean_high_blip_duration']}
 
 #
 # def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
