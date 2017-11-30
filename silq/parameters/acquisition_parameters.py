@@ -14,7 +14,7 @@ from qcodes import Instrument
 from silq import config
 from silq.pulses import *
 from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence
-from silq.analysis import analysis
+from silq.analysis import analysis, analyse_traces
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
@@ -67,8 +67,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.continuous = continuous
 
         self.samples = None
-        self.data = None
-        self.dataset = None
+        self.traces = None
+        self.tracesset = None
         self.results = None
         self.base_folder = None
         self.subfolder = None
@@ -196,7 +196,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if subfolder is None and base_folder is not None:
                 subfolder = f'traces_{self.name}'
 
-        self.dataset = data_tools.create_data_set(name='traces',
+        self.tracesset = data_tools.create_data_set(name='traces',
                                                   base_folder=base_folder,
                                                   subfolder=subfolder,
                                                   formatter=self.formatter)
@@ -244,7 +244,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                     if len(set_arrs) > 1:
                         # Need to give individual array_ids to each of the set arrays
                         arr.array_id += '_{}'.format(k)
-                    self.dataset.add_array(arr)
+                    self.tracesset.add_array(arr)
             set_arrays = (t_list_arr, trace_num_arr)
         else:
             set_arrays = ()
@@ -259,9 +259,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                   shape=traces.shape,
                                   preset_data=traces,
                                   set_arrays=set_arrays)
-            self.dataset.add_array(trace_arr)
+            self.tracesset.add_array(trace_arr)
 
-        self.dataset.finalize()
+        self.tracesset.finalize()
 
     def print_results(self):
         names = self.names if self.names is not None else [self.name]
@@ -286,7 +286,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def acquire(self, stop=None, setup=None, **kwargs):
         """
-        Performs a layout.acquisition. The result is stored in self.data
+        Performs a layout.acquisition. The result is stored in self.traces
         Args:
             stop (Bool): Whether to stop instruments after acquisition.
                 If not specified, it will stop if self.continuous is False
@@ -310,8 +310,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
 
         # Perform acquisition
-        self.data = self.layout.acquisition(stop=stop, **kwargs)
-        return self.data
+        self.traces = self.layout.acquisition(stop=stop, **kwargs)
+        return self.traces
     #
     # def plot_traces(self, channel='output'):
     #     fig, ax = plt.subplots(1,1)
@@ -320,7 +320,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     #     if len((pulse.average for pulse in acquire_pulses)) > 1:
     #         raise RuntimeError('All pulses must have same average mode')
     #
-    #     acquire_traces = {pulse.name: self.data[pulse.name][channel]
+    #     acquire_traces = {pulse.name: self.traces[pulse.name][channel]
     #                       for pulse in acquire_pulses}
     #
     #     if acquire_pulses[0].average == 'trace':
@@ -374,7 +374,7 @@ class DCParameter(AcquisitionParameter):
         # Note that this function does not have a setup, and so the setup
         # must be done once beforehand.
         self.acquire()
-        self.results = {'DC_voltage': self.data['read']['output']}
+        self.results = {'DC_voltage': self.traces['read']['output']}
         return tuple(self.results[name] for name in self.names)
 
 
@@ -535,7 +535,7 @@ class TraceParameter(AcquisitionParameter):
         super().acquire(**kwargs)
 
         traces = {self.trace_pulse.full_name + '_' + output:
-                      self.data[self.trace_pulse.full_name][output]
+                      self.traces[self.trace_pulse.full_name][output]
                   for _, output in self.layout.acquisition_outputs()}
 
         return traces
@@ -776,7 +776,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         # Process results
         DC_voltages = np.array(
-            [self.data[pulse.full_name]['output'] for pulse in
+            [self.traces[pulse.full_name]['output'] for pulse in
              self.pulse_sequence.get_pulses(name='DC_inner')])
 
         if self.use_ramp:
@@ -792,7 +792,7 @@ class DCSweepParameter(AcquisitionParameter):
                     DC_voltages.reshape(self.shapes[0])}
 
         if self.trace_pulse.enabled:
-            self.results['trace_voltage'] = self.data['trace']['output']
+            self.results['trace_voltage'] = self.traces['trace']['output']
 
         return self.results
 
@@ -815,21 +815,27 @@ class EPRParameter(AcquisitionParameter):
                                 'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
+                         properties_attrs=['t_skip', 't_read', 'min_trace_perc'],
                          **kwargs)
 
     @property_ignore_setter
     def labels(self):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
+    def analyse(self, traces):
+        return analysis.analyse_EPR(empty_traces=self.traces['empty']['output'],
+                                    plunge_traces=self.traces['plunge']['output'],
+                                    read_traces=self.traces['read_long']['output'],
+                                    sample_rate=self.sample_rate,
+                                    t_skip=self.t_skip,
+                                    t_read=self.t_read,
+                                    min_trace_perc=self.min_trace_perc)
+
     @clear_single_settings
     def get_raw(self):
-        self.acquire()
+        traces = self.acquire()
 
-        self.results = analysis.analyse_EPR(pulse_traces=self.data,
-                                            sample_rate=self.sample_rate,
-                                            t_skip=self.t_skip,
-                                            t_read=self.t_read)
+        self.results = self.analyse(traces)
 
         if self.save_traces:
             self.store_traces(self.data)
@@ -856,7 +862,7 @@ class ESRParameter(AcquisitionParameter):
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read'],
+                         properties_attrs=['t_skip', 't_read', 'min_trace_perc'],
                          **kwargs)
 
     @property
@@ -913,28 +919,52 @@ class ESRParameter(AcquisitionParameter):
 
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
+    def analyse(self, traces):
+        if self.EPR['enabled']:
+            # Analyse EPR sequence, which also gets the dark counts
+            results = analysis.analyse_EPR(
+                traces=self.traces['read_long']['output'],
+                sample_rate=self.sample_rate,
+                min_trace_perc=self.min_trace_perc,
+                t_skip=self.t_skip, # Use t_skip to keep length consistent
+                t_read=self.t_read,
+                segment='end')
+        else:
+            results = {}
+
+        for pulse in self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"]):
+            read_traces = self.traces[pulse.full_name]['output']
+            ESR_results = analyse_traces(traces=read_traces,
+                                         sample_rate=self.sample_rate,
+                                         filter='low',
+                                         t_skip=self.t_skip,
+                                         t_read=self.t_read)
+
+            # Add ESR_results to results
+            suffix = '' if pulse.id is None else pulse.id
+            results['up_proportion_ESR' + suffix] = ESR_results['up_proportion']
+            if self.EPR['enabled']:
+                # Add contrast obtained by subtracting EPR dark counts
+                contrast = ESR_results['up_proportion'] - results['dark_counts']
+                results['contrast_ESR' + suffix] = contrast
+
+        self.results = results
+        return results
+
     @clear_single_settings
     def get_raw(self):
-        self.acquire()
+        traces = self.acquire()
 
-        if len(self.ESR_frequencies) == 1:
-            label_mapping = {self.ESR['read_pulse'].name: 'ESR'}
-        else:
-            label_mapping = {f'{self.ESR["read_pulse"].name}{k}': f'ESR{k}'
-                             for k in range(len(self.ESR_frequencies))}
-        self.results = analysis.analyse_multi_read_EPR(
-            pulse_traces=self.data, sample_rate=self.sample_rate,
-            t_skip=self.t_skip, t_read=self.t_read,
-            label_mapping=label_mapping)
+        results = self.analyse(traces)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
+            self.store_traces(self.traces, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
 
-        return tuple(self.results[name] for name in self.names)
+        return tuple(results[name] for name in self.names)
 
 
 class NMRParameter(AcquisitionParameter):
@@ -1002,7 +1032,7 @@ class NMRParameter(AcquisitionParameter):
         self.acquire()
 
         self.results = analysis.analyse_NMR(
-            pulse_traces=self.data,
+            pulse_traces=self.traces,
             threshold_up_proportion=self.threshold_up_proportion,
             shots_per_read=self.ESR['shots_per_frequency'],
             sample_rate=self.sample_rate,
@@ -1011,7 +1041,7 @@ class NMRParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
+            self.store_traces(self.traces, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -1050,7 +1080,7 @@ class T1Parameter(AcquisitionParameter):
 
         # Analysis
         self.results = analysis.analyse_read(
-            traces=self.data['read']['output'],
+            traces=self.traces['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
             t_skip=self.t_skip,
             sample_rate=self.sample_rate)
@@ -1063,7 +1093,7 @@ class T1Parameter(AcquisitionParameter):
             else:
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
-            self.store_traces(self.data, subfolder=subfolder)
+            self.store_traces(self.traces, subfolder=subfolder)
 
         if not self.silent:
             self.print_results()
@@ -1099,7 +1129,7 @@ class DarkCountsParameter(AcquisitionParameter):
         self.acquire()
 
         fidelities = analysis.analyse_read(
-            traces=self.data['read']['output'],
+            traces=self.traces['read']['output'],
             threshold_voltage=self.readout_threshold_voltage,
             t_skip=self.t_skip,
             sample_rate=self.sample_rate)
@@ -1107,7 +1137,7 @@ class DarkCountsParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            self.store_traces(self.data, subfolder=self.subfolder)
+            self.store_traces(self.traces, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
@@ -1152,9 +1182,9 @@ class VariableReadParameter(AcquisitionParameter):
         self.acquire()
 
         self.results = {'read_voltage':
-                            np.concatenate([self.data['plunge']['output'],
-                                            self.data['read']['output'],
-                                            self.data['empty']['output']])}
+                            np.concatenate([self.traces['plunge']['output'],
+                                            self.traces['read']['output'],
+                                            self.traces['empty']['output']])}
         return tuple(self.results[name] for name in self.names)
 
 
@@ -1165,7 +1195,7 @@ class BlipsParameter(AcquisitionParameter):
     def __init__(self, name='count_blips', duration=None, pulse_name='read',
                  **kwargs):
         """
-        
+
         Args:
             name: parameter name (default `count_blips`)
             duration: duration of tracepulse
@@ -1203,7 +1233,7 @@ class BlipsParameter(AcquisitionParameter):
     def get_raw(self):
         self.acquire()
         self.results = analysis.count_blips(
-            traces=self.data[self.pulse_name]['output'],
+            traces=self.traces[self.pulse_name]['output'],
             t_skip=0,
             sample_rate=self.sample_rate,
             threshold_voltage=self.threshold_voltage)
