@@ -23,7 +23,7 @@ __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'T1Parameter',
            'DarkCountsParameter', 'VariableReadParameter',
-           'BlipsParameter'
+           'BlipsParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, wrap_set=False, **kwargs):
+                 properties_attrs=None, wrap_set=False, save_traces=False,
+                 **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
@@ -55,7 +56,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.silent = True
         """Do not print results after acquisition"""
 
-        self.save_traces = False
+        self.save_traces = save_traces
         """ Save traces in separate files"""
 
         if environment == 'default':
