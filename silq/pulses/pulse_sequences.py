@@ -28,8 +28,8 @@ class PulseSequenceGenerator(PulseSequence):
 
 
 class ESRPulseSequence(PulseSequenceGenerator):
-    def __init__(self, pulses=[], **kwargs):
-        super().__init__(pulses=pulses, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
 
@@ -40,10 +40,14 @@ class ESRPulseSequence(PulseSequenceGenerator):
             'pulse_delay': 5,
             'pulses': ['pulse']}
 
-        self.pulse_settings['post_pulses'] = self.post_pulses = [
+        self.pulse_settings['EPR'] = self.EPR = {
+            'enabled': True,
+            'pulses':[
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True)]
+            DCPulse('read_long', acquire=True)]}
+
+        self.pulse_settings['post_pulses'] = self.post_pulses = []
 
         self.final_delay = 1
 
@@ -84,6 +88,9 @@ class ESRPulseSequence(PulseSequenceGenerator):
         # Update self.ESR['pulses']. Converts any pulses that are strings to
         # actual pulses, and sets correct frequencies
         self.add_ESR_pulses(ESR_frequencies=ESR_frequencies)
+
+        if self.EPR['enabled']:
+            self.add(*self.EPR['pulses'])
 
         self.add(*self.post_pulses)
 
