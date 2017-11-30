@@ -43,8 +43,9 @@ class ESRPulseSequence(PulseSequenceGenerator):
         self.pulse_settings['post_pulses'] = self.post_pulses = [
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True),
-            DCPulse('final')]
+            DCPulse('read_long', acquire=True)]
+
+        self.final_delay = 1
 
     def add_ESR_pulses(self, ESR_frequencies=None):
         if ESR_frequencies is None:
