@@ -833,12 +833,12 @@ class EPRParameter(AcquisitionParameter):
 
     @clear_single_settings
     def get_raw(self):
-        traces = self.acquire()
+        self.traces = self.acquire()
 
-        self.results = self.analyse(traces)
+        self.results = self.analyse(self.traces)
 
         if self.save_traces:
-            self.store_traces(self.data)
+            self.store_traces(self.traces)
 
         if not self.silent:
             self.print_results()
@@ -929,9 +929,9 @@ class ESRParameter(AcquisitionParameter):
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
-                empty_traces=self.traces['empty']['output'],
-                plunge_traces=self.traces['plunge']['output'],
-                read_traces=self.traces['read_long']['output'],
+                empty_traces=traces['empty']['output'],
+                plunge_traces=traces['plunge']['output'],
+                read_traces=traces['read_long']['output'],
                 sample_rate=self.sample_rate,
                 min_trace_perc=self.min_trace_perc,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
@@ -943,7 +943,7 @@ class ESRParameter(AcquisitionParameter):
                            for pulse in self.ESR['pulses']]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
         for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
-            read_traces = self.traces[read_pulse.full_name]['output']
+            read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analyse_traces(traces=read_traces,
                                          sample_rate=self.sample_rate,
                                          filter='low',
@@ -957,7 +957,7 @@ class ESRParameter(AcquisitionParameter):
             else:
                 suffix = len([name for name in results
                               if f'up_proportion_{ESR_pulse.name}' in name])
-                pulse_label = f'{ESR_pulse.name}{suffix}'
+                pulse_label = f'{ESR_pulse.name}_{suffix}'
 
             # Add up proportion and dark counts
             results[f'up_proportion_{pulse_label}'] = ESR_results['up_proportion']
@@ -971,9 +971,9 @@ class ESRParameter(AcquisitionParameter):
 
     @clear_single_settings
     def get_raw(self):
-        traces = self.acquire()
+        self.traces = self.acquire()
 
-        results = self.analyse(traces)
+        results = self.analyse(self.traces)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
@@ -1045,17 +1045,43 @@ class NMRParameter(AcquisitionParameter):
         for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
             pulse.frequency = ESR_frequency
 
+    def analyse(self, traces):
+        results = {}
+
+        # Calculate threshold voltages from combined read traces
+        high_low = analysis.find_high_low(np.ravel(traces.values()))
+        threshold_voltage = high_low['threshold_voltage']
+
+        num_read_traces = len(self.ESR_frequencies) * self.ESR['shots_per_frequency']
+        for k, ESR_frequency in enumerate(self.ESR_frequencies):
+            # Pulses are interleaved so get the kth pulse from
+            read_idxs = np.arange(k, num_read_traces, len(self.ESR_frequencies))
+            read_names = [f"{self.ESR['read_pulse'].name}[{read_idx}]"
+                          for read_idx in read_idxs]
+            read_traces = [traces[read_name] for read_name in read_names]
+
+            results_NMR = analysis.analyse_NMR(
+                pulse_traces=read_traces,
+                threshold_up_proportion=self.threshold_up_proportion,
+                threshold_voltage=threshold_voltage,
+                sample_rate=self.sample_rate,
+                t_skip=self.t_skip,
+                t_read=self.t_read)
+
+            if len(self.ESR_frequencies) == 1:
+                results = results_NMR
+            else:
+                results[f'up_proportions_{k}'] = results_NMR['up_proportions']
+                results[f'flips_{k}'] = results_NMR['flips']
+                results[f'flip_probability_{k}'] = results_NMR['flip_probability']
+
+        return results
+
     @clear_single_settings
     def get_raw(self):
-        self.acquire()
+        self.traces = self.acquire()
 
-        self.results = analysis.analyse_NMR(
-            pulse_traces=self.traces,
-            threshold_up_proportion=self.threshold_up_proportion,
-            shots_per_read=self.ESR['shots_per_frequency'],
-            sample_rate=self.sample_rate,
-            t_skip=self.t_skip,
-            t_read=self.t_read)
+        self.results = self.analyse(self.traces)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
