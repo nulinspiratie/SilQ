@@ -3,8 +3,7 @@ import peakutils
 import logging
 
 __all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
-           'count_blips', 'analyse_traces', 'analyse_EPR',
-           'analyse_NMR']
+           'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_NMR']
 
 logger = logging.getLogger(__name__)
 
@@ -365,11 +364,11 @@ def analyse_EPR(empty_traces, plunge_traces, read_traces,
                                         t_read=t_read,
                                         segment='begin',
                                         t_skip=t_skip)
-    results_read_end= analyse_traces(traces=read_traces,
-                                     sample_rate=sample_rate,
-                                     t_read=t_read,
-                                     segment='end',
-                                     t_skip=t_skip)
+    results_read_end = analyse_traces(traces=read_traces,
+                                      sample_rate=sample_rate,
+                                      t_read=t_read,
+                                      segment='end',
+                                      t_skip=t_skip)
 
     return {'fidelity_empty': results_empty['end_high'],
             'voltage_difference_empty': results_empty['voltage_difference'],
@@ -433,10 +432,12 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
         up_proportions = np.zeros(samples)
         for sample in range(samples):
             sample_traces = read_traces[read_idx, :, sample]
-            results_read = analyse_read(sample_traces,
-                                        t_skip=t_skip,
-                                        sample_rate=sample_rate,
-                                        threshold_voltage=threshold_voltage)
+            results_read = analyse_traces(sample_traces,
+                                          sample_rate=sample_rate,
+                                          min_trace_perc=min_trace_perc,
+                                          t_read=t_read,
+                                          t_skip=t_skip,
+                                          threshold_voltage=threshold_voltage)
             up_proportions[sample] = results_read['up_proportion']
 
         # Determine number of flips
