@@ -908,7 +908,7 @@ class ESRParameter(AcquisitionParameter):
 
     @property_ignore_setter
     def labels(self):
-        return [name[0].capitalize() + name[1:].replace('_', ' ').capitalize()
+        return [name[0].capitalize() + name[1:].replace('_', ' ')
                 for name in self.names]
 
     @property
