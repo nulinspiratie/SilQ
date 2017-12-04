@@ -1046,34 +1046,32 @@ class NMRParameter(AcquisitionParameter):
             pulse.frequency = ESR_frequency
 
     def analyse(self, traces):
-        results = {}
+        results = {'results_read': []}
 
         # Calculate threshold voltages from combined read traces
         high_low = analysis.find_high_low(np.ravel(traces.values()))
         threshold_voltage = high_low['threshold_voltage']
 
-        num_read_traces = len(self.ESR_frequencies) * self.ESR['shots_per_frequency']
-        for k, ESR_frequency in enumerate(self.ESR_frequencies):
-            # Pulses are interleaved so get the kth pulse from
-            read_idxs = np.arange(k, num_read_traces, len(self.ESR_frequencies))
-            read_names = [f"{self.ESR['read_pulse'].name}[{read_idx}]"
-                          for read_idx in read_idxs]
-            read_traces = [traces[read_name] for read_name in read_names]
+        up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
+        for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
 
-            results_NMR = analysis.analyse_NMR(
-                pulse_traces=read_traces,
-                threshold_up_proportion=self.threshold_up_proportion,
-                threshold_voltage=threshold_voltage,
-                sample_rate=self.sample_rate,
-                t_skip=self.t_skip,
-                t_read=self.t_read)
+            for sample in range(self.samples):
+                traces_idx = f_idx + sample * len(self.ESR_frequencies)
+                read_traces_name = f"{self.ESR['read_pulse'].name}[{traces_idx}]"
+                read_traces = self.traces[read_traces_name]
+                read_result = analyse_traces(traces=read_traces,
+                                             sample_rate=self.sample_rate,
+                                             t_read=self.t_read,
+                                             t_skip=self.t_skip,
+                                             threshold_voltage=threshold_voltage)
+                up_proportions[f_idx, sample] = read_result['up_proportion']
+                results['results_read'].append(read_result)
 
-            if len(self.ESR_frequencies) == 1:
-                results = results_NMR
-            else:
-                results[f'up_proportions_{k}'] = results_NMR['up_proportions']
-                results[f'flips_{k}'] = results_NMR['flips']
-                results[f'flip_probability_{k}'] = results_NMR['flip_probability']
+            results[f'up_proportions_{f_idx}'] = up_proportions
+
+        results_flips = analysis.analyse_flips(
+            up_proportions_frequencies=up_proportions)
+        results.update(**results_flips)
 
         return results
 

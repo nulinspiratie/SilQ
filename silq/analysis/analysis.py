@@ -3,7 +3,7 @@ import peakutils
 import logging
 
 __all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
-           'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_NMR']
+           'count_blips', 'analyse_traces', 'analyse_EPR']
 
 logger = logging.getLogger(__name__)
 
@@ -387,43 +387,104 @@ def analyse_EPR(empty_traces, plunge_traces, read_traces,
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}
 
 
-def analyse_NMR(read_traces, threshold_up_proportion, sample_rate, t_skip=0,
-                min_trace_perc=0.5, t_read=None,
-                threshold_voltage=None, threshold_method='config'):
-    results = {'up_proportions': np.zeros(len(read_traces)),
-               'flips': 0,
-               'flip_probability': 0}
+def analyse_flips(up_proportions_arrs,
+                 threshold_up_proportion=None,
+                 threshold_up_proportion_high=None,
+                 threshold_up_proportion_low=None):
 
-    if threshold_method is None:
-        high_low = find_high_low(np.ravel(read_traces))
-        threshold_voltage = high_low['threshold_voltage']
-        if threshold_voltage is None:
-            # No threshold voltage found
-            return results
+    if threshold_up_proportion_high is None \
+            and threshold_up_proportion_low is None:
+        if threshold_up_proportion is None:
+            raise SyntaxError('Must provide either `threshold_up_proportion`'
+                              'or both `threshold_up_proportion_high` and'
+                              '`threshold_up_proportion_low`')
+        else:
+            threshold_up_proportion_high = threshold_up_proportion
+            threshold_up_proportion_low = threshold_up_proportion
 
-    up_proportions = np.zeros(len(read_traces))
-    for k, read_trace in enumerate(read_traces):
-        results_read = analyse_traces(traces=read_trace,
-                                      sample_rate=sample_rate,
-                                      min_trace_perc=min_trace_perc,
-                                      t_read=t_read,
-                                      t_skip=t_skip,
-                                      threshold_voltage=threshold_voltage,
-                                      threshold_method=threshold_method)
-        up_proportions[k] = results_read['up_proportion']
+    if not isinstance(up_proportions_arrs, np.ndarray):
+        # Convert to numpy array to allow
+        up_proportions_arrs = np.array(up_proportions_arrs)
 
-    # Determine number of flips
-    up_proportion_above_threshold = up_proportions > threshold_up_proportion
+    max_flips = up_proportions_arrs.shape[-1] - 1 # number of samples - 1
 
-    flips = sum(abs(np.diff(up_proportion_above_threshold)))
-    results['up_proportions'] = up_proportions
-    results['flips'] = flips
-    results['flip_probability'] = flips / (len(read_traces) - 1)
+    results = {}
+
+    # Boolean arrs equal to True if up proportion is above/below threshold
+    with np.errstate(invalid='ignore'):
+        # errstate used because up_proportions may contain NaN
+        up_proportions_high = up_proportions_arrs > threshold_up_proportion_high
+        up_proportions_low = up_proportions_arrs < threshold_up_proportion_low
+
+    # State of up proportions by threshold (above: 1, below: -1, between: 0)
+    state_arrs = np.zeros(up_proportions_arrs.shape)
+    state_arrs[up_proportions_high] = 1
+    state_arrs[up_proportions_low] = -1
+    results['state_arrs'] = state_arrs
+
+    for f_idx, state_arr in enumerate(state_arrs):
+        # TODO verify that sum is over correct axis
+        flips = np.sum(np.abs(np.diff(state_arr)) == 2, axis=-1, dtype=float)
+        # Flip probability by dividing flips by number of samples - 1
+        flip_probability = flips / max_flips
+
+        # Add suffix if more than one up_proportion array is provided
+        suffix = f'_{f_idx}' if len(up_proportions_arrs) > 1 else ''
+        results['flips' + suffix] = flips
+        results['flip_probability' + suffix] = flip_probability
+
+        # Only do this if more than one up_proportions is provided
+        for f_idx2 in range(f_idx + 1, len(up_proportions_arrs)):
+            state_arr2 = state_arrs[f_idx2]
+
+            # Calculate relative states (default zero)
+            relative_state_arr = np.zeros(state_arr.shape)
+            # state1 low, state2 high: 1
+            relative_state_arr[(state_arr2 - state_arr) == 2] = 1
+            # state1 high, state2 low: -1
+            relative_state_arr[(state_arr2 - state_arr) == -2] = -1
+            results[f'relative_state_arr_{f_idx}{f_idx2}'] = relative_state_arr
+
+            # Combined flips, happens if relative_state_arr changes by 2
+            # (high, low) -> (low, high) and (low, high) -> (high, low) equal 1
+            combined_flips_arr = np.sum(np.abs(np.diff(relative_state_arr)) == 2,
+                                        axis=-1, dtype=float)
+            results[f'combined_flips_{f_idx}{f_idx2}'] = combined_flips_arr
+            combined_flip_probability = combined_flips_arr / max_flips
+            results[f'combined_flip_probability_{f_idx}{f_idx2}'] = combined_flip_probability
+
+            # Filter out scans that are not entirely in subspace i.e. not all
+            # up proportion combinations have exactly one high, one low state
+            # For this, the multiplied states must equal -1 (one +1, one -1)
+            filtered_scans = np.all(state_arr * state_arr2 == -1, axis=-1)
+            results[f'filtered_scans_{f_idx}{f_idx2}'] = filtered_scans
+
+            # Add filtered version of combined flips
+            for arr_name in [f'combined_flips_{f_idx}{f_idx2}',
+                             f'combined_flip_probability_{f_idx}{f_idx2}']:
+                filtered_arr = results[arr_name].copy()
+                filtered_arr[~filtered_scans] = np.nan
+                results['filtered_' + arr_name] = filtered_arr
+
+        # Also filter flips and flip_probability
+        # This is done afterwards since otherwise these arrays may not exist
+        # e.g. flips_1 does not exist when filtered_scans_01 is created
+        for arr_name in [f'flips_{f_idx}', f'flip_probability_{f_idx}']:
+            # Only loop over nearest indices
+            for f_idx2 in [f_idx - 1, f_idx + 1]:
+                if f_idx2 < 0 or f_idx2 == len(up_proportions_arrs):
+                    # f_idx is either first or last element
+                    continue
+                suffix = f'_{min(f_idx,f_idx2)}{max(f_idx, f_idx2)}'
+                filtered_scans = results[f'filtered_scans' + suffix]
+                filtered_arr = results[arr_name].copy()
+                filtered_arr[~filtered_scans] = np.nan
+                results[f'filtered_{arr_name}' + suffix] = filtered_arr
 
     return results
 
 #
-# def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
+# def analyse_NMR2(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
 #                 min_trace_perc=0.5, t_read=None,
 #                 threshold_voltage=None, threshold_method='config'):
 #
