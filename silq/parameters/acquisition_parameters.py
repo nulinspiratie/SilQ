@@ -13,6 +13,7 @@ from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
+from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
@@ -23,6 +24,7 @@ __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'T1Parameter',
            'DarkCountsParameter', 'VariableReadParameter',
+           'BlipsParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)
@@ -35,7 +37,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     store_trace_channels = ['output']
 
     def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, wrap_set=False, **kwargs):
+                 properties_attrs=None, wrap_set=False, save_traces=False,
+                 **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
@@ -54,7 +57,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.silent = True
         """Do not print results after acquisition"""
 
-        self.save_traces = False
+        self.save_traces = save_traces
         """ Save traces in separate files"""
 
         if environment == 'default':
@@ -93,6 +96,16 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             return super().__getattribute__(item)
         except AttributeError:
             return attribute_from_config(item)
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
+        # Update value in pulse settings if it exists
+        try:
+            if key in self.pulse_sequence.pulse_settings:
+                self.pulse_sequence.pulse_settings[key] = value
+        except AttributeError:
+            pass
 
     @property
     def sample_rate(self):
@@ -287,6 +300,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if stop is None:
             stop = not self.continuous
 
+        if not self.pulse_sequence.up_to_date():
+            self.pulse_sequence.generate()
+
         if setup or (setup is None and
                      self.layout.pulse_sequence != self.pulse_sequence) or \
                 self.layout.samples() != self.samples:
@@ -339,7 +355,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, name='DC', unit='V', **kwargs):
-
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
             DCPulse(name='final')])
@@ -648,13 +663,13 @@ class DCSweepParameter(AcquisitionParameter):
             connection_label = parameter_name
 
         self.sweep_parameters[parameter_name] = UpdateDotDict(
-            update_function=self.generate_pulse_sequence, name=parameter_name,
+            update_function=self.generate, name=parameter_name,
             sweep_voltages=sweep_voltages, connection_label=connection_label,
             offset_parameter=offset_parameter)
 
-        self.generate_pulse_sequence()
+        self.generate()
 
-    def generate_pulse_sequence(self):
+    def generate(self):
         self.pulse_sequence.clear()
 
         iter_sweep_parameters = iter(self.sweep_parameters.items())
@@ -831,21 +846,10 @@ class ESRParameter(AcquisitionParameter):
         """
         self._names = []
 
-        self.pre_pulses = []
-
-        self.post_pulses = [
-            DCPulse('empty', acquire=True),
-            DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True),
-            DCPulse('final')]
-
-        self.ESR = {'pulse': FrequencyRampPulse('adiabatic_ESR'),
-                    'plunge_pulse': DCPulse('plunge'),
-                    'read_pulse': DCPulse('read_initialize', acquire=True),
-                    'pulse_delay': 5}
-        self.ESR['pulses'] = ['pulse']
-
-        self._pulse_sequence_attributes = {}
+        self.pulse_sequence = ESRPulseSequence()
+        self.ESR = self.pulse_sequence.ESR
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
 
         super().__init__(name=name,
                          names=['contrast', 'dark_counts',
@@ -853,9 +857,6 @@ class ESRParameter(AcquisitionParameter):
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read'],
                          **kwargs)
-
-        self._update_pulse_sequence_attributes()
-        self.update_pulse_sequence()
 
     @property
     def names(self):
@@ -897,70 +898,6 @@ class ESRParameter(AcquisitionParameter):
                            f'Up proportion ESR{k} {f_ESR/1e9:.2f} GHz']
         return labels
 
-    def update_pulse_sequence(self):
-
-        # Initialize pulse sequence
-        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
-
-        # Update self.ESR['pulses']. Converts any pulses that are strings to
-        # actual pulses, and sets correct frequencies
-        # Also updates self._pulse_sequence_attributes
-        self.update_ESR_pulse_sequence()
-
-        for ESR_pulse in self.ESR['pulses']:
-            # Add a plunge and read pulse for each frequency
-            plunge_pulse, = self.pulse_sequence.add(self.ESR['plunge_pulse'])
-            ESR_pulse, = self.pulse_sequence.add(ESR_pulse)
-            ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                           delay=self.ESR['pulse_delay'])
-            self.pulse_sequence.add(self.ESR['read_pulse'])
-
-        self.pulse_sequence.add(*self.post_pulses)
-
-        # update names
-        self.names = [name for name in self.names
-                      if 'contrast_read' not in name
-                      and 'up_proportion_read' not in name]
-
-        self._update_pulse_sequence_attributes()
-
-    def _update_pulse_sequence_attributes(self):
-        self._pulse_sequence_attributes = {
-            'pre_pulses': deepcopy(self.pre_pulses),
-            'post_pulses': deepcopy(self.post_pulses),
-            'ESR': deepcopy(self.ESR)
-        }
-
-    def update_ESR_pulse_sequence(self, ESR_frequencies=None):
-        if ESR_frequencies is None:
-            ESR_frequencies = self.ESR_frequencies
-
-        if (self.ESR['pulse'] != self._pulse_sequence_attributes['ESR']['pulse']) \
-                or (len(ESR_frequencies) != len(self.ESR['pulses'])):
-            # Resetting ESR pulses
-            self.ESR['pulses'] = [copy(self.ESR['pulse'])
-                                  for _ in range(len(ESR_frequencies))]
-        else:
-            # Convert any pulse strings to pulses if necessary
-            self.ESR['pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
-                                  for p in self.ESR['pulses']]
-
-        # Make sure all pulses have proper ESR frequency
-        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
-            pulse.frequency = ESR_frequency
-
-        self._update_pulse_sequence_attributes()
-
-    def _matches_pulse_sequence_attrs(self):
-        # Create dict of current pulse sequence attributes
-        pulse_sequence_attributes = {
-            'pre_pulses': self.pre_pulses,
-            'post_pulses': self.post_pulses,
-            'ESR': self.ESR,
-        }
-        # Compare to attributes when pulse sequence was created
-        return pulse_sequence_attributes == self._pulse_sequence_attributes
-
     @property
     def ESR_frequencies(self):
         return [pulse.frequency if isinstance(pulse, Pulse)
@@ -973,13 +910,10 @@ class ESRParameter(AcquisitionParameter):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
 
-        self.update_ESR_pulse_sequence(ESR_frequencies=ESR_frequencies)
+        self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
     @clear_single_settings
     def get_raw(self):
-        if not self._matches_pulse_sequence_attrs():
-            self.update_pulse_sequence()
-
         self.acquire()
 
         if len(self.ESR_frequencies) == 1:
@@ -1004,35 +938,21 @@ class ESRParameter(AcquisitionParameter):
 
 class NMRParameter(AcquisitionParameter):
 
-    def __init__(self, name='NMR', update_pulse_sequence=False, **kwargs):
+    def __init__(self, name='NMR', **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
-
-        self.pre_pulses = []
-        self.NMR = {'stage_pulse': DCPulse('empty'),
-                    'NMR_pulse': SinePulse('NMR'),
-                    'pulses': ['NMR_pulse'],
-                    'pre_delay': 5,
-                    'inter_delay': 1,
-                    'post_delay': 2}
-        self.ESR = {'pulse': FrequencyRampPulse('adiabatic_ESR'),
-                    'plunge_pulse': DCPulse('plunge'),
-                    'read_pulse': DCPulse('read_initialize', acquire=True),
-                    'pulse_delay': 5, 'inter_pulse_delay': 1,
-                    'shots_per_frequency': 25}
-        self.ESR['pulses'] = ['pulse']
-        self.post_pulses = []
+        self.pulse_sequence = NMRPulseSequence()
+        self.NMR = self.pulse_sequence.NMR
+        self.ESR = self.pulse_sequence.ESR
+        self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
+        self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
 
         super().__init__(name=name,
                          names=self.names,
                          snapshot_value=False,
                          properties_attrs=['t_read', 't_skip', 'threshold_up_proportion'],
                          **kwargs)
-
-        # This initializes the pulse sequence
-        if update_pulse_sequence:
-            self.update_pulse_sequence()
 
     @property_ignore_setter
     def names(self):
@@ -1058,89 +978,6 @@ class NMRParameter(AcquisitionParameter):
     def labels(self):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
-    def update_NMR_pulse_sequence(self, pulse_sequence):
-        NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
-
-        NMR_pulses = []
-        for pulse in self.NMR['pulses']:
-            if isinstance(pulse, str):
-                # Pulse is a reference to some pulse in self.NMR
-                pulse = self.NMR[pulse]
-            NMR_pulse, = pulse_sequence.add(pulse)
-
-            if not NMR_pulses:
-                NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                               delay=self.NMR['pre_delay'])
-            else:
-                NMR_pulse.t_start = PulseMatch(NMR_pulses[-1], 't_stop',
-                                               delay=self.NMR['inter_delay'])
-            NMR_pulses.append(NMR_pulse)
-
-        NMR_stage_pulse.duration = (
-            self.NMR['pre_delay']
-            + (len(NMR_pulses) - 1) * self.NMR['inter_delay']
-            + sum(pulse.duration for pulse in NMR_pulses)
-            + self.NMR['post_delay'])
-        return pulse_sequence
-
-    def update_ESR_pulse_sequence(self, pulse_sequence):
-        for _ in range(self.ESR['shots_per_frequency']):
-            for ESR_pulses in self.ESR['pulses']:
-                # Add a plunge and read pulse for each frequency
-
-                if not isinstance(ESR_pulses, Iterable):
-                    # Treat frequency as list, as one could add multiple ESR
-                    # pulses
-                    ESR_pulses = [ESR_pulses]
-
-                plunge_pulse, = pulse_sequence.add(self.ESR['plunge_pulse'])
-                for k, ESR_pulse in enumerate(ESR_pulses):
-
-                    if isinstance(ESR_pulse, str):
-                        # Pulse is a reference to some pulse in self.ESR
-                        ESR_pulse = self.ESR[ESR_pulse]
-
-                    ESR_pulse, = pulse_sequence.add(ESR_pulse)
-
-                    # Delay also depends on any previous ESR pulses
-                    delay = self.ESR['pulse_delay'] + \
-                            k * self.ESR['inter_pulse_delay']
-                    ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                   delay=delay)
-                self.pulse_sequence.add(self.ESR['read_pulse'])
-
-    def update_pulse_sequence(self):
-        """
-        Updates the pulse sequence
-        """
-
-        # Initialize pulse sequence
-        self.pulse_sequence = PulseSequence(pulses=self.pre_pulses)
-
-        self.update_NMR_pulse_sequence(self.pulse_sequence)
-
-        self.update_ESR_pulse_sequence(self.pulse_sequence)
-
-        self.pulse_sequence.add(*self.post_pulses)
-
-        self._pulse_sequence_attributes = {
-            'pre_pulses': deepcopy(self.pre_pulses),
-            'post_pulses': deepcopy(self.post_pulses),
-            'NMR_sequence': deepcopy(self.NMR),
-            'ESR_sequence': deepcopy(self.ESR),
-        }
-
-    def _matches_pulse_sequence_attrs(self):
-        # Create dict of current pulse sequence attributes
-        pulse_sequence_attributes = {
-            'pre_pulses': self.pre_pulses,
-            'post_pulses': self.post_pulses,
-            'NMR_sequence': self.NMR,
-            'ESR_sequence': self.ESR
-        }
-        # Compare to attributes when pulse sequence was created
-        return pulse_sequence_attributes == self._pulse_sequence_attributes
-
     @property
     def ESR_frequencies(self):
         return [pulse.frequency if isinstance(pulse, Pulse)
@@ -1161,9 +998,6 @@ class NMRParameter(AcquisitionParameter):
 
     @clear_single_settings
     def get_raw(self):
-        if not self._matches_pulse_sequence_attrs():
-            self.update_pulse_sequence()
-
         self.acquire()
 
         self.results = analysis.analyse_NMR(
@@ -1320,6 +1154,62 @@ class VariableReadParameter(AcquisitionParameter):
                             np.concatenate([self.data['plunge']['output'],
                                             self.data['read']['output'],
                                             self.data['empty']['output']])}
+        return tuple(self.results[name] for name in self.names)
+
+
+class BlipsParameter(AcquisitionParameter):
+    """
+    Parameter that measures properties of blips in a trace
+    """
+    def __init__(self, name='count_blips', duration=None, pulse_name='read',
+                 **kwargs):
+        """
+        
+        Args:
+            name: parameter name (default `count_blips`)
+            duration: duration of tracepulse
+            pulse_name: name of trace pulse (default `read`)
+            **kwargs: kwargs passed to AcquisitionParameter
+        """
+        self.pulse_name = pulse_name
+
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name=pulse_name, acquire=True, average='none')])
+
+        super().__init__(name=name,
+                         names=['blips',
+                                'blips_per_second',
+                                'mean_low_blip_duration',
+                                'mean_high_blip_duration'],
+                         units=['', '1/s', 'ms', 'ms'],
+                         shapes=((), (), (),()),
+                         snapshot_value=False,
+                         continuous = True,
+                         **kwargs)
+        self.samples = 1
+        self.duration = duration
+        self.threshold_voltage = 0.3
+
+    @property
+    def duration(self):
+        return self.pulse_sequence['read'].duration
+
+    @duration.setter
+    def duration(self, duration):
+        self.pulse_sequence['read'].duration = duration
+
+    @clear_single_settings
+    def get_raw(self):
+        self.acquire()
+        self.results = analysis.count_blips(
+            traces=self.data[self.pulse_name]['output'],
+            t_skip=0,
+            sample_rate=self.sample_rate,
+            threshold_voltage=self.threshold_voltage)
+
+        if not self.silent:
+            self.print_results()
+
         return tuple(self.results[name] for name in self.names)
 
 
