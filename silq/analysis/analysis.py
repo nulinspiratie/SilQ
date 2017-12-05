@@ -294,8 +294,9 @@ def analyse_empty(traces, filter_loaded=True):
             'voltage_difference': high_low['voltage_difference']}
 
 
-def analyse_read(traces, start_idx=0, threshold_voltage=None,
+def analyse_read(traces, sample_rate, t_skip=0, threshold_voltage=None,
                  filter_loaded=True):
+    start_idx = round(t_skip * 1e-3 * sample_rate)
     if threshold_voltage is None:
         threshold_voltage = find_high_low(traces)['threshold_voltage']
 
@@ -339,7 +340,6 @@ def analyse_read_long(t_read, sample_rate, traces=None,
         else:
             traces = np.hstack([read_segment_begin, read_segment_end])
 
-    start_idx = int(round(t_skip * 1e-3 * sample_rate))
     read_pts = int(round(t_read * 1e-3 * sample_rate))
 
     high_low = find_high_low(traces, threshold_method=threshold_method)
@@ -366,11 +366,15 @@ def analyse_read_long(t_read, sample_rate, traces=None,
             read_segment_end = traces
         read_segment_end = read_segment_end[:, -read_pts:]
 
-        results_begin = analyse_read(read_segment_begin, start_idx=start_idx,
+        results_begin = analyse_read(read_segment_begin,
+                                     t_skip=t_skip,
+                                     sample_rate=sample_rate,
                                      threshold_voltage=threshold_voltage,
                                      filter_loaded=True)
         up_proportion = results_begin['up_proportion']
-        dark_counts = analyse_read(read_segment_end, start_idx=start_idx,
+        dark_counts = analyse_read(read_segment_end,
+                                   t_skip=t_skip,
+                                   sample_rate=sample_rate,
                                    threshold_voltage=threshold_voltage,
                                    filter_loaded=False)['up_proportion']
 
@@ -440,9 +444,12 @@ def analyse_multi_read_EPR(pulse_traces, sample_rate, t_read, t_skip,
 
     """
     # Analyse empty stage
-    results_empty = analyse_empty(pulse_traces['empty']['output'])
+    # Analyse empty stage, there are multiple empties in the PulseSequence
+    empty_trace = [val for key, val in pulse_traces.items()
+                    if 'empty' in key][0]
+    results_empty = analyse_empty(empty_trace['output'])
 
-    # Analyse plunge stage, there are mulitple plunges in the PulseSequence
+    # Analyse plunge stage, there are multiple plunges in the PulseSequence
     plunge_trace = [val for key, val in pulse_traces.items()
                     if 'plunge' in key][0]
     results_load = analyse_load(plunge_trace['output'])
