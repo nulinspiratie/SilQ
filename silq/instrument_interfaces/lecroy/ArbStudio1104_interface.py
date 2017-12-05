@@ -10,8 +10,6 @@ from silq.tools.general_tools import arreqclose_in_list
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 class ArbStudio1104Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
