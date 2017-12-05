@@ -82,6 +82,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         self.add_parameter('active_channels',
                            get_cmd=self._get_active_channels)
 
+        self.add_parameter('default_sampling_rates', set_cmd=None,
+                           initial_value=[500e6] * self.instrument.n_channels)
+
         self.add_parameter('trigger_mode',
                            parameter_class=ManualParameter,
                            vals=vals.Enum('none', 'hardware', 'software'),
@@ -113,15 +116,12 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             logger.debug('Done.')
 
     def setup(self, **kwargs):
-        # TODO: figure out how/if we want to configure channel-specific sampling rates
-        sampling_rates = {ch: 500e6 for ch in self.active_channels()}
+        # TODO: Handle sampling rates different from default
         # TODO: figure out how we want to configure error_threshold
         error_threshold = 1e-6
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
         # flush the onboard RAM and reset waveform counter
-        prescaler = 0
-        sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
         self.instrument.flush_waveform()
         waveform_counter = 0
 
@@ -159,9 +159,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         waveforms = dict()
 
         for pulse in self.pulse_sequence:
-            channel_waveforms = pulse.implementation.implement(instrument=self.instrument,
-                                                sampling_rates=sampling_rates,
-                                                threshold=error_threshold)
+            channel_waveforms = pulse.implementation.implement(
+                instrument=self.instrument,
+                default_sampling_rates=self.default_sampling_rates(),
+                threshold=error_threshold)
 
             for ch in channel_waveforms:
                 if ch in waveforms:
@@ -170,9 +171,13 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     waveforms[ch] = channel_waveforms[ch]
 
         # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
-        for ch in sorted(self._get_active_channels()):
+        for ch_idx, ch in enumerate(sorted(self._get_active_channels())):
             waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
             global_t_start = min(pulse.t_start for pulse in self.pulse_sequence)
+
+            default_sampling_rate = self.default_sampling_rates()[ch_idx]
+            prescaler = 0 if default_sampling_rate == 500e6 else 100e6 / default_sampling_rate
+
             insert_points = []
             for i, wf in enumerate(waveforms[ch]):
                 if i == 0:
@@ -443,22 +448,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
             return [waveform_repeated, waveform_tail]
 
+
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting SinePulse for M3201A interface {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         """
         This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
         it to a set of pulse-independent instructions/information that can be handled by interface.setup().
@@ -466,10 +459,6 @@ class SinePulseImplementation(PulseImplementation):
         For example:
             SinePulseImplementation()
                 initializes a generic (interface independent) pulseimplementation for the sinepulse
-            SinePulseImplementation.target_pulse()
-                target the generic (interface independent) pulseimplementation to this specific interface, also adds
-                trigger requirements, which are communicated back to the layout. The trigger requirements are also
-                interface specific. The pulse in now called a 'targeted pulse'.
             SinePulseImplementation.implement()
                 takes the targeted pulse and returns information/instructions that are independent of the pulse type
                 (DCPulse, SinePulse, ...) and can be handled by interface.setup() to send instructions to the driver.
@@ -511,14 +500,6 @@ class SinePulseImplementation(PulseImplementation):
         else:
             raise Exception('No implementation for connection {}'.format(
                 self.pulse.connection))
-
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-        period_sample = 1 / sampling_rate
-
-        assert self.pulse.frequency < sampling_rate / 2, \
-            f'Sine frequency {self.frequency} is too high for' \
-            f'the sampling frequency {sampling_rate}'
-
         waveforms = {}
 
         full_name = self.pulse.full_name or 'none'
@@ -531,21 +512,28 @@ class SinePulseImplementation(PulseImplementation):
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15  # the minimum size of a waveform
 
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-        period_sample = 1 / sampling_rate
 
-        for ch in channels:
+        for ch_idx, ch in enumerate(channels):
+
+            sampling_rate = default_sampling_rates[ch_idx]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            period_sample = 1 / sampling_rate
+            assert self.pulse.frequency < sampling_rate / 2, \
+                f'Sine frequency {self.pulse.frequency} is too high for' \
+                f'the sampling frequency {sampling_rate}'
+
             # This factor determines the number of points needed in the waveform
             # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
             n_min = int(np.ceil(cycles / 2**16))
 
-            n, error, waveform_samples = pulse_to_waveform_sequence(duration, self.pulse.frequency, sampling_rate, threshold,
+            n, error, waveform_samples = pulse_to_waveform_sequence(duration, self.pulse.frequency,
+                                                                    sampling_rate, threshold,
                                                            n_min=n_min, n_max=1000,
                                                            sample_points_multiple=waveform_multiple)
 
             if waveform_samples < waveform_minimum:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
-                                   f'{waveform_sample/sampling_rate*1e3:.3f}ms < '
+                                   f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
 
@@ -569,56 +557,49 @@ class SinePulseImplementation(PulseImplementation):
                 # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
                 waveform_tail_samples = 0
 
-            t_list_2 = np.linspace(waveform_tail_start, self.pulse.t_stop, waveform_tail_samples, endpoint=True)
+            t_list_2 = np.linspace(waveform_tail_start,
+                                   self.pulse.t_stop,
+                                   waveform_tail_samples,
+                                   endpoint=True)
 
             waveform_repeated = {}
             waveform_tail = {}
 
-            waveform_repeated_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_1)]
+            waveform_repeated_data = self.pulse.get_voltage(t_list_1) / 1.5
 
-            waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                         waveform_data_a=waveform_repeated_data)
+            waveform_repeated['waveform'] = instrument.new_waveform_from_double(
+                waveform_type=0,
+                waveform_data_a=waveform_repeated_data)
             waveform_repeated['name'] = full_name
             waveform_repeated['points'] = waveform_samples
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.pulse.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
-            waveform_repeated['prescaler'] = self.prescaler
+            waveform_repeated['prescaler'] = prescaler
 
             if len(t_list_2) == 0:
                 waveforms[ch] = [waveform_repeated]
             else:
-                waveform_tail_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_2)]
+                waveform_tail_data = self.pulse.get_voltage(t_list_2) / 1.5
 
-                waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                             waveform_data_a=waveform_tail_data)
+                waveform_tail['waveform'] = instrument.new_waveform_from_double(
+                    waveform_type=0,
+                    waveform_data_a=waveform_tail_data)
                 waveform_tail['name'] = full_name + '_tail'
                 waveform_tail['points'] = waveform_tail_samples
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
-                waveform_tail['t_stop'] = waveform_tail_stop
-                waveform_tail['prescaler'] = self.prescaler
+                waveform_tail['t_stop'] = self.pulse.t_stop
+                waveform_tail['prescaler'] = prescaler
 
                 waveforms[ch] = [waveform_repeated, waveform_tail]
 
         return waveforms
 
+
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting DCPulse for {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
@@ -634,10 +615,12 @@ class DCPulseImplementation(PulseImplementation):
         waveform_multiple = 5
         waveform_minimum = 15  # the minimum size of a waveform
 
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-        period_sample = 1 / sampling_rate
+        for ch_idx, ch in enumerate(channels):
 
-        for ch in channels:
+            sampling_rate = default_sampling_rates[ch_idx]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            period_sample = 1 / sampling_rate
+
             period = period_sample * waveform_multiple
             max_cycles = int(duration // period)
 
@@ -672,59 +655,51 @@ class DCPulseImplementation(PulseImplementation):
             if waveform_tail_samples < waveform_minimum:
                 waveform_tail_samples = 0
 
-            t_list_2 = np.linspace(waveform_tail_start, self.pulse.t_stop, waveform_tail_samples, endpoint=True)
+            t_list_2 = np.linspace(waveform_tail_start,
+                                   self.pulse.t_stop,
+                                   waveform_tail_samples,
+                                   endpoint=True)
 
             waveform_repeated = {}
             waveform_tail = {}
 
-            waveform_repeated_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_1)]
+            waveform_repeated_data = self.pulse.get_voltage(t_list_1) / 1.5
 
-            waveform_repeated['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                         waveform_data_a=waveform_repeated_data)
+            waveform_repeated['waveform'] = instrument.new_waveform_from_double(
+                waveform_type=0,
+                waveform_data_a=waveform_repeated_data)
             waveform_repeated['name'] = full_name
             waveform_repeated['points'] = waveform_samples
             waveform_repeated['cycles'] = waveform_repeated_cycles
             waveform_repeated['t_start'] = self.pulse.t_start
             waveform_repeated['t_stop'] = waveform_tail_start
-            waveform_repeated['prescaler'] = self.prescaler
+            waveform_repeated['prescaler'] = prescaler
 
             if waveform_tail_samples == 0:
                 waveform_repeated['t_stop'] = self.pulse.t_stop
                 waveforms[ch] = [waveform_repeated]
             else:
-                waveform_tail_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list_2)]
+                waveform_tail_data = self.pulse.get_voltage(t_list_2) / 1.5
 
-                waveform_tail['waveform'] = instrument.new_waveform_from_double(waveform_type=0,
-                                                                             waveform_data_a=waveform_tail_data)
+                waveform_tail['waveform'] = instrument.new_waveform_from_double(
+                    waveform_type=0,
+                    waveform_data_a=waveform_tail_data)
 
                 waveform_tail['name'] = full_name + '_tail'
                 waveform_tail['points'] = waveform_tail_samples
                 waveform_tail['cycles'] = 1
                 waveform_tail['t_start'] = waveform_tail_start
                 waveform_tail['t_stop'] = self.pulse.t_stop
-                waveform_tail['prescaler'] = self.prescaler
+                waveform_tail['prescaler'] = prescaler
 
                 waveforms[ch] = [waveform_repeated, waveform_tail]
 
         return waveforms
 
+
 class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
-
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting DCRampPulse for {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
@@ -740,10 +715,12 @@ class DCRampPulseImplementation(PulseImplementation):
         waveform_minimum = 15
 
         duration = self.pulse.duration
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-        period_sample = 1 / sampling_rate
+        for ch_idx, ch in enumerate(channels):
 
-        for ch in channels:
+            sampling_rate = default_sampling_rates[ch_idx]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            period_sample = 1 / sampling_rate
+
             waveform_samples = waveform_multiple * round(
                 (self.pulse.duration / period_sample) / waveform_multiple)
             t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop,
@@ -753,8 +730,7 @@ class DCRampPulseImplementation(PulseImplementation):
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                    f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                    f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
-            waveform_data = [voltage / 1.5 for voltage in
-                             self.pulse.get_voltage(t_list)]
+            waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
             waveform = {
                 'waveform': instrument.new_waveform_from_double(waveform_type=0,
@@ -764,28 +740,16 @@ class DCRampPulseImplementation(PulseImplementation):
                 'cycles': 1,
                 't_start': self.pulse.t_start,
                 't_stop': self.pulse.t_stop,
-                'prescaler': self.prescaler}
+                'prescaler': prescaler}
 
             waveforms[ch] = [waveform]
 
         return waveforms
 
+
 class AWGPulseImplementation(PulseImplementation):
     pulse_class = AWGPulse
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting AWGPulse for {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
@@ -799,45 +763,38 @@ class AWGPulseImplementation(PulseImplementation):
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15
 
-        for ch in channels:
-            sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-            period_sample = 1 / sampling_rate
+        for ch_idx, ch in enumerate(channels):
 
+            sampling_rate = default_sampling_rates[ch_idx]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            period_sample = 1 / sampling_rate
 
             waveform_samples = waveform_multiple * round(
                 (self.pulse.duration / period_sample) / waveform_multiple)
-            t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
+            t_list = np.linspace(self.pulse.t_start,
+                                 self.pulse.t_stop,
+                                 waveform_samples,
+                                 endpoint=True)
 
-            waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list)]
+            waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
-            waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
-                                                                        waveform_data_a=waveform_data),
+            waveform = {'waveform': instrument.new_waveform_from_double(
+                waveform_type=0,
+                waveform_data_a=waveform_data),
                         'name':full_name,
                         'cycles': 1,
                         't_start': self.pulse.t_start,
                         't_stop': self.pulse.t_start,
-                        'prescaler':self.prescaler}
+                        'prescaler':prescaler}
 
             waveforms[ch] = [waveform]
 
         return waveforms
 
+
 class CombinationPulseImplementation(PulseImplementation):
     pulse_class = CombinationPulse
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting CombinationPulse for {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
@@ -852,10 +809,13 @@ class CombinationPulseImplementation(PulseImplementation):
         waveform_minimum = 15
 
         duration = self.pulse.duration
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6 / self.prescaler
-        period_sample = 1 / sampling_rate
 
-        for ch in channels:
+        for ch_idx, ch in enumerate(channels):
+
+            sampling_rate = default_sampling_rates[ch_idx]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            period_sample = 1 / sampling_rate
+
             waveform_samples = waveform_multiple * round(
                 (duration/ period_sample) / waveform_multiple)
 
@@ -864,9 +824,12 @@ class CombinationPulseImplementation(PulseImplementation):
                                f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                                f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
-            t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
+            t_list = np.linspace(self.pulse.t_start,
+                                 self.pulse.t_stop,
+                                 waveform_samples,
+                                 endpoint=True)
 
-            waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list)]
+            waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
             waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                         waveform_data_a=waveform_data),
@@ -874,24 +837,20 @@ class CombinationPulseImplementation(PulseImplementation):
                         'cycles': 1,
                         't_start': self.pulse.t_start,
                         't_stop': self.pulse.t_stop,
-                        'prescaler': self.prescaler}
+                        'prescaler': prescaler}
 
             waveforms[ch] = [waveform]
 
         return waveforms
 
+
 class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
-
-    def __init__(self, prescaler=0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
     @property
     def amplitude(self):
         return 1.0
 
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channel = self.pulse.connection.output['channel'].name
         else:
@@ -905,7 +864,9 @@ class TriggerPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
         duration = self.pulse.duration
 
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
+
+        sampling_rate = default_sampling_rates[int(channel[-1])]
+        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
         period_sample = 1 / sampling_rate
 
         waveform_samples = waveform_multiple * round(
@@ -917,7 +878,7 @@ class TriggerPulseImplementation(PulseImplementation):
                 f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
+        waveform_data = np.append(self.pulse.get_voltage(t_list[:-1]), [0]) / 1.5
         assert len(waveform_data) == waveform_samples, 'Waveform data length' \
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
 
@@ -928,7 +889,7 @@ class TriggerPulseImplementation(PulseImplementation):
                     'cycles': 1,
                     't_start': self.pulse.t_start,
                     't_stop': self.pulse.t_stop,
-                    'prescaler': self.prescaler}
+                    'prescaler': prescaler}
 
         waveforms[channel] = [waveform]
 
@@ -937,25 +898,11 @@ class TriggerPulseImplementation(PulseImplementation):
 
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
-    def __init__(self, prescaler = 0, **kwargs):
-        PulseImplementation.__init__(self, **kwargs)
-        self.prescaler = prescaler
-
     @property
     def amplitude(self):
         return 1.0
 
-    def target_pulse(self, pulse, interface, **kwargs):
-        logger.debug('targeting MarkerPulse for {}'.format(interface))
-        is_primary = kwargs.pop('is_primary', False)
-        # Target the generic pulse to this specific interface
-        targeted_pulse = PulseImplementation.target_pulse(
-            self, pulse, interface=interface, **kwargs)
-
-        return targeted_pulse
-
-
-    def implement(self, instrument, sampling_rates, threshold):
+    def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channel = self.pulse.connection.output['channel'].name
         else:
@@ -969,7 +916,8 @@ class MarkerPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
         duration = self.pulse.duration
 
-        sampling_rate = 500e6 if self.prescaler == 0 else 100e6/self.prescaler
+        sampling_rate = default_sampling_rates[int(channel[-1])]
+        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
         period_sample = 1 / sampling_rate
 
         # Waveform must have at least waveform_multiple samples
@@ -981,7 +929,7 @@ class MarkerPulseImplementation(PulseImplementation):
                 f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
         t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, waveform_samples, endpoint=True)
 
-        waveform_data = [voltage/1.5 for voltage in self.pulse.get_voltage(t_list[:-1])] + [0]
+        waveform_data = np.append(self.pulse.get_voltage(t_list[:-1]), [0]) / 1.5
         assert len(waveform_data) == waveform_samples, f'Waveform data length' \
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
@@ -991,7 +939,7 @@ class MarkerPulseImplementation(PulseImplementation):
                     'cycles': 1,
                     't_start': self.pulse.t_start,
                     't_stop': self.pulse.t_stop,
-                    'prescaler': self.prescaler}
+                    'prescaler': prescaler}
 
         waveforms[channel] = [waveform]
 
