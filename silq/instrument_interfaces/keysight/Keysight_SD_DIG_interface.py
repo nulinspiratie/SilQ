@@ -126,15 +126,31 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 ch_name = 'ch{}'.format(ch)
                 ts = (pulse.t_start - t_0, pulse.t_stop - t_0)
                 sample_range = [int(round(t * self.sample_rate())) for t in ts]
+                pts = len(sample_range)
 
                 # Extract pulse data from the channel data
                 if acquisition_average_mode == 'none':
                     data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
                     # Further average the pulse data
-                    if pulse.average == 'trace':
+                    if pulse.average == 'none':
+                        pass
+                    elif pulse.average == 'trace':
                         data[name][ch_name] = np.mean(data[name][ch_name], axis=0)
                     elif pulse.average == 'point':
                         data[name][ch_name] = np.mean(data[name][ch_name])
+                    elif 'point_segment' in pulse.average:
+                        segments = int(pulse.average.split(':')[1])
+                        pts = data[name][ch_name].shape[1]
+
+                        segments_idx = [int(round(pts * idx / segments))
+                                        for idx in np.arange(segments + 1)]
+                        pulse_traces = np.zeros(segments)
+                        for k in range(segments):
+                            pulse_traces[k] = np.mean(data[name][ch_name][:, segments_idx[k]:segments_idx[k + 1]])
+
+                        data[name][ch_name] = pulse_traces
+                    else:
+                        raise SyntaxError(f'average mode {pulse.average} not configured')
 
                 elif acquisition_average_mode == 'trace':
                     data[name][ch_name] = ch_data[sample_range[0]:sample_range[1]]
