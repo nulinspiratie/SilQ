@@ -502,6 +502,10 @@ class PulseSequence:
 
         return shapes
 
+    def up_to_date(self):
+        """ Whether a pulse sequence needs to be generated.
+        Can be overridden in subclass """
+        return True
 
 class PulseImplementation:
     pulse_config = None

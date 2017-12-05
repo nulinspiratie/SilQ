@@ -17,8 +17,9 @@ __all__ = ['Condition', 'TruthCondition', 'ConditionSet', 'Measurement',
 
 logger = logging.getLogger(__name__)
 
-_dummy_parameter = qc.ManualParameter(name='msmt_idx',
-                                      label='Measurement idx')
+_dummy_parameter = qc.Parameter(name='msmt_idx',
+                                set_cmd=None,
+                                label='Measurement idx')
 
 class Condition:
     def __init__(self, **kwargs):

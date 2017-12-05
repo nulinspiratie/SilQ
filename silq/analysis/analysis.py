@@ -226,8 +226,11 @@ def count_blips(traces, threshold_voltage, sample_rate, t_skip):
     low_blip_duration = np.array(low_blip_pts) / sample_rate * 1e3
     high_blip_duration = np.array(high_blip_pts) / sample_rate * 1e3
 
-    return {'low_blip_duration': low_blip_duration,
-            'low_blip_duration': high_blip_duration,
+    duration = len(traces[0]) / sample_rate
+    return {'blips': len(low_blip_duration),
+            'blips_per_second': len(low_blip_duration) / duration,
+            'low_blip_duration': low_blip_duration,
+            'high_blip_duration': high_blip_duration,
             'mean_low_blip_duration': np.mean(low_blip_duration),
             'mean_high_blip_duration': np.mean(high_blip_duration)}
 

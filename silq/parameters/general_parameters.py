@@ -15,40 +15,86 @@ __all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
            'AttributeParameter', 'ConfigPulseAttribute']
 
 
-
 class CombinedParameter(Parameter):
     """
     Combines multiple parameters into a single parameter.
     Setting this parameter sets all underlying parameters to this value
     Getting this parameter gets the value of the first parameter
     """
-    def __init__(self, parameters, name=None, label=None, unit=None, offsets=None, **kwargs):
+    def __init__(self, parameters, name=None, label='', unit=None, offsets=None,
+                 scales=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
-        if label is None:
-            label = ' and '.join([parameter.label for parameter in parameters])
+
+        self.label = None
         if unit is None:
             unit = parameters[0].unit
-        super().__init__(name, label=label, unit=unit, **kwargs)
 
         self.parameters = parameters
         self.offsets = offsets
+        self.scales = scales
+
+        super().__init__(name, label=label, unit=unit, **kwargs)
+
+    @property
+    def label(self):
+        if self._label:
+            return self._label
+
+        if self.scales is None and self.offsets is None:
+            return ' and '.join([parameter.label for parameter in self.parameters])
+        else:
+            labels = []
+            for k, parameter in enumerate(self.parameters):
+                if self.scales is not None:
+                    label = f'{self.scales[k]} * {parameter.name}'
+                else:
+                    label = parameter.name
+
+                if self.offsets is not None:
+                    label += f' + {self.offsets[k]}'
+
+            return f'({", ".join(labels)})'
+
+    @label.setter
+    def label(self, label):
+        self._label = label
+
+    def zero_offset(self):
+        self.offsets = [param() for param in self.parameters]
+
+    def calculate_individual_values(self, value):
+        """
+        Calulate values of parameters from a combined value
+        Args:
+            value: combined value
+
+        Returns:
+            list of values for each parameter
+        """
+        vals = []
+        for k, parameter in enumerate(self.parameters):
+            val = value
+            if self.scales is not None:
+                val *= self.scales[k]
+            if self.offsets is not None:
+                val += self.offsets[k]
+            vals.append(val)
+
+        return vals
 
     def get_raw(self):
         value = self.parameters[0]()
         if self.offsets is not None:
             value -= self.offsets[0]
-        self._save_val(value)
+        if self.scales is not None:
+            value /= self.scales[0]
         return value
 
     def set_raw(self, value):
-        self._save_val(value)
-        for k, parameter in enumerate(self.parameters):
-            if self.offsets is not None:
-                offset = self.offsets[k]
-            else:
-                offset = 0
-            parameter(value + offset)
+        individual_values = self.calculate_individual_values(value)
+        for parameter, val in zip(self.parameters, individual_values):
+            parameter(val)
             sleep(0.005)
 
 
