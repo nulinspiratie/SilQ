@@ -10,7 +10,7 @@ from silq import config
 from silq.instrument_interfaces import Channel
 from silq.pulses.pulse_modules import PulseSequence
 
-from qcodes import Instrument, FormatLocation, Parameter
+from qcodes import Instrument, FormatLocation
 from qcodes.utils import validators as vals
 from qcodes.data.io import DiskIO
 
