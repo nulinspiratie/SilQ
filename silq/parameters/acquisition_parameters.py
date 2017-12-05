@@ -338,8 +338,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
-    def __init__(self, name='DC', **kwargs):
-        self.samples = 1
+    def __init__(self, name='DC', unit='V', **kwargs):
 
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
@@ -348,10 +347,11 @@ class DCParameter(AcquisitionParameter):
         super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
-                         units=['V'],
+                         units=[unit],
                          snapshot_value=False,
                          continuous = True,
                          **kwargs)
+        self.samples = 1
 
     @clear_single_settings
     def get_raw(self):
@@ -550,12 +550,12 @@ class DCSweepParameter(AcquisitionParameter):
         self.use_ramp = False
 
         self.additional_pulses = []
-        self.samples = 1
 
         super().__init__(name=name, names=['DC_voltage'],
                          labels=['DC voltage'], units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
+        self.samples = 1
 
     def __getitem__(self, item):
         return self.sweep_parameters[item]
@@ -585,9 +585,9 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
-            points = round(self.trace_pulse.duration * 1e-3 * self.sample_rate)
+            points = round(self.trace_pulse.duration * self.sample_rate)
             trace_setpoints = tuple(
-                np.linspace(0, self.trace_pulse.duration, points))
+                np.linspace(0, 1e3*self.trace_pulse.duration, points))
             setpoints += (convert_setpoints(trace_setpoints),)
         return setpoints
 
@@ -624,7 +624,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             shapes += (round(
-                self.trace_pulse.duration * 1e-3 * self.sample_rate),),
+                self.trace_pulse.duration * self.sample_rate),),
         return shapes
 
     @property_ignore_setter
