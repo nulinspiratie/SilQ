@@ -809,7 +809,7 @@ class MeasurementPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 't_start={self.t_start}, duration={self.duration}'
+            properties_str = f't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)
