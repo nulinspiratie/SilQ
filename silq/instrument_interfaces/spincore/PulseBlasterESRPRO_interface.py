@@ -30,8 +30,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         # Factor of 2 needed because apparently the core clock is not the same
         # as the sampling rate
         # TODO check if this is correct
-        us = 2 * core_clock # points per microsecond
-        ms = us * 1e3 # points per millisecond
+        # convert core_clock in MHz to sample_rate in Hz
+        sample_rate = 2 * core_clock * 1e6
 
         #Initial pulseblaster commands
         self.instrument.stop()
@@ -89,7 +89,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
             # Send wait instruction until next event
             wait_duration = t_next - t
-            wait_cycles = round(wait_duration * ms)
+            wait_cycles = round(wait_duration * sample_rate)
             # Either send continue command or long_delay command if the
             # wait duration is too long
             if wait_cycles < 1e9:
@@ -108,7 +108,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             # Wait until end of pulse sequence
             wait_duration = max(self.pulse_sequence.duration - t, 0)
             if wait_duration:
-                wait_cycles = round(wait_duration * ms)
+                wait_cycles = round(wait_duration * sample_rate)
                 if wait_cycles < 1e9:
                     instructions.append((inactive_channel_mask, 'continue', 0, wait_cycles))
                 else:
