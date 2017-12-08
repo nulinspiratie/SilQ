@@ -1181,7 +1181,7 @@ class BlipsParameter(AcquisitionParameter):
                                 'blips_per_second',
                                 'mean_low_blip_duration',
                                 'mean_high_blip_duration'],
-                         units=['', '1/s', 'ms', 'ms'],
+                         units=['', '1/s', 's', 's'],
                          shapes=((), (), (),()),
                          snapshot_value=False,
                          continuous = True,
