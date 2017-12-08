@@ -557,12 +557,12 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
-        self.trace_pulse = DCPulse(name='trace', duration=100, enabled=False,
+        self.trace_pulse = DCPulse(name='trace', duration=100e-3, enabled=False,
                                    acquire=True, average='trace', amplitude=0)
 
-        self.pulse_duration = 1
-        self.final_delay = 120
-        self.inter_delay = 0.2
+        self.pulse_duration = 1e-3
+        self.final_delay = 120e-3
+        self.inter_delay = 200e-6
         self.use_ramp = False
 
         self.additional_pulses = []
@@ -601,7 +601,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
-            points = round(self.trace_pulse.duration * 1e-3 * self.sample_rate)
+            points = round(self.trace_pulse.duration * self.sample_rate)
             trace_setpoints = tuple(
                 np.linspace(0, self.trace_pulse.duration, points))
             setpoints += (convert_setpoints(trace_setpoints),)
@@ -640,7 +640,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             shapes += (round(
-                self.trace_pulse.duration * 1e-3 * self.sample_rate),),
+                self.trace_pulse.duration * self.sample_rate),),
         return shapes
 
     @property_ignore_setter
@@ -655,7 +655,7 @@ class DCSweepParameter(AcquisitionParameter):
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
         if self.trace_pulse.enabled:
-            setpoint_units += (('ms',), )
+            setpoint_units += (('s',), )
         return setpoint_units
 
     def add_sweep(self, parameter_name, sweep_voltages=None,
