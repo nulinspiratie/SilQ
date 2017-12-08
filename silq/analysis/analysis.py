@@ -205,7 +205,7 @@ def find_up_proportion(traces, threshold_voltage=None, return_mean=True,
 
 def count_blips(traces, threshold_voltage, sample_rate, t_skip):
     low_blip_pts, high_blip_pts = [], []
-    start_idx = round(t_skip * 1e-3 * sample_rate)
+    start_idx = round(t_skip * sample_rate)
 
     for k, trace in enumerate(traces):
         idx = start_idx
@@ -223,8 +223,8 @@ def count_blips(traces, threshold_voltage, sample_rate, t_skip):
                 blip_list.append(next_idx)
                 idx += next_idx
 
-    low_blip_duration = np.array(low_blip_pts) / sample_rate * 1e3
-    high_blip_duration = np.array(high_blip_pts) / sample_rate * 1e3
+    low_blip_duration = np.array(low_blip_pts) / sample_rate
+    high_blip_duration = np.array(high_blip_pts) / sample_rate
 
     duration = len(traces[0]) / sample_rate
     return {'blips': len(low_blip_duration),
@@ -296,7 +296,7 @@ def analyse_empty(traces, filter_loaded=True):
 
 def analyse_read(traces, sample_rate, t_skip=0, threshold_voltage=None,
                  filter_loaded=True):
-    start_idx = round(t_skip * 1e-3 * sample_rate)
+    start_idx = round(t_skip * sample_rate)
     if threshold_voltage is None:
         threshold_voltage = find_high_low(traces)['threshold_voltage']
 
@@ -340,7 +340,7 @@ def analyse_read_long(t_read, sample_rate, traces=None,
         else:
             traces = np.hstack([read_segment_begin, read_segment_end])
 
-    read_pts = int(round(t_read * 1e-3 * sample_rate))
+    read_pts = int(round(t_read * sample_rate))
 
     high_low = find_high_low(traces, threshold_method=threshold_method)
     threshold_voltage = high_low['threshold_voltage']
@@ -532,7 +532,7 @@ def analyse_NMR(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
     samples, read_pts = single_read_segment.shape
 
     if t_read is not None:
-        read_pts = round(t_read * 1e-3 * sample_rate)
+        read_pts = round(t_read * sample_rate)
 
     # Create 4D array of all read segments
     read_traces = np.zeros((distinct_reads_per_trace, # Distinct ESR frequencies
