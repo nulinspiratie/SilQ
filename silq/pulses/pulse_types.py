@@ -804,8 +804,8 @@ class TriggerWaitPulse(Pulse):
 
 
 class MeasurementPulse(Pulse):
-    def __init__(self, name=None, **kwargs):
-        super().__init__(name=name, **kwargs)
+    def __init__(self, name=None, acquire=True, **kwargs):
+        super().__init__(name=name, acquire=acquire, **kwargs)
 
     def __repr__(self):
         try:
