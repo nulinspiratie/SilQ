@@ -396,8 +396,7 @@ class TraceParameter(AcquisitionParameter):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
         self.samples = 1
-        self.trace_pulse = MeasurementPulse(name=name, duration=1,
-                                            acquire=True,
+        self.trace_pulse = MeasurementPulse(name=name, duration=1e-3,
                                             average=self.average_mode)
 
         super().__init__(name='Trace_acquisition',
@@ -482,15 +481,15 @@ class TraceParameter(AcquisitionParameter):
             return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('Time', ), ) * len(self.layout.acquisition_outputs())
+            return (('time', ), ) * len(self.layout.acquisition_outputs())
 
 
     @property_ignore_setter
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
-            return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
+            return ((None, 's', ), ) * len(self.layout.acquisition_outputs())
         else:
-            return (('ms', ), ) * len(self.layout.acquisition_outputs())
+            return (('s', ), ) * len(self.layout.acquisition_outputs())
 
 
     def setup(self, start=None, **kwargs):
