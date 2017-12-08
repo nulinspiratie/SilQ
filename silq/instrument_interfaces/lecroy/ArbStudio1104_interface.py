@@ -34,11 +34,11 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.add_parameter('trigger_in_duration',
                            set_cmd=None,
-                           unit='us',
-                           initial_value=0.1)
+                           unit='s',
+                           initial_value=100e-9)
         self.add_parameter('final_delay',
                            set_cmd=None,
-                           unit='us', initial_value=1)
+                           unit='s', initial_value=1e-6)
 
         self.add_parameter('active_channels', get_cmd=self._get_active_channels)
 
@@ -167,7 +167,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def _get_trigger_pulse(self, t):
         trigger_pulse = TriggerPulse(t_start=t,
-            duration=self.trigger_in_duration() * 1e-3,
+            duration=self.trigger_in_duration(),
             connection_requirements={'input_instrument': self.instrument_name(),
                 'trigger': True})
         return trigger_pulse
@@ -282,18 +282,18 @@ class SinePulseImplementation(PulseImplementation):
         # duration requires too many points. We therefore find a duration
         # that does not create too many points, and generate the waveform.
         # TODO implement full waveform if sampling rate is not too high
-        self.waveform_duration = 1  # us
-        assert self.waveform_duration * 1e-6 * self.frequency > 10, "sine pulse frequency {} too low, increase waveform " \
+        self.waveform_duration = 1e-6
+        assert self.waveform_duration * self.frequency > 10, "sine pulse frequency {} too low, increase waveform " \
                                                                     "duration".format(
             self.frequency)
-        assert self.waveform_duration * 1e-3 < self.duration, "Waveform duration too long"
+        assert self.waveform_duration < self.duration, "Waveform duration too long"
 
         for ch in channels:
             # TODO choose number of points to minimize the phase accumulation
             # Start t_list from t_start to ensure phase is taken into account
             t_list = np.arange(self.t_start,
-                               self.t_start + self.waveform_duration * 1e-3,
-                               1 / sampling_rates[ch] * 1e3)  # ms
+                               self.t_start + self.waveform_duration,
+                               1 / sampling_rates[ch])
             if len(t_list) % 2:
                 t_list = t_list[:-1]
 
@@ -384,8 +384,8 @@ class DCRampPulseImplementation(PulseImplementation):
             "intermediary triggers"
 
         t_list = {ch: np.arange(self.pulse.t_start,
-                                self.pulse.t_stop - self.pulse.final_delay*1e-3,
-                                1 / sampling_rates[ch] * 1e3)
+                                self.pulse.t_stop - self.pulse.final_delay,
+                                1 / sampling_rates[ch])
                   for ch in sampling_rates}
 
         # All waveforms must have an even number of points
