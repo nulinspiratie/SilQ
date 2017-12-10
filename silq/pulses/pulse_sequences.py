@@ -91,7 +91,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
 
 class NMRPulseSequence(PulseSequenceGenerator):
-     def __init__(self, pulses=[], **kwargs):
+    def __init__(self, pulses=[], **kwargs):
         super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings['NMR'] = self.NMR = {
             'stage_pulse': DCPulse('empty'),
@@ -216,7 +216,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
 
         t = stage_pulse.t_start + self.ESR['pre_delay']
 
-        # Add pre-pulse
+        # Add initial pulse (evolve to state where T2 effects can be observed)
         if self.ESR['initial_pulse'] is not None:
             ESR_initial_pulse, = self.add(self.ESR['initial_pulse'])
             ESR_initial_pulse.t_start = t
