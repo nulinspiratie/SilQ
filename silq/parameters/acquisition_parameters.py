@@ -1103,13 +1103,12 @@ class T2ElectronParameter(AcquisitionParameter):
         self.results = analysis.analyse_multi_read_EPR(
             pulse_traces=self.data['read']['output'],
             t_read=self.t_read,
-            # threshold_voltage=self.readout_threshold_voltage,
             t_skip=self.t_skip,
             sample_rate=self.sample_rate)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            self.store_traces(self.data, subfolder=subfolder)
+            self.store_traces(self.data)
 
         if not self.silent:
             self.print_results()
