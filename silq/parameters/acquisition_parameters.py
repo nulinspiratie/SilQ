@@ -1071,6 +1071,7 @@ class T1Parameter(AcquisitionParameter):
 
         return tuple(self.results[name] for name in self.names)
 
+
 class T2ElectronParameter(AcquisitionParameter):
     def __init__(self, name='Electron_T2', **kwargs):
         self.pulse_sequence = T2ElectronPulseSequence()
@@ -1108,12 +1109,6 @@ class T2ElectronParameter(AcquisitionParameter):
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
-            if self.subfolder is not None:
-                subfolder = '{}/tau_{:.0f}'.format(self.subfolder,
-                                               self.wait_time)
-            else:
-                subfolder = 'tau_{:.0f}'.format(self.wait_time)
-
             self.store_traces(self.data, subfolder=subfolder)
 
         if not self.silent:
