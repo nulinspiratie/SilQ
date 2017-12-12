@@ -13,7 +13,8 @@ from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
-from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence
+from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
+    T2ElectronPulseSequence
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
@@ -1063,6 +1064,50 @@ class T1Parameter(AcquisitionParameter):
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
             self.store_traces(self.data, subfolder=subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return tuple(self.results[name] for name in self.names)
+
+
+class T2ElectronParameter(AcquisitionParameter):
+    def __init__(self, name='Electron_T2', **kwargs):
+        self.pulse_sequence = T2ElectronPulseSequence()
+
+        super().__init__(name=name,
+                         names=['up_proportion', 'num_traces'],
+                         labels=['Up proportion', 'Number of traces'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip'],
+                         **kwargs)
+
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+        self.ESR = self.pulse_sequence.ESR
+
+    @property
+    def inter_delay(self):
+        return self.ESR['inter_delay']
+
+    @inter_delay.setter
+    def inter_delay(self, inter_delay):
+        self.ESR['inter_delay'] = inter_delay
+
+    @clear_single_settings
+    def get_raw(self):
+        self.acquire()
+
+        # Analysis
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data['read']['output'],
+            t_read=self.t_read,
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            self.store_traces(self.data)
 
         if not self.silent:
             self.print_results()
