@@ -1,7 +1,8 @@
 import numpy as np
 import peakutils
 import logging
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, List, Sequence
+import collections
 
 __all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
@@ -599,26 +600,23 @@ def analyse_EPR(empty_traces: np.ndarray,
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}
 
 
-def analyse_flips(up_proportions_arrs,
-                 threshold_up_proportion=None,
-                 threshold_up_proportion_high=None,
-                 threshold_up_proportion_low=None):
-
-    if threshold_up_proportion_high is None \
-            and threshold_up_proportion_low is None:
-        if threshold_up_proportion is None:
-            raise SyntaxError('Must provide either `threshold_up_proportion`'
-                              'or both `threshold_up_proportion_high` and'
-                              '`threshold_up_proportion_low`')
-        else:
-            threshold_up_proportion_high = threshold_up_proportion
-            threshold_up_proportion_low = threshold_up_proportion
+def analyse_flips(up_proportions_arrs: List[np.ndarray],
+                  threshold_up_proportion: Union[Sequence, float]):
+    if isinstance(threshold_up_proportion, collections.Sequence):
+        if len(threshold_up_proportion) != 2:
+            raise SyntaxError(f'threshold_up_proportion must be either single '
+                              'value, or two values (low and high threshold)')
+        threshold_up_proportion_low = threshold_up_proportion[0]
+        threshold_up_proportion_high = threshold_up_proportion[1]
+    else:
+        threshold_up_proportion_low = threshold_up_proportion
+        threshold_up_proportion_high = threshold_up_proportion
 
     if not isinstance(up_proportions_arrs, np.ndarray):
         # Convert to numpy array to allow
         up_proportions_arrs = np.array(up_proportions_arrs)
 
-    max_flips = up_proportions_arrs.shape[-1] - 1 # number of samples - 1
+    max_flips = up_proportions_arrs.shape[-1] - 1  # number of samples - 1
 
     results = {}
 
@@ -659,11 +657,13 @@ def analyse_flips(up_proportions_arrs,
 
             # Combined flips, happens if relative_state_arr changes by 2
             # (high, low) -> (low, high) and (low, high) -> (high, low) equal 1
-            combined_flips_arr = np.sum(np.abs(np.diff(relative_state_arr)) == 2,
-                                        axis=-1, dtype=float)
+            combined_flips_arr = np.sum(
+                np.abs(np.diff(relative_state_arr)) == 2,
+                axis=-1, dtype=float)
             results[f'combined_flips_{f_idx}{f_idx2}'] = combined_flips_arr
             combined_flip_probability = combined_flips_arr / max_flips
-            results[f'combined_flip_probability_{f_idx}{f_idx2}'] = combined_flip_probability
+            results[
+                f'combined_flip_probability_{f_idx}{f_idx2}'] = combined_flip_probability
 
             # Filter out scans that are not entirely in subspace i.e. not all
             # up proportion combinations have exactly one high, one low state
@@ -694,75 +694,3 @@ def analyse_flips(up_proportions_arrs,
                 results[f'filtered_{arr_name}' + suffix] = filtered_arr
 
     return results
-
-#
-# def analyse_NMR2(pulse_traces, threshold_up_proportion, sample_rate, t_skip=0,
-#                 min_trace_perc=0.5, t_read=None,
-#                 threshold_voltage=None, threshold_method='config'):
-#
-#
-#
-#     # Find names of all read segments unless they are read_long
-#     # (for dark counts)
-#     read_segment_names = [key for key in pulse_traces
-#                           if key != 'read_long' and 'read' in key]
-#     # Number of distinct reads in a trace (i.e. with different ESR frequency)
-#     distinct_reads_per_trace = len(read_segment_names) // shots_per_read
-#
-#     results = {}
-#
-#     # Get shape of single read segment (samples * points_per_segment
-#     single_read_segment = pulse_traces[read_segment_names[0]]['output']
-#     samples, read_pts = single_read_segment.shape
-#
-#     if t_read is not None:
-#         read_pts = round(t_read * 1e-3 * sample_rate)
-#
-#     # Create 4D array of all read segments
-#     read_traces = np.zeros((distinct_reads_per_trace, # Distinct ESR frequencies
-#                             shots_per_read, # Repetitions of each ESR frequency
-#                             samples, # Samples (= max_flips + 1)
-#                             read_pts # sampling points within segment
-#                             ))
-#     for k, read_segment_name in enumerate(read_segment_names):
-#         shot_traces = pulse_traces[read_segment_name]['output'][:, :read_pts]
-#         # For each shot, all frequencies are looped over.
-#         # Therefore read_idx is inner loop, and shot_idx outer loop
-#         read_idx = k % distinct_reads_per_trace
-#         shot_idx = k // distinct_reads_per_trace
-#         read_traces[read_idx, shot_idx] = shot_traces
-#
-#     # Find threshold voltage if not provided
-#     if threshold_voltage is None:
-#         high_low = find_high_low(np.ravel(read_traces),
-#                                  threshold_method=threshold_method)
-#         threshold_voltage = high_low['threshold_voltage']
-#
-#     # Populate the up proportions
-#     for read_idx in range(distinct_reads_per_trace):
-#
-#         up_proportions = np.zeros(samples)
-#         for sample in range(samples):
-#             sample_traces = read_traces[read_idx, :, sample]
-#             results_read = analyse_traces(sample_traces,
-#                                           sample_rate=sample_rate,
-#                                           min_trace_perc=min_trace_perc,
-#                                           t_read=t_read,
-#                                           t_skip=t_skip,
-#                                           threshold_voltage=threshold_voltage)
-#             up_proportions[sample] = results_read['up_proportion']
-#
-#         # Determine number of flips
-#         has_high_contrast = up_proportions > threshold_up_proportion
-#
-#         flips = sum(abs(np.diff(has_high_contrast)))
-#         if distinct_reads_per_trace == 1:
-#             results['up_proportions'] = up_proportions
-#             results['flips'] = flips
-#             results['flip_probability'] = flips / (samples - 1)
-#         else:
-#             results[f'up_proportions_{read_idx}'] = up_proportions
-#             results[f'flips_{read_idx}'] = flips
-#             results[f'flip_probability_{read_idx}'] = flips / (samples - 1)
-#
-#     return results
