@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
 connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
-                         'input_interface','output_arg', 'output_instrument',
-                         'output_channel', 'output_interface','trigger']
+                         'input_interface', 'output_arg', 'output_instrument',
+                         'output_channel', 'output_interface', 'trigger']
+
 
 class Layout(Instrument):
-
     shared_kwargs = ['instrument_interfaces']
 
     def __init__(self, name, instrument_interfaces,
@@ -349,7 +349,7 @@ class Layout(Instrument):
     def _set_primary_instrument(self, primary_instrument):
         # TODO remove once parameters are improved
         for instrument_name, interface in self._interfaces.items():
-            interface.is_primary(instrument_name==primary_instrument)
+            interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
@@ -680,6 +680,7 @@ class Layout(Instrument):
         Returns:
             None
         """
+
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
 
         if not self.pulse_sequence:
@@ -709,7 +710,7 @@ class Layout(Instrument):
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
-                is_primary = self.primary_instrument() == interface.name
+                is_primary = self.primary_instrument() == interface.instrument.name
                 output_connections = self.get_connections(
                     output_interface=interface)
 
@@ -836,7 +837,7 @@ class Layout(Instrument):
                     output_arg = connection.output['str']
                     # Find label corresponding to output arg
                     output_label = next(
-                        item[1]for item in self.acquisition_outputs()
+                        item[1] for item in self.acquisition_outputs()
                         if item[0] == output_arg)
                     data[pulse][output_label] = trace
         except:
@@ -934,7 +935,7 @@ class Connection:
                               for ch in output_channel]
         if input_channel is not None:
             input_channel = [ch.name if isinstance(ch, Channel) else ch
-                              for ch in input_channel]
+                             for ch in input_channel]
 
         # Test conditions
         if (output_instrument is not None) and \
@@ -942,15 +943,15 @@ class Connection:
             return False
         elif (output_channel is not None) and \
                 (('channel' not in self.output) or
-                 (self.output['channel'].name not in output_channel)):
+                     (self.output['channel'].name not in output_channel)):
             return False
         elif (input_instrument is not None) and \
                 (('instrument' not in self.input) or
-                 (self.input['instrument'] not in input_instrument)):
+                     (self.input['instrument'] not in input_instrument)):
             return False
         elif (input_channel is not None) and \
                 (('channel' not in self.input) or
-                 (self.input['channel'].name not in input_channel)):
+                     (self.input['channel'].name not in input_channel)):
             return False
         else:
             return True
@@ -1108,21 +1109,20 @@ class CombinedConnection(Connection):
         self.output['str'] = [connection.output['str']
                               for connection in connections]
         self.output['instruments'] = list(set([connection.output['instrument']
-                                          for connection in connections]))
+                                               for connection in connections]))
         if len(self.output['instruments']) == 1:
             self.output['instrument'] = self.output['instruments'][0]
             self.output['channels'] = list(set([connection.output['channel']
-                                           for connection in connections]))
-
+                                                for connection in connections]))
 
         self.input['str'] = [connection.input['str']
                              for connection in connections]
         self.input['instruments'] = list(set([connection.input['instrument']
-                                         for connection in connections]))
+                                              for connection in connections]))
         if len(self.input['instruments']) == 1:
             self.input['instrument'] = self.input['instruments'][0]
             self.input['channels'] = list(set([connection.input['channel']
-                                          for connection in connections]))
+                                               for connection in connections]))
 
     def __repr__(self):
         output = 'CombinedConnection\n'
