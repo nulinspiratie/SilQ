@@ -828,7 +828,7 @@ class EPRParameter(AcquisitionParameter):
                                     sample_rate=self.sample_rate,
                                     t_skip=self.t_skip,
                                     t_read=self.t_read,
-                                    min_trace_perc=self.min_trace_perc)
+                                    min_filter_proportion=self.min_trace_perc)
 
     @clear_single_settings
     def get_raw(self):
@@ -932,7 +932,7 @@ class ESRParameter(AcquisitionParameter):
                 plunge_traces=traces['plunge']['output'],
                 read_traces=traces['read_long']['output'],
                 sample_rate=self.sample_rate,
-                min_trace_perc=self.min_trace_perc,
+                min_filter_proportion=self.min_trace_perc,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
                 t_read=self.t_read)
         else:
@@ -1048,16 +1048,29 @@ class NMRParameter(AcquisitionParameter):
         results = {'results_read': []}
 
         # Calculate threshold voltages from combined read traces
-        high_low = analysis.find_high_low(np.ravel(traces.values()))
+        high_low = analysis.find_high_low(
+            np.ravel([trace['output'] for trace in traces.values()]))
         threshold_voltage = high_low['threshold_voltage']
+        print(threshold_voltage)
+
+        # Extract points per shot from a single read trace
+        single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
+        single_read_traces = self.traces[single_read_traces_name]['output']
+        points_per_shot = single_read_traces.shape[1]
 
         up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
         for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
-
             for sample in range(self.samples):
-                traces_idx = f_idx + sample * len(self.ESR_frequencies)
-                read_traces_name = f"{self.ESR['read_pulse'].name}[{traces_idx}]"
-                read_traces = self.traces[read_traces_name]
+                # Create array containing all read traces
+                read_traces = np.zeros(
+                    (self.ESR['shots_per_frequency'], points_per_shot))
+                for shot_idx in range(self.ESR['shots_per_frequency']):
+                    # Read traces of different frequencies are interleaved
+                    traces_idx = f_idx + shot_idx * len(self.ESR_frequencies)
+                    traces_name = f"{self.ESR['read_pulse'].name}[{traces_idx}]"
+                    read_traces[shot_idx] = self.traces[traces_name]['output'][
+                        sample]
+
                 read_result = analyse_traces(traces=read_traces,
                                              sample_rate=self.sample_rate,
                                              t_read=self.t_read,
@@ -1066,12 +1079,14 @@ class NMRParameter(AcquisitionParameter):
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
 
-            results[f'up_proportions_{f_idx}'] = up_proportions
+            results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
 
+        # Add singleton dimension because analyse_flips handles 3D up_proportions
+        up_proportions = np.expand_dims(up_proportions, 1)
         results_flips = analysis.analyse_flips(
-            up_proportions_frequencies=up_proportions)
+            up_proportions_arrs=up_proportions,
+            threshold_up_proportion=self.threshold_up_proportion)
         results.update(**results_flips)
-
         return results
 
     @clear_single_settings
