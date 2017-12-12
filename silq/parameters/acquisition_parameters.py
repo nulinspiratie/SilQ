@@ -354,8 +354,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
-    def __init__(self, name='DC', **kwargs):
-
+    def __init__(self, name='DC', unit='V', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
             DCPulse(name='final')])
@@ -363,7 +362,7 @@ class DCParameter(AcquisitionParameter):
         super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
-                         units=['V'],
+                         units=[unit],
                          snapshot_value=False,
                          continuous = True,
                          **kwargs)
@@ -395,7 +394,6 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, name='trace_pulse', average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
-        self.samples = 1
         self.trace_pulse = MeasurementPulse(name=name, duration=1,
                                             acquire=True,
                                             average=self.average_mode)
@@ -407,6 +405,7 @@ class TraceParameter(AcquisitionParameter):
                          shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
+        self.samples = 1
 
     @property
     def average_mode(self):
@@ -566,12 +565,12 @@ class DCSweepParameter(AcquisitionParameter):
         self.use_ramp = False
 
         self.additional_pulses = []
-        self.samples = 1
 
         super().__init__(name=name, names=['DC_voltage'],
                          labels=['DC voltage'], units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
+        self.samples = 1
 
     def __getitem__(self, item):
         return self.sweep_parameters[item]
