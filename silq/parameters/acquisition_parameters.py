@@ -466,7 +466,7 @@ class TraceParameter(AcquisitionParameter):
         num_traces = len(self.layout.acquisition_outputs())
 
         pts = int(round(duration * self.sample_rate))
-        t_list = tuple(np.linspace(0, duration* 1e3, pts, endpoint=True))
+        t_list = tuple(np.linspace(0, duration, pts, endpoint=True))
 
         if self.samples > 1 and self.average_mode == 'none':
             setpoints = ((tuple(np.arange(self.samples, dtype=float)),
@@ -600,9 +600,9 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
-            points = round(self.trace_pulse.duration * self.sample_rate)
+            points = round(self.trace_pulse.duration * 1e-3 * self.sample_rate)
             trace_setpoints = tuple(
-                np.linspace(0, 1e3*self.trace_pulse.duration, points))
+                np.linspace(0, self.trace_pulse.duration, points))
             setpoints += (convert_setpoints(trace_setpoints),)
         return setpoints
 
@@ -639,7 +639,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             shapes += (round(
-                self.trace_pulse.duration * self.sample_rate),),
+                self.trace_pulse.duration * 1e-3 * self.sample_rate),),
         return shapes
 
     @property_ignore_setter
