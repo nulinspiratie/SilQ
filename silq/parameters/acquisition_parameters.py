@@ -13,8 +13,9 @@ from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
-from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence
-from silq.analysis import analysis, analyse_traces
+from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
+    T2ElectronPulseSequence
+from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
@@ -822,13 +823,14 @@ class EPRParameter(AcquisitionParameter):
         return [name.replace('_', ' ').capitalize() for name in self.names]
 
     def analyse(self, traces):
-        return analysis.analyse_EPR(empty_traces=self.traces['empty']['output'],
-                                    plunge_traces=self.traces['plunge']['output'],
-                                    read_traces=self.traces['read_long']['output'],
-                                    sample_rate=self.sample_rate,
-                                    t_skip=self.t_skip,
-                                    t_read=self.t_read,
-                                    min_filter_proportion=self.min_trace_perc)
+        return analysis.analyse_EPR(
+            empty_traces=self.traces['empty']['output'],
+            plunge_traces=self.traces['plunge']['output'],
+            read_traces=self.traces['read_long']['output'],
+            sample_rate=self.sample_rate,
+            t_skip=self.t_skip,
+            t_read=self.t_read,
+            min_filter_proportion=self.min_trace_perc)
 
     @clear_single_settings
     def get_raw(self):
@@ -943,11 +945,12 @@ class ESRParameter(AcquisitionParameter):
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
         for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
             read_traces = traces[read_pulse.full_name]['output']
-            ESR_results = analyse_traces(traces=read_traces,
-                                         sample_rate=self.sample_rate,
-                                         filter='low',
-                                         t_skip=self.t_skip,
-                                         t_read=self.t_read)
+            ESR_results = analysis.analyse_traces(
+                traces=read_traces,
+                sample_rate=self.sample_rate,
+                filter='low',
+                t_skip=self.t_skip,
+                t_read=self.t_read)
 
             # Extract ESR pulse labels
             if ESR_pulse_names.count(ESR_pulse.name) == 1:
@@ -1071,11 +1074,12 @@ class NMRParameter(AcquisitionParameter):
                     read_traces[shot_idx] = self.traces[traces_name]['output'][
                         sample]
 
-                read_result = analyse_traces(traces=read_traces,
-                                             sample_rate=self.sample_rate,
-                                             t_read=self.t_read,
-                                             t_skip=self.t_skip,
-                                             threshold_voltage=threshold_voltage)
+                read_result = analysis.analyse_traces(
+                    traces=read_traces,
+                    sample_rate=self.sample_rate,
+                    t_read=self.t_read,
+                    t_skip=self.t_skip,
+                    threshold_voltage=threshold_voltage)
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
 
@@ -1150,6 +1154,50 @@ class T1Parameter(AcquisitionParameter):
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
             self.store_traces(self.traces, subfolder=subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return tuple(self.results[name] for name in self.names)
+
+
+class T2ElectronParameter(AcquisitionParameter):
+    def __init__(self, name='Electron_T2', **kwargs):
+        self.pulse_sequence = T2ElectronPulseSequence()
+
+        super().__init__(name=name,
+                         names=['up_proportion', 'num_traces'],
+                         labels=['Up proportion', 'Number of traces'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip'],
+                         **kwargs)
+
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+        self.ESR = self.pulse_sequence.ESR
+
+    @property
+    def inter_delay(self):
+        return self.ESR['inter_delay']
+
+    @inter_delay.setter
+    def inter_delay(self, inter_delay):
+        self.ESR['inter_delay'] = inter_delay
+
+    @clear_single_settings
+    def get_raw(self):
+        self.acquire()
+
+        # Analysis
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data['read']['output'],
+            t_read=self.t_read,
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            self.store_traces(self.data)
 
         if not self.silent:
             self.print_results()
