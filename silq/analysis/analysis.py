@@ -528,27 +528,27 @@ def analyse_EPR(empty_traces: np.ndarray,
             If below this value, up_proportion etc. are not calculated.
 
     Returns:
-        fidelity_empty (float): proportion of empty traces that end ionized
-            (high voltage). Traces are filtered out that do not start neutral
-            (low voltage).
-        voltage_difference_empty (float): voltage difference between high and
-            low state in empty traces
-        fidelity_load (float): proportion of plunge traces that end neutral
-            (low voltage). Traces are filtered out that do not start ionized
-            (high voltage).
-        voltage_difference_load (float): voltage difference between high and
-            low state in plunge traces
-        up_proportion (float): proportion of read traces that have blips
-            For each trace, only up to t_read is considered.
-        dark_counts (float): proportion of read traces that have dark counts.
-            For each trace, only the final t_read is considered.
-        contrast (float): =up_proportion - dark_counts
-        voltage_difference_read (float): voltage difference between high and
-            low state in read traces
-            blips (float): average blips per trace in read traces.
-            mean_low_blip_duration (float): average duration in low state.
-            mean_high_blip_duration (float): average duration in high state.
-
+        Dict containing:
+            fidelity_empty (float): proportion of empty traces that end ionized
+                (high voltage). Traces are filtered out that do not start
+                neutral (low voltage).
+            voltage_difference_empty (float): voltage difference between high
+                and low state in empty traces
+            fidelity_load (float): proportion of plunge traces that end neutral
+                (low voltage). Traces are filtered out that do not start ionized
+                (high voltage).
+            voltage_difference_load (float): voltage difference between high and
+                low state in plunge traces
+            up_proportion (float): proportion of read traces that have blips
+                For each trace, only up to t_read is considered.
+            dark_counts (float): proportion of read traces that have dark
+                counts. For each trace, only the final t_read is considered.
+            contrast (float): =up_proportion - dark_counts
+            voltage_difference_read (float): voltage difference between high and
+                low state in read traces
+                blips (float): average blips per trace in read traces.
+                mean_low_blip_duration (float): average duration in low state.
+                mean_high_blip_duration (float): average duration in high state.
     """
     # Analyse empty stage
     results_empty = analyse_traces(traces=empty_traces,
@@ -601,7 +601,62 @@ def analyse_EPR(empty_traces: np.ndarray,
 
 
 def analyse_flips(up_proportions_arrs: List[np.ndarray],
-                  threshold_up_proportion: Union[Sequence, float]):
+                  threshold_up_proportion: Union[Sequence, float]) -> \
+        Dict[str, Any]:
+    """ Analyse flipping between NMR states
+
+    For each up_proportion array, it will count the number of flips
+    (transition between high/low up proportion) for each sample.
+
+    If more than one up_proportion array is passed, combined flipping events
+    between each pair of states is also considered (i.e. one goes from low to
+    high up proportion, the other from high to low). Furthermore, filtering is
+    also performed where flips are only counted if the nuclear state remains in
+    the subspace spanned by the pair of states for all samples.
+
+    Args:
+        up_proportions_arrs: 3D Arrays of up proportions, calculated from
+            `analyse_traces`. Up proportion is the proportion of traces that
+            contain blips. First and second dimensions are arbitrary (can be a
+            singleton), third dimension is samples.
+        threshold_up_proportion: Threshold for when an up_proportion is high
+            enough to count the nucleus as being in that state (consistently
+            able to flip the electron). Can also be a tuple with two elements,
+            in which case the first is a lower threshold, below which we can
+            say the nucleus is not in the state, and the second is an upper
+            threshold . If any up proportion is not in that state, it is in an
+            undefined state, and not counted for flipping. For any filtering
+            on up_proportion pairs, the whole row is considered invalid (NaN).
+
+    Returns:
+        Dict containing:
+            flips(_{idx}) (int): Number of flips between high/low up_proportion.
+                If more than one up_proportion_arr is provided, a zero-based
+                index is added to specify the up_proportion_array.
+                If an up_proportion is between the lower and upper threshold,
+                it is not counted.
+            flip_probability(_{idx}) (float): proportion of flips compared to
+                maximum number of flips (samples - 1). If more than one
+                up_proportion_arr is provided, a zero-based index is added to
+                specify the up_proportion_array
+
+        The following results are between neighbouring pairs of
+        up_proportion_arrs (|idx1-idx2| == 1), and are only returned if more
+        than one up_proportion_arr is given:
+            'combined_flips_{idx1}{idx2}: combined flipping events between
+                up_proportion_arrs idx1 and idx2, where one of the
+                up_proportions switches from high to low, and the other from
+                low to high.
+            'combined_flip_probability_{idx1}{idx2}: Flipping probability of the
+                combined flipping events.
+
+            Additionally, each of the above results will have another result
+            with the same name, but prepended with `filtered_`, and appended
+            with `_{idx1}{idx2}` if not already present. Here, all the values
+            are filtered out where the corresponding pair of up_proportion
+            samples do not have exactly one high and one low for each sample.
+            The values that do not satisfy the filter are set to np.nan.
+    """
     if isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:
             raise SyntaxError(f'threshold_up_proportion must be either single '
@@ -630,7 +685,7 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
     state_arrs = np.zeros(up_proportions_arrs.shape)
     state_arrs[up_proportions_high] = 1
     state_arrs[up_proportions_low] = -1
-    results['state_arrs'] = state_arrs
+    # results['state_arrs'] = state_arrs
 
     for f_idx, state_arr in enumerate(state_arrs):
         # TODO verify that sum is over correct axis
@@ -653,7 +708,7 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
             relative_state_arr[(state_arr2 - state_arr) == 2] = 1
             # state1 high, state2 low: -1
             relative_state_arr[(state_arr2 - state_arr) == -2] = -1
-            results[f'relative_state_arr_{f_idx}{f_idx2}'] = relative_state_arr
+            # results[f'relative_state_arr_{f_idx}{f_idx2}'] = relative_state_arr
 
             # Combined flips, happens if relative_state_arr changes by 2
             # (high, low) -> (low, high) and (low, high) -> (high, low) equal 1
@@ -662,14 +717,14 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
                 axis=-1, dtype=float)
             results[f'combined_flips_{f_idx}{f_idx2}'] = combined_flips_arr
             combined_flip_probability = combined_flips_arr / max_flips
-            results[
-                f'combined_flip_probability_{f_idx}{f_idx2}'] = combined_flip_probability
+            results[f'combined_flip_probability_{f_idx}{f_idx2}'] = \
+                combined_flip_probability
 
             # Filter out scans that are not entirely in subspace i.e. not all
             # up proportion combinations have exactly one high, one low state
             # For this, the multiplied states must equal -1 (one +1, one -1)
             filtered_scans = np.all(state_arr * state_arr2 == -1, axis=-1)
-            results[f'filtered_scans_{f_idx}{f_idx2}'] = filtered_scans
+            # results[f'filtered_scans_{f_idx}{f_idx2}'] = filtered_scans
 
             # Add filtered version of combined flips
             for arr_name in [f'combined_flips_{f_idx}{f_idx2}',
