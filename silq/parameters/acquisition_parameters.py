@@ -13,7 +13,8 @@ from qcodes import Instrument
 
 from silq import config
 from silq.pulses import *
-from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence
+from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
+    T2ElectronPulseSequence
 from silq.analysis import analysis
 from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
@@ -354,8 +355,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
 class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
-    def __init__(self, name='DC', **kwargs):
-
+    def __init__(self, name='DC', unit='V', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='read', acquire=True, average='point'),
             DCPulse(name='final')])
@@ -363,7 +363,7 @@ class DCParameter(AcquisitionParameter):
         super().__init__(name=name,
                          names=['DC_voltage'],
                          labels=['DC voltage'],
-                         units=['V'],
+                         units=[unit],
                          snapshot_value=False,
                          continuous = True,
                          **kwargs)
@@ -395,7 +395,6 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, name='trace_pulse', average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
-        self.samples = 1
         self.trace_pulse = MeasurementPulse(name=name, duration=1e-3,
                                             average=self.average_mode)
 
@@ -406,6 +405,7 @@ class TraceParameter(AcquisitionParameter):
                          shapes=self.shapes,
                          snapshot_value=False,
                          **kwargs)
+        self.samples = 1
 
     @property
     def average_mode(self):
@@ -565,12 +565,12 @@ class DCSweepParameter(AcquisitionParameter):
         self.use_ramp = False
 
         self.additional_pulses = []
-        self.samples = 1
 
         super().__init__(name=name, names=['DC_voltage'],
                          labels=['DC voltage'], units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
+        self.samples = 1
 
     def __getitem__(self, item):
         return self.sweep_parameters[item]
@@ -1063,6 +1063,50 @@ class T1Parameter(AcquisitionParameter):
                 subfolder = 'tau_{:.0f}'.format(self.wait_time)
 
             self.store_traces(self.data, subfolder=subfolder)
+
+        if not self.silent:
+            self.print_results()
+
+        return tuple(self.results[name] for name in self.names)
+
+
+class T2ElectronParameter(AcquisitionParameter):
+    def __init__(self, name='Electron_T2', **kwargs):
+        self.pulse_sequence = T2ElectronPulseSequence()
+
+        super().__init__(name=name,
+                         names=['up_proportion', 'num_traces'],
+                         labels=['Up proportion', 'Number of traces'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip'],
+                         **kwargs)
+
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+        self.ESR = self.pulse_sequence.ESR
+
+    @property
+    def inter_delay(self):
+        return self.ESR['inter_delay']
+
+    @inter_delay.setter
+    def inter_delay(self, inter_delay):
+        self.ESR['inter_delay'] = inter_delay
+
+    @clear_single_settings
+    def get_raw(self):
+        self.acquire()
+
+        # Analysis
+        self.results = analysis.analyse_multi_read_EPR(
+            pulse_traces=self.data['read']['output'],
+            t_read=self.t_read,
+            t_skip=self.t_skip,
+            sample_rate=self.sample_rate)
+
+        # Store raw traces if self.save_traces is True
+        if self.save_traces:
+            self.store_traces(self.data)
 
         if not self.silent:
             self.print_results()
