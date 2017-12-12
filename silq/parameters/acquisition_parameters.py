@@ -1129,7 +1129,7 @@ class VariableReadParameter(AcquisitionParameter):
                          shapes=((1,),),
                          setpoint_names=(('time',),),
                          setpoint_labels=(('Time',),),
-                         setpoint_units=(('ms',),),
+                         setpoint_units=(('s',),),
                          snapshot_value=False,
                          **kwargs)
 
