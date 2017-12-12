@@ -188,3 +188,72 @@ class NMRPulseSequence(PulseSequenceGenerator):
         # Create copy of current pulse settings for comparison later
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
+class T2ElectronPulseSequence(PulseSequenceGenerator):
+    def __init__(self, **kwargs):
+        super().__init__(pulses=[], **kwargs)
+
+        self.pulse_settings['ESR'] = self.ESR = {
+            'stage_pulse': DCPulse('plunge'),
+            'initial_pulse': SinePulse('ESR_PiHalf'),
+            'refocusing_pulse': SinePulse('ESR_Pi'),
+            'final_pulse': SinePulse('ESR_PiHalf'),
+            'read_pulse': DCPulse('read'),
+
+            'num_refocusing_pulses': 0,
+            
+            'pre_delay': None,
+            'inter_delay': None,
+            'post_delay': None,
+        }
+
+        self.pulse_settings['pre_pulses'] = self.pre_pulses = []
+        self.pulse_settings['post_pulses'] = self.post_pulses = [
+            DCPulse('empty'), DCPulse('plunge'), DCPulse('read_long', acquire=True)]
+
+    def add_ESR_pulses(self):
+        # Add stage pulse, duration will be specified later
+        stage_pulse, = self.add(self.ESR['stage_pulse'])
+
+        t = stage_pulse.t_start + self.ESR['pre_delay']
+
+        # Add initial pulse (evolve to state where T2 effects can be observed)
+        if self.ESR['initial_pulse'] is not None:
+            ESR_initial_pulse, = self.add(self.ESR['initial_pulse'])
+            ESR_initial_pulse.t_start = t
+            t += ESR_initial_pulse.duration
+
+        for k in range(self.ESR['num_refocusing_pulses']):
+            t += self.ESR['inter_delay']
+            ESR_refocusing_pulse = self.add(self.ESR['refocusing_pulse'])
+            ESR_refocusing_pulse.t_start = t
+            t += ESR_refocusing_pulse.duration
+
+        t += self.ESR['inter_delay']
+        if self.ESR['final_pulse'] is not None:
+            ESR_final_pulse, = self.add(self.ESR['final_pulse'])
+            ESR_final_pulse.t_start = t
+            t += ESR_final_pulse.duration
+
+        t += self.ESR['post_delay']
+
+        stage_pulse.duration = t - stage_pulse.t_start
+
+        # Add final read pulse
+        self.add(self.ESR['read_pulse'])
+
+    def generate(self):
+        """
+        Updates the pulse sequence
+        """
+
+        # Initialize pulse sequence
+        self.clear()
+
+        self.add(*self.pulse_settings['pre_pulses'])
+
+        self.add_ESR_pulses()
+
+        self.add(*self.pulse_settings['post_pulses'])
+
+        # Create copy of current pulse settings for comparison later
+        self._latest_pulse_settings = deepcopy(self.pulse_settings)
