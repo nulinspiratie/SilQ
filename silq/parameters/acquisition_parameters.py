@@ -23,8 +23,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'T1Parameter',
-           'DarkCountsParameter', 'VariableReadParameter',
+           'NMRParameter', 'VariableReadParameter',
            'BlipsParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
@@ -1025,7 +1024,8 @@ class NMRParameter(AcquisitionParameter):
         results_flips = analysis.analyse_flips(
             up_proportions_arrs=up_proportions,
             threshold_up_proportion=self.threshold_up_proportion)
-        results.update(**results_flips)
+        # Add results, only choosing first element so its no longer an array
+        results.update({k: v[0] for k, v in results_flips.items()})
         return results
 
 
