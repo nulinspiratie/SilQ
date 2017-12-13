@@ -5,8 +5,8 @@
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = SilQ
-SOURCEDIR     = source
-BUILDDIR      = ../../sphinxdoc-test-docs
+SOURCEDIR     = .
+BUILDDIR      = ../../SilQ-documentation
 
 # Put it first so that "make" without argument is like "make help".
 help:
