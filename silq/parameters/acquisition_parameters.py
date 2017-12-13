@@ -1111,58 +1111,6 @@ class NMRParameter(AcquisitionParameter):
         return tuple(self.results[name] for name in self.names)
 
 
-class T1Parameter(AcquisitionParameter):
-    def __init__(self, name='T1', **kwargs):
-        self.pulse_sequence = PulseSequence([
-            # SteeredInitialization('steered_initialization', enabled=False),
-            DCPulse('empty'),
-            DCPulse('plunge'),
-            DCPulse('read', acquire=True),
-            DCPulse('final')])
-            # FrequencyRampPulse('adiabatic_ESR'))
-
-        self.readout_threshold_voltage = None
-
-        super().__init__(name=name,
-                         names=['up_proportion', 'num_traces'],
-                         labels=['Up proportion', 'Number of traces'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip'],
-                         **kwargs)
-
-        self._meta_attrs.append('readout_threshold_voltage')
-
-    @property
-    def wait_time(self):
-        return self.pulse_sequence['plunge'].duration
-
-    @clear_single_settings
-    def get_raw(self):
-        self.acquire()
-
-        # Analysis
-        self.results = analysis.analyse_read(
-            traces=self.traces['read']['output'],
-            threshold_voltage=self.readout_threshold_voltage,
-            t_skip=self.t_skip,
-            sample_rate=self.sample_rate)
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            if self.subfolder is not None:
-                subfolder = '{}/tau_{:.0f}'.format(self.subfolder,
-                                               self.wait_time)
-            else:
-                subfolder = 'tau_{:.0f}'.format(self.wait_time)
-
-            self.store_traces(self.traces, subfolder=subfolder)
-
-        if not self.silent:
-            self.print_results()
-
-        return tuple(self.results[name] for name in self.names)
-
-
 class T2ElectronParameter(AcquisitionParameter):
     def __init__(self, name='Electron_T2', **kwargs):
         self.pulse_sequence = T2ElectronPulseSequence()
@@ -1228,50 +1176,6 @@ class T2ElectronParameter(AcquisitionParameter):
         # Store raw traces if self.save_traces is True
         if self.save_traces:
             self.store_traces(self.data)
-
-        if not self.silent:
-            self.print_results()
-
-        return tuple(self.results[name] for name in self.names)
-
-
-class DarkCountsParameter(AcquisitionParameter):
-    def __init__(self, name='dark_counts', **kwargs):
-        """
-        Parameter used to perform an adiabatic sweep
-        """
-        self.pulse_sequence = PulseSequence([
-            SteeredInitialization('steered_initialization', enabled=True),
-            DCPulse('read', acquire=True)])
-
-        self.readout_threshold_voltage = None
-
-        super().__init__(name=name,
-                         names=['dark_counts'],
-                         labels=['Dark counts'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip'],
-                         **kwargs)
-
-        self._meta_attrs.append('readout_threshold_voltage')
-
-    def acquire(self, **kwargs):
-        super().acquire(**kwargs)
-
-    @clear_single_settings
-    def get_raw(self):
-        self.acquire()
-
-        fidelities = analysis.analyse_read(
-            traces=self.traces['read']['output'],
-            threshold_voltage=self.readout_threshold_voltage,
-            t_skip=self.t_skip,
-            sample_rate=self.sample_rate)
-        self.results = [fidelities['up_proportion']]
-
-        # Store raw traces if self.save_traces is True
-        if self.save_traces:
-            self.store_traces(self.traces, subfolder=self.subfolder)
 
         if not self.silent:
             self.print_results()
