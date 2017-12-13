@@ -283,9 +283,9 @@ class SinePulseImplementation(PulseImplementation):
         # that does not create too many points, and generate the waveform.
         # TODO implement full waveform if sampling rate is not too high
         self.waveform_duration = 1e-6
-        assert self.waveform_duration * self.frequency > 10, "sine pulse frequency {} too low, increase waveform " \
-                                                                    "duration".format(
-            self.frequency)
+        assert self.waveform_duration * self.frequency > 10, \
+            f"sine pulse frequency {self.frequency} too low, increase " \
+            f"waveform duration"
         assert self.waveform_duration < self.duration, "Waveform duration too long"
 
         for ch in channels:
