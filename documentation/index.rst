@@ -12,6 +12,18 @@ Welcome to SilQ's documentation!
 
 
 
+
+Documentation
+-------------
+.. toctree::
+   :maxdepth: 2
+
+   unsorted/Introduction to SilQ concepts
+   unsorted/Pulses and PulseSequences
+   specifications/index
+
+
+
 Indices and tables
 ==================
 
