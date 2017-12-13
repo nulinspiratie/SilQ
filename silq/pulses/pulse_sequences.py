@@ -207,11 +207,18 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
             'read_pulse': DCPulse('read'),
 
             'num_refocusing_pulses': 0,
-            
+
             'pre_delay': None,
             'inter_delay': None,
             'post_delay': None,
         }
+
+        self.pulse_settings['EPR'] = self.EPR = {
+            'enabled': True,
+            'pulses':[
+            DCPulse('empty', acquire=True),
+            DCPulse('plunge', acquire=True),
+            DCPulse('read_long', acquire=True)]}
 
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = [
@@ -259,6 +266,9 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['pre_pulses'])
 
         self.add_ESR_pulses()
+
+        if self.EPR['enabled']:
+            self.add(*self.EPR['pulses'])
 
         self.add(*self.pulse_settings['post_pulses'])
 
