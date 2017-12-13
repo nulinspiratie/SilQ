@@ -815,7 +815,8 @@ class EPRParameter(AcquisitionParameter):
                                 'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read', 'min_trace_perc'],
+                         properties_attrs=['t_skip', 't_read',
+                                           'min_filter_proportion'],
                          **kwargs)
 
     @property_ignore_setter
@@ -830,7 +831,7 @@ class EPRParameter(AcquisitionParameter):
             sample_rate=self.sample_rate,
             t_skip=self.t_skip,
             t_read=self.t_read,
-            min_filter_proportion=self.min_trace_perc)
+            min_filter_proportion=self.min_filter_proportion)
 
     @clear_single_settings
     def get_raw(self):
@@ -864,7 +865,8 @@ class ESRParameter(AcquisitionParameter):
                          names=['contrast', 'dark_counts',
                                 'voltage_difference_read'],
                          snapshot_value=False,
-                         properties_attrs=['t_skip', 't_read', 'min_trace_perc'],
+                         properties_attrs=['t_skip', 't_read',
+                                           'min_filter_proportion'],
                          **kwargs)
 
     @property
@@ -934,7 +936,7 @@ class ESRParameter(AcquisitionParameter):
                 plunge_traces=traces['plunge']['output'],
                 read_traces=traces['read_long']['output'],
                 sample_rate=self.sample_rate,
-                min_filter_proportion=self.min_trace_perc,
+                min_filter_proportion=self.min_filter_proportion,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
                 t_read=self.t_read)
         else:
@@ -1175,6 +1177,7 @@ class T2ElectronParameter(AcquisitionParameter):
         self.pre_pulses = self.pulse_sequence.pre_pulses
         self.post_pulses = self.pulse_sequence.post_pulses
         self.ESR = self.pulse_sequence.ESR
+        self.EPR = self.pulse_sequence.EPR
 
     @property
     def inter_delay(self):
@@ -1184,16 +1187,43 @@ class T2ElectronParameter(AcquisitionParameter):
     def inter_delay(self, inter_delay):
         self.ESR['inter_delay'] = inter_delay
 
+    def analyse(self, traces):
+        if self.EPR['enabled']:
+            # Analyse EPR sequence, which also gets the dark counts
+            results = analysis.analyse_EPR(
+                empty_traces=traces['empty']['output'],
+                plunge_traces=traces['plunge']['output'],
+                read_traces=traces['read_long']['output'],
+                sample_rate=self.sample_rate,
+                min_filter_proportion=self.min_filter_proportion,
+                t_skip=self.t_skip, # Use t_skip to keep length consistent
+                t_read=self.t_read)
+        else:
+            results = {}
+
+        read_pulse = self.pulse_sequence.get_pulse(name=self.ESR["read_pulse"].name)
+        read_traces = traces[read_pulse.full_name]['output']
+        ESR_results = analysis.analyse_traces(
+            traces=read_traces,
+            sample_rate=self.sample_rate,
+            filter='low',
+            t_skip=self.t_skip,
+            t_read=self.t_read)
+
+        results['ESR_results'] = ESR_results
+        results[f'up_proportion_{read_pulse.name}'] = ESR_results['up_proportion']
+        if self.EPR['enabled']:
+            # Add contrast obtained by subtracting EPR dark counts
+            contrast = ESR_results['up_proportion'] - results['dark_counts']
+            results[f'contrast_{read_pulse.name}'] = contrast
+
+        return results
+
     @clear_single_settings
     def get_raw(self):
         self.acquire()
 
-        # Analysis
-        self.results = analysis.analyse_multi_read_EPR(
-            pulse_traces=self.data['read']['output'],
-            t_read=self.t_read,
-            t_skip=self.t_skip,
-            sample_rate=self.sample_rate)
+        self.results = self.analyse(self.traces)
 
         # Store raw traces if self.save_traces is True
         if self.save_traces:
