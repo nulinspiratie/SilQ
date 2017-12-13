@@ -410,7 +410,7 @@ def analyse_traces(traces: np.ndarray,
             the results `up_proportion`, `end_low`, `end_high` are set to an
             initial value
     """
-    assert filter not in [None, 'low', 'high'], 'filter must be None, `low`, or `high`'
+    assert filter in [None, 'low', 'high'], 'filter must be None, `low`, or `high`'
 
     assert segment in ['begin', 'end'], 'segment must be either `begin` or `end`'
 
@@ -656,6 +656,9 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
             are filtered out where the corresponding pair of up_proportion
             samples do not have exactly one high and one low for each sample.
             The values that do not satisfy the filter are set to np.nan.
+            
+            filtered_scans_{idx1}{idx2}: 2D bool array, True if pair of 
+                up_proportion rows remain in subspace
     """
     if isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:
@@ -724,7 +727,7 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
             # up proportion combinations have exactly one high, one low state
             # For this, the multiplied states must equal -1 (one +1, one -1)
             filtered_scans = np.all(state_arr * state_arr2 == -1, axis=-1)
-            # results[f'filtered_scans_{f_idx}{f_idx2}'] = filtered_scans
+            results[f'filtered_scans_{f_idx}{f_idx2}'] = filtered_scans
 
             # Add filtered version of combined flips
             for arr_name in [f'combined_flips_{f_idx}{f_idx2}',
