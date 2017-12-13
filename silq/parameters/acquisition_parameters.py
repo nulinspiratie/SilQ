@@ -1,8 +1,6 @@
 import numpy as np
-from copy import copy
 from collections import OrderedDict, Iterable
-from copy import copy, deepcopy
-from matplotlib import pyplot as plt
+from copy import copy
 from blinker import signal
 from functools import partial
 import logging
@@ -1208,7 +1206,7 @@ class BlipsParameter(AcquisitionParameter):
     def __init__(self, name='count_blips', duration=None, pulse_name='read',
                  **kwargs):
         """
-        
+
         Args:
             name: parameter name (default `count_blips`)
             duration: duration of tracepulse

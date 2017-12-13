@@ -140,8 +140,8 @@ class Pulse(HasTraits):
         Update attr when attr in pulse config is modified
         Args:
             _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set. 
-                Will update any attribute if not specified. 
+            select (Optional(List(str): list of attrs that can be set.
+                Will update any attribute if not specified.
             **kwargs: {attr: new_val}
 
         Returns:
@@ -315,34 +315,35 @@ class Pulse(HasTraits):
             return default
 
     def __add__(self, other):
-        """
-        This method is called when adding two pulse instances by performing `pulse1 + pulse2`.
+        """ This method is called when adding two pulses: `pulse1 + pulse2`.
 
         Args:
             other (Pulse): The pulse instance to be added to self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+            combined_pulse (Pulse): A new pulse instance representing the
+                combination of two pulses.
 
         """
         name = 'CombinationPulse_{}'.format(id(self)+id(other))
         return CombinationPulse(name, self, other, '+')
 
     def __radd__(self, other):
-        """
-        This method is called when reverse adding something to a pulse.
-        The reason this method is implemented is so that the user can sum over multiple pulses by performing:
+        """ This method is called when reverse adding something to a pulse.
+
+        The reason this method is implemented is so that the user can sum over
+        multiple pulses by performing:
 
             combination_pulse = sum([pulse1, pulse2, pulse3])
 
-        The sum method actually tries calling 0.__add__(pulse1), which doesn't exist, so it is converted into
-        pulse1.__radd__(0).
+        The sum method actually tries calling 0.__add__(pulse1), which doesn't
+        exist, so it is converted into pulse1.__radd__(0).
 
         Args:
             other: an instance of unknown type that might be int(0)
 
         Returns:
-            pulse (Pulse): Either self (if other is zero) or the sum of self and other.
+            pulse (Pulse): Either self (if other is zero) or self + other.
 
         """
         if other == 0:
@@ -351,14 +352,14 @@ class Pulse(HasTraits):
             return self.__add__(other)
 
     def __sub__(self, other):
-        """
-        This method is called when subtracting two pulse instances by performing `pulse1 - pulse2`.
+        """ This method is called when subtracting two pulses: `pulse1 - pulse2`
 
         Args:
             other (Pulse): The pulse instance to be subtracted from self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+            combined_pulse (Pulse): A new pulse instance representing the
+                combination of two pulses.
 
         """
         name = 'CombinationPulse_{}'.format(id(self)+id(other))
@@ -366,13 +367,14 @@ class Pulse(HasTraits):
 
     def __mul__(self, other):
         """
-        This method is called when multiplying two pulse instances by performing `pulse1 * pulse2`.
+        This method is called when multiplying two pulses: `pulse1 * pulse2`.
 
         Args:
             other (Pulse): The pulse instance to be multiplied with self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the combination of two pulses.
+            combined_pulse (Pulse): A new pulse instance representing the
+                combination of two pulses.
 
         """
         name = 'CombinationPulse_{}'.format(id(self)+id(other))
@@ -466,15 +468,14 @@ class Pulse(HasTraits):
 
     def _get_repr(self, properties_str):
         if self.connection:
-            properties_str += '\n\tconnection: {}'.format(self.connection)
+            properties_str += f'\n\tconnection: {self.connection}'
         if self.connection_requirements:
-            properties_str += '\n\trequirements: {}'.format(
-                self.connection_requirements)
+            properties_str += f'\n\trequirements: {self.connection_requirements}'
         if hasattr(self, 'additional_pulses') and self.additional_pulses:
             properties_str += '\n\tadditional_pulses:'
             for pulse in self.additional_pulses:
                 pulse_repr = '\t'.join(repr(pulse).splitlines(True))
-                properties_str += '\n\t{}'.format(pulse_repr)
+                properties_str += f'\n\t{pulse_repr}'
 
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
@@ -587,8 +588,8 @@ class SinePulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
         return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
@@ -691,12 +692,12 @@ class DCPulse(Pulse):
 
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and  np.max(t) <= self.t_stop, \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
         if isinstance(t, collections.Iterable):
-            return np.ones(len(t))*self.amplitude
+            return np.ones(len(t)) * self.amplitude
         else:
             return self.amplitude
 
@@ -754,13 +755,13 @@ class TriggerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
         if isinstance(t, collections.Iterable):
-            return np.ones(len(t))*self.amplitude
+            return np.ones(len(t)) * self.amplitude
         else:
             return self.amplitude
 
@@ -779,13 +780,13 @@ class MarkerPulse(Pulse):
 
     def get_voltage(self, t):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
-            "voltage at {} s is not in the time range {} s - {} s of " \
-            "pulse {}".format(t, self.t_start, self.t_stop, self)
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
         # Amplitude can only be provided in an implementation.
         # This is dependent on input/output channel properties.
         if isinstance(t, collections.Iterable):
-            return np.ones(len(t))*self.amplitude
+            return np.ones(len(t)) * self.amplitude
         else:
             return self.amplitude
 
@@ -826,11 +827,12 @@ class CombinationPulse(Pulse):
         CombinationPulse = SinePulse + DCPulse
         CombinationPulse = DCPulse * SinePulse
 
-    Just like any other pulse, a CombinationPulse has a name, t_start and t_stop. t_start and t_stop are calculated and
-    updated from the pulses that make up the combination.
+    Like any other pulse, a CombinationPulse has a name, t_start and t_stop.
+    t_start and t_stop are calculated and updated from the pulses that make up
+    the combination.
 
-    A CombinationPulse is itself a child of the Pulse class, therefore a CombinationPulse can also be used in
-    consecutive combinations like:
+    A CombinationPulse is itself a child of the Pulse class, therefore a
+    CombinationPulse can also be used in consecutive combinations like:
         CombinationPulse1 = SinePulse1 + DCPulse
         CombinationPulse2 = SinePulse2 + CombinationPulse1
 
@@ -838,14 +840,16 @@ class CombinationPulse(Pulse):
         name (str): The name for this CombinationPulse.
         pulse1 (Pulse): The first pulse this combination is made up from.
         pulse2 (Pulse): The second pulse this combination is made up from.
-        relation (str): The relation between pulse1 and pulse2. This must be one of the following:
-            '+'     :   pulse1 + pulse2
-            '-'     :   pulse1 - pulse2
-            '*'     :   pulse1 * pulse2
+        relation (str): The relation between pulse1 and pulse2.
+            This must be one of the following:
+                '+'     :   pulse1 + pulse2
+                '-'     :   pulse1 - pulse2
+                '*'     :   pulse1 * pulse2
 
     """
 
-    def __init__(self, name=None, pulse1=None, pulse2=None, relation=None, **kwargs):
+    def __init__(self, name=None, pulse1=None, pulse2=None, relation=None,
+                 **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.pulse1 = pulse1
@@ -883,13 +887,11 @@ class CombinationPulse(Pulse):
         if isinstance(self.pulse1, CombinationPulse):
             pulse1_details = self.pulse1.pulse_details
         else:
-            pulse1_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse1.name,
-                                                                  pulse_repr=repr(self.pulse1))
+            pulse1_details = f'\t {self.pulse1.name} : {repr(self.pulse1)}\n'
         if isinstance(self.pulse2, CombinationPulse):
             pulse2_details = self.pulse2.pulse_details
         else:
-            pulse2_details = '\t {pulse} : {pulse_repr}\n'.format(pulse=self.pulse2.name,
-                                                                  pulse_repr=repr(self.pulse2))
+            pulse2_details = f'\t {self.pulse2.name} : {repr(self.pulse2)}\n'
         return pulse1_details + pulse2_details
 
     def __repr__(self):
@@ -911,14 +913,18 @@ class CombinationPulse(Pulse):
         result1 = np.zeros(t.shape[0])
         result2 = np.zeros(t.shape[0])
 
-        pulse1_t = t[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)]
-        pulse2_t = t[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)]
+        pulse1_t = t[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop],
+                            axis=0)]
+        pulse2_t = t[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop],
+                            axis=0)]
 
         voltage1 = self.pulse1.get_voltage(pulse1_t)
         voltage2 = self.pulse2.get_voltage(pulse2_t)
 
-        result1[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop], axis=0)] = voltage1
-        result2[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop], axis=0)] = voltage2
+        result1[np.all([self.pulse1.t_start <= t, t <= self.pulse1.t_stop],
+                       axis=0)] = voltage1
+        result2[np.all([self.pulse2.t_start <= t, t <= self.pulse2.t_stop],
+                       axis=0)] = voltage2
 
         if self.relation == '+':
             return result1 + result2
