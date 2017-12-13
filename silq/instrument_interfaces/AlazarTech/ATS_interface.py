@@ -372,8 +372,8 @@ class ATSInterface(InstrumentInterface):
                               self.pulse_sequence.get_pulses(acquire=True))
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             delta_t_start = pulse.t_start - t_start_initial
-            start_idx = int(round(delta_t_start / 1e3 * self.sample_rate()))
-            pts = int(round(pulse.duration / 1e3 * self.sample_rate()))
+            start_idx = int(round(delta_t_start * self.sample_rate()))
+            pts = int(round(pulse.duration * self.sample_rate()))
 
             pulse_traces[pulse.full_name] = {}
             for ch, trace in traces.items():
