@@ -7,8 +7,8 @@ Welcome to SilQ's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+  :maxdepth: 2
+  :caption: Contents:
 
 
 
@@ -16,14 +16,14 @@ Welcome to SilQ's documentation!
 Documentation
 -------------
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-   unsorted/Introduction to SilQ concepts
-   unsorted/Pulses and PulseSequences
    specifications/index
 
 
-
+.. automodule:: silq
+  :members:
+  :show-inheritance:
 Indices and tables
 ==================
 
