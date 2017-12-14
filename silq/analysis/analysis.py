@@ -98,10 +98,10 @@ def find_high_low(traces: np.ndarray,
             if too many/few peaks were found
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
-                `mean`: average of high and low voltage.
-                `{n}*std_low`: n standard deviations above mean low voltage
-                `{n}*std_high`: n standard deviations below mean high voltage
-                `config`: Use threshold method provided in
+            - `mean`: average of high and low voltage.
+            - `{n}*std_low`: n standard deviations above mean low voltage
+            - `{n}*std_high`: n standard deviations below mean high voltage
+            - `config`: Use threshold method provided in
                     `config.analysis.threshold_method` (`mean` if not specified)
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.

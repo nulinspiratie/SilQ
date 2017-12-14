@@ -18,12 +18,9 @@ Documentation
 .. toctree::
   :maxdepth: 2
 
-   specifications/index
+   specifications/Layout targeting specifications
 
 
-.. automodule:: silq
-  :members:
-  :show-inheritance:
 Indices and tables
 ==================
 
