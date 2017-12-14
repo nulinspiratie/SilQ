@@ -7,8 +7,8 @@ Welcome to SilQ's documentation!
 ================================
 
 .. toctree::
-  :maxdepth: 2
-  :caption: Contents:
+   :maxdepth: 2
+   :caption: Contents:
 
 
 
@@ -16,9 +16,9 @@ Welcome to SilQ's documentation!
 Documentation
 -------------
 .. toctree::
-  :maxdepth: 2
+   :maxdepth: 2
 
-   specifications/Layout targeting specifications
+   specifications/index
 
 
 Indices and tables
