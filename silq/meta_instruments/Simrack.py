@@ -2,8 +2,6 @@ from functools import partial
 
 from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
-from qcodes.instrument.remote import RemoteInstrument
-import qcodes.instrument_drivers.stanford_research.SIM900 as SIM900
 
 class Simrack(Instrument):
     shared_kwargs = ['SIMs']
