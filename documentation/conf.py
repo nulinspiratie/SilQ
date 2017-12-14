@@ -17,9 +17,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../SilQ-documentation/source'))
 
 # import juliadoc
 
@@ -95,7 +95,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'classic'
 # html_theme = 'julia'
 # html_theme_path = [juliadoc.get_theme_dir()]
 # html_sidebars = juliadoc.default_sidebars()
