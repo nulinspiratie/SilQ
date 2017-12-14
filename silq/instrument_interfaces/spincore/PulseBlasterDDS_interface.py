@@ -91,7 +91,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             self.instrument.set_amplitudes(amplitudes=amplitudes,
                                            channel=channel.idx)
 
-        ms = 1e6 # points per millisecond
+        s_to_ns = 1e9 # instruction delays expressed in ns
 
         # Iteratively increase time
         t = 0
@@ -109,7 +109,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             # Send continue instruction until next event
             delay_duration = t_next - t
-            delay_cycles = round(delay_duration * ms)
+            delay_cycles = round(delay_duration * s_to_ns)
             # Either send continue command or long_delay command if the
             # delay duration is too long
 
@@ -148,7 +148,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             # NOTE: This will disable all output channels and use default registers
             delay_duration = max(self.pulse_sequence.duration - t, 0)
             if delay_duration:
-                delay_cycles = round(delay_duration * ms)
+                delay_cycles = round(delay_duration * s_to_ns)
                 if delay_cycles < 1e9:
                     inst = DEFAULT_INSTR + (0, 'continue', 0, delay_cycles)
                 else:

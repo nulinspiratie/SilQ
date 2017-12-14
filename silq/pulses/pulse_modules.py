@@ -29,10 +29,10 @@ class PulseMatch():
 
     def __call__(self, sender, **kwargs):
         """
-        Set value of target 
+        Set value of target
         Args:
-            sender: 
-            **kwargs: 
+            sender:
+            **kwargs:
 
         """
         if self.origin_pulse_attr in kwargs:
@@ -362,8 +362,8 @@ class PulseSequence:
         for pulse in pulses:
             if isinstance(pulse, str):
                 pulses_name = [p for p in self.pulses if p.full_name==pulse]
-                assert len(pulses_name) == 1, 'No unique pulse named {}, found {} ' \
-                                        'pulses'.format(pulse, len(pulses_name))
+                assert len(pulses_name) == 1, f'No unique pulse {pulse} found' \
+                                              f', pulses: {len(pulses_name)}'
                 pulse = pulses_name[0]
             self.pulses.remove(pulse)
             if pulse.enabled:
@@ -490,7 +490,7 @@ class PulseSequence:
         for pulse in self:
             if not pulse.acquire:
                 continue
-            pts = round(pulse.duration * 1e-3 * sample_rate)
+            pts = round(pulse.duration * sample_rate)
             if pulse.average == 'point':
                 shape = (1,)
             elif pulse.average == 'trace':
