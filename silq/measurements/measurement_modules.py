@@ -1,5 +1,5 @@
 import logging
-from qcodes import config
+import qcodes as qc
 
 from silq.tools.general_tools import JSONEncoder
 
@@ -7,7 +7,7 @@ __all__ = ['MeasurementSequence']
 
 logger = logging.getLogger(__name__)
 
-measurement_config = config['user'].get('measurement', {})
+measurement_config = qc.config['user'].get('measurement', {})
 
 
 class MeasurementSequence:
