@@ -99,13 +99,15 @@ def find_high_low(traces: np.ndarray,
             if too many/few peaks were found
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
-                * **mean**: average of high and low voltage.
-                * **{n}\*std_low**: n standard deviations above mean low
-                  voltage, where n is a float (ignore slash in raw docstring).
-                * **{n}\*std_high**: n standard deviations below mean high
-                  voltage, where n is a float (ignore slash in raw docstring).
-                * **config**: Use threshold method provided in
-                  `config.analysis.threshold_method` (`mean` if not specified)
+
+            * **mean**: average of high and low voltage.
+            * **{n}\*std_low**: n standard deviations above mean low voltage,
+              where n is a float (ignore slash in raw docstring).
+            * **{n}\*std_high**: n standard deviations below mean high voltage,
+              where n is a float (ignore slash in raw docstring).
+            * **config**: Use threshold method provided in
+              `config.analysis.threshold_method` (`mean` if not specified)
+
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.
 
@@ -380,11 +382,14 @@ def analyse_traces(traces: np.ndarray,
             If not specified, `find_high_low` is used to determine threshold.
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
-                `mean`: average of high and low voltage.
-                `{n}*std_low`: n standard deviations above mean low voltage.
-                `{n}*std_high`: n standard deviations below mean high voltage.
-                `config`: Use threshold method provided in
-                    `config.analysis.threshold_method` (`mean` if not specified)
+
+            * **mean**: average of high and low voltage.
+            * **{n}\*std_low**: n standard deviations above mean low voltage,
+              where n is a float (ignore slash in raw docstring).
+            * **{n}\*std_high**: n standard deviations below mean high voltage,
+              where n is a float (ignore slash in raw docstring).
+            * **config**: Use threshold method provided in
+              `config.analysis.threshold_method` (`mean` if not specified)
 
     Returns:
         Dict[str, Any]:
@@ -532,7 +537,7 @@ def analyse_EPR(empty_traces: np.ndarray,
         Dict[str, float]:
         * **fidelity_empty** (float): proportion of empty traces that end
           ionized (high voltage). Traces are filtered out that do not start
-                neutral (low voltage).
+          neutral (low voltage).
         * **voltage_difference_empty** (float): voltage difference between high
           and low state in empty traces
         * **fidelity_load** (float): proportion of plunge traces that end
@@ -547,9 +552,9 @@ def analyse_EPR(empty_traces: np.ndarray,
         * **contrast** (float): =up_proportion - dark_counts
         * **voltage_difference_read** (float): voltage difference between high
           and low state in read traces
-            * **blips** (float): average blips per trace in read traces.
-            * **mean_low_blip_duration** (float): average duration in low state.
-            * **mean_high_blip_duration** (float): average duration in high state.
+        * **blips** (float): average blips per trace in read traces.
+        * **mean_low_blip_duration** (float): average duration in low state.
+        * **mean_high_blip_duration** (float): average duration in high state.
     """
     # Analyse empty stage
     results_empty = analyse_traces(traces=empty_traces,
@@ -640,7 +645,7 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
           up_proportion_array.
 
         The following results are between neighbouring pairs of
-        up_proportion_arrs (|idx1-idx2| == 1), and are only returned if more
+        up_proportion_arrs (idx1-idx2\ == +-1), and are only returned if more
         than one up_proportion_arr is given:
 
         * **combined_flips_{idx1}{idx2}**: combined flipping events between
