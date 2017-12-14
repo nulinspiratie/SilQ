@@ -4,10 +4,11 @@ import logging
 from copy import copy
 import pickle
 from time import sleep
+from typing import Union, List
 
 import silq
 from silq import config
-from silq.instrument_interfaces import Channel
+from silq.instrument_interfaces import Channel, InstrumentInterface
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument, FormatLocation
@@ -26,21 +27,24 @@ connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
 class Layout(Instrument):
     shared_kwargs = ['instrument_interfaces']
 
-    def __init__(self, name, instrument_interfaces,
-                 store_pulse_sequences_folder=None, **kwargs):
-        """
-        The layout meta-instrument defines the experimental setup and
-        controls its instruments via interfaces.
-        The Layout should be created once all the instrument and their
-        respective interfaces have been created.
+    def __init__(self, name: str = 'layout',
+                 instrument_interfaces: List[InstrumentInterface] = [],
+                 store_pulse_sequences_folder: Union[bool, None] = None,
+                 **kwargs):
+        """ Acquisition controller of instruments via their interfaces.
+
+        The Layout is provided with the instruments and their associated
+        interfaces, as well as connectivity between instrument channels.
+
+
         Args:
-            name: Name of Layout instrument
-            instrument_interfaces: list of all instrument interfaces
-            store_pulse_sequences_folder: folder in which to store a copy of 
-                any pulse sequence that is targeted. Pulse sequences are 
-                stored as pickles, and can be used to trace back measurement 
-                parameters 
-            **kwargs:
+            name: Name of Layout instrument.
+            instrument_interfaces: List of all instrument interfaces
+            store_pulse_sequences_folder: Folder in which to store a copy of
+                any pulse sequence that is targeted. Pulse sequences are
+                stored as pickles, and can be used to trace back measurement
+                parameters.
+            **kwargs: Additional kwargs passed to Instrument
         """
         super().__init__(name, **kwargs)
 
@@ -105,9 +109,9 @@ class Layout(Instrument):
 
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
-        """
-        Set target pulse sequence to layout, which distributes pulses to
+        """ Set target pulse sequence to layout, which distributes pulses to
         interfaces
+
         Args:
             pulse_sequence: Pulse sequence to be targeted
         """
@@ -120,8 +124,8 @@ class Layout(Instrument):
 
     @property
     def acquisition_interface(self):
-        """
-        Obtain interface for acquisition system
+        """ Obtain interface for acquisition system
+
         Returns:
             Interface instrument
         """
@@ -132,8 +136,7 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        """
-        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
+        """ Returns a dictionary acquisition_label: acquisition_channel_name pairs.
         The acquisition_label is the label associated with a certain
         acquisition channel. This is settable via layout.acquisition_outputs
         The acquisition_channel_name is the actual channel name of the
@@ -246,39 +249,48 @@ class Layout(Instrument):
                 self.add_connection(**connection)
 
     def get_connections(self, connection=None, **conditions):
-        """
-        Returns all connections that satisfy given conditions
-        Possible conditions:
+        """ Returns all connections that satisfy given conditions
+
+        Args:
+            connection: Specific connection to be checked. If the connection
+                is in layout.connections, it returns a list with the connection.
+                Can be useful when pulse.connection_requirements needs a
+                specific connection
             connection: Specific connection to be checked. If the connection
                 is in layout.connections, it returns a list with the connection.
                 Can be useful when pulse.connection_requirements needs a
                 specific connection
             output_arg: string representation of output.
-                SingleConnection has form '{instrument}.{channel}'
-                CombinedConnection is list of SingleConnection output_args, 
-                    which must have equal number of elements as underlying 
-                    connections. Can be combined with input_arg, in which 
-                    case the first element of output_arg and input_arg are 
-                    assumed to belong to the same underlying connection.
+
+                * SingleConnection has form '{instrument}.{channel}'
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with input_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
             output_interface: Connections must have output_interface object
             output_instrument: Connections must have output_instrument name
             output_channel: Connections must have output_channel
                 (either Channel object, or channel name)
             input_arg: string representation of input.
-                SingleConnection has form '{instrument}.{channel}'
-                CombinedConnection is list of SingleConnection output_args, 
-                    which must have equal number of elements as underlying 
-                    connections. Can be combined with output_arg, in which 
-                    case the first element of output_arg and input_arg are 
-                    assumed to belong to the same underlying connection.
+
+                * SingleConnection has form '{instrument}.{channel}'
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with output_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
             input_interface: Connections must have input_interface object
             input_instrument: Connections must have input_instrument name
             input_channel: Connections must have input_channel
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
-            software: Connection is not an actual hardware connection. Used 
+            software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
+
         Returns:
             Connections that satisfy kwarg constraints
         """
@@ -660,18 +672,18 @@ class Layout(Instrument):
         other instruments are never setup before the triggered instruments.
         Any flags, such as to skip starting an instrument, are also collected
         and applied at this stage.
-        
+
         Interfaces can return a dict of flags. The following flags are accepted:
         - setup (dict): key (instrument_name) value setup_flags
-            When the interface with instrument_name (key) is setup, the 
+            When the interface with instrument_name (key) is setup, the
             setup flags (value) will be passed along
-        - skip_start (str): instrument name that should be skipped when 
+        - skip_start (str): instrument name that should be skipped when
             calling layout.start()
-        - post_start_actions (list(callable)): callables to perform after all 
+        - post_start_actions (list(callable)): callables to perform after all
             interfaces are started
         - start_last (interface) interface that should be started after others
-        
-        
+
+
         Args:
             samples: Number of samples (by default uses previous value)
             repeat: Whether to repeat pulse sequence indefinitely or stop at end
@@ -1059,7 +1071,7 @@ class SingleConnection(Connection):
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
-            software: Connection is not an actual hardware connection. Used 
+            software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
         Returns:
             Bool depending on if the connection satisfies conditions
@@ -1162,24 +1174,23 @@ class CombinedConnection(Connection):
 
     def satisfies_conditions(self, output_arg=None, input_arg=None,
                              trigger=None, acquire=None, **kwargs):
-        """
-        Checks if this connection satisfies conditions
+        """ Checks if this connection satisfies conditions
         Args:
-            output_arg: list of SingleConnection output_args, each of which 
+            output_arg: list of SingleConnection output_args, each of which
                 has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with 
-                input_arg, in which case the first element of output_arg and 
-                input_arg are assumed to belong to the same underlying 
+                of elements as underlying connections. Can be combined with
+                input_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
                 connection.
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
                 (either Channel object, or channel name)
-            input_arg: list of SingleConnection input_args, each of which 
+            input_arg: list of SingleConnection input_args, each of which
                 has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with 
-                output_arg, in which case the first element of output_arg and 
-                input_arg are assumed to belong to the same underlying 
+                of elements as underlying connections. Can be combined with
+                output_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
                 connection.
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
