@@ -25,28 +25,29 @@ def smooth(x: np.ndarray,
     (with the window size) in both ends so that transient parts are minimized
     in the begining and end part of the output signal.
 
-    input:
+    Args:
         x: the input signal
         window_len: the dimension of the smoothing window; should be an odd integer
-        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
-            flat window will produce a moving average smoothing.
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett',
+            'blackman' flat window will produce a moving average smoothing.
 
-    output:
+    Returns:
         the smoothed signal
 
-    example:
+    Example:
+        t=linspace(-2,2,0.1)
+        x=sin(t)+randn(len(t))*0.1
+        y=smooth(x)
 
-    t=linspace(-2,2,0.1)
-    x=sin(t)+randn(len(t))*0.1
-    y=smooth(x)
+    See Also:
+        numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman,
+        numpy.convolve, scipy.signal.lfilter
 
-    see also:
-
-    numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
-    scipy.signal.lfilter
-
-    TODO: the window parameter could be the window itself if an array instead of a string
-    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    TODO:
+        the window parameter could be the window itself if an array instead of a string
+    NOTE:
+        length(output) != length(input), to correct this:
+        return y[(window_len/2-1):-(window_len/2)] instead of just y.
     """
     # TODO: Somehow it shifts the center.
     if x.ndim != 1:
@@ -78,7 +79,7 @@ def find_high_low(traces: np.ndarray,
                   threshold_peak: float = 0.02,
                   attempts: int = 8,
                   threshold_method: str = 'config',
-                  min_SNR: Union[float, None] = None) -> Dict[str, Any]:
+                  min_SNR: Union[float, None] = None):
     """ Find high and low voltages of traces using histograms
 
     This function determines the high and low voltages of traces by binning them
@@ -91,33 +92,34 @@ def find_high_low(traces: np.ndarray,
     Args:
         traces: 2D array of acquisition traces
         plot: Whether to plot the histograms
-        threshold_peak: threshold for discerning a peak. Will be varied if too
+        threshold_peak: Threshold for discerning a peak. Will be varied if too
             many/few peaks are found
         attempts: Maximum number of attempts for discerning two peaks.
             Each attempt the threshold_peak is decreased/increased depending on
             if too many/few peaks were found
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
-            - `mean`: average of high and low voltage.
-            - `{n}*std_low`: n standard deviations above mean low voltage
-            - `{n}*std_high`: n standard deviations below mean high voltage
-            - `config`: Use threshold method provided in
-                    `config.analysis.threshold_method` (`mean` if not specified)
+                * **mean**: average of high and low voltage.
+                * **{n}\*std_low**: n standard deviations above mean low
+                  voltage, where n is a float (ignore slash in raw docstring).
+                * **{n}\*std_high**: n standard deviations below mean high
+                  voltage, where n is a float (ignore slash in raw docstring).
+                * **config**: Use threshold method provided in
+                  `config.analysis.threshold_method` (`mean` if not specified)
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.
 
     Returns:
-        Dict containing:
-            low (float): mean low voltage, `None` if two peaks cannot be
-                discerned
-            `high` (float): mean high voltage, `None` if no two peaks cannot be
-                discerned
-            threshold_voltage (float): threshold voltage for a blip. If SNR is
-            below `min_SNR` or no two peaks can be discerned, returns `None`.
-            voltage_difference (float): difference between low and high voltage.
-                If not two peaks can be discerned, returns `None`.
-            DC_voltage (float): average voltage of traces.
-
+        Dict[str, Any]:
+        * **low** (float): Mean low voltage, `None` if two peaks cannot be
+          discerned
+        * **high** (float): Mean high voltage, `None` if no two peaks cannot be
+          discerned
+        * **threshold_voltage** (float): Threshold voltage for a blip. If SNR is
+          below `min_SNR` or no two peaks can be discerned, returns `None`.
+        * **voltage_difference** (float): Difference between low and high
+          voltage. If not two peaks can be discerned, returns `None`.
+        * **DC_voltage** (float): Average voltage of traces.
     """
     assert attempts > 0, f'Attempts {attempts} must be at least 1'
 
@@ -266,9 +268,10 @@ def find_up_proportion(traces: np.ndarray,
         filter_window: number of points of smoothing (0 means no smoothing)
 
     Returns:
-        if return_array is False:
+
+        if return_array is False
             (float) The proportion of traces with a blip
-        else:
+        else
             Boolean array, True if the trace has a blip
 
     """
@@ -298,23 +301,23 @@ def find_up_proportion(traces: np.ndarray,
 def count_blips(traces: np.ndarray,
                 threshold_voltage: float,
                 sample_rate: float,
-                t_skip: float) -> Dict[str, Any]:
-    """ Count number of blips and durations in high/low state
+                t_skip: float):
+    """ Count number of blips and durations in high/low state.
 
     Args:
-        traces: 2D array of acquisition traces
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-        sample_rate: acquisition sample rate (per second)
-        t_skip: initial time to skip for each trace (ms)
+        traces: 2D array of acquisition traces.
+        threshold_voltage: Threshold voltage for a `high` voltage (blip).
+        sample_rate: Acquisition sample rate (per second).
+        t_skip: Initial time to skip for each trace (ms).
 
     Returns:
-        Dict containing:
-            blips (float): number of blips per trace
-            blips_per_second (float): number of blips per second
-            low_blip_duration (np.ndarray): durations in low-voltage state
-            high_blip_duration (np.ndarray): durations in high-voltage state
-            mean_low_blip_duration (float): average duration in low state
-            mean_high_blip_duration (float): average duration in high state
+        Dict[str, Any]:
+        * **blips** (float): Number of blips per trace.
+        * **blips_per_second** (float): Number of blips per second.
+        * **low_blip_duration** (np.ndarray): Durations in low-voltage state.
+        * **high_blip_duration** (np.ndarray): Durations in high-voltage state.
+        * **mean_low_blip_duration** (float): Average duration in low state.
+        * **mean_high_blip_duration** (float): Average duration in high state.
     """
     low_blip_pts, high_blip_pts = [], []
     start_idx = round(t_skip * sample_rate)
@@ -335,8 +338,8 @@ def count_blips(traces: np.ndarray,
                 blip_list.append(next_idx)
                 idx += next_idx
 
-    low_blip_duration = np.array(low_blip_pts) / sample_rate
-    high_blip_duration = np.array(high_blip_pts) / sample_rate
+    low_blip_durations = np.array(low_blip_pts) / sample_rate
+    high_blip_durations = np.array(high_blip_pts) / sample_rate
 
     blips = len(low_blip_durations) / len(traces)
 
@@ -357,7 +360,7 @@ def analyse_traces(traces: np.ndarray,
                    t_read: Union[float, None] = None,
                    segment: str = 'begin',
                    threshold_voltage: Union[float, None] = None,
-                   threshold_method: str='config') -> Dict[str, Any]:
+                   threshold_method: str='config'):
     """ Analyse voltage, up proportions, and blips of acquisition traces
 
     Args:
@@ -384,21 +387,21 @@ def analyse_traces(traces: np.ndarray,
                     `config.analysis.threshold_method` (`mean` if not specified)
 
     Returns:
-        Dict containing:
-            up_proportion (float): proportion of traces that has a blip
-            end_high (float): proportion of traces that end with high voltage
-            end_low (float): proportion of traces that end with low voltage
-            num_traces (int): Number of traces that satisfy filter
-            filtered_traces_idx (np.ndarray): 1D bool array, True if that trace
-                satisfies filter
-            voltage_difference (float): voltage difference between high and low
-                voltages
-            average_voltage (float): average voltage over all traces
-            threshold_voltage (float): threshold voltage for counting a blip
-                (high voltage). Is calculated if not provided as input arg.
-            blips (float): average blips per trace.
-            mean_low_blip_duration (float): average duration in low state
-            mean_high_blip_duration (float): average duration in high state
+        Dict[str, Any]:
+        * **up_proportion** (float): proportion of traces that has a blip
+        * **end_high** (float): proportion of traces that end with high voltage
+        * **end_low** (float): proportion of traces that end with low voltage
+        * **num_traces** (int): Number of traces that satisfy filter
+        * **filtered_traces_idx** (np.ndarray): 1D bool array,
+          True if that trace satisfies filter
+        * **voltage_difference** (float): voltage difference between high and
+          low voltages
+        * **average_voltage** (float): average voltage over all traces
+        * **threshold_voltage** (float): threshold voltage for counting a blip
+          (high voltage). Is calculated if not provided as input arg.
+        * **blips** (float): average blips per trace.
+        * **mean_low_blip_duration** (float): average duration in low state
+        * **mean_high_blip_duration** (float): average duration in high state
 
     Note:
         If no threshold voltage is provided, and no two peaks can be discerned,
@@ -510,7 +513,7 @@ def analyse_EPR(empty_traces: np.ndarray,
                 sample_rate: float,
                 t_skip: float,
                 t_read: float,
-                min_filter_proportion: float = 0.5) -> Dict[str, float]:
+                min_filter_proportion: float = 0.5):
     """ Analyse an empty-plunge-read sequence
 
     Args:
@@ -526,27 +529,27 @@ def analyse_EPR(empty_traces: np.ndarray,
             If below this value, up_proportion etc. are not calculated.
 
     Returns:
-        Dict containing:
-            fidelity_empty (float): proportion of empty traces that end ionized
-                (high voltage). Traces are filtered out that do not start
+        Dict[str, float]:
+        * **fidelity_empty** (float): proportion of empty traces that end
+          ionized (high voltage). Traces are filtered out that do not start
                 neutral (low voltage).
-            voltage_difference_empty (float): voltage difference between high
-                and low state in empty traces
-            fidelity_load (float): proportion of plunge traces that end neutral
-                (low voltage). Traces are filtered out that do not start ionized
-                (high voltage).
-            voltage_difference_load (float): voltage difference between high and
-                low state in plunge traces
-            up_proportion (float): proportion of read traces that have blips
-                For each trace, only up to t_read is considered.
-            dark_counts (float): proportion of read traces that have dark
-                counts. For each trace, only the final t_read is considered.
-            contrast (float): =up_proportion - dark_counts
-            voltage_difference_read (float): voltage difference between high and
-                low state in read traces
-                blips (float): average blips per trace in read traces.
-                mean_low_blip_duration (float): average duration in low state.
-                mean_high_blip_duration (float): average duration in high state.
+        * **voltage_difference_empty** (float): voltage difference between high
+          and low state in empty traces
+        * **fidelity_load** (float): proportion of plunge traces that end
+          neutral (low voltage). Traces are filtered out that do not start
+          ionized (high voltage).
+        * **voltage_difference_load** (float): voltage difference between high
+          and low state in plunge traces
+        * **up_proportion** (float): proportion of read traces that have blips
+          For each trace, only up to t_read is considered.
+        * **dark_counts** (float): proportion of read traces that have dark
+          counts. For each trace, only the final t_read is considered.
+        * **contrast** (float): =up_proportion - dark_counts
+        * **voltage_difference_read** (float): voltage difference between high
+          and low state in read traces
+            * **blips** (float): average blips per trace in read traces.
+            * **mean_low_blip_duration** (float): average duration in low state.
+            * **mean_high_blip_duration** (float): average duration in high state.
     """
     # Analyse empty stage
     results_empty = analyse_traces(traces=empty_traces,
@@ -599,8 +602,7 @@ def analyse_EPR(empty_traces: np.ndarray,
 
 
 def analyse_flips(up_proportions_arrs: List[np.ndarray],
-                  threshold_up_proportion: Union[Sequence, float]) -> \
-        Dict[str, Any]:
+                  threshold_up_proportion: Union[Sequence, float]):
     """ Analyse flipping between NMR states
 
     For each up_proportion array, it will count the number of flips
@@ -627,36 +629,36 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
             on up_proportion pairs, the whole row is considered invalid (NaN).
 
     Returns:
-        Dict containing:
-            flips(_{idx}) (int): Number of flips between high/low up_proportion.
-                If more than one up_proportion_arr is provided, a zero-based
-                index is added to specify the up_proportion_array.
-                If an up_proportion is between the lower and upper threshold,
-                it is not counted.
-            flip_probability(_{idx}) (float): proportion of flips compared to
-                maximum number of flips (samples - 1). If more than one
-                up_proportion_arr is provided, a zero-based index is added to
-                specify the up_proportion_array
+        Dict[str, Any]:
+        * **flips(_{idx})** (int): Flips between high/low up_proportion.
+          If more than one up_proportion_arr is provided, a zero-based index is
+          added to specify the up_proportion_array. If an up_proportion is
+          between the lower and upper threshold, it is not counted.
+        * **flip_probability(_{idx})** (float): proportion of flips compared to
+          maximum flips (samples - 1). If more than one up_proportion_arr is
+          provided, a zero-based index is added to specify the
+          up_proportion_array.
 
         The following results are between neighbouring pairs of
         up_proportion_arrs (|idx1-idx2| == 1), and are only returned if more
         than one up_proportion_arr is given:
-            'combined_flips_{idx1}{idx2}: combined flipping events between
-                up_proportion_arrs idx1 and idx2, where one of the
-                up_proportions switches from high to low, and the other from
-                low to high.
-            'combined_flip_probability_{idx1}{idx2}: Flipping probability of the
-                combined flipping events.
 
-            Additionally, each of the above results will have another result
-            with the same name, but prepended with `filtered_`, and appended
-            with `_{idx1}{idx2}` if not already present. Here, all the values
-            are filtered out where the corresponding pair of up_proportion
-            samples do not have exactly one high and one low for each sample.
-            The values that do not satisfy the filter are set to np.nan.
+        * **combined_flips_{idx1}{idx2}**: combined flipping events between
+          up_proportion_arrs idx1 and idx2, where one of the
+          up_proportions switches from high to low, and the other from
+          low to high.
+        * **combined_flip_probability_{idx1}{idx2}**: Flipping probability
+          of the combined flipping events.
 
-            filtered_scans_{idx1}{idx2}: 2D bool array, True if pair of
-                up_proportion rows remain in subspace
+        Additionally, each of the above results will have another result with
+        the same name, but prepended with `filtered_`, and appended with
+        `_{idx1}{idx2}` if not already present. Here, all the values are
+        filtered out where the corresponding pair of up_proportion samples do
+        not have exactly one high and one low for each sample. The values that
+        do not satisfy the filter are set to np.nan.
+
+        * **filtered_scans_{idx1}{idx2}**: 2D bool array, True if pair of
+          up_proportion rows remain in subspace
     """
     if isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:

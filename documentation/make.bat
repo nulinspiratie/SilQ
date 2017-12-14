@@ -13,7 +13,7 @@ set SPHINXPROJ=SilQ
 
 if "%1" == "" goto help
 
-
+sphinx-apidoc -o _modules ../silq
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
