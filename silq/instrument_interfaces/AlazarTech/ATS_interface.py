@@ -269,7 +269,7 @@ class ATSInterface(InstrumentInterface):
                      self.pulse_sequence.get_pulses(acquire=True))
         acquisition_duration = t_stop - t_start
 
-        samples_per_trace = self.sample_rate() * acquisition_duration * 1e-3
+        samples_per_trace = self.sample_rate() * acquisition_duration
         if self.acquisition_controller() == 'Triggered':
             # samples_per_record must be a multiple of 16
             samples_per_record = int(16 * np.ceil(float(samples_per_trace) / 16))
@@ -311,7 +311,7 @@ class ATSInterface(InstrumentInterface):
             allocated_buffers = 80
 
             samples_per_buffer = self.sample_rate() * \
-                                 initialization.t_buffer * 1e-3
+                                 initialization.t_buffer
             # samples_per_record must be a multiple of 16
             samples_per_buffer = int(16 * np.ceil(float(samples_per_buffer) / 16))
             self.update_settings(samples_per_record=samples_per_buffer,
@@ -342,7 +342,8 @@ class ATSInterface(InstrumentInterface):
             # logging.warning("ATS cannot be configured with three acquisition "
             #                 "channels {}, setting to ABCD".format(channel_ids))
             channel_ids = 'ABCD'
-        buffer_timeout = int(max(20000, 3.1 * self.pulse_sequence.duration))
+
+        buffer_timeout = int(max(20000, 3.1 * self.pulse_sequence.duration * 1e3))
         self.update_settings(channel_selection=channel_ids,
                              buffer_timeout=buffer_timeout)  # ms
 
@@ -371,8 +372,8 @@ class ATSInterface(InstrumentInterface):
                               self.pulse_sequence.get_pulses(acquire=True))
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             delta_t_start = pulse.t_start - t_start_initial
-            start_idx = int(round(delta_t_start / 1e3 * self.sample_rate()))
-            pts = int(round(pulse.duration / 1e3 * self.sample_rate()))
+            start_idx = int(round(delta_t_start * self.sample_rate()))
+            pts = int(round(pulse.duration * self.sample_rate()))
 
             pulse_traces[pulse.full_name] = {}
             for ch, trace in traces.items():
