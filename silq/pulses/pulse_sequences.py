@@ -37,7 +37,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
             'pulse': FrequencyRampPulse('ESR'),
             'plunge_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
-            'pulse_delay': 5,
+            'pulse_delay': 5e-3,
             'pulses': ['pulse']}
 
         self.pulse_settings['EPR'] = self.EPR = {
@@ -49,7 +49,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
         self.pulse_settings['post_pulses'] = self.post_pulses = []
 
-        self.final_delay = 1
+        self.final_delay = 1e-3
 
     def add_ESR_pulses(self, ESR_frequencies=None):
         if ESR_frequencies is None:
@@ -104,15 +104,16 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
             'pulses': ['NMR_pulse'],
-            'pre_delay': 5,
-            'inter_delay': 1,
-            'post_delay': 2}
+            'pre_delay': 5e-3,
+            'inter_delay': 1e-3,
+            'post_delay': 2e-3}
         self.pulse_settings['ESR'] = self.ESR = {
             'ESR_pulse': FrequencyRampPulse('adiabatic_ESR'),
             'pulses': ['ESR_pulse'],
             'plunge_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
-            'pulse_delay': 5, 'inter_pulse_delay': 1,
+            'pulse_delay': 5e-3,
+            'inter_pulse_delay': 1e-3,
             'shots_per_frequency': 25}
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = []
@@ -140,11 +141,10 @@ class NMRPulseSequence(PulseSequenceGenerator):
                                                delay=self.NMR['inter_delay'])
             NMR_pulses.append(NMR_pulse)
 
-        NMR_stage_pulse.duration = (
-            self.NMR['pre_delay']
-            + (len(NMR_pulses) - 1) * self.NMR['inter_delay']
-            + sum(pulse.duration for pulse in NMR_pulses)
-            + self.NMR['post_delay'])
+        NMR_stage_pulse.duration = self.NMR['pre_delay']
+        NMR_stage_pulse.duration += (len(NMR_pulses) - 1) * self.NMR['inter_delay']
+        NMR_stage_pulse.duration += sum(pulse.duration for pulse in NMR_pulses)
+        NMR_stage_pulse.duration += self.NMR['post_delay']
         return pulse_sequence
 
     def add_ESR_pulses(self, pulse_sequence=None):

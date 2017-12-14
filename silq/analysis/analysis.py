@@ -317,8 +317,7 @@ def count_blips(traces: np.ndarray,
             mean_high_blip_duration (float): average duration in high state
     """
     low_blip_pts, high_blip_pts = [], []
-    # TODO convert to seconds (also documentation)
-    start_idx = round(t_skip * 1e-3 * sample_rate)
+    start_idx = round(t_skip * sample_rate)
 
     for k, trace in enumerate(traces):
         idx = start_idx
@@ -336,9 +335,8 @@ def count_blips(traces: np.ndarray,
                 blip_list.append(next_idx)
                 idx += next_idx
 
-    # TODO convert to seconds
-    low_blip_durations = np.array(low_blip_pts) / sample_rate * 1e3
-    high_blip_durations = np.array(high_blip_pts) / sample_rate * 1e3
+    low_blip_duration = np.array(low_blip_pts) / sample_rate
+    high_blip_duration = np.array(high_blip_pts) / sample_rate
 
     blips = len(low_blip_durations) / len(traces)
 
@@ -450,7 +448,7 @@ def analyse_traces(traces: np.ndarray,
     results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
     # minimum trace idx to include (to discard initial capacitor spike)
-    start_idx = round(t_skip * 1e-3 * sample_rate)
+    start_idx = round(t_skip * sample_rate)
 
     if filter == 'low':
         # Filter all traces that do not start with low voltage
@@ -475,7 +473,7 @@ def analyse_traces(traces: np.ndarray,
 
     if t_read is not None:
         # Only use a time segment of each trace
-        read_pts = int(round(t_read * 1e-3 * sample_rate))
+        read_pts = int(round(t_read * sample_rate))
         if segment == 'begin':
             segmented_filtered_traces = filtered_traces[:, :read_pts]
         else:
@@ -656,8 +654,8 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
             are filtered out where the corresponding pair of up_proportion
             samples do not have exactly one high and one low for each sample.
             The values that do not satisfy the filter are set to np.nan.
-            
-            filtered_scans_{idx1}{idx2}: 2D bool array, True if pair of 
+
+            filtered_scans_{idx1}{idx2}: 2D bool array, True if pair of
                 up_proportion rows remain in subspace
     """
     if isinstance(threshold_up_proportion, collections.Sequence):

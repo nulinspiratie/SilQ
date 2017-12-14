@@ -1,8 +1,6 @@
 import numpy as np
-from copy import copy
 from collections import OrderedDict, Iterable
-from copy import copy, deepcopy
-from matplotlib import pyplot as plt
+from copy import copy
 from blinker import signal
 from functools import partial
 import logging
@@ -371,8 +369,7 @@ class TraceParameter(AcquisitionParameter):
     def __init__(self, name='trace_pulse', average_mode='none', **kwargs):
         self._average_mode = average_mode
         self._pulse_sequence = PulseSequence()
-        self.trace_pulse = MeasurementPulse(name=name, duration=1,
-                                            acquire=True,
+        self.trace_pulse = MeasurementPulse(name=name, duration=1e-3,
                                             average=self.average_mode)
 
         super().__init__(name='Trace_acquisition',
@@ -458,15 +455,15 @@ class TraceParameter(AcquisitionParameter):
             return (('sample', 'time', ), ) * \
                    len(self.layout.acquisition_outputs())
         else:
-            return (('Time', ), ) * len(self.layout.acquisition_outputs())
+            return (('time', ), ) * len(self.layout.acquisition_outputs())
 
 
     @property_ignore_setter
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
-            return ((None, 'ms', ), ) * len(self.layout.acquisition_outputs())
+            return ((None, 's', ), ) * len(self.layout.acquisition_outputs())
         else:
-            return (('ms', ), ) * len(self.layout.acquisition_outputs())
+            return (('s', ), ) * len(self.layout.acquisition_outputs())
 
 
     def setup(self, start=None, **kwargs):
@@ -526,12 +523,12 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
-        self.trace_pulse = DCPulse(name='trace', duration=100, enabled=False,
+        self.trace_pulse = DCPulse(name='trace', duration=100e-3, enabled=False,
                                    acquire=True, average='trace', amplitude=0)
 
-        self.pulse_duration = 1
-        self.final_delay = 120
-        self.inter_delay = 0.2
+        self.pulse_duration = 1e-3
+        self.final_delay = 120e-3
+        self.inter_delay = 200e-6
         self.use_ramp = False
 
         self.additional_pulses = []
@@ -570,7 +567,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
-            points = round(self.trace_pulse.duration * 1e-3 * self.sample_rate)
+            points = round(self.trace_pulse.duration * self.sample_rate)
             trace_setpoints = tuple(
                 np.linspace(0, self.trace_pulse.duration, points))
             setpoints += (convert_setpoints(trace_setpoints),)
@@ -609,7 +606,7 @@ class DCSweepParameter(AcquisitionParameter):
 
         if self.trace_pulse.enabled:
             shapes += (round(
-                self.trace_pulse.duration * 1e-3 * self.sample_rate),),
+                self.trace_pulse.duration * self.sample_rate),),
         return shapes
 
     @property_ignore_setter
@@ -624,7 +621,7 @@ class DCSweepParameter(AcquisitionParameter):
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
         if self.trace_pulse.enabled:
-            setpoint_units += (('ms',), )
+            setpoint_units += (('s',), )
         return setpoint_units
 
     def add_sweep(self, parameter_name, sweep_voltages=None,
@@ -1101,7 +1098,7 @@ class VariableReadParameter(AcquisitionParameter):
                          shapes=((1,),),
                          setpoint_names=(('time',),),
                          setpoint_labels=(('Time',),),
-                         setpoint_units=(('ms',),),
+                         setpoint_units=(('s',),),
                          snapshot_value=False,
                          **kwargs)
 
@@ -1149,7 +1146,7 @@ class BlipsParameter(AcquisitionParameter):
                                 'blips_per_second',
                                 'mean_low_blip_duration',
                                 'mean_high_blip_duration'],
-                         units=['', '1/s', 'ms', 'ms'],
+                         units=['', '1/s', 's', 's'],
                          shapes=((), (), (),()),
                          snapshot_value=False,
                          continuous = True,
