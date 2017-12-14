@@ -1,4 +1,3 @@
-import qcodes as qc
 from qcodes import Instrument
 from qcodes.instrument.parameter import Parameter, ManualParameter
 from qcodes import validators as vals
@@ -29,7 +28,7 @@ class VoltageControl(Instrument):
                            get_cmd=self.real_parameters[0])
 
     def add_virtual_voltage(self, name, ratios):
-
+        pass
 
 class List(vals.Validator):
     valid_types = (list, np.array, set)
