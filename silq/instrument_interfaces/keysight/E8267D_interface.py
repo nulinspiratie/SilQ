@@ -71,7 +71,7 @@ class E8267DInterface(InstrumentInterface):
                            set_cmd=None,
                            initial_value=None)
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         if not self.pulse_sequence:
             return []
 

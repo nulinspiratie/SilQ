@@ -1,4 +1,4 @@
-from silq.instrument_interfaces import InstrumentInterface, Channel
+from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import  PulseImplementation
 from silq.pulses.pulse_types import MeasurementPulse
 

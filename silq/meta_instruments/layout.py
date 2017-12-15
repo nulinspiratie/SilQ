@@ -7,8 +7,7 @@ from time import sleep
 from typing import Union, List
 
 import silq
-from silq import config
-from silq.instrument_interfaces import Channel, InstrumentInterface
+from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import PulseSequence
 
 from qcodes import Instrument, FormatLocation
@@ -94,9 +93,9 @@ class Layout(Instrument):
         # Handle saving of pulse sequence
         if store_pulse_sequences_folder is not None:
             self.store_pulse_sequences_folder = store_pulse_sequences_folder
-        elif config.properties.get('store_pulse_sequences_folder') is not None:
+        elif silq.config.properties.get('store_pulse_sequences_folder') is not None:
             self.store_pulse_sequences_folder = \
-                config.properties.store_pulse_sequences_folder
+                silq.config.properties.store_pulse_sequences_folder
         else:
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
@@ -226,8 +225,7 @@ class Layout(Instrument):
             with open(filepath, "r") as fp:
                 connections = json.load(fp)
         else:
-            from silq import config
-            connections = config.get('connections', None)
+            connections = silq.config.get('connections', None)
             if connections is None:
                 raise RuntimeError('No connections found in config.user')
 
@@ -331,12 +329,12 @@ class Layout(Instrument):
                     environment, connection_label = connection_label.split('.')
                 else:
                     # Use default environment defined in config
-                    assert 'default_environment' in config.properties, \
+                    assert 'default_environment' in silq.config.properties, \
                         "No environment nor default environment provided"
-                    environment = config.properties.default_environment
+                    environment = silq.config.properties.default_environment
 
             # Obtain list of connections from environment
-            environment_connections = config[environment].connections
+            environment_connections = silq.config[environment].connections
 
             # Find connection from environment connections
             assert connection_label in environment_connections, \
@@ -592,7 +590,7 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_additional_pulses(interface=self)
+            additional_pulses = interface.get_additional_pulses()
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 

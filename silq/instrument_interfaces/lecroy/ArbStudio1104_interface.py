@@ -49,7 +49,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = list(set(active_channels))
         return active_channels
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
 
         # Return empty list if no pulses are in the pulse sequence
         if not self.pulse_sequence or self.is_primary():

@@ -1,9 +1,9 @@
-from functools import partial
+from typing import Union, List, Dict, Any
 
 from qcodes import Instrument
 from qcodes.utils import validators as vals
 
-from silq.pulses import PulseSequence
+from silq.pulses.pulse_sequences import PulseSequence
 
 
 class InstrumentInterface(Instrument):
@@ -81,7 +81,12 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self) -> list:
+        """ Additional pulses required for instrument, e.g. trigger pulses.
+        
+        Returns:
+            List of additional pulses, empty by default.
+        """
         return []
 
     def initialize(self):
@@ -93,7 +98,31 @@ class InstrumentInterface(Instrument):
         self.pulse_sequence.clear()
         self.input_pulse_sequence.clear()
 
-    def setup(self, **kwargs):
+    def setup(self,
+              samples: Union[int, None],
+              is_primary: bool,
+              output_connections: list,
+              repeat: bool,
+              **kwargs) -> Dict[str, Any]:
+        """ Set up instrument after layout has been targeted by pulse sequence.
+        
+        Needs to be implemented in subclass.
+        
+        Args:
+            samples: Number of acquisition samples. 
+                If None, it will use the previously set value.
+            is_primary: Instrument is primary instrument, which runs the pulse
+                sequence when started. Usually a triggering instrument.
+            output_connections: Output :py:class:`.Connection` list of 
+                instrument, needed by some interfaces to setup the instrument.
+            repeat: Repeat the pulse sequence indefinitely. If False, calling
+                :py:func:`layout.start` will only run the pulse sequence once.
+            **kwargs: Additional interface-specific kwarg.
+    
+        Returns:
+            setup flags (see :py:attr:`.Layout.flags`)
+
+        """
         raise NotImplementedError(
             'This method should be implemented in a subclass')
 
