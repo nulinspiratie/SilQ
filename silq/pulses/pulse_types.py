@@ -9,7 +9,7 @@ from functools import partial
 from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter, freq_to_str
-from silq import config
+import silq
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
            'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
@@ -45,19 +45,19 @@ class Pulse(HasTraits):
         self.id = id
 
         if environment == 'default':
-            environment = config.properties.get('default_environment',
-                                                'default')
+            environment = silq.config.properties.get('default_environment',
+                                                     'default')
         self.environment = environment
 
         # Setup pulse config
         try:
             # Set pulse_config from SilQ environment config
-            self.pulse_config = config[self.environment].pulses[self.name]
+            self.pulse_config = silq.config[self.environment].pulses[self.name]
         except KeyError:
             self.pulse_config = None
         try:
             # Set properties_config from SilQ environment config
-            self.properties_config = config[self.environment].properties
+            self.properties_config = silq.config[self.environment].properties
         except (KeyError, AttributeError):
             self.properties_config = None
 
@@ -255,9 +255,9 @@ class Pulse(HasTraits):
                 signal(f'config:{value}.properties').connect(
                     self._handle_properties_config_signal)
 
-                if self.name in config[value].pulses:
+                if self.name in silq.config[value].pulses:
                     # Replace pulse_config
-                    self.pulse_config = config[value].pulses[self.name]
+                    self.pulse_config = silq.config[value].pulses[self.name]
                     # Update all pulse attrs that exist in new pulse_config
                     for env_key, env_val in self.pulse_config.items():
                         if hasattr(self, env_key):
@@ -265,14 +265,14 @@ class Pulse(HasTraits):
                 else:
                     self.pulse_config = None
 
-                if 'properties' in config[value]:
+                if 'properties' in silq.config[value]:
                     # Repace properties_config
-                    self.properties_attrs = config[value].properties
+                    self.properties_attrs = silq.config[value].properties
                     # Replace all attrs in new properties_config if they are
                     # in self.properties_attrs
                     for attr in self.properties_attrs:
-                        if attr in config[value].properties:
-                            setattr(self, attr, config[value].properties[attr])
+                        if attr in silq.config[value].properties:
+                            setattr(self, attr, silq.config[value].properties[attr])
 
             super().__setattr__(key, value)
 

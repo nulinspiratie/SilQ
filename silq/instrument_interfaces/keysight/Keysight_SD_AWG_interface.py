@@ -335,7 +335,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
             self.trigger_thread.start()
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         if self.is_primary():
             # Instrument does not require triggers
             return []

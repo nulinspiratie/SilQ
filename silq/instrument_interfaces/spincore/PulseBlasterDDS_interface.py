@@ -45,7 +45,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         # Request one trigger at the start if not primary
         # TODO test if this works
         if not self.is_primary():
