@@ -4,7 +4,7 @@ import logging
 from copy import copy
 import pickle
 from time import sleep
-from typing import Union, List
+from typing import Union, List, Sequence
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
@@ -23,29 +23,414 @@ connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
                          'output_channel', 'output_interface', 'trigger']
 
 
+class Connection:
+    def __init__(self, default=False, scale=None):
+        """
+        Connection base class for connections between interfaces (instruments)
+
+        Args:
+            default (Bool): Whether this connection should be the default.
+                This is used when multiple possible connection are found that
+                can implement a pulse. In such a case, if any connection has
+                default=True, it will be chosen over the others.
+            scale: Whether there is a scaling factor between output and input.
+                Scale 1/x means the signal at the input is x times lower than
+                emitted from the output
+        """
+        self.input = {}
+        self.output = {}
+        self.scale = scale
+
+        # TODO make default dependent on implementation
+        self.default = default
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        """Define a non-equality test"""
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        # Define custom hash, used for creating a set of unique elements
+        dict_items = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, dict):
+                # Dicts cannot be hashed, and must be converted
+                v = tuple(sorted(v.items()))
+            dict_items[k] = v
+        return hash(tuple(sorted(dict_items)))
+
+    def target_pulse(self, pulse):
+        raise NotImplementedError();
+
+    def satisfies_conditions(self, input_instrument=None,
+                             input_channel=None, input_interface=None,
+                             output_instrument=None, output_channel=None,
+                             output_interface=None,
+                             **kwargs):
+        """
+        Checks if this connection satisfies conditions. Note that all
+        instrument/channel args can also be lists of elements. If so,
+        condition is satisfied if connection property is in list
+        Args:
+            output_interface: Connection must have output_interface object
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+                (either Channel object, or channel name)
+            input_interface: Connection must have input_interface object
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel
+                (either Channel object, or channel name)
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+        # Convert interfaces to their underlying instruments
+        if output_interface is not None:
+            output_instrument = output_interface.instrument_name()
+        if input_interface is not None:
+            input_instrument = input_interface.instrument_name()
+
+        # Change instruments and channels into lists
+        if not (output_instrument is None or type(output_instrument) is list):
+            output_instrument = [output_instrument]
+        if not (input_instrument is None or type(input_instrument) is list):
+            input_instrument = [input_instrument]
+        if not (output_channel is None or type(output_channel) is list):
+            output_channel = [output_channel]
+        if not (input_channel is None or type(input_channel) is list):
+            input_channel = [input_channel]
+
+        # If channel is an object, convert to its name
+        if output_channel is not None:
+            output_channel = [ch.name if isinstance(ch, Channel) else ch
+                              for ch in output_channel]
+        if input_channel is not None:
+            input_channel = [ch.name if isinstance(ch, Channel) else ch
+                             for ch in input_channel]
+
+        # Test conditions
+        if (output_instrument is not None) and \
+                (self.output['instrument'] not in output_instrument):
+            return False
+        elif (output_channel is not None) and \
+                (('channel' not in self.output) or
+                     (self.output['channel'].name not in output_channel)):
+            return False
+        elif (input_instrument is not None) and \
+                (('instrument' not in self.input) or
+                     (self.input['instrument'] not in input_instrument)):
+            return False
+        elif (input_channel is not None) and \
+                (('channel' not in self.input) or
+                     (self.input['channel'].name not in input_channel)):
+            return False
+        else:
+            return True
+
+
+class SingleConnection(Connection):
+    def __init__(self, output_instrument, output_channel,
+                 input_instrument, input_channel,
+                 trigger=False, acquire=False, software=False, **kwargs):
+        """
+        Class representing a single connection between instrument channels.
+
+        Args:
+            output_instrument (str): Name of output instrument
+            output_channel (Channel): Output channel object
+            input_instrument (str): Name of output instrument
+            input_channel (Channel): Input channel object
+            trigger (bool): Sets the output channel to trigger the input
+                instrument
+            acquire (bool): Sets if this connection is used for acquisition
+            software (bool): Sets if this connection is a software connection.
+                This is used for cases such as software triggering
+            default (bool): Sets if this connection is the default for pulses
+        """
+        # TODO add optionality of having multiple channels connected.
+        # TODO Add mirroring of other channel.
+        super().__init__(**kwargs)
+
+        self.output['instrument'] = output_instrument
+        self.output['channel'] = output_channel
+        self.output['str'] = '{}.{}'.format(output_instrument,
+                                            output_channel.name)
+
+        self.input['instrument'] = input_instrument
+        self.input['channel'] = input_channel
+        self.input['str'] = '{}.{}'.format(input_instrument,
+                                           input_channel.name)
+
+        self.trigger = trigger
+        # TODO add this connection to input_instrument.trigger
+
+        self.acquire = acquire
+        self.software = software
+
+    def __repr__(self):
+        output_str = "Connection{{{}.{}->{}.{}}}(".format(
+            self.output['instrument'], self.output['channel'].name,
+            self.input['instrument'], self.input['channel'].name)
+        if self.trigger:
+            output_str += ', trigger'
+        if self.default:
+            output_str += ', default'
+        if self.acquire:
+            output_str += ', acquire'
+        if self.software:
+            output_str += ', software'
+        output_str += ')'
+        return output_str
+
+    def target_pulse(self, pulse, apply_scale=True, copy_pulse=True):
+        """
+        Targets a pulse to this connection.
+        This includes applying a possible scale to the pulse amplitude,
+        and linking the property pulse.connection to this connection object.
+        Args:
+            pulse: Pulse to be targeted
+            apply_scale (bool): Sets if the pulse amplitude should be divided by
+                the scale
+            copy_pulse (bool): Sets if the pulse should be copied.
+                If set to True, a new object is created, and all properties
+                are fixed (not dependent on other pulses).
+
+        Returns:
+            Targeted (copy of) pulse
+        """
+        if copy_pulse:
+            targeted_pulse = copy(pulse)
+        else:
+            targeted_pulse = pulse
+        targeted_pulse.connection = self
+        if apply_scale and self.scale is not None:
+            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
+                if hasattr(pulse, attr):
+                    val = getattr(pulse, attr)
+                    setattr(targeted_pulse, attr, val / self.scale)
+        return targeted_pulse
+
+    def satisfies_conditions(self, output_arg=None, input_arg=None,
+                             trigger=None, acquire=None, software=None,
+                             **kwargs):
+        """
+        Checks if this connection satisfies conditions. Note that all
+        instrument/channel args can also be lists of elements. If so,
+        condition is satisfied if connection property is in list
+        Args:
+            output_arg: Connection must have output '{instrument}.{channel}'
+            output_interface: Connection must have output_interface object
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+                (either Channel object, or channel name)
+            input_arg: Connection must have input '{instrument}.{channel}'
+            input_interface: Connection must have input_interface object
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel
+                (either Channel object, or channel name)
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
+            software: Connection is not an actual hardware connection. Used
+                when a software trigger needs to be sent
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+        if output_arg is not None:
+            if not isinstance(output_arg, str):
+                # output_arg is of wrong type (probably CombinedConnection)
+                return False
+            if not self.output['str'] == output_arg:
+                return False
+
+        if input_arg is not None:
+            if not isinstance(input_arg, str):
+                # input_arg is of wrong type (probably CombinedConnection)
+                return False
+            if not self.input['str'] == input_arg:
+                return False
+
+        if not super().satisfies_conditions(**kwargs):
+            return False
+        elif trigger is not None and self.trigger != trigger:
+            return False
+        elif acquire is not None and self.acquire != acquire:
+            return False
+        elif software is not None and self.software != software:
+            return False
+        else:
+            return True
+
+
+class CombinedConnection(Connection):
+    def __init__(self, connections, scale=None, **kwargs):
+        """
+        Class used to combine multiple SingleConnections.
+        The CombinedConnection is most useful for when multiple connections
+        are often used together.
+        Args:
+            connections: SingleConnections to combine
+            scale (float list): List specifying the value by which the
+                amplitude of a pulse should be scaled for each connection
+                (by default no scaling).
+            **kwargs: Additional Connection kwargs.
+        """
+        super().__init__(scale=scale, **kwargs)
+        self.connections = connections
+
+        self.output['str'] = [connection.output['str']
+                              for connection in connections]
+        self.output['instruments'] = list(set([connection.output['instrument']
+                                               for connection in connections]))
+        if len(self.output['instruments']) == 1:
+            self.output['instrument'] = self.output['instruments'][0]
+            self.output['channels'] = list(set([connection.output['channel']
+                                                for connection in connections]))
+
+        self.input['str'] = [connection.input['str']
+                             for connection in connections]
+        self.input['instruments'] = list(set([connection.input['instrument']
+                                              for connection in connections]))
+        if len(self.input['instruments']) == 1:
+            self.input['instrument'] = self.input['instruments'][0]
+            self.input['channels'] = list(set([connection.input['channel']
+                                               for connection in connections]))
+
+    def __repr__(self):
+        output = 'CombinedConnection\n'
+        for connection in self.connections:
+            output += '\t' + repr(connection) + '\n'
+        return output
+
+    def target_pulse(self, pulse):
+        """
+        Targets a pulse to the combined connection.
+        This creates a copy of the pulse for each connection, applies the
+        respective scale, and further lets each of the connections target the
+        respective pulse.
+        Args:
+            pulse: Pulse to be targeted
+
+        Returns:
+            pulses: List of pulses for each of the connections
+        """
+        pulses = []
+        for k, connection in enumerate(self.connections):
+            targeted_pulse = copy(pulse)
+            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
+                if hasattr(pulse, attr):
+                    val = getattr(pulse, attr)
+                    if isinstance(val, Iterable):
+                        if k < len(getattr(pulse, attr)):
+                            setattr(targeted_pulse, attr, val[k])
+                        else:
+                            setattr(targeted_pulse, attr, val[0])
+                    elif self.scale is not None:
+                        setattr(targeted_pulse, attr, val / self.scale[k])
+            targeted_pulse = connection.target_pulse(targeted_pulse,
+                                                     copy_pulse=False)
+            pulses.append(targeted_pulse)
+        return pulses
+
+    def satisfies_conditions(self, output_arg=None, input_arg=None,
+                             trigger=None, acquire=None, **kwargs):
+        """ Checks if this connection satisfies conditions
+        Args:
+            output_arg: list of SingleConnection output_args, each of which
+                has the form '{instrument}.{channel}. Must have equal number
+                of elements as underlying connections. Can be combined with
+                input_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
+                connection.
+            output_interface: Connection must have output_interface
+            output_instrument: Connection must have output_instrument name
+            output_channel: Connection must have output_channel
+                (either Channel object, or channel name)
+            input_arg: list of SingleConnection input_args, each of which
+                has the form '{instrument}.{channel}. Must have equal number
+                of elements as underlying connections. Can be combined with
+                output_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
+                connection.
+            input_interface: Connection must have input_interface
+            input_instrument: Connection must have input_instrument name
+            input_channel: Connection must have input_channel.
+                (either Channel object, or channel name)
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
+        Returns:
+            Bool depending on if the connection satisfies conditions
+        """
+
+        if output_arg is not None:
+            if not isinstance(output_arg, list):
+                # output_arg is not a list (probably str for SingleConnection)
+                return False
+            if not len(output_arg) == len(self.connections):
+                return False
+
+        if input_arg is not None:
+            if not isinstance(input_arg, list):
+                # input_arg is not a list (probably str for SingleConnection)
+                return False
+            if not len(input_arg) == len(self.connections):
+                return False
+
+        if output_arg is not None and input_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an output/input
+                # combination that satisfies conditions
+                if not any(connection.satisfies_conditions(output_arg=output,
+                                                           input_arg=input)
+                           for output, input in zip(output_arg, input_arg)):
+                    return False
+        elif output_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an output that satisfies conditions
+                if not any(connection.satisfies_conditions(output_arg=output)
+                           for output in output_arg):
+                    return False
+        elif input_arg is not None:
+            for connection in self.connections:
+                # Check for each connection if there is an input that satisfies conditions
+                if not any(connection.satisfies_conditions(input_arg=input)
+                           for input in input_arg):
+                    return False
+
+        if not super().satisfies_conditions(**kwargs):
+            return False
+        elif trigger is not None:
+            return False
+        elif acquire is not None and self.acquire != acquire:
+            return False
+        else:
+            return True
+
+
 class Layout(Instrument):
 
     def __init__(self, name: str = 'layout',
                  instrument_interfaces: List[InstrumentInterface] = [],
                  store_pulse_sequences_folder: Union[bool, None] = None,
                  **kwargs):
-        """ Global acquisition controller of instruments via their interfaces.
+        """Global pulse sequence controller of instruments via interfaces.
 
-        The Layout is the global controller of all instruments involved in
-        executing pulse sequences. It is responsible for targeting a generic
-        setup-independent :py:class:`.PulseSequence to a setup-dependent one.
-        Each :py:class:`.Pulse` is passed along to the relevant
-        :py:class:`.InstrumentInterface` of instruments, as well as additional
-        pulses, such as triggering pulses. Each InstrumentInterface
-        The
-        instruments
-        being configured to execute the pulse sequence
-        The goal of the layout is to target a pulse sequence, diverting its
-        pulses to the relevant instruments,
-        provided with the instruments and
-        their associated
-        interfaces, as well as connectivity between instrument channels.
-
+        The Layout contains a representation of the experimental layout, i.e. it
+        has a list of the instruments in the experimental setup, and the 
+        physical connectivity between the instrument channels.
+        Knowledge of the instruments and their connectivity allows the layout to
+        target a generic setup-independent :class:`.PulseSequence` to one 
+        that is specific to the experimental layout. Each :class:`.Pulse` is
+        passed along to the relevant :class:`.InstrumentInterface` of
+        instruments, as well as additional pulses, such as triggering pulses. 
+        
+        One the instrument interfaces has received the pulses it is supposed to
+        apply, it can convert these into instrument commands during the setup 
+        phase. Once all instruments have been setup, the resulting output and
+        acquisition of the instruments should match that of the pulse sequence.
 
         Args:
             name: Name of Layout instrument.
@@ -62,15 +447,12 @@ class Layout(Instrument):
         self._interfaces = {interface.instrument_name(): interface
                             for interface in instrument_interfaces}
 
-        # TODO remove this and methods once parameters are improved
-        self._primary_instrument = None
-
         self.connections = []
 
         self.add_parameter('instruments',
                            get_cmd=lambda: list(self._interfaces.keys()))
         self.add_parameter('primary_instrument',
-                           get_cmd=lambda: self._primary_instrument,
+                           get_cmd=None,
                            set_cmd=self._set_primary_instrument,
                            vals=vals.Enum(*self._interfaces.keys()))
 
@@ -115,16 +497,21 @@ class Layout(Instrument):
 
     @property
     def pulse_sequence(self):
+        """Target pulse sequence by distributing its pulses to interfaces.
+        
+        Each pulse is directed to a connection, either provided by 
+        :attr:`Pulse.connection` or :attr:`Pulse.connection_label`.
+
+        Args:
+            pulse_sequence: Pulse sequence to be targeted
+            
+        Raises:
+            AssertionError if not a pulse sequence
+        """
         return self._pulse_sequence
 
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
-        """ Set target pulse sequence to layout, which distributes pulses to
-        interfaces
-
-        Args:
-            pulse_sequence: Pulse sequence to be targeted
-        """
         assert isinstance(pulse_sequence, PulseSequence), \
             "Can only set layout.pulse_sequence to a PulseSequence"
 
@@ -134,10 +521,13 @@ class Layout(Instrument):
 
     @property
     def acquisition_interface(self):
-        """ Obtain interface for acquisition system
+        """AcquisitionInterface: interface for acquisition instrument
+        
+        Acquisition instrument given by parameter 
+        :attr:`Layout.acquisition_instrument`.
 
         Returns:
-            Interface instrument
+            Acquisition InstrumentInterface
         """
         if self.acquisition_instrument() is not None:
             return self._interfaces[self.acquisition_instrument()]
@@ -146,11 +536,16 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        """ Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-        The acquisition_label is the label associated with a certain
-        acquisition channel. This is settable via layout.acquisition_outputs
-        The acquisition_channel_name is the actual channel name of the
+        """Dict[str, str]: {acquisition_label: acquisition_channel_name} pairs.
+        
+        The `acquisition_label` is the label associated with a certain
+        acquisition channel, settable via :attr:`layout.acquisition_outputs`.
+        The `acquisition_channel_name` is the actual channel name of the
         acquisition controller.
+
+        Example:
+            {'output': 'chA'}. 
+            
         """
 
         acquisition_channels = od()
@@ -168,26 +563,36 @@ class Layout(Instrument):
 
     @property
     def sample_rate(self):
+        """Union[float, None]: Acquisition sample rate
+        
+        If :attr:`Layout.acquisition_interface` is not setup, return None
+        
+        """
         if self.acquisition_interface is not None:
             return self.acquisition_interface.sample_rate()
         else:
             return None
 
-    def add_connection(self, output_arg, input_arg, **kwargs):
-        """
-        Creates a SingleConnection between two instrument interface channels.
-        Note that both the output and input instruments must already have a
-        corresponding interface and should have been passed when creating the
-        Layout.
-
+    def add_connection(self,
+                       output_arg: str,
+                       input_arg: str,
+                       **kwargs):
+        """Creates a :class:`.SingleConnection` between two instrument interface
+           channels.
+        
         Args:
-            output_arg: "{instrument}_{channel}" string for the connection
-                output
-            input_arg: "{instrument}_{channel}" string for the connection input
-            **kwargs: Additional options for the SingleConnection
+            output_arg: "{instrument}_{channel}" string for connection output.
+            input_arg: "{instrument}_{channel}" string for connection input.
+            **kwargs: Additional init options for the SingleConnection.
 
         Returns:
             SingleConnection object
+            
+        Notes:
+            Both the output and input instruments must already have a
+              corresponding interface which should have been passed when 
+              creating the Layout.
+
         """
         output_instrument, output_channel_name = output_arg.split('.')
         output_interface = self._interfaces[output_instrument]
@@ -205,27 +610,46 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def combine_connections(self, *connections, **kwargs):
-        """
-        Combines multiple SingleConnections into a CombinedConnection.
-        This is useful for cases such as when pulses are by default sent
-        through multiple connections simultaneously.
+    def combine_connections(self,
+                            *connections: Sequence[SingleConnection],
+                            **kwargs):
+        """Combines multiple :class:`SingleConnection` into a 
+        :class:`CombinedConnection`.
+        
+        This is useful for cases such as when pulses are by default directed to
+        multiple connections, e.g. compensated pulses.
+        Combined connection is also added to list of existing connections.
+        
         Args:
-            *connections: list of SingleConnections
+            *connections: SingleConnections to be combined
             **kwargs: Additional kwargs for CombinedConnection
 
         Returns:
-            CombinedConnection object
+            CombinedConnection object combining single connections
+            
         """
         connection = CombinedConnection(connections=connections, **kwargs)
-        self.connections += [connection]
+        self.connections.append(connection)
         return connection
 
-    def load_connections(self, filepath=None):
-        """
-        Load connections from qcodes.config.user.connections
+    def load_connections(self, filepath: Union[str, None] = None):
+        """Load connections from config or file
+        
+        Args:
+            filepath: Path to JSON file containing JSON representation of
+                connections. If None, `qcodes.config.user.connections` is used.
+        
         Returns:
-            None
+            List[Connection]: Loaded connections
+            
+        Raises:
+            RuntimeError if no filepath provided and no connections in config.
+            
+        Note:
+            Please see other Experiment folder configs for JSON syntax.
+            
+        Todo:
+            Write documentation/function for how to create JSON connection list.
         """
         self.connections.clear()
         if filepath is not None:
@@ -257,18 +681,31 @@ class Layout(Instrument):
                 # Properties in connection dict are kwargs
                 self.add_connection(**connection)
 
-    def get_connections(self, connection=None, **conditions):
+        return self.connections
+
+    def get_connections(self,
+                        connection: Connection = None,
+                        output_arg: str = None,
+                        output_interface: InstrumentInterface = None,
+                        output_instrument: Instrument = None,
+                        output_channel: Union[Channel, str] = None,
+                        input_arg: str = None,
+                        input_interface: InstrumentInterface = None,
+                        input_instrument: Instrument = None,
+                        input_channel: Union[Channel, str] = None,
+                        trigger: bool = None,
+                        acquire: bool = None,
+                        software: bool = None) -> List[Connection]:
         """ Returns all connections that satisfy given conditions
+        
+        Only conditions that have been set to anything other than None are used.
 
         Args:
             connection: Specific connection to be checked. If the connection
                 is in layout.connections, it returns a list with the connection.
-                Can be useful when pulse.connection_requirements needs a
-                specific connection
-            connection: Specific connection to be checked. If the connection
-                is in layout.connections, it returns a list with the connection.
-                Can be useful when pulse.connection_requirements needs a
-                specific connection
+                Can be useful when :attr:`pulse.connection_requirements` needs a
+                specific connection. If provided, all other conditions are 
+                ignored.
             output_arg: string representation of output.
 
                 * SingleConnection has form '{instrument}.{channel}'
@@ -279,12 +716,11 @@ class Layout(Instrument):
                   assumed to belong to the same underlying connection.
 
             output_interface: Connections must have output_interface object
-            output_instrument: Connections must have output_instrument name
-            output_channel: Connections must have output_channel
-                (either Channel object, or channel name)
+            output_instrument: name of output instrument
+            output_channel: either Channel or channel name
             input_arg: string representation of input.
 
-                * SingleConnection has form '{instrument}.{channel}'
+                * SingleConnection has form `{instrument}.{channel}`
                 * CombinedConnection is list of SingleConnection output_args,
                   which must have equal number of elements as underlying
                   connections. Can be combined with output_arg, in which
@@ -293,8 +729,7 @@ class Layout(Instrument):
 
             input_interface: Connections must have input_interface object
             input_instrument: Connections must have input_instrument name
-            input_channel: Connections must have input_channel
-                (either Channel object, or channel name)
+            input_channel: either Channel or channel name
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
             software: Connection is not an actual hardware connection. Used
@@ -302,34 +737,104 @@ class Layout(Instrument):
 
         Returns:
             Connections that satisfy kwarg constraints
+            
+        Note:
+            If connection condition provided, all other conditions are ignored.
+            
+        Raises:
+            RuntimeError if connection is provided but not found
         """
         if connection is not None:
             # Check if connection is in connections.
             if connection in self.connections:
                 return [connection]
             else:
-                # raise RuntimeError(f"{connection} not found in connections")
-                raise RuntimeError("{} not found in connections".format(
-                    connection))
+                raise RuntimeError(f"{connection} not found in connections")
         else:
-            return [connection for connection in self.connections
-                    if connection.satisfies_conditions(**conditions)]
+            satisfied_connections = []
+            for connection in self.connections:
+                if connection.satisfies_conditions(
+                        connection=connection,
+                        output_arg=output_arg,
+                        output_interface=output_interface,
+                        output_instrument=output_instrument,
+                        output_channel=output_channel,
+                        input_arg=input_arg,
+                        input_interface=input_interface,
+                        input_instrument=input_instrument,
+                        input_channel=input_channel,
+                        trigger=trigger,
+                        acquire=acquire,
+                        software=software):
+                    satisfied_connections.append(connection)
 
-    def get_connection(self, environment=None,
-                       connection_label=None, **conditions):
-        """
-        Returns connection that satisfy given kwargs.
-        If not exactly one was found, it raises an error.
+            return satisfied_connections
+
+    def get_connection(self,
+                       connection_label: str = None,
+                       environment: str = None,
+                       output_arg: str = None,
+                       output_interface: InstrumentInterface = None,
+                       output_instrument: Instrument = None,
+                       output_channel: Union[Channel, str] = None,
+                       input_arg: str = None,
+                       input_interface: InstrumentInterface = None,
+                       input_instrument: Instrument = None,
+                       input_channel: Union[Channel, str] = None,
+                       trigger: bool = None,
+                       acquire: bool = None,
+                       software: bool = None):
+        """Get unique connection that satisfies conditions.
+        
         Args:
-            output_interface: Connections must have output_interface
-            output_instrument: Connections must have output_instrument name
-            output_channel: Connections must have output_channel
-            input_interface: Connections must have input_interface
+            connection_label: label specifying specific connection.
+                Connection labels are provided as dict in 
+                `qcodes.config.user.{environment}.connections, where environment
+                the config environment. If provided, all other conditions are
+                ignored.
+            environment: config environment, only used if connection_label is
+                provided. If not provided but connection_label is provided,
+                `qcodes.config.user.properties.default_environment` is used.
+            output_arg: string representation of output.
+
+                * SingleConnection has form '{instrument}.{channel}'
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with input_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
+            output_interface: Connections must have output_interface object
+            output_instrument: name of output instrument
+            output_channel: either Channel or channel name
+            input_arg: string representation of input.
+
+                * SingleConnection has form `{instrument}.{channel}`
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with output_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
+            input_interface: Connections must have input_interface object
             input_instrument: Connections must have input_instrument name
-            input_channel: Connections must have input_channel
-            trigger: Connection must be a triggering connection
+            input_channel: either Channel or channel name
+            trigger: Connection is used for triggering
+            acquire: Connection is used for acquisition
+            software: Connection is not an actual hardware connection. Used
+                when a software trigger needs to be sent
+                
         Returns:
             Connection that satisfies kwarg constraints
+            
+        Note:
+            If connection_label is provided, all other conditions are ignored.
+            
+        Raises:
+            AssertionError if connection_label is provided, but no environment,
+                and default_environment not specified
+            AssertionError if connection_label is specified but not found
+            AssertionError if no unique connection is found
         """
         if connection_label is not None:
             if environment is None:
@@ -361,10 +866,21 @@ class Layout(Instrument):
         else:
             # Extract from conditions other than environment and
             # connection_label
-            connections = self.get_connections(**conditions)
+            connections = self.get_connections(
+                output_arg=output_arg,
+                output_interface=output_interface,
+                output_instrument=output_instrument,
+                output_channel=output_channel,
+                input_arg=input_arg,
+                input_interface=input_interface,
+                input_instrument=input_instrument,
+                input_channel=input_channel,
+                trigger=trigger,
+                acquire=acquire,
+                software=software)
             assert len(connections) == 1, \
                 f"Found {len(connections)} connections " \
-                f"instead of one satisfying {conditions}"
+                f"instead of one satisfying conditions"
             return connections[0]
 
     def _set_primary_instrument(self, primary_instrument):
@@ -867,390 +1383,3 @@ class Layout(Instrument):
             raise
 
         return data
-
-
-class Connection:
-    def __init__(self, default=False, scale=None):
-        """
-        Connection base class for connections between interfaces (instruments)
-
-        Args:
-            default (Bool): Whether this connection should be the default.
-                This is used when multiple possible connection are found that
-                can implement a pulse. In such a case, if any connection has
-                default=True, it will be chosen over the others.
-            scale: Whether there is a scaling factor between output and input.
-                Scale 1/x means the signal at the input is x times lower than
-                emitted from the output
-        """
-        self.input = {}
-        self.output = {}
-        self.scale = scale
-
-        # TODO make default dependent on implementation
-        self.default = default
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        else:
-            return False
-
-    def __ne__(self, other):
-        """Define a non-equality test"""
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        # Define custom hash, used for creating a set of unique elements
-        dict_items = {}
-        for k, v in self.__dict__.items():
-            if isinstance(v, dict):
-                # Dicts cannot be hashed, and must be converted
-                v = tuple(sorted(v.items()))
-            dict_items[k] = v
-        return hash(tuple(sorted(dict_items)))
-
-    def target_pulse(self, pulse):
-        raise NotImplementedError();
-
-    def satisfies_conditions(self, input_instrument=None,
-                             input_channel=None, input_interface=None,
-                             output_instrument=None, output_channel=None,
-                             output_interface=None,
-                             **kwargs):
-        """
-        Checks if this connection satisfies conditions. Note that all
-        instrument/channel args can also be lists of elements. If so,
-        condition is satisfied if connection property is in list
-        Args:
-            output_interface: Connection must have output_interface object
-            output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel
-                (either Channel object, or channel name)
-            input_interface: Connection must have input_interface object
-            input_instrument: Connection must have input_instrument name
-            input_channel: Connection must have input_channel
-                (either Channel object, or channel name)
-        Returns:
-            Bool depending on if the connection satisfies conditions
-        """
-        # Convert interfaces to their underlying instruments
-        if output_interface is not None:
-            output_instrument = output_interface.instrument_name()
-        if input_interface is not None:
-            input_instrument = input_interface.instrument_name()
-
-        # Change instruments and channels into lists
-        if not (output_instrument is None or type(output_instrument) is list):
-            output_instrument = [output_instrument]
-        if not (input_instrument is None or type(input_instrument) is list):
-            input_instrument = [input_instrument]
-        if not (output_channel is None or type(output_channel) is list):
-            output_channel = [output_channel]
-        if not (input_channel is None or type(input_channel) is list):
-            input_channel = [input_channel]
-
-        # If channel is an object, convert to its name
-        if output_channel is not None:
-            output_channel = [ch.name if isinstance(ch, Channel) else ch
-                              for ch in output_channel]
-        if input_channel is not None:
-            input_channel = [ch.name if isinstance(ch, Channel) else ch
-                             for ch in input_channel]
-
-        # Test conditions
-        if (output_instrument is not None) and \
-                (self.output['instrument'] not in output_instrument):
-            return False
-        elif (output_channel is not None) and \
-                (('channel' not in self.output) or
-                     (self.output['channel'].name not in output_channel)):
-            return False
-        elif (input_instrument is not None) and \
-                (('instrument' not in self.input) or
-                     (self.input['instrument'] not in input_instrument)):
-            return False
-        elif (input_channel is not None) and \
-                (('channel' not in self.input) or
-                     (self.input['channel'].name not in input_channel)):
-            return False
-        else:
-            return True
-
-
-class SingleConnection(Connection):
-    def __init__(self, output_instrument, output_channel,
-                 input_instrument, input_channel,
-                 trigger=False, acquire=False, software=False, **kwargs):
-        """
-        Class representing a single connection between instrument channels.
-
-        Args:
-            output_instrument (str): Name of output instrument
-            output_channel (Channel): Output channel object
-            input_instrument (str): Name of output instrument
-            input_channel (Channel): Input channel object
-            trigger (bool): Sets the output channel to trigger the input
-                instrument
-            acquire (bool): Sets if this connection is used for acquisition
-            software (bool): Sets if this connection is a software connection.
-                This is used for cases such as software triggering
-            default (bool): Sets if this connection is the default for pulses
-        """
-        # TODO add optionality of having multiple channels connected.
-        # TODO Add mirroring of other channel.
-        super().__init__(**kwargs)
-
-        self.output['instrument'] = output_instrument
-        self.output['channel'] = output_channel
-        self.output['str'] = '{}.{}'.format(output_instrument,
-                                            output_channel.name)
-
-        self.input['instrument'] = input_instrument
-        self.input['channel'] = input_channel
-        self.input['str'] = '{}.{}'.format(input_instrument,
-                                           input_channel.name)
-
-        self.trigger = trigger
-        # TODO add this connection to input_instrument.trigger
-
-        self.acquire = acquire
-        self.software = software
-
-    def __repr__(self):
-        output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument'], self.output['channel'].name,
-            self.input['instrument'], self.input['channel'].name)
-        if self.trigger:
-            output_str += ', trigger'
-        if self.default:
-            output_str += ', default'
-        if self.acquire:
-            output_str += ', acquire'
-        if self.software:
-            output_str += ', software'
-        output_str += ')'
-        return output_str
-
-    def target_pulse(self, pulse, apply_scale=True, copy_pulse=True):
-        """
-        Targets a pulse to this connection.
-        This includes applying a possible scale to the pulse amplitude,
-        and linking the property pulse.connection to this connection object.
-        Args:
-            pulse: Pulse to be targeted
-            apply_scale (bool): Sets if the pulse amplitude should be divided by
-                the scale
-            copy_pulse (bool): Sets if the pulse should be copied.
-                If set to True, a new object is created, and all properties
-                are fixed (not dependent on other pulses).
-
-        Returns:
-            Targeted (copy of) pulse
-        """
-        if copy_pulse:
-            targeted_pulse = copy(pulse)
-        else:
-            targeted_pulse = pulse
-        targeted_pulse.connection = self
-        if apply_scale and self.scale is not None:
-            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
-                if hasattr(pulse, attr):
-                    val = getattr(pulse, attr)
-                    setattr(targeted_pulse, attr, val / self.scale)
-        return targeted_pulse
-
-    def satisfies_conditions(self, output_arg=None, input_arg=None,
-                             trigger=None, acquire=None, software=None,
-                             **kwargs):
-        """
-        Checks if this connection satisfies conditions. Note that all
-        instrument/channel args can also be lists of elements. If so,
-        condition is satisfied if connection property is in list
-        Args:
-            output_arg: Connection must have output '{instrument}.{channel}'
-            output_interface: Connection must have output_interface object
-            output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel
-                (either Channel object, or channel name)
-            input_arg: Connection must have input '{instrument}.{channel}'
-            input_interface: Connection must have input_interface object
-            input_instrument: Connection must have input_instrument name
-            input_channel: Connection must have input_channel
-                (either Channel object, or channel name)
-            trigger: Connection is used for triggering
-            acquire: Connection is used for acquisition
-            software: Connection is not an actual hardware connection. Used
-                when a software trigger needs to be sent
-        Returns:
-            Bool depending on if the connection satisfies conditions
-        """
-        if output_arg is not None:
-            if not isinstance(output_arg, str):
-                # output_arg is of wrong type (probably CombinedConnection)
-                return False
-            if not self.output['str'] == output_arg:
-                return False
-
-        if input_arg is not None:
-            if not isinstance(input_arg, str):
-                # input_arg is of wrong type (probably CombinedConnection)
-                return False
-            if not self.input['str'] == input_arg:
-                return False
-
-        if not super().satisfies_conditions(**kwargs):
-            return False
-        elif trigger is not None and self.trigger != trigger:
-            return False
-        elif acquire is not None and self.acquire != acquire:
-            return False
-        elif software is not None and self.software != software:
-            return False
-        else:
-            return True
-
-
-class CombinedConnection(Connection):
-    def __init__(self, connections, scale=None, **kwargs):
-        """
-        Class used to combine multiple SingleConnections.
-        The CombinedConnection is most useful for when multiple connections
-        are often used together.
-        Args:
-            connections: SingleConnections to combine
-            scale (float list): List specifying the value by which the
-                amplitude of a pulse should be scaled for each connection
-                (by default no scaling).
-            **kwargs: Additional Connection kwargs.
-        """
-        super().__init__(scale=scale, **kwargs)
-        self.connections = connections
-
-        self.output['str'] = [connection.output['str']
-                              for connection in connections]
-        self.output['instruments'] = list(set([connection.output['instrument']
-                                               for connection in connections]))
-        if len(self.output['instruments']) == 1:
-            self.output['instrument'] = self.output['instruments'][0]
-            self.output['channels'] = list(set([connection.output['channel']
-                                                for connection in connections]))
-
-        self.input['str'] = [connection.input['str']
-                             for connection in connections]
-        self.input['instruments'] = list(set([connection.input['instrument']
-                                              for connection in connections]))
-        if len(self.input['instruments']) == 1:
-            self.input['instrument'] = self.input['instruments'][0]
-            self.input['channels'] = list(set([connection.input['channel']
-                                               for connection in connections]))
-
-    def __repr__(self):
-        output = 'CombinedConnection\n'
-        for connection in self.connections:
-            output += '\t' + repr(connection) + '\n'
-        return output
-
-    def target_pulse(self, pulse):
-        """
-        Targets a pulse to the combined connection.
-        This creates a copy of the pulse for each connection, applies the
-        respective scale, and further lets each of the connections target the
-        respective pulse.
-        Args:
-            pulse: Pulse to be targeted
-
-        Returns:
-            pulses: List of pulses for each of the connections
-        """
-        pulses = []
-        for k, connection in enumerate(self.connections):
-            targeted_pulse = copy(pulse)
-            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
-                if hasattr(pulse, attr):
-                    val = getattr(pulse, attr)
-                    if isinstance(val, Iterable):
-                        if k < len(getattr(pulse, attr)):
-                            setattr(targeted_pulse, attr, val[k])
-                        else:
-                            setattr(targeted_pulse, attr, val[0])
-                    elif self.scale is not None:
-                        setattr(targeted_pulse, attr, val / self.scale[k])
-            targeted_pulse = connection.target_pulse(targeted_pulse,
-                                                     copy_pulse=False)
-            pulses.append(targeted_pulse)
-        return pulses
-
-    def satisfies_conditions(self, output_arg=None, input_arg=None,
-                             trigger=None, acquire=None, **kwargs):
-        """ Checks if this connection satisfies conditions
-        Args:
-            output_arg: list of SingleConnection output_args, each of which
-                has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with
-                input_arg, in which case the first element of output_arg and
-                input_arg are assumed to belong to the same underlying
-                connection.
-            output_interface: Connection must have output_interface
-            output_instrument: Connection must have output_instrument name
-            output_channel: Connection must have output_channel
-                (either Channel object, or channel name)
-            input_arg: list of SingleConnection input_args, each of which
-                has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with
-                output_arg, in which case the first element of output_arg and
-                input_arg are assumed to belong to the same underlying
-                connection.
-            input_interface: Connection must have input_interface
-            input_instrument: Connection must have input_instrument name
-            input_channel: Connection must have input_channel.
-                (either Channel object, or channel name)
-            trigger: Connection is used for triggering
-            acquire: Connection is used for acquisition
-        Returns:
-            Bool depending on if the connection satisfies conditions
-        """
-
-        if output_arg is not None:
-            if not isinstance(output_arg, list):
-                # output_arg is not a list (probably str for SingleConnection)
-                return False
-            if not len(output_arg) == len(self.connections):
-                return False
-
-        if input_arg is not None:
-            if not isinstance(input_arg, list):
-                # input_arg is not a list (probably str for SingleConnection)
-                return False
-            if not len(input_arg) == len(self.connections):
-                return False
-
-        if output_arg is not None and input_arg is not None:
-            for connection in self.connections:
-                # Check for each connection if there is an output/input
-                # combination that satisfies conditions
-                if not any(connection.satisfies_conditions(output_arg=output,
-                                                           input_arg=input)
-                           for output, input in zip(output_arg, input_arg)):
-                    return False
-        elif output_arg is not None:
-            for connection in self.connections:
-                # Check for each connection if there is an output that satisfies conditions
-                if not any(connection.satisfies_conditions(output_arg=output)
-                           for output in output_arg):
-                    return False
-        elif input_arg is not None:
-            for connection in self.connections:
-                # Check for each connection if there is an input that satisfies conditions
-                if not any(connection.satisfies_conditions(input_arg=input)
-                           for input in input_arg):
-                    return False
-
-        if not super().satisfies_conditions(**kwargs):
-            return False
-        elif trigger is not None:
-            return False
-        elif acquire is not None and self.acquire != acquire:
-            return False
-        else:
-            return True
