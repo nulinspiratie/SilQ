@@ -24,15 +24,26 @@ connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
 
 
 class Layout(Instrument):
-    shared_kwargs = ['instrument_interfaces']
 
     def __init__(self, name: str = 'layout',
                  instrument_interfaces: List[InstrumentInterface] = [],
                  store_pulse_sequences_folder: Union[bool, None] = None,
                  **kwargs):
-        """ Acquisition controller of instruments via their interfaces.
+        """ Global acquisition controller of instruments via their interfaces.
 
-        The Layout is provided with the instruments and their associated
+        The Layout is the global controller of all instruments involved in
+        executing pulse sequences. It is responsible for targeting a generic
+        setup-independent :py:class:`.PulseSequence to a setup-dependent one.
+        Each :py:class:`.Pulse` is passed along to the relevant
+        :py:class:`.InstrumentInterface` of instruments, as well as additional
+        pulses, such as triggering pulses. Each InstrumentInterface
+        The
+        instruments
+        being configured to execute the pulse sequence
+        The goal of the layout is to target a pulse sequence, diverting its
+        pulses to the relevant instruments,
+        provided with the instruments and
+        their associated
         interfaces, as well as connectivity between instrument channels.
 
 
