@@ -7,7 +7,23 @@ from silq.pulses.pulse_sequences import PulseSequence
 
 
 class InstrumentInterface(Instrument):
-    def __init__(self, instrument_name, **kwargs):
+    def __init__(self,
+                 instrument_name: str, **kwargs):
+        """ Interface between the :py:class:.Layout` and instruments
+        
+        When a :py:class:.PulseSequence` is targeted in the Layout, the pulses
+        are directed to the appropriate interface. Each interface is responsible
+        for translating all pulses directed to it into instrument commands.
+        During the actual measurement, the instrument's operations will
+        correspond to that required by the pulse sequence.
+        
+        The interface also contains a list of all available channels in the
+        instrument.
+        
+        Args:
+            instrument_name: name of instrument for which this is an interface
+        """
+        # TODO: pass along actual instrument instead of name
         super().__init__(name=instrument_name + '_interface', **kwargs)
         self.instrument = self.find_instrument(name=instrument_name)
 
