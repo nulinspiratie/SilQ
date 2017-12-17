@@ -174,8 +174,7 @@ class SingleConnection(Connection):
 
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
-        self.input['str'] = '{}.{}'.format(input_instrument,
-                                           input_channel.name)
+        self.input['str'] = f'{input_instrument}.{input_channel.name}'
 
         self.trigger = trigger
         # TODO add this connection to input_instrument.trigger
