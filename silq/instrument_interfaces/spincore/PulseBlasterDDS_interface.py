@@ -56,7 +56,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         else:
             return []
 
-    def setup(self, final_instruction='loop', is_primary=True, repeat=True,
+    def setup(self, final_instruction='loop', repeat=True,
               **kwargs):
         #Initial pulseblaster commands
         self.instrument.setup()
@@ -98,7 +98,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         t_stop_max = max(self.pulse_sequence.t_stop_list)
         inst_list = []
 
-        if not is_primary:
+        if not self.is_primary():
             # Wait for trigger
             inst_list.append(DEFAULT_INSTR + (0, 'wait', 0, 100))
 
@@ -143,7 +143,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             t = t_next
 
-        if is_primary:
+        if self.is_primary():
             # Insert delay until end of pulse sequence
             # NOTE: This will disable all output channels and use default registers
             delay_duration = max(self.pulse_sequence.duration - t, 0)
@@ -172,7 +172,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
 
-        if not is_primary:
+        if not self.is_primary():
             # Return flag to ensure this instrument is started after its
             # triggering instrument. This is because it is triggered when its
             # trigger voltage reaches below a threshold, meaning that the triggering
