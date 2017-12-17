@@ -120,10 +120,10 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         return additional_pulses
 
-    def setup(self, is_primary=False, **kwargs):
+    def setup(self, **kwargs):
         # TODO implement setup for modes other than stepped
 
-        if is_primary:
+        if self.is_primary():
             logger.warning('Arbstudio not programmed as primary instrument')
 
         # Clear waveforms and sequences
