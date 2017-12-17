@@ -1,8 +1,7 @@
 import numpy as np
 import logging
 
-from silq.instrument_interfaces \
-    import InstrumentInterface, Channel
+from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import SinePulse, PulseImplementation, TriggerPulse
 
 
@@ -16,11 +15,30 @@ RESET_PHASE = RESET_PHASE_FALSE
 DEFAULT_CH_INSTR = (0, 0, 0, 0, 0)
 DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
+
 class PulseBlasterDDSInterface(InstrumentInterface):
+    """ Interface for the Pulseblaster DDS
+    
+    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+    pulses are directed to the appropriate interface. Each interface is
+    responsible for translating all pulses directed to it into instrument 
+    commands. During the actual measurement, the instrument's operations will
+    correspond to that required by the pulse sequence.
+    
+    The interface also contains a list of all available channels in the
+    instrument.
+    
+    Args:
+        instrument_name: name of instrument for which this is an interface
+        
+    Note:    
+        For a given instrument, its associated interface can be found using
+            :func:`get_instrument_interface`
+
+    """
 
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
-
 
         self._output_channels = {
             # Measured output ranged from -3V to 3 V @ 50 ohm Load.
