@@ -544,7 +544,7 @@ class ATSInterface(InstrumentInterface):
                 Setting is not an ATS configuration or acquisition setting.
         """
         assert setting in self._settings_names, \
-            "Kwarg {} is not a valid ATS acquisition setting".format(setting)
+            f"Kwarg {setting} is not a valid ATS acquisition setting"
         if setting in self._configuration_settings.keys():
             return self._configuration_settings[setting]
         elif setting in self._acquisition_settings.keys():
