@@ -542,7 +542,8 @@ class Layout(Instrument):
             pulse_sequence: Pulse sequence to be targeted
             
         Raises:
-            AssertionError if not a pulse sequence
+            AssertionError 
+                Value passed is not valid pulse sequence
         """
         return self._pulse_sequence
 
@@ -572,7 +573,7 @@ class Layout(Instrument):
 
     @property
     def acquisition_channels(self):
-        """Dict[str, str]: {acquisition_label: acquisition_channel_name} pairs.
+        """Dict[str, str] {acquisition_label: acquisition_channel_name} pairs.
         
         The `acquisition_label` is the label associated with a certain
         acquisition channel, settable via :attr:`layout.acquisition_outputs`.
@@ -679,7 +680,8 @@ class Layout(Instrument):
             List[Connection]: Loaded connections
             
         Raises:
-            RuntimeError if no filepath provided and no connections in config.
+            RuntimeError
+                No filepath provided and no connections in config.
             
         Note:
             Please see other Experiment folder configs for JSON syntax.
@@ -778,7 +780,8 @@ class Layout(Instrument):
             If connection condition provided, all other conditions are ignored.
             
         Raises:
-            RuntimeError if connection is provided but not found
+            RuntimeError
+                Connection is provided but not found
         """
         if connection is not None:
             # Check if connection is in connections.
@@ -825,9 +828,9 @@ class Layout(Instrument):
         Args:
             connection_label: label specifying specific connection.
                 Connection labels are provided as dict in 
-                `qcodes.config.user.{environment}.connections, where environment
-                the config environment. If provided, all other conditions are
-                ignored.
+                `qcodes.config.user.{environment}.connections`, where 
+                environment the config environment. 
+                If provided, all other conditions are ignored.
             environment: config environment, only used if connection_label is
                 provided. If not provided but connection_label is provided,
                 `qcodes.config.user.properties.default_environment` is used.
@@ -867,10 +870,13 @@ class Layout(Instrument):
             If connection_label is provided, all other conditions are ignored.
             
         Raises:
-            AssertionError if connection_label is provided, but no environment,
-                and default_environment not specified
-            AssertionError if connection_label is specified but not found
-            AssertionError if no unique connection is found
+            AssertionError 
+                `connection_label` is provided, but no environment,
+                and `default_environment` not specified
+            AssertionError 
+                `connection_label` is specified but not found
+            AssertionError 
+                No unique connection is found
         """
         if connection_label is not None:
             if environment is None:
@@ -943,8 +949,9 @@ class Layout(Instrument):
                 limit
                 
         Raises:
-            RecursionError if no hierarchy can be found. Occurs if for instance
-                instruments are triggering each other.
+            RecursionError 
+                No hierarchy can be found. Occurs if for instance instruments
+                are triggering each other.
         """
 
         # Set acquisition interface as first interface
@@ -1007,7 +1014,8 @@ class Layout(Instrument):
             Connection object for pulse
             
         Raises:
-            AssertionError if no unique connection can be found
+            AssertionError 
+                No unique connection can be found
         """
         connection_requirements = pulse.connection_requirements.copy()
 
@@ -1214,6 +1222,7 @@ class Layout(Instrument):
         and applied at this stage.
 
         Interfaces can return a dict of flags. The following flags are accepted:
+        
         * setup (dict): key (instrument_name) value setup_flags.
           When the interface with instrument_name (key) is setup, the
           setup flags (value) will be passed along.
@@ -1222,7 +1231,6 @@ class Layout(Instrument):
         * post_start_actions (list(callable)): callables to perform after all
           interfaces are started.
         * start_last (interface) interface that should be started after others.
-
 
         Args:
             samples: Number of samples (by default uses previous value)
