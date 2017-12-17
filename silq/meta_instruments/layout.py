@@ -1,14 +1,16 @@
 import os
+import numpy as np
 from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
 import pickle
 from time import sleep
-from typing import Union, List, Sequence
+from typing import Union, List, Sequence, Dict, Any
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import PulseSequence
+from silq.pulses.pulse_types import Pulse
 
 from qcodes import Instrument, FormatLocation
 from qcodes.utils import validators as vals
@@ -24,25 +26,18 @@ connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
 
 
 class Connection:
-    def __init__(self, default=False, scale=None):
-        """
-        Connection base class for connections between interfaces (instruments)
+    """Connection base class for connections between interfaces (instruments).
+    
+    Args:
+        scale: Whether there is a scaling factor between output and input.
+            Scale 1/x means the signal at the input is x times lower than
+            emitted from the output
+    """
+    def __init__(self, scale: float = None):
 
-        Args:
-            default (Bool): Whether this connection should be the default.
-                This is used when multiple possible connection are found that
-                can implement a pulse. In such a case, if any connection has
-                default=True, it will be chosen over the others.
-            scale: Whether there is a scaling factor between output and input.
-                Scale 1/x means the signal at the input is x times lower than
-                emitted from the output
-        """
         self.input = {}
         self.output = {}
         self.scale = scale
-
-        # TODO make default dependent on implementation
-        self.default = default
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -55,7 +50,7 @@ class Connection:
         return not self.__eq__(other)
 
     def __hash__(self):
-        # Define custom hash, used for creating a set of unique elements
+        """Define custom hash, used for creating a set of unique elements."""
         dict_items = {}
         for k, v in self.__dict__.items():
             if isinstance(v, dict):
@@ -64,18 +59,27 @@ class Connection:
             dict_items[k] = v
         return hash(tuple(sorted(dict_items)))
 
-    def target_pulse(self, pulse):
-        raise NotImplementedError();
-
-    def satisfies_conditions(self, input_instrument=None,
-                             input_channel=None, input_interface=None,
-                             output_instrument=None, output_channel=None,
-                             output_interface=None,
-                             **kwargs):
+    def target_pulse(self,
+                     pulse: Pulse):
+        """Target pulse to connection.
+        
+        Used to apply modifications such as an amplitude scale.
+        
+        Note:
+            The pulse should be copied, and modifications applied to the copy.
         """
-        Checks if this connection satisfies conditions. Note that all
-        instrument/channel args can also be lists of elements. If so,
-        condition is satisfied if connection property is in list
+        raise NotImplementedError()
+
+    def satisfies_conditions(self,
+                             input_instrument: str = None,
+                             input_channel: Union[Channel, str] = None,
+                             input_interface: InstrumentInterface = None,
+                             output_instrument: str = None,
+                             output_channel: Union[Channel, str] = None,
+                             output_interface: InstrumentInterface = None,
+                             **kwargs) -> bool:
+        """Checks if this connection satisfies conditions. 
+        
         Args:
             output_interface: Connection must have output_interface object
             output_instrument: Connection must have output_instrument name
@@ -85,8 +89,13 @@ class Connection:
             input_instrument: Connection must have input_instrument name
             input_channel: Connection must have input_channel
                 (either Channel object, or channel name)
+        
         Returns:
-            Bool depending on if the connection satisfies conditions
+            True if the connection satisfies conditions
+        
+        Note:
+            instrument/channel args can also be lists of elements. If so,
+                condition is satisfied if connection property is in list.
         """
         # Convert interfaces to their underlying instruments
         if output_interface is not None:
@@ -133,24 +142,27 @@ class Connection:
 
 
 class SingleConnection(Connection):
-    def __init__(self, output_instrument, output_channel,
-                 input_instrument, input_channel,
-                 trigger=False, acquire=False, software=False, **kwargs):
-        """
-        Class representing a single connection between instrument channels.
+    """Class representing a single connection between instrument channels.
 
-        Args:
-            output_instrument (str): Name of output instrument
-            output_channel (Channel): Output channel object
-            input_instrument (str): Name of output instrument
-            input_channel (Channel): Input channel object
-            trigger (bool): Sets the output channel to trigger the input
-                instrument
-            acquire (bool): Sets if this connection is used for acquisition
-            software (bool): Sets if this connection is a software connection.
-                This is used for cases such as software triggering
-            default (bool): Sets if this connection is the default for pulses
-        """
+    Args:
+        output_instrument: Name of output instrument.
+        output_channel: Output channel object.
+        input_instrument: Name of output instrument.
+        input_channel: Input channel object.
+        trigger: Sets the output channel to trigger the input instrument.
+        acquire: Sets if this connection is used for acquisition.
+        software: Sets if this connection is a software connection.
+            This is used for cases such as software triggering.
+    """
+    def __init__(self,
+                 output_instrument: str,
+                 output_channel: Channel,
+                 input_instrument: str,
+                 input_channel: Channel,
+                 trigger: bool = False,
+                 acquire: bool = False,
+                 software: bool = False,
+                 **kwargs):
         # TODO add optionality of having multiple channels connected.
         # TODO Add mirroring of other channel.
         super().__init__(**kwargs)
@@ -177,8 +189,6 @@ class SingleConnection(Connection):
             self.input['instrument'], self.input['channel'].name)
         if self.trigger:
             output_str += ', trigger'
-        if self.default:
-            output_str += ', default'
         if self.acquire:
             output_str += ', acquire'
         if self.software:
@@ -186,21 +196,30 @@ class SingleConnection(Connection):
         output_str += ')'
         return output_str
 
-    def target_pulse(self, pulse, apply_scale=True, copy_pulse=True):
-        """
-        Targets a pulse to this connection.
-        This includes applying a possible scale to the pulse amplitude,
-        and linking the property pulse.connection to this connection object.
+    def target_pulse(self,
+                     pulse: Pulse,
+                     apply_scale: bool = True,
+                     copy_pulse: bool = True) -> Pulse:
+        """Targets a pulse to this connection.
+        
+        During connection targeting, the pulse is copied and its properties
+        modified for a specific connection. This includes applying a any scale
+        to the pulse amplitude, and adding the connection to
+        :attr:`Pulse.connection`.
+        
         Args:
             pulse: Pulse to be targeted
-            apply_scale (bool): Sets if the pulse amplitude should be divided by
-                the scale
-            copy_pulse (bool): Sets if the pulse should be copied.
+            apply_scale: Divide :attr:`Pulse.amplitude` by connection scale.
+            copy_pulse: Copy pulse before targeting
                 If set to True, a new object is created, and all properties
                 are fixed (not dependent on other pulses).
 
         Returns:
             Targeted (copy of) pulse
+            
+        Note:
+            If scale is applied, the attribute `amplitude`, `amplitude_start`,
+                and `amplitude_stop` are scaled.
         """
         if copy_pulse:
             targeted_pulse = copy(pulse)
@@ -214,13 +233,15 @@ class SingleConnection(Connection):
                     setattr(targeted_pulse, attr, val / self.scale)
         return targeted_pulse
 
-    def satisfies_conditions(self, output_arg=None, input_arg=None,
-                             trigger=None, acquire=None, software=None,
-                             **kwargs):
-        """
-        Checks if this connection satisfies conditions. Note that all
-        instrument/channel args can also be lists of elements. If so,
-        condition is satisfied if connection property is in list
+    def satisfies_conditions(self,
+                             output_arg: str = None,
+                             input_arg: str = None,
+                             trigger: bool = None,
+                             acquire: bool = None,
+                             software: bool = None,
+                             **kwargs) -> bool:
+        """Checks if this connection satisfies conditions. 
+        
         Args:
             output_arg: Connection must have output '{instrument}.{channel}'
             output_interface: Connection must have output_interface object
@@ -236,8 +257,14 @@ class SingleConnection(Connection):
             acquire: Connection is used for acquisition
             software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
+                
         Returns:
-            Bool depending on if the connection satisfies conditions
+            True if connection satisfies conditions
+            
+        Note:
+            All instrument/channel args can also be lists of elements. If so,
+                condition is satisfied if connection property is in list
+            
         """
         if output_arg is not None:
             if not isinstance(output_arg, str):
@@ -266,18 +293,21 @@ class SingleConnection(Connection):
 
 
 class CombinedConnection(Connection):
-    def __init__(self, connections, scale=None, **kwargs):
-        """
-        Class used to combine multiple SingleConnections.
-        The CombinedConnection is most useful for when multiple connections
-        are often used together.
-        Args:
-            connections: SingleConnections to combine
-            scale (float list): List specifying the value by which the
-                amplitude of a pulse should be scaled for each connection
-                (by default no scaling).
-            **kwargs: Additional Connection kwargs.
-        """
+    """Class used to combine multiple SingleConnections.
+    
+    The CombinedConnection is most useful for when multiple connections
+    are often used together, such as when using compensated pulses.
+    
+    Args:
+        connections: List of :class:`SingleConnection` to combine
+        scale: List specifying the value by which the amplitude of a pulse
+            should be scaled for each connection (by default no scaling).
+        **kwargs: Additional Connection kwargs.
+    """
+    def __init__(self,
+                 connections: List[SingleConnection],
+                 scale: List[float] = None,
+                 **kwargs):
         super().__init__(scale=scale, **kwargs)
         self.connections = connections
 
@@ -305,12 +335,14 @@ class CombinedConnection(Connection):
             output += '\t' + repr(connection) + '\n'
         return output
 
-    def target_pulse(self, pulse):
-        """
-        Targets a pulse to the combined connection.
+    def target_pulse(self,
+                     pulse: Pulse) -> List[Pulse]:
+        """Targets a pulse to the combined connection.
+        
         This creates a copy of the pulse for each connection, applies the
         respective scale, and further lets each of the connections target the
         respective pulse.
+        
         Args:
             pulse: Pulse to be targeted
 
@@ -335,9 +367,14 @@ class CombinedConnection(Connection):
             pulses.append(targeted_pulse)
         return pulses
 
-    def satisfies_conditions(self, output_arg=None, input_arg=None,
-                             trigger=None, acquire=None, **kwargs):
-        """ Checks if this connection satisfies conditions
+    def satisfies_conditions(self,
+                             output_arg: str = None,
+                             input_arg: str = None,
+                             trigger: bool = None,
+                             acquire: bool = None,
+                             **kwargs):
+        """Checks if this connection satisfies conditions
+        
         Args:
             output_arg: list of SingleConnection output_args, each of which
                 has the form '{instrument}.{channel}. Must have equal number
@@ -361,6 +398,7 @@ class CombinedConnection(Connection):
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
+            
         Returns:
             Bool depending on if the connection satisfies conditions
         """
@@ -411,36 +449,34 @@ class CombinedConnection(Connection):
 
 
 class Layout(Instrument):
-
+    """Global pulse sequence controller of instruments via interfaces.
+    
+    The Layout contains a representation of the experimental layout, i.e. it
+    has a list of the instruments in the experimental setup, and the physical
+    connectivity between the instrument channels. Knowledge of the instruments
+    and their connectivity allows the layout to target a generic 
+    setup-independent :class:`.PulseSequence` to one that is specific to the
+    experimental layout. Each :class:`.Pulse` is passed along to the relevant
+    :class:`.InstrumentInterface` of instruments, as well as additional pulses,
+    such as triggering pulses. 
+    
+    One the instrument interfaces has received the pulses it is supposed to
+    apply, it can convert these into instrument commands during the setup phase.
+    Once all instruments have been setup, the resulting output and acquisition
+    of the instruments should match that of the pulse sequence.
+    
+    Args:
+        name: Name of Layout instrument.
+        instrument_interfaces: List of all instrument interfaces
+        store_pulse_sequences_folder: Folder in which to store a copy of any 
+            pulse sequence that is targeted. Pulse sequences are stored as
+            pickles, and can be used to trace back measurement parameters.
+        **kwargs: Additional kwargs passed to Instrument
+    """
     def __init__(self, name: str = 'layout',
                  instrument_interfaces: List[InstrumentInterface] = [],
                  store_pulse_sequences_folder: Union[bool, None] = None,
                  **kwargs):
-        """Global pulse sequence controller of instruments via interfaces.
-
-        The Layout contains a representation of the experimental layout, i.e. it
-        has a list of the instruments in the experimental setup, and the 
-        physical connectivity between the instrument channels.
-        Knowledge of the instruments and their connectivity allows the layout to
-        target a generic setup-independent :class:`.PulseSequence` to one 
-        that is specific to the experimental layout. Each :class:`.Pulse` is
-        passed along to the relevant :class:`.InstrumentInterface` of
-        instruments, as well as additional pulses, such as triggering pulses. 
-        
-        One the instrument interfaces has received the pulses it is supposed to
-        apply, it can convert these into instrument commands during the setup 
-        phase. Once all instruments have been setup, the resulting output and
-        acquisition of the instruments should match that of the pulse sequence.
-
-        Args:
-            name: Name of Layout instrument.
-            instrument_interfaces: List of all instrument interfaces
-            store_pulse_sequences_folder: Folder in which to store a copy of
-                any pulse sequence that is targeted. Pulse sequences are
-                stored as pickles, and can be used to trace back measurement
-                parameters.
-            **kwargs: Additional kwargs passed to Instrument
-        """
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
@@ -696,7 +732,7 @@ class Layout(Instrument):
                         trigger: bool = None,
                         acquire: bool = None,
                         software: bool = None) -> List[Connection]:
-        """ Returns all connections that satisfy given conditions
+        """Get all connections that satisfy connection conditions
         
         Only conditions that have been set to anything other than None are used.
 
@@ -883,21 +919,32 @@ class Layout(Instrument):
                 f"instead of one satisfying conditions"
             return connections[0]
 
-    def _set_primary_instrument(self, primary_instrument):
-        # TODO remove once parameters are improved
+    def _set_primary_instrument(self, primary_instrument: str):
+        """Sets primary instrument, updating `is_primary` in all interfaces."""
         for instrument_name, interface in self._interfaces.items():
             interface.is_primary(instrument_name == primary_instrument)
 
-    def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
-        """
-        Determines the hierarchy for instruments, ensuring that instruments
-        in the list never trigger instruments later in the list.
-        This function is recursive.
+    def _get_interfaces_hierarchical(
+            self, sorted_interfaces: List[InstrumentInterface] = []):
+        """Sort interfaces by triggering order, from bottom to top.
+         
+        This sorting ensures that earlier instruments never trigger later ones.
+        The primary instrument will therefore be one of the last elements.
+        
         Args:
-            sorted_interfaces: should start empty. This gets filled recursively
+            sorted_interfaces: Sorted list of interfaces. Should start empty,
+                and is filled recursively.
 
         Returns:
-            Hierarchically sorted list of interfaces
+            Hierarchically sorted list of interfaces.
+            
+        Note:
+            This function is recursive. It may fail after reaching the recursion
+                limit
+                
+        Raises:
+            RecursionError if no hierarchy can be found. Occurs if for instance
+                instruments are triggering each other.
         """
 
         # Set acquisition interface as first interface
@@ -939,86 +986,28 @@ class Layout(Instrument):
         # Go to next level in recursion
         return self._get_interfaces_hierarchical(sorted_interfaces)
 
-    def _get_pulse_interface(self, pulse):
-        """
-        Retrieves the instrument interface to output pulse
-        Args:
-            pulse: Pulse for which to find the default instrument interface
-
-        Returns:
-            Instrument interface for pulse
-        """
-
-        # Only look at interfaces that are the output instrument for a
-        # connection that satisfies pulse.connection_requirements
-        connections = self.get_connections(**pulse.connection_requirements)
-        # print('All connections: {}'.format(self.connections))
-        # print('Available connections: {}'.format(connections))
-
-        output_instruments = set([connection.output['instrument']
-                                  for connection in connections])
-        # print('Output instruments: {}'.format(output_instruments))
-
-        interfaces = {instrument: self._interfaces[instrument]
-                      for instrument in output_instruments}
-        # print('potential interfaces: {}'.format(interfaces))
-
-        matched_interfaces = []
-        for instrument_name, interface in interfaces.items():
-            pulse_implementation = interface.has_pulse_implementation(pulse)
-
-            # Skip to next interface if there is no pulse implementation
-            if pulse_implementation is None:
-                continue
-
-            # Test if all additional pulses of this pulse also have a matching
-            # interface. Note that this is recursive.
-            if not all([self._get_pulse_interface(additional_pulse) is not None
-                        for additional_pulse
-                        in pulse_implementation.additional_pulses]):
-                continue
-            else:
-                matched_interfaces.append(interface)
-
-        if not matched_interfaces:
-            raise Exception('No instruments have an implementation for pulses '
-                            '{}'.format(pulse))
-        elif len(matched_interfaces) > 1:
-            raise Exception('More than one interface has an implementation for '
-                            'pulse. Functionality to choose instrument not yet '
-                            'implemented.\nInterfaces: {}, pulse: {}'.format(
-                matched_interfaces, pulse))
-        else:
-            return matched_interfaces[0]
-
-    def get_pulse_instrument(self, pulse):
-        """
-        Retrieves the name of the instrument that can output the given pulse
-
-        Args:
-            pulse: Pulse for which to find the default instrument name
-
-        Returns:
-            Instrument name for pulse
-        """
-        interface = self._get_pulse_interface(pulse)
-        return interface.instrument_name()
-
-    def get_pulse_connection(self, pulse, interface=None, instrument=None,
+    def get_pulse_connection(self,
+                             pulse: Pulse,
+                             interface: InstrumentInterface = None,
+                             instrument: str = None,
                              **kwargs):
-        """
-        Obtain default connection for a given pulse. If no instrument or
-        instrument_name is given, the instrument is determined from
-        self.get_pulse_instrument.
-
+        """Get connection a given pulse should be targeted to
+        
+        If :attr:`Pulse.connection_label` is specified, it is used to determine
+        the connection. Otherwise, conditions in 
+        :attr:`Pulse.connection_requirements` are used to determine connection. 
+        
         Args:
-            pulse: Pulse for which to find default connection
+            pulse: Pulse for which to find connection
             interface (optional): Output instrument interface of pulse
             instrument (optional): Output instrument name of pulse
             **kwargs: Additional kwargs to specify connection
 
         Returns:
             Connection object for pulse
+            
+        Raises:
+            AssertionError if no unique connection can be found
         """
         connection_requirements = pulse.connection_requirements.copy()
 
@@ -1031,28 +1020,40 @@ class Layout(Instrument):
             connection = self.get_connection(
                 environment=pulse.environment,
                 connection_label=pulse.connection_label,
-                **connection_requirements)
+                **connection_requirements,
+                **kwargs)
         else:
-            connection = self.get_connection(**connection_requirements)
+            connection = self.get_connection(**connection_requirements,
+                                             **kwargs)
         return connection
 
-    def _target_pulse(self, pulse, **kwargs):
-        """
-        Add pulse to default instrument that can output the pulse.
-        Often the instrument requires additional pulses, such as a triggering
-        pulse. These pulses are also targeted by recursively calling this
-        function.
-        During targeting, all the properties of pulses are fixed, meaning
-        that they do not depend on other pulses anymore. By contrast,
-        untargeted pulses can be dependent on other pulses, such as starting
-        at the end of the previous pulse, even if the previous pulse is
-        modified.
+    def _target_pulse(self,
+                      pulse: Pulse):
+        """Target pulse to corresponding connection and instrument interface.
+        
+        The connection is determined from either :attr:`Pulse.connection_label`,
+        or if undefined, from :attr:`Pulse.connection_requirements`. At the
+        connection targeting stage, and effects such as an amplitude scale are
+        applied.
+        
+        Afterwards, the pulse is then directed to the connection's output and
+        input interfaces.
+        
         Args:
             pulse: pulse to be targeted
-            **kwargs: No function yet  (TODO remove)
 
-        Returns:
-            None
+        Notes:
+            * At each targeting stage, the pulse is copied such that any
+              modifications don't affect the original pulse.
+            * Often the instrument requires additional pulses, such as a 
+              triggering pulse. These pulses are also targeted by recursively 
+              calling this function.
+            * During targeting, all the properties of pulses are fixed, meaning
+              that they do not depend on other pulses anymore. By contrast,
+              untargeted pulses can be dependent on other pulses, such as 
+              starting at the end of the previous pulse, even if the previous 
+              pulse is modified.
+        
         """
         # Get default output instrument
         connection = self.get_pulse_connection(pulse)
@@ -1062,8 +1063,12 @@ class Layout(Instrument):
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
 
+        # Return a list of pulses. The reason for not necessarily returing a
+        # single pulse is that targeting by a CombinedConnection will target the
+        # pulse to each of its connections it's composed of.
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
+            # Convert to list
             pulses = [pulses]
 
         for pulse in pulses:
@@ -1079,18 +1084,23 @@ class Layout(Instrument):
                 pulse.connection.input['instrument']]
             input_interface.input_pulse_sequence.add(targeted_pulse)
 
-    def _target_pulse_sequence(self, pulse_sequence):
-        """
-        Targets a pulse sequence.
+    def _target_pulse_sequence(self,
+                               pulse_sequence: PulseSequence):
+        """Targets a pulse sequence.
+        
         For each of the pulses, it finds the instrument that can output it,
         and adds the pulse to its respective interface. It also takes care of
         any additional necessities, such as additional triggering pulses.
+        
+        if :attr:`Layout.store_pulse_sequence_folder` is defined, the pulse
+        sequence is also stored as a .pickle file.
 
         Args:
-            pulse_sequence: (Untargeted) pulse sequence that is to be targeted.
+            pulse_sequence: Untargeted pulse sequence that is to be targeted.
 
-        Returns:
-            None
+        Notes:
+            * If a measurement is running, all instruments are stopped
+            * The original pulse sequence and pulses remain unmodified
         """
         logger.info(f'Targeting pulse sequence {pulse_sequence}')
 
@@ -1126,7 +1136,6 @@ class Layout(Instrument):
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
-            logger.debug('Storing pulse sequence to')
             try:
                 self._pulse_sequences_folder_io.base_location = \
                     self.store_pulse_sequences_folder
@@ -1144,16 +1153,19 @@ class Layout(Instrument):
             except:
                 logger.exception('Could not save pulse sequence')
 
-    def update_flags(self, new_flags):
-        """
-        Updates existing flags with new flags. Flags are instructions sent
-        to interfaces, usually from other interfaces to modify the usual
-        operations. Examples are skip_start, setup kwargs, etc.
+    def update_flags(self,
+                     new_flags: Dict[str, Dict[str, Any]]):
+        """Updates existing interface :attr:`Layout.flags` with new flags. 
+        
+        Flags are instructions sent to interfaces, usually from other 
+        interfaces, to modify the usual operations. 
+        Examples are `skip_start`, `setup` kwargs, etc.
+        
         Args:
             new_flags: {instrument: {flag: val}} dict
 
-        Returns:
-            None
+        See Also:
+            :meth:`Layout.setup` for information on allowed flags.
         """
         if 'skip_start' in new_flags:
             self.flags['skip_start'].add(new_flags['skip_start'])
@@ -1188,9 +1200,12 @@ class Layout(Instrument):
                 # Set dict since it may not have existed previously
                 self.flags['setup'][instrument_name] = instrument_flags
 
-    def setup(self, samples=None, repeat=True,**kwargs):
-        """
-        Sets up all the instruments after having targeted a pulse sequence.
+    def setup(self,
+              samples: int = None,
+              repeat: bool = True,
+              **kwargs):
+        """Sets up all the instruments after having targeted a pulse sequence.
+        
         Instruments are setup through their respective interfaces, and only
         the instruments that have a pulse sequence are setup.
         The interface setup order is by hierarchy, i.e. instruments that trigger
@@ -1199,23 +1214,20 @@ class Layout(Instrument):
         and applied at this stage.
 
         Interfaces can return a dict of flags. The following flags are accepted:
-        - setup (dict): key (instrument_name) value setup_flags
-            When the interface with instrument_name (key) is setup, the
-            setup flags (value) will be passed along
-        - skip_start (str): instrument name that should be skipped when
-            calling layout.start()
-        - post_start_actions (list(callable)): callables to perform after all
-            interfaces are started
-        - start_last (interface) interface that should be started after others
+        * setup (dict): key (instrument_name) value setup_flags.
+          When the interface with instrument_name (key) is setup, the
+          setup flags (value) will be passed along.
+        * skip_start (str): instrument name that should be skipped when
+          calling :meth:`layout.start`.
+        * post_start_actions (list(callable)): callables to perform after all
+          interfaces are started.
+        * start_last (interface) interface that should be started after others.
 
 
         Args:
             samples: Number of samples (by default uses previous value)
             repeat: Whether to repeat pulse sequence indefinitely or stop at end
             **kwargs: additional kwargs sent to all interfaces being setup.
-
-        Returns:
-            None
         """
 
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
@@ -1252,7 +1264,6 @@ class Layout(Instrument):
                     output_interface=interface)
 
                 flags = interface.setup(samples=self.samples(),
-                                        is_primary=is_primary,
                                         output_connections=output_connections,
                                         repeat=repeat,
                                         **setup_flags, **kwargs)
@@ -1274,14 +1285,20 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self, auto_stop=None):
-        """
-        Starts all the instruments except the acquisition instrument
+    def start(self, auto_stop: Union[bool, float] = None):
+        """Starts all the instruments except the acquisition instrument.
+        
         The interface start order is by hierarchy, i.e. instruments that trigger
         other instruments are never setup before the triggered instruments.
-        Does not start instruments that have the flag skip_start
-        Returns:
+        
+        Args:
+            auto_stop: Call stop after specified duration.
+                If not specified, uses value from flags (default is False).
+                If set to True, waits 3 times the pulse sequence duration
+                If set to a value, waits for that amount of seconds.
 
+        Note:
+            Does not start instruments that have the flag `skip_start`
         """
         self.active(True)
         for interface in self._get_interfaces_hierarchical():
@@ -1315,38 +1332,39 @@ class Layout(Instrument):
         if auto_stop is not False:
             if auto_stop is True:
                 # Wait for three times the duration of the pulse sequence, then stop instruments
-                sleep(self.pulse_sequence.duration * 3 / 1000)
+                sleep(self.pulse_sequence.duration * 3)
             elif isinstance(auto_stop, (int, float)):
                 # Wait for duration specified in auto_stop
                 sleep(auto_stop)
             else:
                 raise SyntaxError('auto_stop must be either True or a number')
-                self.stop()
 
+            self.stop()
 
     def stop(self):
-        """
-        Stops all instruments.
-        Returns:
-            None
-        """
+        """Stops all instruments."""
         for interface in self._get_interfaces_hierarchical():
             interface.stop()
             logger.debug(f'{interface} stopped')
         self.active(False)
         logger.debug('Layout stopped')
 
-    def acquisition(self, stop=True):
-        """
-        Performs an acquisition.
+    def acquisition(self,
+                    stop: bool = True) -> Dict[str, Dict[str, np.ndarray]]:
+        """Performs an acquisition.
+        
         By default this includes starting and stopping of all the instruments.
+        
         Args:
-            stop (Bool): Whether to stop instruments after finishing
+            stop: Whether to stop instruments after finishing
                 measurements (True by default)
 
         Returns:
-            data (Dict): Dictionary where every element is of the form
-                acquisition_channel: acquisition_signal.
+            Dictionary of the form 
+                {pulse.full_name: {acquisition_label: acquisition_signal}.
+                
+        Note:
+            Stops all instruments if an error occurs during acquisition.
         """
         try:
             logger.info(f'Performing acquisition, stop when finished: {stop}')
