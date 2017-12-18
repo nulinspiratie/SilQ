@@ -1,8 +1,9 @@
 import numpy as np
 import logging
+from typing import List
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse
+from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse
 
 
 logger = logging.getLogger(__name__)

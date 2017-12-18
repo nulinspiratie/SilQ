@@ -7,6 +7,27 @@ from silq.pulses import DCPulse, TriggerPulse, MarkerPulse, TriggerWaitPulse, \
 
 
 class PulseBlasterESRPROInterface(InstrumentInterface):
+    """ Interface for the Pulseblaster ESR PRO
+
+    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the
+    pulses are directed to the appropriate interface. Each interface is
+    responsible for translating all pulses directed to it into instrument
+    commands. During the actual measurement, the instrument's operations will
+    correspond to that required by the pulse sequence.
+
+    The interface also contains a list of all available channels in the
+    instrument.
+
+    Args:
+        instrument_name: name of instrument for which this is an interface
+
+    Note:
+        For a given instrument, its associated interface can be found using
+            :func:`get_instrument_interface`
+
+    Todo:
+        Check if interface works if it is not the primary instrument.
+    """
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -24,7 +45,26 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.pulse_implementations = [TriggerPulseImplementation(),
                                       MarkerPulseImplementation()]
 
-    def setup(self, repeat=True, output_connections=[], **kwargs):
+    def setup(self,
+              repeat: bool = True,
+              output_connections: list = [],
+              **kwargs):
+        """Set up instrument after layout has been targeted by pulse sequence.
+
+        Args:
+            repeat: Repeat the pulse sequence indefinitely. If False, calling
+                :func:`layout.start` will only run the pulse sequence once.
+            output_connections: Output :class:`.Connection` list of
+                instrument, needed to setup the instrument.
+            **kwargs: Ignored kwargs passed by layout.
+
+        Returns:
+            setup flags (see :attr:`.Layout.flags`).
+                the `post_start_actions` flag is set to `[self.start]` if there
+                are connections that need to have `high` voltage in the inactive
+                state. This signifies that the pulse blaster should be started
+                last, which ensures that other instrument have the right voltage
+        """
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
         # Factor of 2 needed because apparently the core clock is not the same
@@ -138,9 +178,11 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             return {'post_start_actions': [self.start]}
 
     def start(self):
+        """Start instrument"""
         self.instrument.start()
 
     def stop(self):
+        """Stop instrument"""
         self.instrument.stop()
 
     def get_additional_pulses(self):
