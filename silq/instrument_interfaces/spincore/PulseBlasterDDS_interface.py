@@ -18,20 +18,20 @@ DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
 class PulseBlasterDDSInterface(InstrumentInterface):
     """ Interface for the Pulseblaster DDS
-    
-    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+
+    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the
     pulses are directed to the appropriate interface. Each interface is
-    responsible for translating all pulses directed to it into instrument 
+    responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
-    
+
     The interface also contains a list of all available channels in the
     instrument.
-    
+
     Args:
         instrument_name: name of instrument for which this is an interface
-        
-    Note:    
+
+    Note:
         For a given instrument, its associated interface can be found using
             :func:`get_instrument_interface`
 
@@ -63,9 +63,13 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Returns:
+            List containing trigger pulse if not primary instrument
+        """
         # Request one trigger at the start if not primary
-        # TODO test if this works
         if not self.is_primary():
             return [TriggerPulse(t_start=0,
                                  connection_requirements={
@@ -74,8 +78,20 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         else:
             return []
 
-    def setup(self, final_instruction='loop', repeat=True,
+    def setup(self,
+              repeat: bool = True,
               **kwargs):
+        """Set up instrument after layout has been targeted by pulse sequence.
+
+        Args:
+            repeat: Repeat the pulse sequence indefinitely. If False, calling
+                :func:`layout.start` will only run the pulse sequence once.
+            **kwargs: Ignored kwargs passed by layout.
+
+        Returns:
+            setup flags (see :attr:`.Layout.flags`)
+
+        """
         #Initial pulseblaster commands
         self.instrument.setup()
 
@@ -199,9 +215,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
 
     def start(self):
+        """Start instrument"""
         self.instrument.start()
 
     def stop(self):
+        """Stop instrument"""
         self.instrument.stop()
 
 
