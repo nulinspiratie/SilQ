@@ -383,25 +383,29 @@ class DCRampPulseImplementation(PulseImplementation):
             "Cannot implement DC ramp pulse if the arbstudio receives " \
             "intermediary triggers"
 
-        t_list = {ch: np.arange(self.pulse.t_start,
-                                self.pulse.t_stop - self.pulse.final_delay,
-                                1 / sampling_rates[ch])
-                  for ch in sampling_rates}
-
-        # All waveforms must have an even number of points
-        for ch in t_list:
-            if len(t_list[ch]) % 2:
-                t_list[ch] = t_list[ch][:-1]
-
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception(
                 f"No implementation for connection {self.pulse.connection}")
 
-        waveforms = {ch: [self.pulse.get_voltage(t_list[ch])]
-                     for ch in channels}
-        sequences = {ch: np.zeros(1, dtype=int) for ch in channels}
+        waveforms = {}
+        sequences = {}
+        for ch in channels:
+            total_points = self.pulse.duration * sampling_rates[ch]
+            final_points = self.pulse.final_delay * sampling_rates[ch]
+            # Waveform points subtract the final waveform delay
+            waveform_points = int(round(total_points - final_points))
+
+            # All waveforms must have an even number of points
+            if waveform_points % 2:
+                waveform_points -= 1
+
+            waveforms[ch] = [np.linspace(self.pulse.amplitude_start,
+                                         self.pulse.amplitude_stop,
+                                         waveform_points)]
+            sequences[ch] = np.zeros(1, dtype=int)
+
         return waveforms, sequences
 
 
