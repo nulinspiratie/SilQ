@@ -9,7 +9,7 @@ from qcodes.utils import validators as vals
 class E8267DInterface(InstrumentInterface):
     """ Interface for the Keysight E8267D
     
-    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+    When a `PulseSequence` is targeted in the `Layout`, the 
     pulses are directed to the appropriate interface. Each interface is
     responsible for translating all pulses directed to it into instrument 
     commands. During the actual measurement, the instrument's operations will
@@ -20,7 +20,7 @@ class E8267DInterface(InstrumentInterface):
         
     Note:    
         For a given instrument, its associated interface can be found using
-            :func:`get_instrument_interface` 
+            `get_instrument_interface` 
     """
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)

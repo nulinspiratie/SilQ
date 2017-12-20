@@ -204,11 +204,11 @@ class SingleConnection(Connection):
         During connection targeting, the pulse is copied and its properties
         modified for a specific connection. This includes applying a any scale
         to the pulse amplitude, and adding the connection to
-        :attr:`Pulse.connection`.
+        `Pulse.connection`.
         
         Args:
             pulse: Pulse to be targeted
-            apply_scale: Divide :attr:`Pulse.amplitude` by connection scale.
+            apply_scale: Divide `Pulse.amplitude` by connection scale.
             copy_pulse: Copy pulse before targeting
                 If set to True, a new object is created, and all properties
                 are fixed (not dependent on other pulses).
@@ -217,8 +217,8 @@ class SingleConnection(Connection):
             Targeted (copy of) pulse
             
         Note:
-            If scale is applied, the attribute `amplitude`, `amplitude_start`,
-                and `amplitude_stop` are scaled.
+            If scale is applied, the attributes ``amplitude``, 
+            ``amplitude_start``, and ``amplitude_stop`` are scaled.
         """
         if copy_pulse:
             targeted_pulse = copy(pulse)
@@ -291,6 +291,7 @@ class SingleConnection(Connection):
             return True
 
 
+
 class CombinedConnection(Connection):
     """Class used to combine multiple SingleConnections.
     
@@ -298,7 +299,7 @@ class CombinedConnection(Connection):
     are often used together, such as when using compensated pulses.
     
     Args:
-        connections: List of :class:`SingleConnection` to combine
+        connections: `SingleConnection` list to combine
         scale: List specifying the value by which the amplitude of a pulse
             should be scaled for each connection (by default no scaling).
         **kwargs: Additional Connection kwargs.
@@ -454,9 +455,9 @@ class Layout(Instrument):
     has a list of the instruments in the experimental setup, and the physical
     connectivity between the instrument channels. Knowledge of the instruments
     and their connectivity allows the layout to target a generic 
-    setup-independent :class:`.PulseSequence` to one that is specific to the
-    experimental layout. Each :class:`.Pulse` is passed along to the relevant
-    :class:`.InstrumentInterface` of instruments, as well as additional pulses,
+    setup-independent `PulseSequence` to one that is specific to the
+    experimental layout. Each `Pulse` is passed along to the relevant
+    `InstrumentInterface` of instruments, as well as additional pulses,
     such as triggering pulses. 
     
     One the instrument interfaces has received the pulses it is supposed to
@@ -535,7 +536,7 @@ class Layout(Instrument):
         """Target pulse sequence by distributing its pulses to interfaces.
         
         Each pulse is directed to a connection, either provided by 
-        :attr:`Pulse.connection` or :attr:`Pulse.connection_label`.
+        `Pulse.connection` or `Pulse.connection_label`.
 
         Args:
             pulse_sequence: Pulse sequence to be targeted
@@ -560,7 +561,6 @@ class Layout(Instrument):
         """AcquisitionInterface: interface for acquisition instrument
         
         Acquisition instrument given by parameter 
-        :attr:`Layout.acquisition_instrument`.
 
         Returns:
             Acquisition InstrumentInterface
@@ -574,9 +574,9 @@ class Layout(Instrument):
     def acquisition_channels(self):
         """Dict[str, str] {acquisition_label: acquisition_channel_name} pairs.
         
-        The `acquisition_label` is the label associated with a certain
-        acquisition channel, settable via :attr:`layout.acquisition_outputs`.
-        The `acquisition_channel_name` is the actual channel name of the
+        The ``acquisition_label`` is the label associated with a certain
+        acquisition channel, settable via `layout.acquisition_outputs`.
+        The ``acquisition_channel_name`` is the actual channel name of the
         acquisition controller.
 
         Example:
@@ -601,7 +601,7 @@ class Layout(Instrument):
     def sample_rate(self):
         """Union[float, None]: Acquisition sample rate
         
-        If :attr:`Layout.acquisition_interface` is not setup, return None
+        If `Layout.acquisition_interface` is not setup, return None
         
         """
         if self.acquisition_interface is not None:
@@ -613,7 +613,7 @@ class Layout(Instrument):
                        output_arg: str,
                        input_arg: str,
                        **kwargs):
-        """Creates a :class:`.SingleConnection` between two instrument interface
+        """Creates a `SingleConnection` between two instrument interface
            channels.
         
         Args:
@@ -649,8 +649,7 @@ class Layout(Instrument):
     def combine_connections(self,
                             *connections: Sequence[SingleConnection],
                             **kwargs):
-        """Combines multiple :class:`SingleConnection` into a 
-        :class:`CombinedConnection`.
+        """Combines multiple `SingleConnection` into a `CombinedConnection`.
         
         This is useful for cases such as when pulses are by default directed to
         multiple connections, e.g. compensated pulses.
@@ -673,7 +672,7 @@ class Layout(Instrument):
         
         Args:
             filepath: Path to JSON file containing JSON representation of
-                connections. If None, `qcodes.config.user.connections` is used.
+                connections. If None, ``qc.config.user.connections`` is used.
         
         Returns:
             List[Connection]: Loaded connections
@@ -740,7 +739,7 @@ class Layout(Instrument):
         Args:
             connection: Specific connection to be checked. If the connection
                 is in layout.connections, it returns a list with the connection.
-                Can be useful when :attr:`pulse.connection_requirements` needs a
+                Can be useful when `pulse.connection_requirements` needs a
                 specific connection. If provided, all other conditions are 
                 ignored.
             output_arg: string representation of output.
@@ -757,7 +756,7 @@ class Layout(Instrument):
             output_channel: either Channel or channel name
             input_arg: string representation of input.
 
-                * SingleConnection has form `{instrument}.{channel}`
+                * SingleConnection has form ``{instrument}.{channel}``
                 * CombinedConnection is list of SingleConnection output_args,
                   which must have equal number of elements as underlying
                   connections. Can be combined with output_arg, in which
@@ -827,12 +826,12 @@ class Layout(Instrument):
         Args:
             connection_label: label specifying specific connection.
                 Connection labels are provided as dict in 
-                `qcodes.config.user.{environment}.connections`, where 
+                ``qcodes.config.user.{environment}.connections``, where 
                 environment the config environment. 
                 If provided, all other conditions are ignored.
             environment: config environment, only used if connection_label is
                 provided. If not provided but connection_label is provided,
-                `qcodes.config.user.properties.default_environment` is used.
+                ``qcodes.config.user.properties.default_environment`` is used.
             output_arg: string representation of output.
 
                 * SingleConnection has form '{instrument}.{channel}'
@@ -847,7 +846,7 @@ class Layout(Instrument):
             output_channel: either Channel or channel name
             input_arg: string representation of input.
 
-                * SingleConnection has form `{instrument}.{channel}`
+                * SingleConnection has form ``{instrument}.{channel}``.
                 * CombinedConnection is list of SingleConnection output_args,
                   which must have equal number of elements as underlying
                   connections. Can be combined with output_arg, in which
@@ -870,10 +869,10 @@ class Layout(Instrument):
             
         Raises:
             AssertionError 
-                `connection_label` is provided, but no environment,
+                ``connection_label`` is provided, but no environment,
                 and `default_environment` not specified
             AssertionError 
-                `connection_label` is specified but not found
+                ``connection_label`` is specified but not found
             AssertionError 
                 No unique connection is found
         """
@@ -925,7 +924,8 @@ class Layout(Instrument):
             return connections[0]
 
     def _set_primary_instrument(self, primary_instrument: str):
-        """Sets primary instrument, updating `is_primary` in all interfaces."""
+        """Sets primary instrument, updating ``is_primary`` in all interfaces.
+        """
         for instrument_name, interface in self._interfaces.items():
             interface.is_primary(instrument_name == primary_instrument)
 
@@ -999,9 +999,9 @@ class Layout(Instrument):
                              **kwargs):
         """Get connection a given pulse should be targeted to
         
-        If :attr:`Pulse.connection_label` is specified, it is used to determine
+        If `Pulse.connection_label` is specified, it is used to determine
         the connection. Otherwise, conditions in 
-        :attr:`Pulse.connection_requirements` are used to determine connection. 
+        `Pulse.connection_requirements` are used to determine connection. 
         
         Args:
             pulse: Pulse for which to find connection
@@ -1038,8 +1038,8 @@ class Layout(Instrument):
                       pulse: Pulse):
         """Target pulse to corresponding connection and instrument interface.
         
-        The connection is determined from either :attr:`Pulse.connection_label`,
-        or if undefined, from :attr:`Pulse.connection_requirements`. At the
+        The connection is determined from either `Pulse.connection_label`,
+        or if undefined, from `Pulse.connection_requirements`. At the
         connection targeting stage, and effects such as an amplitude scale are
         applied.
         
@@ -1099,7 +1099,7 @@ class Layout(Instrument):
         and adds the pulse to its respective interface. It also takes care of
         any additional necessities, such as additional triggering pulses.
         
-        if :attr:`Layout.store_pulse_sequence_folder` is defined, the pulse
+        if `Layout.store_pulse_sequence_folder` is defined, the pulse
         sequence is also stored as a .pickle file.
 
         Args:
@@ -1162,17 +1162,17 @@ class Layout(Instrument):
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
-        """Updates existing interface :attr:`Layout.flags` with new flags. 
+        """Updates existing interface `Layout.flags` with new flags. 
         
         Flags are instructions sent to interfaces, usually from other 
         interfaces, to modify the usual operations. 
-        Examples are `skip_start`, `setup` kwargs, etc.
+        Examples are ``skip_start``, ``setup`` kwargs, etc.
         
         Args:
             new_flags: {instrument: {flag: val}} dict
 
         See Also:
-            :meth:`Layout.setup` for information on allowed flags.
+            `Layout.setup` for information on allowed flags.
         """
         if 'skip_start' in new_flags:
             self.flags['skip_start'].add(new_flags['skip_start'])
@@ -1226,7 +1226,7 @@ class Layout(Instrument):
           When the interface with instrument_name (key) is setup, the
           setup flags (value) will be passed along.
         * skip_start (str): instrument name that should be skipped when
-          calling :meth:`layout.start`.
+          calling `Layout.start`.
         * post_start_actions (list(callable)): callables to perform after all
           interfaces are started.
         * start_last (interface) interface that should be started after others.
@@ -1305,7 +1305,7 @@ class Layout(Instrument):
                 If set to a value, waits for that amount of seconds.
 
         Note:
-            Does not start instruments that have the flag `skip_start`
+            Does not start instruments that have the flag ``skip_start``
         """
         self.active(True)
         for interface in self._get_interfaces_hierarchical():
