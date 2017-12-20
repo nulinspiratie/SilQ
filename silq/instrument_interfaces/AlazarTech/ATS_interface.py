@@ -1,6 +1,5 @@
 import numpy as np
 import inspect
-import logging
 from functools import partial
 from typing import List, Union, Dict
 
@@ -16,7 +15,7 @@ from silq.pulses import Pulse, SteeredInitialization, TriggerPulse,\
 class ATSInterface(InstrumentInterface):
     """Interface for the AlazarTech ATS.
     
-    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+    When a `PulseSequence` is targeted in the `Layout`, the 
     pulses are directed to the appropriate interface. Each interface is
     responsible for translating all pulses directed to it into instrument 
     commands. During the actual measurement, the instrument's operations will
@@ -33,7 +32,7 @@ class ATSInterface(InstrumentInterface):
         * Only been tested on ATS9440, might give issues with other models,
           in particular those having 2 channels instead of 4
         * For a given instrument, its associated interface can be found using
-          :func:`get_instrument_interface`
+          `get_instrument_interface`
     
     Todo:
         * Choose continuous acquisition controller if pulse sequence only
@@ -250,7 +249,7 @@ class ATSInterface(InstrumentInterface):
             **kwargs: Unused setup kwargs passed from Layout
 
         Returns:
-            If using :class:`.SteeredInitialization_AcquisitionController`,
+            If using `SteeredInitialization_AcquisitionController`,
             a ``skip_start`` flag is passed with the target instrument, which
             signals to the layout that that instrument should not be started.
             Instead, it is triggered from the steered initialization controller.
@@ -324,7 +323,7 @@ class ATSInterface(InstrumentInterface):
             pass
 
     def setup_ATS(self):
-        """ Configure ATS using :meth:`.ATS.config` """
+        """ Configure ATS using `ATS.config` """
 
         self.update_settings(channel_range=2,
                              coupling='DC')
@@ -334,21 +333,19 @@ class ATSInterface(InstrumentInterface):
         """ Setup acquisition controller 
         
         Notes:
-            * :class:`.Triggered_AcquisitionController`
+            * `Triggered_AcquisitionController`
               The following settings are fixed at the moment, but there could be
               siturations where these are not optimal, e.g. fast measurements.
               * Allocated buffers is maximally 2.
               * Records per buffer is fixed to 1.
-            * :class:`.Continuous_AcquisitionController`:
+            * `Continuous_AcquisitionController`:
               * Allocated buffers is fixed to 20
-            * :class:`.SteeredInitialization_AcquisitionController`,
+            * `SteeredInitialization_AcquisitionController`,
               * Allocated buffers is fixed to 80
         
         Raises:
-            RuntimeError if acquisition controller is not one of the following:
-                :class:`.Triggered_AcquisitionController`,
-                :class:`.Continuous_AcquisitionController`,
-                :class:`.SteeredInitialization_AcquisitionController`.
+            RuntimeError if acquisition controller is not```tinuous_AcquisitionController``,`
+                 ```SteeredInitialization_AcquisitionController`.
         """
         # Get duration of acquisition. Use flag acquire=True because
         # otherwise initialization Pulses would be taken into account as well
@@ -443,23 +440,23 @@ class ATSInterface(InstrumentInterface):
         self._acquisition_controller.setup()
 
     def start(self):
-        """Ignored method called from :meth:`.Layout.start`"""
+        """Ignored method called from `Layout.start`"""
         pass
 
     def stop(self):
-        """ Ignored method called from :meth:`.Layout.stop`"""
+        """ Ignored method called from `Layout.stop`"""
         pass
 
     def acquisition(self) -> Dict[str, Dict[str, np.ndarray]]:
         """Perform an acquisition.
         
         Should only be called after the interface has been setup and all other
-        instruments have been started (via :meth:`.Layout.start`).
+        instruments have been started (via `Layout.start`).
         
         Returns:
             Acquisition traces that have been segmented for each pulse.
             Returned dictionary format is:
-            `{pulse.full_name: {channel_id: pulse_channel_trace}}`.
+            ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.
             
         """
         traces = self._acquisition_controller.acquisition()
@@ -472,17 +469,17 @@ class ATSInterface(InstrumentInterface):
     def segment_traces(self, traces: Dict[str, np.ndarray]):
         """ Segment traces by acquisition pulses.
         
-        For each pulse with `acquire` set to True (which should be all pulses
+        For each pulse with ``acquire`` set to True (which should be all pulses
         passed along to the ATS_interface), the relevant portion of each channel
         trace is segmented and returned in a new dict
         
         Args:
-            traces: `{channel_id: channel_traces}` dict 
+            traces: ``{channel_id: channel_traces}`` dict 
 
         Returns:
             Dict[str, Dict[str, np.ndarray]:
             Dict format is 
-            `{pulse.full_name: {channel_id: pulse_channel_trace}}`.
+            ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.
 
         """
         pulse_traces = {}
@@ -558,7 +555,7 @@ class ATSInterface(InstrumentInterface):
         
         All existing configuration settings are cleared.
         The controller's configuration settings are not actually updated here,
-        but will be done when calling :meth:`.ATS_interface.setup`.
+        but will be done when calling `ATS_interface.setup`.
 
         Args:
             **settings: ATS configuration settings to be set
@@ -577,7 +574,7 @@ class ATSInterface(InstrumentInterface):
         
         All existing acquisition settings are cleared.
         The controller's acquisition settings are not actually updated here,
-        but will be done when calling :meth:`.ATS_interface.setup`.
+        but will be done when calling `ATS_interface.setup`.
 
         Args:
             **settings: ATS acquisition settings to be set
@@ -595,7 +592,7 @@ class ATSInterface(InstrumentInterface):
         """ Update configuration and acquisition settings
         
         The acquisition controller's settings are not actually updated here, 
-        this will be done when calling :meth:`.ATS_interface.setup`.
+        this will be done when calling `ATS_interface.setup`.
         
         Args:
             **settings: ATS configuration and acquisition settings to be set.
@@ -629,8 +626,8 @@ class SteeredInitializationImplementation(PulseImplementation):
                      **kwargs) -> Pulse:
         """ Target steered initialization pulse to an interface.
         
-        The implementation will further have a `readout_connection` and
-        `trigger_connection`.
+        The implementation will further have a ``readout_connection`` and
+        ``trigger_connection``.
         
         Args:
             pulse: Steered initialization pulse to be targeted.
