@@ -543,7 +543,11 @@ class PulseImplementation:
             return np.all([pulse_requirements.satisfies(pulse)
                            for pulse_requirements in self.pulse_requirements])
 
-    def target_pulse(self, pulse, interface, **kwargs):
+    def target_pulse(self,
+                     pulse,
+                     interface,
+                     connections: list,
+                     **kwargs):
         """
         This tailors a PulseImplementation to a specific pulse.
         """

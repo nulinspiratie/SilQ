@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ArbStudio1104Interface(InstrumentInterface):
     """ Interface for the LeCroy Arbstudio 1104
     
-    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+    When a `PulseSequence` is targeted in the `Layout`, the 
     pulses are directed to the appropriate interface. Each interface is
     responsible for translating all pulses directed to it into instrument 
     commands. During the actual measurement, the instrument's operations will
@@ -29,7 +29,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         
     Note:    
         For a given instrument, its associated interface can be found using
-            :func:`get_instrument_interface`
+            `get_instrument_interface`
             
     Todo:
         * Add modes other than stepped.
@@ -153,7 +153,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         """Set up instrument after layout has been targeted by pulse sequence.
         
         Args:
-            **kwargs: Unused setup kwargs passed by :class:`.Layout`
+            **kwargs: Unused setup kwargs passed by `Layout`
         """
         # TODO implement setup for modes other than stepped
 
@@ -217,7 +217,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         return trigger_pulse
 
     def generate_waveforms_sequences(self) -> List:
-        """Generate waveforms and sequence `self.pulse_sequence`
+        """Generate waveforms and sequence
         
         Updates self.waveforms and self.sequence.
         

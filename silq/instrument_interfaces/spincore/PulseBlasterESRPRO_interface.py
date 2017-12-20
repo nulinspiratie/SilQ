@@ -166,6 +166,7 @@ class TriggerPulseImplementation(PulseImplementation):
         else:
             return channel_value if input_channel.invert else 0
 
+
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
 
