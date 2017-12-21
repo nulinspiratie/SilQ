@@ -21,6 +21,9 @@ class Fit():
     def __init__(self):
         self.model = Model(self.fit_function)
 
+    def fit_function(self, *args, **kwargs):
+        raise NotImplementedError('This should be implemented in a subclass')
+
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
                                 ydata: np.ndarray,

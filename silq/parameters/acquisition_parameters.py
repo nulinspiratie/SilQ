@@ -1,3 +1,4 @@
+from typing import List, Dict
 import numpy as np
 from collections import OrderedDict, Iterable
 from copy import copy
@@ -7,6 +8,7 @@ import logging
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
+from qcodes.data.format import Formatter
 from qcodes import Instrument
 
 from silq import config
@@ -30,21 +32,107 @@ h5fmt = hdf5_format.HDF5Format()
 
 
 class AcquisitionParameter(SettingsClass, MultiParameter):
+    """Parameter used for acquisitions involving a `PulseSequence`.
+    
+    Each AcquisitionParameter has an associated pulse sequence, which it directs
+    to the Layout, after which it acquires traces and performs post-processing.
+    
+    Generally, the flow of an AcquisitionParameter is as follows:
+    
+    1. `AcquisitionParameter.acquire`, which acquires traces.
+       This stage can be subdivided into several steps:
+       
+       1. Generate PulseSequence if pulse sequence properties have changed
+          Note that this is only necessary for a `PulseSequenceGenerator`, which
+          is a more complicated pulse sequences that can be generated from
+          properties.
+       2. Target pulse sequence in `Layout`.
+          This only happens if `Layout.pulse_sequence` differs from the pulse
+          sequence used.
+       3. Call `Layout.setup` which sets up instruments with new pulse sequence.
+          Again, this is only done if `Layout.pulse_sequence` differs.
+       4. Acquire traces using `Layout.acquisition`
+          This in turn gets the traces fromm the acquisition instrument.
+          The returned traces are segmented by pulse and acquisition channel.
+          
+    2. `AcquisitionParameter.analyse`, which analyses the traces
+       This method differs per AcquisitionParameter.
+    3. Perform ancillary actions such as saving traces, printing results
+    4. Return list of results for any measurement.
+       The subset of results that are in `AcquisitionParameter.names` is 
+       returned.
+
+    Args:
+        continuous: If True, instruments keep running after acquisition
+        environment: config environment to use for properties (see notes below).
+        properties_attrs: attributes to match with 
+            ``silq.config.environment.properties`` (see notes below).
+        save_traces: Save acquired traces to disk
+        **kwargs: Additional kwargs passed to MultiParameter 
+        
+    Parameters:
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with 
+            ``silq.config.environment.properties` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+        formatter (Formatter): 
+        
+    Notes:
+        * AcquisitionParameters are subclasses of the `MultiParameter`, and
+          therefore always returns multiple values
+        * AcquisitionParameters are also subclasses of `SettingsClass`, which
+          gives it the ability to temporarily override its attributes using
+          methods `single_settings` and `temporary_settings`. These overridden
+          settings can be clear later on. This is useful if you temporarily want
+          to change settings. See `Settingsclass` for more info.
+        * When certain elements in `silq.config` are updated, this will also
+          update the corresponding attributes in the AcquisitionParameter.
+          Two config paths are monitored:
+          
+          * ``silq.config.{environment}.properties``, though only the attributes
+            specified in `properties_attrs`
+          * ``silq.parameters.{self.name}``..
+    """
+
     layout = None
     formatter = h5fmt
     store_trace_channels = ['output']
 
-    def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, wrap_set=False, save_traces=False,
+    def __init__(self,
+                 continuous: bool = False,
+                 environment: str = 'default',
+                 properties_attrs: List[str] = None,
+                 save_traces: bool = False,
                  **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
             self.pulse_sequence = PulseSequence()
-        """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
-        MultiParameter.__init__(self, shapes=shapes, wrap_set=wrap_set, **kwargs)
+        MultiParameter.__init__(self, shapes=shapes, **kwargs)
 
         if self.layout is None:
             try:
@@ -53,14 +141,11 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 logger.warning(f'No layout found for {self}')
 
         self.silent = True
-        """Do not print results after acquisition"""
 
         self.save_traces = save_traces
-        """ Save traces in separate files"""
 
         if environment == 'default':
-            environment = config.properties.get('default_environment',
-                                                'default')
+            environment = config.properties.get('default_environment', 'default')
         self.environment = environment
         self.continuous = continuous
 
@@ -71,9 +156,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.base_folder = None
         self.subfolder = None
 
-        # Change attribute data_manager from class attribute to instance
-        # attribute. This is necessary to ensure that the data_manager is
-        # passed along when the parameter is spawned from a new process
         self.layout = self.layout
 
         # Attach to properties and parameter configs
@@ -110,11 +192,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """ Acquisition sample rate """
         return self.layout.sample_rate
 
-    def _attach_to_config(self, path, select_attrs=None):
-        """
-        Attach parameter to a subconfig (within silq config).
-        This mean
-        s that whenever an item in the subconfig is updated,
+    def _attach_to_config(self,
+                          path: str,
+                          select_attrs: List[str] = None):
+        """Attach parameter to a subconfig (within silq config).
+        
+        This means that whenever an item in the subconfig is updated,
         the parameter attribute will also be updated to this value.
 
         Notification of config updates is handled through blinker signals.
@@ -155,24 +238,41 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         return subconfig
 
-    def _handle_config_signal(self, _, select=None, **kwargs):
-        """
-        Update attr when attr in pulse config is modified
+    def _handle_config_signal(self, _,
+                              select: List[str] = None,
+                              **kwargs):
+        """Update attr when attr in pulse config is modified
+        
         Args:
             _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set.
+            select: list of attrs that can be set.
                 Will update any attribute if not specified.
             **kwargs: {attr: new_val}
-
-        Returns:
-
         """
         key, val = kwargs.popitem()
         if select is None or key in select:
             setattr(self, key, val)
 
-    def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=None, setpoints=False):
+    def store_traces(self,
+                     pulse_traces: dict,
+                     base_folder: str = None,
+                     subfolder: str = None,
+                     channels: List[str] = None,
+                     setpoints: bool = False):
+        """Store acquisition traces as a DataSet to file.
+        
+        Args:
+            pulse_traces: Trace dictionary with shape
+                {`pulse.full_name`: {acquisition_channel: trace}} 
+            base_folder: base folder in which to store traces.
+                If not specified, will be equal to the active measurement data
+                folder if it's running, else the main data folder.
+            subfolder: Subfolder within the main data folder. Can be useful if
+                you want to separate the traces by a certain property.
+            channels: Acquisition channels. If not specified, uses
+                `AcquisitionParameter.store_trace_channels`.
+            setpoints: Also store setpoints, False by default to save space.
+        """
 
         if channels is None:
             channels = self.store_trace_channels
@@ -262,6 +362,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset.finalize()
 
     def print_results(self):
+        """Print results whose keys are in `AcquisitionParameter.names`"""
         names = self.names if self.names is not None else [self.name]
         for name in names:
             value = self.results[name]
@@ -270,7 +371,16 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             else:
                 print(f'{name}: {value}')
 
-    def setup(self, start=None, **kwargs):
+    def setup(self,
+              start: bool = None,
+              **kwargs):
+        """Setup instruments with current pulse sequence.
+        
+        Args:
+            start: Start instruments after setup. If not specified, will use
+                value in `AcquisitionParameter.continuous`.  
+            **kwargs: Additional kwargs passed to `Layout.setup`.
+        """
         self.layout.pulse_sequence = self.pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
@@ -282,18 +392,24 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, stop=None, setup=None, **kwargs):
-        """
-        Performs a layout.acquisition. The result is stored in self.traces
+    def acquire(self,
+                stop: bool = None,
+                setup: bool = None,
+                **kwargs) -> Dict[str, Dict[str, np.ndarray]]:
+        """Performs a `layout.acquisition`. 
+        
         Args:
-            stop (Bool): Whether to stop instruments after acquisition.
-                If not specified, it will stop if self.continuous is False
-            setup (Bool): Whether to setup layout before acquisition.
+            stop: Stop instruments after acquisition. If not specified, it will
+                stop if `AcquisitionParameter.continuous` is False.
+            setup: Whether to setup layout before acquisition.
                 If not specified, it will setup if pulse_sequences are different
-            **kwargs: Additional kwargs to be given to layout.acquisition
+            **kwargs: Additional kwargs to be given to `layout.acquisition`.
 
         Returns:
-            acquisition output
+            acquisition traces dictionary, segmented by pulse.
+            dictionary has the following format:
+            {pulse.full_name: {acquisition_channel_label: traces}}
+            where acquisition_channel_label is specified in `Layout`.
         """
         if stop is None:
             stop = not self.continuous
@@ -311,11 +427,18 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.traces = self.layout.acquisition(stop=stop, **kwargs)
         return self.traces
 
-    def analyse(self, traces):
+    def analyse(self,
+                traces: Dict[str, Dict[str, np.ndarray]]) -> Dict[str, Any]:
+        """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
     @clear_single_settings
     def get_raw(self):
+        """Perform an acquisition using the current pulse sequence
+        
+        Note:
+            Any overridden settings in single_settings are cleared.
+        """
         self.traces = self.acquire()
 
         self.results = self.analyse(self.traces)
@@ -329,6 +452,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         return tuple(self.results[name] for name in self.names)
 
     def set(self, **kwargs):
+        """Perform an acquisition with temporarily modified settings
+        
+        Shorthand for:
+        ```
+        AcquisitionParameter.single_settings(**kwargs)
+        AcquisitionParameter()
+        ```
+        """
         return self.single_settings(**kwargs)()
 
 
