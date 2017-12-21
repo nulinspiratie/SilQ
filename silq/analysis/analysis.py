@@ -118,7 +118,7 @@ def find_high_low(traces: np.ndarray,
         * **high** (float): Mean high voltage, ``None`` if no two peaks cannot
           be discerned
         * **threshold_voltage** (float): Threshold voltage for a blip. If SNR is
-          below `min_SNR` or no two peaks can be discerned, returns ``None``.
+          below ``min_SNR`` or no two peaks can be discerned, returns ``None``.
         * **voltage_difference** (float): Difference between low and high
           voltage. If not two peaks can be discerned, returns ``None``.
         * **DC_voltage** (float): Average voltage of traces.
@@ -378,7 +378,7 @@ def analyse_traces(traces: np.ndarray,
             and end segments.
         segment: Use beginning or end of trace for ``t_read``.
             Allowed values are ``begin`` and ``end``.
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
             If not specified, `find_high_low` is used to determine threshold.
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
