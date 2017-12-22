@@ -1,4 +1,4 @@
-from typing import Any, Union, Sequence
+from typing import Any, Union, Sequence, Callable
 import numpy as np
 from copy import deepcopy
 import collections
@@ -80,7 +80,7 @@ class Pulse(HasTraits):
             otherwise None. Only `Pulse`.properties_attrs are matched.
         properties_attrs (List[str]): Attributes in properties config to match. 
             Should be defined in ``__init__`` before calling ``Pulse.__init__``.
-        implementation (PulseImplementatino): Pulse implementation for targeted
+        implementation (PulseImplementation): Pulse implementation for targeted
             pulse, see `PulseImplementation`.
     """
     average = Unicode()
@@ -1015,7 +1015,7 @@ class TriggerWaitPulse(Pulse):
         Duration is fixed at 0s.
         
     See Also:
-        `SteeredInitializationPulse`
+        `SteeredInitialization`
     """
     def __init__(self,
                  name: str = None,
@@ -1075,8 +1075,9 @@ class CombinationPulse(Pulse):
 
     A CombinationPulse is itself a child of the Pulse class, therefore a
     CombinationPulse can also be used in consecutive combinations like:
-        CombinationPulse1 = SinePulse1 + DCPulse
-        CombinationPulse2 = SinePulse2 + CombinationPulse1
+    
+    >>> CombinationPulse1 = SinePulse1 + DCPulse
+    >>>CombinationPulse2 = SinePulse2 + CombinationPulse1
 
     Examples:
         >>> CombinationPulse = SinePulse + DCPulse
@@ -1088,9 +1089,11 @@ class CombinationPulse(Pulse):
         pulse2: The second pulse this combination is made up from.
         relation: The relation between pulse1 and pulse2.
             This must be one of the following:
-                '+'     :   pulse1 + pulse2
-                '-'     :   pulse1 - pulse2
-                '*'     :   pulse1 * pulse2
+            
+            * '+'     :   pulse1 + pulse2
+            * '-'     :   pulse1 - pulse2
+            * '*'     :   pulse1 * pulse2
+        
         **kwargs: Additional kwargs of `Pulse`.
 
     """
@@ -1212,7 +1215,7 @@ class AWGPulse(Pulse):
 
     def __init__(self,
                  name: str = None,
-                 fun: function = None,
+                 fun:Callable = None,
                  wf_array: np.ndarray = None,
                  interpolate: bool = True,
                  **kwargs):
