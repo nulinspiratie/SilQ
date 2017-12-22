@@ -85,6 +85,7 @@ class PulseRequirement():
     Args:
         property: Pulse attribute for which to place a constraint.
         requirement: Requirement that a property must satisfy.
+        
             * If a dict, allowed keys are ``min`` and ``max``, the value being
               the minimum/maximum value.
             * If a list, the property must be an element in the list.
@@ -791,7 +792,7 @@ class PulseImplementation:
         Targeting happens in three stages:
         
         1. Both the pulse and pulse implementation are copied.
-        2. `Pulse`implementation of the copied pulse is set to the copied
+        2. `PulseImplementation` of the copied pulse is set to the copied
            pulse implementation, and `PulseImplementation`.pulse is set to the
            copied pulse. This way, they can both reference each other.
         3. The targeted pulse is returned
