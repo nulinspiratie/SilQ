@@ -27,14 +27,67 @@ logger = logging.getLogger(__name__)
 
 
 class Pulse(HasTraits):
+    """ Representation of physical pulse, part of `PulseSequence`
+    
+    ``silq.config.{environment}.pulses``, the 
+    
+    Args:
+        name: Pulse name. If corresponding name is registered in pulse config,
+            its properties will be copied to the pulse.
+        id: Unique pulse identifier, assigned when added to `PulseSequence` if
+            it already has another pulse with same name. Pre-existing pulse will
+            be assigned id 0, and will increase for each successive pulse added.
+        environment: Config environment to use for pulse config. If not set,
+            default environment (``silq.config.properties.default_environment``)
+            is used.
+        t_start: Pulse start time. If undefined and added to `PulseSequence`,
+            it will be set to `Pulse`.t_stop of last pulse. If no pulses are
+            present, it will be set to zero.
+        t_stop: Pulse stop time. Is updated whenever ``t_start`` or ``duration``
+            is changed. Changing this modifies ``duration`` but not ``t_start``.
+        duration: Pulse duration.
+        acquire: Flag to acquire pulse. If True, pulse will be passed on to the
+            acquisition `InstrumentInterface` by the `Layout` during targeting.
+        initialize: Pulse is used for initialization. This signals that the 
+            pulse can exist before the pulse sequence starts. In this case,
+            pulse duration should be zero.
+        connection: Connection that pulse is targeted to. Is only set for
+            targeted pulse.
+        enabled: Pulse is enabled. If False, it still exists in a PulseSequence,
+            but is not included in targeting.
+        average: Pulse acquisition average mode. Allowed modes are:
+            
+            * **'none'**: No averaging (return ``samples x points_per_trace``).
+            * **'trace'**: Average over time (return ``points_per_trace``).
+            * **'point'**: Average over time and sample (return single point).
+            * **'point_segment:{N}'** Segment trace into N segment, average
+              each segment into a point.
+              
+        connection_label: `Connection` label that Pulse should be targeted to.
+            These are defined in ``silq.config.{enironment}.connections``.
+            If unspecified, pulse can only be targeted if 
+            ``connection_requirements`` uniquely determine connection.
+        connection_requirements: Requirements that a connection must satisfy for
+            targeting. If ``connection_label` is defined, these are ignored.
+    """
     average = Unicode()
     signal = Signal()
     _connected_attrs = {}
 
-    def __init__(self, name=None, id=None, environment='default', t_start=None,
-                 t_stop=None, duration=None, acquire=False, initialize=False,
-                 connection=None, enabled=True, average='none',
-                 connection_label=None, connection_requirements={}):
+    def __init__(self,
+                 name: str = None,
+                 id: int = None,
+                 environment: str = 'default',
+                 t_start: float = None,
+                 t_stop: float = None,
+                 duration: float = None,
+                 acquire: bool = False,
+                 initialize: bool = False,
+                 connection = None,
+                 enabled: bool = True,
+                 average: str = 'none',
+                 connection_label: str = None,
+                 connection_requirements: dict = {}):
         # Initialize signals (to notify change of attributes)
         self.signal = Signal()
         # Dict of attrs that are connected via blinker.signal to other pulses
