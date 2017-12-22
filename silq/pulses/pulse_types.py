@@ -1,3 +1,4 @@
+from typing import Any, Union, Sequence
 import numpy as np
 from copy import deepcopy
 import collections
@@ -31,18 +32,20 @@ class Pulse(HasTraits):
     
     ``silq.config.{environment}.pulses``, the 
     
-    Args:
-        name: Pulse name. If corresponding name is registered in pulse config,
-            its properties will be copied to the pulse.
+    Parameters:
+        name: Pulse name. If corresponding name is registered in pulse 
+            config, its properties will be copied to the pulse.
         id: Unique pulse identifier, assigned when added to `PulseSequence` if
             it already has another pulse with same name. Pre-existing pulse will
             be assigned id 0, and will increase for each successive pulse added.
+        full_name: Pulse name, including id if not None. 
+            If id is not None, full_name is '{name}[{id}]'
         environment: Config environment to use for pulse config. If not set,
             default environment (``silq.config.properties.default_environment``)
             is used.
-        t_start: Pulse start time. If undefined and added to `PulseSequence`,
-            it will be set to `Pulse`.t_stop of last pulse. If no pulses are
-            present, it will be set to zero.
+        t_start: Pulse start time. If undefined and added to `PulseSequence`, it
+            will be set to `Pulse`.t_stop of last pulse.
+            If no pulses are present, it will be set to zero.
         t_stop: Pulse stop time. Is updated whenever ``t_start`` or ``duration``
             is changed. Changing this modifies ``duration`` but not ``t_start``.
         duration: Pulse duration.
@@ -51,10 +54,10 @@ class Pulse(HasTraits):
         initialize: Pulse is used for initialization. This signals that the 
             pulse can exist before the pulse sequence starts. In this case,
             pulse duration should be zero.
-        connection: Connection that pulse is targeted to. Is only set for
-            targeted pulse.
-        enabled: Pulse is enabled. If False, it still exists in a PulseSequence,
-            but is not included in targeting.
+        connection (Connection): Connection that pulse is targeted to. 
+            Is only set for targeted pulse.
+        enabled: Pulse is enabled. If False, it still exists in a
+            PulseSequence, but is not included in targeting.
         average: Pulse acquisition average mode. Allowed modes are:
             
             * **'none'**: No averaging (return ``samples x points_per_trace``).
@@ -63,12 +66,22 @@ class Pulse(HasTraits):
             * **'point_segment:{N}'** Segment trace into N segment, average
               each segment into a point.
               
-        connection_label: `Connection` label that Pulse should be targeted to.
+        connection_label: `Connection` label that Pulse should be targeted to. 
             These are defined in ``silq.config.{enironment}.connections``.
             If unspecified, pulse can only be targeted if 
             ``connection_requirements`` uniquely determine connection.
         connection_requirements: Requirements that a connection must satisfy for
             targeting. If ``connection_label` is defined, these are ignored.
+        pulse_config: Pulse config whose attributes to match. If it exists,
+            equal to ``silq.config.{environment}.pulses.{pulse.name}``, 
+            otherwise equal to zero.
+        properties_config: General properties config whose attributes to match.
+            If it exists, equal to ``silq.config.{environment}.properties``,
+            otherwise None. Only `Pulse`.properties_attrs are matched.
+        properties_attrs (List[str]): Attributes in properties config to match. 
+            Should be defined in ``__init__`` before calling ``Pulse.__init__``.
+        implementation (PulseImplementatino): Pulse implementation for targeted
+            pulse, see `PulseImplementation`.
     """
     average = Unicode()
     signal = Signal()
@@ -189,16 +202,13 @@ class Pulse(HasTraits):
             return True
 
     def _handle_config_signal(self, _, select=None, **kwargs):
-        """
-        Update attr when attr in pulse config is modified
+        """Update attr when attr in pulse config is modified
+        
         Args:
             _: sender config (unused)
             select (Optional(List(str): list of attrs that can be set.
                 Will update any attribute if not specified.
             **kwargs: {attr: new_val}
-
-        Returns:
-
         """
         key, val = kwargs.popitem()
         if select is None or key in select:
@@ -211,8 +221,8 @@ class Pulse(HasTraits):
         return f'{pulse_class}({self.full_name})'
 
     def __eq__(self, other):
-        """
-        Overwrite comparison with other (self == other).
+        """Overwrite comparison with other (self == other).
+        
         We want the comparison to return True if other is a pulse with the
         same attributes. This can be complicated since pulses can also be
         targeted, resulting in a pulse implementation. We therefore have to
@@ -270,11 +280,11 @@ class Pulse(HasTraits):
         return not self.__eq__(other)
 
     def __hash__(self):
-        # Define custom hash, used for creating a set of unique elements
+        """Define custom hash, used for creating a set of unique elements"""
         return hash(tuple(sorted(self.__dict__.items())))
 
     def __bool__(self):
-        # Pulse is always equal to true
+        """Pulse is always equal to True"""
         return True
 
     def __setattr__(self, key, value):
@@ -344,9 +354,12 @@ class Pulse(HasTraits):
                 # Also send signal that dependent property t_stop has changed
                 self.signal.send(self, t_stop=self.t_stop)
 
-    def _value_or_config(self, key, value, default=None):
-        """
-        Decides what value to return depending on value and config.
+    def _value_or_config(self,
+                         key: str,
+                         value: Any,
+                         default: Any=None):
+        """Decides what value to return depending on value and config.
+        
         Used for setting pulse attributes at the start
 
         Args:
@@ -367,27 +380,27 @@ class Pulse(HasTraits):
         else:
             return default
 
-    def __add__(self, other):
-        """ This method is called when adding two pulses: `pulse1 + pulse2`.
+    def __add__(self,
+                other: 'Pulse') -> 'CombinationPulse':
+        """ This method is called when adding two pulses: ``pulse1 + pulse2``.
 
         Args:
-            other (Pulse): The pulse instance to be added to self.
+            other: The pulse instance to be added to self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the
-                combination of two pulses.
+            A new pulse instance representing the combination of two pulses.
 
         """
-        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '+')
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> 'Pulse':
         """ This method is called when reverse adding something to a pulse.
 
         The reason this method is implemented is so that the user can sum over
         multiple pulses by performing:
 
-            combination_pulse = sum([pulse1, pulse2, pulse3])
+        >>> combination_pulse = sum([pulse1, pulse2, pulse3])
 
         The sum method actually tries calling 0.__add__(pulse1), which doesn't
         exist, so it is converted into pulse1.__radd__(0).
@@ -396,7 +409,7 @@ class Pulse(HasTraits):
             other: an instance of unknown type that might be int(0)
 
         Returns:
-            pulse (Pulse): Either self (if other is zero) or self + other.
+            Either self (if other is zero) or self + other.
 
         """
         if other == 0:
@@ -404,40 +417,34 @@ class Pulse(HasTraits):
         else:
             return self.__add__(other)
 
-    def __sub__(self, other):
-        """ This method is called when subtracting two pulses: `pulse1 - pulse2`
+    def __sub__(self, other: 'Pulse') -> 'CombinationPulse':
+        """Called when subtracting two pulses: ``pulse1 - pulse2``
 
         Args:
-            other (Pulse): The pulse instance to be subtracted from self.
+            other: The pulse instance to be subtracted from self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the
-                combination of two pulses.
-
+            A new pulse instance representing the combination of two pulses.
         """
-        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '-')
 
-    def __mul__(self, other):
-        """
-        This method is called when multiplying two pulses: `pulse1 * pulse2`.
+    def __mul__(self, other: 'Pulse') -> 'CombinationPulse':
+        """Called when multiplying two pulses: ``pulse1 * pulse2``.
 
         Args:
-            other (Pulse): The pulse instance to be multiplied with self.
+            other: The pulse instance to be multiplied with self.
 
         Returns:
-            combined_pulse (Pulse): A new pulse instance representing the
-                combination of two pulses.
+            A new pulse instance representing the combination of two pulses.
 
         """
-        name = 'CombinationPulse_{}'.format(id(self)+id(other))
+        name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
 
     def __deepcopy__(self, *args):
-        """
-        Creates a copy of a pulse.
-        Args:
-
+        """Creates a copy of a pulse.
+        
         Returns:
             Copy of pulse
         """
@@ -468,8 +475,7 @@ class Pulse(HasTraits):
     __copy__ = __deepcopy__
 
     def _JSONEncoder(self):
-        """
-        Converts to JSON encoder for saving metadata
+        """Converts to JSON encoder for saving metadata
 
         Returns:
             JSON dict
@@ -520,6 +526,9 @@ class Pulse(HasTraits):
             self.duration = round(t_stop - self.t_start, 11)
 
     def _get_repr(self, properties_str):
+        """Get standard representation for pulse.
+        
+        Should be appended in each Pulse subclass."""
         if self.connection:
             properties_str += f'\n\tconnection: {self.connection}'
         if self.connection_requirements:
@@ -533,23 +542,27 @@ class Pulse(HasTraits):
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
 
-    def satisfies_conditions(self, pulse_class=None, name=None, **kwargs):
-        """
-        Checks if pulse satisfies certain conditions.
+    def satisfies_conditions(self,
+                             pulse_class = None,
+                             name: str=None,
+                             **kwargs) -> bool:
+        """Checks if pulse satisfies certain conditions.
+        
         Each kwarg is a condition, and can be a value (equality testing) or it
         can be a tuple (relation, value), in which case the relation is tested.
         Possible relations: '>', '<', '>=', '<=', '=='
+        
         Args:
-            t_start:
-            t:
-            t_stop:
-            duration:
-            acquire:
-            connection:
-            **kwargs:
+            pulse_class: Pulse must have specific class.
+            name: Pulse must have name, which may include id.
+            **kwargs: Additional pulse attributes to be satisfied.
+                Examples are ``t_start``, ``connection``, etc.
+                Time ``t`` can also be passed, in which case the condition is
+                satisfied if t is between `Pulse`.t_start and `Pulse`.t_stop
+                (including limits).
 
         Returns:
-            Bool depending on if all conditions are satisfied.
+            True if all conditions are satisfied.
         """
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
@@ -582,15 +595,43 @@ class Pulse(HasTraits):
         else:
             return True
 
-    def get_voltage(self, t):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
+        raise NotImplementedError('This method should be implemented in a subclass')
 
 
 class SteeredInitialization(Pulse):
-    def __init__(self, name=None, t_no_blip=None, t_max_wait=None,
-                 t_buffer=None,
-                 readout_threshold_voltage=None, **kwargs):
+    """Initialization pulse to ensure a spin-down electron is loaded.
+    
+    This is performed by continuously measuring at the read stage until no blip
+    has been measured for ``t_no_blip``, or until ``t_max_wait`` has elapsed.
+    
+    Parameters:
+        name: Pulse name
+        t_no_blip: Min duration without measuring blips. If condition is met,
+            an event should be fired to the primary instrument to start the 
+            pulse sequence.
+        t_max_wait: Maximum wait time for the no-blip condition. 
+            If ``t_max_wait`` has elapsed, an event should be fired to the 
+            primary instrument to start the pulse seqeuence.
+        t_buffer: Duration of a single acquisition buffer. Shorter buffers mean
+            that one can more closely approach ``t_no_blip``, but too short 
+            buffers may cause lagging.
+        readout_threshold_voltage: Threshold voltage for a blip.
+        **kwargs: Additional parameters of `Pulse`.
+    """
+    def __init__(self,
+                 name: str = None,
+                 t_no_blip: float = None,
+                 t_max_wait: float = None,
+                 t_buffer: float = None,
+                 readout_threshold_voltage: float = None,
+                 **kwargs):
         super().__init__(name=name, t_start=0, duration=0, initialize=True,
                          **kwargs)
 
@@ -613,8 +654,27 @@ class SteeredInitialization(Pulse):
 
 
 class SinePulse(Pulse):
-    def __init__(self, name=None, frequency=None, phase=None, amplitude=None,
-                 power=None, **kwargs):
+    """Sinusoidal pulse
+        
+    Parameters:
+        name: Pulse name
+        frequency: Pulse frequency
+        phase: Pulse phase
+        amplitude: Pulse amplitude. If not set, power must be set.
+        power: Pulse power. If not set, amplitude must be set.
+        **kwargs: Additional parameters of `Pulse`.
+        
+    Notes:
+        Either amplitude or power must be set, depending on the instrument
+        that should output the pulse.
+    """
+    def __init__(self,
+                 name: str = None,
+                 frequency: float = None,
+                 phase: float = None,
+                 amplitude: float = None,
+                 power: float = None,
+                 **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.frequency = self._value_or_config('frequency', frequency)
@@ -639,7 +699,14 @@ class SinePulse(Pulse):
 
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
@@ -648,10 +715,42 @@ class SinePulse(Pulse):
 
 
 class FrequencyRampPulse(Pulse):
-    def __init__(self, name=None, frequency_start=None, frequency_stop=None,
-                 frequency=None, frequency_deviation=None,
-                 frequency_final='stop', amplitude=None, power=None,
-                 frequency_sideband=None, **kwargs):
+    """Linearly increasing/decreasing frequency `Pulse`.
+        
+    Parameters:
+        name: Pulse name
+        frequency_start: Start frequency
+        frequency_stop: Stop frequency.
+        frequency: Center frequency, only used if ``frequency_start`` and
+            ``frequency_stop`` not used.
+        frequency_deviation: Frequency deviation, only used if 
+            ``frequency_start`` and ``frequency_stop`` not used.
+        frequency_final: Can be either ``start`` or ``stop`` indicating the
+            frequency when reaching ``frequency_stop`` should go back to the
+            initial frequency or stay at current frequency. Useful if the 
+            pulse doesn't immediately stop at the end (this depends on how
+            the corresponding instrument/interface is programmed).
+        amplitude: Pulse amplitude. If not set, power must be set.
+        power: Pulse power. If not set, amplitude must be set.
+        frequency_sideband: Sideband frequency to apply. This feature must
+            be existent in interface. Not used if not set.
+        **kwargs: Additional parameters of `Pulse`.
+        
+    Notes:
+        Either amplitude or power must be set, depending on the instrument
+        that should output the pulse.
+    """
+    def __init__(self,
+                 name: str = None,
+                 frequency_start: float = None,
+                 frequency_stop: float = None,
+                 frequency: float = None,
+                 frequency_deviation: float = None,
+                 frequency_final: str = 'stop',
+                 amplitude: float = None,
+                 power: float = None,
+                 frequency_sideband: float = None,
+                 **kwargs):
         super().__init__(name=name, **kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
@@ -724,7 +823,15 @@ class FrequencyRampPulse(Pulse):
 
 
 class DCPulse(Pulse):
-    def __init__(self, name=None, amplitude=None, **kwargs):
+    """DC (fixed-voltage) `Pulse`.
+    
+    Parameters:
+        name: Pulse name
+        amplitue: Pulse amplitude
+        **kwargs: Additional parameters of `Pulse`.
+    """
+    def __init__(self,
+                 name: str = None, amplitude=None, **kwargs):
         super().__init__(name=name, **kwargs)
         self.amplitude = self._value_or_config('amplitude', amplitude)
 
@@ -743,8 +850,13 @@ class DCPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
-
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+        
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
@@ -756,7 +868,18 @@ class DCPulse(Pulse):
 
 
 class DCRampPulse(Pulse):
-    def __init__(self, name=None, amplitude_start=None, amplitude_stop=None,
+    """Linearly ramping voltage `Pulse`.
+    
+    Parameters:
+        name: Pulse name
+        amplitude_start: Start amplitude of pulse.
+        amplitude_stop: Final amplitude of pulse.
+        **kwargs: Additional parameters of `Pulse`.
+    """
+    def __init__(self,
+                 name: str = None,
+                 amplitude_start: float = None,
+                 amplitude_stop: float = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -777,7 +900,13 @@ class DCRampPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
@@ -789,24 +918,38 @@ class DCRampPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .0001  # ms
+    """Triggering pulse.
+    
+    Parameters:
+        name: Pulse name.
+        duration: Pulse duration (default 100 ns).
+        amplitude: Pulse amplitude (default 1V).
+        **kwargs: Additional parameters of `Pulse`.
+    
+    """
+    duration = 100e-9
 
-    def __init__(self, name=None, duration=duration, **kwargs):
-        # Trigger pulses don't necessarily need a specific name
-        if name is None:
-            name = 'trigger'
+    def __init__(self,
+                 name: str = 'trigger',
+                 duration: float = duration,
+                 **kwargs):
         super().__init__(name=name, duration=duration, **kwargs)
         self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
-            properties_str = 't_start={}, duration={}'.format(
-                self.t_start, self.duration)
+            properties_str = f't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
@@ -820,7 +963,17 @@ class TriggerPulse(Pulse):
 
 
 class MarkerPulse(Pulse):
-    def __init__(self, name=None, **kwargs):
+    """Marker pulse
+    
+    Parameters:
+        name: Pulse name.
+        amplitude: Pulse amplitude (default 1V).
+        **kwargs: Additional parameters of `Pulse`.
+    
+    """
+    def __init__(self,
+                 name: str = None,
+                 **kwargs):
         super().__init__(name=name, **kwargs)
         self.amplitude = self._value_or_config('amplitude', 1.0)
 
@@ -831,7 +984,13 @@ class MarkerPulse(Pulse):
             properties_str = ''
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
@@ -845,7 +1004,23 @@ class MarkerPulse(Pulse):
 
 
 class TriggerWaitPulse(Pulse):
-    def __init__(self, name=None, t_start=None, **kwargs):
+    """Pulse that wait until condition is met and then applies trigger
+    
+    Parameters:
+        name: Pulse name
+        t_start: Pulse start time.
+        **kwargs: Additional parameters of `Pulse`.
+        
+    Note:
+        Duration is fixed at 0s.
+        
+    See Also:
+        `SteeredInitializationPulse`
+    """
+    def __init__(self,
+                 name: str = None,
+                 t_start: float = None,
+                 **kwargs):
         super().__init__(name=name, t_start=t_start, duration=0, **kwargs)
 
     def __repr__(self):
@@ -858,6 +1033,19 @@ class TriggerWaitPulse(Pulse):
 
 
 class MeasurementPulse(Pulse):
+    """Pulse that is only used to signify an acquiition
+    
+    This pulse is not directed to any interface other than the acquisition
+    interface.
+    
+    Parameters:
+        name: Pulse name.
+        acquire: Acquire pulse (default True)
+        **kwargs: Additional parameters of `Pulse`.
+        
+    Todo:
+        Verify that it is not directed to any other pulse.
+    """
     def __init__(self, name=None, acquire=True, **kwargs):
         super().__init__(name=name, acquire=acquire, **kwargs)
 
@@ -868,17 +1056,18 @@ class MeasurementPulse(Pulse):
             properties_str = ''
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         raise NotImplementedError('Measurement pulses do not have a voltage')
 
 
 class CombinationPulse(Pulse):
-    """
-    This class represents pulses that are combinations of multiple pulse types.
-
-    For example:
-        CombinationPulse = SinePulse + DCPulse
-        CombinationPulse = DCPulse * SinePulse
+    """Pulse that is a combination of multiple pulse types.
 
     Like any other pulse, a CombinationPulse has a name, t_start and t_stop.
     t_start and t_stop are calculated and updated from the pulses that make up
@@ -889,19 +1078,28 @@ class CombinationPulse(Pulse):
         CombinationPulse1 = SinePulse1 + DCPulse
         CombinationPulse2 = SinePulse2 + CombinationPulse1
 
-    Args:
-        name (str): The name for this CombinationPulse.
-        pulse1 (Pulse): The first pulse this combination is made up from.
-        pulse2 (Pulse): The second pulse this combination is made up from.
-        relation (str): The relation between pulse1 and pulse2.
+    Examples:
+        >>> CombinationPulse = SinePulse + DCPulse
+        >>> CombinationPulse = DCPulse * SinePulse
+
+    Parameters:
+        name: The name for this CombinationPulse.
+        pulse1: The first pulse this combination is made up from.
+        pulse2: The second pulse this combination is made up from.
+        relation: The relation between pulse1 and pulse2.
             This must be one of the following:
                 '+'     :   pulse1 + pulse2
                 '-'     :   pulse1 - pulse2
                 '*'     :   pulse1 * pulse2
+        **kwargs: Additional kwargs of `Pulse`.
 
     """
 
-    def __init__(self, name=None, pulse1=None, pulse2=None, relation=None,
+    def __init__(self,
+                 name: str = None,
+                 pulse1: Pulse = None,
+                 pulse2: Pulse = None,
+                 relation: str = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -958,7 +1156,13 @@ class CombinationPulse(Pulse):
         return super()._get_repr(properties_str)
 
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
@@ -988,24 +1192,30 @@ class CombinationPulse(Pulse):
 
 
 class AWGPulse(Pulse):
-    """
-    This class represents arbitrary waveform pulses that can be implemented by AWGs.
+    """Arbitrary waveform pulses that can be implemented by AWGs.
 
     This class allows the user to create a truly arbitrary pulse by either:
         - providing a function that converts time-stamps to waveform points
         - an array of waveform points
 
-    The resulting AWGPulse can be sampled at different sample rates, interpolating between waveform points if necessary.
+    The resulting AWGPulse can be sampled at different sample rates, 
+    interpolating between waveform points if necessary.
 
-    Args:
-        name (str): The name for this AWGPulse.
-        fun (): The function used for calculating waveform points based on time-stamps.
-        wf_array (np.array): Numpy array of (float) with time-stamps and waveform points.
-        interpolate (bool): Flag for turning interpolation of the wf_array on (True) or off (False).
+    Parameters:
+        name: Pulse name.
+        fun: The function used for calculating waveform points based on 
+            time-stamps.
+        wf_array: Numpy array of (float) with time-stamps and waveform points.
+        interpolate: Use interpolation of the wf_array.
 
     """
 
-    def __init__(self, name=None, fun=None, wf_array=None, interpolate=True, **kwargs):
+    def __init__(self,
+                 name: str = None,
+                 fun: function = None,
+                 wf_array: np.ndarray = None,
+                 interpolate: bool = True,
+                 **kwargs):
         super().__init__(name=name, **kwargs)
 
         if fun:
@@ -1050,7 +1260,13 @@ class AWGPulse(Pulse):
             pass
         return super()._get_repr(properties_str)
 
-    def get_voltage(self, t):
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and 
+                `Pulse`.t_stop
+        """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
