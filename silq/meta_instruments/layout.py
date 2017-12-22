@@ -739,7 +739,7 @@ class Layout(Instrument):
         Args:
             connection: Specific connection to be checked. If the connection
                 is in layout.connections, it returns a list with the connection.
-                Can be useful when `pulse.connection_requirements` needs a
+                Can be useful when `Pulse`.connection_requirements needs a
                 specific connection. If provided, all other conditions are 
                 ignored.
             output_arg: string representation of output.
