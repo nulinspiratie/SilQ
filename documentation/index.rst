@@ -20,6 +20,15 @@ Documentation
 
    specifications/index
 
+Autosummary
+------------
+.. currentmodule:: silq
+
+.. autosummary::
+
+   parameters.acquisition_parameters.AcquisitionParameter
+   parameters.acquisition_parameters.DCParameter
+   parameters.acquisition_parameters.DCSweepParameter
 
 Indices and tables
 ==================
