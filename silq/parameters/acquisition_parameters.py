@@ -110,8 +110,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
           Two config paths are monitored:
 
           * ``silq.config.{environment}.properties``, though only the attributes
-            specified in `properties_attrs`
-          * ``silq.parameters.{self.name}``..
+            specified in `properties_attrs`.
+          * ``silq.parameters.{self.name}``.
     """
 
     layout = None
