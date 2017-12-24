@@ -1222,34 +1222,38 @@ class EPRParameter(AcquisitionParameter):
 class ESRParameter(AcquisitionParameter):
     """Parameter for most pulse sequences involving electron spin resonance.
 
-    This parameter can handle many of the simple pulse sequences involing ESR.
+    This parameter can handle many of the simple pulse sequences involving ESR.
     It uses the `ESRPulseSequence`, which will generate a pulse sequence from
     settings (see parameters below).
 
     In general the pulse sequence is as follows:
 
     1. Perform any pre_pulses defined in `ESRParameter.pre_pulses`.
-    2. Perform a stage pulse (defined in ``ESRParameter.ESR['stage']``).
+    2. Perform stage pulse ``ESRParameter.ESR['stage_pulse']``.
        By default, this is the ``plunge`` pulse.
-    3. Perform ESR within plunge pulse (``ESRParameter.ESR['pulse']``), delay
-       defined in ``ESRParameter.ESR['pulse_delay']``.
-    4. Repeat steps 2 and 3 for each ESR pulse in ``ESRParameter.ESR['pulses'].
-    5. Perform empty-plunge-read sequence (EPR), but only if
-       ``ESRParameter.EPR['enabled']`` is True.
-    6. Perform any post_pulses defined in `ESRParameter.post_pulses`.
+    3. Perform ESR pulse within plunge pulse, the delay from start of plunge 
+       pulse is defined in ``ESRParameter.ESR['pulse_delay']``.
+    4. Perform read pulse ``ESRParameter.ESR['read_pulse']``.
+    5. Repeat steps 2 and 3 for each ESR pulse in 
+       ``ESRParameter.ESR['ESR_pulses']``, which by default contains single
+       pulse ``ESRParameter.ESR['ESR_pulse']``.
+    6. Perform empty-plunge-read sequence (EPR), but only if
+       ``ESRParameter.EPR['enabled']`` is True. 
+       EPR pulses are defined in ``ESRParameter.EPR['pulses']``.
+    7. Perform any post_pulses defined in `ESRParameter.post_pulses`.
 
     A shorthand for using the default ESR pulse for multiple frequencies is by
-    setting `ESRParameter.ESR_frequencies`.
+    setting `ESRParameter.ESR_frequencies`. Settings this will create a copy
+    of ESRParameter.ESR['pulse'] with the respective frequency.
 
-    Examples
+    Examples:
         The following code measures two ESR frequencies and performs an EPR
         from which the contrast can be determined for each ESR frequency:
 
-
         >>> ESR_parameter = ESRParameter()
         >>> ESR_parameter.ESR['pulse_delay'] = 5e-3
-        >>> ESR_parameter.ESR['stage'] = DCPulse['plunge']
-        >>> ESR_parameter.ESR['pulse'] = FrequencyRampPulse('ESR_adiabatic')
+        >>> ESR_parameter.ESR['stage_pulse'] = DCPulse['plunge']
+        >>> ESR_parameter.ESR['ESR_pulse'] = FrequencyRampPulse('ESR_adiabatic')
         >>> ESR_parameter.ESR_frequencies = [39e9, 39.1e9]
         >>> ESR_parameter.EPR['enabled'] = True
         >>> ESR_parameter.pulse_sequence.generate()
@@ -1263,10 +1267,13 @@ class ESRParameter(AcquisitionParameter):
         **kwargs: Additional kwargs passed to `AcquisitionParameter`.
 
     Parameters:
-        ESR (dict): `ESRPulseSequence` generator settings for ESR.
+        ESR (dict): `ESRPulseSequence` generator settings for ESR. Settings are:
+            ``stage_pulse``, ``ESR_pulse``, ``ESR_pulses``, ``pulse_delay``, 
+            ``read_pulse``.
         EPR (dict): `ESRPulseSequence` generator settings for EPR.
             This is optional and can be toggled in `EPR['enabled']`.
-            If disabled, contrast is not calculated.
+            If disabled, contrast is not calculated. 
+            Settings are: ``enabled``, ``pulses``.
         pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
         post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
@@ -1306,6 +1313,12 @@ class ESRParameter(AcquisitionParameter):
             folder of the measurement data set. Otherwise, the base folder is
             the default data folder
         subfolder (str): Subfolder within the base folder to save traces.
+        
+    Notes:
+        * All pulse settings are copies of 
+          ``ESRParameter.pulse_sequence.pulse_settings``.
+        * For given pulse settings, ``ESRParameter.pulse_sequence.generate`` 
+          will recreate the pulse sequence from settings.
     """
     def __init__(self, name='ESR', **kwargs):
         self._names = []
@@ -1333,9 +1346,9 @@ class ESRParameter(AcquisitionParameter):
             names = []
 
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
-                           for pulse in self.ESR['pulses']]
+                           for pulse in self.ESR['ESR_pulses']]
 
-        for pulse in self.ESR['pulses']:
+        for pulse in self.ESR['ESR_pulses']:
             pulse_name = pulse if isinstance(pulse, str) else pulse.name
 
             if ESR_pulse_names.count(pulse_name) == 1:
@@ -1369,7 +1382,7 @@ class ESRParameter(AcquisitionParameter):
         """Apply default ESR pulse for each ESR frequency given."""
         return [pulse.frequency if isinstance(pulse, Pulse)
                 else self.ESR[pulse].frequency
-                for pulse in self.ESR['pulses']]
+                for pulse in self.ESR['ESR_pulses']]
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies: List[float]):
@@ -1402,9 +1415,9 @@ class ESRParameter(AcquisitionParameter):
             results = {}
 
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
-                           for pulse in self.ESR['pulses']]
+                           for pulse in self.ESR['ESR_pulses']]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
-        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
+        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['ESR_pulses']):
             read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analysis.analyse_traces(
                 traces=read_traces,
@@ -1442,30 +1455,34 @@ class T2ElectronParameter(AcquisitionParameter):
 
     In general, the pulse sequence is as follows:
 
-    1. Apply any pre_pulses defined in `T2ElectronParameter.pre_pulses`.
-    2. Apply pulse ``T2ElectronParameter.ESR['stage_pulse']``.
+    1. Perform any pre_pulses defined in `T2ElectronParameter.pre_pulses`.
+    2. Perform stage pulse ``T2ElectronParameter.ESR['stage_pulse']``.
        By default, this is the ``plunge`` pulse.
-    3. Apply ESR pulse ``T2ElectronParameter.ESR['initial_pulse']`` after
-       ``T2ElectronParameter.ESR['pre_delay']`` seconds after start of the
-       ``stage`` pulse.
-    4. Wait ``T2ElectronParameter.ESR['inter_delay']`` seconds and apply
-       ``T2ElectronParameter.ESR['refocusing_pulse']``.
-    5. Repeat step 4 ``T2ElectronParameter.ESR['num_refocusing_pulses']`` times.
-    6. Wait ``T2ElectronParameter.ESR['inter_delay']`` seconds and apply
-       ``T2ElectronParameter.ESR['final_pulse']``.
-    7. Wait ``T2ElectronParameter.ESR['post_delay']``, and finish stage pulse
-    8. Apply ``T2ElectronParameter.ESR['read_pulse']`` and measure trace.
-    9. Apply EPR sequence if ``T2ElectronParameter.EPR['enabled'] == True``.
-
+    3. Perform ESR pulse within plunge pulse, the delay from start of plunge 
+       pulse is defined in ``T2ElectronParameter.ESR['pulse_delay']``.
+    4. Perform read pulse ``T2ElectronParameter.ESR['read_pulse']``.
+    5. Repeat steps 2 and 3 for each ESR pulse in 
+       ``T2ElectronParameter.ESR['ESR_pulses']``, which by default contains the
+       single pulse ``T2ElectronParameter.ESR['ESR_pulse']``.
+    6. Perform empty-plunge-read sequence (EPR), but only if
+       ``T2ElectronParameter.EPR['enabled']`` is True. 
+       EPR pulses are defined in ``T2ElectronParameter.EPR['pulses']``.
+    7. Perform any post_pulses defined in `T2ElectronParameter.post_pulses`.
+    
     Args:
         name: Parameter name
         **kwargs: Additional kwargs passed to `AcquisitionParameter`.
 
     Parameters:
         ESR (dict): `T2ElectronPulseSequence` generator settings for ESR.
+            Settings are: ``stage_pulse``, ``ESR_initial_pulse``, 
+            ``ESR_refocusing_pulse``, ``ESR_final_pulse``, ``read_pulse``,
+            ``num_refocusing_pulses``, ``pre_delay``, ``inter_delay``, 
+            ``post_delay``.
         EPR (dict): `T2ElectronPulseSequence` generator settings for EPR.
             This is optional and can be toggled in `EPR['enabled']`.
             If disabled, contrast is not calculated.
+            Settings are: ``enabled``, ``pulses``.
         pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
         post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
@@ -1505,8 +1522,6 @@ class T2ElectronParameter(AcquisitionParameter):
             folder of the measurement data set. Otherwise, the base folder is
             the default data folder
         subfolder (str): Subfolder within the base folder to save traces.
-
-
     """
 
     def __init__(self, name='Electron_T2', **kwargs):
@@ -1564,8 +1579,7 @@ class T2ElectronParameter(AcquisitionParameter):
             t_read=self.t_read)
 
         results['ESR_results'] = ESR_results
-        results[f'up_proportion_{read_pulse.name}'] = ESR_results[
-            'up_proportion']
+        results[f'up_proportion_{read_pulse.name}'] = ESR_results['up_proportion']
         if self.EPR['enabled']:
             # Add contrast obtained by subtracting EPR dark counts
             contrast = ESR_results['up_proportion'] - results['dark_counts']
@@ -1586,22 +1600,28 @@ class NMRParameter(AcquisitionParameter):
     1. Perform any pre_pulses defined in `NMRParameter.pre_pulses`.
     2. Perform NMR sequence
 
-        1. Perform a stage pulse (defined in ``NMRParameter.NMR['stage']``)
-        2. Perform NMR pulses in the stage pulse. The pulses are defined in
-           ``NMRParameter.NMR['pulses'], and delays between pulses defined in
-           ``NMRParameter.NMR['inter_delay']``.
+       1. Perform stage pulse ``NMRParameter.NMR['stage_pulse']``.
+          Default is 'empty' `DCPulse`.
+       2. Perform NMR pulses within the stage pulse. The NMR pulses defined
+          in ``NMRParameter.NMR['NMR_pulses']`` are applied successively. 
+          The delay after start of the stage pulse is 
+          ``NMRParameter.NMR['pre_delay']``, delays between NMR pulses is 
+          ``NMRParameter.NMR['inter_delay']``, and the delay after the final 
+          NMR pulse is ``NMRParameter.NMR['post_delay']``.
 
     3. Perform ESR sequence
 
-       1. Perform ``stage`` pulse (defined in ``NMRParameter.ESR['stage']``).
-          Usually this is the ``plunge`` pulse.
-       2. Perform ESR pulse within stage pulse for first frequency in
-          `NMRParameter.ESR_frequencies`.
+       1. Perform stage pulse ``NMRParameter.ESR['stage_pulse']``.
+          Default is 'plunge' `DCPulse`.
+       2. Perform ESR pulse within stage pulse for first pulse in
+          ``NMRParameter.ESR['ESR_pulses']``. 
        3. Perform ``NMRParameter.ESR['read_pulse']``, and acquire trace.
-       4. Repeat steps 1 - 3 for each ESR frequency.
+       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
+          usually correspond to different ESR frequencies (see 
+          `NMRParameter`.ESR_frequencies).
        5. Repeat steps 1 - 4 for ``NMRParameter.ESR['shots_per_frequency']``
-          This will effectively interleave the ESR frequencies, which counters
-          effects of the nucleus flipping within an acquisition.
+          This effectively interleaves the ESR pulses, which counters effects of
+          the nucleus flipping within an acquisition.
 
     This acquisition is repeated `NMRParameter.samples` times. If the nucleus is
     in one of the states for which an ESR frequency is on resonance, a high
@@ -1616,13 +1636,21 @@ class NMRParameter(AcquisitionParameter):
         **kwargs: Additional kwargs passed to `AcquisitionParameter`
 
     Parameters:
-        ESR (dict): `PulseSequenceGenerator` settings for ESR.
+        NMR (dict): `NMRPulseSequence` pulse settings for NMR. Settings are:
+            ``stage_pulse``, ``NMR_pulse``, ``NMR_pulses``, ``pre_delay``, 
+            ``inter_delay``, ``post_delay``.
+        ESR (dict): `NMRPulseSequence` pulse settings for ESR. Settings are:
+            ``ESR_pulse``, ``stage_pulse``, ``ESR_pulses``, ``read_pulse``,
+            ``pulse_delay``.
         EPR (dict): `PulseSequenceGenerator` settings for EPR. This is optional
             and can be toggled in `EPR['enabled']`. If disabled, contrast is not
             calculated.
         pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
         post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        ESR_frequencies (List[float]): List of ESR frequencies to use. When set,
+            a copy of ``NMRParameter.ESR['ESR_pulse']`` is created for each 
+            frequency, and added to ``NMRParameter.ESR['ESR_pulses']``.
         samples (int): Number of acquisition samples
         results (dict): Results obtained after analysis of traces.
         t_skip (float): initial part of read trace to ignore for measuring
@@ -1662,7 +1690,6 @@ class NMRParameter(AcquisitionParameter):
             folder of the measurement data set. Otherwise, the base folder is
             the default data folder
         subfolder (str): Subfolder within the base folder to save traces.
-
 
     Note:
         * The `NMRPulseSequence` does not have an empty-plunge-read (EPR)
