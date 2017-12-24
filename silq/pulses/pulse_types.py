@@ -28,9 +28,39 @@ logger = logging.getLogger(__name__)
 
 
 class Pulse(HasTraits):
-    """ Representation of physical pulse, part of `PulseSequence`
+    """ Representation of physical pulse, component in a `PulseSequence`.
     
-    ``silq.config.{environment}.pulses``, the 
+    A Pulse is a representation of a physical pulse, usually one that is
+    outputted by an instrument. All pulses have specific timings, defined by
+    ``t_start``, ``t_stop``, and ``duration``. Additional attributes specify 
+    ancillary properties, such as if the acquisition instrument should 
+    ``acquire`` the pulse. Specific pulse types (subclasses of `Pulse`) have
+    additional properties, such as a ``frequency``.
+    
+    Pulses can be added to a `PulseSequence`, which can in turn be targeted by 
+    the `Layout`. Here, each `Pulse` is targeted to a `Connection`, which can
+    modify the pulse (e.g. applying an amplitude scale). Next the pulse is
+    targeted by the output and input `InstrumentInterface` of the connection,
+    which provide an instrument-specific implementation of the pulse.
+    
+    Pulses usually have a name, which is used to retrieve any default properties
+    from the config. If the pulse name is an entry in 
+    ``silq.config.{environment}.pulses``, the properties in that entry are
+     used by default. These default values can be overridden by either passing
+     them explicitly during the pulse initialization, or afterwards.
+     
+     Example:
+         If ``silq.config.{environment}.pulses`` contains:
+         
+         >>> {'read': {'amplitude': 0.5, 'duration': 100e-3}}
+          
+         Then creating the following pulse will partially use these properties:
+         
+         >>> DCPulse('read', duration=200e-3)
+         DCPulse('read', amplitude=0.5, duration=200e-3)
+         
+         Here the default ``amplitude`` value is used, but the duration is
+         overridden during initialization.
     
     Parameters:
         name: Pulse name. If corresponding name is registered in pulse 
