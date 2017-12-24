@@ -80,7 +80,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -487,7 +487,7 @@ class DCParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -555,7 +555,7 @@ class TraceParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -771,7 +771,7 @@ class DCSweepParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -1164,7 +1164,7 @@ class EPRParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -1297,7 +1297,7 @@ class ESRParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -1506,7 +1506,7 @@ class T2ElectronParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
@@ -1865,7 +1865,7 @@ class BlipsParameter(AcquisitionParameter):
             Useful if stopping/starting instruments takes a considerable amount
             of time.
         environment (str): Config environment to use for properties.
-            If not specified, ``silq.config.properties.default_environment` is
+            If not specified, ``silq.config.properties.default_environment`` is
             used. See notes below for more info.
         properties_attrs (List[str]): Attributes to match with
             ``silq.config.environment.properties` See notes below for more info.
