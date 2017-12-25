@@ -11,6 +11,36 @@ from qcodes.config.config import DotDict
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update']
 
 class SubConfig:
+    """Extended config used within ``qcodes.config``.
+     
+    The SubConfig is a modified version of the qcodes config, the root being in
+    ``qcodes.config.user``. It contains two main extensions:
+    
+    1. Support for saving/loading the config as a JSON folder structure
+       This simplifies editing part of the config in an editor.
+       Each subconfig can be set to either save as a folder or as a file via the
+       ``save_as_dir`` attribute.
+    2. Emit a signal when a value changes. The signal  uses ``blinker.signal``,
+       the signal name being ``config:{config_path}``, where ``config_path`` is
+       a dot-separated path to of the config. For example, setting:
+       
+       >>> silq.config.environment1.key1 = val
+       
+       The config path is equal to ``qcodes.config.user.environment1.key1`` and
+       emits the following signal:
+       
+       >>> signal('config:environment1').send(self, key1=val)
+       
+       This signal can then by picked up by other objects such as `Pulse`, to
+       update its attribtues from the config.
+       
+    
+    Parameters:
+        name: Config name
+        folder: 
+        parent: 
+        save_as_dir: 
+    """
     def __init__(self, name, folder=None, parent=None, save_as_dir=None):
 
 
