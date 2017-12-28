@@ -1,3 +1,4 @@
+from typing import List
 from functools import partial
 import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
@@ -6,9 +7,9 @@ import pyperclip
 from time import time
 import numpy as np
 import logging
-from winsound import Beep
 
 from qcodes.station import Station
+from qcodes.data.data_array import DataArray
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
            'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
@@ -18,9 +19,21 @@ logger = logging.getLogger(__name__)
 
 
 class PlotAction:
+    """Interactive key/button action for `MatPlot`
+    
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+    """
     enable_key = None
 
-    def __init__(self, plot, timeout=None, enable_key=None):
+    def __init__(self,
+                 plot: MatPlot,
+                 timeout: int = None,
+                 enable_key: str = None):
         self.timeout = timeout
         self.t_enable_key_pressed = None
 
@@ -44,28 +57,53 @@ class PlotAction:
             # Depends on if last enable_key press was within timeout seconds
             return time() - self.t_enable_key_pressed < self.timeout
 
-    def txt_to_clipboard(self, txt):
-        pyperclip.copy(txt)
-
     def key_press(self, event):
+        """Handle Matplotlib key press.
+        
+        This enables PlotAction if key press is ``enable_key``
+        """
         if event.key == self.enable_key:
             logger.debug(f'Enabling action {self}')
             self.t_enable_key_pressed = time()
 
     def button_press(self, event):
+        """Handle Matplotlib button press action."""
         pass
 
-    def handle_code(self, code, copy=False, execute=False, new_cell=True):
+    def handle_code(self,
+                    code: str,
+                    copy: bool = False,
+                    execute: bool = False,
+                    new_cell: bool = True):
+        """Handle code, either executing it or copying it to clipbard
+        
+        Args:
+            code: Python code to handle.
+            copy: Copy to clipboard.
+            execute: Execute code, only relevant if ``new_cell`` is True.
+            new_cell: Create new cell below current one and add code.
+        """
         if copy:
             logger.debug('Copying code to clipboard')
-            self.txt_to_clipboard(self.txt)
+            pyperclip.copy(code)
 
         if new_cell:
             logger.debug(f'Adding code to new cell below, execute: {execute}')
-            create_cell(self.txt, execute=execute, location='below')
+            create_cell(code, execute=execute, location='below')
 
 
 class SetGates(PlotAction):
+    """Set gates when button pressed in MatPlot, enabled with ``alt + g``.
+    
+    Only works for 2D plots.
+    
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+    """
     enable_key = 'alt+g'
 
     def button_press(self, event):
@@ -77,6 +115,19 @@ class SetGates(PlotAction):
 
 
 class MeasureSingle(PlotAction):
+    """Measure parameter at clicked gate vales, enabled with ``alt + s``
+    
+    Upon button click, a new cell below current one is created, in which gates
+    are set to clicked values, and a qc.Measure is performed for measure_param.
+    
+    Only works for 2D plots.
+    
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled."""
     enable_key = 'alt+s'
 
     def button_press(self, event):
@@ -92,6 +143,20 @@ class MeasureSingle(PlotAction):
 
 
 class MoveGates(PlotAction):
+    """Increase/decrease gates when pressing alt + {arrow}, enabled with alt+m.
+    
+    Alt + up/down moves the y-gate.
+    Alt + left/right moves the x-gate.
+    Alt + +/- increases/decreases step size.
+    
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+        delta (float): Step size.
+    """
     enable_key = 'alt+m'
     delta = 0.001 # step to move when pressing a key
 
@@ -138,6 +203,17 @@ class MoveGates(PlotAction):
 
 
 class SwitchPlotIdx(PlotAction):
+    """Change plot index when pressing ``alt+{arrow}``, used with `SliderPlot`.
+    
+    Alt + left/right changes first plot index.
+    Alt + up/down changes second plot index (if two sliders).
+    
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled."""
     def key_press(self, event):
         super().key_press(event)
 
@@ -161,7 +237,23 @@ class SwitchPlotIdx(PlotAction):
 
 
 class InteractivePlot(MatPlot):
-    def __init__(self, *args, actions=(), timeout=600, **kwargs):
+    """Base class for `MatPlot` plots adding interactivity.
+    
+    The QCoDeS `MatPlot`, which uses ``matplotlib``, can be interactive, and
+    respond to key/button presses. This subclass of MatPlot enables such
+    interactivity by adding `PlotAction` to the plot. Each `PlotAction` can
+    respond to specific key presses or button clicks.
+    
+    Parameters:
+        *args: args passed to `MatPlot`.
+        actions: `PlotAction` list to use for plot.
+        timeout: Timeout for any action to be disabled.
+        **kwargs: kwargs passed to `MatPlot`.
+    """
+    def __init__(self,
+                 *args,
+                 actions: List[PlotAction] = (),
+                 timeout: int = 600, **kwargs):
         super().__init__(*args, **kwargs)
         self.station = Station.default
         self.layout = getattr(self.station, 'layout', None)
@@ -189,7 +281,18 @@ class InteractivePlot(MatPlot):
         for action in self.actions:
             action.timeout = timeout
 
-    def load_data_array(self, data_array):
+    def load_data_array(self, data_array: DataArray):
+        """Retrieve properties of a `DataArray`, such as set arrays and labels.
+        
+        Args:
+            data_array: DataArray to extract
+             
+        Returns:
+            Dict[str, Any]:
+            set_arrays (List[DataArray]): List of set arrays.
+            labels: Labels of set arrays
+            gates: Gates of set arrays, None if not in `Station`.
+        """
         set_arrays = data_array.set_arrays
         labels = []
         gates = []
@@ -200,7 +303,15 @@ class InteractivePlot(MatPlot):
                 'labels': labels,
                 'gates': gates}
 
-    def connect_event(self, event, action):
+    def connect_event(self,
+                      event: str,
+                      action: PlotAction):
+        """Attach PlotAction to a specific event.
+        
+        Args:
+            event: matplotlib event (e.g. key_press_event, button_press_event)
+            action: PlotAction to attach
+        """
         if event in self.cid:
             self.fig.canvas.mpl_disconnect(self.cid[event])
 
@@ -208,6 +319,11 @@ class InteractivePlot(MatPlot):
         self.cid[event] = cid
 
     def handle_key_press(self, event):
+        """Handle key press event, forwarding to relevant `PlotAction`
+        
+        The relevant PlotActions are those that are either enabled, or whose
+        ``enable_key`` match the key press event.
+        """
         self._event_key = event
         logger.debug(f'Key pressed: {event.key}')
         try:
@@ -218,6 +334,10 @@ class InteractivePlot(MatPlot):
             logger.error(f'key press: {e}')
 
     def handle_button_press(self, event):
+        """Handle button press event, forwarding to relevan `PlotAction`.
+        
+        The relative PlotActions are those that are already enabled.
+        """
         self._event_button = event
         logger.debug(f'Clicked (x:{event.xdata:.6}, y:{event.ydata:.6})')
         try:
