@@ -173,7 +173,8 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         try:
             return super().__getattribute__(item)
         except AttributeError:
-            return attribute_from_config(item)
+            return attribute_from_config(
+                item, config=config.properties)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
