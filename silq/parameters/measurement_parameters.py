@@ -87,7 +87,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
         try:
             return super().__getattribute__(item)
         except AttributeError:
-            return attribute_from_config(item)
+            return attribute_from_config(item, config.properties)
 
     @property
     def loc_provider(self):
