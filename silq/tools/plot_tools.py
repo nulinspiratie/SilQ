@@ -8,9 +8,7 @@ from time import time
 import numpy as np
 import logging
 
-from silq.parameters.acquisition_parameters import AcquisitionParameter, \
-    TraceParameter, DCSweepParameter
-
+from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
 from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
@@ -504,8 +502,9 @@ class ScanningPlot(InteractivePlot):
             be started by calling `ScanningPlot.start`.
         **kwargs: Additional kwargs to `InteractivePlot` and `Matplot`.
     """
+    # AcquisitionParameter type
     def __init__(self,
-                 parameter: AcquisitionParameter,
+                 parameter: _BaseParameter,
                  interval: float = 0.01,
                  auto_start: bool = False,
                  **kwargs):
@@ -599,7 +598,8 @@ class TracePlot(ScanningPlot):
         **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
     
     """
-    def __init__(self, parameter: TraceParameter, **kwargs):
+    # TraceParameter type
+    def __init__(self, parameter: _BaseParameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
         average_mode = getattr(parameter, 'average_mode', 'none')
         if parameter.samples > 1 and average_mode == 'none':
@@ -669,8 +669,9 @@ class DCSweepPlot(ScanningPlot):
         **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
     """
     gate_mapping = {}
+    # DCSweepParameter type
     def __init__(self,
-                 parameter: DCSweepParameter,
+                 parameter: _BaseParameter,
                  gate_mapping: Dict[str, str] = None,
                  **kwargs):
         if gate_mapping is not None:
