@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from functools import partial
 import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
@@ -8,7 +8,11 @@ from time import time
 import numpy as np
 import logging
 
+from silq.parameters.acquisition_parameters import AcquisitionParameter, \
+    TraceParameter, DCSweepParameter
+
 from qcodes.station import Station
+from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
@@ -20,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 class PlotAction:
     """Interactive key/button action for `MatPlot`
+    
+    A PlotAction can be attached to an `InteractivePlot`, adding some sort of
+    interactivity, e.g. change parameter value when pressing a key button.
     
     Parameters:
         plot: Plot object
@@ -334,7 +341,7 @@ class InteractivePlot(MatPlot):
             logger.error(f'key press: {e}')
 
     def handle_button_press(self, event):
-        """Handle button press event, forwarding to relevan `PlotAction`.
+        """Handle button press event, forwarding to relevant `PlotAction`.
         
         The relative PlotActions are those that are already enabled.
         """
@@ -349,8 +356,13 @@ class InteractivePlot(MatPlot):
 
 
 class SliderPlot(InteractivePlot):
-    """
-    Used to slide through 2D images of a 4D dataset
+    """Slide through 1D/2D images of a `DataArray` with more dimensions.
+    
+    Parameters:
+        data_array: Multidimensional `DataArray` to display.
+        ndim: Plotting dimension (1 or 2)
+        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+        
     """
     def __init__(self, data_array, ndim=2, **kwargs):
         self.ndim = ndim
@@ -433,11 +445,22 @@ class SliderPlot(InteractivePlot):
 
 
 class CalibrationPlot(InteractivePlot):
+    """Interactive plot for 2D calibrations, move gates and measure at points.
+    
+    The 2D calibration scan must contain a `Parameter` that returns the 
+    contrast. Pressing ``alt + m`` adds a dot on the colorplot, which can be
+    moved by holding ``alt`` and pressing an arrow key. the contrast can then
+    be measured at the dot by pressing ``alt + s``.
+    
+    Args:
+        data_set: Calibration 2D scan data set.
+        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+        samples_measure (int): Samples to use when measuring at a single point.
+    """
     measure_parameter = 'adiabatic_ESR'
     samples_measure = 200
-    samples_scan = 100
 
-    def __init__(self, data_set, **kwargs):
+    def __init__(self, data_set: DataSet, **kwargs):
         self.data_set = data_set
         if 'voltage_difference' in data_set.arrays:
             super().__init__(data_set.contrast, data_set.dark_counts,
@@ -454,7 +477,13 @@ class CalibrationPlot(InteractivePlot):
 
 
 class DCPlot(InteractivePlot):
-    def __init__(self, data_set,  **kwargs):
+    """Interactive plot for a 2D DC scan, For easy moving gates on 2D plot.
+    
+    Args:
+        data_set: 2D DC scan `DataSet`.
+        **kwargs: Additional kwargs for `InteractivePlot` and `MatPlot`.
+    """
+    def __init__(self, data_set: DataSet,  **kwargs):
         self.data_set = data_set
         super().__init__(data_set.DC_voltage, **kwargs)
 
@@ -466,7 +495,20 @@ class DCPlot(InteractivePlot):
 
 
 class ScanningPlot(InteractivePlot):
-    def __init__(self, parameter, interval=0.01, auto_start=False, **kwargs):
+    """Base class for interactive plots to repeatedly measure and refresh plot.
+    
+    Args:
+        parameter: Parameter to measure and plot.
+        interval: Measuring and updating interval.
+        auto_start: Start refreshing once initialized. If False, refreshing can
+            be started by calling `ScanningPlot.start`.
+        **kwargs: Additional kwargs to `InteractivePlot` and `Matplot`.
+    """
+    def __init__(self,
+                 parameter: AcquisitionParameter,
+                 interval: float = 0.01,
+                 auto_start: bool = False,
+                 **kwargs):
         super().__init__(**kwargs)
         self.update_idx = 0
         self.update_start_idx = 1
@@ -485,7 +527,7 @@ class ScanningPlot(InteractivePlot):
 
         if auto_start:
             # Already started during acquire
-            self.start(setup=False, start=False)
+            self.start(setup=False)
 
     @property
     def interval(self):
@@ -502,7 +544,15 @@ class ScanningPlot(InteractivePlot):
             return (time() - self.t_start) / (self.update_idx -
                                               self.update_start_idx)
 
-    def start(self, setup=True, start=True):
+    def start(self,
+              setup: bool = True,
+              start: bool = True):
+        """Start measuring and refreshing plot
+        
+        Args:
+            setup: Setup `AcquisitionParameter`
+            start: Start instruments, only used if ``setup`` is True.
+            """
         self.parameter.continuous = True
         if setup:
             self.parameter.setup(start=start)
@@ -511,13 +561,27 @@ class ScanningPlot(InteractivePlot):
         self.update_idx = 0
 
     def stop(self, *args):
-        # *args are needed for if it is a callback
+        """Stop measuring and refreshing plot.
+        
+        Timer is stopped.
+        
+        Args:
+            *args: Unused args passed if method is called as a callback
+        """
         logger.debug('Stopped')
         self.timer.stop()
         self.layout.stop()
         self.parameter.continuous = False
 
     def scan(self, initialize=False, stop=False):
+        """Perform single meeasurement and update plot.
+        
+        Repeatedly called by timer.
+        
+        Args:
+            initialize: True if this method is called during initialization.
+            stop: Stop instruments after acquisition.
+        """
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
@@ -528,7 +592,14 @@ class ScanningPlot(InteractivePlot):
 
 
 class TracePlot(ScanningPlot):
-    def __init__(self, parameter, **kwargs):
+    """Interactive plot that repeatedly measures pulse sequence and plots trace
+    
+    Args:
+        parameter: `TraceParameter` whose pulse sequence to measure.
+        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+    
+    """
+    def __init__(self, parameter: TraceParameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
         average_mode = getattr(parameter, 'average_mode', 'none')
         if parameter.samples > 1 and average_mode == 'none':
@@ -539,7 +610,12 @@ class TracePlot(ScanningPlot):
 
         # self.actions = [MoveGates(self)]
 
-    def update_plot(self, initialize=False):
+    def update_plot(self, initialize: bool = False):
+        """Update plot with new trace
+        
+        Args:
+            initialize: Method called during initialization.
+        """
         for k, name in enumerate(self.parameter.names):
             result = self.results[name]
             if initialize:
@@ -585,8 +661,18 @@ class TracePlot(ScanningPlot):
 
 
 class DCSweepPlot(ScanningPlot):
+    """Refreshing 2D DC plot using `DCSweepParameter` for fast 2D DC scanning.
+    
+    Args:
+        parameter: `DCSweepParameter` for fast 2D DC scanning.
+        gate_mapping: Mapping of gate names, for plot labels.
+        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+    """
     gate_mapping = {}
-    def __init__(self, parameter, gate_mapping=None, **kwargs):
+    def __init__(self,
+                 parameter: DCSweepParameter,
+                 gate_mapping: Dict[str, str] = None,
+                 **kwargs):
         if gate_mapping is not None:
             self.gate_mapping = gate_mapping
 
@@ -606,6 +692,11 @@ class DCSweepPlot(ScanningPlot):
         self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
+        """Update plot with new 2D DC scan.
+        
+        Args:
+            initialize: Method called during initialization.
+        """
         for k, name in enumerate(self.parameter.names):
             result = self.results[name]
             if initialize:
