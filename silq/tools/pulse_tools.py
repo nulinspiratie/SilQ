@@ -1,8 +1,17 @@
+from typing import Tuple
 __all__ = ['pulse_to_waveform_sequence']
 
-def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_min=1, n_max=1000, sample_points_multiple=1):
-    """
-    This method can be used when generating a periodic signal with an AWG device. Given a frequency and duration of the
+def pulse_to_waveform_sequence(duration: float,
+                               frequency: float,
+                               sampling_rate: float,
+                               threshold: float,
+                               n_min: int = 1,
+                               n_max: int = 1000,
+                               sample_points_multiple: int = 1) -> \
+        Tuple[int, float, int]:
+    """Method for generating a periodic signal with an AWG device. 
+    
+    Given a frequency and duration of the
     desired signal, a general AWG can produce that signal by repeating one waveform (waveform_1) for a number of times
     (cycles) and ending with a second waveform (waveform_2). This is a practical way of generating periodic signals that
     are long in duration without using a lot of the available RAM of the AWG.
@@ -14,20 +23,20 @@ def pulse_to_waveform_sequence(duration, frequency, sampling_rate, threshold, n_
     This function calculates the minimum number n for which the error threshold is satisfied. Therefore minimizing the
     total amount of sample points that need to be stored by the AWG.
 
-        Args:
-            duration (float): duration of the signal in seconds
-            frequency (float): frequency of the signal in Hz
-            sampling_rate (float): the sampling rate of the waveform
-            threshold (float): threshold in relative period error
-            n_min (int): minimum number of signal periods that the waveform must contain
-            n_max (int): maximum number of signal periods that a waveform can contain
-            sample_points_multiple (int): the number of samples must be a multiple of
+    Args:
+        duration: duration of the signal in seconds
+        frequency: frequency of the signal in Hz
+        sampling_rate: the sampling rate of the waveform
+        threshold: threshold in relative period error
+        n_min: minimum number of signal periods that the waveform must contain
+        n_max: maximum number of signal periods that a waveform can contain
+        sample_points_multiple: the number of samples must be a multiple of
 
-        Returns:
-            (tuple):
-                n (int):        number of signal periods that are in one cycle of the repeating waveform
-                error (float):  relative error in the signal period
-                samples (int):  number of samples in one cycle of the repeating waveform
+    Returns:
+        Tuple:
+        * **n (int)**:        number of signal periods that are in one cycle of the repeating waveform
+        * **error (float)**:  relative error in the signal period
+        * **samples (int)**:  number of samples in one cycle of the repeating waveform
 
     """
     period = 1 / frequency
