@@ -508,7 +508,9 @@ class ScanningPlot(InteractivePlot):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.results = self.parameter.acquire(stop=stop)
+        self.parameter()
+        if stop:
+            self.layout.stop()
         self.update_plot(initialize=initialize)
 
         self.update_idx += 1
@@ -528,7 +530,7 @@ class TracePlot(ScanningPlot):
 
     def update_plot(self, initialize=False):
         for k, name in enumerate(self.parameter.names):
-            result = self.results[name]
+            result = self.parameter.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
@@ -594,7 +596,7 @@ class DCSweepPlot(ScanningPlot):
 
     def update_plot(self, initialize=False):
         for k, name in enumerate(self.parameter.names):
-            result = self.results[name]
+            result = self.parameter.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
