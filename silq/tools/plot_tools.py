@@ -137,6 +137,113 @@ class MoveGates(PlotAction):
             logger.info('Alt key not pressed, not moving gates')
 
 
+class TuneCompensation(PlotAction):
+    enable_key = 'alt+c'
+
+    def __init__(self, *args, **kwargs):
+        """ A tool to plot a line of compensated plunging/emptying on a DC scan.
+
+        Key commands:
+          'alt+c'            : enables this tool
+          'alt+<arrow_key>'  : move the central (read) position of your line in that respective direction
+          'alt+<+ or ->'     : increase/decrease the compensation angle with the horizontal
+          'alt+<8 or 2>'     : increase/decrease the empty depth
+          'alt+<6 or 4>'     : increase/decrease the plunge depth
+          'alt+5'            : reset all parameters to their default values
+        """
+        super().__init__(*args, **kwargs)
+        self.default_empty_depth = 10e-3
+        self.default_plunge_depth = -10e-3
+        self.default_theta = -45 # degrees
+        self.default_y_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[0])
+        self.default_x_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[1][0])
+        self.plot_feats = []
+
+        self.delta_v = 1e-3
+        self.delta_t = 1
+
+        self.initialize_parameters()
+
+    def initialize_parameters(self):
+        self.plunge_depth = self.default_plunge_depth
+        self.empty_depth = self.default_empty_depth
+        self.theta = self.default_theta
+        self.x_read = self.default_x_read
+        self.y_read = self.default_y_read
+
+    def key_press(self, event):
+        super().key_press(event)
+
+        if event.key in ['alt+up', 'alt+down', 'alt+left', 'alt+right', 'alt+8',
+                         'alt+6', 'alt+4', 'alt+2', 'alt+5', 'alt++', 'alt+-']:
+
+            # Tune compensation
+            if event.key == 'alt++':
+                self.theta += self.delta_t
+            elif event.key == 'alt+-':
+                self.theta -= self.delta_t
+
+            # Tune read position
+            elif event.key == 'alt+up':
+                self.y_read += self.delta_v
+            elif event.key == 'alt+down':
+                self.y_read -= self.delta_v
+            elif event.key == 'alt+right':
+                self.x_read += self.delta_v
+            elif event.key == 'alt+left':
+                self.x_read -= self.delta_v
+
+            # Tune empty depth
+            elif event.key == 'alt+8':
+                self.empty_depth += self.delta_v
+            elif event.key == 'alt+2':
+                self.empty_depth -= self.delta_v
+
+            # Tune plunge depth
+            elif event.key == 'alt+6':
+                self.plunge_depth += self.delta_v
+            elif event.key == 'alt+4':
+                self.plunge_depth -= self.delta_v
+
+            # Reset
+            elif event.key == 'alt+5':
+                self.initialize_parameters()
+
+        self.draw_features()
+
+    def draw_features(self):
+        # Remove old features before drawing new ones
+        for plot_feat in self.plot_feats:
+            f = plot_feat.pop(0)
+            f.remove()
+            del f
+
+        set_vals = self.plot.data_set.DC_voltage.set_arrays[1][0]
+
+        # Calculate compensation factor
+        self.compensation = np.tan(np.deg2rad(self.theta))
+
+        read_pt = self.plot[0].plot(self.x_read, self.y_read, 'ro',
+                                    markeredgewidth=2, markerfacecolor='None')
+
+        empty_pt = self.plot[0].plot(self.x_read + self.empty_depth / np.sqrt(1 + 1 / self.compensation ** 2),
+                                     self.y_read + np.sign(self.compensation) *
+                                     self.empty_depth / np.sqrt(self.compensation ** 2 + 1),
+                                     'go', markeredgewidth=2, markerfacecolor='None')
+
+        plunge_pt = self.plot[0].plot(self.x_read + self.plunge_depth / np.sqrt(1 + 1 / self.compensation ** 2),
+                                      self.y_read + np.sign(self.compensation) *
+                                      self.plunge_depth / np.sqrt(self.compensation ** 2 + 1),
+                                      'yo', markeredgewidth=2, markerfacecolor='None')
+
+        comp_line = self.plot[0].plot(set_vals,
+                                      (set_vals - self.x_read) / self.compensation + self.y_read, 'c')
+
+        self.plot_feats = [read_pt, empty_pt, plunge_pt, comp_line]
+
+        self.plot.update()
+
+
 class SwitchPlotIdx(PlotAction):
     def key_press(self, event):
         super().key_press(event)
@@ -342,7 +449,7 @@ class DCPlot(InteractivePlot):
         self.y_gate, self.x_gate = results['gates']
         self.y_label, self.x_label = results['labels']
 
-        self.actions = [SetGates(self), MoveGates(self)]
+        self.actions = [SetGates(self), MoveGates(self), TuneCompensation(self)]
 
 
 class ScanningPlot(InteractivePlot):
