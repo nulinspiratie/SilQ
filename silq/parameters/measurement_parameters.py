@@ -500,6 +500,8 @@ class CoulombPeakParameter(MeasurementParameter):
 
 
 class DCMultisweepParameter(MeasurementParameter):
+    formatter = None
+
     def __init__(self, name, acquisition_parameter, x_gate, y_gate, **kwargs):
         super().__init__(name=name, names=['DC_voltage'], labels=['DC voltage'],
                          units=['V'], shapes=((1, 1),),
@@ -586,7 +588,10 @@ class DCMultisweepParameter(MeasurementParameter):
         try:
             if not self.continuous:
                 self.setup()
-            self.data = self.loop.run(name=f'multi_2D_scan')
+            self.data = self.loop.run(name=f'multi_2D_scan',
+                                      set_active=False,
+                                      formatter=self.formatter,
+                                      save_metadata=False)
         # except:
         #     logger.debug('except stopping')
         #     self.layout.stop()

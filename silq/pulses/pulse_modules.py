@@ -365,6 +365,10 @@ class PulseSequence:
                 assert len(pulses_name) == 1, f'No unique pulse {pulse} found' \
                                               f', pulses: {len(pulses_name)}'
                 pulse = pulses_name[0]
+            else:
+                pulses = [p for p in self if p == pulse]
+                assert len(pulses) == 1, f'No unique pulse {pulse} found' \
+                                         f', pulses: {pulses}'
             self.pulses.remove(pulse)
             if pulse.enabled:
                 self.enabled_pulses.remove(pulse)
