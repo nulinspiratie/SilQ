@@ -10,10 +10,6 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 
 
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
 
 Documentation
 -------------
