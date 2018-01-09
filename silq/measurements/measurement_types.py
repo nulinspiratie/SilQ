@@ -94,26 +94,29 @@ class ConditionSet:
     should be performed if the dataset satisfies the conditions (success) or
     does not (fail). These actions can then be performed by a
     MeasurementSequence. Possible actions are:
-        'success': Finish measurement sequence successfully
-        'fail': Finish measurement sequence unsuccessfully
-        'next_{cmd}: Go to next measurement if it exists, else it is cmd,
-            where cmd can be either 'success' or 'fail'.
-        None: Go to next measurement if it exists. If there is no next
-            measurement, the action is 'success' if the last measurement
-            satisfies the condition_set, else 'fail'.
 
-    Attributes:
+        :'success': Finish measurement sequence successfully
+        :'fail': Finish measurement sequence unsuccessfully
+        :'next_{cmd}': Go to next measurement if it exists, else it is cmd,
+            where cmd can be either 'success' or 'fail'.
+        :None: Go to next measurement if it exists. If there is no next
+            measurement, the action is 'success' if the last measurement
+            satisfies the condition_set, else 'fail'. Note that this is not a
+            string.
+
+    Parameters:
         on_success (str): action to perform if some points satisfy conditions.
         on_fail (str): action to perform if no points satisfy conditions.
         update (bool): Values should be updated if dataset satisfies conditions.
         result (dict): result after testing a dataset for conditions.
             items are:
-                is_satisfied (bool): Dataset has points that satisfy conditions
-                action (str): action to perform, taken from
-                    self.on_success if is_satisfied, else from self.on_fail.
-                satisfied_arr (bool arr): array of dataset dimensions,
-                    where each element indicates if that value satisfies
-                    conditions.
+
+            :is_satisfied (bool): Dataset has points that satisfy conditions
+            :action (str): action to perform, taken from
+                self.on_success if is_satisfied, else from self.on_fail.
+            :satisfied_arr (bool arr): array of dataset dimensions,
+                where each element indicates if that value satisfies
+                conditions.
     """
     def __init__(self, *conditions, on_success=None, on_fail=None,
                  update=False):
@@ -180,14 +183,16 @@ class ConditionSet:
     def check_satisfied(self, data):
         """
         Checks if a dataset satisfies a set of conditions
+
         Args:
             dataset: Dataset to check against conditions
 
         Returns:
-            Dict containing
-            is_satisfied (bool): If the conditions are satisfied
-            action (string): Action to perform
-            satisfied_arr (bool arr): array where each element corresponds to a
+            Dict[str, Any]: Dictionary containing:
+
+            :is_satisfied (bool): If the conditions are satisfied
+            :action (string): Action to perform
+            :satisfied_arr (bool arr): array where each element corresponds to a
                 combination of set vals, and whose value specifies if those
                 set_vals satisfies conditions
         """

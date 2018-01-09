@@ -29,7 +29,7 @@ def execfile(filename: str,
              globals: dict = None,
              locals: dict = None):
     """Execute code in .py file, adding new variables to globals/locals.
-    
+
     Args:
         globals: Global variables dictionary. If not specified, uses globals
             in first frame.
@@ -55,7 +55,7 @@ def get_truth(test_val: Any,
               target_val: Any,
               relation: str = '==') -> bool:
     """Tests if the ``test_val`` satisfies the ``relation`` to ``target_val``.
-    
+
     Args:
         test_val: lhs of relation with target_val.
         target_val: rhs of relation with test_val
@@ -81,20 +81,20 @@ class SettingsClass:
     """
     Class used to temporarily override attributes.
     This can be done through obj.single_settings() and obj.temporary_settings().
-    Any settings specified here will override the actual values of the object 
+    Any settings specified here will override the actual values of the object
     until settings are cleared
-    
+
     Settings can be cleared in two ways:
-    Using the decorator @clear_single_settings on a method, which will delete 
+    Using the decorator @clear_single_settings on a method, which will delete
     the single_settings.
-    Using obj.clear_settings(), which will clear both the single settings and 
+    Using obj.clear_settings(), which will clear both the single settings and
     temporary settings.
-    
+
     Furthermore, attribute_names can be added to ignore_if_set.
-    If the object's value of that attribute is not equal to None, [], or (), 
+    If the object's value of that attribute is not equal to None, [], or (),
     it cannot be overridden through single or temporary settings.
-    
-    Note that for all attributes, they must be set in the object before they 
+
+    Note that for all attributes, they must be set in the object before they
     can be overridden by single/temporary settings
     """
     _single_settings = {}
@@ -187,7 +187,7 @@ class SettingsClass:
 
 class UpdateDotDict(DotDict):
     """DotDict that can evaluate function upon being updated.
-    
+
     Args:
         update_function: Function that is called every time a value changes.
         **kwargs: Unused kwargs.
@@ -208,17 +208,17 @@ class UpdateDotDict(DotDict):
 
 def attribute_from_config(item: str, config: dict):
     """Check if attribute exists is an item in the config
-    
+
     Args:
         item: key in config to check
         config: config to check
-        
+
     Returns:
         Value in config. If dict-like, will be converted to dict.
 
     Raises:
         AttributeError: item not found.
-    
+
     """
     # check if {item}_{self.mode} is in properties_config
     # if mode is None, mode_str='', in which case it checks for {item}
@@ -235,8 +235,8 @@ def attribute_from_config(item: str, config: dict):
 
 
 def clear_single_settings(f):
-    """`SettingsClass` wrapper to clear single_settings after running function. 
-    
+    """`SettingsClass` wrapper to clear single_settings after running function.
+
     Args:
         f: function after which to clear ``single_settings`` attribute.
     """
@@ -266,20 +266,20 @@ def JSONEncoder(obj,
                 ignore_attrs: List[str] = [],
                 ignore_vals: List[str]=[]):
     """Encode object as dict for JSON encoding.
-    
+
     Args:
         ignore_attrs: Attributes that should not be included.
         ignore_vals: Vals to be ignored.
-    
+
     Returns:
         dict representation of object.
-        
+
     Notes:
         # If one of its attributes is an object containing method ``_JSONEncoder``,
           the method is called to get its JSON representation.
         # Lists are encoded using `JSONListEncoder`, which has an additional
           check for the method ``_JSONEncoder``.
-    
+
     Todo:
         Ensure parameters etc. are encoded using their snapshot.
     """
@@ -304,11 +304,12 @@ def JSONEncoder(obj,
 
 def run_code(label, **kwargs):
     """Creates cell to run code from global variable code_labels
-    
+
     Code labels is a dictionary in which each key has a corresponding value
     that is a string representation of executable code.
     Note that the module variable code_labels must be set to equal the global
     variable code_labels.
+
     Args:
         label: label referring to code in dict code_labels
         **kwargs: Optional kwargs that are replaced in code
@@ -317,7 +318,7 @@ def run_code(label, **kwargs):
 
     Returns:
         Creates cell at bottom of notebook and executes it
-    
+
     Note:
         This function is not used anymore, though it should still work
     """
@@ -332,14 +333,14 @@ def run_code(label, **kwargs):
 
 def get_exponent(val: float):
     """Get decimal exponent
-    
+
     Example:
         >>> get_exponent(0.032)
         -2
-    
+
     Args:
         val: Val of which to get exponent
-        
+
     Returns:
         Exponent
     """
@@ -351,14 +352,14 @@ def get_exponent(val: float):
 
 def get_first_digit(val: float):
     """Get first nonzero digit.
-    
+
     Example:
         >>> get_first_digit(0.032)
         3
-    
+
     Args:
         val: Val for which to get first nonzero digit
-        
+
     Returns:
         First nonero digit.
     """
@@ -368,15 +369,15 @@ def get_first_digit(val: float):
 
 class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
     """Logging handler that creates a new log file every day.
-    
-    Files are stored with .log suffix, and dates are included in filename 
+
+    Files are stored with .log suffix, and dates are included in filename
     from the beginning. Also allows multiple processes to access same log.
-    
+
     Note:
-        # From: https://stackoverflow.com/questions/24649789/how-to-force-a
+        - From: https://stackoverflow.com/questions/24649789/how-to-force-a
           -rotating-name-with-pythons-timedrotatingfilehandler
-        # Essentially a TimedRotatingFileHandler with some modifications.
-        # Haven't gone through the code, but it does the trick.
+        - Essentially a TimedRotatingFileHandler with some modifications.
+        - Haven't gone through the code, but it does the trick.
     """
     def __init__(self, filename, when='h', interval=1, backupCount=0,
                  encoding=None, delay=False, utc=False, postfix = ".log"):
@@ -496,13 +497,13 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
 
 def convert_setpoints(*args):
     """Convert setpoints to tuples, supporting multidimensional setpoints.
-    
+
     Temporary solution to make setpoints work (see issue #627).
     Currently, setpoints need to be tuples (arrays etc. give issues). Further,
     the second setpoint array needs to be 2D etc.
-    
+
     Args:
-        *args: 1D setpoint arrays. each successive setpoints array gains an 
+        *args: 1D setpoint arrays. each successive setpoints array gains an
             extra dimension
 
     Returns:
@@ -521,7 +522,7 @@ def convert_setpoints(*args):
 
 class Singleton(type):
     """Meta-class for classes that can only have a single instance.
-    
+
     If a second instance is created, it will instead return the already-existing
     instance.
     """
@@ -535,15 +536,16 @@ class Singleton(type):
 def arreq_in_list(myarr: np.ndarray,
                   list_arrays: List[np.ndarray]):
     """Get index of array in list of arrays, testing equality
-    
+
     Modified from https://stackoverflow.com/questions/23979146/
-                  check-if-numpy-array-is-in-list-of-numpy-arrays
+    check-if-numpy-array-is-in-list-of-numpy-arrays
+
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
 
     Returns:
-        idx of array in list equal to myarr, None if not found. 
+        idx of array in list equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if np.array_equal(elem, myarr)),
@@ -553,15 +555,16 @@ def arreq_in_list(myarr: np.ndarray,
 def arreqclose_in_list(myarr: np.ndarray,
                        list_arrays: List[np.ndarray]):
     """Get index of array in list of arrays, testing approximate equality
-    
+
     Modified from https://stackoverflow.com/questions/23979146/
                   check-if-numpy-array-is-in-list-of-numpy-arrays
+
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
 
     Returns:
-        idx of array in list approximately equal to myarr, None if not found. 
+        idx of array in list approximately equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if elem.size == myarr.size
@@ -571,7 +574,7 @@ def arreqclose_in_list(myarr: np.ndarray,
 
 class property_ignore_setter(object):
     """Decorator similar to @property that ignores setter
-    
+
     The setter shouldn't be defined, and any setting of attribute is ignored.
     """
     def __init__(self, func, doc=None):
@@ -587,7 +590,7 @@ class property_ignore_setter(object):
 
 def freq_to_str(frequency, fmt='{:.15g}'):
     """Formats frequency, using right magnitude.
-    
+
     Note:
         This will be superseded later on when all attributes are converted to
         parameters.

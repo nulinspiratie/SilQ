@@ -14,26 +14,26 @@ from silq.pulses import Pulse, SteeredInitialization, TriggerPulse,\
 
 class ATSInterface(InstrumentInterface):
     """Interface for the AlazarTech ATS.
-    
-    When a `PulseSequence` is targeted in the `Layout`, the 
+
+    When a `PulseSequence` is targeted in the `Layout`, the
     pulses are directed to the appropriate interface. Each interface is
-    responsible for translating all pulses directed to it into instrument 
+    responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
-    
+
     Args:
         instrument_name: Name of ATS instrument.
-        acquisition_controller_names: Instrument names of all ATS 
+        acquisition_controller_names: Instrument names of all ATS
             acquisition controllers. Interface will find the associated
             acquisition controllers.
         **kwargs: Additional kwargs passed to Instrument.
-        
+
     Notes:
         * Only been tested on ATS9440, might give issues with other models,
           in particular those having 2 channels instead of 4
         * For a given instrument, its associated interface can be found using
           `get_instrument_interface`
-    
+
     Todo:
         * Choose continuous acquisition controller if pulse sequence only
           consists of a measurement pulse, as this doesn't require a trigger
@@ -151,10 +151,10 @@ class ATSInterface(InstrumentInterface):
                                    acquisition_controller_name: str,
                                    cls_name: Union[str, None] = None):
         """Add an acquisition controller to the available controllers.
-        
+
         If another acquisition controller exists of the same class, it will
         be overwritten.
-        
+
         Args:
             acquisition_controller_name: instrument name of controller.
                 Must be on same server as interface and ATS
@@ -181,17 +181,17 @@ class ATSInterface(InstrumentInterface):
 
     def get_additional_pulses(self) -> list:
         """Additional pulses required for instrument, e.g. trigger pulses.
-        
+
         Returns:
             * Empty list if there are no acquisition pulses.
-            * A single trigger pulse at start of acquisition if using triggered 
+            * A single trigger pulse at start of acquisition if using triggered
               acquisition controller.
-            * AcquisitionPulse and TriggerWaitPulse if using the steered 
+            * AcquisitionPulse and TriggerWaitPulse if using the steered
               initialization controller
-              
+
         Raises:
-            NotImplementedError 
-                Using continous acquisition controller 
+            NotImplementedError
+                Using continous acquisition controller
         """
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
@@ -232,7 +232,7 @@ class ATSInterface(InstrumentInterface):
 
     def initialize(self):
         """Initializes ATS interface by setting acquisition controller.
-        
+
         Called at the start of targeting a pulse sequence.
         """
         super().initialize()
@@ -242,14 +242,14 @@ class ATSInterface(InstrumentInterface):
               samples: Union[int, None] = None,
               **kwargs) -> Union[dict, None]:
         """ Sets up ATS and its controller after targeting a pulse sequence.
-        
+
         Args:
-            samples: Number of acquisition samples. 
+            samples: Number of acquisition samples.
                 If None, it will use the previously set value.
             **kwargs: Unused setup kwargs passed from Layout
 
         Returns:
-            If using `SteeredInitialization_AcquisitionController`,
+            If using ``SteeredInitialization_AcquisitionController``,
             a ``skip_start`` flag is passed with the target instrument, which
             signals to the layout that that instrument should not be started.
             Instead, it is triggered from the steered initialization controller.
@@ -272,12 +272,12 @@ class ATSInterface(InstrumentInterface):
 
     def setup_trigger(self):
         """Configure settings related to triggering of the ATS
-        
+
         Only configures anything if TriggeredAcquisitionController is used.
-        
+
         Raises:
-            AssertionError 
-                TriggeredAcquisitionController is used, and no voltage 
+            AssertionError
+                TriggeredAcquisitionController is used, and no voltage
                 transition can be determined.
             """
         # TODO: Correctly handle case where there are no trigger pulses
@@ -323,29 +323,35 @@ class ATSInterface(InstrumentInterface):
             pass
 
     def setup_ATS(self):
-        """ Configure ATS using `ATS.config` """
+        """ Configure ATS using ``ATS.config`` """
 
         self.update_settings(channel_range=2,
                              coupling='DC')
         self.instrument.config(**self._configuration_settings)
 
     def setup_acquisition_controller(self):
-        """ Setup acquisition controller 
-        
+        """ Setup acquisition controller
+
         Notes:
-            * `Triggered_AcquisitionController`
+            - ``Triggered_AcquisitionController``
               The following settings are fixed at the moment, but there could be
               siturations where these are not optimal, e.g. fast measurements.
-              * Allocated buffers is maximally 2.
-              * Records per buffer is fixed to 1.
-            * `Continuous_AcquisitionController`:
-              * Allocated buffers is fixed to 20
-            * `SteeredInitialization_AcquisitionController`,
-              * Allocated buffers is fixed to 80
-        
+
+              - Allocated buffers is maximally 2.
+              - Records per buffer is fixed to 1.
+
+            - ``Continuous_AcquisitionController``:
+
+              - Allocated buffers is fixed to 20
+
+            - ``SteeredInitialization_AcquisitionController``:
+
+              - Allocated buffers is fixed to 80
+
         Raises:
-            RuntimeError if acquisition controller is not```tinuous_AcquisitionController``,`
-                 ```SteeredInitialization_AcquisitionController`.
+            RuntimeError if acquisition controller is not
+                ``Continuous_AcquisitionController``,
+                ``SteeredInitialization_AcquisitionController``.
         """
         # Get duration of acquisition. Use flag acquire=True because
         # otherwise initialization Pulses would be taken into account as well
@@ -449,15 +455,15 @@ class ATSInterface(InstrumentInterface):
 
     def acquisition(self) -> Dict[str, Dict[str, np.ndarray]]:
         """Perform an acquisition.
-        
+
         Should only be called after the interface has been setup and all other
         instruments have been started (via `Layout.start`).
-        
+
         Returns:
             Acquisition traces that have been segmented for each pulse.
             Returned dictionary format is:
             ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.
-            
+
         """
         traces = self._acquisition_controller.acquisition()
         # Convert list of channel traces to a {ch_id: trace} dict
@@ -468,17 +474,17 @@ class ATSInterface(InstrumentInterface):
 
     def segment_traces(self, traces: Dict[str, np.ndarray]):
         """ Segment traces by acquisition pulses.
-        
+
         For each pulse with ``acquire`` set to True (which should be all pulses
-        passed along to the ATS_interface), the relevant portion of each channel
+        passed along to the ATSInterface), the relevant portion of each channel
         trace is segmented and returned in a new dict
-        
+
         Args:
-            traces: ``{channel_id: channel_traces}`` dict 
+            traces: ``{channel_id: channel_traces}`` dict
 
         Returns:
             Dict[str, Dict[str, np.ndarray]:
-            Dict format is 
+            Dict format is
             ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.
 
         """
@@ -525,7 +531,7 @@ class ATSInterface(InstrumentInterface):
 
     def setting(self, setting):
         """Obtain a setting for the ATS.
-        
+
         It then checks if it is a configuration or acquisition setting.
         If the setting is specified in self.configuration/acquisition_setting,
         it returns that value, else it returns the value set in the ATS
@@ -535,7 +541,7 @@ class ATSInterface(InstrumentInterface):
 
         Returns:
             Value of the setting
-            
+
         Raises:
             AssertionError
                 Setting is not an ATS configuration or acquisition setting.
@@ -552,10 +558,10 @@ class ATSInterface(InstrumentInterface):
 
     def set_configuration_settings(self, **settings):
         """ Sets the configuration settings for the ATS through its controller.
-        
+
         All existing configuration settings are cleared.
         The controller's configuration settings are not actually updated here,
-        but will be done when calling `ATS_interface.setup`.
+        but will be done when calling `ATSInterface.setup`.
 
         Args:
             **settings: ATS configuration settings to be set
@@ -571,10 +577,10 @@ class ATSInterface(InstrumentInterface):
 
     def set_acquisition_settings(self, **settings):
         """ Sets the acquisition settings for the ATS through its controller.
-        
+
         All existing acquisition settings are cleared.
         The controller's acquisition settings are not actually updated here,
-        but will be done when calling `ATS_interface.setup`.
+        but will be done when calling `ATSInterface.setup`.
 
         Args:
             **settings: ATS acquisition settings to be set
@@ -590,15 +596,15 @@ class ATSInterface(InstrumentInterface):
 
     def update_settings(self, **settings):
         """ Update configuration and acquisition settings
-        
-        The acquisition controller's settings are not actually updated here, 
-        this will be done when calling `ATS_interface.setup`.
-        
+
+        The acquisition controller's settings are not actually updated here,
+        this will be done when calling `ATSInterface.setup`.
+
         Args:
             **settings: ATS configuration and acquisition settings to be set.
 
         Raises:
-            AssertionError 
+            AssertionError
                 Some settings are not configuration nor acquisition settings.
         """
         settings_valid = all(map(
@@ -625,21 +631,21 @@ class SteeredInitializationImplementation(PulseImplementation):
                      connections: list,
                      **kwargs) -> Pulse:
         """ Target steered initialization pulse to an interface.
-        
+
         The implementation will further have a ``readout_connection`` and
         ``trigger_connection``.
-        
+
         Args:
             pulse: Steered initialization pulse to be targeted.
             interface: Interface to target pulse to.
             connections: List of output connections
-            **kwargs: 
+            **kwargs:
 
-        Returns: 
+        Returns:
             targeted pulse
 
         Raises:
-            AssertionError 
+            AssertionError
                 Not exactly one readout connection found
             AssertionError
                 Not exactly one trigger connection found

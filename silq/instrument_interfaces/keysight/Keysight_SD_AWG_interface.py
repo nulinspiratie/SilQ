@@ -456,7 +456,8 @@ class SinePulseImplementation(PulseImplementation):
         This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
         it to a set of pulse-independent instructions/information that can be handled by interface.setup().
 
-        For example:
+        For example::
+
             SinePulseImplementation()
                 initializes a generic (interface independent) pulseimplementation for the sinepulse
             SinePulseImplementation.implement()
@@ -471,7 +472,8 @@ class SinePulseImplementation(PulseImplementation):
         Returns:
             waveforms (dict): dictionary containing waveform objects for each channel
 
-        example return value:
+        example return value::
+
             waveforms =
                 {
                 'ch_1':

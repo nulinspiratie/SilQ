@@ -9,20 +9,20 @@ from silq.pulses.pulse_types import Pulse
 
 class Channel:
     """Instrument channel, specified in :class:`InstrumentInterface`
-    
+
     A channel usually corresponds to a physical channel in the instrument,
     such as an input/output channel, triggering channel, etc.
-    
+
     Args:
-        instrument_name: Name of instrument. 
+        instrument_name: Name of instrument.
         name: Channel name, usually specified on the instrument.
         id: Channel id, usually zero-based index.
         input: Channel is an input channel.
         output: Channel is an output channel.
         input_trigger: Channel is used as instrument trigger.
-        input_TTL: Channel input signal must be TTL 
+        input_TTL: Channel input signal must be TTL
         output_TTL: Channel output signal is TTL with (low, high) voltage
-        invert: Channel signal is inverted: on is low signal, off is high signal 
+        invert: Channel signal is inverted: on is low signal, off is high signal
     """
     def __init__(self,
                  instrument_name: str,
@@ -75,20 +75,20 @@ class Channel:
 
 class InstrumentInterface(Instrument):
     """ Interface between the :class:`.Layout` and instruments
-    
-    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the 
+
+    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the
     pulses are directed to the appropriate interface. Each interface is
-    responsible for translating all pulses directed to it into instrument 
+    responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
-    
+
     The interface also contains a list of all available channels in the
     instrument.
-    
+
     Args:
         instrument_name: name of instrument for which this is an interface
-        
-    Note:    
+
+    Note:
         For a given instrument, its associated interface can be found using
             :func:`get_instrument_interface`
 
@@ -125,7 +125,7 @@ class InstrumentInterface(Instrument):
 
     def get_channel(self, channel_name: str) -> Channel:
         """Get channel by its name.
-        
+
         Args:
             channel_name: name of channel
 
@@ -139,10 +139,10 @@ class InstrumentInterface(Instrument):
                                  pulse: Pulse,
                                  connections: list = None) -> Union[Pulse, None]:
         """Get a target implementation of a pulse if it exists.
-        
+
         If no implementation can be found for the pulse, or if the pulse
         properties are out of the implementation's bounds, None is returned.
-        
+
         Args:
             pulse: pulse to be targeted
             connections: List of all connections in Layout, which might be
@@ -160,7 +160,7 @@ class InstrumentInterface(Instrument):
 
     def get_additional_pulses(self) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
-        
+
         Returns:
             List of additional pulses, empty by default.
         """
@@ -181,18 +181,18 @@ class InstrumentInterface(Instrument):
               repeat: bool = True,
               **kwargs) -> Dict[str, Any]:
         """Set up instrument after layout has been targeted by pulse sequence.
-        
+
         Needs to be implemented in subclass.
-        
+
         Args:
-            samples: Number of acquisition samples. 
+            samples: Number of acquisition samples.
                 If None, it will use the previously set value.
-            output_connections: Output :class:`.Connection` list of 
+            output_connections: Output :class:`.Connection` list of
                 instrument, needed by some interfaces to setup the instrument.
             repeat: Repeat the pulse sequence indefinitely. If False, calling
-                :func:`layout.start` will only run the pulse sequence once.
+                :func:`Layout.start` will only run the pulse sequence once.
             **kwargs: Additional interface-specific kwarg.
-    
+
         Returns:
             setup flags (see :attr:`.Layout.flags`)
 
@@ -202,7 +202,7 @@ class InstrumentInterface(Instrument):
 
     def start(self):
         """Start instrument
-        
+
         Note:
             Acquisition instruments usually don't need to be started
         """

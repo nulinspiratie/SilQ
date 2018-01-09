@@ -14,23 +14,23 @@ logger = logging.getLogger(__name__)
 
 class ArbStudio1104Interface(InstrumentInterface):
     """ Interface for the LeCroy Arbstudio 1104
-    
-    When a `PulseSequence` is targeted in the `Layout`, the 
+
+    When a `PulseSequence` is targeted in the `Layout`, the
     pulses are directed to the appropriate interface. Each interface is
-    responsible for translating all pulses directed to it into instrument 
+    responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
-    
+
     The interface also contains a list of all available channels in the
     instrument.
-    
+
     Args:
         instrument_name: name of instrument for which this is an interface
-        
-    Note:    
+
+    Note:
         For a given instrument, its associated interface can be found using
             `get_instrument_interface`
-            
+
     Todo:
         * Add modes other than stepped.
         * Add use as primary instrument.
@@ -151,7 +151,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def setup(self, **kwargs):
         """Set up instrument after layout has been targeted by pulse sequence.
-        
+
         Args:
             **kwargs: Unused setup kwargs passed by `Layout`
         """
@@ -203,7 +203,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def _get_trigger_pulse(self, t: float) -> TriggerPulse:
         """Create input trigger pulse
-        
+
         Args:
             t: trigger start time
 
@@ -218,9 +218,9 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def generate_waveforms_sequences(self) -> List:
         """Generate waveforms and sequence
-        
+
         Updates self.waveforms and self.sequence.
-        
+
         Returns:
             List of waveforms
         """
@@ -304,8 +304,8 @@ class SinePulseImplementation(PulseImplementation):
                 channel, where each element in waveforms is a list
                 containing the voltage levels of the waveform
             waveforms: {output_channel: sequence} dictionary for each
-            output channel, where each element in sequence indicates the
-            waveform that must be played after the trigger
+                output channel, where each element in sequence indicates the
+                waveform that must be played after the trigger
         """
         # Find all trigger pulses occuring within this pulse
         trigger_pulses = input_pulse_sequence.get_pulses(
@@ -369,10 +369,10 @@ class DCPulseImplementation(PulseImplementation):
         Returns:
             waveforms: {output_channel: waveforms} dictionary for each output
                 channel, where each element in waveforms is a list
-                containing the voltage levels of the waveform
+                containing the voltage levels of the waveform.
             waveforms: {output_channel: sequence} dictionary for each
-            output channel, where each element in sequence indicates the
-            waveform that must be played after the trigger
+                output channel, where each element in sequence indicates the
+                waveform that must be played after the trigger
         """
 
         # Find all trigger pulses occuring within this pulse
@@ -418,8 +418,8 @@ class DCRampPulseImplementation(PulseImplementation):
                 channel, where each element in waveforms is a list
                 containing the voltage levels of the waveform
             waveforms: {output_channel: sequence} dictionary for each
-            output channel, where each element in sequence indicates the
-            waveform that must be played after the trigger
+                output channel, where each element in sequence indicates the
+                waveform that must be played after the trigger
         """
         # Find all trigger pulses occuring within this pulse
         trigger_pulses = input_pulse_sequence.get_pulses(

@@ -13,18 +13,18 @@ __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update']
 
 class SubConfig:
     """Extended config used within ``qcodes.config``.
-     
+
     The SubConfig is a modified version of the qcodes config, the root being in
     ``qcodes.config.user``. It is used as the SilQ config (silq.config),
     initialized when silq is imported and populated during `silq.initialize`
     with the respective experiment config.
-    
+
     SubConfigs can be nested, and there is a SubConfig child class for each
     type (`DictConfig` for dicts, `ListConfig` for lists, etc.). These should
     be automatically instantiated when adding a dict/list to a SubConfig.
-    
+
     The SubConfig contains two main extensions over the qcodes config:
-    
+
     1. Support for saving/loading the config as a JSON folder structure
        This simplifies editing part of the config in an editor.
        Each subconfig can be set to either save as a folder or as a file via the
@@ -32,20 +32,20 @@ class SubConfig:
     2. Emit a signal when a value changes. The signal  uses ``blinker.signal``,
        the signal name being ``config:{config_path}``, where ``config_path`` is
        a dot-separated path to of the config. For example, setting:
-       
+
        >>> silq.config.environment1.key1 = val
-       
+
        The config path is equal to ``qcodes.config.user.environment1.key1`` and
        emits the following signal:
-       
+
        >>> signal('config:environment1').send(self, key1=val)
-       
+
        This signal can then by picked up by other objects such as `Pulse`, to
        update its attribtues from the config.
-    
+
     Parameters:
         name: Config name. SilQ config root is ``config``.
-        folder: Absolute config folder path. Automatically set for child 
+        folder: Absolute config folder path. Automatically set for child
             SubConfigs in the root SubConfig.
         parent: Parent SubConfig (None for root SubConfig).
         save_as_dir: Save SubConfig as dir. If False, SubConfig and all elements
@@ -70,7 +70,7 @@ class SubConfig:
 
     @property
     def config_path(self):
-        """SubConfig path, e.g. ``config:dot.separated.path"""
+        """SubConfig path, e.g. ``config:dot.separated.path``"""
         if self.parent is None:
             return f'{self.name}:'
         else:
@@ -82,20 +82,20 @@ class SubConfig:
     def load(self,
              folder: str = None):
         """Load config from folder.
-        
-        The folder must either contain a {self.name}.json file, 
+
+        The folder must either contain a {self.name}.json file,
         or alternatively a folder containing config files/folders.
-        In the latter case, a dict is created, and all the files/folders in 
+        In the latter case, a dict is created, and all the files/folders in
         the folder will be elements of the dict.
-        
-        If ``save_as_dir`` attribute is None, it will be updated to either True 
+
+        If ``save_as_dir`` attribute is None, it will be updated to either True
         or False depending if there is a subfolder or file to load from the
-        folder, respectively. 
-        
+        folder, respectively.
+
         Note that `SubConfig.load` returns a dict/list, which should then be
-        added to the Subconfig object depending on the subclass. This should be 
-        implemented in the load() method of subclasses.
-         
+        added to the Subconfig object depending on the subclass. This should be
+        implemented in the load method of subclasses.
+
         Args:
             folder: folder to look for. If not provided, uses ``self.folder``.
 
@@ -166,13 +166,13 @@ class SubConfig:
              folder: str = None,
              save_as_dir: bool = None):
         """Save SubConfig as JSON files in folder structure.
-        
+
         Calling this method iteratively calls the same method on each of its
         elements. The folder structure is determined by the ``save_as_dir``
         attribute.
-        
+
         Args:
-            folder: Folder in which to save SubConfig. If ``None``, uses 
+            folder: Folder in which to save SubConfig. If ``None``, uses
                 ``self.folder``. Automatically passed for child SubConfigs.
             save_as_dir: Save SubConfig as folder, in which each element is
                 a key. If ``None``, uses ``self.save_as_dir``. Automatically set
@@ -197,18 +197,18 @@ class SubConfig:
 
 class DictConfig(SubConfig, DotDict):
     """`SubConfig` for dictionaries, extension of ``qcodes.config``.
-    
+
     This is a SubConfig child class for dictionaries.
-    
-    The DictConfig is a `DotDict`, meaning that its elements can be accessed as
-    attributes. For example, the following lines are identical:
-    
+
+    The DictConfig is a ``DotDict``, meaning that its elements can be accessed
+    as attributes. For example, the following lines are identical:
+
     >>> dict_config['item1']['item2']
     >>> dict_config.item1.item2
-    
+
     Args:
         name: Config name. SilQ config root is ``config``.
-        folder: Absolute config folder path. Automatically set for child 
+        folder: Absolute config folder path. Automatically set for child
             SubConfigs in the root SubConfig.
         parent: Parent SubConfig (None for root SubConfig).
         config: Pre-existing config to load into new DictConfig.
@@ -291,7 +291,7 @@ class DictConfig(SubConfig, DotDict):
     def get(self, key: str,
             default: Any = None):
         """Override dictionary get, because it does not call __getitem__.
-        
+
         Args:
             key: key to get
             default: default value if key not found. None by default
@@ -306,7 +306,7 @@ class DictConfig(SubConfig, DotDict):
 
     def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
         """Sends signal when listened property of dependent property is updated.
-        
+
         Args:
             dependent_attr: name of dependent attribute
             listen_attr: name of attribute that is listened.
@@ -322,7 +322,7 @@ class DictConfig(SubConfig, DotDict):
     def load(self,
              folder: str = None):
         """Load SubConfig from folder.
-        
+
         Args:
             folder: Folder from which to load SubConfig.
         """
@@ -353,7 +353,7 @@ class ListConfig(SubConfig, list):
 
     Args:
         name: Config name. SilQ config root is ``config``.
-        folder: Absolute config folder path. Automatically set for child 
+        folder: Absolute config folder path. Automatically set for child
             SubConfigs in the root SubConfig.
         parent: Parent SubConfig (None for root SubConfig).
         config: Pre-existing config to load into new ListConfig.
@@ -374,7 +374,7 @@ class ListConfig(SubConfig, list):
     def load(self,
              folder: str = None):
         """Load SubConfig from folder.
-        
+
         Args:
             folder: Folder from which to load SubConfig.
         """
@@ -399,7 +399,7 @@ class ListConfig(SubConfig, list):
 
 def update(d, u):
     """ Update dictionary recursively.
-    
+
     this ensures that subdicts are also converted
     This is a modified version of the update function in qcodes config
     """
