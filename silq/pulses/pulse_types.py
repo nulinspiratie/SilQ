@@ -29,46 +29,46 @@ logger = logging.getLogger(__name__)
 
 class Pulse(HasTraits):
     """ Representation of physical pulse, component in a `PulseSequence`.
-    
+
     A Pulse is a representation of a physical pulse, usually one that is
     outputted by an instrument. All pulses have specific timings, defined by
-    ``t_start``, ``t_stop``, and ``duration``. Additional attributes specify 
-    ancillary properties, such as if the acquisition instrument should 
+    ``t_start``, ``t_stop``, and ``duration``. Additional attributes specify
+    ancillary properties, such as if the acquisition instrument should
     ``acquire`` the pulse. Specific pulse types (subclasses of `Pulse`) have
     additional properties, such as a ``frequency``.
-    
-    Pulses can be added to a `PulseSequence`, which can in turn be targeted by 
+
+    Pulses can be added to a `PulseSequence`, which can in turn be targeted by
     the `Layout`. Here, each `Pulse` is targeted to a `Connection`, which can
     modify the pulse (e.g. applying an amplitude scale). Next the pulse is
     targeted by the output and input `InstrumentInterface` of the connection,
     which provide an instrument-specific implementation of the pulse.
-    
+
     Pulses usually have a name, which is used to retrieve any default properties
-    from the config. If the pulse name is an entry in 
+    from the config. If the pulse name is an entry in
     ``silq.config.{environment}.pulses``, the properties in that entry are
-     used by default. These default values can be overridden by either passing
-     them explicitly during the pulse initialization, or afterwards.
-     
-     Example:
-         If ``silq.config.{environment}.pulses`` contains:
-         
-         >>> {'read': {'amplitude': 0.5, 'duration': 100e-3}}
-          
-         Then creating the following pulse will partially use these properties:
-         
-         >>> DCPulse('read', duration=200e-3)
-         DCPulse('read', amplitude=0.5, duration=200e-3)
-         
-         Here the default ``amplitude`` value is used, but the duration is
-         overridden during initialization.
-    
+    used by default. These default values can be overridden by either passing
+    them explicitly during the pulse initialization, or afterwards.
+
+    Example:
+        If ``silq.config.{environment}.pulses`` contains:
+
+        >>> {'read': {'amplitude': 0.5, 'duration': 100e-3}}
+
+        Then creating the following pulse will partially use these properties:
+
+        >>> DCPulse('read', duration=200e-3)
+        DCPulse('read', amplitude=0.5, duration=200e-3)
+
+        Here the default ``amplitude`` value is used, but the duration is
+        overridden during initialization.
+
     Parameters:
-        name: Pulse name. If corresponding name is registered in pulse 
+        name: Pulse name. If corresponding name is registered in pulse
             config, its properties will be copied to the pulse.
         id: Unique pulse identifier, assigned when added to `PulseSequence` if
             it already has another pulse with same name. Pre-existing pulse will
             be assigned id 0, and will increase for each successive pulse added.
-        full_name: Pulse name, including id if not None. 
+        full_name: Pulse name, including id if not None.
             If id is not None, full_name is '{name}[{id}]'
         environment: Config environment to use for pulse config. If not set,
             default environment (``silq.config.properties.default_environment``)
@@ -81,34 +81,34 @@ class Pulse(HasTraits):
         duration: Pulse duration.
         acquire: Flag to acquire pulse. If True, pulse will be passed on to the
             acquisition `InstrumentInterface` by the `Layout` during targeting.
-        initialize: Pulse is used for initialization. This signals that the 
+        initialize: Pulse is used for initialization. This signals that the
             pulse can exist before the pulse sequence starts. In this case,
             pulse duration should be zero.
-        connection (Connection): Connection that pulse is targeted to. 
+        connection (Connection): Connection that pulse is targeted to.
             Is only set for targeted pulse.
         enabled: Pulse is enabled. If False, it still exists in a
             PulseSequence, but is not included in targeting.
         average: Pulse acquisition average mode. Allowed modes are:
-            
+
             * **'none'**: No averaging (return ``samples x points_per_trace``).
             * **'trace'**: Average over time (return ``points_per_trace``).
             * **'point'**: Average over time and sample (return single point).
             * **'point_segment:{N}'** Segment trace into N segment, average
               each segment into a point.
-              
-        connection_label: `Connection` label that Pulse should be targeted to. 
-            These are defined in ``silq.config.{enironment}.connections``.
-            If unspecified, pulse can only be targeted if 
+
+        connection_label: `Connection` label that Pulse should be targeted to.
+            These are defined in ``silq.config.{environment}.connections``.
+            If unspecified, pulse can only be targeted if
             ``connection_requirements`` uniquely determine connection.
         connection_requirements: Requirements that a connection must satisfy for
-            targeting. If ``connection_label` is defined, these are ignored.
+            targeting. If ``connection_label`` is defined, these are ignored.
         pulse_config: Pulse config whose attributes to match. If it exists,
-            equal to ``silq.config.{environment}.pulses.{pulse.name}``, 
+            equal to ``silq.config.{environment}.pulses.{pulse.name}``,
             otherwise equal to zero.
         properties_config: General properties config whose attributes to match.
             If it exists, equal to ``silq.config.{environment}.properties``,
             otherwise None. Only `Pulse`.properties_attrs are matched.
-        properties_attrs (List[str]): Attributes in properties config to match. 
+        properties_attrs (List[str]): Attributes in properties config to match.
             Should be defined in ``__init__`` before calling ``Pulse.__init__``.
         implementation (PulseImplementation): Pulse implementation for targeted
             pulse, see `PulseImplementation`.
@@ -233,7 +233,7 @@ class Pulse(HasTraits):
 
     def _handle_config_signal(self, _, select=None, **kwargs):
         """Update attr when attr in pulse config is modified
-        
+
         Args:
             _: sender config (unused)
             select (Optional(List(str): list of attrs that can be set.
@@ -252,7 +252,7 @@ class Pulse(HasTraits):
 
     def __eq__(self, other):
         """Overwrite comparison with other (self == other).
-        
+
         We want the comparison to return True if other is a pulse with the
         same attributes. This can be complicated since pulses can also be
         targeted, resulting in a pulse implementation. We therefore have to
@@ -389,7 +389,7 @@ class Pulse(HasTraits):
                          value: Any,
                          default: Any=None):
         """Decides what value to return depending on value and config.
-        
+
         Used for setting pulse attributes at the start
 
         Args:
@@ -474,7 +474,7 @@ class Pulse(HasTraits):
 
     def __deepcopy__(self, *args):
         """Creates a copy of a pulse.
-        
+
         Returns:
             Copy of pulse
         """
@@ -557,7 +557,7 @@ class Pulse(HasTraits):
 
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
-        
+
         Should be appended in each Pulse subclass."""
         if self.connection:
             properties_str += f'\n\tconnection: {self.connection}'
@@ -577,11 +577,11 @@ class Pulse(HasTraits):
                              name: str=None,
                              **kwargs) -> bool:
         """Checks if pulse satisfies certain conditions.
-        
+
         Each kwarg is a condition, and can be a value (equality testing) or it
         can be a tuple (relation, value), in which case the relation is tested.
         Possible relations: '>', '<', '>=', '<=', '=='
-        
+
         Args:
             pulse_class: Pulse must have specific class.
             name: Pulse must have name, which may include id.
@@ -629,7 +629,7 @@ class Pulse(HasTraits):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         raise NotImplementedError('This method should be implemented in a subclass')
@@ -637,20 +637,20 @@ class Pulse(HasTraits):
 
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
-    
+
     This is performed by continuously measuring at the read stage until no blip
     has been measured for ``t_no_blip``, or until ``t_max_wait`` has elapsed.
-    
+
     Parameters:
         name: Pulse name
         t_no_blip: Min duration without measuring blips. If condition is met,
-            an event should be fired to the primary instrument to start the 
+            an event should be fired to the primary instrument to start the
             pulse sequence.
-        t_max_wait: Maximum wait time for the no-blip condition. 
-            If ``t_max_wait`` has elapsed, an event should be fired to the 
+        t_max_wait: Maximum wait time for the no-blip condition.
+            If ``t_max_wait`` has elapsed, an event should be fired to the
             primary instrument to start the pulse seqeuence.
         t_buffer: Duration of a single acquisition buffer. Shorter buffers mean
-            that one can more closely approach ``t_no_blip``, but too short 
+            that one can more closely approach ``t_no_blip``, but too short
             buffers may cause lagging.
         readout_threshold_voltage: Threshold voltage for a blip.
         **kwargs: Additional parameters of `Pulse`.
@@ -685,7 +685,7 @@ class SteeredInitialization(Pulse):
 
 class SinePulse(Pulse):
     """Sinusoidal pulse
-        
+
     Parameters:
         name: Pulse name
         frequency: Pulse frequency
@@ -693,7 +693,7 @@ class SinePulse(Pulse):
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
         **kwargs: Additional parameters of `Pulse`.
-        
+
     Notes:
         Either amplitude or power must be set, depending on the instrument
         that should output the pulse.
@@ -734,7 +734,7 @@ class SinePulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -746,18 +746,18 @@ class SinePulse(Pulse):
 
 class FrequencyRampPulse(Pulse):
     """Linearly increasing/decreasing frequency `Pulse`.
-        
+
     Parameters:
         name: Pulse name
         frequency_start: Start frequency
         frequency_stop: Stop frequency.
         frequency: Center frequency, only used if ``frequency_start`` and
             ``frequency_stop`` not used.
-        frequency_deviation: Frequency deviation, only used if 
+        frequency_deviation: Frequency deviation, only used if
             ``frequency_start`` and ``frequency_stop`` not used.
         frequency_final: Can be either ``start`` or ``stop`` indicating the
             frequency when reaching ``frequency_stop`` should go back to the
-            initial frequency or stay at current frequency. Useful if the 
+            initial frequency or stay at current frequency. Useful if the
             pulse doesn't immediately stop at the end (this depends on how
             the corresponding instrument/interface is programmed).
         amplitude: Pulse amplitude. If not set, power must be set.
@@ -765,7 +765,7 @@ class FrequencyRampPulse(Pulse):
         frequency_sideband: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
         **kwargs: Additional parameters of `Pulse`.
-        
+
     Notes:
         Either amplitude or power must be set, depending on the instrument
         that should output the pulse.
@@ -854,7 +854,7 @@ class FrequencyRampPulse(Pulse):
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
-    
+
     Parameters:
         name: Pulse name
         amplitue: Pulse amplitude
@@ -882,9 +882,9 @@ class DCPulse(Pulse):
 
     def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
         """Get voltage(s) at time(s) t.
-        
+
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -899,7 +899,7 @@ class DCPulse(Pulse):
 
 class DCRampPulse(Pulse):
     """Linearly ramping voltage `Pulse`.
-    
+
     Parameters:
         name: Pulse name
         amplitude_start: Start amplitude of pulse.
@@ -934,7 +934,7 @@ class DCRampPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -949,13 +949,13 @@ class DCRampPulse(Pulse):
 
 class TriggerPulse(Pulse):
     """Triggering pulse.
-    
+
     Parameters:
         name: Pulse name.
         duration: Pulse duration (default 100 ns).
         amplitude: Pulse amplitude (default 1V).
         **kwargs: Additional parameters of `Pulse`.
-    
+
     """
     duration = 100e-9
 
@@ -977,7 +977,7 @@ class TriggerPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -994,12 +994,12 @@ class TriggerPulse(Pulse):
 
 class MarkerPulse(Pulse):
     """Marker pulse
-    
+
     Parameters:
         name: Pulse name.
         amplitude: Pulse amplitude (default 1V).
         **kwargs: Additional parameters of `Pulse`.
-    
+
     """
     def __init__(self,
                  name: str = None,
@@ -1018,7 +1018,7 @@ class MarkerPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -1035,15 +1035,15 @@ class MarkerPulse(Pulse):
 
 class TriggerWaitPulse(Pulse):
     """Pulse that wait until condition is met and then applies trigger
-    
+
     Parameters:
         name: Pulse name
         t_start: Pulse start time.
         **kwargs: Additional parameters of `Pulse`.
-        
+
     Note:
         Duration is fixed at 0s.
-        
+
     See Also:
         `SteeredInitialization`
     """
@@ -1064,15 +1064,15 @@ class TriggerWaitPulse(Pulse):
 
 class MeasurementPulse(Pulse):
     """Pulse that is only used to signify an acquiition
-    
+
     This pulse is not directed to any interface other than the acquisition
     interface.
-    
+
     Parameters:
         name: Pulse name.
         acquire: Acquire pulse (default True)
         **kwargs: Additional parameters of `Pulse`.
-        
+
     Todo:
         Verify that it is not directed to any other pulse.
     """
@@ -1090,7 +1090,7 @@ class MeasurementPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         raise NotImplementedError('Measurement pulses do not have a voltage')
@@ -1105,7 +1105,7 @@ class CombinationPulse(Pulse):
 
     A CombinationPulse is itself a child of the Pulse class, therefore a
     CombinationPulse can also be used in consecutive combinations like:
-    
+
     >>> CombinationPulse1 = SinePulse1 + DCPulse
     >>>CombinationPulse2 = SinePulse2 + CombinationPulse1
 
@@ -1119,11 +1119,11 @@ class CombinationPulse(Pulse):
         pulse2: The second pulse this combination is made up from.
         relation: The relation between pulse1 and pulse2.
             This must be one of the following:
-            
+
             * '+'     :   pulse1 + pulse2
             * '-'     :   pulse1 - pulse2
             * '*'     :   pulse1 * pulse2
-        
+
         **kwargs: Additional kwargs of `Pulse`.
 
     """
@@ -1193,7 +1193,7 @@ class CombinationPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
@@ -1231,12 +1231,12 @@ class AWGPulse(Pulse):
         - providing a function that converts time-stamps to waveform points
         - an array of waveform points
 
-    The resulting AWGPulse can be sampled at different sample rates, 
+    The resulting AWGPulse can be sampled at different sample rates,
     interpolating between waveform points if necessary.
 
     Parameters:
         name: Pulse name.
-        fun: The function used for calculating waveform points based on 
+        fun: The function used for calculating waveform points based on
             time-stamps.
         wf_array: Numpy array of (float) with time-stamps and waveform points.
         interpolate: Use interpolation of the wf_array.
@@ -1297,7 +1297,7 @@ class AWGPulse(Pulse):
         """Get voltage(s) at time(s) t.
 
         Raises:
-            AssertionError: not all ``t`` between `Pulse`.t_start and 
+            AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \

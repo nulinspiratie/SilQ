@@ -166,15 +166,13 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         Adds an acquisition controller to the available controllers.
         If another acquisition controller exists of the same class, it will
         be overwritten.
+
         Args:
             acquisition_controller_name: instrument name of controller.
                 Must be on same server as interface and Keysight digitizer
             cls_name: Optional name of class, which is used as controller key.
                 If no cls_name is provided, it is found from the instrument
                 class name
-
-        Returns:
-            None
         """
         acquisition_controller = self.find_instrument(
             acquisition_controller_name)

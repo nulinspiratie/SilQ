@@ -16,20 +16,21 @@ def create_data_set(name: str,
                     base_folder: str,
                     subfolder: str = None,
                     formatter: Formatter = None):
-    """Create empty `DataSet` within main data folder.
-    
-    Uses `new_data`, and handles location formatting.
-    
+    """Create empty ``DataSet`` within main data folder.
+
+    Uses ``new_data``, and handles location formatting.
+
     Args:
-        name: `DataSet` name, used as DataSet folder name.
-        base_folder: Base folder for DataSet. Should be a pre-existing `DataSet`
-            folder. If None, a new folder is created in main data folder.
-        subfolder: Adds subfolder within base_folder for `DataSet`. 
-            Should not be used without explicitly setting ``base_folder``. 
+        name: ``DataSet`` name, used as DataSet folder name.
+        base_folder: Base folder for DataSet. Should be a pre-existing
+            ``DataSet`` folder. If None, a new folder is created in main data
+            folder.
+        subfolder: Adds subfolder within base_folder for ``DataSet``.
+            Should not be used without explicitly setting ``base_folder``.
         formatter: Formatter to use for data storage (e.g. GNUPlotFormat).
 
     Returns:
-        New empty `DataSet`.
+        New empty ``DataSet``.
     """
     location_string = '{base_folder}/'
     if subfolder is not None:
@@ -49,7 +50,7 @@ def create_data_set(name: str,
 def get_data_folder(*path: str,
                     newest_date: str = None):
     """Get first data folder in main data folder satisfying conditions.
-    
+
     Args:
         *path: Filter for data folder.
             First arg can be an absolute path, in which case data folder is
@@ -64,7 +65,7 @@ def get_data_folder(*path: str,
 
     Returns:
         Relative path to found dataset
-        
+
     Raises:
         IterationError: No dataset found.
     """

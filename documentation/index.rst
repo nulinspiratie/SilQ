@@ -29,18 +29,18 @@ Documentation
 # Setting up QCoDeS and SilQ
 
 # Getting started with QCoDeS
-  # `Parameter`
-  # `Instrument`
-  # Measurements: `Loop` and `Measure`
-  # `DataSet`
+  # ``Parameter``
+  # ``Instrument``
+  # Measurements: ``Loop`` and ``Measure``
+  # ``DataSet``
   # Plotting
   # More documentation/examples
 
 # Getting started with SilQ
-  # `PulseSequence` and `Pulses`
+  # `PulseSequence` and `Pulse`
   # `Layout`
   # `InstrumentInterface`
-  # `Connections`
+  # `Connection`
   # `AcquisitionParameter`
 
 

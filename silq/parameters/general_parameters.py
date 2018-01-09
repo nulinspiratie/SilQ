@@ -18,29 +18,28 @@ __all__ = ['CombinedParameter', 'AttributeParameter']
 class CombinedParameter(Parameter):
     """Combines multiple parameters into a single parameter.
 
-
     Setting this parameter sets all underlying parameters to this value, after
     applying possible scale and offset in that order.
     Getting this parameter gets the value of the first parameter, and applies
-    offset and scale in that order..
+    offset and scale in that order.
 
     Args:
         parameters: Parameters to be combined.
-        name: Name of `CombinedParameter`, by default equal to the names of the
-            composed parameters seperated by underscores.
-        label: Label of `CombinedParameter, by default equal to the labels of
-            the composed parameters separated by `` and ``. Also includes any
+        name: Name of ``CombinedParameter``, by default equal to the names of
+            the composed parameters separated by underscores.
+        label: Label of ``CombinedParameter``, by default equal to the labels of
+            the composed parameters separated by ``and``. Also includes any
             scale and offset.
         unit: Parameter unit.
         offsets: Optional offset for parameters. If set, must have equal number
             of elements as parameters
         scales: Optional scale for parameters. If set, must have equal number
             of elements as parameters.
-        **kwargs: Additional kwargs passed to `Parameter`.
+        **kwargs: Additional kwargs passed to ``Parameter``.
 
     Note:
         * All args are also attributes.
-        * While QCoDeS already has a `CombinedParameter`, it has some
+        * While QCoDeS already has a ``CombinedParameter``, it has some
           shortcomings which are addressed here. Maybe in the future this will
           be PR'ed to the main QCoDeS repository.
     """
@@ -135,8 +134,8 @@ class AttributeParameter(Parameter):
         object: Object whose attribute to set/get.
         attribute: Attribute to set/get
         is_key: whether the attribute is a key in a dictionary. If not
-            specified, it will check if `AttributeParameter.object` is a dict.
-        **kwargs: Additional kwargs passed to `Parameter`.
+            specified, it will check if ``AttributeParameter.object`` is a dict.
+        **kwargs: Additional kwargs passed to ``Parameter``.
     """
     def __init__(self,
                  object: object,

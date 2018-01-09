@@ -10,13 +10,13 @@ to match each Pulse to a specific connection by searching through the
 available interfaces and their PulseImplementations.
 However, there are situations where you want a pulse to be directed to a
 specific connection, in which case the Layout fails. A solution is proposed
-in `Layout targeting strategy`, where each Pulse has an associated
-`environment` and `connection_label`. An environment is a dictionary stored
+in `Layout targeting specifications`, where each Pulse has an associated
+``environment`` and ``connection_label``. An environment is a dictionary stored
 in the config, which contains among others a dictionary of
-`connection_label: connection` pairs. This way, a pulse gets sent to a
+``connection_label: connection`` pairs. This way, a pulse gets sent to a
 specific connection depending on the environment it is using.
 
-You can think of the `environment` as something that gives context to the
+You can think of the ``environment`` as something that gives context to the
 pulse from which the pulse can gather environment-specific information and
 properties.
 
@@ -29,7 +29,7 @@ name
     '{PulseSequence}.{Pulse}'
 
 label(s)
-    Measurements often share common pulses (such as a `read` pulse). These
+    Measurements often share common pulses (such as a ``read`` pulse). These
     pulses should share common properties, meaning that changing the property
     globally should change it for all instances. This is done by linking
     Pulses to the config. A Pulse can retrieve its properties from the config,
@@ -60,7 +60,7 @@ Open questions
 
 How should a Pulse retrieve properties from the config?
     Something along the lines of a label should be used to link a Pulse with
-    a set of properties defined in the config. An example is a `read` pulse,
-    which should retrieve the duration and voltage level of a `read` pulse.
+    a set of properties defined in the config. An example is a ``read`` pulse,
+    which should retrieve the duration and voltage level of a ``read`` pulse.
     However, there are more complicated cases where a single label might not
     be sufficient.
