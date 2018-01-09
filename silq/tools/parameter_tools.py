@@ -8,19 +8,19 @@ __all__ = ['SweepDependentValues', 'create_set_vals']
 
 class SweepDependentValues(SweepValues):
     """Sweep Parameter values with args that depend on current value.
-    
-    This class is used in `Parameter.sweep` to extend the functionality to allow
-    choosing values that depend on the parameter's current value.
+
+    This class is used in ``Parameter.sweep`` to extend the functionality to
+    allow choosing values that depend on the parameter's current value.
 
     Not all arguments need to be specified. Instead, a subset can be chosen.
 
     Args:
-        parameter: Parameter used for sweeping. 
+        parameter: Parameter used for sweeping.
         step: Parameter value step size
-        step_percentage: Percentage for step size. If this value is used, 
+        step_percentage: Percentage for step size. If this value is used,
             ``silq.config.parameters.{parameter.name}.steps`` should be a list
             with two elements, the first corresponding to ``step_percentage=0``,
-            the second to ``step_percentage=100`, with values in between being
+            the second to ``step_percentage=100``, with values in between being
             the logarithmic equivalent.
         num: Number of points.
         window: Range of values around center value.

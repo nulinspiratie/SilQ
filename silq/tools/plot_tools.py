@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 
 class PlotAction:
-    """Interactive key/button action for `MatPlot`
-    
+    """Interactive key/button action for ``MatPlot``
+
     A PlotAction can be attached to an `InteractivePlot`, adding some sort of
     interactivity, e.g. change parameter value when pressing a key button.
-    
+
     Parameters:
         plot: Plot object
         timeout: Seconds before plot action is deactivated. Only relevant if the
@@ -64,7 +64,7 @@ class PlotAction:
 
     def key_press(self, event):
         """Handle Matplotlib key press.
-        
+
         This enables PlotAction if key press is ``enable_key``
         """
         if event.key == self.enable_key:
@@ -81,7 +81,7 @@ class PlotAction:
                     execute: bool = False,
                     new_cell: bool = True):
         """Handle code, either executing it or copying it to clipbard
-        
+
         Args:
             code: Python code to handle.
             copy: Copy to clipboard.
@@ -99,9 +99,9 @@ class PlotAction:
 
 class SetGates(PlotAction):
     """Set gates when button pressed in MatPlot, enabled with ``alt + g``.
-    
+
     Only works for 2D plots.
-    
+
     Parameters:
         plot: Plot object
         timeout: Seconds before plot action is deactivated. Only relevant if the
@@ -121,12 +121,12 @@ class SetGates(PlotAction):
 
 class MeasureSingle(PlotAction):
     """Measure parameter at clicked gate vales, enabled with ``alt + s``
-    
+
     Upon button click, a new cell below current one is created, in which gates
     are set to clicked values, and a qc.Measure is performed for measure_param.
-    
+
     Only works for 2D plots.
-    
+
     Parameters:
         plot: Plot object
         timeout: Seconds before plot action is deactivated. Only relevant if the
@@ -149,11 +149,11 @@ class MeasureSingle(PlotAction):
 
 class MoveGates(PlotAction):
     """Increase/decrease gates when pressing alt + {arrow}, enabled with alt+m.
-    
+
     Alt + up/down moves the y-gate.
     Alt + left/right moves the x-gate.
     Alt + +/- increases/decreases step size.
-    
+
     Parameters:
         plot: Plot object
         timeout: Seconds before plot action is deactivated. Only relevant if the
@@ -209,10 +209,10 @@ class MoveGates(PlotAction):
 
 class SwitchPlotIdx(PlotAction):
     """Change plot index when pressing ``alt+{arrow}``, used with `SliderPlot`.
-    
+
     Alt + left/right changes first plot index.
     Alt + up/down changes second plot index (if two sliders).
-    
+
     Parameters:
         plot: Plot object
         timeout: Seconds before plot action is deactivated. Only relevant if the
@@ -242,18 +242,18 @@ class SwitchPlotIdx(PlotAction):
 
 
 class InteractivePlot(MatPlot):
-    """Base class for `MatPlot` plots adding interactivity.
-    
-    The QCoDeS `MatPlot`, which uses ``matplotlib``, can be interactive, and
+    """Base class for ``MatPlot`` plots adding interactivity.
+
+    The QCoDeS ``MatPlot``, which uses ``matplotlib``, can be interactive, and
     respond to key/button presses. This subclass of MatPlot enables such
     interactivity by adding `PlotAction` to the plot. Each `PlotAction` can
     respond to specific key presses or button clicks.
-    
+
     Parameters:
-        *args: args passed to `MatPlot`.
+        *args: args passed to ``MatPlot``.
         actions: `PlotAction` list to use for plot.
         timeout: Timeout for any action to be disabled.
-        **kwargs: kwargs passed to `MatPlot`.
+        **kwargs: kwargs passed to ``MatPlot``.
     """
     def __init__(self,
                  *args,
@@ -287,16 +287,16 @@ class InteractivePlot(MatPlot):
             action.timeout = timeout
 
     def load_data_array(self, data_array: DataArray):
-        """Retrieve properties of a `DataArray`, such as set arrays and labels.
-        
+        """Retrieve properties of a ``DataArray``, such as set arrays and labels.
+
         Args:
             data_array: DataArray to extract
-             
+
         Returns:
             Dict[str, Any]:
             set_arrays (List[DataArray]): List of set arrays.
             labels: Labels of set arrays
-            gates: Gates of set arrays, None if not in `Station`.
+            gates: Gates of set arrays, None if not in ``Station``.
         """
         set_arrays = data_array.set_arrays
         labels = []
@@ -312,7 +312,7 @@ class InteractivePlot(MatPlot):
                       event: str,
                       action: PlotAction):
         """Attach PlotAction to a specific event.
-        
+
         Args:
             event: matplotlib event (e.g. key_press_event, button_press_event)
             action: PlotAction to attach
@@ -325,7 +325,7 @@ class InteractivePlot(MatPlot):
 
     def handle_key_press(self, event):
         """Handle key press event, forwarding to relevant `PlotAction`
-        
+
         The relevant PlotActions are those that are either enabled, or whose
         ``enable_key`` match the key press event.
         """
@@ -340,7 +340,7 @@ class InteractivePlot(MatPlot):
 
     def handle_button_press(self, event):
         """Handle button press event, forwarding to relevant `PlotAction`.
-        
+
         The relative PlotActions are those that are already enabled.
         """
         self._event_button = event
@@ -354,13 +354,13 @@ class InteractivePlot(MatPlot):
 
 
 class SliderPlot(InteractivePlot):
-    """Slide through 1D/2D images of a `DataArray` with more dimensions.
-    
+    """Slide through 1D/2D images of a ``DataArray`` with more dimensions.
+
     Parameters:
-        data_array: Multidimensional `DataArray` to display.
+        data_array: Multidimensional ``DataArray`` to display.
         ndim: Plotting dimension (1 or 2)
-        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
-        
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+
     """
     def __init__(self, data_array, ndim=2, **kwargs):
         self.ndim = ndim
@@ -444,15 +444,15 @@ class SliderPlot(InteractivePlot):
 
 class CalibrationPlot(InteractivePlot):
     """Interactive plot for 2D calibrations, move gates and measure at points.
-    
-    The 2D calibration scan must contain a `Parameter` that returns the 
+
+    The 2D calibration scan must contain a ``Parameter`` that returns the
     contrast. Pressing ``alt + m`` adds a dot on the colorplot, which can be
     moved by holding ``alt`` and pressing an arrow key. the contrast can then
     be measured at the dot by pressing ``alt + s``.
-    
+
     Args:
         data_set: Calibration 2D scan data set.
-        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
         samples_measure (int): Samples to use when measuring at a single point.
     """
     measure_parameter = 'adiabatic_ESR'
@@ -476,10 +476,10 @@ class CalibrationPlot(InteractivePlot):
 
 class DCPlot(InteractivePlot):
     """Interactive plot for a 2D DC scan, For easy moving gates on 2D plot.
-    
+
     Args:
-        data_set: 2D DC scan `DataSet`.
-        **kwargs: Additional kwargs for `InteractivePlot` and `MatPlot`.
+        data_set: 2D DC scan ``DataSet``.
+        **kwargs: Additional kwargs for `InteractivePlot` and ``MatPlot``.
     """
     def __init__(self, data_set: DataSet,  **kwargs):
         self.data_set = data_set
@@ -494,13 +494,13 @@ class DCPlot(InteractivePlot):
 
 class ScanningPlot(InteractivePlot):
     """Base class for interactive plots to repeatedly measure and refresh plot.
-    
+
     Args:
         parameter: Parameter to measure and plot.
         interval: Measuring and updating interval.
         auto_start: Start refreshing once initialized. If False, refreshing can
             be started by calling `ScanningPlot.start`.
-        **kwargs: Additional kwargs to `InteractivePlot` and `Matplot`.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``Matplot``.
     """
     # AcquisitionParameter type
     def __init__(self,
@@ -547,7 +547,7 @@ class ScanningPlot(InteractivePlot):
               setup: bool = True,
               start: bool = True):
         """Start measuring and refreshing plot
-        
+
         Args:
             setup: Setup `AcquisitionParameter`
             start: Start instruments, only used if ``setup`` is True.
@@ -561,9 +561,9 @@ class ScanningPlot(InteractivePlot):
 
     def stop(self, *args):
         """Stop measuring and refreshing plot.
-        
+
         Timer is stopped.
-        
+
         Args:
             *args: Unused args passed if method is called as a callback
         """
@@ -574,9 +574,9 @@ class ScanningPlot(InteractivePlot):
 
     def scan(self, initialize=False, stop=False):
         """Perform single meeasurement and update plot.
-        
+
         Repeatedly called by timer.
-        
+
         Args:
             initialize: True if this method is called during initialization.
             stop: Stop instruments after acquisition.
@@ -592,11 +592,11 @@ class ScanningPlot(InteractivePlot):
 
 class TracePlot(ScanningPlot):
     """Interactive plot that repeatedly measures pulse sequence and plots trace
-    
+
     Args:
         parameter: `TraceParameter` whose pulse sequence to measure.
-        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
-    
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+
     """
     # TraceParameter type
     def __init__(self, parameter: _BaseParameter, **kwargs):
@@ -612,7 +612,7 @@ class TracePlot(ScanningPlot):
 
     def update_plot(self, initialize: bool = False):
         """Update plot with new trace
-        
+
         Args:
             initialize: Method called during initialization.
         """
@@ -662,11 +662,11 @@ class TracePlot(ScanningPlot):
 
 class DCSweepPlot(ScanningPlot):
     """Refreshing 2D DC plot using `DCSweepParameter` for fast 2D DC scanning.
-    
+
     Args:
         parameter: `DCSweepParameter` for fast 2D DC scanning.
         gate_mapping: Mapping of gate names, for plot labels.
-        **kwargs: Additional kwargs to `InteractivePlot` and `MatPlot`.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
     """
     gate_mapping = {}
     # DCSweepParameter type
@@ -694,7 +694,7 @@ class DCSweepPlot(ScanningPlot):
 
     def update_plot(self, initialize=False):
         """Update plot with new 2D DC scan.
-        
+
         Args:
             initialize: Method called during initialization.
         """

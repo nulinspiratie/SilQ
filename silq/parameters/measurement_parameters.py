@@ -34,9 +34,9 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     A `MeasurementParameter` usually consists of several acquisitions,
     which it uses for complex sequences.
 
-    A `MeasurementParameter` usually uses a `qcodes.Loop` or a `qcodes.Measure`
-    or several in succession. The results in the `DataSet` are analysed and
-    often some post-action is performed.
+    A `MeasurementParameter` usually uses a ``qcodes.Loop`` or a
+    ``qcodes.Measure`` or several in succession. The results in the ``DataSet``
+    are analysed and often some post-action is performed.
 
     Example:
         An example of a `MeasurementParameter` is a retuning sequence, which
@@ -62,8 +62,8 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
     Todo:
         * Clean up MeasurementParameter, remove attributes
-          `MeasurementParameter.discriminant` and
-          `MeasurementParameter.acquisition_parameter`.
+          ``MeasurementParameter.discriminant`` and
+          ``MeasurementParameter.acquisition_parameter``.
 
     """
     def __init__(self,
@@ -105,6 +105,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def base_folder(self):
         """
         Obtain measurement base folder (if any).
+
         Returns:
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None

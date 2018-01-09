@@ -20,7 +20,7 @@ DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 class PulseBlasterDDSInterface(InstrumentInterface):
     """ Interface for the Pulseblaster DDS
 
-    When a `PulseSequence` is targeted in the `Layout`, the 
+    When a `PulseSequence` is targeted in the `Layout`, the
     pulses are directed to the appropriate interface. Each interface is
     responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
@@ -86,11 +86,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
         Args:
             repeat: Repeat the pulse sequence indefinitely. If False, calling
-                `layout.start` will only run the pulse sequence once.
+                `Layout.start` will only run the pulse sequence once.
             **kwargs: Ignored kwargs passed by layout.
 
         Returns:
-            setup flags (see `Layout.flags`)
+            setup flags (see ``Layout.flags``)
 
         """
         #Initial pulseblaster commands

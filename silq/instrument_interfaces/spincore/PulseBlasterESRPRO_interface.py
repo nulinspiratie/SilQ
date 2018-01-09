@@ -53,16 +53,16 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         Args:
             repeat: Repeat the pulse sequence indefinitely. If False, calling
-                `layout.start` will only run the pulse sequence once.
+                `Layout.start` will only run the pulse sequence once.
             output_connections: Output `Connection` list of
                 instrument, needed to setup the instrument.
             **kwargs: Ignored kwargs passed by layout.
 
         Returns:
-            setup flags (see `Layout.flags`).
+            setup flags (see ``Layout.flags``).
                 the ``post_start_actions`` flag is set to ``[self.start]`` if
                 there are connections that need to have ``high`` voltage in the
-                inactive state. This signifies that the pulse blaster should be 
+                inactive state. This signifies that the pulse blaster should be
                 started last, which ensures that other instrument have the right
                 voltage.
         """
