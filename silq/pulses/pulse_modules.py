@@ -235,7 +235,7 @@ class PulseSequence:
         if self.final_delay is not None:
             duration += self.final_delay
 
-        return duration
+        return np.round(duration, 11)
 
     @duration.setter
     def duration(self, duration):
