@@ -1014,7 +1014,10 @@ class NMRParameter(AcquisitionParameter):
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
 
-            results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
+            if len(self.ESR_frequencies) > 1:
+                results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
+            else:
+                results['up_proportions'] = up_proportions[f_idx]
 
         # Add singleton dimension because analyse_flips handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
