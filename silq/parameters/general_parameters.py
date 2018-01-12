@@ -46,13 +46,15 @@ class CombinedParameter(Parameter):
         else:
             labels = []
             for k, parameter in enumerate(self.parameters):
-                if self.scales is not None:
-                    label = f'{self.scales[k]} * {parameter.name}'
+                if self.scales is not None and self.scales[k] != 1:
+                    label = f'{self.scales[k]:.3g} * {parameter.name}'
                 else:
                     label = parameter.name
 
                 if self.offsets is not None:
-                    label += f' + {self.offsets[k]}'
+                    label += f' + {self.offsets[k]:.4g}'
+
+                labels.append(label)
 
             return f'({", ".join(labels)})'
 
