@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Fit():
-    plot_kwargs = {'linestyle': '--', 'color': 'k', 'lw': 3}
+    plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
 
     def __init__(self, **kwargs):
         self.model = Model(self.fit_function)
