@@ -921,7 +921,9 @@ class ESRParameter(AcquisitionParameter):
 
 class NMRParameter(AcquisitionParameter):
 
-    def __init__(self, name='NMR', **kwargs):
+    def __init__(self, name='NMR',
+                 names=['flips', 'flip_probability', 'up_proportions'],
+                 **kwargs):
         """
         Parameter used to determine the Rabi frequency
         """
@@ -932,26 +934,45 @@ class NMRParameter(AcquisitionParameter):
         self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
 
         super().__init__(name=name,
-                         names=self.names,
+                         names=names,
                          snapshot_value=False,
                          properties_attrs=['t_read', 't_skip', 'threshold_up_proportion'],
                          **kwargs)
 
-    @property_ignore_setter
+    @property
     def names(self):
         names = []
-        if len(self.ESR_frequencies) == 1:
-            names += ['flips', 'flip_probability', 'up_proportions']
-        else:
-            for k, _ in enumerate(self.ESR_frequencies):
-                names += [f'flips_{k}',
-                          f'flip_probability_{k}',
-                          f'up_proportions_{k}']
+
+        for name in self._names:
+            if name in ['flips', 'flip_probability', 'up_proportions']:
+                if len(self.ESR_frequencies) == 1:
+                    names.append(name)
+                else:
+                    names += [f'{name}_{k}'
+                              for k in range(len(self.ESR_frequencies))]
+            elif name in ['combined_flips', 'combined_flip_probability',
+                          'filtered_combined_flips',
+                          'filtered_combined_flip_probability'] and \
+                            len(self.ESR_frequencies) > 1:
+                names += [f'{name}_{k}{k+1}'
+                          for k in range(len(self.ESR_frequencies) - 1)]
+            elif name in ['filtered_flips', 'filtered_flip_probability'] and \
+                            len(self.ESR_frequencies) > 1:
+                for k in range(0, len(self.ESR_frequencies)):
+                    if k > 0:
+                        names.append(f'{name}_{k}_{k-1}{k}')
+                    if k < len(self.ESR_frequencies) - 1:
+                        names.append(f'{name}_{k}_{k}{k+1}')
         return names
+
+    @names.setter
+    def names(self, names):
+        self._names = names
 
     @property_ignore_setter
     def shapes(self):
-        return ((), (), (self.samples, )) * len(self.ESR_frequencies)
+        return tuple((self.samples,) if 'up_proportions' in name else ()
+                     for name in self.names)
 
     @property_ignore_setter
     def units(self):
