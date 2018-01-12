@@ -236,25 +236,33 @@ class RetuneBlipsParameter(MeasurementParameter):
             return None
 
         blips_per_second = self.data.blips_per_second.ndarray
+        blips_per_second = np.nan_to_num(blips_per_second)
         mean_low_blip_duration = self.data.mean_low_blip_duration.ndarray
+        mean_low_blip_duration = np.nan_to_num(mean_low_blip_duration)
         mean_high_blip_duration = self.data.mean_high_blip_duration.ndarray
+        mean_high_blip_duration = np.nan_to_num(mean_high_blip_duration)
 
         if len(blips_per_second) != 21:
-            raise RuntimeError(f'Must have 21 sweep vals, not {len(blips_per_second)}')
+            raise RuntimeError(
+                f'Must have 21 sweep vals, not {len(blips_per_second)}')
 
         data = np.zeros((len(blips_per_second), 3))
 
         # normalize data
         # Blips per second gets a gaussian normalization
-        data[:,0] = (blips_per_second - np.mean(blips_per_second)) / np.std(blips_per_second)
+        data[:, 0] = (blips_per_second - np.mean(blips_per_second)) / np.std(
+            blips_per_second)
 
         # blip durations get a logarithmic normalization, since the region
         # of interest has a low value
-        log_offset = 1 # add offset since otherwise log(0) raises an error
-        data[:,1] = np.log10(mean_low_blip_duration + log_offset)
-        data[:,2] = np.log10(mean_high_blip_duration + log_offset)
+        log_offset = 1e-3  # add offset since otherwise log(0) raises an error
+        data[:, 1] = np.log10(mean_low_blip_duration + log_offset)
+        data[:, 2] = np.log10(mean_high_blip_duration + log_offset)
 
-        data = np.nan_to_num(data)
+        # Center logarithmic blip durations around zero
+        for k in range(1, 3):
+            data[:, k] += 1.5
+
         data = np.expand_dims(data, 0)
 
         # Predict optimum value
@@ -294,7 +302,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                                            location=self.loc_provider)
 
         try:
-            self.loop.run(set_active=False, quiet=(active_data_set() is not None))
+            self.loop.run(set_active=False, quiet=True)
         finally:
             self.sweep_parameter(initial_set_val)
 
@@ -450,7 +458,7 @@ class CoulombPeakParameter(MeasurementParameter):
         # Perform measurement
         self.acquisition_parameter.setup()
         try:
-            self.loop.run(set_active=False, quiet=(active_data_set() is not None))
+            self.loop.run(set_active=False, quiet=True)
         except:
             # Error occurred, reset to initial values and raise error
             if self.DC_peak_offset is None:
