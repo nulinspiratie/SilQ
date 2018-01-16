@@ -55,8 +55,8 @@ class Keysight81180AInterface(InstrumentInterface):
     def setup(self, **kwargs):
         self.active_channels(list({pulse.connection.output['channel'].name
                                    for pulse in self.pulse_sequence}))
-        for ch_name in self.active_channels():
-            instrument_channel = getattr(self.instrument, ch_name)
+        for ch in self.active_channels():
+            instrument_channel = getattr(self.instrument, ch)
 
             instrument_channel.run_mode('sequenced')
             instrument_channel.sequence_mode('stepped')
@@ -69,15 +69,45 @@ class Keysight81180AInterface(InstrumentInterface):
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
 
-        for ch_name in self.active_channels():
-            pulse_sequence = self.pulse_sequence(input_channel=ch_name)
+        for ch in self.active_channels():
+            instrument_channel = getattr(self.instrument, ch)
+
+            pulse_sequence = self.pulse_sequence(input_channel=ch)
+
+            # Determine segments
+            segments = [(pulse.t_start, pulse.t_stop)
+                        for pulse in pulse_sequence(is_marker=False)]
+            for marker_pulse in pulse_sequence(is_marker=True):
+                t = marker_pulse.t_start
+                while t < marker_pulse.t_stop:
+                    for segment in segments:
+                        if segment[0] <= t <= segment[1]:
+                            t = segment[1]
+                            break
+                    else:
+                        # No existing segment for this part of marker pulse
+                        t_start_next = min(segment[0] for segment in segments
+                                           if segment[0] > t)
+                        t_next = min(t_start_next, marker_pulse.t_stop)
+                        segments.append((t, t_next))
+                        t = t_next
+
 
             # Add empty waveform, with minimum points (320)
             empty_segment = np.zeros(320)
-            self.waveforms[ch_name].append(empty_segment)
+            self.waveforms[ch].append(empty_segment)
 
-            for pulse in pulse_sequence:
-                if not pulse.is_marker:
+
+
+            for pulse in pulse_sequence(is_marker=False):
+                waveform = pulse.implement(
+                    sample_rate=instrument_channel.sample_rate())
+
+                # Check if waveform is already programmed
+                waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch])
+                if waveform_idx is None:
+                    # Add waveform to existing waveforms
+                    self.waveforms[ch].append(waveform)
         pass
 
     def start(self):
