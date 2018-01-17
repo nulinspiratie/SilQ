@@ -4,6 +4,7 @@ from copy import copy
 from blinker import signal
 from functools import partial
 import logging
+import re
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
@@ -1050,6 +1051,106 @@ class NMRParameter(AcquisitionParameter):
         return results
 
 
+class FlipNucleusParameter(AcquisitionParameter):
+    def __init__(self, name='flip_nucleus', **kwargs):
+        self.pulse_sequence = NMRPulseSequence()
+        self.NMR = self.pulse_sequence.NMR
+        self.ESR = self.pulse_sequence.ESR
+        self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
+        self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
+
+        super().__init__(name=name,
+                         names=[],
+                         snapshot_value=False,
+                         wrap_set=False,
+                         **kwargs)
+
+    def get_NMR_pulses(self, initial_state, final_state, mode='full'):
+        if mode not in ['neighbour', 'full']:
+            raise SyntaxError('Mode must be either `neighbour` or `full`')
+
+        elif initial_state == final_state:
+            return []
+
+        pulses_config = config[self.environment].pulses
+
+        if mode == 'neighbour':
+            if initial_state < final_state:
+                states = range(initial_state, final_state)
+            else:
+                states = range(initial_state - 1, final_state - 1, -1)
+
+            pulse_names = [f'NMR{state}{state+1}_pi' for state in states]
+
+            if not all(pulse_name in pulses_config for pulse_name in pulse_names):
+                raise RuntimeError('Not all pulses are defined in config')
+
+        elif mode == 'full':
+            state_sequences = {}
+            new_state_sequences = {str(initial_state): 0}
+            k = 0
+            while new_state_sequences:
+                if k > 10:
+                    break
+                k += 1
+                state_sequences.update(**new_state_sequences)
+                accessed_states = set(map(int, ''.join(state_sequences)))
+                new_state_sequences = {}
+
+                for state_sequence, duration in state_sequences.items():
+                    current_state = int(state_sequence[-1])
+                    pattern = f'^NMR({current_state}([0-9])|([0-9]){current_state})_pi$'
+
+                    for pulse_name, pulse_settings in pulses_config.items():
+                        match = re.match(pattern, pulse_name)
+                        if not match:
+                            continue
+
+                        next_state = int(match.group(2) or match.group(3))
+                        if next_state not in accessed_states:
+                            new_duration = duration + pulse_settings['duration']
+                            new_state_sequence = state_sequence + str(next_state)
+                            new_state_sequences[new_state_sequence] = new_duration
+
+
+            # Update accessed states to include new states
+            state_sequences.update(**new_state_sequences)
+            accessed_states = set(map(int, ''.join(state_sequences)))
+
+            if final_state not in accessed_states:
+                raise RuntimeError(f'Cannot find pulse sequence to {final_state}')
+            else:
+                valid_state_sequences = {k: v for k, v in state_sequences.items()
+                                         if int(k[-1]) == final_state}
+                if len(valid_state_sequences) > 1:
+                    state_sequence = min(valid_state_sequences,
+                                         key=valid_state_sequences.get)
+                else:
+                    state_sequence = next(iter(valid_state_sequences))
+
+                pulse_names = []
+                for state1, state2 in zip(state_sequence[:-1], state_sequence[1:]):
+                    pulse_name = f'NMR{min(state1, state2)}{max(state1, state2)}_pi'
+                    pulse_names.append(pulse_name)
+
+        return [SinePulse(pulse_name) for pulse_name in pulse_names]
+
+
+    def set(self, initial_state, final_state, run=True):
+        if initial_state == final_state:
+            # No need to perform any pulse sequence
+            return
+
+        self.ESR['pulses'] = []
+        self.NMR['pulses'] = self.get_NMR_pulses(initial_state, final_state)
+        self.pulse_sequence.generate()
+
+        if run:
+            self.setup(repeat=False)
+            self.layout.start()
+            self.layout.stop()
+
+
 class T2ElectronParameter(AcquisitionParameter):
     def __init__(self, name='Electron_T2', **kwargs):
         self.pulse_sequence = T2ElectronPulseSequence()
@@ -1150,8 +1251,8 @@ class BlipsParameter(AcquisitionParameter):
     """
     Parameter that measures properties of blips in a trace
     """
-    def __init__(self, name='count_blips', duration=None, pulse_name='read',
-                 **kwargs):
+    def __init__(self, name='count_blips', duration=None,
+                 pulse_name='read_trace', **kwargs):
         """
 
         Args:
@@ -1181,11 +1282,11 @@ class BlipsParameter(AcquisitionParameter):
 
     @property
     def duration(self):
-        return self.pulse_sequence['read'].duration
+        return self.pulse_sequence[self.pulse_name].duration
 
     @duration.setter
     def duration(self, duration):
-        self.pulse_sequence['read'].duration = duration
+        self.pulse_sequence[self.pulse_name].duration = duration
 
     def analyse(self, traces):
         return analysis.count_blips(
