@@ -343,6 +343,11 @@ def count_blips(traces: np.ndarray,
     low_blip_durations = np.array(low_blip_pts) / sample_rate
     high_blip_durations = np.array(high_blip_pts) / sample_rate
 
+    mean_low_blip_duration = np.NaN if not len(low_blip_durations) \
+        else np.mean(low_blip_durations)
+    mean_high_blip_duration = np.NaN if not len(high_blip_durations) \
+        else np.mean(high_blip_durations)
+
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
@@ -350,8 +355,8 @@ def count_blips(traces: np.ndarray,
             'blips_per_second': blips / duration,
             'low_blip_durations': low_blip_durations,
             'high_blip_durations': high_blip_durations,
-            'mean_low_blip_duration': np.mean(low_blip_durations),
-            'mean_high_blip_duration': np.mean(high_blip_durations)}
+            'mean_low_blip_duration': mean_low_blip_duration,
+            'mean_high_blip_duration': mean_high_blip_duration}
 
 
 def analyse_traces(traces: np.ndarray,
