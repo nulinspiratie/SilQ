@@ -5,13 +5,15 @@ import logging
 from qcodes.data.data_array import DataArray
 
 
-__all__ = ['Fit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit']
+__all__ = ['Fit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
+           'RabiFrequencyFit']
 
 logger = logging.getLogger(__name__)
 
 
 class Fit():
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
+    sweep_parameter = None
 
     def __init__(self, **kwargs):
         self.model = Model(self.fit_function)
@@ -35,17 +37,32 @@ class Fit():
     def find_nearest_value(self, array, value):
         return array[self.find_nearest_index(array, value)]
 
-    def perform_fit(self, xvals, ydata, initial_parameters=None, weights=None,
+    def perform_fit(self, xvals, ydata, initial_parameters={},
+                    fixed_parameters={}, weights=None,
                     print=False, plot=None):
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
         if isinstance(ydata, DataArray):
             ydata = ydata.ndarray
 
-        parameters = self.find_initial_parameters(xvals, ydata, initial_parameters)
+        # Filter out all NaNs
+        non_nan_indices = ~(np.isnan(xvals) | np.isnan(ydata))
+        xvals = xvals[non_nan_indices]
+        ydata = ydata[non_nan_indices]
 
-        self.fit_result = self.model.fit(ydata, t=xvals, params=parameters,
-                                         weights=weights)
+        # Find initial parameters, also pass fixed parameters along so they are
+        # not modified
+        parameters = self.find_initial_parameters(
+            xvals, ydata, initial_parameters={**fixed_parameters,
+                                              **initial_parameters})
+
+        # Ensure that fixed parameters do not vary
+        for key, value in fixed_parameters.items():
+            parameters[key].vary = False
+
+        self.fit_result = self.model.fit(ydata, params=parameters,
+                                         weights=weights,
+                                         **{self.sweep_parameter: xvals})
 
         if print:
             self.print_results()
@@ -75,7 +92,7 @@ class Fit():
 
 
 class ExponentialFit(Fit):
-
+    sweep_parameter = 't'
     @staticmethod
     def fit_function(t,  tau, amplitude, offset):
         return amplitude * np.exp(-t/tau) + offset
@@ -102,15 +119,14 @@ class ExponentialFit(Fit):
 
 
 class SineFit(Fit):
+    sweep_parameter = 't'
     @staticmethod
     def fit_function(t, amplitude, frequency, phase, offset):
         return amplitude * np.sin(2 * np.pi * frequency * t + phase) + offset
 
-    def find_initial_parameters(self, xvals, ydata, initial_parameters=None,
+    def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
         super().__init__()
-        if initial_parameters is None:
-            initial_parameters = {}
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -144,16 +160,15 @@ class SineFit(Fit):
 
 
 class ExponentialSineFit(Fit):
+    sweep_parameter = 't'
     @staticmethod
     def fit_function(t, amplitude, tau, frequency, phase, offset):
         return amplitude * np.exp(-t / tau) * np.sin(
             2 * np.pi * frequency * t + phase) + offset
 
-    def find_initial_parameters(self, xvals, ydata, initial_parameters=None,
+    def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
         super().__init__()
-        if initial_parameters is None:
-            initial_parameters = {}
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -181,6 +196,42 @@ class ExponentialSineFit(Fit):
             initial_parameters['phase'] = phase
         if 'offset' not in initial_parameters:
             initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        return parameters
+
+
+class RabiFrequencyFit(Fit):
+    sweep_parameter = 'f'
+    @staticmethod
+    def fit_function(f, f0, gamma, t):
+        Omega = np.sqrt(gamma**2 + (2*np.pi*(f - f0))**2 / 4)
+        return gamma**2 / Omega**2 * np.sin(Omega*t)**2
+
+    def find_initial_parameters(self, xvals, ydata, initial_parameters={},
+                                plot=False):
+        super().__init__()
+
+        parameters = Parameters()
+
+        max_idx = np.argmax(ydata)
+        max_frequency = xvals[max_idx]
+
+        if 'f0' not in initial_parameters:
+            initial_parameters['f0'] = max_frequency
+
+        if 'gamma' not in initial_parameters:
+            if 't' in initial_parameters:
+                initial_parameters['gamma'] = np.pi / initial_parameters['t'] / 2
+            else:
+                FWHM_min_idx = np.argmax(xvals > max_frequency / 2)
+                FWHM_max_idx = len(xvals) - np.argmax((xvals > max_frequency / 2)[::-1]) - 1
+                initial_parameters['gamma'] = 2*np.pi * (xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
+
+        if 't' not in initial_parameters:
+            initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
