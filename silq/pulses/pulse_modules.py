@@ -243,16 +243,15 @@ class PulseSequence:
 
     @property
     def t_start_list(self):
-        return [pulse.t_start for pulse in self.enabled_pulses]
+        return sorted({pulse.t_start for pulse in self.enabled_pulses})
 
     @property
     def t_stop_list(self):
-
-        return [pulse.t_stop for pulse in self.enabled_pulses]
+        return sorted({pulse.t_stop for pulse in self.enabled_pulses})
 
     @property
     def t_list(self):
-        return list(set(self.t_start_list + self.t_stop_list + [self.duration]))
+        return sorted({self.t_start_list + self.t_stop_list + [self.duration]})
 
     def replace(self, pulse_sequence):
         """
