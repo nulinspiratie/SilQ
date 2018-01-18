@@ -602,7 +602,7 @@ class SinePulse(Pulse):
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
-        return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
