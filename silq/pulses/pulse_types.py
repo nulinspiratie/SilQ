@@ -77,10 +77,6 @@ class Pulse(HasTraits):
             self.properties_attrs = []
         self.properties_attrs += ['t_read', 't_skip']
 
-        # Set handler that only uses attributes in properties_attrs
-        self._handle_properties_config_signal = partial(
-            self._handle_config_signal,
-            select=self.properties_attrs)
         # Connect changes in properties config to handling method
         # If environment has no properties key, this will never be called.
         signal(f'config:{self.environment}.properties').connect(
@@ -150,6 +146,21 @@ class Pulse(HasTraits):
         key, val = kwargs.popitem()
         if select is None or key in select:
             setattr(self, key, val)
+
+    def _handle_properties_config_signal(self, arg, **kwargs):
+        """ Update attr when attr in properties config is modified.
+
+        Note:
+            This method has to be defined separately, and cannot simply be
+            defined using a partial on `_handle_config_signal`, as this will
+            somehow cause it to always reference itself, and thus never be gc'ed
+
+        Args:
+            arg: Ignored handle arg passed by signal.send.
+            **kwargs: handle kwargs
+
+        """
+        self._handle_config_signal(arg, select=self.properties_attrs, **kwargs)
 
     def __str__(self):
         # This is called by blinker.signal to get a repr. Instead of creating
