@@ -199,7 +199,7 @@ Experiments folder. Note that you should write the path as a raw string:
 .. _initialization-files:
 
 ^^^^^^^^^^^^^^^^^^^^
-initialization files
+Initialization files
 ^^^^^^^^^^^^^^^^^^^^
 An experimental setup (or personal computer) often requires code that should be
 initialized at the start of your measurement session. This includes loading
