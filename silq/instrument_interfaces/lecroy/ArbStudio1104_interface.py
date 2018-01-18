@@ -15,8 +15,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
-            'ch{}'.format(k): Channel(instrument_name=self.instrument_name(),
-                                      name='ch{}'.format(k), id=k, output=True)
+            f'ch{k}': Channel(instrument_name=self.instrument_name(),
+                              name=f'ch{k}', id=k, output=True)
         for k in [1, 2, 3, 4]}
 
         self._channels = {**self._output_channels,
@@ -124,7 +124,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO implement setup for modes other than stepped
 
         if is_primary:
-            logger.warning('Arbstudio not programmed as primary instrument')
+            logger.warning('Arbstudio cannot function as primary instrument')
 
         # Clear waveforms and sequences
         for ch in self._output_channels.values():
