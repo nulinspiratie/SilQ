@@ -2,12 +2,11 @@ import numpy as np
 import logging
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation
 from silq.tools.general_tools import arreqclose_in_list
 
-from qcodes.utils.validators import Lists, Enum
+from qcodes.utils.validators import Lists, Enum, Numbers
 
 
 logger = logging.getLogger(__name__)
@@ -19,9 +18,9 @@ class AWG520Interface(InstrumentInterface):
         - Sets first point of each waveform to final voltage of previous
           waveform because this is the value used when the previous waveform
           ended and is waiting for triggers.
-
+        - Amplitude significantly decreases above 400 MHz at 1 GHz sampling.
     Todo:
-
+        Check if only channel 2 can be programmed
         Add marker channels
     """
     def __init__(self, instrument_name, **kwargs):
@@ -39,7 +38,11 @@ class AWG520Interface(InstrumentInterface):
         }
 
         # TODO: Add pulse implementations
-        self.pulse_implementations = []
+        self.pulse_implementations = [
+            DCPulseImplementation(pulse_requirements=[('amplitude', {'max': 2})]),
+            SinePulseImplementation(pulse_requirements=[('frequency', {'max': 500e6}),
+                                                        ('amplitude', {'max': 2})])
+        ]
 
         self.add_parameter('final_delay',
                            unit='s',
@@ -54,6 +57,11 @@ class AWG520Interface(InstrumentInterface):
         self.add_parameter('active_channels',
                            set_cmd=None,
                            vals=Lists(Enum(1,2)))
+        self.add_parameter('sampling_rate',
+                           unit='1/s',
+                           initial_value=1e9,
+                           set_cmd=None,
+                           vals=Numbers(max_value=1e9))
 
     def get_additional_pulses(self, **kwargs):
         # Return empty list if no pulses are in the pulse sequence
@@ -120,9 +128,87 @@ class AWG520Interface(InstrumentInterface):
         if is_primary:
             raise RuntimeError('AWG520 cannot function as primary instrument')
 
-        
+        self.active_channels({pulse.connection.output['channel']
+                              for pulse in self.pulse_sequence})
+
+        # Create waveforms and sequence
+        waveforms = []
+        sequence = {ch: [] for ch in self.active_channels()}
+
+        t = 0
+        previous_voltages = {ch: 0 for ch in self.active_channels()}
+        while t < self.pulse_sequence.duration:
+            pulses = {ch: self.pulse_sequence.get_pulse(t_start=t, output_channel=ch)
+                      for ch in ['ch1', 'ch2']}
+            assert pulses['ch1'].t_stop == pulses['ch2'].t_stop, \
+                f"Pulses do not have same t_stop. Pulses: {pulses}"
+
+            # Add pulses to waveforms and sequences
+            for ch, pulse in pulses.items():
+                assert pulse is not None,\
+                    f"Could not find unique pulse for channel {ch} at t_start={t}"
+
+                waveform = pulse.implementation.implement(
+                    first_point_voltage=previous_voltages[ch],
+                    sampling_rate=self.sampling_rate())
+                waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch])
+                if waveform_idx is None:
+                    waveforms.append(waveform)
+                    waveform_idx = len(waveforms) - 1
+                sequence[ch].append(waveform_idx)
+
+                # Update previous voltage to last point of current waveform
+                previous_voltages[ch] = waveform[-1]
+
+            t = pulse.t_stop
+
+        self.instrument.stop()
+        self.instrument.trigger_mode('ENH')
+        self.instrument.trigger_level(1)
+        self.instrument.clock_freq(self.sampling_rate())
+        for ch in [self.instrument.ch1, self.instrument.ch2]:
+            ch.offset(0)
+            # TODO What happens when we increase channel amplitude?
+            ch.amplitude(1)
+            ch.status('OFF')
+
+        # Upload waveforms
+        self.instrument.change_folder('silq')
+        filenames = []
+        for k, waveform in enumerate(waveforms):
+            filename = f'waveform_{k}.wfm'
+            marker1 = marker2 = np.zeros(len(waveform))
+            self.instrument.send_waveform(waveform,
+                                          marker1,
+                                          marker2,
+                                          filename,
+                                          clock=self.sampling_rate)
+            filenames.append(filename)
+
+        # Upload sequence
+        sequence_waveform_names = [[filenames[waveform_idx]
+                                    for waveform_idx in sequence[ch]]
+                                   for ch in self.active_channels()]
+        N_instructions = len(sequence_waveform_names[0])
+        repetitions = np.ones(N_instructions)
+        wait_trigger = np.ones(N_instructions)
+        goto_one = np.zeros(N_instructions)
+        logic_jump = np.zeros(N_instructions)
+        if len(self.active_channels()) == 1:
+            sequence_waveform_names = sequence_waveform_names[0]
+        self.instrument.send_sequence(sequence_waveform_names,
+                                      repetitions,
+                                      wait_trigger,
+                                      goto_one,
+                                      logic_jump,
+                                      'sequence.seq')
+
+        for error in self.instrument.get_errors():
+            logger.warning(error)
 
     def start(self):
+        self.instrument.ch1.status('ON')
+        self.instrument.ch2.status('ON')
         self.instrument.start()
 
     def stop(self):
@@ -130,4 +216,58 @@ class AWG520Interface(InstrumentInterface):
 
 
 class DCPulseImplementation(PulseImplementation):
-    pass
+    # Number of points in a waveform (must be at least 256)
+    pulse_class = DCPulse
+    pts = 256
+
+    def implement(self,
+                  first_point_voltage: int = 0,
+                  sampling_rate: float = 1e9, **kwargs) -> np.ndarray:
+        """Implements the DC pulses for the AWG520
+
+        Args:
+            first_point_voltage: Voltage to set first point of waveform to.
+                When the previous waveform ends, the voltage is set to the first
+                point of the next voltage.
+            sampling_rate: AWG sampling rate
+            final_delay: Final part of waveform to skip. If this does not exist,
+                the waveform may not have finished when next trigger arrives,
+                in which case the trigger is ignored.
+                
+        Returns:
+            waveform
+        """
+
+        # AWG520 requires waveforms of at least 256 points
+        waveform = np. self.voltage * np.ones(self.pts)
+        waveform[0] = first_point_voltage
+        return waveform
+
+
+class SinePulseImplementation(PulseImplementation):
+    # Number of points in a waveform (must be at least 256)
+    pulse_class = SinePulse
+
+    def implement(self,
+                  first_point_voltage: int = 0,
+                  sampling_rate: float = 1e9,
+                  final_delay: float = 0, **kwargs) -> np.ndarray:
+        """Implements Sine pulses for the AWG520
+
+        Args:
+            first_point_voltage: Voltage to set first point of waveform to.
+                When the previous waveform ends, the voltage is set to the first
+                point of the next voltage.
+            sampling_rate: AWG sampling rate
+            final_delay: Final part of waveform to skip. If this does not exist,
+                the waveform may not have finished when next trigger arrives,
+                in which case the trigger is ignored.
+        Returns:
+            Waveform array
+        """
+        t_list = np.arange(self.pulse.t_start,
+                           self.pulse.t_stop - final_delay,
+                           1 / sampling_rate)
+        waveform = self.pulse.get_voltage(t_list)
+        waveform[0] = first_point_voltage
+        return waveform
