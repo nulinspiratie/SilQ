@@ -48,7 +48,7 @@ class AWG520Interface(InstrumentInterface):
                            unit='s',
                            set_cmd=None,
                            initial_value=.1e-6,
-                           doc='Time subtracted from each waveform to ensure '
+                           docstring='Time subtracted from each waveform to ensure '
                                'that it is finished once next trigger arrives.')
         self.add_parameter('trigger_in_duration',
                            unit='s',
@@ -87,13 +87,17 @@ class AWG520Interface(InstrumentInterface):
                                         t_stop=pulse.t_start,
                                         amplitude=0)
                     gap_pulses.append(self.get_pulse_implementation(gap_pulse))
-                t = pulse.t_start
+                t = pulse.t_stop
 
             if t < self.pulse_sequence.duration:
                 # Add DCPulse to fill gap between pulses
                 gap_pulse = DCPulse(t_start=t,
                                     t_stop=self.pulse_sequence.duration,
-                                    amplitude=0)
+                                    amplitude=0,
+                                    connection_requirements={
+                                        'output_instrument': self.instrument.name,
+                                        'output_channel': channel
+                                    })
                 gap_pulses.append(self.get_pulse_implementation(gap_pulse))
 
         self.pulse_sequence.add(*gap_pulses)

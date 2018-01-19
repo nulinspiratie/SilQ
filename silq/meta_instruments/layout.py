@@ -211,7 +211,7 @@ class Layout(Instrument):
         self.connections += [connection]
         return connection
 
-    def load_connections(self, filepath=None):
+    def load_connections(self, filepath=None, connections_dicts=None):
         """
         Load connections from qcodes.config.user.connections
         Returns:
@@ -225,6 +225,8 @@ class Layout(Instrument):
                 filepath = os.path.join(silq.get_SilQ_folder(), filepath)
             with open(filepath, "r") as fp:
                 connections = json.load(fp)
+        elif connections_dicts is not None:
+            connections = connections_dicts
         else:
             from silq import config
             connections = config.get('connections', None)
@@ -377,7 +379,10 @@ class Layout(Instrument):
 
         # Set acquisition interface as first interface
         if not sorted_interfaces:
-            sorted_interfaces = [self.acquisition_interface]
+            if self.acquisition_interface is not None:
+                sorted_interfaces = [self.acquisition_interface]
+            else:
+                sorted_interfaces = []
 
         # Find all interfaces that have not been sorted yet
         remaining_interfaces = {
@@ -495,6 +500,9 @@ class Layout(Instrument):
         Returns:
             Connection object for pulse
         """
+        if pulse.connection is not None:
+           return pulse.connection
+
         connection_requirements = pulse.connection_requirements.copy()
 
         if interface is not None:
