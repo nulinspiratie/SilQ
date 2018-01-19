@@ -74,6 +74,9 @@ class AWG520Interface(InstrumentInterface):
         # Add DCPulse(amplitude=0) for any gaps between pulses
         gap_pulses = []
         for channel in active_channels:
+            connection = self.pulse_sequence.get_connection(
+                output_instrument=self.instrument.name,
+                output_channel=channel)
             pulses = sorted(self.pulse_sequence.get_pulses(output_channel=channel),
                             key=lambda pulse: pulse.t_start)
             t = 0
@@ -85,7 +88,8 @@ class AWG520Interface(InstrumentInterface):
                     # Add DCPulse to fill gap between pulses
                     gap_pulse = DCPulse(t_start=t,
                                         t_stop=pulse.t_start,
-                                        amplitude=0)
+                                        amplitude=0,
+                                        connection=connection)
                     gap_pulses.append(self.get_pulse_implementation(gap_pulse))
                 t = pulse.t_stop
 
@@ -94,10 +98,7 @@ class AWG520Interface(InstrumentInterface):
                 gap_pulse = DCPulse(t_start=t,
                                     t_stop=self.pulse_sequence.duration,
                                     amplitude=0,
-                                    connection_requirements={
-                                        'output_instrument': self.instrument.name,
-                                        'output_channel': channel
-                                    })
+                                    connection=connection)
                 gap_pulses.append(self.get_pulse_implementation(gap_pulse))
 
         self.pulse_sequence.add(*gap_pulses)
