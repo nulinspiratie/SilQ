@@ -104,13 +104,16 @@ class AWG520Interface(InstrumentInterface):
         # the other pulse finished its waveform and is waiting for a trigger.
         # Here we check that this does not occur.
         if len(active_channels) > 1:
+            t = 0
             for t_start in self.pulse_sequence.t_start_list:
-                if any(pulse.t_start < t_start < pulse.t_stop
-                       and not pulse.implementation.is_full_waveform
-                       for pulse in self.pulse_sequence):
-                    raise RuntimeError(f'At t={t_start} s, a new pulse starts'
-                                       f'while another pulse is still active.')
-                    #TODO Implement splitting of pulses
+                pulses = {ch: self.pulse_sequence.get_pulse(t_start=t_start,
+                                                            output_channel=ch)
+                          for ch in ['ch1', 'ch2']}
+                assert t == pulses['ch1'].t_start, \
+                    f"Gap between t_stop={t} and pulse.t_start{pulses['ch1'].t_start}"
+                assert pulses['ch1'].t_stop == pulses['ch2'].t_stop, \
+                    f"Pulses do not have same t_stop. Pulses: {pulses}"
+                t = pulses['ch1'].t_stop
 
         # TODO test if first waveform needs trigger as well
         additional_pulses = [
