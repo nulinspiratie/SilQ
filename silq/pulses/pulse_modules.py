@@ -252,7 +252,7 @@ class PulseSequence:
 
     @property
     def t_list(self):
-        return list(set(self.t_start_list + self.t_stop_list + [self.duration]))
+        return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def replace(self, pulse_sequence):
         """
@@ -563,6 +563,6 @@ class PulseImplementation:
     def get_additional_pulses(self, interface):
         return []
 
-    def implement(self):
+    def implement(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')
