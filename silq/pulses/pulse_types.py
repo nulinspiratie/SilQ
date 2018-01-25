@@ -601,8 +601,10 @@ class SinePulse(Pulse):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
-
-        return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        if self.phase is None:
+            return self.amplitude * np.sin(2 * np.pi * self.frequency * (t - self.t_start))
+        else:
+            return self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
@@ -747,7 +749,7 @@ class DCRampPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .0001  # ms
+    duration = .1e-6
 
     def __init__(self, name=None, duration=duration, **kwargs):
         # Trigger pulses don't necessarily need a specific name
