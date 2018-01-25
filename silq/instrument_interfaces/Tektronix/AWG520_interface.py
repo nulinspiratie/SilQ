@@ -1,5 +1,7 @@
 import numpy as np
 import logging
+from time import sleep
+from copy import copy
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
@@ -23,6 +25,8 @@ class AWG520Interface(InstrumentInterface):
         Check if only channel 2 can be programmed
         Add marker channels
     """
+
+    max_waveforms = 200
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self._output_channels = {
@@ -37,11 +41,12 @@ class AWG520Interface(InstrumentInterface):
                                name='trig_in', input_trigger=True)
         }
 
-        # TODO: Add pulse implementations
         self.pulse_implementations = [
-            DCPulseImplementation(pulse_requirements=[('amplitude', {'max': 2})]),
+            DCPulseImplementation(pulse_requirements=[('amplitude', {'min': -1,
+                                                                     'max': 1})]),
             SinePulseImplementation(pulse_requirements=[('frequency', {'max': 500e6}),
-                                                        ('amplitude', {'max': 2})])
+                                                        ('amplitude', {'min': -1,
+                                                                       'max': 1})])
         ]
 
         self.add_parameter('final_delay',
@@ -50,75 +55,128 @@ class AWG520Interface(InstrumentInterface):
                            initial_value=.1e-6,
                            docstring='Time subtracted from each waveform to ensure '
                                'that it is finished once next trigger arrives.')
+        self.add_parameter('max_final_delay',
+                           unit='s',
+                           set_cmd=None,
+                           initial_value=10e-6,
+                           docstring='Time subtracted from each waveform to ensure '
+                               'that it is finished once next trigger arrives.')
         self.add_parameter('trigger_in_duration',
                            unit='s',
                            set_cmd=None,
                            initial_value=.1e-6)
         self.add_parameter('active_channels',
                            set_cmd=None,
-                           vals=Lists(Enum(1,2)))
+                           vals=Lists(Enum('ch1', 'ch2')))
         self.add_parameter('sampling_rate',
                            unit='1/s',
                            initial_value=1e9,
                            set_cmd=None,
                            vals=Numbers(max_value=1e9))
 
+        self.waveforms = {}
+        self.waveform_filenames = {}
+        self.sequence = {}
+
     def get_additional_pulses(self, **kwargs):
         # Return empty list if no pulses are in the pulse sequence
         if not self.pulse_sequence or self.is_primary():
             return []
 
-        active_channels = {pulse.connection.output['channel']
-                           for pulse in self.pulse_sequence}
-
-        # Add DCPulse(amplitude=0) for any gaps between pulses
-        gap_pulses = []
-        for channel in active_channels:
-            connection = self.pulse_sequence.get_connection(
-                output_instrument=self.instrument.name,
-                output_channel=channel)
-            pulses = sorted(self.pulse_sequence.get_pulses(output_channel=channel),
-                            key=lambda pulse: pulse.t_start)
-            t = 0
-            for pulse in pulses:
-                if pulse.t_start < t:
-                    raise RuntimeError(f'Pulse {pulse} starts before previous'
-                                       f'pulse is finished')
-                elif pulse.t_start > t:
-                    # Add DCPulse to fill gap between pulses
-                    gap_pulse = DCPulse(t_start=t,
-                                        t_stop=pulse.t_start,
-                                        amplitude=0,
-                                        connection=connection)
-                    gap_pulses.append(self.get_pulse_implementation(gap_pulse))
-                t = pulse.t_stop
-
-            if t < self.pulse_sequence.duration:
-                # Add DCPulse to fill gap between pulses
-                gap_pulse = DCPulse(t_start=t,
-                                    t_stop=self.pulse_sequence.duration,
-                                    amplitude=0,
-                                    connection=connection)
-                gap_pulses.append(self.get_pulse_implementation(gap_pulse))
-
-        self.pulse_sequence.add(*gap_pulses)
+        active_channels = list(set(pulse.connection.output['channel'].name
+                                   for pulse in self.pulse_sequence))
 
         # If a pulse starts on one channel and needs a trigger while another
         # pulse is still active on the other channel, this would cause the other
         # pulse to move onto the next pulse prematurely. This only happens if
         # the other pulse finished its waveform and is waiting for a trigger.
         # Here we check that this does not occur.
+
         if len(active_channels) > 1:
+            connections = {ch: self.pulse_sequence.get_connection(
+                output_instrument=self.instrument.name,
+                output_channel=ch) for ch in active_channels}
             t = 0
+            gap_pulses = []
             for t_start in self.pulse_sequence.t_start_list:
+
+                if t_start < t:
+                    raise RuntimeError(
+                        f'Pulse starting before end of previous pulse {t}')
+                elif t_start > t:
+                    # Add gap pulses for each channel
+                    for ch in active_channels:
+                        gap_pulse = DCPulse(t_start=t,
+                                            t_stop=t_start,
+                                            amplitude=0,
+                                            connection=connections[ch])
+                        gap_pulses.append(self.get_pulse_implementation(gap_pulse))
+                    t = t_start
+
                 pulses = {ch: self.pulse_sequence.get_pulse(t_start=t_start,
                                                             output_channel=ch)
-                          for ch in ['ch1', 'ch2']}
-                assert t == pulses['ch1'].t_start, \
-                    f"Gap between t_stop={t} and pulse.t_start{pulses['ch1'].t_start}"
-                assert pulses['ch1'].t_stop == pulses['ch2'].t_stop, \
-                    f"Pulses do not have same t_stop. Pulses: {pulses}"
-                t = pulses['ch1'].t_stop
+                          for ch in active_channels}
+
+                if pulses['ch1'] is None and pulses['ch2'] is None:
+                    raise RuntimeError(f"pulse sequence has t_start={t_start}, "
+                                        "but couldn't find pulse for either channel")
+                elif pulses['ch1'] is not None and pulses['ch2'] is not None:
+                    assert pulses['ch1'].t_stop == pulses['ch2'].t_stop, \
+                        f"t_stop of pulses starting at {t_start} must be equal." \
+                        f"This is a current limitation of the AWG interface."
+                    t = pulses['ch1'].t_stop
+                elif pulses['ch1'] is not None:
+                    # add gap pulse for ch2
+                    gap_pulse = DCPulse(t_start=t_start,
+                                        t_stop=pulses['ch1'].t_stop,
+                                        amplitude=0,
+                                        connection=connections['ch2'])
+                    gap_pulses.append(self.get_pulse_implementation(gap_pulse))
+                    t = pulses['ch1'].t_stop
+                else:
+                    # add gap pulse for ch1
+                    gap_pulse = DCPulse(t_start=t_start,
+                                        t_stop=pulses['ch2'].t_stop,
+                                        amplitude=0,
+                                        connection=connections['ch1'])
+                    gap_pulses.append(self.get_pulse_implementation(gap_pulse))
+                    t = pulses['ch2'].t_stop
+        else:
+            ch = active_channels[0]
+            # only add gap pulses for active channel
+            connection = self.pulse_sequence.get_connection(
+                output_instrument=self.instrument.name,
+                output_channel=ch)
+            gap_pulses = []
+            t = 0
+            for t_start in self.pulse_sequence.t_start_list:
+                if t_start < t:
+                    raise RuntimeError('Pulse starting before previous pulse '
+                                       f'finished {t} s')
+                elif t_start > t:
+                    # Add gap pulse
+                    gap_pulse = DCPulse(t_start=t,
+                                        t_stop=t_start,
+                                        amplitude=0,
+                                        connection=connection)
+                    gap_pulses.append(self.get_pulse_implementation(gap_pulse))
+
+                pulse = self.pulse_sequence.get_pulse(t_start=t_start,
+                                                      output_channel=ch)
+                # Pulse will be None if the pulse sequence has a final delay
+                if pulse is not None:
+                    t = pulse.t_stop
+
+        if t != self.pulse_sequence.duration:
+            for ch in active_channels:
+                gap_pulse = DCPulse(t_start=t,
+                                    t_stop=self.pulse_sequence.duration,
+                                    amplitude=0,
+                                    connection=connections[ch])
+                gap_pulses.append(self.get_pulse_implementation(gap_pulse))
+
+        if gap_pulses:
+            self.pulse_sequence.add(*gap_pulses)
 
         # TODO test if first waveform needs trigger as well
         additional_pulses = [
@@ -127,7 +185,7 @@ class AWG520Interface(InstrumentInterface):
                          connection_requirements={
                              'input_instrument': self.instrument_name(),
                              'trigger': True})
-            for t_start in self.pulse_sequence.t_start_list
+            for t_start in self.pulse_sequence.t_start_list + [self.pulse_sequence.duration]
         ]
 
         return additional_pulses
@@ -136,67 +194,140 @@ class AWG520Interface(InstrumentInterface):
         if is_primary:
             raise RuntimeError('AWG520 cannot function as primary instrument')
 
-        self.active_channels({pulse.connection.output['channel']
-                              for pulse in self.pulse_sequence})
+        self.active_channels(list({pulse.connection.output['channel'].name
+                                   for pulse in self.pulse_sequence}))
 
-        # Create waveforms and sequence
-        waveforms = []
-        sequence = {ch: [] for ch in self.active_channels()}
-
+        # Get waveforms for all channels
         t = 0
-        previous_voltages = {ch: 0 for ch in self.active_channels()}
-        while t < self.pulse_sequence.duration:
-            pulses = {ch: self.pulse_sequence.get_pulse(t_start=t, output_channel=ch)
-                      for ch in ['ch1', 'ch2']}
-            assert pulses['ch1'].t_stop == pulses['ch2'].t_stop, \
-                f"Pulses do not have same t_stop. Pulses: {pulses}"
+        pulses = {ch: self.pulse_sequence.get_pulses(output_channel=ch)
+                  for ch in self.active_channels()}
+        if len(self.active_channels()) > 1:
+            assert len(pulses['ch1']) == len(pulses['ch2']), \
+                "Channel1 and channel2 do not have equal number of pulses"
 
-            # Add pulses to waveforms and sequences
-            for ch, pulse in pulses.items():
-                assert pulse is not None,\
-                    f"Could not find unique pulse for channel {ch} at t_start={t}"
+        waveforms = {ch: [k for k in range(len(pulses[ch]))]
+                     for ch in self.active_channels()}
+        for k in range(len(next(iter(pulses.values())))):
+            pulse = {ch: pulses[ch][k] for ch in self.active_channels()}
+            # Get pulse of first channel
+            pulse1 = pulse[self.active_channels()[0]]
 
-                waveform = pulse.implementation.implement(
-                    first_point_voltage=previous_voltages[ch],
-                    sampling_rate=self.sampling_rate())
-                waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch])
+            if len(self.active_channels()) > 1:
+                assert t == pulse["ch1"].t_start == pulse["ch2"].t_start, \
+                    f't={t} does not match pulse.t_start={pulse["ch1"].t_start}'
+                assert pulse["ch1"].t_stop == pulse["ch2"].t_stop, \
+                    f'pulse["ch1"].t_stop != pulse["ch2"].t_stop: ' \
+                    f'{pulse["ch1"].t_stop} != {pulse["ch2"].t_stop}'
+            else:
+                assert t == pulse1.t_start, "t != pulse.t_start: {t} != {pulse1.t_start}"
+
+            # Waveform points of both channels need to match
+            # Here we find out the number of points needed
+            pulse_pts = [pulse.implementation.pts for pulse in pulse.values()]
+            if None in pulse_pts:
+                waveform_pts = (pulse1.t_stop - self.final_delay() -
+                                pulse1.t_start) * self.sampling_rate()
+            else:
+                waveform_pts = max(pulse_pts)
+            # Use linspace because it ensures length of array
+            t_list = np.linspace(pulse1.t_start,
+                                 pulse1.t_start + waveform_pts/self.sampling_rate(),
+                                 waveform_pts, endpoint=False)
+            if len(t_list) % 4:
+                # Points need to be increment of 4
+                t_list = t_list[:len(t_list) - (len(t_list) % 4)]
+            assert len(t_list) >= 256, \
+                f"Waveform has too few points at pulse.t_start={pulse1.t_start}"
+
+            for ch in self.active_channels():
+                waveforms[ch][k] = pulse[ch].implementation.implement(t_list=t_list)
+
+            t = pulse1.t_stop
+
+        # Set first point of each waveform to endpoint of previous waveform
+        endpoint_voltages = {ch: [waveform[-1] for waveform in ch_waveforms]
+                             for ch, ch_waveforms in waveforms.items()}
+        for ch in self.active_channels():
+            for k, waveform in enumerate(waveforms[ch]):
+                waveform[0] = endpoint_voltages[ch][(k-1) % len(waveforms[ch])]
+
+        # Create list of unique waveforms and corresponding sequence
+        waveforms_list = []
+        sequence = {ch: [] for ch in self.active_channels()}
+        for ch in self.active_channels():
+            for waveform in waveforms[ch]:
+                waveform_idx = arreqclose_in_list(waveform, waveforms_list)
                 if waveform_idx is None:
-                    waveforms.append(waveform)
-                    waveform_idx = len(waveforms) - 1
+                    waveforms_list.append(waveform)
+                    waveform_idx = len(waveforms_list) - 1
                 sequence[ch].append(waveform_idx)
-
-                # Update previous voltage to last point of current waveform
-                previous_voltages[ch] = waveform[-1]
-
-            t = pulse.t_stop
 
         self.instrument.stop()
         self.instrument.trigger_mode('ENH')
         self.instrument.trigger_level(1)
         self.instrument.clock_freq(self.sampling_rate())
-        for ch in [self.instrument.ch1, self.instrument.ch2]:
-            ch.offset(0)
-            # TODO What happens when we increase channel amplitude?
-            ch.amplitude(1)
-            ch.status('OFF')
 
-        # Upload waveforms
-        self.instrument.change_folder('silq')
-        filenames = []
-        for k, waveform in enumerate(waveforms):
-            filename = f'waveform_{k}.wfm'
-            marker1 = marker2 = np.zeros(len(waveform))
-            self.instrument.send_waveform(waveform,
-                                          marker1,
-                                          marker2,
-                                          filename,
-                                          clock=self.sampling_rate)
-            filenames.append(filename)
+        for ch in ['ch1', 'ch2']:
+            self.instrument[f'{ch}_offset'](0)
+            self.instrument[f'{ch}_amp'](2)
+            self.instrument[f'{ch}_status']('OFF')
+        # for ch in [self.instrument.ch1, self.instrument.ch2]:
+        #     ch.offset(0)
+        #     # TODO What happens when we increase channel amplitude?
+        #     ch.amplitude(1)
+        #     ch.status('OFF')
+
+        # Create silq folder to place waveforms and sequences in
+        if self.instrument.get_current_folder_name() != '/silq':
+            self.instrument.change_folder('/')
+            _, folders = self.instrument.get_folder_contents()
+            if 'silq' not in folders:
+                self.instrument.make_directory('silq', root=True)
+            self.instrument.change_folder('silq')
+
+        total_waveform_points = sum(len(waveform) for waveform in waveforms_list)
+
+        assert total_waveform_points < 3.99e6, \
+            f'Too many total waveform points: {total_waveform_points}'
+
+        total_existing_waveform_points = sum(
+            len(waveform) for waveform in self.waveform_filenames.values())
+        if (total_waveform_points + total_existing_waveform_points > 3.99e6) or \
+                len(self.waveform_filenames) > self.max_waveforms:
+            logger.info('Deleting existing waveforms from hard disk')
+            self.instrument.delete_all_files(root=False)
+            self.waveform_filenames.clear()
+
+        waveform_filename_mapping = []
+        # Copy waveform filenames because we only want to update the attribute
+        # If the setup is complete
+        waveform_filenames = copy(self.waveform_filenames)
+        for waveform in waveforms_list:
+            waveform_idx = arreqclose_in_list(waveform, waveform_filenames.values())
+            if waveform_idx is None:
+                # Waveform has not yet been uploaded
+                waveform_idx = len(waveform_filenames)
+
+                # Upload waveform
+                filename = f'waveform_{waveform_idx}.wfm'
+                marker1 = marker2 = np.zeros(len(waveform))
+                self.instrument.send_waveform(waveform,
+                                              marker1,
+                                              marker2,
+                                              filename,
+                                              clock=self.sampling_rate())
+                waveform_filenames[filename] = waveform
+            else:
+                filename = list(waveform_filenames)[waveform_idx]
+            # Add waveform mapping
+            waveform_filename_mapping.append(filename)
+
 
         # Upload sequence
-        sequence_waveform_names = [[filenames[waveform_idx]
-                                    for waveform_idx in sequence[ch]]
-                                   for ch in self.active_channels()]
+        sequence_waveform_names = [
+            [waveform_filename_mapping[waveform_idx]
+             for waveform_idx in sequence[ch]]
+            for ch in self.active_channels()]
         N_instructions = len(sequence_waveform_names[0])
         repetitions = np.ones(N_instructions)
         wait_trigger = np.ones(N_instructions)
@@ -204,22 +335,37 @@ class AWG520Interface(InstrumentInterface):
         logic_jump = np.zeros(N_instructions)
         if len(self.active_channels()) == 1:
             sequence_waveform_names = sequence_waveform_names[0]
-        self.instrument.send_sequence(sequence_waveform_names,
+        self.instrument.send_sequence('sequence.seq',
+                                      sequence_waveform_names,
                                       repetitions,
                                       wait_trigger,
                                       goto_one,
-                                      logic_jump,
-                                      'sequence.seq')
+                                      logic_jump)
 
+        # Check for errors here because else it adds a 50% overhead because it's
+        # still busy setting the sequence
         for error in self.instrument.get_errors():
             logger.warning(error)
 
+        self.instrument.set_sequence('sequence.seq')
+
+        self.waveforms = waveforms
+        self.waveform_filenames = waveform_filenames
+        self.sequence = sequence
+
     def start(self):
-        self.instrument.ch1.status('ON')
-        self.instrument.ch2.status('ON')
+        for ch in self.active_channels():
+            self.instrument[f'{ch}_status']('ON')
+        # self.instrument.ch1.status('ON')
+        # self.instrument.ch2.status('ON')
         self.instrument.start()
 
+        # SLeep for a short time because else it sometimes misses first trigger
+        sleep(0.2)
+
     def stop(self):
+        self.instrument.ch1_status('OFF')
+        self.instrument.ch2_status('OFF')
         self.instrument.stop()
 
 
@@ -229,8 +375,8 @@ class DCPulseImplementation(PulseImplementation):
     pts = 256
 
     def implement(self,
-                  first_point_voltage: int = 0,
-                  sampling_rate: float = 1e9, **kwargs) -> np.ndarray:
+                  t_list: np.ndarray,
+                  **kwargs) -> np.ndarray:
         """Implements the DC pulses for the AWG520
 
         Args:
@@ -245,21 +391,19 @@ class DCPulseImplementation(PulseImplementation):
         Returns:
             waveform
         """
-
         # AWG520 requires waveforms of at least 256 points
-        waveform = np. self.voltage * np.ones(self.pts)
-        waveform[0] = first_point_voltage
+        waveform = self.pulse.amplitude * np.ones(len(t_list))
         return waveform
 
 
 class SinePulseImplementation(PulseImplementation):
     # Number of points in a waveform (must be at least 256)
     pulse_class = SinePulse
+    pts = None
 
     def implement(self,
-                  first_point_voltage: int = 0,
-                  sampling_rate: float = 1e9,
-                  final_delay: float = 0, **kwargs) -> np.ndarray:
+                  t_list: np.ndarray,
+                  **kwargs) -> np.ndarray:
         """Implements Sine pulses for the AWG520
 
         Args:
@@ -273,9 +417,5 @@ class SinePulseImplementation(PulseImplementation):
         Returns:
             Waveform array
         """
-        t_list = np.arange(self.pulse.t_start,
-                           self.pulse.t_stop - final_delay,
-                           1 / sampling_rate)
         waveform = self.pulse.get_voltage(t_list)
-        waveform[0] = first_point_voltage
         return waveform
