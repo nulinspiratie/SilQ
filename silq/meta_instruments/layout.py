@@ -545,6 +545,10 @@ class Layout(Instrument):
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, connections=self.connections)
 
+            assert targeted_pulse is not None, \
+                f"Interface {interface} could not target pulse {pulse} using " \
+                f"connection {connection}."
+
             self.targeted_pulse_sequence.add(targeted_pulse)
 
             interface.pulse_sequence.add(targeted_pulse)
