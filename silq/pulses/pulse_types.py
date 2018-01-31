@@ -572,13 +572,14 @@ class SteeredInitialization(Pulse):
 
 class SinePulse(Pulse):
     def __init__(self, name=None, frequency=None, phase=None, amplitude=None,
-                 power=None, **kwargs):
+                 power=None, offset=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.frequency = self._value_or_config('frequency', frequency)
         self.phase = self._value_or_config('phase', phase)
         self.power = self._value_or_config('power', power)
         self.amplitude = self._value_or_config('amplitude', amplitude)
+        self.offset = self._value_or_config('offset', offset)
 
     def __repr__(self):
         properties_str = ''
@@ -589,6 +590,9 @@ class SinePulse(Pulse):
 
             if self.amplitude is not None:
                 properties_str += f', A={self.amplitude} V'
+
+            if self.offset is not None:
+                properties_str += f', offset={self.offset} V'
 
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
@@ -601,8 +605,15 @@ class SinePulse(Pulse):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
+        if self.phase is None:
+            waveform =  self.amplitude * np.sin(2 * np.pi * self.frequency * (t - self.t_start))
+        else:
+            waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
-        return self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        if self.offset is not None:
+            waveform += self.offset
+
+        return waveform
 
 
 class FrequencyRampPulse(Pulse):
@@ -778,9 +789,12 @@ class TriggerPulse(Pulse):
 
 
 class MarkerPulse(Pulse):
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name=None, amplitude=None, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', 1.0)
+        if amplitude is not None:
+            self.amplitude = amplitude
+        else:
+            self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:

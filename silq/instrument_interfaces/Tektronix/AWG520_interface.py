@@ -3,11 +3,12 @@ import logging
 from time import sleep
 from copy import copy
 
+import silq
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation
 from silq.tools.general_tools import arreqclose_in_list
-
+from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from qcodes.utils.validators import Lists, Enum, Numbers
 
 
@@ -77,6 +78,11 @@ class AWG520Interface(InstrumentInterface):
         self.waveforms = {}
         self.waveform_filenames = {}
         self.sequence = {}
+
+        # Create silq folder to place waveforms and sequences in
+        self.instrument.change_folder('/silq', create_if_necessary=True)
+        # Delete all files in folder
+        self.instrument.delete_all_files()
 
     def get_additional_pulses(self, **kwargs):
         # Return empty list if no pulses are in the pulse sequence
@@ -205,9 +211,11 @@ class AWG520Interface(InstrumentInterface):
             assert len(pulses['ch1']) == len(pulses['ch2']), \
                 "Channel1 and channel2 do not have equal number of pulses"
 
-        waveforms = {ch: [k for k in range(len(pulses[ch]))]
-                     for ch in self.active_channels()}
-        for k in range(len(next(iter(pulses.values())))):
+        N_instructions = len(pulses[self.active_channels()[0]])
+
+        waveforms = {ch: [0] * N_instructions for ch in self.active_channels()}
+        repetitions = [0] * N_instructions
+        for k in range(N_instructions):
             pulse = {ch: pulses[ch][k] for ch in self.active_channels()}
             # Get pulse of first channel
             pulse1 = pulse[self.active_channels()[0]]
@@ -225,23 +233,37 @@ class AWG520Interface(InstrumentInterface):
             # Here we find out the number of points needed
             pulse_pts = [pulse.implementation.pts for pulse in pulse.values()]
             if None in pulse_pts:
-                waveform_pts = (pulse1.t_stop - self.final_delay() -
-                                pulse1.t_start) * self.sampling_rate()
+                waveform_pts = int(round((pulse1.t_stop - self.final_delay() -
+                                          pulse1.t_start) * self.sampling_rate()))
             else:
-                waveform_pts = max(pulse_pts)
-            # Use linspace because it ensures length of array
-            t_list = np.linspace(pulse1.t_start,
-                                 pulse1.t_start + waveform_pts/self.sampling_rate(),
-                                 waveform_pts, endpoint=False)
+                waveform_pts = int(round(max(pulse_pts)))
+
+            # subtract 0.5 from waveform points to ensure correct length
+            t_list = np.arange(pulse1.t_start,
+                               pulse1.t_start + (waveform_pts-0.5)/self.sampling_rate(),
+                               1/self.sampling_rate())
+
             if len(t_list) % 4:
                 # Points need to be increment of 4
                 t_list = t_list[:len(t_list) - (len(t_list) % 4)]
             assert len(t_list) >= 256, \
                 f"Waveform has too few points at pulse.t_start={pulse1.t_start}"
 
-            for ch in self.active_channels():
-                waveforms[ch][k] = pulse[ch].implementation.implement(t_list=t_list)
+            single_repetitions = [0 for _ in self.active_channels()]
+            for ch_idx, ch in enumerate(self.active_channels()):
+                waveforms[ch][k], single_repetitions[ch_idx] = pulse[ch].implementation.implement(
+                    t_list=t_list, sampling_rate=self.sampling_rate())
 
+            if all(repetition == None for repetition in single_repetitions):
+                # None of the channel pulses cares about repetitions, set to 1
+                repetitions[k] = 1
+            else:
+                specified_repetitions = {elem for elem in single_repetitions
+                                         if elem is not None}
+                if len(set(specified_repetitions)) > 1:
+                    raise RuntimeError(f'Pulses {pulse} require different number'
+                                       f'of repetitions: {single_repetitions}')
+                repetitions[k] = next(iter(specified_repetitions))
             t = pulse1.t_stop
 
         # Set first point of each waveform to endpoint of previous waveform
@@ -256,7 +278,8 @@ class AWG520Interface(InstrumentInterface):
         sequence = {ch: [] for ch in self.active_channels()}
         for ch in self.active_channels():
             for waveform in waveforms[ch]:
-                waveform_idx = arreqclose_in_list(waveform, waveforms_list)
+                waveform_idx = arreqclose_in_list(waveform, waveforms_list,
+                                                  rtol=-1e-4, atol=1e-4)
                 if waveform_idx is None:
                     waveforms_list.append(waveform)
                     waveform_idx = len(waveforms_list) - 1
@@ -273,17 +296,11 @@ class AWG520Interface(InstrumentInterface):
             self.instrument[f'{ch}_status']('OFF')
         # for ch in [self.instrument.ch1, self.instrument.ch2]:
         #     ch.offset(0)
-        #     # TODO What happens when we increase channel amplitude?
         #     ch.amplitude(1)
         #     ch.status('OFF')
 
         # Create silq folder to place waveforms and sequences in
-        if self.instrument.get_current_folder_name() != '/silq':
-            self.instrument.change_folder('/')
-            _, folders = self.instrument.get_folder_contents()
-            if 'silq' not in folders:
-                self.instrument.make_directory('silq', root=True)
-            self.instrument.change_folder('silq')
+        self.instrument.change_folder('/silq', create_if_necessary=True)
 
         total_waveform_points = sum(len(waveform) for waveform in waveforms_list)
 
@@ -303,7 +320,9 @@ class AWG520Interface(InstrumentInterface):
         # If the setup is complete
         waveform_filenames = copy(self.waveform_filenames)
         for waveform in waveforms_list:
-            waveform_idx = arreqclose_in_list(waveform, waveform_filenames.values())
+            waveform_idx = arreqclose_in_list(waveform,
+                                              waveform_filenames.values(),
+                                              rtol=1e-4, atol=1e-4)
             if waveform_idx is None:
                 # Waveform has not yet been uploaded
                 waveform_idx = len(waveform_filenames)
@@ -328,8 +347,7 @@ class AWG520Interface(InstrumentInterface):
             [waveform_filename_mapping[waveform_idx]
              for waveform_idx in sequence[ch]]
             for ch in self.active_channels()]
-        N_instructions = len(sequence_waveform_names[0])
-        repetitions = np.ones(N_instructions)
+
         wait_trigger = np.ones(N_instructions)
         goto_one = np.zeros(N_instructions)
         logic_jump = np.zeros(N_instructions)
@@ -393,16 +411,20 @@ class DCPulseImplementation(PulseImplementation):
         """
         # AWG520 requires waveforms of at least 256 points
         waveform = self.pulse.amplitude * np.ones(len(t_list))
-        return waveform
+        repetitions = None # Repetitions is irrelevant
+
+        return waveform, repetitions
 
 
 class SinePulseImplementation(PulseImplementation):
     # Number of points in a waveform (must be at least 256)
     pulse_class = SinePulse
     pts = None
+    settings = {}
 
     def implement(self,
                   t_list: np.ndarray,
+                  sampling_rate: float,
                   **kwargs) -> np.ndarray:
         """Implements Sine pulses for the AWG520
 
@@ -417,5 +439,38 @@ class SinePulseImplementation(PulseImplementation):
         Returns:
             Waveform array
         """
-        waveform = self.pulse.get_voltage(t_list)
-        return waveform
+        settings = {**silq.config.properties.get('sine_waveform_settings', {}),
+                    **self.settings}
+        max_points = settings.pop('max_points', 50000)
+        if len(t_list) <= max_points:
+            waveform = self.pulse.get_voltage(t_list)
+            repetitions = 1
+        else:
+            duration = np.max(t_list) - np.min(t_list)
+            min_points = np.ceil(duration / 65536 * sampling_rate)
+            use_modified_frequency = settings.pop('use_modified_frequency', False)
+            results = pulse_to_waveform_sequence(max_points=max_points,
+                                                 frequency=self.pulse.frequency,
+                                                 sampling_rate=sampling_rate,
+                                                 total_duration=duration,
+                                                 min_points=max(256, min_points),
+                                                 sample_points_multiple=4,
+                                                 **settings
+                                                 )
+            # Store results for debugging purposes
+            self.results = results
+
+            if use_modified_frequency:
+                # Temporarily change frequency to modified value
+                original_frequency = self.pulse.frequency
+                self.pulse.frequency = results['optimum']['modified_frequency']
+
+            t_list_segment = t_list[:results['optimum']['points']]
+            waveform = self.pulse.get_voltage(t_list_segment)
+            repetitions = results['optimum']['repetitions']
+
+            if use_modified_frequency:
+                # Revert frequency to original
+                self.pulse.frequency = original_frequency
+
+        return waveform, repetitions
