@@ -898,9 +898,7 @@ class TriggerPulseImplementation(PulseImplementation):
 
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
-    @property
-    def amplitude(self):
-        return 1.0
+    amplitude = 1.0
 
     def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):

@@ -671,7 +671,7 @@ class Layout(Instrument):
                 # Set dict since it may not have existed previously
                 self.flags['setup'][instrument_name] = instrument_flags
 
-    def setup(self, samples=None, repeat=True,**kwargs):
+    def setup(self, samples=None, repeat=True, ignore=[], **kwargs):
         """
         Sets up all the instruments after having targeted a pulse sequence.
         Instruments are setup through their respective interfaces, and only
@@ -724,7 +724,7 @@ class Layout(Instrument):
                 [ch_name for _, ch_name in self.acquisition_channels.items()])
 
         for interface in self._get_interfaces_hierarchical():
-            if interface.pulse_sequence:
+            if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:

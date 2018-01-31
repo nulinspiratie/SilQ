@@ -260,7 +260,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                                   set_arrays=set_arrays)
             self.dataset.add_array(trace_arr)
 
-        self.dataset.finalize(save_metadata=False)
+        self.dataset.finalize(write_metadata=False)
 
     def print_results(self):
         names = self.names if self.names is not None else [self.name]
