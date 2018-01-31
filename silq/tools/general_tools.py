@@ -485,7 +485,7 @@ def arreq_in_list(myarr, list_arrays):
                 None)
 
 
-def arreqclose_in_list(myarr, list_arrays):
+def arreqclose_in_list(myarr, list_arrays, rtol=1e-5, atol=1e-8):
     """
     Get index of array in list of arrays, testing approximate equality
     Modified from https://stackoverflow.com/questions/23979146/
@@ -499,7 +499,7 @@ def arreqclose_in_list(myarr, list_arrays):
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if elem.size == myarr.size
-                 and np.allclose(elem, myarr)),
+                 and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
                 None)
 
 
