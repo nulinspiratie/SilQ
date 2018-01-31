@@ -758,7 +758,7 @@ class DCRampPulse(Pulse):
 
 
 class TriggerPulse(Pulse):
-    duration = .0001  # ms
+    duration = .1e-6
 
     def __init__(self, name=None, duration=duration, **kwargs):
         # Trigger pulses don't necessarily need a specific name
