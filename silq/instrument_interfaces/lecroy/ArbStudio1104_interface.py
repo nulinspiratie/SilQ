@@ -4,7 +4,7 @@ import logging
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
-    PulseImplementation
+    MarkerPulse, PulseImplementation
 from silq.tools.general_tools import arreqclose_in_list
 
 
@@ -28,9 +28,10 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.pulse_implementations = [SinePulseImplementation(
             pulse_requirements=[('frequency', {'min': 1e6, 'max': 125e6})]),
-            DCPulseImplementation(pulse_requirements=[]),
-            DCRampPulseImplementation(pulse_requirements=[]),
-            TriggerPulseImplementation(pulse_requirements=[])]
+            DCPulseImplementation(),
+            DCRampPulseImplementation(),
+            MarkerPulseImplementation(),
+            TriggerPulseImplementation()]
 
         self.add_parameter('trigger_in_duration',
                            set_cmd=None,
@@ -206,7 +207,8 @@ class ArbStudio1104Interface(InstrumentInterface):
 
                 # Only add waveforms that don't already exist
                 for waveform in channel_waveforms:
-                    waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch])
+                    waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch],
+                                                      rtol=1e-4, atol=1e-5)
                     if waveform_idx is None:
                         self.waveforms[ch].append(waveform)
 
@@ -217,7 +219,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                 for k, sequence_idx in enumerate(channel_sequence):
                     waveform = channel_waveforms[sequence_idx]
                     waveform_idx = arreqclose_in_list(waveform,
-                                                      self.waveforms[ch])
+                                                      self.waveforms[ch],
+                                                      rtol=1e-4, atol=1e-4)
                     # Update channel_sequence item to correct index
                     channel_sequence[k] = waveform_idx
                 self.sequences[ch].extend(channel_sequence)
@@ -407,6 +410,52 @@ class DCRampPulseImplementation(PulseImplementation):
             sequences[ch] = np.zeros(1, dtype=int)
 
         return waveforms, sequences
+
+
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
+    pts = 4
+
+    def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
+        """
+        Implements the DC pulses for the ArbStudio for SingleConnection. If
+        the input pulse sequence contains triggers in between the DC pulse,
+        the output sequence will repeat the waveform multiple times
+
+        Args:
+            input_pulse_sequence: Arbstudio input pulsesfrom which the
+                triggering determines how how often the sequence repeats the
+                waveform
+
+        Returns:
+            waveforms: {output_channel: waveforms} dictionary for each output
+                channel, where each element in waveforms is a list
+                containing the voltage levels of the waveform
+            waveforms: {output_channel: sequence} dictionary for each
+            output channel, where each element in sequence indicates the
+            waveform that must be played after the trigger
+        """
+
+        # Find all trigger pulses occuring within this pulse
+        trigger_pulses = input_pulse_sequence.get_pulses(
+            t_start=('>', self.pulse.t_start),
+            t_stop=('<', self.pulse.t_stop),
+            trigger=True)
+
+        # Arbstudio requires a minimum of four points to be returned
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
+        else:
+            raise Exception(f"No implementation for connection "
+                            f"{self.pulse.connection}")
+
+        waveforms = {ch: [np.ones(self.pts) * self.pulse.amplitude]
+                     for ch in channels}
+        sequences = {ch: np.zeros(len(trigger_pulses) + 1, dtype=int)
+                     for ch in channels}
+
+        return waveforms, sequences
+
 
 
 class TriggerPulseImplementation(PulseImplementation):
