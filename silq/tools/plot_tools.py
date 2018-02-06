@@ -414,7 +414,7 @@ class TracePlot(ScanningPlot):
         subplots = kwargs.pop('subplots', 1)
         average_mode = getattr(parameter, 'average_mode', 'none')
         if parameter.samples > 1 and average_mode == 'none':
-            subplots = (len(self.layout.acquisition_outputs()), 1)
+            subplots = (len(self.layout.acquisition_channels()), 1)
         else:
             subplots = 1
         super().__init__(parameter, subplots=subplots, **kwargs)
