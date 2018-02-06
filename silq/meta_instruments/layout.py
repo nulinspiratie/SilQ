@@ -68,11 +68,8 @@ class Layout(Instrument):
                            set_cmd=None,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
-        self.add_parameter('acquisition_outputs',
+        self.add_parameter('acquisition_channels',
                            set_cmd=None,
-                           initial_value=([('chip.output', 'output')]
-                                          if 'chip' in self._interfaces.keys()
-                                          else []),
                            vals=vals.Anything())
 
         self.add_parameter(name='samples',
@@ -133,28 +130,6 @@ class Layout(Instrument):
             return self._interfaces[self.acquisition_instrument()]
         else:
             return None
-
-    @property
-    def acquisition_channels(self):
-        """ Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-        The acquisition_label is the label associated with a certain
-        acquisition channel. This is settable via layout.acquisition_outputs
-        The acquisition_channel_name is the actual channel name of the
-        acquisition controller.
-        """
-
-        acquisition_channels = od()
-        for output_arg, output_label in self.acquisition_outputs():
-            # Use try/except in case not all connections exist
-            try:
-                connection = self.get_connection(
-                    output_arg=output_arg,
-                    input_instrument=self.acquisition_instrument())
-                acquisition_channels[output_label] = \
-                    connection.input['channel'].name
-            except:
-                return None
-        return acquisition_channels
 
     @property
     def sample_rate(self):
@@ -713,7 +688,7 @@ class Layout(Instrument):
 
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
-                [ch_name for _, ch_name in self.acquisition_channels.items()])
+                [ch_name for ch_name, _ in self.acquisition_channels()])
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
@@ -744,7 +719,7 @@ class Layout(Instrument):
         trace_shapes = self.pulse_sequence.get_trace_shapes(
             sample_rate=self.sample_rate, samples=self.samples())
         self.acquisition_shapes = {}
-        output_labels = [output[1] for output in self.acquisition_outputs()]
+        output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
@@ -841,16 +816,8 @@ class Layout(Instrument):
             for pulse, channel_traces in pulse_traces.items():
                 data[pulse] = {}
                 for channel, trace in channel_traces.items():
-                    # Find corresponding connection
-                    connection = self.get_connection(
-                        input_channel=channel,
-                        input_instrument=self.acquisition_instrument())
-                    # Get output arg (instrument.channel)
-                    output_arg = connection.output['str']
-                    # Find label corresponding to output arg
-                    output_label = next(
-                        item[1] for item in self.acquisition_outputs()
-                        if item[0] == output_arg)
+                    output_label = next(item[1] for item in self.acquisition_channels()
+                                        if item[0] == channel)
                     data[pulse][output_label] = trace
         except:
             # If any error occurs, stop all instruments
