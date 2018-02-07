@@ -30,6 +30,14 @@ class Pulse(HasTraits):
     average = Unicode()
     signal = Signal()
     _connected_attrs = {}
+    _skip_JSON_encoder_attrs = ['_connected_attrs',
+                                '_cross_validation_lock',
+                                '_trait_notifiers',
+                                '_trait_validators',
+                                '_trait_values',
+                                'signal',
+                                'pulse_config',
+                                'properties_config']
 
     def __init__(self, name=None, id=None, environment='default', t_start=None,
                  t_stop=None, duration=None, acquire=False, initialize=False,
@@ -434,7 +442,9 @@ class Pulse(HasTraits):
         """
         return_dict = {}
         for attr, val in vars(self).items():
-            return_dict[attr] = val
+            if attr not in self._skip_JSON_encoder_attrs:
+                strip_attr = attr.lstrip('_')
+                return_dict[strip_attr] = val
         return return_dict
 
     @property

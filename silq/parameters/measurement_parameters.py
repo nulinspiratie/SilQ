@@ -1,8 +1,11 @@
 import numpy as np
 import logging
 from collections import Iterable
+import numbers
+from scipy.interpolate import interp1d
 
 import qcodes as qc
+from qcodes import Instrument
 from qcodes.loops import active_data_set, Loop, BreakIf
 from qcodes.data import hdf5_format
 from qcodes.instrument.parameter import MultiParameter
@@ -29,11 +32,19 @@ measurement_config = config.get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
+    layout = None
 
     def __init__(self, name, acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
         MultiParameter.__init__(self, name, snapshot_value=False, **kwargs)
+
+        if self.layout is None:
+            try:
+                MeasurementParameter.layout = Instrument.find_instrument(
+                    'layout')
+            except KeyError:
+                logger.warning(f'No layout found for {self}')
 
         self.discriminant = discriminant
 
@@ -100,7 +111,10 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def print_results(self):
         if getattr(self, 'names', None) is not None:
             for name, result in self.results.items():
-                print(f'{name}: {result:.3f}')
+                if isinstance(result, numbers.Number):
+                    print(f'{name}: {result:.3f}')
+                else:
+                    print(f'{name}: {result}')
         elif hasattr(self, 'results'):
             print(f'{self.name}: {self.results[self.name]:.3f}')
 
@@ -108,24 +122,25 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 class RetuneBlipsParameter(MeasurementParameter):
     """
     Parameter that retunes to a transition by analysing blips in a neural network
-    
+
     The first (optional) stage is to use a CoulombPeakParameter to find the
     center of the Coulomb peak.
-    
+
     Second, a sweep parameter is varied for a range of sweep values. For each 
     sweep point, a trace is acquired, and its blips measured in a BlipsParameter.
     This information is then analysed by a neural network, from which the
     optimal tuning position is predicted.
-    
+
     The Neural network is a Keras model that needs to be pre-trained with data.
     More info: Experiments/personal/Serwan/Neural networks/Retune blips.ipynb
     The following Neural Network seems to produce decent results:
-    
+
     model = Sequential()
     model.add(Dense(3, activation='linear', input_shape=(21,3)))
     model.add(Flatten())
     model.add(Dense(1, activation='linear'))
     """
+
     def __init__(self,
                  name='retune_blips',
                  coulomb_peak_parameter=None,
@@ -134,6 +149,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                  sweep_vals=None,
                  tune_to_coulomb_peak=True,
                  tune_to_optimum=True,
+                 optimum_DC_offset=None,
                  model_filepath=None,
                  voltage_limit=None,
                  **kwargs):
@@ -157,7 +173,12 @@ class RetuneBlipsParameter(MeasurementParameter):
                 Otherwise, it will always assume the system remains on the
                 Coulomb peak
             tune_to_optimum: Tune to optimum values predicted by neural network.
-                If True, the offsets of the sweep parameter are also zeroed
+                If True, the offsets of the sweep parameter are also zeroed.
+            optimum_DC_offset: Additional offset to optimum determined from 
+                neural network model. Used if the model is not trained properly
+                and has a constant offset in predictions.
+                If single value, combined parameter will be offset.
+                If tuple, offsets are per parameter in combined parameter.
             model_filepath: Filepath of Keras neural network (.h5 extension).
             voltage_limit: Maximum voltage difference from initial offsets to
                 avoid the system .
@@ -172,7 +193,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
         super().__init__(name=name,
                          names=['optimal_vals', 'offsets'],
-                         units=['mV', 'mV'],
+                         units=['V', 'V'],
                          shapes=((), ()),
                          **kwargs)
 
@@ -182,6 +203,7 @@ class RetuneBlipsParameter(MeasurementParameter):
         self.sweep_vals = sweep_vals
         self.tune_to_coulomb_peak = tune_to_coulomb_peak
         self.tune_to_optimum = tune_to_optimum
+        self.optimum_DC_offset = optimum_DC_offset
 
         self.initial_offsets = None
         self.voltage_limit = voltage_limit
@@ -210,7 +232,7 @@ class RetuneBlipsParameter(MeasurementParameter):
     @property_ignore_setter
     def shapes(self):
         if isinstance(self.sweep_parameter, CombinedParameter):
-            shape = (len(self.sweep_parameter.parameters), )
+            shape = (len(self.sweep_parameter.parameters),)
         else:
             shape = ()
         return (shape,) * len(self.names)
@@ -271,7 +293,7 @@ class RetuneBlipsParameter(MeasurementParameter):
         # Scale results
         # Neural network output is between -1 (sweep_vals[0]) and +1 (sweep_vals[-1])
         scale_factor = (self.sweep_vals[-1] - self.sweep_vals[0]) / 2
-        self.optimal_val =  self.neural_network_results * scale_factor
+        self.optimal_val = self.neural_network_results * scale_factor
 
         return self.optimal_val
 
@@ -284,7 +306,6 @@ class RetuneBlipsParameter(MeasurementParameter):
             logger.debug(f'skipping iteration {self.idx} % {self.every_nth}')
             # Skip this iteration, return old results
             return [self.results[name] for name in self.names]
-
 
         initial_set_val = self.sweep_parameter()
         initial_offsets = self.sweep_parameter.offsets
@@ -310,19 +331,35 @@ class RetuneBlipsParameter(MeasurementParameter):
             optimum = self.calculate_optimum()
 
             if optimum is not None and self.tune_to_optimum:
-                if self.voltage_limit is not None:
-                    optimum_vals = self.sweep_parameter.calculate_individual_values(optimum)
-                    voltage_differences = np.array(self.initial_offsets) - optimum_vals
-                    if max(abs(voltage_differences)) > self.voltage_limit:
+                if self.voltage_limit is None:
+                    tune_to_optimum = True
+                else:
+                    optimum_vals = self.sweep_parameter.calculate_individual_values(
+                        optimum)
+                    voltage_differences = np.array(
+                        self.initial_offsets) - optimum_vals
+                    if max(abs(voltage_differences)) < self.voltage_limit:
+                        tune_to_optimum = True
+                    else:
                         logging.warning(f'tune voltage {optimum_vals} outside '
                                         f'range, tuning back to initial value')
                         self.sweep_parameter.offsets = self.initial_offsets
                         self.sweep_parameter(0)
+                        tune_to_optimum = False
+
+                if tune_to_optimum:
+                    if self.optimum_DC_offset is None:
+                        self.sweep_parameter(optimum)
+
+                    elif isinstance(self.optimum_DC_offset, float):
+                        self.sweep_parameter(optimum + self.optimum_DC_offset)
                     else:
                         self.sweep_parameter(optimum)
-                        self.sweep_parameter.zero_offset()
-                else:
-                    self.sweep_parameter(optimum)
+                        for parameter, offset in zip(
+                                self.sweep_parameter.parameters,
+                                self.optimum_DC_offset):
+                            parameter(parameter() + offset)
+
                     self.sweep_parameter.zero_offset()
 
         self.results = {
@@ -340,6 +377,7 @@ class CoulombPeakParameter(MeasurementParameter):
     Finding the Coulomb peak is done by sweeping a gate and measuring the DC
     voltage at each point.
     """
+
     def __init__(self,
                  name='coulomb_peak',
                  sweep_parameter=None,
@@ -348,6 +386,7 @@ class CoulombPeakParameter(MeasurementParameter):
                  DC_peak_offset=None,
                  tune_to_peak=True,
                  min_voltage=0.5,
+                 interpolate: bool = True,
                  **kwargs):
         """
         Args:
@@ -386,6 +425,9 @@ class CoulombPeakParameter(MeasurementParameter):
         self.DC_peak_offset = DC_peak_offset
 
         self.tune_to_peak = tune_to_peak
+        self.interpolate = interpolate
+
+        self.continuous = True
 
         self.results = {}
 
@@ -402,12 +444,12 @@ class CoulombPeakParameter(MeasurementParameter):
     def calculate_sweep_vals(self):
         if self.sweep_parameter is None:
             return None
-        elif self.sweep['range']:
+        elif self.sweep.get('range', None):
             return self.sweep_parameter[self.sweep['range']]
         elif self.sweep['step_percentage'] and self.sweep['num']:
             return self.sweep_parameter.sweep(
                 step_percentage=self.sweep['step_percentage'],
-            num=self.sweep['num'])
+                num=self.sweep['num'])
         else:
             return None
 
@@ -446,7 +488,7 @@ class CoulombPeakParameter(MeasurementParameter):
             # Add DC offset
             self.combined_set_parameter(self.DC_peak_offset)
 
-        #  Calculate sweep vals
+        # Calculate sweep vals
         initial_set_val = self.sweep_parameter()
         sweep_vals = self.calculate_sweep_vals()
 
@@ -456,9 +498,13 @@ class CoulombPeakParameter(MeasurementParameter):
                                            location=self.loc_provider)
 
         # Perform measurement
-        self.acquisition_parameter.setup()
+        if (
+                self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
+        or self.layout.samples() != self.acquisition_parameter.samples):
+            self.acquisition_parameter.setup()
         try:
-            self.loop.run(set_active=False, quiet=True)
+            self.loop.run(set_active=False, quiet=True,
+                          stop=not self.continuous)
         except:
             # Error occurred, reset to initial values and raise error
             if self.DC_peak_offset is None:
@@ -468,7 +514,8 @@ class CoulombPeakParameter(MeasurementParameter):
             raise
 
         # Analyse measurement results
-        if self.min_voltage is not None and np.max(self.data.DC_voltage) < self.min_voltage:
+        if self.min_voltage is not None and np.max(
+                self.data.DC_voltage) < self.min_voltage:
             # Could not find coulomb peak
             self.results[self.names[0]] = np.nan
             self.results[self.names[1]] = np.nan
@@ -480,8 +527,20 @@ class CoulombPeakParameter(MeasurementParameter):
                 self.combined_set_parameter(0)
         else:
             # Found coulomb peak
-            max_idx = np.argmax(self.data.DC_voltage)
-            max_set_val = sweep_vals[max_idx]
+            # Perform some smoothing of data
+            self.smoothed_arr = self.data.DC_voltage.smooth(5)
+            if self.interpolate:
+                self.interpolation = interp1d(sweep_vals, self.smoothed_arr,
+                                              'cubic')
+                self.interpolation_x_vals = np.linspace(sweep_vals[0],
+                                                        sweep_vals[-1], 100)
+                self.interpolation_y_vals = self.interpolation(
+                    self.interpolation_x_vals)
+                max_idx = np.argmax(self.interpolation_y_vals)
+                max_set_val = self.interpolation_x_vals[max_idx]
+            else:
+                max_idx = np.argmax(self.smoothed_arr)
+                max_set_val = sweep_vals[max_idx]
             self.results[self.names[0]] = max_set_val
             self.results[self.names[1]] = max_set_val - initial_set_val
 
@@ -494,10 +553,12 @@ class CoulombPeakParameter(MeasurementParameter):
                     peak_offset = max_set_val - initial_set_val
 
                     sweep_parameter_idx = next(
-                        index for index, item in enumerate(self.combined_set_parameter.parameters)
+                        index for index, item in
+                        enumerate(self.combined_set_parameter.parameters)
                         if item is self.sweep_parameter)
 
-                    self.combined_set_parameter.offsets[sweep_parameter_idx] += peak_offset
+                    self.combined_set_parameter.offsets[
+                        sweep_parameter_idx] += peak_offset
 
                     self.combined_set_parameter(0)
 
@@ -505,6 +566,202 @@ class CoulombPeakParameter(MeasurementParameter):
         self.results['DC_voltage'] = self.data.DC_voltage
 
         return [self.results[name] for name in self.names]
+
+
+class MeasureFlipNucleusParameter(MeasurementParameter):
+    def __init__(self,
+                 name='measure_flip_nucleus',
+                 measure_nucleus_parameter=None,
+                 flip_nucleus_parameter=None,
+                 max_attempts=3,
+                 **kwargs):
+        super().__init__(name=name, names=[], shapes=(), wrap_set=False,
+                         **kwargs)
+
+        self.measure_nucleus_parameter = measure_nucleus_parameter
+        self.flip_nucleus_parameter = flip_nucleus_parameter
+        self.max_attempts = max_attempts
+
+    def set(self, target_state):
+        for k in range(self.max_attempts):
+            self.measure_nucleus_parameter()
+            results = self.measure_nucleus_parameter.results
+            if not results['found_nucleus_state']:
+                logger.info('Could not determine nucleus state. perhaps in a '
+                            'state for which ESR frequency is not known')
+                continue
+            nucleus_state = results['nucleus_state']
+            if nucleus_state == target_state:
+                logger.info(f'Nucleus is in target state {target_state}')
+                return
+            else:
+                logger.info(f'Flipping nucleus from {nucleus_state} '
+                            f'to {target_state}')
+                self.flip_nucleus_parameter(nucleus_state, target_state)
+
+
+class MeasureNucleusParameter(MeasurementParameter):
+    def __init__(self,
+                 name='measure_nucleus',
+                 discriminant='contrast_ESR',
+                 acquisition_parameter=None,
+                 frequency_set_parameter=None,
+                 frequency_vals=None,
+                 frequency_order='descending',
+                 threshold=0.5,
+                 samples=None,
+                 break_if_satisfied=True):
+        super().__init__(name=name, acquisition_parameter=acquisition_parameter,
+                         names=['found_nucleus_state',
+                                'nucleus_state',
+                                'max_nucleus_' + discriminant,
+                                'nucleus_' + discriminant,
+                                'average_' + discriminant],
+                         discriminant=discriminant,
+                         shapes=((), (), (), (), ()),
+                         wrap_set=False)
+
+        self.frequency_set_parameter = frequency_set_parameter
+        self.frequency_vals = frequency_vals
+        self.frequency_order = frequency_order
+
+        self.threshold = threshold
+        self.break_if_satisfied = break_if_satisfied
+        self.samples = samples
+        self.continuous = False
+        self.silent = True
+
+        self.results = {}
+        self.loop = None
+        self.data = None
+
+    @property_ignore_setter
+    def labels(self):
+        return [name.replace('_', ' ').capitalize() for name in self.names]
+
+    @property_ignore_setter
+    def shapes(self):
+        return ((), (), (), (len(self.frequency_vals),), ())
+
+    @property
+    def frequency_vals(self):
+        if self._frequency_vals is not None:
+            frequency_vals = self._frequency_vals
+        else:
+            environment = self.acquisition_parameter.environment
+            frequency_vals = {int(key): val for key, val
+                              in
+                              config[environment].properties.ESR_vals.items()}
+        return frequency_vals
+
+    @frequency_vals.setter
+    def frequency_vals(self, vals):
+        if vals is not None and not isinstance(vals, dict):
+            raise SyntaxError('frequency_vals must be None or dict')
+        else:
+            self._frequency_vals = vals
+
+    @property
+    def frequency_order(self):
+        frequency_vals = self.frequency_vals
+
+        if self._frequency_order == 'descending':
+            frequency_order = sorted(frequency_vals.keys(), reverse=True)
+        elif self._frequency_order == 'ascending':
+            frequency_order = sorted(frequency_vals.keys(), reverse=False)
+        else:
+            # Frequency order is a list
+            frequency_order = self.frequency_order
+
+        return frequency_order
+
+    @frequency_order.setter
+    def frequency_order(self, order):
+        if isinstance(order, str) and order in ['ascending', 'descending']:
+            self._frequency_order = order
+        elif isinstance(order, Iterable):
+            self._frequency_order = list(order)
+        else:
+            raise TypeError('frequency order must either be an iterable, '
+                            'or `ascending` or `descending`')
+
+    @property
+    def frequency_vals_sorted(self):
+        frequency_vals = self.frequency_vals
+        return [frequency_vals[key] for key in self.frequency_order]
+
+    def create_loop(self):
+        def above_threshold():
+            val = self.acquisition_parameter.results[self.discriminant]
+            is_above_threshold = val > self.threshold
+            logger.debug(
+                f'{self.discriminant} {val} > {self.threshold}: {is_above_threshold}')
+            return is_above_threshold
+
+        if self.acquisition_parameter is None:
+            raise RuntimeError('Must specify acquisition_parameter')
+        if self.frequency_set_parameter is None:
+            raise RuntimeError('Must specify frequency_set_parameter')
+
+        actions = [self.acquisition_parameter]
+        if self.break_if_satisfied:
+            actions.append(BreakIf(above_threshold))
+
+        loop = Loop(
+            self.frequency_set_parameter[self.frequency_vals_sorted]
+        ).each(
+            *actions
+        )
+        return loop
+
+    @clear_single_settings
+    def get_raw(self):
+
+        self.loop = self.create_loop()
+        self.data = self.loop.get_data_set(name=self.name,
+                                           location=self.loc_provider)
+
+        temporary_settings = {"continuous": True,
+                              "base_folder": self.data.location,
+                              "subfolder": 'traces'}
+        if self.samples is not None:
+            temporary_settings['samples'] = self.samples
+
+        self.acquisition_parameter.temporary_settings(**temporary_settings)
+
+        if (
+                self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
+        or self.layout.samples() != self.acquisition_parameter.samples):
+            self.acquisition_parameter.setup()
+
+        self.loop.run(set_active=False, quiet=True,
+                      stop=not self.continuous)
+
+        discriminant_vals = getattr(self.data, self.discriminant).ndarray
+        if np.nanmax(discriminant_vals) >= self.threshold:
+            # Successfully found nucleus state
+            frequency_idx = np.nanargmax(discriminant_vals)
+            self.results['found_nucleus_state'] = True
+            self.results['nucleus_state'] = int(
+                self.frequency_order[frequency_idx])
+        else:
+            # Could not localize nucleus state
+            self.results['found_nucleus_state'] = False
+            self.results['nucleus_state'] = np.nan
+        self.results['max_nucleus_' + self.discriminant] = np.nanmax(
+            discriminant_vals)
+        self.results['nucleus_' + self.discriminant] = discriminant_vals
+        self.results['average_' + self.discriminant] = np.nanmean(
+            discriminant_vals)
+
+        if not self.silent:
+            self.print_results()
+
+        return [self.results[name] for name in self.names]
+
+    def set(self, **kwargs):
+        # Set single settings
+        return self.single_settings(**kwargs)()
 
 
 class DCMultisweepParameter(MeasurementParameter):
@@ -549,7 +806,6 @@ class DCMultisweepParameter(MeasurementParameter):
         return np.linspace(-self.x_sweep_range / 2, self.x_sweep_range / 2,
                            self.pts + 1)[:-1]
 
-
     @property
     def AC_y_vals(self):
         return np.linspace(-self.y_sweep_range / 2, self.y_sweep_range / 2,
@@ -571,8 +827,8 @@ class DCMultisweepParameter(MeasurementParameter):
     def setpoints(self):
         return convert_setpoints(np.linspace(self.y_range[0], self.y_range[1],
                                              self.pts * self.y_sweeps),
-            np.linspace(self.x_range[0], self.x_range[1],
-                        self.pts * self.x_sweeps)),
+                                 np.linspace(self.x_range[0], self.x_range[1],
+                                             self.pts * self.x_sweeps)),
 
     @property_ignore_setter
     def shapes(self):
@@ -610,7 +866,6 @@ class DCMultisweepParameter(MeasurementParameter):
                 logger.debug('finally stopping')
                 self.layout.stop()
                 self.acquisition_parameter.clear_settings()
-
 
         arr = np.zeros((len(self.DC_y_vals) * self.pts,
                         len(self.DC_x_vals) * self.pts))
@@ -655,7 +910,7 @@ class MeasurementSequenceParameter(MeasurementParameter):
 
         super().__init__(
             name=name,
-            names=[name+'_msmts', 'optimal_set_vals', self.discriminant],
+            names=[name + '_msmts', 'optimal_set_vals', self.discriminant],
             shapes=((), (len(self.set_parameters),), ()),
             discriminant=self.discriminant,
             acquisition_parameter=self.acquisition_parameter,
@@ -779,7 +1034,7 @@ class SelectFrequencyParameter(MeasurementParameter):
         else:
             if not self.silent:
                 logger.warning("Could not find frequency with high enough "
-                                "contrast")
+                               "contrast")
 
         self['frequency'] = frequency
 
@@ -829,7 +1084,7 @@ class TrackPeakParameter(MeasurementParameter):
 
     @property
     def shapes(self):
-        return [(), (len(self.set_vals), ), (len(self.set_vals),)]
+        return [(), (len(self.set_vals),), (len(self.set_vals),)]
 
     @clear_single_settings
     def get(self):

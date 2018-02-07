@@ -224,7 +224,7 @@ qc.Parameter.sweep = _sweep
 # Override ActiveLoop._run_wrapper to stop the layout and clear settings of
 # any accquisition parameters in the loop after the loop has completed.
 _qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
-def _run_wrapper(self, set_active=True, *args, **kwargs):
+def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
 
     def clear_all_acquisition_parameter_settings(loop):
         from silq.parameters import AcquisitionParameter
@@ -241,8 +241,9 @@ def _run_wrapper(self, set_active=True, *args, **kwargs):
     finally:
         try:
             layout = qc.Instrument.find_instrument('layout')
-            layout.stop()
-            logger.info('Stopped layout at end of loop')
+            if stop:
+                layout.stop()
+                logger.info('Stopped layout at end of loop')
         except KeyError:
             logger.warning(f'No layout found to stop')
 
