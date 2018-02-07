@@ -8,7 +8,7 @@ import re
 
 from qcodes import DataSet, DataArray, MultiParameter, active_data_set
 from qcodes.data import hdf5_format
-from qcodes import Instrument
+from qcodes import Instrument, MatPlot
 
 from silq import config
 from silq.pulses import *
@@ -315,6 +315,39 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def analyse(self, traces):
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
+    def plot_traces(self, filter=None, channels=['output']):
+        plot_traces = OrderedDict()
+        for pulse_name, trace in self.traces.items():
+            if filter is not None and filter not in pulse_name:
+                continue
+
+            plot_traces[pulse_name] = trace
+
+        if len(channels) > 1:
+            subplots = (len(plot_traces), len(channels))
+        else:
+            subplots = len(plot_traces)
+        plot = MatPlot(subplots=subplots)
+
+        k = 0
+        for pulse_name, traces in plot_traces.items():
+            for channel in channels:
+                trace_arr = traces[channel]
+                pts = trace_arr.shape[-1]
+                t_list = np.linspace(0, pts / self.sample_rate, pts,
+                                     endpoint=False)
+                if trace_arr.ndim == 2:
+                    plot[k].add(traces[channel], x=t_list,
+                                y=np.arange(trace_arr.shape[0], dtype=float))
+                else:
+                    plot[k].add(traces[channel], x=t_list)
+                plot[k].set_xlabel('Time (s)')
+                plot[k].set_title(pulse_name)
+                k += 1
+        plot.tight_layout()
+        return plot
+
+
     @clear_single_settings
     def get_raw(self):
         self.traces = self.acquire()
@@ -331,6 +364,83 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def set(self, **kwargs):
         return self.single_settings(**kwargs)()
+
+
+class PulseSequenceAcquisitionParameter(AcquisitionParameter):
+    def __init__(self, name, tile_pulses=[], samples=1, **kwargs):
+        self.tile_pulses = tile_pulses
+        super().__init__(name=name, names=[], shapes=[], **kwargs)
+        self.samples = samples
+        self.tile_pulses = tile_pulses
+
+    @property_ignore_setter
+    def names(self):
+        acquire_pulses = self.pulse_sequence.get_pulses(acquire=True)
+        acquire_pulse_names = [pulse.name for pulse in acquire_pulses
+                               if not pulse.name in self.tile_pulses]
+        acquire_pulse_names.extend(self.tile_pulses)
+        return acquire_pulse_names
+
+    @property_ignore_setter
+    def labels(self):
+        return self.names
+
+    @property_ignore_setter
+    def shapes(self):
+        trace_shapes = self.pulse_sequence.get_trace_shapes(self.sample_rate,
+                                                            self.samples)
+
+        # Tile pulses
+        for acquire_pulse_name in self.names:
+            if acquire_pulse_name not in self.tile_pulses:
+                continue
+
+            pulse_trace_shapes = []
+            for pulse_name, pulse_shape in list(trace_shapes.items()):
+                if (pulse_name == acquire_pulse_name
+                    or pulse_name.startswith(f'{acquire_pulse_name}[')):
+                    pulse_trace_shapes.append(pulse_shape)
+                    trace_shapes.pop(pulse_name)
+
+            pulse_trace_shape = list(pulse_trace_shapes[0])
+            pulse_trace_shape[-1] = sum(shape[-1] for shape in pulse_trace_shapes)
+
+            trace_shapes[acquire_pulse_name] = pulse_trace_shape
+
+        return [tuple(trace_shapes[name]) for name in self.names]
+
+    def analyse(self, traces):
+        tile_indices = {name: 0 for name in self.names}
+
+        tiled_traces = {acquire_pulse_name: np.zeros(shape)
+                        for acquire_pulse_name, shape in zip(self.names,
+                                                             self.shapes)}
+        for acquire_pulse_name in self.names:
+            if acquire_pulse_name not in self.tile_pulses:
+                tiled_traces[acquire_pulse_name] = traces[acquire_pulse_name]['output']
+            else:
+                tile_traces = {pulse_name: trace for pulse_name, trace in traces.items()
+                               if (pulse_name == acquire_pulse_name
+                                   or pulse_name.startswith(f'{acquire_pulse_name}['))}
+                if len(tile_traces) == 1:
+                    tiled_traces[acquire_pulse_name] = next(iter(tiled_traces.values()))
+                else:
+                    pulse_ids = sorted(int(pulse_name.split('[')[1].rstrip(']'))
+                                       for pulse_name in traces)
+                    for pulse_id in pulse_ids:
+                        trace = traces[f'{acquire_pulse_name}[{pulse_id}]']['output']
+
+                        if isinstance(trace, np.ndarray):
+                            idx_increment = trace.shape[-1]
+                        else:
+                            idx_increment = 1
+
+                        tile_slice = slice(tile_indices[acquire_pulse_name],
+                                           tile_indices[acquire_pulse_name]+idx_increment)
+                        tiled_traces[acquire_pulse_name][..., tile_slice] = trace
+                        tile_indices[acquire_pulse_name] += idx_increment
+
+        return tiled_traces
 
 
 class DCParameter(AcquisitionParameter):
@@ -404,16 +514,16 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def names(self):
         return tuple(self.trace_pulse.full_name + f'_{output[1]}'
-                for output in self.layout.acquisition_outputs())
+                     for output in self.layout.acquisition_channels())
 
     @property_ignore_setter
     def labels(self):
         return tuple(f'{output[1]} Trace'
-                for output in self.layout.acquisition_outputs())
+                for output in self.layout.acquisition_channels())
 
     @property_ignore_setter
     def units(self):
-        return ('V', ) * len(self.layout.acquisition_outputs())
+        return ('V', ) * len(self.layout.acquisition_channels())
 
     @property_ignore_setter
     def shapes(self):
@@ -422,13 +532,12 @@ class TraceParameter(AcquisitionParameter):
                 self.layout.sample_rate, self.samples)
             trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
             if self.samples > 1 and self.average_mode == 'none':
-                return ((trace_pulse_shape,),) * \
-                       len(self.layout.acquisition_outputs())
+                return ((trace_pulse_shape,),) * len(self.layout.acquisition_channels())
             else:
                 return ((trace_pulse_shape[1], ), ) * \
-                        len(self.layout.acquisition_outputs())
+                        len(self.layout.acquisition_channels())
         else:
-            return ((1,),) * len(self.layout.acquisition_outputs())
+            return ((1,),) * len(self.layout.acquisition_channels())
 
 
     @property_ignore_setter
@@ -436,9 +545,9 @@ class TraceParameter(AcquisitionParameter):
         if self.trace_pulse in self.pulse_sequence:
             duration = self.trace_pulse.duration
         else:
-            return ((1,),) * len(self.layout.acquisition_outputs())
+            return ((1,),) * len(self.layout.acquisition_channels())
 
-        num_traces = len(self.layout.acquisition_outputs())
+        num_traces = len(self.layout.acquisition_channels())
 
         pts = int(round(duration * self.sample_rate))
         t_list = tuple(np.linspace(0, duration, pts, endpoint=True))
@@ -454,17 +563,17 @@ class TraceParameter(AcquisitionParameter):
     def setpoint_names(self):
         if self.samples > 1 and self.average_mode == 'none':
             return (('sample', 'time', ), ) * \
-                   len(self.layout.acquisition_outputs())
+                   len(self.layout.acquisition_channels())
         else:
-            return (('time', ), ) * len(self.layout.acquisition_outputs())
+            return (('time', ), ) * len(self.layout.acquisition_channels())
 
 
     @property_ignore_setter
     def setpoint_units(self):
         if self.samples > 1 and self.average_mode == 'none':
-            return ((None, 's', ), ) * len(self.layout.acquisition_outputs())
+            return ((None, 's', ), ) * len(self.layout.acquisition_channels())
         else:
-            return (('s', ), ) * len(self.layout.acquisition_outputs())
+            return (('s', ), ) * len(self.layout.acquisition_channels())
 
 
     def setup(self, start=None, **kwargs):
@@ -510,7 +619,7 @@ class TraceParameter(AcquisitionParameter):
 
         traces = {self.trace_pulse.full_name + '_' + output:
                       self.traces[self.trace_pulse.full_name][output]
-                  for _, output in self.layout.acquisition_outputs()}
+                  for _, output in self.layout.acquisition_channels()}
 
         return traces
 
@@ -776,7 +885,8 @@ class EPRParameter(AcquisitionParameter):
                                 'fidelity_empty', 'fidelity_load'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read',
-                                           'min_filter_proportion'],
+                                           'min_filter_proportion',
+                                           'filter_traces'],
                          **kwargs)
 
     @property_ignore_setter
@@ -791,7 +901,8 @@ class EPRParameter(AcquisitionParameter):
             sample_rate=self.sample_rate,
             t_skip=self.t_skip,
             t_read=self.t_read,
-            min_filter_proportion=self.min_filter_proportion)
+            min_filter_proportion=self.min_filter_proportion,
+            filter_traces=self.filter_traces)
 
 
 class ESRParameter(AcquisitionParameter):
@@ -812,7 +923,8 @@ class ESRParameter(AcquisitionParameter):
                                 'voltage_difference_read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read',
-                                           'min_filter_proportion'],
+                                           'min_filter_proportion',
+                                           'filter_traces'],
                          **kwargs)
 
     @property
@@ -883,6 +995,7 @@ class ESRParameter(AcquisitionParameter):
                 read_traces=traces['read_long']['output'],
                 sample_rate=self.sample_rate,
                 min_filter_proportion=self.min_filter_proportion,
+                filter_traces=self.filter_traces,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
                 t_read=self.t_read)
         else:
@@ -891,14 +1004,17 @@ class ESRParameter(AcquisitionParameter):
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
                            for pulse in self.ESR['pulses']]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
+        results['ESR_results'] = []
         for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
             read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analysis.analyse_traces(
                 traces=read_traces,
                 sample_rate=self.sample_rate,
-                filter='low',
+                filter='low' if self.filter_traces else None,
+                min_filter_proportion=self.min_filter_proportion,
                 t_skip=self.t_skip,
                 t_read=self.t_read)
+            results['ESR_results'].append(ESR_results)
 
             # Extract ESR pulse labels
             if ESR_pulse_names.count(ESR_pulse.name) == 1:
@@ -1159,7 +1275,7 @@ class T2ElectronParameter(AcquisitionParameter):
                          names=['up_proportion', 'num_traces'],
                          labels=['Up proportion', 'Number of traces'],
                          snapshot_value=False,
-                         properties_attrs=['t_skip'],
+                         properties_attrs=['t_skip', 'filter_traces'],
                          **kwargs)
 
         self.pre_pulses = self.pulse_sequence.pre_pulses
@@ -1194,7 +1310,7 @@ class T2ElectronParameter(AcquisitionParameter):
         ESR_results = analysis.analyse_traces(
             traces=read_traces,
             sample_rate=self.sample_rate,
-            filter='low',
+            filter='low' if self.filter_traces else None,
             t_skip=self.t_skip,
             t_read=self.t_read)
 
