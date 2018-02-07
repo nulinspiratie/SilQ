@@ -582,7 +582,8 @@ class SteeredInitialization(Pulse):
 
 class SinePulse(Pulse):
     def __init__(self, name=None, frequency=None, phase=None, amplitude=None,
-                 power=None, offset=None, **kwargs):
+                 power=None, offset=None, frequency_sideband=None,
+                 frequency_carrier=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.frequency = self._value_or_config('frequency', frequency)
@@ -590,6 +591,10 @@ class SinePulse(Pulse):
         self.power = self._value_or_config('power', power)
         self.amplitude = self._value_or_config('amplitude', amplitude)
         self.offset = self._value_or_config('offset', offset)
+        self.frequency_sideband = self._value_or_config('frequency_sideband',
+                                                        frequency_sideband)
+        self.frequency_carrier = self._value_or_config('frequency_carrier',
+                                                       frequency_carrier)
 
     def __repr__(self):
         properties_str = ''
@@ -603,6 +608,12 @@ class SinePulse(Pulse):
 
             if self.offset is not None:
                 properties_str += f', offset={self.offset} V'
+
+            if self.frequency_sideband is not None:
+                properties_str += f'f={freq_to_str(self.frequency_sideband)}'
+
+            if self.frequency_carrier is not None:
+                properties_str += f'f={freq_to_str(self.frequency_carrier)}'
 
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
@@ -630,7 +641,7 @@ class FrequencyRampPulse(Pulse):
     def __init__(self, name=None, frequency_start=None, frequency_stop=None,
                  frequency=None, frequency_deviation=None,
                  frequency_final='stop', amplitude=None, power=None,
-                 frequency_sideband=None, **kwargs):
+                 frequency_sideband=None, frequency_carrier=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
@@ -649,6 +660,8 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
         self.frequency_sideband = self._value_or_config('frequency_sideband',
                                                         frequency_sideband)
+        self.frequency_carrier = self._value_or_config('frequency_carrier',
+                                                       frequency_carrier)
 
         self.amplitude = self._value_or_config('amplitude', amplitude)
         self.power = self._value_or_config('power', power)
@@ -693,6 +706,8 @@ class FrequencyRampPulse(Pulse):
             properties_str += f', f_dev={freq_to_str(self.frequency_deviation)}'
             if self.frequency_sideband is not None:
                 properties_str += ', f_sb={freq_to_str(self.frequency_sideband)}'
+            if self.frequency_carrier is not None:
+                properties_str += f'f={freq_to_str(self.frequency_carrier)}'
             properties_str += f', power={self.power}'
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
