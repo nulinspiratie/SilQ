@@ -210,7 +210,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
         self.model_filepath = model_filepath
         if model_filepath is not None:
-            self.model = self.model = load_model(self.model_filepath)
+            self.model = load_model(self.model_filepath)
         else:
             logger.warning(f'No neural network model loaded for {self}')
             self.model = None
@@ -738,21 +738,21 @@ class MeasureNucleusParameter(MeasurementParameter):
                       stop=not self.continuous)
 
         discriminant_vals = getattr(self.data, self.discriminant).ndarray
-        if np.nanmax(discriminant_vals) >= self.threshold:
-            # Successfully found nucleus state
-            frequency_idx = np.nanargmax(discriminant_vals)
-            self.results['found_nucleus_state'] = True
-            self.results['nucleus_state'] = int(
-                self.frequency_order[frequency_idx])
-        else:
-            # Could not localize nucleus state
-            self.results['found_nucleus_state'] = False
-            self.results['nucleus_state'] = np.nan
-        self.results['max_nucleus_' + self.discriminant] = np.nanmax(
-            discriminant_vals)
-        self.results['nucleus_' + self.discriminant] = discriminant_vals
-        self.results['average_' + self.discriminant] = np.nanmean(
-            discriminant_vals)
+        with np.errstate(invalid='ignore'):
+            if np.nansum(discriminant_vals >= self.threshold) == 1:
+                # Successfully found nucleus state
+                frequency_idx = np.nanargmax(discriminant_vals)
+                self.results['found_nucleus_state'] = True
+                self.results['nucleus_state'] = int(
+                    self.frequency_order[frequency_idx])
+            else:
+                # Could not localize nucleus state
+                self.results['found_nucleus_state'] = False
+                self.results['nucleus_state'] = np.nan
+            self.results['max_nucleus_' + self.discriminant] = np.nanmax(discriminant_vals)
+            self.results['nucleus_' + self.discriminant] = discriminant_vals
+            self.results['average_' + self.discriminant] = np.nanmean(
+                discriminant_vals)
 
         if not self.silent:
             self.print_results()
