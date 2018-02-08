@@ -75,32 +75,52 @@ class E8267DInterface(InstrumentInterface):
         if not self.pulse_sequence:
             return []
 
-        frequencies = list({pulse.frequency for pulse in self.pulse_sequence})
+        frequencies = list({int(round(pulse.frequency))
+                            for pulse in self.pulse_sequence})
 
-        frequency_deviations = {pulse.frequency_deviation
-                                for pulse in self.pulse_sequence
-                                if hasattr(pulse, 'frequency_deviation')}
+        frequency_sidebands = {int(round(pulse.frequency_sideband))
+                               for pulse in self.pulse_sequence
+                               if getattr(pulse, 'frequency_sideband', False)}
 
-        if len(frequencies) > 1 or frequency_deviations:
-            # Find minimum and maximum frequency
-            min_frequency = min(pulse.frequency - pulse.frequency_deviation
-                                if hasattr(pulse, 'frequency_deviation')
-                                else pulse.frequency
-                                for pulse in self.pulse_sequence)
-            max_frequency = max(pulse.frequency + pulse.frequency_deviation
-                                if hasattr(pulse, 'frequency_deviation')
-                                else pulse.frequency
-                                for pulse in self.pulse_sequence)
+        # Find minimum and maximum frequency
+        min_frequency = max_frequency = None
+        for pulse in self.pulse_sequence:
+            frequency_deviation = getattr(pulse, 'frequency_deviation', None)
+            frequency_sideband = getattr(pulse, 'frequency_sideband', None)
 
-            if not self.fix_frequency():
-                self.frequency((min_frequency + max_frequency) / 2)
+            if frequency_sidebands:
+                assert frequency_sideband is not None, \
+                    "frequency_sideband must either be set for all pulses or " \
+                    "for none (can be 0 Hz)."
 
-            if not self.fix_frequency_deviation():
-                self.frequency_deviation(max(max_frequency - self.frequency(),
-                                             self.frequency() - min_frequency))
-        else:
-            self.frequency(frequencies[0])
-            self.frequency_deviation(0)
+            pulse_min_frequency = pulse_max_frequency = pulse.frequency
+            if frequency_deviation is not None:
+                pulse_min_frequency -= pulse.frequency_deviation
+                pulse_max_frequency += pulse.frequency_deviation
+            if frequency_sideband is not None:
+                pulse_min_frequency -= pulse.frequency_sideband
+                pulse_max_frequency -= pulse.frequency_sideband
+
+            if min_frequency is None or pulse_min_frequency < min_frequency:
+                min_frequency = pulse_min_frequency
+            if max_frequency is None or pulse_max_frequency > max_frequency:
+                max_frequency = pulse_max_frequency
+
+        min_frequency = int(round(min_frequency))
+        max_frequency = int(round(max_frequency))
+
+        if not self.fix_frequency():
+                # Choose center frequency
+                self.frequency(int(round((min_frequency + max_frequency) / 2)))
+
+        if not self.fix_frequency_deviation():
+            self.frequency_deviation(
+                int(round(max([max_frequency - self.frequency(),
+                               self.frequency() - min_frequency]))))
+
+        assert self.frequency_deviation() < 80e6, \
+            "Maximum FM frequency deviation is 80 MHz. " \
+            f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
         additional_pulses = []
         for pulse in self.pulse_sequence:
@@ -153,19 +173,47 @@ class SinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
+        frequency = self.pulse.frequency
+
+        if self.pulse.frequency_sideband:
+            # Add sideband frequency since it shifts the center frequency
+            frequency += self.pulse.frequency_sideband
+
         if frequency_deviation > 0:
             amplitude = (self.pulse.frequency - frequency) / frequency_deviation
-            assert abs(amplitude) < 1 + 1e-13, \
+            assert abs(amplitude) <= 1 + 1e-13, \
                 f'amplitude {amplitude} cannot be higher than 1'
 
             additional_pulses.append(
                 DCPulse(
                     t_start=self.pulse.t_start - interface.envelope_padding(),
-                    t_stop=self.pulse.t_start + interface.envelope_padding(),
+                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
                     amplitude=amplitude,
                     connection_requirements={
                         'input_instrument': interface.instrument_name(),
                         'input_channel': interface.modulation_channel()}))
+
+            if self.pulse.frequency_sideband:
+                additional_pulses.extend([
+                    SinePulse(
+                        t_start=self.pulse.t_start - interface.envelope_padding(),
+                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                        frequency=self.pulse.frequency_sideband,
+                        amplitude=amplitude,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': 'I'}),
+                    SinePulse(
+                        t_start=self.pulse.t_start - interface.envelope_padding(),
+                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                        frequency=self.pulse.frequency_sideband,
+                        phase=90,
+                        amplitude=amplitude,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': 'Q'}),
+                ])
+
         return additional_pulses
 
 class FrequencyRampPulseImplementation(PulseImplementation):
