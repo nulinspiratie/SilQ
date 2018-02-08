@@ -318,8 +318,11 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def plot_traces(self, filter=None, channels=['output']):
         plot_traces = OrderedDict()
         for pulse_name, trace in self.traces.items():
-            if filter is not None and filter not in pulse_name:
-                continue
+            if filter is not None:
+                if isinstance(filter, str):
+                    filter = [filter]
+                if not any(elem in pulse_name for elem in filter):
+                    continue
 
             plot_traces[pulse_name] = trace
 
@@ -947,7 +950,7 @@ class ESRParameter(AcquisitionParameter):
             else:
                 suffix= len([name for name in names
                              if f'up_proportion_{pulse_name}' in name])
-                name = f'{pulse_name}{suffix}'
+                name = f'{pulse_name}_{suffix}'
             names.append(f'up_proportion_{name}')
             if self.EPR['enabled']:
                 names.append(f'contrast_{name}')
@@ -1124,13 +1127,15 @@ class NMRParameter(AcquisitionParameter):
         high_low = analysis.find_high_low(
             np.ravel([trace['output'] for trace in traces.values()]))
         threshold_voltage = high_low['threshold_voltage']
-        print(threshold_voltage)
 
         # Extract points per shot from a single read trace
         single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
         single_read_traces = traces[single_read_traces_name]['output']
         points_per_shot = single_read_traces.shape[1]
 
+        self.read_traces = np.zeros((len(self.ESR_frequencies), self.samples,
+                                     self.ESR['shots_per_frequency'],
+                                     points_per_shot))
         up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
         for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
             for sample in range(self.samples):
@@ -1142,7 +1147,7 @@ class NMRParameter(AcquisitionParameter):
                     traces_idx = f_idx + shot_idx * len(self.ESR_frequencies)
                     traces_name = f"{self.ESR['read_pulse'].name}[{traces_idx}]"
                     read_traces[shot_idx] = traces[traces_name]['output'][sample]
-
+                self.read_traces[f_idx, sample] = read_traces
                 read_result = analysis.analyse_traces(
                     traces=read_traces,
                     sample_rate=self.sample_rate,
