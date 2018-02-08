@@ -70,13 +70,14 @@ class E8267DInterface(InstrumentInterface):
                            unit='Hz',
                            set_cmd=None,
                            initial_value=None)
+        self.add_parameter('IQ_modulation',
+                           set_cmd=None,
+                           initial_value=None,
+                           vals=vals.Enum('on', 'off'))
 
     def get_additional_pulses(self, **kwargs):
         if not self.pulse_sequence:
             return []
-
-        frequencies = list({int(round(pulse.frequency))
-                            for pulse in self.pulse_sequence})
 
         frequency_sidebands = {int(round(pulse.frequency_sideband))
                                for pulse in self.pulse_sequence
@@ -92,6 +93,9 @@ class E8267DInterface(InstrumentInterface):
                 assert frequency_sideband is not None, \
                     "frequency_sideband must either be set for all pulses or " \
                     "for none (can be 0 Hz)."
+                self.IQ_modulation('on')
+            else:
+                self.IQ_modulation('off')
 
             pulse_min_frequency = pulse_max_frequency = pulse.frequency
             if frequency_deviation is not None:
@@ -149,6 +153,8 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.pulse_modulation('on')
         self.instrument.pulse_modulation_source('ext')
         self.instrument.output_modulation('on')
+
+        self.instrument.internal_IQ_modulation(self.IQ_modulation())
 
     def start(self):
         self.instrument.RF_output('on')
