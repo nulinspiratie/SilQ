@@ -173,6 +173,12 @@ class SinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
+        if frequency_deviation > 0 or self.pulse.frequency_sideband is not None:
+            assert self.pulse.t_start >= self.envelope_padding(), \
+                f"Keysight E8267D uses envelope padding " \
+                f"{self.envelope_padding()} s before and after pulse for FM "\
+                f"and IQ modulation, so this is the minimum pulse.t_start."
+
         frequency = self.pulse.frequency
 
         if self.pulse.frequency_sideband:
@@ -185,34 +191,34 @@ class SinePulseImplementation(PulseImplementation):
                 f'amplitude {amplitude} cannot be higher than 1'
 
             additional_pulses.append(
-                DCPulse(
-                    t_start=self.pulse.t_start - interface.envelope_padding(),
-                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                    amplitude=amplitude,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': interface.modulation_channel()}))
+                DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                        amplitude=amplitude,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
+                )
+            )
 
-            if self.pulse.frequency_sideband:
-                additional_pulses.extend([
-                    SinePulse(
-                        t_start=self.pulse.t_start - interface.envelope_padding(),
-                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                        frequency=self.pulse.frequency_sideband,
-                        amplitude=amplitude,
-                        connection_requirements={
-                            'input_instrument': interface.instrument_name(),
-                            'input_channel': 'I'}),
-                    SinePulse(
-                        t_start=self.pulse.t_start - interface.envelope_padding(),
-                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                        frequency=self.pulse.frequency_sideband,
-                        phase=90,
-                        amplitude=amplitude,
-                        connection_requirements={
-                            'input_instrument': interface.instrument_name(),
-                            'input_channel': 'Q'}),
-                ])
+        if self.pulse.frequency_sideband is not None:
+            # Add IQ pulses
+            additional_pulses.extend([
+                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=self.pulse.frequency_sideband,
+                          amplitude=1,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'I'}),
+                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=self.pulse.frequency_sideband,
+                          phase=90,
+                          amplitude=1,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'Q'}),
+            ])
 
         return additional_pulses
 
@@ -220,13 +226,16 @@ class FrequencyRampPulseImplementation(PulseImplementation):
     pulse_class = FrequencyRampPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
-        assert pulse.power is not None, "Pulse must have power defined"
+        assert pulse.power is not None, f"Pulse must have power defined {pulse}"
         assert pulse.frequency_start != pulse.frequency_stop, \
             f"Pulse frequency_start must differ from frequency_stop {pulse}"
         return super().target_pulse(pulse, interface, **kwargs)
 
     def get_additional_pulses(self, interface, frequency, frequency_deviation):
-        # TODO (additional_pulses) correct amplitudes
+        assert self.pulse.t_start >= self.envelope_padding(), \
+            f"Keysight E8267D uses envelope padding " \
+            f"{self.envelope_padding()} s before and after pulse for FM "\
+            f"and IQ modulation, so this is the minimum pulse.t_start."
 
         amplitude_start = (self.pulse.frequency_start - frequency) / \
                           frequency_deviation
@@ -239,60 +248,62 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         amplitude_slope = (amplitude_stop - amplitude_start) / frequency_difference
         amplitude_final = amplitude_start + amplitude_slope * frequency_difference
 
-
         # Add an envelope pulse with some padding on both sides.
         additional_pulses = [
-            MarkerPulse(
-                t_start=self.pulse.t_start - interface.envelope_padding()/2,
-                t_stop=self.pulse.t_stop + interface.envelope_padding()/2,
-                connection_requirements={
-                    'input_instrument': interface.instrument_name(),
-                    'input_channel': 'trig_in'}
+            MarkerPulse(t_start=self.pulse.t_start,
+                        t_stop=self.pulse.t_stop,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': 'trig_in'}
             ),
             # Add a ramping DC pulse for frequency modulation
-            DCRampPulse(
-                t_start=self.pulse.t_start,
-                t_stop=self.pulse.t_stop,
-                amplitude_start=amplitude_start,
-                amplitude_stop=amplitude_stop,
-                connection_requirements={
-                    'input_instrument': interface.instrument_name(),
-                    'input_channel': interface.modulation_channel()}
+            DCRampPulse(t_start=self.pulse.t_start,
+                        t_stop=self.pulse.t_stop,
+                        amplitude_start=amplitude_start,
+                        amplitude_stop=amplitude_stop,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
             )
         ]
 
         if interface.envelope_padding() > 0:
             # Add padding DC pulses at start and end
             additional_pulses.extend((
-                DCPulse(
-                    t_start=self.pulse.t_start - interface.envelope_padding(),
-                    t_stop=self.pulse.t_start,
-                    amplitude=amplitude_start,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': interface.modulation_channel()}
+                DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                        t_stop=self.pulse.t_start,
+                        amplitude=amplitude_start,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
                 ),
-                DCPulse(
-                    t_start=self.pulse.t_stop,
-                    t_stop=self.pulse.t_stop+interface.envelope_padding(),
-                    amplitude=amplitude_final,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': interface.modulation_channel()}
+                DCPulse(t_start=self.pulse.t_stop,
+                        t_stop=self.pulse.t_stop+interface.envelope_padding(),
+                        amplitude=amplitude_final,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}
                 )
             ))
 
         if self.pulse.frequency_sideband is not None:
-            additional_pulses.append(
-                SinePulse(
-                    t_start=self.pulse.t_start,
-                    t_stop=self.pulse.t_stop,
-                    amplitude=1,
-                    frequency=self.pulse.frequency_sideband,
-                    connection_requirements={
-                        'input_instrument': interface.instrument_name(),
-                        'input_channel': ['I', 'Q']
-                    })
-            )
+            # Add IQ pulses
+            additional_pulses.extend([
+                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=self.pulse.frequency_sideband,
+                          amplitude=1,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'I'}),
+                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=self.pulse.frequency_sideband,
+                          phase=90,
+                          amplitude=1,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'Q'})
+            ])
 
         return additional_pulses
