@@ -272,6 +272,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 print(f'{name}: {value}')
 
     def setup(self, start=None, **kwargs):
+        if not self.pulse_sequence.up_to_date():
+            self.pulse_sequence.generate()
+
         self.layout.pulse_sequence = self.pulse_sequence
 
         samples = kwargs.pop('samples', self.samples)
