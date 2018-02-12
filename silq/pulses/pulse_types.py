@@ -8,7 +8,8 @@ from functools import partial
 
 from .pulse_modules import PulseMatch
 
-from silq.tools.general_tools import get_truth, property_ignore_setter, freq_to_str
+from silq.tools.general_tools import get_truth, property_ignore_setter, \
+    freq_to_str, is_between
 from silq import config
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
@@ -582,21 +583,29 @@ class SteeredInitialization(Pulse):
 
 class SinePulse(Pulse):
     def __init__(self, name=None, frequency=None, phase=None, amplitude=None,
-                 power=None, offset=None, frequency_sideband=None, **kwargs):
+                 power=None, offset=None, frequency_sideband=None,
+                 sideband_mode=None, phase_reference=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.frequency = self._value_or_config('frequency', frequency)
-        self.phase = self._value_or_config('phase', phase)
+        self.phase = self._value_or_config('phase', phase, 0)
         self.power = self._value_or_config('power', power)
         self.amplitude = self._value_or_config('amplitude', amplitude)
         self.offset = self._value_or_config('offset', offset)
         self.frequency_sideband = self._value_or_config('frequency_sideband',
                                                         frequency_sideband)
+        self.sideband_mode = self._value_or_config('sideband_mode',
+                                                   sideband_mode, 'IQ')
+        self.phase_reference = self._value_or_config('phase_reference',
+                                                     phase_reference, 'relative')
 
     def __repr__(self):
         properties_str = ''
         try:
             properties_str = f'f={freq_to_str(self.frequency)}'
+            properties_str += f', phase={self.phase} deg '
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+
             if self.power is not None:
                 properties_str += f', power={self.power} dBm'
 
@@ -607,7 +616,8 @@ class SinePulse(Pulse):
                 properties_str += f', offset={self.offset} V'
 
             if self.frequency_sideband is not None:
-                properties_str += f'f={freq_to_str(self.frequency_sideband)}'
+                properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
 
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
@@ -617,13 +627,14 @@ class SinePulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
-        if self.phase is None:
-            waveform =  self.amplitude * np.sin(2 * np.pi * self.frequency * (t - self.t_start))
-        else:
-            waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
+
+        waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
         if self.offset is not None:
             waveform += self.offset
@@ -635,7 +646,7 @@ class FrequencyRampPulse(Pulse):
     def __init__(self, name=None, frequency_start=None, frequency_stop=None,
                  frequency=None, frequency_deviation=None,
                  frequency_final='stop', amplitude=None, power=None,
-                 frequency_sideband=None, **kwargs):
+                 frequency_sideband=None, sideband_mode=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
@@ -654,6 +665,8 @@ class FrequencyRampPulse(Pulse):
         self._frequency_final = frequency_final
         self.frequency_sideband = self._value_or_config('frequency_sideband',
                                                         frequency_sideband)
+        self.sideband_mode = self._value_or_config('sideband_mode',
+                                                   sideband_mode, 'IQ')
 
         self.amplitude = self._value_or_config('amplitude', amplitude)
         self.power = self._value_or_config('power', power)
@@ -697,7 +710,8 @@ class FrequencyRampPulse(Pulse):
             properties_str = f'f={freq_to_str(self.frequency)}'
             properties_str += f', f_dev={freq_to_str(self.frequency_deviation)}'
             if self.frequency_sideband is not None:
-                properties_str += ', f_sb={freq_to_str(self.frequency_sideband)}'
+                properties_str += f', f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
             properties_str += f', power={self.power}'
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
@@ -729,7 +743,7 @@ class DCPulse(Pulse):
 
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
@@ -762,7 +776,7 @@ class DCRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
 
@@ -791,7 +805,7 @@ class TriggerPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
@@ -813,13 +827,13 @@ class MarkerPulse(Pulse):
 
     def __repr__(self):
         try:
-            properties_str = 't_start={self.t_start}, duration={self.duration}'
+            properties_str = f't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
@@ -946,7 +960,7 @@ class CombinationPulse(Pulse):
 
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
@@ -1038,7 +1052,7 @@ class AWGPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
+        assert is_between(t, self.t_start, self.t_stop), \
             "voltage at {} s is not in the time range {} s - {} s of " \
             "pulse {}".format(t, self.t_start, self.t_stop, self)
 
