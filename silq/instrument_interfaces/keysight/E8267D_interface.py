@@ -180,14 +180,14 @@ class SinePulseImplementation(PulseImplementation):
                             'input_channel': 'trig_in'})]
 
         if frequency_deviation > 0 or self.pulse.frequency_sideband is not None:
-            assert self.pulse.t_start >= self.envelope_padding(), \
+            assert self.pulse.t_start >= interface.envelope_padding(), \
                 f"Keysight E8267D uses envelope padding " \
-                f"{self.envelope_padding()} s before and after pulse for FM "\
-                f"and IQ modulation, so this is the minimum pulse.t_start."
+                f"{interface.envelope_padding()} s before and after pulse for "\
+                f"FM and IQ modulation, so this is the minimum pulse.t_start."
 
         frequency = self.pulse.frequency
 
-        if self.pulse.frequency_sideband:
+        if self.pulse.frequency_sideband is not None:
             # Add sideband frequency since it shifts the center frequency
             frequency += self.pulse.frequency_sideband
 
@@ -208,23 +208,28 @@ class SinePulseImplementation(PulseImplementation):
 
         if self.pulse.frequency_sideband is not None:
             # Add IQ pulses
-            additional_pulses.extend([
-                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=self.pulse.frequency_sideband,
-                          amplitude=1,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'I'}),
-                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=self.pulse.frequency_sideband,
-                          phase=90,
-                          amplitude=1,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'Q'}),
-            ])
+            if 'I' in self.pulse.sideband_mode:
+                additional_pulses.append(
+                    SinePulse(name='sideband_I',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=self.pulse.frequency_sideband,
+                              amplitude=1,
+                              phase=0,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'I'}))
+            if 'Q' in self.pulse.sideband_mode:
+                additional_pulses.append(
+                    SinePulse(name='sideband_Q',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=self.pulse.frequency_sideband,
+                              phase=-90,
+                              amplitude=1,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'Q'}))
 
         return additional_pulses
 
@@ -238,10 +243,14 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         return super().target_pulse(pulse, interface, **kwargs)
 
     def get_additional_pulses(self, interface, frequency, frequency_deviation):
-        assert self.pulse.t_start >= self.envelope_padding(), \
+        assert self.pulse.t_start >= interface.envelope_padding(), \
             f"Keysight E8267D uses envelope padding " \
-            f"{self.envelope_padding()} s before and after pulse for FM "\
+            f"{interface.envelope_padding()} s before and after pulse for FM "\
             f"and IQ modulation, so this is the minimum pulse.t_start."
+
+        if self.pulse.frequency_sideband is not None:
+            # Add sideband frequency since it shifts the center frequency
+            frequency += self.pulse.frequency_sideband
 
         amplitude_start = (self.pulse.frequency_start - frequency) / \
                           frequency_deviation
@@ -294,22 +303,27 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
         if self.pulse.frequency_sideband is not None:
             # Add IQ pulses
-            additional_pulses.extend([
-                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=self.pulse.frequency_sideband,
-                          amplitude=1,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'I'}),
-                SinePulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=self.pulse.frequency_sideband,
-                          phase=90,
-                          amplitude=1,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'Q'})
-            ])
+            if 'I' in self.pulse.sideband_mode:
+                additional_pulses.append(
+                    SinePulse(name='sideband_I',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=self.pulse.frequency_sideband,
+                              amplitude=1,
+                              phase=0,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'I'}))
+            if 'Q' in self.pulse.sideband_mode:
+                additional_pulses.append(
+                    SinePulse(name='sideband_Q',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=self.pulse.frequency_sideband,
+                              phase=-90,
+                              amplitude=1,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'Q'}))
 
         return additional_pulses
