@@ -1,6 +1,7 @@
 import numpy as np
 from copy import copy, deepcopy
 from blinker import Signal
+from matplotlib import pyplot as plt
 
 __all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
            'PulseImplementation']
@@ -505,6 +506,60 @@ class PulseSequence:
             shapes[pulse.full_name] = shape
 
         return shapes
+
+    def plot(self, output_arg=None, output_channel=None, dt=1e-6,
+             subplots=False, scale_ylim=True):
+        pulses = self.get_pulses(output_arg=output_arg,
+                                 output_channel=output_channel)
+
+        connections = {pulse.connection for pulse in pulses}
+        connections = sorted(connections,
+                             key=lambda connection: connection.output['str'])
+        if subplots:
+            fig, axes = plt.subplots(len(connections), sharex=True,
+                                     figsize=(10, 1.5 * len(connections)))
+        else:
+            fig, axes = plt.subplots(1, figsize=(10, 4))
+
+        t_list = np.arange(0, self.duration, dt)
+        voltages = {}
+        for k, connection in enumerate(connections):
+            connection_pulses = [pulse for pulse in pulses if
+                                 pulse.connection == connection]
+            #         print('connection_pulses', connection_pulses)
+            connection_voltages = np.nan * np.ones(len(t_list))
+            for pulse in connection_pulses:
+                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop, dt)
+                start_idx = np.argmax(t_list >= pulse.t_start)
+                # Determine max_pts because sometimes there is a rounding error
+                max_pts = len(connection_voltages[
+                              start_idx:start_idx + len(pulse_t_list)])
+                #             print('pulse', pulse, ', start_idx', start_idx, ', len(pulse_t_list)', len(pulse_t_list))
+                connection_voltages[
+                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
+                    pulse_t_list[:max_pts])
+            voltages[connection.output['str']] = connection_voltages
+
+            ax = axes[k] if isinstance(axes, np.ndarray) else axes
+            ax.plot(t_list, connection_voltages, label=connection.output["str"])
+            if not subplots:
+                ax.set_xlabel('Time (s)')
+            ax.set_ylabel('Amplitude (V)')
+            ax.set_xlim(0, self.duration)
+            ax.legend()
+
+        if scale_ylim:
+            min_voltage = np.nanmin(np.concatenate(tuple(voltages.values())))
+            max_voltage = np.nanmax(np.concatenate(tuple(voltages.values())))
+            voltage_difference = max_voltage - min_voltage
+            for ax in axes:
+                ax.set_ylim(min_voltage - 0.05 * voltage_difference,
+                            max_voltage + 0.05 * voltage_difference)
+
+        fig.tight_layout()
+        if subplots:
+            fig.subplots_adjust(hspace=0)
+        return t_list, voltages
 
     def up_to_date(self):
         """ Whether a pulse sequence needs to be generated.
