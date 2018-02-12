@@ -92,6 +92,10 @@ class AWG520Interface(InstrumentInterface):
         active_channels = list(set(pulse.connection.output['channel'].name
                                    for pulse in self.pulse_sequence))
 
+        connections = {ch: self.pulse_sequence.get_connection(
+            output_instrument=self.instrument.name,
+            output_channel=ch) for ch in active_channels}
+
         # If a pulse starts on one channel and needs a trigger while another
         # pulse is still active on the other channel, this would cause the other
         # pulse to move onto the next pulse prematurely. This only happens if
@@ -99,9 +103,6 @@ class AWG520Interface(InstrumentInterface):
         # Here we check that this does not occur.
 
         if len(active_channels) > 1:
-            connections = {ch: self.pulse_sequence.get_connection(
-                output_instrument=self.instrument.name,
-                output_channel=ch) for ch in active_channels}
             t = 0
             gap_pulses = []
             for t_start in self.pulse_sequence.t_start_list:
@@ -447,7 +448,8 @@ class SinePulseImplementation(PulseImplementation):
             repetitions = 1
         else:
             duration = np.max(t_list) - np.min(t_list)
-            min_points = np.ceil(duration / 65536 * sampling_rate)
+            min_points = settings.pop('min_points',
+                                      np.ceil(duration / 65536 * sampling_rate))
             use_modified_frequency = settings.pop('use_modified_frequency', False)
             results = pulse_to_waveform_sequence(max_points=max_points,
                                                  frequency=self.pulse.frequency,
