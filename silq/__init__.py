@@ -167,15 +167,15 @@ def initialize(name=None, mode=None, select=None, ignore=None):
 
     for filename in init_filenames:
         # Remove prefix
-        name = filename.split('_', 1)[1]
+        filename_no_prefix = filename.split('_', 1)[1]
         # Remove .py extension
-        name = name.rsplit('.', 1)[0]
-        if select is not None and name not in select:
+        filename_no_prefix = filename_no_prefix.rsplit('.', 1)[0]
+        if select and filename_no_prefix not in select:
             continue
-        elif ignore is not None and name in ignore:
+        elif ignore and filename_no_prefix in ignore:
             continue
         else:
-            print('Initializing {}'.format(name))
+            print(f'Initializing {filename_no_prefix}')
             filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
                 exec_line = fh.read()
