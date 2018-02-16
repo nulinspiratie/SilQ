@@ -62,8 +62,13 @@ class CombinedParameter(Parameter):
     def label(self, label):
         self._label = label
 
-    def zero_offset(self):
-        self.offsets = [param() for param in self.parameters]
+    def zero_offset(self, offset=0):
+        if self.scales is not None:
+            self.offsets = [param() - offset * scale for param, scale in
+                       zip(self.parameters, self.scales)]
+        else:
+            self.offsets = [param() for param in self.parameters]
+        return self.offsets
 
     def calculate_individual_values(self, value):
         """
