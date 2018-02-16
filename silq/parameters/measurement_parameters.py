@@ -299,6 +299,8 @@ class RetuneBlipsParameter(MeasurementParameter):
 
     @clear_single_settings
     def get_raw(self):
+        assert self.model_filepath is not None, "Must provide model filepath"
+
         self.idx += 1
         if (self.every_nth is not None
             and (self.idx - 1) % self.every_nth != 0
@@ -327,45 +329,46 @@ class RetuneBlipsParameter(MeasurementParameter):
         finally:
             self.sweep_parameter(initial_set_val)
 
-        if self.model_filepath is not None:
-            optimum = self.calculate_optimum()
+        optimum = self.calculate_optimum()
 
-            if optimum is not None and self.tune_to_optimum:
-                if self.voltage_limit is None:
+        if optimum is None:
+            tune_to_optimum = False
+            optimal_vals = initial_offsets
+            offsets = [0] * len(initial_offsets)
+        else:
+            optimal_vals = self.sweep_parameter.calculate_individual_values(optimum)
+            offsets = [offset - initial_offset for offset, initial_offset in
+                       zip(optimal_vals, initial_offsets)]
+
+            if not self.tune_to_optimum:
+                tune_to_optimum = False
+            elif self.voltage_limit is None:
+                tune_to_optimum = True
+            else:
+                voltage_differences = np.array(self.initial_offsets) - optimal_vals
+                if max(abs(voltage_differences)) < self.voltage_limit:
                     tune_to_optimum = True
                 else:
-                    optimum_vals = self.sweep_parameter.calculate_individual_values(
-                        optimum)
-                    voltage_differences = np.array(
-                        self.initial_offsets) - optimum_vals
-                    if max(abs(voltage_differences)) < self.voltage_limit:
-                        tune_to_optimum = True
-                    else:
-                        logging.warning(f'tune voltage {optimum_vals} outside '
-                                        f'range, tuning back to initial value')
-                        self.sweep_parameter.offsets = self.initial_offsets
-                        self.sweep_parameter(0)
-                        tune_to_optimum = False
+                    logging.warning(f'tune voltage {optimal_vals} outside '
+                                    f'range, tuning back to initial value')
+                    # self.sweep_parameter.offsets = self.initial_offsets
+                    # self.sweep_parameter(0)
+                    tune_to_optimum = False
 
-                if tune_to_optimum:
-                    if self.optimum_DC_offset is None:
-                        self.sweep_parameter(optimum)
+        if tune_to_optimum:
+            self.sweep_parameter(optimum)
+            self.sweep_parameter.zero_offset()
 
-                    elif isinstance(self.optimum_DC_offset, float):
-                        self.sweep_parameter(optimum + self.optimum_DC_offset)
-                    else:
-                        self.sweep_parameter(optimum)
-                        for parameter, offset in zip(
-                                self.sweep_parameter.parameters,
-                                self.optimum_DC_offset):
-                            parameter(parameter() + offset)
-
-                    self.sweep_parameter.zero_offset()
+            if isinstance(self.optimum_DC_offset, float):
+                self.sweep_parameter(self.optimum_DC_offset)
+            elif self.optimum_DC_offset is not None:
+                for parameter, offset in zip(self.sweep_parameter.parameters,
+                                             self.optimum_DC_offset):
+                    parameter(parameter() + offset)
 
         self.results = {
-            'optimal_vals': self.sweep_parameter.offsets,
-            'offsets': [offset - initial_offset for offset, initial_offset in
-                        zip(self.sweep_parameter.offsets, initial_offsets)]
+            'optimal_vals': optimal_vals,
+            'offsets': offsets
         }
 
         return [self.results[name] for name in self.names]
@@ -641,7 +644,7 @@ class MeasureNucleusParameter(MeasurementParameter):
 
     @property_ignore_setter
     def shapes(self):
-        return ((), (), (), (len(self.frequency_vals),), ())
+        return ((), (), (), (len(self.frequency_vals), ), ())
 
     @property
     def frequency_vals(self):
@@ -650,8 +653,7 @@ class MeasureNucleusParameter(MeasurementParameter):
         else:
             environment = self.acquisition_parameter.environment
             frequency_vals = {int(key): val for key, val
-                              in
-                              config[environment].properties.ESR_vals.items()}
+                              in config[environment].properties.ESR_vals.items()}
         return frequency_vals
 
     @frequency_vals.setter
@@ -694,8 +696,7 @@ class MeasureNucleusParameter(MeasurementParameter):
         def above_threshold():
             val = self.acquisition_parameter.results[self.discriminant]
             is_above_threshold = val > self.threshold
-            logger.debug(
-                f'{self.discriminant} {val} > {self.threshold}: {is_above_threshold}')
+            logger.debug(f'{self.discriminant} {val} > {self.threshold}: {is_above_threshold}')
             return is_above_threshold
 
         if self.acquisition_parameter is None:
@@ -729,9 +730,8 @@ class MeasureNucleusParameter(MeasurementParameter):
 
         self.acquisition_parameter.temporary_settings(**temporary_settings)
 
-        if (
-                self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
-        or self.layout.samples() != self.acquisition_parameter.samples):
+        if (self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
+            or self.layout.samples() != self.acquisition_parameter.samples):
             self.acquisition_parameter.setup()
 
         self.loop.run(set_active=False, quiet=True,
@@ -751,8 +751,7 @@ class MeasureNucleusParameter(MeasurementParameter):
                 self.results['nucleus_state'] = np.nan
             self.results['max_nucleus_' + self.discriminant] = np.nanmax(discriminant_vals)
             self.results['nucleus_' + self.discriminant] = discriminant_vals
-            self.results['average_' + self.discriminant] = np.nanmean(
-                discriminant_vals)
+            self.results['average_' + self.discriminant] = np.nanmean(discriminant_vals)
 
         if not self.silent:
             self.print_results()
