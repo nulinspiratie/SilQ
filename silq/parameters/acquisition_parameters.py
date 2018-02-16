@@ -453,8 +453,8 @@ class DCParameter(AcquisitionParameter):
     # TODO implement continuous acquisition
     def __init__(self, name='DC', unit='V', **kwargs):
         self.pulse_sequence = PulseSequence([
-            DCPulse(name='read', acquire=True, average='point'),
-            DCPulse(name='final')])
+            DCPulse(name='DC', acquire=True, average='point'),
+            DCPulse(name='DC_final')])
 
         super().__init__(name=name,
                          names=['DC_voltage'],
@@ -466,7 +466,7 @@ class DCParameter(AcquisitionParameter):
         self.samples = 1
 
     def analyse(self, traces):
-        return {'DC_voltage': traces['read']['output']}
+        return {'DC_voltage': traces['DC']['output']}
 
 
 class TraceParameter(AcquisitionParameter):
@@ -1376,7 +1376,7 @@ class BlipsParameter(AcquisitionParameter):
     Parameter that measures properties of blips in a trace
     """
     def __init__(self, name='count_blips', duration=None,
-                 pulse_name='read_trace', **kwargs):
+                 pulse_name='DC_trace', **kwargs):
         """
 
         Args:
