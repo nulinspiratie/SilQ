@@ -671,7 +671,7 @@ class MeasureNucleusParameter(MeasurementParameter):
             frequency_order = sorted(frequency_vals.keys(), reverse=False)
         else:
             # Frequency order is a list
-            frequency_order = self.frequency_order
+            frequency_order = self._frequency_order
 
         return frequency_order
 
