@@ -4,7 +4,6 @@ import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
-from functools import partial
 
 from .pulse_modules import PulseMatch
 
@@ -61,7 +60,7 @@ class Pulse(HasTraits):
         try:
             # Set pulse_config from SilQ environment config
             self.pulse_config = config[self.environment].pulses[self.name]
-        except KeyError:
+        except (KeyError, TypeError):
             self.pulse_config = None
         try:
             # Set properties_config from SilQ environment config
