@@ -48,9 +48,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
             DCPulse('plunge', acquire=True),
             DCPulse('read_long', acquire=True)]}
 
-        self.pulse_settings['post_pulses'] = self.post_pulses = []
-
-        self.final_delay = 1e-3
+        self.pulse_settings['post_pulses'] = self.post_pulses = [DCPulse('final')]
 
     def add_ESR_pulses(self, ESR_frequencies=None):
         if ESR_frequencies is None:
@@ -227,7 +225,10 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
 
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = [
-            DCPulse('empty'), DCPulse('plunge'), DCPulse('read_long', acquire=True)]
+            DCPulse('empty'),
+            DCPulse('plunge'),
+            DCPulse('read_long', acquire=True),
+            DCPulse('final')]
 
     def add_ESR_pulses(self):
         # Add stage pulse, duration will be specified later
