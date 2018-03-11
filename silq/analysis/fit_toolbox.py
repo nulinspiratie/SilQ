@@ -162,9 +162,11 @@ class SineFit(Fit):
 class ExponentialSineFit(Fit):
     sweep_parameter = 't'
     @staticmethod
-    def fit_function(t, amplitude, tau, frequency, phase, offset):
-        return amplitude * np.exp(-t / tau) * np.sin(
-            2 * np.pi * frequency * t + phase) + offset
+    def fit_function(t, amplitude, tau, frequency, phase, offset,
+                     exponent_factor):
+        exponential = np.exp(-np.power(t / tau, exponent_factor))
+        sine = np.sin(2 * np.pi * frequency * t + phase)
+        return amplitude * exponential * sine + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
@@ -197,8 +199,13 @@ class ExponentialSineFit(Fit):
         if 'offset' not in initial_parameters:
             initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
 
+        if not 'exponent_factor' in initial_parameters:
+            initial_parameters['exponent_factor'] = 1
+
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
+
+        parameters['exponent_factor'].min = 0
 
         return parameters
 
