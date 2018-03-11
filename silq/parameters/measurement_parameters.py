@@ -577,30 +577,96 @@ class MeasureFlipNucleusParameter(MeasurementParameter):
                  measure_nucleus_parameter=None,
                  flip_nucleus_parameter=None,
                  max_attempts=3,
+                 target_state=None,
+                 final_measure=False,
+                 silent=True,
+                 condition=None,
                  **kwargs):
-        super().__init__(name=name, names=[], shapes=(), wrap_set=False,
-                         **kwargs)
 
         self.measure_nucleus_parameter = measure_nucleus_parameter
         self.flip_nucleus_parameter = flip_nucleus_parameter
         self.max_attempts = max_attempts
+        self.target_state = target_state
+        self.final_measure = final_measure
+        self.silent = silent
+        self.condition = condition
 
-    def set(self, target_state):
-        for k in range(self.max_attempts):
-            self.measure_nucleus_parameter()
-            results = self.measure_nucleus_parameter.results
-            if not results['found_nucleus_state']:
-                logger.info('Could not determine nucleus state. perhaps in a '
-                            'state for which ESR frequency is not known')
-                continue
-            nucleus_state = results['nucleus_state']
-            if nucleus_state == target_state:
-                logger.info(f'Nucleus is in target state {target_state}')
-                return
+        self.results = {}
+
+
+        super().__init__(name=name, names=self.names, shapes=self.shapes,
+                         wrap_set=False, **kwargs)
+
+    @property_ignore_setter
+    def names(self):
+        names = ['nuclear_states',
+                 'nucleus_up_proportions',
+                 'nucleus_pulse_sequences',
+                 'nucleus_flip_success']
+        if self.final_measure:
+            names.append('final state')
+        return names
+
+    @property_ignore_setter
+    def shapes(self):
+        shapes = [(self.max_attempts,),
+                  (self.max_attempts, len(self.measure_nucleus_parameter.frequency_vals)),
+                  (self.max_attempts,),
+                  ()]
+        if self.final_measure:
+            shapes.append(())
+        return tuple(shapes)
+
+    @clear_single_settings
+    def get_raw(self):
+        if self.target_state is None:
+            raise SyntaxError('Must provide MeasureFlipNucleusParameter.target_state')
+
+        nuclear_states = np.nan * np.ones(self.max_attempts)
+        nucleus_up_proportions = np.nan * np.ones((
+            self.max_attempts, len(self.measure_nucleus_parameter.frequency_vals)))
+        nucleus_pulse_sequences = np.nan * np.ones(self.max_attempts)
+        nucleus_flip_success = False
+        nucleus_state = np.nan
+
+        if self.condition is None or self.condition():
+
+            for k in range(self.max_attempts):
+                self.measure_nucleus_parameter()
+                results = self.measure_nucleus_parameter.results
+                nucleus_state = nuclear_states[k] = results['nucleus_state']
+                nucleus_up_proportions[k] = next(val for key, val in results.items()
+                                                 if key.startswith('nucleus_up_proportion'))
+
+
+                if not results['found_nucleus_state']:
+                    logger.info('Could not determine nucleus state. perhaps in a '
+                                'state for which ESR frequency is not known')
+                    continue
+                if nucleus_state == self.target_state:
+                    logger.info(f'Nucleus is in target state {self.target_state}')
+                    nucleus_flip_success = True
+                    break
+                else:
+                    logger.info(f'Flipping nucleus from {nucleus_state} '
+                                f'to {self.target_state}')
+                    self.flip_nucleus_parameter(nucleus_state, self.target_state)
             else:
-                logger.info(f'Flipping nucleus from {nucleus_state} '
-                            f'to {target_state}')
-                self.flip_nucleus_parameter(nucleus_state, target_state)
+                nucleus_flip_success = False
+
+        if not self.silent:
+            self.print_results()
+
+        self.results = {'nuclear_states': nuclear_states,
+                        'nucleus_up_proportions': nucleus_up_proportions,
+                        'nucleus_pulse_sequences': nucleus_pulse_sequences,
+                        'nucleus_flip_success': nucleus_flip_success,
+                        'final_state': nucleus_state}
+        return [self.results[name] for name in self.names]
+
+    def set(self, target_state, **kwargs):
+        self.single_settings(target_state=target_state, **kwargs)
+        return self()
 
 
 class MeasureNucleusParameter(MeasurementParameter):
