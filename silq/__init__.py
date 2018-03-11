@@ -208,8 +208,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
 ### Override QCoDeS functions
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
-          step_percentage=None):
-    if step_percentage is None:
+          step_percentage=None, window=None):
+    if step_percentage is None and window is None:
         if start is None or stop is None:
             raise RuntimeError('Must provide start and stop')
         from qcodes.instrument.sweep_values import SweepFixedValues
@@ -217,7 +217,8 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
                                 step=step, num=num)
     else:
         return SweepDependentValues(parameter=self, step=step,
-                                    step_percentage=step_percentage, num=num)
+                                    step_percentage=step_percentage, num=num,
+                                    window=window)
 qc.Parameter.sweep = _sweep
 
 

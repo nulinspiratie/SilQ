@@ -46,10 +46,12 @@ class SweepDependentValues(SweepValues):
     def create_vals(self):
         if self.window is None:
             if self.min_val is not None and self.max_val is not None:
-                self.window = self.max_val - self.min_val
+                window = self.max_val - self.min_val
             else:
                 step = self.determine_step(self.parameter)
                 window = step * (self.num - 1)
+        else:
+            window = self.window
 
         if self.num is None:
             step = self.determine_step(self.parameter)
