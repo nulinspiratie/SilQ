@@ -488,6 +488,7 @@ class TraceParameter(AcquisitionParameter):
         self._pulse_sequence = PulseSequence()
         self.trace_pulse = MeasurementPulse(name=name, duration=1e-3,
                                             average=self.average_mode)
+        self._pulse_sequence.add(self.trace_pulse)
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
