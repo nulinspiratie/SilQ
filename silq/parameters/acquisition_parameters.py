@@ -631,7 +631,8 @@ class TraceParameter(AcquisitionParameter):
         return traces
 
     def analyse(self, traces):
-        return {self.names[k] : traces[name].tolist()[0]
+        return {self.names[k] : traces[name] if isinstance(traces[name], float)
+                else traces[name].tolist()[0]
                 for k, name in enumerate(traces)}
 
 
