@@ -10,6 +10,7 @@ import silq
 from silq import config
 from silq.instrument_interfaces import Channel, InstrumentInterface
 from silq.pulses.pulse_modules import PulseSequence
+from silq.pulses.pulse_types import MeasurementPulse
 
 from qcodes import Instrument, FormatLocation
 from qcodes.utils import validators as vals
@@ -511,6 +512,9 @@ class Layout(Instrument):
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
+
+        if isinstance(pulse, MeasurementPulse):
+            return
 
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
