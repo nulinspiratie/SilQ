@@ -505,16 +505,18 @@ class Layout(Instrument):
         Returns:
             None
         """
-        # Get default output instrument
-        connection = self.get_pulse_connection(pulse)
-        interface = self._interfaces[connection.output['instrument']]
 
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
 
         if isinstance(pulse, MeasurementPulse):
+            # Measurement pulses do not need to be output
             return
+
+        # Get default output instrument
+        connection = self.get_pulse_connection(pulse)
+        interface = self._interfaces[connection.output['instrument']]
 
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
@@ -776,7 +778,6 @@ class Layout(Instrument):
             else:
                 raise SyntaxError('auto_stop must be either True or a number')
                 self.stop()
-
 
     def stop(self):
         """
