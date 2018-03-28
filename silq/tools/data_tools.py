@@ -32,65 +32,56 @@ def store_data(dataset, result):
                   ids_values={'data_vals': result})
 
 
-def get_data_folder(path_str='', subfolder=None, newest_date=None):
-    if isinstance(newest_date, str):
-        newest_date = parse(newest_date)
+def get_data_folder(*path, newest_date=None):
 
+    # Ensure that all path items use '/'
+    path = [p.replace('\\', '/') for p in path]
 
-    path_str = path_str.replace('\\', '/')
+    # Determine if a specific date and/or data filter is required
+    if not path:
+        logger.debug('No path args provided, any data folder will suffice')
+        date_folder = None
+        path.append('')
+    elif ':' in path[0]:
+        return path[0]
+    elif '/' in path[0]:
+        date_folder, path[0] = path[0].split('/')
+        logger.debug(f'Date {date_folder} and filter {path[0]} provided')
+    else:
+        date_folder = None
+        logger.debug(f'Data filter {path[0]} provided, but no date')
 
     base_path = silq.config.properties.data_folder
     base_path = base_path.replace('\\', '/')
-
-    logger.debug(f'Dirs: {os.listdir(base_path)}')
-
-    if '/' not in path_str:
-        logging.debug('No date provided, getting latest date folder')
+    if date_folder is None:
+        # Find latest date folder
         date_folders = reversed(os.listdir(base_path))
+        # Cycle through date folders
         for date_folder in date_folders:
+            # Check if folder is actual date folder containing data
             try:
                 date = parse(date_folder)
-                if newest_date is not None and date > newest_date:
-                    continue
-                else:
-                    # date_folder has date format, exit loop
-                    logging.debug(f'Date folder: {date_folder}')
-                    break
             except ValueError:
-                # date_folder does not have date format, continuing to next
+                # not actual date folder
                 continue
+
+            if newest_date is not None and date > newest_date:
+                continue
+            else:
+                break
         else:
-            raise RuntimeError(f'No date folder found in {base_path}')
-            # TODO include previous dates
+            raise RuntimeError(f'No matching date folder found in {base_path}')
 
-        # No date provided, so any data folder must match path_str
-        data_str = path_str
-    elif ':' in path_str:
-        raise NotImplementedError('Full paths not yet implemented')
-    else:
-        # relative path, likely of form {date}/{data_folder}
-        date_folder, data_str = path_str.split('/')[-2:]
+    # Iteratively go through path items and add them to the data path
+    relative_path = date_folder
+    for subpath in path:
+        if subpath[:1] == '#' and subpath[1:].isdigit():
+            # prepend zeros if necessary
+            subpath = f'#{int(subpath[1:]):03}'
 
-    if data_str[:1] == '#' and data_str[1:].isdigit():
-        data_str = f'#{int(data_str[1:]):03}'
+        data_path = os.path.join(base_path, relative_path)
+        data_folder = next(folder for folder in os.listdir(data_path)[::-1]
+                           if subpath in folder)
+        relative_path = os.path.join(relative_path, data_folder)
 
-    date_path = os.path.join(base_path, date_folder)
-
-    data_folders = reversed(os.listdir(date_path))
-    data_folder = next(folder for folder in data_folders if data_str in folder)
-    data_path = os.path.join(date_path, data_folder)
-
-    if subfolder is not None:
-        if subfolder[:1] == '#' and subfolder[1:].isdigit():
-            subfolder = f'#{int(subfolder[1:]):03}'
-
-        data_subfolders = reversed(os.listdir(data_path))
-        data_subfolder = next(folder for folder in data_subfolders
-                              if subfolder in folder)
-        logger.debug(f'Subfolder: {data_subfolder}')
-        data_folder = os.path.join(data_folder, data_subfolder)
-
-    data_relative_path = os.path.join(date_folder, data_folder)
-    data_relative_path.replace('\\', '/')
-
-    return data_relative_path
+    return relative_path

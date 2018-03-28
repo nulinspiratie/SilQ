@@ -154,7 +154,7 @@ class SIM928Dialog(QFrame):
 
             # Add SIM voltage
             self.raw_val_label = QLabel('SIM val: {:.3g} V'.format(
-                self.parameter.get_latest() * self.parameter.scale))
+                self.parameter.raw_value))
             self.raw_val_label.setAlignment(Qt.AlignCenter)
             self.raw_val_label.setFont(QFont("Times", 12))
             layout.addWidget(self.raw_val_label)

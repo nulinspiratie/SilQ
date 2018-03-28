@@ -1,6 +1,7 @@
 import numpy as np
-import copy
+from copy import copy, deepcopy
 from blinker import Signal
+from matplotlib import pyplot as plt
 
 __all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
            'PulseImplementation']
@@ -29,10 +30,10 @@ class PulseMatch():
 
     def __call__(self, sender, **kwargs):
         """
-        Set value of target 
+        Set value of target
         Args:
-            sender: 
-            **kwargs: 
+            sender:
+            **kwargs:
 
         """
         if self.origin_pulse_attr in kwargs:
@@ -181,21 +182,8 @@ class PulseSequence:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __call__(self, **conditions):
-        """
-        Return filtered copy of pulse sequence satisfying conditions
-        Args:
-            **conditions: Conditions that any pulses must satisfy
-
-        Returns:
-            Copy of pulse sequence containing pulses that meet conditions
-        """
-        return PulseSequence(
-            pulses=self.get_pulses(**conditions),
-            allow_untargeted_pulses=self.allow_untargeted_pulses,
-            allow_targeted_pulses=self.allow_targeted_pulses,
-            allow_pulse_overlap=self.allow_pulse_overlap,
-            final_delay=self.final_delay)
+    def __copy__(self, *args):
+        return deepcopy(self)
 
     def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
             for attr in vars(self):
@@ -248,7 +236,7 @@ class PulseSequence:
         if self.final_delay is not None:
             duration += self.final_delay
 
-        return duration
+        return np.round(duration, 11)
 
     @duration.setter
     def duration(self, duration):
@@ -265,7 +253,7 @@ class PulseSequence:
 
     @property
     def t_list(self):
-        return list(set(self.t_start_list + self.t_stop_list + [self.duration]))
+        return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def replace(self, pulse_sequence):
         """
@@ -278,7 +266,7 @@ class PulseSequence:
         """
         # Copy over all attributes from the pulse
         for attr, val in vars(pulse_sequence).items():
-            setattr(self, attr, copy.deepcopy(val))
+            setattr(self, attr, deepcopy(val))
 
     def add(self, *pulses):
         """
@@ -300,6 +288,7 @@ class PulseSequence:
         added_pulses = []
 
         for pulse in pulses:
+
             if not self.allow_pulse_overlap and \
                     any(self.pulses_overlap(pulse, p)
                         for p in self.enabled_pulses):
@@ -318,18 +307,19 @@ class PulseSequence:
                 raise SyntaxError(f'Pulse {pulse} duration must be specified')
             else:
                 # Check if pulse with same name exists
+                pulse_copy = copy(pulse)
+                pulse_copy.id = None # Remove any pre-existing pulse id
                 if pulse.name is not None:
                     pulses_same_name = self.get_pulses(name=pulse.name)
                     if pulses_same_name:
                         # Ensure id is unique
                         if pulses_same_name[0].id is None:
                             pulses_same_name[0].id = 0
-                            pulse.id = 1
+                            pulse_copy.id = 1
                         else:
                             max_id = max(p.id for p in pulses_same_name)
-                            pulse.id = max_id + 1
+                            pulse_copy.id = max_id + 1
 
-                pulse_copy = pulse.copy()
                 if pulse_copy.t_start is None:
                     if self: # There exist pulses in this pulse_sequence
                         # Add last pulse of this pulse_sequence to the pulse
@@ -372,10 +362,14 @@ class PulseSequence:
         """
         for pulse in pulses:
             if isinstance(pulse, str):
-                pulses_name = [p for p in self.pulses if p.name==pulse]
-                assert len(pulses_name) == 1, 'No unique pulse named {}, found {} ' \
-                                        'pulses'.format(pulse, len(pulses_name))
+                pulses_name = [p for p in self.pulses if p.full_name==pulse]
+                assert len(pulses_name) == 1, f'No unique pulse {pulse} found' \
+                                              f', pulses: {len(pulses_name)}'
                 pulse = pulses_name[0]
+            else:
+                pulses = [p for p in self if p == pulse]
+                assert len(pulses) == 1, f'No unique pulse {pulse} found' \
+                                         f', pulses: {pulses}'
             self.pulses.remove(pulse)
             if pulse.enabled:
                 self.enabled_pulses.remove(pulse)
@@ -395,9 +389,6 @@ class PulseSequence:
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
-
-    def copy(self):
-        return copy.deepcopy(self)
 
     def pulses_overlap(self, pulse1, pulse2):
         """
@@ -423,6 +414,12 @@ class PulseSequence:
 
     def get_pulses(self, enabled=True, **conditions):
         pulses = self.pulses
+        # Filter pulses by pulse conditions
+        pulse_conditions = {k: v for k, v in conditions.items()
+                            if k in self.pulse_conditions + ['pulse_class']}
+        pulses = [pulse for pulse in pulses
+                  if pulse.satisfies_conditions(
+                    enabled=enabled, **pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
@@ -433,12 +430,6 @@ class PulseSequence:
                       pulse.connection.satisfies_conditions(
                           **connection_conditions)]
 
-        # Filter pulses by pulse conditions
-        pulse_conditions = {k: v for k, v in conditions.items()
-                            if k not in self.connection_conditions}
-        pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(
-                    enabled=enabled, **pulse_conditions)]
         return pulses
 
     def get_pulse(self, **conditions):
@@ -504,7 +495,7 @@ class PulseSequence:
         for pulse in self:
             if not pulse.acquire:
                 continue
-            pts = round(pulse.duration * 1e-3 * sample_rate)
+            pts = round(pulse.duration * sample_rate)
             if pulse.average == 'point':
                 shape = (1,)
             elif pulse.average == 'trace':
@@ -516,6 +507,64 @@ class PulseSequence:
 
         return shapes
 
+    def plot(self, output_arg=None, output_channel=None, dt=1e-6,
+             subplots=False, scale_ylim=True):
+        pulses = self.get_pulses(output_arg=output_arg,
+                                 output_channel=output_channel)
+
+        connections = {pulse.connection for pulse in pulses}
+        connections = sorted(connections,
+                             key=lambda connection: connection.output['str'])
+        if subplots:
+            fig, axes = plt.subplots(len(connections), sharex=True,
+                                     figsize=(10, 1.5 * len(connections)))
+        else:
+            fig, axes = plt.subplots(1, figsize=(10, 4))
+
+        t_list = np.arange(0, self.duration, dt)
+        voltages = {}
+        for k, connection in enumerate(connections):
+            connection_pulses = [pulse for pulse in pulses if
+                                 pulse.connection == connection]
+            #         print('connection_pulses', connection_pulses)
+            connection_voltages = np.nan * np.ones(len(t_list))
+            for pulse in connection_pulses:
+                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop, dt)
+                start_idx = np.argmax(t_list >= pulse.t_start)
+                # Determine max_pts because sometimes there is a rounding error
+                max_pts = len(connection_voltages[
+                              start_idx:start_idx + len(pulse_t_list)])
+                #             print('pulse', pulse, ', start_idx', start_idx, ', len(pulse_t_list)', len(pulse_t_list))
+                connection_voltages[
+                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
+                    pulse_t_list[:max_pts])
+            voltages[connection.output['str']] = connection_voltages
+
+            ax = axes[k] if isinstance(axes, np.ndarray) else axes
+            ax.plot(t_list, connection_voltages, label=connection.output["str"])
+            if not subplots:
+                ax.set_xlabel('Time (s)')
+            ax.set_ylabel('Amplitude (V)')
+            ax.set_xlim(0, self.duration)
+            ax.legend()
+
+        if scale_ylim:
+            min_voltage = np.nanmin(np.concatenate(tuple(voltages.values())))
+            max_voltage = np.nanmax(np.concatenate(tuple(voltages.values())))
+            voltage_difference = max_voltage - min_voltage
+            for ax in axes:
+                ax.set_ylim(min_voltage - 0.05 * voltage_difference,
+                            max_voltage + 0.05 * voltage_difference)
+
+        fig.tight_layout()
+        if subplots:
+            fig.subplots_adjust(hspace=0)
+        return t_list, voltages
+
+    def up_to_date(self):
+        """ Whether a pulse sequence needs to be generated.
+        Can be overridden in subclass """
+        return True
 
 class PulseImplementation:
     pulse_config = None
@@ -560,8 +609,8 @@ class PulseImplementation:
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
-        targeted_pulse = pulse.copy()
-        pulse_implementation = copy.deepcopy(self)
+        targeted_pulse = copy(pulse)
+        pulse_implementation = deepcopy(self)
         targeted_pulse.implementation = pulse_implementation
         pulse_implementation.pulse = targeted_pulse
         return targeted_pulse
@@ -569,6 +618,6 @@ class PulseImplementation:
     def get_additional_pulses(self, interface):
         return []
 
-    def implement(self):
+    def implement(self, **kwargs):
         raise NotImplementedError(
             'This method should be implemented in a subclass')

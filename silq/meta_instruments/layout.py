@@ -1,38 +1,51 @@
-from collections import OrderedDict as od
+import os
+from collections import OrderedDict as od, Iterable
 import logging
+from copy import copy
+import pickle
+from time import sleep
+from typing import Union, List
 
 import silq
 from silq import config
-from silq.instrument_interfaces import Channel
+from silq.instrument_interfaces import Channel, InstrumentInterface
 from silq.pulses.pulse_modules import PulseSequence
+from silq.pulses.pulse_types import MeasurementPulse
 
-from qcodes import Instrument
-from qcodes.instrument.parameter import ManualParameter
+from qcodes import Instrument, FormatLocation
 from qcodes.utils import validators as vals
-
+from qcodes.data.io import DiskIO
 
 logger = logging.getLogger(__name__)
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
 connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
-                         'input_interface','output_arg', 'output_instrument',
-                         'output_channel', 'output_interface','trigger']
+                         'input_interface', 'output_arg', 'output_instrument',
+                         'output_channel', 'output_interface', 'trigger']
+
 
 class Layout(Instrument):
-
     shared_kwargs = ['instrument_interfaces']
 
-    def __init__(self, name, instrument_interfaces, **kwargs):
-        """
-        The layout meta-instrument defines the experimental setup and
-        controls its instruments via interfaces.
-        The Layout should be created once all the instrument and their
-        respective interfaces have been created.
+    def __init__(self, name: str = 'layout',
+                 instrument_interfaces: List[InstrumentInterface] = [],
+                 store_pulse_sequences_folder: Union[bool, None] = None,
+                 **kwargs):
+        """ Acquisition controller of instruments via their interfaces.
+
+        The Layout is provided with the instruments and their associated
+        interfaces, as well as connectivity between instrument channels.
+
+
         Args:
-            name: Name of Layout instrument
-            instrument_interfaces: list of all instrument interfaces
-            **kwargs:
+            name: Name of Layout instrument.
+            instrument_interfaces: List of all instrument interfaces
+            store_pulse_sequences_folder: Folder in which to store a copy of
+                any pulse sequence that is targeted. Pulse sequences are
+                stored as pickles, and can be used to trace back measurement
+                parameters.
+            **kwargs: Additional kwargs passed to Instrument
         """
         super().__init__(name, **kwargs)
 
@@ -53,22 +66,19 @@ class Layout(Instrument):
                            vals=vals.Enum(*self._interfaces.keys()))
 
         self.add_parameter('acquisition_instrument',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
-        self.add_parameter('acquisition_outputs',
-                           parameter_class=ManualParameter,
-                           initial_value=([('chip.output', 'output')]
-                                          if 'chip' in self._interfaces.keys()
-                                          else []),
+        self.add_parameter('acquisition_channels',
+                           set_cmd=None,
                            vals=vals.Anything())
 
         self.add_parameter(name='samples',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=1)
 
         self.add_parameter(name='active',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
 
@@ -79,6 +89,16 @@ class Layout(Instrument):
         # layout.pulse_sequence
         self.targeted_pulse_sequence = None
 
+        # Handle saving of pulse sequence
+        if store_pulse_sequences_folder is not None:
+            self.store_pulse_sequences_folder = store_pulse_sequences_folder
+        elif config.properties.get('store_pulse_sequences_folder') is not None:
+            self.store_pulse_sequences_folder = \
+                config.properties.store_pulse_sequences_folder
+        else:
+            self.store_pulse_sequences_folder = None
+        self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
+
         self.acquisition_shapes = {}
 
     @property
@@ -87,9 +107,9 @@ class Layout(Instrument):
 
     @pulse_sequence.setter
     def pulse_sequence(self, pulse_sequence):
-        """
-        Set target pulse sequence to layout, which distributes pulses to
+        """ Set target pulse sequence to layout, which distributes pulses to
         interfaces
+
         Args:
             pulse_sequence: Pulse sequence to be targeted
         """
@@ -99,13 +119,11 @@ class Layout(Instrument):
         # Target pulse_sequence, distributing pulses to interfaces
         self._target_pulse_sequence(pulse_sequence)
 
-        # Update pulse sequence
-        self._pulse_sequence = pulse_sequence.copy()
 
     @property
     def acquisition_interface(self):
-        """
-        Obtain interface for acquisition system
+        """ Obtain interface for acquisition system
+
         Returns:
             Interface instrument
         """
@@ -113,29 +131,6 @@ class Layout(Instrument):
             return self._interfaces[self.acquisition_instrument()]
         else:
             return None
-
-    @property
-    def acquisition_channels(self):
-        """
-        Returns a dictionary acquisition_label: acquisition_channel_name pairs.
-        The acquisition_label is the label associated with a certain
-        acquisition channel. This is settable via layout.acquisition_outputs
-        The acquisition_channel_name is the actual channel name of the
-        acquisition controller.
-        """
-
-        acquisition_channels = od()
-        for output_arg, output_label in self.acquisition_outputs():
-            # Use try/except in case not all connections exist
-            try:
-                connection = self.get_connection(
-                    output_arg=output_arg,
-                    input_instrument=self.acquisition_instrument())
-                acquisition_channels[output_label] = \
-                    connection.input['channel'].name
-            except:
-                return None
-        return acquisition_channels
 
     @property
     def sample_rate(self):
@@ -230,39 +225,48 @@ class Layout(Instrument):
                 self.add_connection(**connection)
 
     def get_connections(self, connection=None, **conditions):
-        """
-        Returns all connections that satisfy given conditions
-        Possible conditions:
+        """ Returns all connections that satisfy given conditions
+
+        Args:
+            connection: Specific connection to be checked. If the connection
+                is in layout.connections, it returns a list with the connection.
+                Can be useful when pulse.connection_requirements needs a
+                specific connection
             connection: Specific connection to be checked. If the connection
                 is in layout.connections, it returns a list with the connection.
                 Can be useful when pulse.connection_requirements needs a
                 specific connection
             output_arg: string representation of output.
-                SingleConnection has form '{instrument}.{channel}'
-                CombinedConnection is list of SingleConnection output_args, 
-                    which must have equal number of elements as underlying 
-                    connections. Can be combined with input_arg, in which 
-                    case the first element of output_arg and input_arg are 
-                    assumed to belong to the same underlying connection.
+
+                * SingleConnection has form '{instrument}.{channel}'
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with input_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
             output_interface: Connections must have output_interface object
             output_instrument: Connections must have output_instrument name
             output_channel: Connections must have output_channel
                 (either Channel object, or channel name)
             input_arg: string representation of input.
-                SingleConnection has form '{instrument}.{channel}'
-                CombinedConnection is list of SingleConnection output_args, 
-                    which must have equal number of elements as underlying 
-                    connections. Can be combined with output_arg, in which 
-                    case the first element of output_arg and input_arg are 
-                    assumed to belong to the same underlying connection.
+
+                * SingleConnection has form '{instrument}.{channel}'
+                * CombinedConnection is list of SingleConnection output_args,
+                  which must have equal number of elements as underlying
+                  connections. Can be combined with output_arg, in which
+                  case the first element of output_arg and input_arg are
+                  assumed to belong to the same underlying connection.
+
             input_interface: Connections must have input_interface object
             input_instrument: Connections must have input_instrument name
             input_channel: Connections must have input_channel
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
-            software: Connection is not an actual hardware connection. Used 
+            software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
+
         Returns:
             Connections that satisfy kwarg constraints
         """
@@ -333,7 +337,7 @@ class Layout(Instrument):
     def _set_primary_instrument(self, primary_instrument):
         # TODO remove once parameters are improved
         for instrument_name, interface in self._interfaces.items():
-            interface.is_primary(instrument_name==primary_instrument)
+            interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(self, sorted_interfaces=[]):
         """
@@ -501,13 +505,18 @@ class Layout(Instrument):
         Returns:
             None
         """
-        # Get default output instrument
-        connection = self.get_pulse_connection(pulse)
-        interface = self._interfaces[connection.output['instrument']]
 
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
+
+        if isinstance(pulse, MeasurementPulse):
+            # Measurement pulses do not need to be output
+            return
+
+        # Get default output instrument
+        connection = self.get_pulse_connection(pulse)
+        interface = self._interfaces[connection.output['instrument']]
 
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
@@ -568,6 +577,29 @@ class Layout(Instrument):
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
+        # Update pulse sequence
+        self._pulse_sequence = copy(pulse_sequence)
+
+        # Store pulse sequence
+        if self.store_pulse_sequences_folder:
+            logger.debug('Storing pulse sequence to')
+            try:
+                self._pulse_sequences_folder_io.base_location = \
+                    self.store_pulse_sequences_folder
+                location = FormatLocation()(self._pulse_sequences_folder_io,
+                                            {"name": 'pulse_sequence'})
+                location += '.pickle'
+
+                filepath = self._pulse_sequences_folder_io.to_path(location)
+
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+                logger.debug(f'Storing pulse sequence to {filepath}')
+                with open(filepath, 'wb') as f:
+                    pickle.dump(self._pulse_sequence, f)
+            except:
+                logger.exception('Could not save pulse sequence')
+
     def update_flags(self, new_flags):
         """
         Updates existing flags with new flags. Flags are instructions sent
@@ -579,28 +611,40 @@ class Layout(Instrument):
         Returns:
             None
         """
-        for instrument, new_instrument_flags in new_flags.items():
-            instrument_flags = self.flags[instrument]
-            for flag, val in new_instrument_flags.items():
-                if flag not in instrument_flags:
-                    # New instrument flag is not yet in existing flags,
-                    # add it to the existing flags
-                    instrument_flags[flag] = val
-                elif type(val) is dict:
-                    # New instrument flag is already in existing flags,
-                    # but the value is a dict. Update existing flag dict with
-                    #  new dict
-                    instrument_flags[flag].update(val)
-                elif not instrument_flags[flag] == val:
-                    raise RuntimeError(
-                        "Instrument {} flag {} already exists, but val {} does "
-                        "not match existing val {}".format(
-                            instrument, val, instrument_flags[flag]))
-                else:
-                    # Instrument Flag exists, and values match
-                    pass
+        if 'skip_start' in new_flags:
+            self.flags['skip_start'].add(new_flags['skip_start'])
 
-    def setup(self, samples=None, **kwargs):
+        if 'post_start_actions' in new_flags:
+            self.flags['post_start_actions'] += new_flags['post_start_actions']
+
+        if 'start_last' in new_flags:
+            self.flags['start_last'].add(new_flags['start_last'])
+
+        if 'setup' in new_flags:
+            for instrument_name, new_instrument_flags in new_flags['setup'].items():
+                instrument_flags = self.flags['setup'].get(instrument_name, {})
+                for flag, val in new_instrument_flags.items():
+                    if flag not in instrument_flags:
+                        # New instrument flag is not yet in existing flags,
+                        # add it to the existing flags
+                        instrument_flags[flag] = val
+                    elif type(val) is dict:
+                        # New instrument flag is already in existing flags,
+                        # but the value is a dict. Update existing flag dict with
+                        #  new dict
+                        instrument_flags[flag].update(val)
+                    elif not instrument_flags[flag] == val:
+                        raise RuntimeError(
+                            f"Instrument {instrument_name} flag {flag} already "
+                            f"exists, but val {val} does not match existing "
+                            f"val {instrument_flags[flag]}")
+                    else:
+                        # Instrument Flag exists, and values match
+                        pass
+                # Set dict since it may not have existed previously
+                self.flags['setup'][instrument_name] = instrument_flags
+
+    def setup(self, samples=None, repeat=True, ignore=[], **kwargs):
         """
         Sets up all the instruments after having targeted a pulse sequence.
         Instruments are setup through their respective interfaces, and only
@@ -609,15 +653,29 @@ class Layout(Instrument):
         other instruments are never setup before the triggered instruments.
         Any flags, such as to skip starting an instrument, are also collected
         and applied at this stage.
+
+        Interfaces can return a dict of flags. The following flags are accepted:
+        - setup (dict): key (instrument_name) value setup_flags
+            When the interface with instrument_name (key) is setup, the
+            setup flags (value) will be passed along
+        - skip_start (str): instrument name that should be skipped when
+            calling layout.start()
+        - post_start_actions (list(callable)): callables to perform after all
+            interfaces are started
+        - start_last (interface) interface that should be started after others
+
+
         Args:
             samples: Number of samples (by default uses previous value)
+            repeat: Whether to repeat pulse sequence indefinitely or stop at end
             **kwargs: additional kwargs sent to all interfaces being setup.
 
         Returns:
             None
         """
+
         logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
-        
+
         if not self.pulse_sequence:
             raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
@@ -625,46 +683,54 @@ class Layout(Instrument):
             self.stop()
 
         # Initialize with empty flags, used for instructions between interfaces
-        self.flags = {instrument: {} for instrument in self.instruments()}
+        self.flags = {'setup': {},
+                      'skip_start': set(),
+                      'post_start_actions': [],
+                      'start_last': set(),
+                      'auto_stop': None}
 
         if samples is not None:
             self.samples(samples)
 
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
-                [ch_name for _, ch_name in self.acquisition_channels.items()])
+                [ch_name for ch_name, _ in self.acquisition_channels()])
 
         for interface in self._get_interfaces_hierarchical():
-            if interface.pulse_sequence:
+            if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
-                instrument_flags = self.flags[interface.instrument_name()]
-                setup_flags = instrument_flags.get('setup', {})
+                setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
-                is_primary = self.primary_instrument() == interface.name
+                is_primary = self.primary_instrument() == interface.instrument.name
                 output_connections = self.get_connections(
                     output_interface=interface)
 
                 flags = interface.setup(samples=self.samples(),
                                         is_primary=is_primary,
                                         output_connections=output_connections,
+                                        repeat=repeat,
                                         **setup_flags, **kwargs)
                 if flags:
-                    logger.debug(f'Received setup flags {setup_flags} from '
-                                 f'interface {interface.name}')
+                    logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
+
+        if self.flags['auto_stop'] is None:
+            # auto_stop flag hasn't been specified.
+            # Set to True if the pulse sequence doesn't repeat, False otherwise
+            self.flags['auto_stop'] = not repeat
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
             sample_rate=self.sample_rate, samples=self.samples())
         self.acquisition_shapes = {}
-        output_labels = [output[1] for output in self.acquisition_outputs()]
+        output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self):
+    def start(self, auto_stop=None):
         """
         Starts all the instruments except the acquisition instrument
         The interface start order is by hierarchy, i.e. instruments that trigger
@@ -677,16 +743,41 @@ class Layout(Instrument):
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
                 continue
-            elif self.flags[interface.instrument_name()].get('skip_start',
-                                                             False):
-                logger.info('Interface {interface.name} has flag to skip start')
+            elif interface.instrument_name() in self.flags['skip_start']:
+                logger.info('Skipping starting {interface.name} (flag skip_start)')
+                continue
+            elif interface in self.flags['start_last']:
+                logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
                 interface.start()
                 logger.debug(f'{interface} started')
             else:
-                pass
+                logger.debug(f'Skipping starting {interface} (no pulse sequence)')
+
+        for interface in self.flags['start_last']:
+            interface.start()
+            logger.debug(f'Started {interface} after others (flag start_last)')
+
+        for action in self.flags['post_start_actions']:
+            action()
+            logger.debug(f'Called post_start_action {action}')
+
         logger.debug('Layout started')
+
+        if auto_stop is None:
+            auto_stop = self.flags['auto_stop']
+
+        if auto_stop is not False:
+            if auto_stop is True:
+                # Wait for three times the duration of the pulse sequence, then stop instruments
+                sleep(self.pulse_sequence.duration * 3 / 1000)
+            elif isinstance(auto_stop, (int, float)):
+                # Wait for duration specified in auto_stop
+                sleep(auto_stop)
+            else:
+                raise SyntaxError('auto_stop must be either True or a number')
+                self.stop()
 
     def stop(self):
         """
@@ -730,16 +821,8 @@ class Layout(Instrument):
             for pulse, channel_traces in pulse_traces.items():
                 data[pulse] = {}
                 for channel, trace in channel_traces.items():
-                    # Find corresponding connection
-                    connection = self.get_connection(
-                        input_channel=channel,
-                        input_instrument=self.acquisition_instrument())
-                    # Get output arg (instrument.channel)
-                    output_arg = connection.output['str']
-                    # Find label corresponding to output arg
-                    output_label = next(
-                        item[1]for item in self.acquisition_outputs()
-                        if item[0] == output_arg)
+                    output_label = next(item[1] for item in self.acquisition_channels()
+                                        if item[0] == channel)
                     data[pulse][output_label] = trace
         except:
             # If any error occurs, stop all instruments
@@ -836,7 +919,7 @@ class Connection:
                               for ch in output_channel]
         if input_channel is not None:
             input_channel = [ch.name if isinstance(ch, Channel) else ch
-                              for ch in input_channel]
+                             for ch in input_channel]
 
         # Test conditions
         if (output_instrument is not None) and \
@@ -844,15 +927,15 @@ class Connection:
             return False
         elif (output_channel is not None) and \
                 (('channel' not in self.output) or
-                 (self.output['channel'].name not in output_channel)):
+                     (self.output['channel'].name not in output_channel)):
             return False
         elif (input_instrument is not None) and \
                 (('instrument' not in self.input) or
-                 (self.input['instrument'] not in input_instrument)):
+                     (self.input['instrument'] not in input_instrument)):
             return False
         elif (input_channel is not None) and \
                 (('channel' not in self.input) or
-                 (self.input['channel'].name not in input_channel)):
+                     (self.input['channel'].name not in input_channel)):
             return False
         else:
             return True
@@ -929,7 +1012,7 @@ class SingleConnection(Connection):
             Targeted (copy of) pulse
         """
         if copy_pulse:
-            targeted_pulse = pulse.copy()
+            targeted_pulse = copy(pulse)
         else:
             targeted_pulse = pulse
         targeted_pulse.connection = self
@@ -960,7 +1043,7 @@ class SingleConnection(Connection):
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
             acquire: Connection is used for acquisition
-            software: Connection is not an actual hardware connection. Used 
+            software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
         Returns:
             Bool depending on if the connection satisfies conditions
@@ -1010,21 +1093,20 @@ class CombinedConnection(Connection):
         self.output['str'] = [connection.output['str']
                               for connection in connections]
         self.output['instruments'] = list(set([connection.output['instrument']
-                                          for connection in connections]))
+                                               for connection in connections]))
         if len(self.output['instruments']) == 1:
             self.output['instrument'] = self.output['instruments'][0]
             self.output['channels'] = list(set([connection.output['channel']
-                                           for connection in connections]))
-
+                                                for connection in connections]))
 
         self.input['str'] = [connection.input['str']
                              for connection in connections]
         self.input['instruments'] = list(set([connection.input['instrument']
-                                         for connection in connections]))
+                                              for connection in connections]))
         if len(self.input['instruments']) == 1:
             self.input['instrument'] = self.input['instruments'][0]
             self.input['channels'] = list(set([connection.input['channel']
-                                          for connection in connections]))
+                                               for connection in connections]))
 
     def __repr__(self):
         output = 'CombinedConnection\n'
@@ -1046,12 +1128,12 @@ class CombinedConnection(Connection):
         """
         pulses = []
         for k, connection in enumerate(self.connections):
-            targeted_pulse = pulse.copy()
+            targeted_pulse = copy(pulse)
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
-                    if isinstance(val, tuple):
-                        if k < len(pulse.amplitude):
+                    if isinstance(val, Iterable):
+                        if k < len(getattr(pulse, attr)):
                             setattr(targeted_pulse, attr, val[k])
                         else:
                             setattr(targeted_pulse, attr, val[0])
@@ -1064,24 +1146,23 @@ class CombinedConnection(Connection):
 
     def satisfies_conditions(self, output_arg=None, input_arg=None,
                              trigger=None, acquire=None, **kwargs):
-        """
-        Checks if this connection satisfies conditions
+        """ Checks if this connection satisfies conditions
         Args:
-            output_arg: list of SingleConnection output_args, each of which 
+            output_arg: list of SingleConnection output_args, each of which
                 has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with 
-                input_arg, in which case the first element of output_arg and 
-                input_arg are assumed to belong to the same underlying 
+                of elements as underlying connections. Can be combined with
+                input_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
                 connection.
             output_interface: Connection must have output_interface
             output_instrument: Connection must have output_instrument name
             output_channel: Connection must have output_channel
                 (either Channel object, or channel name)
-            input_arg: list of SingleConnection input_args, each of which 
+            input_arg: list of SingleConnection input_args, each of which
                 has the form '{instrument}.{channel}. Must have equal number
-                of elements as underlying connections. Can be combined with 
-                output_arg, in which case the first element of output_arg and 
-                input_arg are assumed to belong to the same underlying 
+                of elements as underlying connections. Can be combined with
+                output_arg, in which case the first element of output_arg and
+                input_arg are assumed to belong to the same underlying
                 connection.
             input_interface: Connection must have input_interface
             input_instrument: Connection must have input_instrument name
