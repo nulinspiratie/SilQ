@@ -278,7 +278,7 @@ class TestLayout(unittest.TestCase):
         self.assertEqual(len(sequence[1]), 3)
 
     def test_arbstudio_pulseblaster(self):
-        self.layout.acquisition_outputs([])
+        self.layout.acquisition_channels([])
         self.layout.primary_instrument('pulseblaster')
         self.layout.acquisition_instrument('ATS')
         self.layout.add_connection(output_arg='arbstudio.ch1',
@@ -344,7 +344,7 @@ class TestLayout(unittest.TestCase):
 
         self.layout.add_connection(output_arg='chip.output',
                                    input_arg='ATS.chA')
-        self.layout.acquisition_outputs([('chip.output', 'output'),
+        self.layout.acquisition_channels([('chip.output', 'output'),
                                          ('arbstudio.ch3', 'pulses')])
 
         # Setup pulses
@@ -394,7 +394,7 @@ class TestLayout(unittest.TestCase):
             self.interfaces['ATS'].setting('samples_per_record')))
 
     def test_multipulse(self):
-        self.layout.acquisition_outputs([])
+        self.layout.acquisition_channels([])
         self.layout.primary_instrument('pulseblaster')
         self.layout.acquisition_instrument('ATS')
 
@@ -419,7 +419,7 @@ class TestLayout(unittest.TestCase):
 
         self.layout.add_connection(output_arg='chip.output',
                                    input_arg='ATS.chA')
-        self.layout.acquisition_outputs([('chip.output', 'output'),
+        self.layout.acquisition_channels([('chip.output', 'output'),
                                          ('arbstudio.ch3', 'pulses')])
 
         trigger_connections = self.layout.get_connections(

@@ -15,40 +15,93 @@ __all__ = ['CombinedParameter', 'ScaledParameter', 'StoreParameter',
            'AttributeParameter', 'ConfigPulseAttribute']
 
 
-
 class CombinedParameter(Parameter):
     """
     Combines multiple parameters into a single parameter.
     Setting this parameter sets all underlying parameters to this value
     Getting this parameter gets the value of the first parameter
     """
-    def __init__(self, parameters, name=None, label=None, unit=None, offsets=None, **kwargs):
+    def __init__(self, parameters, name=None, label='', unit=None, offsets=None,
+                 scales=None, **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
-        if label is None:
-            label = ' and '.join([parameter.label for parameter in parameters])
+
+        self.label = None
         if unit is None:
             unit = parameters[0].unit
-        super().__init__(name, label=label, unit=unit, **kwargs)
 
         self.parameters = parameters
         self.offsets = offsets
+        self.scales = scales
 
-    def get(self):
+        super().__init__(name, label=label, unit=unit, **kwargs)
+
+    @property
+    def label(self):
+        if self._label:
+            return self._label
+
+        if self.scales is None and self.offsets is None:
+            return ' and '.join([parameter.label for parameter in self.parameters])
+        else:
+            labels = []
+            for k, parameter in enumerate(self.parameters):
+                if self.scales is not None and self.scales[k] != 1:
+                    label = f'{self.scales[k]:.3g} * {parameter.name}'
+                else:
+                    label = parameter.name
+
+                if self.offsets is not None:
+                    label += f' + {self.offsets[k]:.4g}'
+
+                labels.append(label)
+
+            return f'({", ".join(labels)})'
+
+    @label.setter
+    def label(self, label):
+        self._label = label
+
+    def zero_offset(self, offset=0):
+        if self.scales is not None:
+            self.offsets = [param() - offset * scale for param, scale in
+                       zip(self.parameters, self.scales)]
+        else:
+            self.offsets = [param() for param in self.parameters]
+        return self.offsets
+
+    def calculate_individual_values(self, value):
+        """
+        Calulate values of parameters from a combined value
+        Args:
+            value: combined value
+
+        Returns:
+            list of values for each parameter
+        """
+        vals = []
+        for k, parameter in enumerate(self.parameters):
+            val = value
+            if self.scales is not None:
+                val *= self.scales[k]
+            if self.offsets is not None:
+                val += self.offsets[k]
+            vals.append(val)
+
+        return vals
+
+    def get_raw(self):
         value = self.parameters[0]()
         if self.offsets is not None:
             value -= self.offsets[0]
-        self._save_val(value)
+        if self.scales is not None:
+            value /= self.scales[0]
         return value
 
-    def set(self, value):
-        self._save_val(value)
-        for k, parameter in enumerate(self.parameters):
-            if self.offsets is not None:
-                offset = self.offsets[k]
-            else:
-                offset = 0
-            parameter(value + offset)
+    def set_raw(self, value):
+        individual_values = self.calculate_individual_values(value)
+        for parameter, val in zip(self.parameters, individual_values):
+            parameter(val)
             sleep(0.005)
 
 
@@ -72,12 +125,12 @@ class ScaledParameter(Parameter):
         self.scale = scale
         self._meta_attrs.extend(['scale'])
 
-    def get(self):
+    def get_raw(self):
         value = self.parameter() / self.scale
         self._save_val(value)
         return value
 
-    def set(self, val):
+    def set_raw(self, val):
         value = val * self.scale
         self._save_val(val)
         self.parameter(value)
@@ -116,7 +169,7 @@ class StoreParameter(Parameter):
             name='test_data_parameter',
             formatter=formatter)
 
-    def get(self):
+    def get_raw(self):
         result = np.random.randint(1, 100, size=self.shape)
 
         loop_indices = slice(0,self.shape[0],1)
@@ -129,29 +182,38 @@ class StoreParameter(Parameter):
 
 
 class AttributeParameter(Parameter):
-    def __init__(self, object, attribute, scale=None, **kwargs):
+    def __init__(self, object, attribute, name=None, scale=None, is_key=None,
+                 **kwargs):
         """
         Creates a parameter that can set/get an attribute from an object
         Args:
             object: object whose attribute to set/get
             attribute: attribute to set/get
+            is_key: whether the attribute is a key in a dictionary
             **kwargs: Other parameter kwargs
         """
-        name = kwargs.pop('name', attribute)
+        name = name if name is not None else attribute
         super().__init__(name=name, **kwargs)
 
         self.object = object
         self.attribute = attribute
         self.scale = scale
+        self.is_key = isinstance(object, dict) if is_key is None else is_key
 
-    def set(self, value):
+    def set_raw(self, value):
         if self.scale is not None:
             value = tuple(value / scale for scale in self.scale)
-        setattr(self.object, self.attribute, value)
+        if not self.is_key:
+            setattr(self.object, self.attribute, value)
+        else:
+            self.object[self.attribute] = value
         self._save_val(value)
 
-    def get(self):
-        value =  getattr(self.object, self.attribute)
+    def get_raw(self):
+        if not self.is_key:
+            value =  getattr(self.object, self.attribute)
+        else:
+            value = self.object[self.attribute]
         if self.scale is not None:
             value = value[0] * self.scale[0]
         self._save_val(value)
@@ -173,11 +235,11 @@ class ConfigPulseAttribute(Parameter):
         self.pulse_name = pulse_name
         self.attribute = attribute
 
-    def set(self, value):
+    def set_raw(self, value):
         pulse_config[self.pulse_name][self.attribute] = value
         self._save_val(value)
 
-    def get(self):
+    def get_raw(self):
         value = pulse_config[self.pulse_name][self.attribute]
         self._save_val(value)
         return value

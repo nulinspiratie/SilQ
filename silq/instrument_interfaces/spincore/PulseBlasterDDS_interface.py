@@ -56,7 +56,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         else:
             return []
 
-    def setup(self, final_instruction='loop', is_primary=True, **kwargs):
+    def setup(self, final_instruction='loop', is_primary=True, repeat=True,
+              **kwargs):
         #Initial pulseblaster commands
         self.instrument.setup()
 
@@ -90,7 +91,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             self.instrument.set_amplitudes(amplitudes=amplitudes,
                                            channel=channel.idx)
 
-        ms = 1e6 # points per millisecond
+        s_to_ns = 1e9 # instruction delays expressed in ns
 
         # Iteratively increase time
         t = 0
@@ -108,7 +109,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             # Send continue instruction until next event
             delay_duration = t_next - t
-            delay_cycles = round(delay_duration * ms)
+            delay_cycles = round(delay_duration * s_to_ns)
             # Either send continue command or long_delay command if the
             # delay duration is too long
 
@@ -147,7 +148,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             # NOTE: This will disable all output channels and use default registers
             delay_duration = max(self.pulse_sequence.duration - t, 0)
             if delay_duration:
-                delay_cycles = round(delay_duration * ms)
+                delay_cycles = round(delay_duration * s_to_ns)
                 if delay_cycles < 1e9:
                     inst = DEFAULT_INSTR + (0, 'continue', 0, delay_cycles)
                 else:
@@ -159,13 +160,25 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
                 inst_list.append(inst)
 
-        # Loop back to beginning (wait if not primary)
-        inst = DEFAULT_INSTR + (0, 'branch', 0, 100)
-        inst_list.append(inst)
+        if repeat:
+            # Loop back to beginning (wait if not primary)
+            inst_list.append(DEFAULT_INSTR + (0, 'branch', 0, 100))
+        else:
+            # Stop pulse sequence
+            inst_list.append(DEFAULT_INSTR + (0, 'stop', 0, 100))
+
 
         # Note that this command does not actually send anything to the DDS,
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
+
+        if not is_primary:
+            # Return flag to ensure this instrument is started after its
+            # triggering instrument. This is because it is triggered when its
+            # trigger voltage reaches below a threshold, meaning that the triggering
+            # voltage must be high when this instrument is started.
+            return {'start_last': self}
+
 
     def start(self):
         self.instrument.start()

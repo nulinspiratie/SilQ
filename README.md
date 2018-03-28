@@ -7,7 +7,7 @@ SilQ is a measurement software designed to control spin-based systems. It utiliz
 
 ### Install Python
 1.	Download [Anaconda 64bit python 3.6](https://www.continuum.io/downloads)
-2.	Install Anaconda (make sure to tick the options add to system path and register as python 3.5
+2.	Install Anaconda (make sure to tick the options add to system path and register as python 3.6
 
 ### Install Github
 1.	Download and install [Github Desktop](https://desktop.github.com/) and create a [Github account](https://github.com/)
@@ -36,6 +36,14 @@ silq.set_experiments_folder(r'{experiments_folder}')
 ```
 where you should replace `{experiments_folder}` with the absolute path to your Experiments folder.
 Note that you should write the path as a raw string: `r'{experiments_folder}'`.
+
+### Optional: Install Jupyter Notebook extensions
+A number of extensions have been written for Jupyter Notebooks, some of which are vey useful.
+The extensions can be installed by running the following command in command prompt:
+```
+conda install -c conda-forge jupyter_contrib_nbextensions
+```
+You can see a list of extensions and enable/disable them through the [nbextension configurator](https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator). This can be accessed by opening a jupyter notebook instance, and clicking the `NBextensions` tab.
 
 ## Using SilQ
 The measurement software SilQ and QCodes can be imported as a package, just like any other python packages.

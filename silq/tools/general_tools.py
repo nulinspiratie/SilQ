@@ -18,7 +18,7 @@ __all__ = ['execfile', 'get_truth', 'get_memory_usage', 'partial_from_attr',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
            'Singleton', 'arreq_in_list', 'arreqclose_in_list',
-           'property_ignore_setter']
+           'property_ignore_setter', 'freq_to_str']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
@@ -170,6 +170,7 @@ class SettingsClass:
                 self._temporary_settings[item] = value
             else:
                 raise ValueError('Setting {} not found'.format(item))
+        return self
 
     def single_settings(self, **kwargs):
         """
@@ -184,6 +185,7 @@ class SettingsClass:
                 self._single_settings[item] = value
             else:
                 raise ValueError('Setting {} not found'.format(item))
+        return self
 
     def clear_settings(self):
         """
@@ -483,7 +485,7 @@ def arreq_in_list(myarr, list_arrays):
                 None)
 
 
-def arreqclose_in_list(myarr, list_arrays):
+def arreqclose_in_list(myarr, list_arrays, rtol=1e-5, atol=1e-8):
     """
     Get index of array in list of arrays, testing approximate equality
     Modified from https://stackoverflow.com/questions/23979146/
@@ -497,7 +499,7 @@ def arreqclose_in_list(myarr, list_arrays):
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if elem.size == myarr.size
-                 and np.allclose(elem, myarr)),
+                 and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
                 None)
 
 
@@ -514,3 +516,16 @@ class property_ignore_setter(object):
 
     def __set__(self, obj, value):
         pass
+
+
+def freq_to_str(frequency, fmt='{:.15g}'):
+    if frequency > 1e9:
+        frequency_string = fmt.format(frequency/1e9) + ' GHz'
+    elif frequency > 1e6:
+        frequency_string = fmt.format(frequency/1e6) + ' MHz'
+    elif frequency > 1e3:
+        frequency_string = fmt.format(frequency/1e3) + ' kHz'
+    else:
+        frequency_string = fmt.format(frequency) + ' Hz'
+
+    return frequency_string

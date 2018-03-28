@@ -4,6 +4,8 @@ import warnings
 import logging
 import json
 from .tools.config import DictConfig, ListConfig
+from .tools.parameter_tools import SweepDependentValues
+from .tools.general_tools import SettingsClass
 
 import qcodes as qc
 
@@ -13,12 +15,26 @@ logger = logging.getLogger(__name__)
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
 silq_env_var = 'SILQ_EXP_FOLDER'
 
+if 'ipykernel' in sys.modules:
+    # Load iPython magic (configured via qc.config.core.register_magic)
+    from qcodes.utils.magic import register_magic_class
+
+    register_magic = qc.config.core.get('register_magic', False)
+    if register_magic is not False:
+        from silq.tools.notebook_tools import SilQMagics
+
+        register_magic_class(cls=SilQMagics,
+                             magic_commands=register_magic)
+
 
 # Add saving of config to qcodes DataSet
 def _save_config(self, location=None):
     try:
         if location is None:
             location = self.location
+        if not location and hasattr(self, '_location'):
+            # Location is False, dataset created in qc.Measure, ignore
+            return
 
         if not os.path.isabs(location):
             location = os.path.join(qc.DataSet.default_io.base_location, location)
@@ -129,11 +145,18 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                 name = name
                 break
 
-    if mode is not None:
-        select = configurations[name]['modes'][mode].get('select', None)
-        ignore = configurations[name]['modes'][mode].get('ignore', None)
+    try:
+        configuration = next(val for key, val in get_configurations().items()
+                             if key.lower() == name.lower())
+    except StopIteration:
+        raise NameError(f'Configuration {name} not found. Allowed '
+                        f'configurations are {get_configurations().keys()}')
 
-    folder = os.path.join(experiments_folder, configurations[name]['folder'])
+    if mode is not None:
+        select = configuration['modes'][mode].get('select', None)
+        ignore = configuration['modes'][mode].get('ignore', None)
+
+    folder = os.path.join(experiments_folder, configuration['folder'])
     config.__dict__['folder'] = os.path.join(experiments_folder, folder)
     if os.path.exists(os.path.join(folder, 'config')):
         config.load()
@@ -144,15 +167,15 @@ def initialize(name=None, mode=None, select=None, ignore=None):
 
     for filename in init_filenames:
         # Remove prefix
-        name = filename.split('_', 1)[1]
+        filename_no_prefix = filename.split('_', 1)[1]
         # Remove .py extension
-        name = name.rsplit('.', 1)[0]
-        if select is not None and name not in select:
+        filename_no_prefix = filename_no_prefix.rsplit('.', 1)[0]
+        if select and filename_no_prefix not in select:
             continue
-        elif ignore is not None and name in ignore:
+        elif ignore and filename_no_prefix in ignore:
             continue
         else:
-            print('Initializing {}'.format(name))
+            print(f'Initializing {filename_no_prefix}')
             filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
                 exec_line = fh.read()
@@ -180,3 +203,51 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                      'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
             location_provider.fmt = '{date}/#{counter}_{name}_{time}'
+
+
+### Override QCoDeS functions
+# parameter.sweep
+def _sweep(self, start=None, stop=None, step=None, num=None,
+          step_percentage=None, window=None):
+    if step_percentage is None and window is None:
+        if start is None or stop is None:
+            raise RuntimeError('Must provide start and stop')
+        from qcodes.instrument.sweep_values import SweepFixedValues
+        return SweepFixedValues(self, start=start, stop=stop,
+                                step=step, num=num)
+    else:
+        return SweepDependentValues(parameter=self, step=step,
+                                    step_percentage=step_percentage, num=num,
+                                    window=window)
+qc.Parameter.sweep = _sweep
+
+
+# Override ActiveLoop._run_wrapper to stop the layout and clear settings of
+# any accquisition parameters in the loop after the loop has completed.
+_qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
+def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
+
+    def clear_all_acquisition_parameter_settings(loop):
+        from silq.parameters import AcquisitionParameter
+
+        for action in loop:
+            if isinstance(action, qc.loops.ActiveLoop):
+                clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, SettingsClass):
+                logger.info(f'End-of-loop: clearing settings for {action}')
+                action.clear_settings()
+
+    try:
+        _qc_run_wrapper(self, set_active=set_active, *args, **kwargs)
+    finally:
+        try:
+            layout = qc.Instrument.find_instrument('layout')
+            if stop:
+                layout.stop()
+                logger.info('Stopped layout at end of loop')
+        except KeyError:
+            logger.warning(f'No layout found to stop')
+
+        # Clear all settings for any acquisition parameters in the loop
+        clear_all_acquisition_parameter_settings(self)
+qc.loops.ActiveLoop._run_wrapper = _run_wrapper
