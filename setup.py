@@ -29,6 +29,8 @@ extras = {
     'Peak finding': ('peakutils', '1.0.3'),
     'PythonNet': ('pythonnet', '2.1'),
     'slacker': ('slacker', '0.9.42'),
+    'theano': ('theano', '0.9'),
+    'keras': ('keras', '2.0.8')
     # 'ipympl': ('ipympl', '0.0.3')
 
 }
@@ -61,7 +63,7 @@ setup(name='silq',
           'ipywidgets>=4.1',
           'h5py>=2.6',
           'pyperclip>=1.5',
-          'blinker'
+          'blinker',
       ],
       extras_require=extras_require,
       zip_safe=False)

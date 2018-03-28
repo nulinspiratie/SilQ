@@ -3,7 +3,6 @@ from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import DCPulse, DCRampPulse, SinePulse, FrequencyRampPulse, \
     TriggerPulse, MarkerPulse, PulseImplementation
 
-from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 class E8267DInterface(InstrumentInterface):
@@ -47,29 +46,29 @@ class E8267DInterface(InstrumentInterface):
         ]
 
         self.add_parameter('envelope_padding',
-                           unit='ms',
-                           parameter_class=ManualParameter,
+                           unit='s',
+                           set_cmd=None,
                            initial_value=0)
         self.add_parameter('modulation_channel',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value='ext1',
                            vals=vals.Enum(*self._input_channels))
 
         self.add_parameter('fix_frequency',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
         self.add_parameter('fix_frequency_deviation',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
         self.add_parameter('frequency',
                            unit='Hz',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=None)
         self.add_parameter('frequency_deviation',
                            unit='Hz',
-                           parameter_class=ManualParameter,
+                           set_cmd=None,
                            initial_value=None)
 
     def get_additional_pulses(self, **kwargs):
@@ -149,13 +148,14 @@ class SinePulseImplementation(PulseImplementation):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
+                        amplitude=3,
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
         if frequency_deviation > 0:
             amplitude = (self.pulse.frequency - frequency) / frequency_deviation
-            assert abs(amplitude) < 1, \
+            assert abs(amplitude) < 1 + 1e-13, \
                 f'amplitude {amplitude} cannot be higher than 1'
 
             additional_pulses.append(

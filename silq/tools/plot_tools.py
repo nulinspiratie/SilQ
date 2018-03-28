@@ -401,7 +401,9 @@ class ScanningPlot(InteractivePlot):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.results = self.parameter.acquire(stop=stop)
+        self.parameter()
+        if stop:
+            self.layout.stop()
         self.update_plot(initialize=initialize)
 
         self.update_idx += 1
@@ -412,7 +414,7 @@ class TracePlot(ScanningPlot):
         subplots = kwargs.pop('subplots', 1)
         average_mode = getattr(parameter, 'average_mode', 'none')
         if parameter.samples > 1 and average_mode == 'none':
-            subplots = (len(self.layout.acquisition_outputs()), 1)
+            subplots = (len(self.layout.acquisition_channels()), 1)
         else:
             subplots = 1
         super().__init__(parameter, subplots=subplots, **kwargs)
@@ -421,7 +423,7 @@ class TracePlot(ScanningPlot):
 
     def update_plot(self, initialize=False):
         for k, name in enumerate(self.parameter.names):
-            result = self.results[name]
+            result = self.parameter.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
@@ -476,6 +478,8 @@ class DCSweepPlot(ScanningPlot):
             kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
+
+        self.point = None
         super().__init__(parameter, subplots=subplots, **kwargs)
 
         if parameter.trace_pulse.enabled:
@@ -485,7 +489,7 @@ class DCSweepPlot(ScanningPlot):
 
     def update_plot(self, initialize=False):
         for k, name in enumerate(self.parameter.names):
-            result = self.results[name]
+            result = self.parameter.results[name]
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
