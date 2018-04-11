@@ -28,7 +28,9 @@ def get_instrument_interface(instrument):
         'Keysight_M3300A_DIG': {'module': '.keysight',
                        'class': 'Keysight_SD_DIG_Interface'},
         'Keysight_M3300A_FPGA': {'module': '.keysight',
-                                 'class':'Keysight_SD_FPGA_Interface'}
+                                 'class':'Keysight_SD_FPGA_Interface'},
+        'Keysight_81180A' : {'module': '.keysight',
+                       'class': 'Keysight81180AInterface'}
     }
 
     instrument_class = instrument.__class__.__name__
