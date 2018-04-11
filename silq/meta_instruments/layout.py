@@ -352,8 +352,8 @@ class Layout(Instrument):
         """
 
         # Set acquisition interface as first interface
-        if not sorted_interfaces:
-            sorted_interfaces = [self.acquisition_interface]
+        if not sorted_interfaces and self.acquisition_interface is not None:
+                sorted_interfaces = [self.acquisition_interface]
 
         # Find all interfaces that have not been sorted yet
         remaining_interfaces = {
