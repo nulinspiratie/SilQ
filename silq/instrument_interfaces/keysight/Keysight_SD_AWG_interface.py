@@ -109,7 +109,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.started = False
         self.instrument.off()
-        if (self.trigger_thread != None):
+        if (self.trigger_thread is not None):
             logger.debug('Waiting for trigger thread to close...')
             while(self.trigger_thread.is_alive()):
                 pass

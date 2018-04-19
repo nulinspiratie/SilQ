@@ -204,7 +204,7 @@ class TriggerPulseImplementation(PulseImplementation):
         input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
-        if t >= self.pulse.t_start and t < self.pulse.t_stop:
+        if self.pulse.t_start <= t < self.pulse.t_stop:
             return 0 if input_channel.invert else channel_value
         else:
             return channel_value if input_channel.invert else 0
@@ -224,7 +224,7 @@ class MarkerPulseImplementation(PulseImplementation):
         input_channel = self.pulse.connection.input['channel']
         channel_value = 2 ** output_channel.id
 
-        if t >= self.pulse.t_start and t < self.pulse.t_stop:
+        if self.pulse.t_start <= t < self.pulse.t_stop:
             return 0 if input_channel.invert else channel_value
         else:
             return channel_value if input_channel.invert else 0
