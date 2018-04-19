@@ -1,3 +1,4 @@
+from typing import List, Dict, Any
 import numpy as np
 from collections import OrderedDict, Iterable
 from copy import copy
@@ -6,7 +7,8 @@ from functools import partial
 import logging
 import re
 
-from qcodes import DataSet, DataArray, MultiParameter, active_data_set
+from qcodes import DataSet, DataArray, MultiParameter, active_data_set, \
+    Parameter, Instrument
 from qcodes.data import hdf5_format
 from qcodes import Instrument, MatPlot
 
@@ -31,18 +33,105 @@ h5fmt = hdf5_format.HDF5Format()
 
 
 class AcquisitionParameter(SettingsClass, MultiParameter):
+    """Parameter used for acquisitions involving a `PulseSequence`.
+
+    Each AcquisitionParameter has an associated pulse sequence, which it directs
+    to the Layout, after which it acquires traces and performs post-processing.
+
+    Generally, the flow of an AcquisitionParameter is as follows:
+
+    1. `AcquisitionParameter.acquire`, which acquires traces.
+       This stage can be subdivided into several steps:
+
+       1. Generate PulseSequence if pulse sequence properties have changed
+          Note that this is only necessary for a `PulseSequenceGenerator`, which
+          is a more complicated pulse sequences that can be generated from
+          properties.
+       2. Target pulse sequence in `Layout`.
+          This only happens if `Layout.pulse_sequence` differs from the pulse
+          sequence used.
+       3. Call `Layout.setup` which sets up instruments with new pulse sequence.
+          Again, this is only done if `Layout.pulse_sequence` differs.
+       4. Acquire traces using `Layout.acquisition`
+          This in turn gets the traces fromm the acquisition instrument.
+          The returned traces are segmented by pulse and acquisition channel.
+
+    2. `AcquisitionParameter.analyse`, which analyses the traces
+       This method differs per AcquisitionParameter.
+    3. Perform ancillary actions such as saving traces, printing results
+    4. Return list of results for any measurement.
+       The subset of results that are in ``AcquisitionParameter.names`` is
+       returned.
+
+    Args:
+        continuous: If True, instruments keep running after acquisition
+        environment: config environment to use for properties (see notes below).
+        properties_attrs: attributes to match with
+            ``silq.config.environment.properties`` (see notes below).
+        save_traces: Save acquired traces to disk
+        **kwargs: Additional kwargs passed to ``MultiParameter``
+
+    Parameters:
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Notes:
+        - AcquisitionParameters are subclasses of the ``MultiParameter``, and
+          therefore always returns multiple values
+        - AcquisitionParameters are also subclasses of `SettingsClass`, which
+          gives it the ability to temporarily override its attributes using
+          methods `single_settings` and `temporary_settings`. These overridden
+          settings can be clear later on. This is useful if you temporarily want
+          to change settings. See `SettingsClass` for more info.
+        - When certain elements in ``silq.config`` are updated, this will also
+          update the corresponding attributes in the AcquisitionParameter.
+          Two config paths are monitored:
+
+          - ``silq.config.{environment}.properties``, though only the attributes
+            specified in ``properties_attrs``.
+          - ``silq.parameters.{self.name}``.
+
+    """
+
     layout = None
     formatter = h5fmt
     store_trace_channels = ['output']
 
-    def __init__(self, continuous=False, environment='default',
-                 properties_attrs=None, wrap_set=False, save_traces=False,
+    def __init__(self,
+                 continuous: bool = False,
+                 environment: str = 'default',
+                 properties_attrs: List[str] = None,
+                 wrap_set: bool = False,
+                 save_traces: bool = False,
                  **kwargs):
         SettingsClass.__init__(self)
 
         if not hasattr(self, 'pulse_sequence'):
             self.pulse_sequence = PulseSequence()
-        """Pulse sequence of acquisition parameter"""
 
         shapes = kwargs.pop('shapes', ((), ) * len(kwargs['names']))
         MultiParameter.__init__(self, shapes=shapes, wrap_set=wrap_set, **kwargs)
@@ -54,14 +143,11 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 logger.warning(f'No layout found for {self}')
 
         self.silent = True
-        """Do not print results after acquisition"""
 
         self.save_traces = save_traces
-        """ Save traces in separate files"""
 
         if environment == 'default':
-            environment = config.properties.get('default_environment',
-                                                'default')
+            environment = config.properties.get('default_environment', 'default')
         self.environment = environment
         self.continuous = continuous
 
@@ -71,11 +157,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.results = None
         self.base_folder = None
         self.subfolder = None
-
-        # Change attribute data_manager from class attribute to instance
-        # attribute. This is necessary to ensure that the data_manager is
-        # passed along when the parameter is spawned from a new process
-        self.layout = self.layout
 
         # Attach to properties and parameter configs
         self.properties_attrs = properties_attrs
@@ -88,13 +169,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self._meta_attrs.extend(['label', 'name', 'pulse_sequence'])
 
     def __repr__(self):
-        return '{} acquisition parameter'.format(self.name)
+        return f'{self.name} acquisition parameter'
 
     def __getattribute__(self, item):
         try:
             return super().__getattribute__(item)
         except AttributeError:
-            return attribute_from_config(item)
+            return attribute_from_config(
+                item, config=config.properties)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -106,16 +188,22 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         except AttributeError:
             pass
 
+    @property_ignore_setter
+    def labels(self):
+        return [name[0].capitalize() + name[1:].replace('_', ' ')
+                for name in self.names]
+
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
         return self.layout.sample_rate
 
-    def _attach_to_config(self, path, select_attrs=None):
-        """
-        Attach parameter to a subconfig (within silq config).
-        This mean
-        s that whenever an item in the subconfig is updated,
+    def _attach_to_config(self,
+                          path: str,
+                          select_attrs: List[str] = None):
+        """Attach parameter to a subconfig (within silq config).
+
+        This means that whenever an item in the subconfig is updated,
         the parameter attribute will also be updated to this value.
 
         Notification of config updates is handled through blinker signals.
@@ -156,24 +244,41 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         return subconfig
 
-    def _handle_config_signal(self, _, select=None, **kwargs):
-        """
-        Update attr when attr in pulse config is modified
+    def _handle_config_signal(self, _,
+                              select: List[str] = None,
+                              **kwargs):
+        """Update attr when attr in pulse config is modified
+
         Args:
             _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set.
+            select: list of attrs that can be set.
                 Will update any attribute if not specified.
             **kwargs: {attr: new_val}
-
-        Returns:
-
         """
         key, val = kwargs.popitem()
         if select is None or key in select:
             setattr(self, key, val)
 
-    def store_traces(self, pulse_traces, base_folder=None, subfolder=None,
-                     channels=None, setpoints=False):
+    def store_traces(self,
+                     pulse_traces: dict,
+                     base_folder: str = None,
+                     subfolder: str = None,
+                     channels: List[str] = None,
+                     setpoints: bool = False):
+        """Store acquisition traces as a DataSet to file.
+
+        Args:
+            pulse_traces: Trace dictionary with shape
+                {``pulse.full_name``: {acquisition_channel: trace}}
+            base_folder: base folder in which to store traces.
+                If not specified, will be equal to the active measurement data
+                folder if it's running, else the main data folder.
+            subfolder: Subfolder within the main data folder. Can be useful if
+                you want to separate the traces by a certain property.
+            channels: Acquisition channels. If not specified, uses
+                `AcquisitionParameter.store_trace_channels`.
+            setpoints: Also store setpoints, False by default to save space.
+        """
 
         if channels is None:
             channels = self.store_trace_channels
@@ -263,6 +368,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.dataset.finalize(write_metadata=False)
 
     def print_results(self):
+        """Print results whose keys are in ``AcquisitionParameter.names``"""
         names = self.names if self.names is not None else [self.name]
         for name in names:
             value = self.results[name]
@@ -271,7 +377,16 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             else:
                 print(f'{name}: {value}')
 
-    def setup(self, start=None, **kwargs):
+    def setup(self,
+              start: bool = None,
+              **kwargs):
+        """Setup instruments with current pulse sequence.
+
+        Args:
+            start: Start instruments after setup. If not specified, will use
+                value in ``AcquisitionParameter.continuous``.
+            **kwargs: Additional kwargs passed to `Layout.setup`.
+        """
         if not self.pulse_sequence.up_to_date():
             self.pulse_sequence.generate()
 
@@ -286,18 +401,24 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if start:
             self.layout.start()
 
-    def acquire(self, stop=None, setup=None, **kwargs):
-        """
-        Performs a layout.acquisition. The result is stored in self.traces
+    def acquire(self,
+                stop: bool = None,
+                setup: bool = None,
+                **kwargs) -> Dict[str, Dict[str, np.ndarray]]:
+        """Performs a `Layout.acquisition`.
+
         Args:
-            stop (Bool): Whether to stop instruments after acquisition.
-                If not specified, it will stop if self.continuous is False
-            setup (Bool): Whether to setup layout before acquisition.
+            stop: Stop instruments after acquisition. If not specified, it will
+                stop if ``AcquisitionParameter.continuous`` is False.
+            setup: Whether to setup layout before acquisition.
                 If not specified, it will setup if pulse_sequences are different
-            **kwargs: Additional kwargs to be given to layout.acquisition
+            **kwargs: Additional kwargs to be given to `Layout.acquisition`.
 
         Returns:
-            acquisition output
+            acquisition traces dictionary, segmented by pulse.
+            dictionary has the following format:
+            {pulse.full_name: {acquisition_channel_label: traces}}
+            where acquisition_channel_label is specified in `Layout`.
         """
         if stop is None:
             stop = not self.continuous
@@ -315,7 +436,9 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.traces = self.layout.acquisition(stop=stop, **kwargs)
         return self.traces
 
-    def analyse(self, traces):
+    def analyse(self,
+                traces: Dict[str, Dict[str, np.ndarray]]) -> Dict[str, Any]:
+        """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
     def plot_traces(self, filter=None, channels=['output']):
@@ -369,6 +492,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         return tuple(self.results[name] for name in self.names)
 
     def set(self, **kwargs):
+        """Perform an acquisition with temporarily modified settings
+
+        Shorthand for:
+        ```
+        AcquisitionParameter.single_settings(**kwargs)
+        AcquisitionParameter()
+        ```
+        """
         return self.single_settings(**kwargs)()
 
 
@@ -450,18 +581,63 @@ class PulseSequenceAcquisitionParameter(AcquisitionParameter):
 
 
 class DCParameter(AcquisitionParameter):
-    # TODO implement continuous acquisition
-    def __init__(self, name='DC', unit='V', **kwargs):
+    """Acquires DC voltage
+
+    The pulse sequence contains a single read pulse, the duration of which
+    specifies how long should be averaged.
+
+    Args:
+        name: Parameter name.
+        unit: Unit of DC voltage (e.g. can be changed to nA)
+
+    Parameters:
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Notes:
+        - ``DCParameter.continuous`` is True by default
+
+    Todo:
+        Remove ``final`` pulse once ``PulseSequence.final_delay`` is verified.
+        implement continuous acquisition in the ATS interface
+    """
+    def __init__(self,
+                 name: str = 'DC',
+                 unit: str = 'V',
+                 **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='DC', acquire=True, average='point'),
             DCPulse(name='DC_final')])
 
         super().__init__(name=name,
                          names=['DC_voltage'],
-                         labels=['DC voltage'],
                          units=[unit],
                          snapshot_value=False,
-                         continuous = True,
+                         continuous=True,
                          **kwargs)
         self.samples = 1
 
@@ -473,14 +649,43 @@ class TraceParameter(AcquisitionParameter):
     """An acquisition parameter for obtaining a trace or multiple traces
     of a given PulseSequence.
 
-    A generic initial PulseSequence is defined, but can be redefined at
-    run-time.
-    e.g.
-        parameter.average_mode = 'none'
-        parameter.pulse_sequence = my_pulse_sequence
+    Example:
+        >>> parameter.average_mode = 'none'
+        >>> parameter.pulse_sequence = my_pulse_sequence
 
-    Note that for the above example, all pulses in my_pulse_sequence will be
-    copied.
+        Note that for the above example, all pulses in my_pulse_sequence will be
+        copied.
+
+    Parameters:
+        trace_pulse (Pulse): Acquisition measurement pulse.
+            Duration is dynamically set to the duration of acquired pulses.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
 
     """
     def __init__(self, name='trace_pulse', average_mode='none', **kwargs):
@@ -492,7 +697,6 @@ class TraceParameter(AcquisitionParameter):
 
         super().__init__(name='Trace_acquisition',
                          names=self.names,
-                         labels=self.labels,
                          units=self.units,
                          shapes=self.shapes,
                          snapshot_value=False,
@@ -501,6 +705,10 @@ class TraceParameter(AcquisitionParameter):
 
     @property
     def average_mode(self):
+        """Acquisition averaging mode.
+
+        The attribute `Pulse.average` is overridden.
+        """
         return self._average_mode
 
     @average_mode.setter
@@ -526,7 +734,7 @@ class TraceParameter(AcquisitionParameter):
     @property_ignore_setter
     def labels(self):
         return tuple(f'{output[1]} Trace'
-                for output in self.layout.acquisition_channels())
+                     for output in self.layout.acquisition_channels())
 
     @property_ignore_setter
     def units(self):
@@ -584,8 +792,7 @@ class TraceParameter(AcquisitionParameter):
 
 
     def setup(self, start=None, **kwargs):
-        """
-        Modifies provided pulse sequence by creating a single
+        """ Modifies provided pulse sequence by creating a single
         pulse which overlaps all other pulses with acquire=True and
         then acquires only this pulse.
         """
@@ -604,11 +811,12 @@ class TraceParameter(AcquisitionParameter):
 
         # Ensure that each pulse is not acquired as this could cause
         # overlapping issues
-        for pulse in self.pulse_sequence.get_pulses():
+        for pulse in self.pulse_sequence:
             if pulse is self.trace_pulse:
                 continue
             pulse.acquire = False
 
+        # Remove any existing trace pulse
         if self.trace_pulse.full_name in self.pulse_sequence:
             self.pulse_sequence.remove(self.trace_pulse.full_name)
         self.pulse_sequence.add(self.trace_pulse)
@@ -616,11 +824,14 @@ class TraceParameter(AcquisitionParameter):
         super().setup(start=start, **kwargs)
 
     def acquire(self, **kwargs):
-        """
-        Acquires the number of traces defined in self.samples
+        """Acquires the number of traces defined in self.samples
 
-        return:  A tuple of data points. e.g.
-                 ((data_for_1st_output), (data_for_2nd_output), ...)
+        Args:
+            **kwargs: kwargs passed to `AcquisitionParameter.acquire`
+
+        Returns:
+            A tuple of data points. e.g.
+            ((data_for_1st_output), (data_for_2nd_output), ...)
         """
         super().acquire(**kwargs)
 
@@ -631,12 +842,73 @@ class TraceParameter(AcquisitionParameter):
         return traces
 
     def analyse(self, traces):
+        """Rearrange traces to match ``AcquisitionParameter.names``"""
         return {self.names[k] : traces[name] if isinstance(traces[name], float)
                 else traces[name].tolist()[0]
                 for k, name in enumerate(traces)}
 
 
 class DCSweepParameter(AcquisitionParameter):
+    """Perform 1D and 2D DC sweeps by rapidly varying AWG output voltages
+
+    Using this parameter, a 2D DC sweep of 100x100 points can be obtained in
+    ~1 second. This does of course depend on the filtering of the lines, and the
+    acquisition sampling rate. This is used in the `DCSweepPlot` to continuously
+    update and display the charge stability diagram.
+
+    The pulse sequence is created by first calling `DCSweepParameter.add_sweep`,
+    which adds a dimension every time it's called.
+    After adding the sweeps, `DCSweepParameter.generate` will create the
+    corresponding `PulseSequence`.
+
+    Args:
+        name: parameter name
+        **kwargs: Additional kwargs passed to AcquisitionParameter
+
+    Parameters:
+        trace_pulse (Pulse): Trace pulse at fixed voltage at the end of sweep.
+            Can be turned off by ``trace_pulse.enabled = False``.
+        pulse_duration (float): Duration of each point in DC sweep
+        final_delay (float): Delay at end of pulse sequence.
+        inter_delay (float): Delay after each row of DC points
+        use_ramp (bool): Combine single row of DC points into a ramp pulse that
+            will be segmented later. This saves number of waveforms sent,
+            reduces triggers, an creates less `Pulse` objects.
+        sweep_parameters (UpdateDotDict): Sweep parameters. Every time an item
+            is updated, `DCSweepParameter.generate` is called.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Note:
+        Currently only works up to 2D.
+
+    Todo:
+        Convert pulse sequence and generator into `PulseSequenceGenerator`
+    """
     def __init__(self, name='DC_sweep', **kwargs):
 
         self.sweep_parameters = OrderedDict()
@@ -652,7 +924,7 @@ class DCSweepParameter(AcquisitionParameter):
         self.additional_pulses = []
 
         super().__init__(name=name, names=['DC_voltage'],
-                         labels=['DC voltage'], units=['V'],
+                         units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
                          shapes=((1,),), **kwargs)
         self.samples = 1
@@ -742,8 +1014,27 @@ class DCSweepParameter(AcquisitionParameter):
             setpoint_units += (('s',), )
         return setpoint_units
 
-    def add_sweep(self, parameter_name, sweep_voltages=None,
-                  connection_label=None, offset_parameter=None):
+    def add_sweep(self,
+                  parameter_name: str,
+                  sweep_voltages: np.ndarray = None,
+                  connection_label: str = None,
+                  offset_parameter: Parameter = None):
+        """Add sweep to ``DCSweepParameter.sweep_parameters``
+
+        Each call will add a sweep as the outer dimension.
+
+        Args:
+            parameter_name: Name of parameter (for axis labelling).
+            sweep_voltages: List of sweep voltages. If
+                ``DCSweepParameter.use_ramp`` is True, these must be
+                equidistant.
+            connection_label: Connection label to target pulses to.
+                For multiple sweeps, each connection label must be distinct.
+                Connection labels are defined in ``Layout.acquisition_outputs``.
+            offset_parameter: Parameter used for offsetting the sweep voltages.
+                Usually this is the corresponding DC voltage parameter.
+        """
+
         if connection_label is None:
             connection_label = parameter_name
 
@@ -755,6 +1046,11 @@ class DCSweepParameter(AcquisitionParameter):
         self.generate()
 
     def generate(self):
+        """Generates pulse sequence using sweeps in `DCSweepParameter.add_sweep`
+
+        Note:
+            Currently only works for 1D and 2D
+        """
         self.pulse_sequence.clear()
 
         iter_sweep_parameters = iter(self.sweep_parameters.items())
@@ -855,8 +1151,22 @@ class DCSweepParameter(AcquisitionParameter):
         self.pulse_sequence = PulseSequence(pulses=pulses)
         self.pulse_sequence.final_delay = self.final_delay
 
-    def analyse(self, traces):
-        # Process results
+    def analyse(self,
+                traces: Dict[str, Dict[str, np.ndarray]]):
+        """Analyse traces, ensuring resulting dimensionality is correct
+
+        Args:
+            traces: Traces returned by `AcquisitionParameter.acquire`.
+
+        Returns:
+            (Dict[str, Any]): Dict containing:
+
+            :DC_voltage (np.ndarray): DC voltages with dimensionality
+              corresponding to number of sweeps.
+            :trace_voltage (np.ndarray): voltage trace of final trace pulse.
+              Only used if ``DCSweepParameter.trace_pulse.enabled``.
+              Trace in ``output`` connection label is returned.
+        """
         DC_voltages = np.array(
             [traces[pulse.full_name]['output'] for pulse in
              self.pulse_sequence.get_pulses(name='DC_inner')])
@@ -879,7 +1189,124 @@ class DCSweepParameter(AcquisitionParameter):
         return results
 
 
+class VariableReadParameter(AcquisitionParameter):
+    """Parameter for measuring spin tails.
+
+    The pulse sequence is ``plunge`` - ``read`` - ``empty``.
+    By varying the read amplitude, the voltage should transition between
+    high voltage (``empty``) to low voltage (``plunge``), and somewhere in
+    between an increased voltage should be visible at the start, indicating
+    spin-dependent tunneling.
+
+    Args:
+        name: Parameter name
+        **kwargs: Additional kwargs passed to AcquisitionParameter
+
+    Parameters:
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples to average over.
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+
+    Todo:
+        Replace ``final`` pulse with ``PulseSequence.final_delay``.
+    """
+    def __init__(self, name='variable_read', **kwargs):
+        self.pulse_sequence = PulseSequence([
+            DCPulse(name='plunge', acquire=True, average='trace'),
+            DCPulse(name='read', acquire=True, average='trace'),
+            DCPulse(name='empty', acquire=True, average='trace'),
+            DCPulse(name='final')])
+
+        super().__init__(name=name,
+                         names=('read_voltage',),
+                         units=('V',),
+                         shapes=((1,),),
+                         setpoint_names=(('time',),),
+                         setpoint_labels=(('Time',),),
+                         setpoint_units=(('s',),),
+                         snapshot_value=False,
+                         **kwargs)
+
+    @property_ignore_setter
+    def setpoints(self):
+        duration = sum(pulse.duration for pulse in
+                       self.pulse_sequence.get_pulses(acquire=True))
+        return (tuple(np.linspace(0, duration, self.shapes[0][0])), ),
+
+    @property_ignore_setter
+    def shapes(self):
+        shapes = self.layout.acquisition_shapes
+        pts = sum(shapes[pulse_name]['output'][0]
+                  for pulse_name in ['plunge', 'read', 'empty'])
+        return (pts,),
+
+    def analyse(self, traces):
+        return {'read_voltage':
+                    np.concatenate([self.traces['plunge']['output'],
+                                    self.traces['read']['output'],
+                                    self.traces['empty']['output']])}
+
+
 class EPRParameter(AcquisitionParameter):
+    """Parameter for an empty-plunge-read sequence.
+
+    Args:
+        name: Name of acquisition parameter
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`.
+
+    Parameters:
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        t_skip (float): initial part of read trace to ignore for measuring
+            blips. Useful if there is a voltage spike at the start, which could
+            otherwise be measured as a ``blip``. Retrieved from
+            ``silq.environment.properties.t_skip``.
+        t_read (float): duration of read trace to include for measuring blips.
+            Useful if latter half of read pulse is used for initialization.
+            Retrieved from ``silq.environment.properties.t_read``.
+        min_filter_proportion (float): Minimum number of read traces needed in
+            which the voltage starts low (loaded donor). Otherwise, most results
+            are set to zero. Retrieved from
+            ``silq.environment.properties.min_filter_proportion``.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Note:
+        A ``read_long`` pulse is used instead of ``read`` because this allows
+        comparison of the start and end of the pulse, giving the ``contrast``.
+
+    Todo:
+        Remove ``final`` pulse, double check that ``PulseSequence.final_delay``
+            also works.
+
+    """
     def __init__(self, name='EPR', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse('empty', acquire=True),
@@ -897,11 +1324,9 @@ class EPRParameter(AcquisitionParameter):
                                            'filter_traces'],
                          **kwargs)
 
-    @property_ignore_setter
-    def labels(self):
-        return [name.replace('_', ' ').capitalize() for name in self.names]
-
-    def analyse(self, traces):
+    def analyse(self,
+                traces: Dict[str, Dict[str, np.ndarray]]) -> Dict[str, Any]:
+        """Analyse traces using `analyse_EPR`"""
         return analysis.analyse_EPR(
             empty_traces=self.traces['empty']['output'],
             plunge_traces=self.traces['plunge']['output'],
@@ -914,10 +1339,108 @@ class EPRParameter(AcquisitionParameter):
 
 
 class ESRParameter(AcquisitionParameter):
+    """Parameter for most pulse sequences involving electron spin resonance.
+
+    This parameter can handle many of the simple pulse sequences involving ESR.
+    It uses the `ESRPulseSequence`, which will generate a pulse sequence from
+    settings (see parameters below).
+
+    In general the pulse sequence is as follows:
+
+    1. Perform any pre_pulses defined in ``ESRParameter.pre_pulses``.
+    2. Perform stage pulse ``ESRParameter.ESR['stage_pulse']``.
+       By default, this is the ``plunge`` pulse.
+    3. Perform ESR pulse within plunge pulse, the delay from start of plunge
+       pulse is defined in ``ESRParameter.ESR['pulse_delay']``.
+    4. Perform read pulse ``ESRParameter.ESR['read_pulse']``.
+    5. Repeat steps 2 and 3 for each ESR pulse in
+       ``ESRParameter.ESR['ESR_pulses']``, which by default contains single
+       pulse ``ESRParameter.ESR['ESR_pulse']``.
+    6. Perform empty-plunge-read sequence (EPR), but only if
+       ``ESRParameter.EPR['enabled']`` is True.
+       EPR pulses are defined in ``ESRParameter.EPR['pulses']``.
+    7. Perform any post_pulses defined in ``ESRParameter.post_pulses``.
+
+    A shorthand for using the default ESR pulse for multiple frequencies is by
+    setting `ESRParameter.ESR_frequencies`. Settings this will create a copy
+    of ESRParameter.ESR['ESR_pulse'] with the respective frequency.
+
+    Examples:
+        The following code measures two ESR frequencies and performs an EPR
+        from which the contrast can be determined for each ESR frequency:
+
+        >>> ESR_parameter = ESRParameter()
+        >>> ESR_parameter.ESR['pulse_delay'] = 5e-3
+        >>> ESR_parameter.ESR['stage_pulse'] = DCPulse['plunge']
+        >>> ESR_parameter.ESR['ESR_pulse'] = FrequencyRampPulse('ESR_adiabatic')
+        >>> ESR_parameter.ESR_frequencies = [39e9, 39.1e9]
+        >>> ESR_parameter.EPR['enabled'] = True
+        >>> ESR_parameter.pulse_sequence.generate()
+
+        The total pulse sequence is plunge-read-plunge-read-empty-plunge-read
+        with an ESR pulse in the first two plunge pulses, 5 ms after the start
+        of the plunge pulse. The ESR pulses have different frequencies.
+
+    Args:
+        name: Name of acquisition parameter
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`.
+
+    Parameters:
+        ESR (dict): `ESRPulseSequence` generator settings for ESR. Settings are:
+            ``stage_pulse``, ``ESR_pulse``, ``ESR_pulses``, ``pulse_delay``,
+            ``read_pulse``.
+        EPR (dict): `ESRPulseSequence` generator settings for EPR.
+            This is optional and can be toggled in ``EPR['enabled']``.
+            If disabled, contrast is not calculated.
+            Settings are: ``enabled``, ``pulses``.
+        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
+        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        t_skip (float): initial part of read trace to ignore for measuring
+            blips. Useful if there is a voltage spike at the start, which could
+            otherwise be measured as a ``blip``. Retrieved from
+            ``silq.environment.properties.t_skip``.
+        t_read (float): duration of read trace to include for measuring blips.
+            Useful if latter half of read pulse is used for initialization.
+            Retrieved from ``silq.environment.properties.t_read``.
+        min_filter_proportion (float): Minimum number of read traces needed in
+            which the voltage starts low (loaded donor). Otherwise, most results
+            are set to zero. Retrieved from
+            ``silq.environment.properties.min_filter_proportion``.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties``.
+            See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Notes:
+        - All pulse settings are copies of
+          ``ESRParameter.pulse_sequence.pulse_settings``.
+        - For given pulse settings, ``ESRParameter.pulse_sequence.generate``
+          will recreate the pulse sequence from settings.
+    """
     def __init__(self, name='ESR', **kwargs):
-        """
-        Parameter used to perform electron spin resonance (ESR)
-        """
         self._names = []
 
         self.pulse_sequence = ESRPulseSequence()
@@ -944,9 +1467,9 @@ class ESRParameter(AcquisitionParameter):
             names = []
 
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
-                           for pulse in self.ESR['pulses']]
+                           for pulse in self.ESR['ESR_pulses']]
 
-        for pulse in self.ESR['pulses']:
+        for pulse in self.ESR['ESR_pulses']:
             pulse_name = pulse if isinstance(pulse, str) else pulse.name
 
             if ESR_pulse_names.count(pulse_name) == 1:
@@ -975,26 +1498,30 @@ class ESRParameter(AcquisitionParameter):
     def units(self):
         return ('', ) * len(self.names)
 
-    @property_ignore_setter
-    def labels(self):
-        return [name[0].capitalize() + name[1:].replace('_', ' ')
-                for name in self.names]
-
     @property
     def ESR_frequencies(self):
+        """Apply default ESR pulse for each ESR frequency given."""
         return [pulse.frequency if isinstance(pulse, Pulse)
                 else self.ESR[pulse].frequency
-                for pulse in self.ESR['pulses']]
+                for pulse in self.ESR['ESR_pulses']]
 
     @ESR_frequencies.setter
-    def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR['pulses']):
+    def ESR_frequencies(self, ESR_frequencies: List[float]):
+        if len(ESR_frequencies) != len(self.ESR['ESR_pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
 
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
     def analyse(self, traces):
+        """Analyse ESR traces.
+
+        If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
+        If there are several ESR pulses, adds a zero-based suffix at the end for
+        each ESR pulse. If ``ESRParameter.EPR['enabled'] == True``, the results
+        from `analyse_EPR` are also added, as well as ``contrast_{pulse.name}``
+        (plus a suffix if there are several ESR pulses).
+        """
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
@@ -1010,10 +1537,10 @@ class ESRParameter(AcquisitionParameter):
             results = {}
 
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
-                           for pulse in self.ESR['pulses']]
+                           for pulse in self.ESR['ESR_pulses']]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
         results['ESR_results'] = []
-        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['pulses']):
+        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['ESR_pulses']):
             read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analysis.analyse_traces(
                 traces=read_traces,
@@ -1044,10 +1571,258 @@ class ESRParameter(AcquisitionParameter):
         return results
 
 
-class NMRParameter(AcquisitionParameter):
+class T2ElectronParameter(AcquisitionParameter):
+    """Parameter for measuring electron decoherence.
 
-    def __init__(self, name='NMR',
-                 names=['flips', 'flip_probability', 'up_proportions'],
+    This parameter can apply any number of refocusing pulses.
+    It uses the `T2ElectronPulseSequence`, which will generate a pulse sequence
+    from settings (see parameters below).
+
+    In general, the pulse sequence is as follows:
+
+    1. Perform any pre_pulses defined in `T2ElectronParameter.pre_pulses`.
+    2. Perform stage pulse ``T2ElectronParameter.ESR['stage_pulse']``.
+       By default, this is the ``plunge`` pulse.
+    3. Perform ESR pulse within plunge pulse, the delay from start of plunge
+       pulse is defined in ``T2ElectronParameter.ESR['pulse_delay']``.
+    4. Perform read pulse ``T2ElectronParameter.ESR['read_pulse']``.
+    5. Repeat steps 2 and 3 for each ESR pulse in
+       ``T2ElectronParameter.ESR['ESR_pulses']``, which by default contains the
+       single pulse ``T2ElectronParameter.ESR['ESR_pulse']``.
+    6. Perform empty-plunge-read sequence (EPR), but only if
+       ``T2ElectronParameter.EPR['enabled']`` is True.
+       EPR pulses are defined in ``T2ElectronParameter.EPR['pulses']``.
+    7. Perform any post_pulses defined in ``T2ElectronParameter.post_pulses``.
+
+    Args:
+        name: Parameter name
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`.
+
+    Parameters:
+        ESR (dict): `T2ElectronPulseSequence` generator settings for ESR.
+            Settings are: ``stage_pulse``, ``ESR_initial_pulse``,
+            ``ESR_refocusing_pulse``, ``ESR_final_pulse``, ``read_pulse``,
+            ``num_refocusing_pulses``, ``pre_delay``, ``inter_delay``,
+            ``post_delay``.
+        EPR (dict): `T2ElectronPulseSequence` generator settings for EPR.
+            This is optional and can be toggled in ``EPR['enabled']``.
+            If disabled, contrast is not calculated.
+            Settings are: ``enabled``, ``pulses``.
+        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
+        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        t_skip (float): initial part of read trace to ignore for measuring
+            blips. Useful if there is a voltage spike at the start, which could
+            otherwise be measured as a ``blip``. Retrieved from
+            ``silq.environment.properties.t_skip``.
+        t_read (float): duration of read trace to include for measuring blips.
+            Useful if latter half of read pulse is used for initialization.
+            Retrieved from ``silq.environment.properties.t_read``.
+        min_filter_proportion (float): Minimum number of read traces needed in
+            which the voltage starts low (loaded donor). Otherwise, most results
+            are set to zero. Retrieved from
+            ``silq.environment.properties.min_filter_proportion``.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+    """
+    def __init__(self, name='Electron_T2', **kwargs):
+        self.pulse_sequence = T2ElectronPulseSequence()
+
+        super().__init__(name=name,
+                         names=['up_proportion', 'num_traces'],
+                         labels=['Up proportion', 'Number of traces'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip'],
+                         **kwargs)
+
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+        self.ESR = self.pulse_sequence.ESR
+        self.EPR = self.pulse_sequence.EPR
+
+    @property
+    def inter_delay(self):
+        return self.ESR['inter_delay']
+
+    @inter_delay.setter
+    def inter_delay(self, inter_delay):
+        self.ESR['inter_delay'] = inter_delay
+
+    def analyse(self, traces):
+        """Analyse ESR traces.
+
+        If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
+        If there are several ESR pulses, adds a zero-based suffix at the end for
+        each ESR pulse. If ``ESRParameter.EPR['enabled'] == True``, the results
+        from `analyse_EPR` are also added, as well as `contrast_{pulse.name}`
+        (plus a suffix if there are several ESR pulses).
+        """
+        if self.EPR['enabled']:
+            # Analyse EPR sequence, which also gets the dark counts
+            results = analysis.analyse_EPR(
+                empty_traces=traces['empty']['output'],
+                plunge_traces=traces['plunge']['output'],
+                read_traces=traces['read_long']['output'],
+                sample_rate=self.sample_rate,
+                min_filter_proportion=self.min_filter_proportion,
+                t_skip=self.t_skip, # Use t_skip to keep length consistent
+                t_read=self.t_read)
+        else:
+            results = {}
+
+        read_pulse = self.pulse_sequence.get_pulse(name=self.ESR["read_pulse"].name)
+        read_traces = traces[read_pulse.full_name]['output']
+        ESR_results = analysis.analyse_traces(
+            traces=read_traces,
+            sample_rate=self.sample_rate,
+            filter='low',
+            t_skip=self.t_skip,
+            t_read=self.t_read)
+
+        results['ESR_results'] = ESR_results
+        results[f'up_proportion_{read_pulse.name}'] = ESR_results['up_proportion']
+        if self.EPR['enabled']:
+            # Add contrast obtained by subtracting EPR dark counts
+            contrast = ESR_results['up_proportion'] - results['dark_counts']
+            results[f'contrast_{read_pulse.name}'] = contrast
+
+        return results
+
+
+class NMRParameter(AcquisitionParameter):
+    """ Parameter for most measurements involving an NMR pulse.
+
+    This parameter can apply several NMR pulses, and also measure several ESR
+    frequencies. It uses the `NMRPulseSequence`, which will generate a pulse
+    sequence from settings (see parameters below).
+
+    In general, the pulse sequence is as follows:
+
+    1. Perform any pre_pulses defined in ``NMRParameter.pre_pulses``.
+    2. Perform NMR sequence
+
+       1. Perform stage pulse ``NMRParameter.NMR['stage_pulse']``.
+          Default is 'empty' `DCPulse`.
+       2. Perform NMR pulses within the stage pulse. The NMR pulses defined
+          in ``NMRParameter.NMR['NMR_pulses']`` are applied successively.
+          The delay after start of the stage pulse is
+          ``NMRParameter.NMR['pre_delay']``, delays between NMR pulses is
+          ``NMRParameter.NMR['inter_delay']``, and the delay after the final
+          NMR pulse is ``NMRParameter.NMR['post_delay']``.
+
+    3. Perform ESR sequence
+
+       1. Perform stage pulse ``NMRParameter.ESR['stage_pulse']``.
+          Default is 'plunge' `DCPulse`.
+       2. Perform ESR pulse within stage pulse for first pulse in
+          ``NMRParameter.ESR['ESR_pulses']``.
+       3. Perform ``NMRParameter.ESR['read_pulse']``, and acquire trace.
+       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
+          usually correspond to different ESR frequencies (see
+          `NMRParameter`.ESR_frequencies).
+       5. Repeat steps 1 - 4 for ``NMRParameter.ESR['shots_per_frequency']``
+          This effectively interleaves the ESR pulses, which counters effects of
+          the nucleus flipping within an acquisition.
+
+    This acquisition is repeated ``NMRParameter.samples`` times. If the nucleus
+    is in one of the states for which an ESR frequency is on resonance, a high
+    ``up_proportion`` is measured, while for the other frequencies a low
+    ``up_proportion`` is measured. By looking over successive samples and
+    measuring how often the ``up_proportions`` switch between above/below
+    ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
+    (see `NMRParameter.analyse` and `analyse_flips`).
+
+    Args:
+        name: Parameter name
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`
+
+    Parameters:
+        NMR (dict): `NMRPulseSequence` pulse settings for NMR. Settings are:
+            ``stage_pulse``, ``NMR_pulse``, ``NMR_pulses``, ``pre_delay``,
+            ``inter_delay``, ``post_delay``.
+        ESR (dict): `NMRPulseSequence` pulse settings for ESR. Settings are:
+            ``ESR_pulse``, ``stage_pulse``, ``ESR_pulses``, ``read_pulse``,
+            ``pulse_delay``.
+        EPR (dict): `PulseSequenceGenerator` settings for EPR. This is optional
+            and can be toggled in ``EPR['enabled']``. If disabled, contrast is
+            not calculated.
+        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
+        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        ESR_frequencies (List[float]): List of ESR frequencies to use. When set,
+            a copy of ``NMRParameter.ESR['ESR_pulse']`` is created for each
+            frequency, and added to ``NMRParameter.ESR['ESR_pulses']``.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        t_skip (float): initial part of read trace to ignore for measuring
+            blips. Useful if there is a voltage spike at the start, which could
+            otherwise be measured as a ``blip``. Retrieved from
+            ``silq.environment.properties.t_skip``.
+        t_read (float): duration of read trace to include for measuring blips.
+            Useful if latter half of read pulse is used for initialization.
+            Retrieved from ``silq.environment.properties.t_read``.
+        threshold_up_proportion (Union[float, Tuple[float, float]): threshold
+            for up proportions needed to determine ESR pulse to be on-resonance.
+            If tuple, first element is threshold below which ESR pulse is
+            off-resonant, and second element is threshold above which ESR pulse
+            is on-resonant. Useful for filtering of up proportions at boundary.
+            Retrieved from
+            ``silq.environment.properties.threshold_up_proportion``.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+    Note:
+        - The `NMRPulseSequence` does not have an empty-plunge-read (EPR)
+          sequence, and therefore does not add a contrast or dark counts.
+          Verifying that the system is in tune is therefore a little bit tricky.
+
+    """
+    def __init__(self, name: str = 'NMR',
+                 names: List[str] = ['flips', 'flip_probability', 'up_proportions'],
                  **kwargs):
         """
         Parameter used to determine the Rabi frequency
@@ -1061,7 +1836,8 @@ class NMRParameter(AcquisitionParameter):
         super().__init__(name=name,
                          names=names,
                          snapshot_value=False,
-                         properties_attrs=['t_read', 't_skip', 'threshold_up_proportion'],
+                         properties_attrs=['t_read', 't_skip',
+                                           'threshold_up_proportion'],
                          **kwargs)
 
     @property
@@ -1103,29 +1879,57 @@ class NMRParameter(AcquisitionParameter):
     def units(self):
         return ('', ) * len(self.names)
 
-    @property_ignore_setter
-    def labels(self):
-        return [name.replace('_', ' ').capitalize() for name in self.names]
-
     @property
     def ESR_frequencies(self):
+        """ESR frequencies to measure.
+
+        For each ESR frequency, ``NMRParameter.ESR['shots_per_read']`` reads
+        are performed.
+        """
         return [pulse.frequency if isinstance(pulse, Pulse)
                 else self.ESR[pulse].frequency
-                for pulse in self.ESR['pulses']]
+                for pulse in self.ESR['ESR_pulses']]
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR['pulses']):
+        if len(ESR_frequencies) != len(self.ESR['ESR_pulses']):
             logger.warning('Different number of frequencies. '
                            'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR['pulses']= [copy(self.ESR['pulse'])
+            self.ESR['ESR_pulses']= [copy(self.ESR['ESR_pulse'])
                                  for _ in range(len(ESR_frequencies))]
-        self.ESR['pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
-                              for p in self.ESR['pulses']]
-        for pulse, ESR_frequency in zip(self.ESR['pulses'], ESR_frequencies):
+        self.ESR['ESR_pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
+                              for p in self.ESR['ESR_pulses']]
+        for pulse, ESR_frequency in zip(self.ESR['ESR_pulses'], ESR_frequencies):
             pulse.frequency = ESR_frequency
 
-    def analyse(self, traces):
+    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]]):
+        """Analyse flipping events between nuclear states
+
+        Returns:
+            (Dict[str, Any]): Dict containing:
+
+            :results_read (dict): `analyse_traces` results for each read
+              trace
+            :up_proportions_{idx} (np.ndarray): Up proportions, the
+              dimensionality being equal to ``NMRParameter.samples``.
+              ``{idx}`` is replaced with the zero-based ESR frequency index.
+            :Results from `analyse_flips`. These are:
+
+              - flips_{idx},
+              - flip_probability_{idx}
+              - combined_flips_{idx1}{idx2}
+              - combined_flip_probability_{idx1}{idx2}
+
+              Additionally, each of the above results will have another result
+              with the same name, but prepended with ``filtered_``, and appended
+              with ``_{idx1}{idx2}`` if not already present. Here, all the
+              values are filtered out where the corresponding pair of
+              up_proportion samples do not have exactly one high and one low for
+              each sample. The values that do not satisfy the filter are set to
+              ``np.nan``.
+
+              :filtered_scans_{idx1}{idx2}:
+        """
         results = {'results_read': []}
 
         # Calculate threshold voltages from combined read traces
@@ -1267,8 +2071,8 @@ class FlipNucleusParameter(AcquisitionParameter):
             # No need to perform any pulse sequence
             return
 
-        self.ESR['pulses'] = []
-        self.NMR['pulses'] = self.get_NMR_pulses(initial_state, final_state)
+        self.ESR['ESR_pulses'] = []
+        self.NMR['NMR_pulses'] = self.get_NMR_pulses(initial_state, final_state)
         self.pulse_sequence.generate()
 
         if run:
@@ -1277,116 +2081,70 @@ class FlipNucleusParameter(AcquisitionParameter):
             self.layout.stop()
 
 
-class T2ElectronParameter(AcquisitionParameter):
-    def __init__(self, name='Electron_T2', **kwargs):
-        self.pulse_sequence = T2ElectronPulseSequence()
-
-        super().__init__(name=name,
-                         names=['up_proportion', 'num_traces'],
-                         labels=['Up proportion', 'Number of traces'],
-                         snapshot_value=False,
-                         properties_attrs=['t_skip', 'filter_traces'],
-                         **kwargs)
-
-        self.pre_pulses = self.pulse_sequence.pre_pulses
-        self.post_pulses = self.pulse_sequence.post_pulses
-        self.ESR = self.pulse_sequence.ESR
-        self.EPR = self.pulse_sequence.EPR
-
-    @property
-    def inter_delay(self):
-        return self.ESR['inter_delay']
-
-    @inter_delay.setter
-    def inter_delay(self, inter_delay):
-        self.ESR['inter_delay'] = inter_delay
-
-    def analyse(self, traces):
-        if self.EPR['enabled']:
-            # Analyse EPR sequence, which also gets the dark counts
-            results = analysis.analyse_EPR(
-                empty_traces=traces['empty']['output'],
-                plunge_traces=traces['plunge']['output'],
-                read_traces=traces['read_long']['output'],
-                sample_rate=self.sample_rate,
-                min_filter_proportion=self.min_filter_proportion,
-                t_skip=self.t_skip, # Use t_skip to keep length consistent
-                t_read=self.t_read)
-        else:
-            results = {}
-
-        read_pulse = self.pulse_sequence.get_pulse(name=self.ESR["read_pulse"].name)
-        read_traces = traces[read_pulse.full_name]['output']
-        ESR_results = analysis.analyse_traces(
-            traces=read_traces,
-            sample_rate=self.sample_rate,
-            filter='low' if self.filter_traces else None,
-            t_skip=self.t_skip,
-            t_read=self.t_read)
-
-        results['ESR_results'] = ESR_results
-        results[f'up_proportion_{read_pulse.name}'] = ESR_results['up_proportion']
-        if self.EPR['enabled']:
-            # Add contrast obtained by subtracting EPR dark counts
-            contrast = ESR_results['up_proportion'] - results['dark_counts']
-            results[f'contrast_{read_pulse.name}'] = contrast
-
-        return results
-
-
-class VariableReadParameter(AcquisitionParameter):
-    def __init__(self, name='variable_read', **kwargs):
-        self.pulse_sequence = PulseSequence([
-            DCPulse(name='plunge', acquire=True, average='trace'),
-            DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='empty', acquire=True, average='trace'),
-            DCPulse(name='final')])
-
-        super().__init__(name=name,
-                         names=('read_voltage',),
-                         labels=('Read voltage',),
-                         units=('V',),
-                         shapes=((1,),),
-                         setpoint_names=(('time',),),
-                         setpoint_labels=(('Time',),),
-                         setpoint_units=(('s',),),
-                         snapshot_value=False,
-                         **kwargs)
-
-    @property_ignore_setter
-    def setpoints(self):
-        duration = sum(pulse.duration for pulse in
-                       self.pulse_sequence.get_pulses(acquire=True))
-        return (tuple(np.linspace(0, duration, self.shapes[0][0])), ),
-
-    @property_ignore_setter
-    def shapes(self):
-        shapes = self.layout.acquisition_shapes
-        pts = sum(shapes[pulse_name]['output'][0]
-                  for pulse_name in ['plunge', 'read', 'empty'])
-        return (pts,),
-
-    def analyse(self, traces):
-        return {'read_voltage':
-                    np.concatenate([self.traces['plunge']['output'],
-                                    self.traces['read']['output'],
-                                    self.traces['empty']['output']])}
-
-
 class BlipsParameter(AcquisitionParameter):
-    """
-    Parameter that measures properties of blips in a trace
-    """
-    def __init__(self, name='count_blips', duration=None,
-                 pulse_name='DC_trace', **kwargs):
-        """
+    """Parameter that measures properties of blips in a trace
 
-        Args:
-            name: parameter name (default `count_blips`)
-            duration: duration of tracepulse
-            pulse_name: name of trace pulse (default `read`)
-            **kwargs: kwargs passed to AcquisitionParameter
-        """
+    The `PulseSequence` consists of a single read pulse.
+    From this trace, the number of blips per second is counted, as well as the
+    mean time in ``low`` and ``high`` voltage state.
+    This parameter can be used in retuning sequence.
+
+    Args:
+        name: Parameter name.
+        duration: Duration of read trace
+        pulse_name: Name of read pulse
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`.
+
+    Parameters:
+        threshold_voltage (float): Threshold voltage for a blip in voltage.
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        t_skip (float): initial part of read trace to ignore for measuring
+            blips. Useful if there is a voltage spike at the start, which could
+            otherwise be measured as a ``blip``. Retrieved from
+            ``silq.environment.properties.t_skip``.
+        t_read (float): duration of read trace to include for measuring blips.
+            Useful if latter half of read pulse is used for initialization.
+            Retrieved from ``silq.environment.properties.t_read``.
+        min_filter_proportion (float): Minimum number of read traces needed in
+            which the voltage starts low (loaded donor). Otherwise, most results
+            are set to zero. Retrieved from
+            ``silq.environment.properties.min_filter_proportion``.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        environment (str): Config environment to use for properties.
+            If not specified, ``silq.config.properties.default_environment`` is
+            used. See notes below for more info.
+        properties_attrs (List[str]): Attributes to match with
+            ``silq.config.environment.properties`` See notes below for more info.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+        store_trace_channels (List[str]): acquisition channel labels for which
+            to store traces. the Layout has a list of acquisition labels.
+        dataset (DataSet): Traces DataSet
+        base_folder (str): Base folder in which to save traces. If not specified,
+            and acquisition is part of a measurement, the base folder is the
+            folder of the measurement data set. Otherwise, the base folder is
+            the default data folder
+        subfolder (str): Subfolder within the base folder to save traces.
+
+
+    See Also:
+        - `RetuneBlipsParameter`.
+
+    """
+    def __init__(self,
+                 name: str = 'count_blips',
+                 duration: float = None,
+                 pulse_name: str = 'DC_trace',
+                 **kwargs):
         self.pulse_name = pulse_name
 
         self.pulse_sequence = PulseSequence([
@@ -1408,6 +2166,7 @@ class BlipsParameter(AcquisitionParameter):
 
     @property
     def duration(self):
+        """Shorthand for read pulse duration."""
         return self.pulse_sequence[self.pulse_name].duration
 
     @duration.setter
@@ -1415,6 +2174,7 @@ class BlipsParameter(AcquisitionParameter):
         self.pulse_sequence[self.pulse_name].duration = duration
 
     def analyse(self, traces):
+        """`count_blips` analysis."""
         return analysis.count_blips(
             traces=self.traces[self.pulse_name]['output'],
             t_skip=0,
@@ -1423,7 +2183,12 @@ class BlipsParameter(AcquisitionParameter):
 
 
 class NeuralNetworkParameter(AcquisitionParameter):
-    # TODO: Make a measurement Parameter
+    """Base parameter for neural networks
+
+    Todo:
+        - Needs to be updated
+        - Transform into a `MeasurementParameter`.
+    """
     def __init__(self, target_parameter, input_names, output_names=None,
                  model_filepath=None, include_target_output=None, **kwargs):
         # Load model here because it takes quite a while to load
@@ -1490,7 +2255,12 @@ class NeuralNetworkParameter(AcquisitionParameter):
 
 
 class NeuralRetuneParameter(NeuralNetworkParameter):
-    # TODO: Make a measurement Parameter
+    """Parameter that uses neural network for retuning.
+
+    Todo:
+        - Needs to be updated
+        - Transform into a `MeasurementParameter`.
+    """
     def __init__(self, target_parameter, output_parameters, update=False,
                  **kwargs):
         self.output_parameters = output_parameters

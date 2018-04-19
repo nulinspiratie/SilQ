@@ -109,7 +109,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.started = False
         self.instrument.off()
-        if (self.trigger_thread != None):
+        if (self.trigger_thread is not None):
             logger.debug('Waiting for trigger thread to close...')
             while(self.trigger_thread.is_alive()):
                 pass
@@ -339,7 +339,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
             self.trigger_thread.start()
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         if self.is_primary():
             # Instrument does not require triggers
             return []
@@ -460,7 +460,8 @@ class SinePulseImplementation(PulseImplementation):
         This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
         it to a set of pulse-independent instructions/information that can be handled by interface.setup().
 
-        For example:
+        For example::
+
             SinePulseImplementation()
                 initializes a generic (interface independent) pulseimplementation for the sinepulse
             SinePulseImplementation.implement()
@@ -475,7 +476,8 @@ class SinePulseImplementation(PulseImplementation):
         Returns:
             waveforms (dict): dictionary containing waveform objects for each channel
 
-        example return value:
+        example return value::
+
             waveforms =
                 {
                 'ch_1':

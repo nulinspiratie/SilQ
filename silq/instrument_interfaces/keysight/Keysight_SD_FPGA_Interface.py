@@ -104,7 +104,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
     #   Interface Functions
     #
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         return []
 
     def setup(self, **kwargs):

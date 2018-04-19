@@ -3,15 +3,35 @@ from dateutil.parser import parse
 import logging
 
 import qcodes as qc
+from qcodes.data.format import Formatter
 import silq
 from qcodes.data.data_set import new_data
 
-__all__ = ['create_data_set', 'store_data', 'get_data_folder']
+__all__ = ['create_data_set', 'get_data_folder']
 
 logger = logging.getLogger(__name__)
 
 
-def create_data_set(name, base_folder, subfolder=None, formatter=None):
+def create_data_set(name: str,
+                    base_folder: str,
+                    subfolder: str = None,
+                    formatter: Formatter = None):
+    """Create empty ``DataSet`` within main data folder.
+
+    Uses ``new_data``, and handles location formatting.
+
+    Args:
+        name: ``DataSet`` name, used as DataSet folder name.
+        base_folder: Base folder for DataSet. Should be a pre-existing
+            ``DataSet`` folder. If None, a new folder is created in main data
+            folder.
+        subfolder: Adds subfolder within base_folder for ``DataSet``.
+            Should not be used without explicitly setting ``base_folder``.
+        formatter: Formatter to use for data storage (e.g. GNUPlotFormat).
+
+    Returns:
+        New empty ``DataSet``.
+    """
     location_string = '{base_folder}/'
     if subfolder is not None:
         location_string += '{subfolder}/'
@@ -27,12 +47,28 @@ def create_data_set(name, base_folder, subfolder=None, formatter=None):
     return data_set
 
 
-def store_data(dataset, result):
-    dataset.store(loop_indices=slice(0, result.shape[0], 1),
-                  ids_values={'data_vals': result})
+def get_data_folder(*path: str,
+                    newest_date: str = None):
+    """Get first data folder in main data folder satisfying conditions.
 
+    Args:
+        *path: Filter for data folder.
+            First arg can be an absolute path, in which case data folder is
+            searched in that path.
+            If a list of strings, each element corresponds to a subfolder in
+            main data folder, whose folder name must contain the given string.
+            Arg can be dataset index, in which case it must start with #, and be
+            followed by digits. leading zeroes are not necessary.
+            If not provided, first data folder in main data path is used.
+        newest_date: Latest date for dataset. If specified, the first dataset
+            earlier than this date is searched.
 
-def get_data_folder(*path, newest_date=None):
+    Returns:
+        Relative path to found dataset
+
+    Raises:
+        IterationError: No dataset found.
+    """
 
     # Ensure that all path items use '/'
     path = [p.replace('\\', '/') for p in path]

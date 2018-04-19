@@ -112,21 +112,21 @@ def find_high_low(traces: np.ndarray,
             * **{n}\*std_high**: n standard deviations below mean high voltage,
               where n is a float (ignore slash in raw docstring).
             * **config**: Use threshold method provided in
-              `config.analysis.threshold_method` (`mean` if not specified)
+              ``config.analysis.threshold_method`` (``mean`` if not specified)
 
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.
 
     Returns:
         Dict[str, Any]:
-        * **low** (float): Mean low voltage, `None` if two peaks cannot be
+        * **low** (float): Mean low voltage, ``None`` if two peaks cannot be
           discerned
-        * **high** (float): Mean high voltage, `None` if no two peaks cannot be
-          discerned
+        * **high** (float): Mean high voltage, ``None`` if no two peaks cannot
+          be discerned
         * **threshold_voltage** (float): Threshold voltage for a blip. If SNR is
-          below `min_SNR` or no two peaks can be discerned, returns `None`.
+          below ``min_SNR`` or no two peaks can be discerned, returns ``None``.
         * **voltage_difference** (float): Difference between low and high
-          voltage. If not two peaks can be discerned, returns `None`.
+          voltage. If not two peaks can be discerned, returns ``None``.
         * **DC_voltage** (float): Average voltage of traces.
     """
     assert attempts > 0, f'Attempts {attempts} must be at least 1'
@@ -219,14 +219,14 @@ def edge_voltage(traces: np.ndarray,
 
     Args:
         traces: 2D array of acquisition traces
-        edge: which side of traces to test, either `begin` or `end`
-        state: voltage that the edge must have, either `low` or `high`
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold
+        edge: which side of traces to test, either ``begin`` or ``end``
+        state: voltage that the edge must have, either ``low`` or ``high``
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold
         points: Number of data points to average over to determine state
         start_idx: index of first point to use. Useful if there is some
             capacitive voltage spike occuring at the start.
-            Only used if edge is `begin`
+            Only used if edge is ``begin``.
 
     Returns:
         1D boolean array, True if the trace has the correct state at the edge
@@ -267,12 +267,12 @@ def find_up_proportion(traces: np.ndarray,
 
     Args:
         traces: 2D array of acquisition traces
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold
         return_array: whether to return the boolean array or the up proportion
         start_idx: index of first point to use. Useful if there is some
             capacitive voltage spike occuring at the start.
-            Only used if edge is `begin`
+            Only used if edge is ``begin``
         filter_window: number of points of smoothing (0 means no smoothing)
 
     Returns:
@@ -314,7 +314,7 @@ def count_blips(traces: np.ndarray,
 
     Args:
         traces: 2D array of acquisition traces.
-        threshold_voltage: Threshold voltage for a `high` voltage (blip).
+        threshold_voltage: Threshold voltage for a ``high`` voltage (blip).
         sample_rate: Acquisition sample rate (per second).
         t_skip: Initial time to skip for each trace (ms).
 
@@ -380,17 +380,17 @@ def analyse_traces(traces: np.ndarray,
         traces: 2D array of acquisition traces.
         sample_rate: acquisition sample rate (per second).
         filter: only use traces that begin in low or high voltage.
-            Allowed values are `low`, `high` or `None` (do not filter).
+            Allowed values are ``low``, ``high`` or ``None`` (do not filter).
         min_filter_proportion: minimum proportion of traces that satisfy filter.
             If below this value, up_proportion etc. are not calculated.
         t_skip: initial time to skip for each trace (ms).
         t_read: duration of each trace to use for calculating up_proportion etc.
             e.g. for a long trace, you want to compare up proportion of start
             and end segments.
-        segment: Use beginning or end of trace for `t_read`.
-            Allowed values are `begin` and `end`.
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold.
+        segment: Use beginning or end of trace for ``t_read``.
+            Allowed values are ``begin`` and ``end``.
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold.
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
 
@@ -400,7 +400,7 @@ def analyse_traces(traces: np.ndarray,
             * **{n}\*std_high**: n standard deviations below mean high voltage,
               where n is a float (ignore slash in raw docstring).
             * **config**: Use threshold method provided in
-              `config.analysis.threshold_method` (`mean` if not specified)
+              ``config.analysis.threshold_method`` (``mean`` if not specified)
 
     Returns:
         Dict[str, Any]:
@@ -424,7 +424,7 @@ def analyse_traces(traces: np.ndarray,
             all results except average_voltage are set to an initial value
             (either 0 or undefined)
         If the filtered trace proportion is less than min_filter_proportion,
-            the results `up_proportion`, `end_low`, `end_high` are set to an
+            the results ``up_proportion``, ``end_low``, ``end_high`` are set to an
             initial value
     """
     assert filter in [None, 'low', 'high'], 'filter must be None, `low`, or `high`'
@@ -672,8 +672,8 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
           of the combined flipping events.
 
         Additionally, each of the above results will have another result with
-        the same name, but prepended with `filtered_`, and appended with
-        `_{idx1}{idx2}` if not already present. Here, all the values are
+        the same name, but prepended with ``filtered_``, and appended with
+        ``_{idx1}{idx2}`` if not already present. Here, all the values are
         filtered out where the corresponding pair of up_proportion samples do
         not have exactly one high and one low for each sample. The values that
         do not satisfy the filter are set to np.nan.
