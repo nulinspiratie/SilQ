@@ -23,7 +23,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'VariableReadParameter',
-           'BlipsParameter',
+           'BlipsParameter', 'FlipNucleusParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)

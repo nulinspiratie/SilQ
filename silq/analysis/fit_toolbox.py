@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 import logging
 from qcodes.data.data_array import DataArray
 
-
 __all__ = ['Fit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
            'RabiFrequencyFit']
 
@@ -15,54 +14,70 @@ class Fit():
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, fit=True, print=False, plot=None, **kwargs):
         self.model = Model(self.fit_function)
         self.fit_result = None
 
         self.plot_handle = None
 
-        if kwargs:
-            self.perform_fit(**kwargs)
+        self.xvals = None
+        self.ydata = None
+        self.weights = None
+        self.parameters = None
 
-    def find_initial_parameters(self):
+        if kwargs:
+            self.get_parameters(**kwargs)
+            if fit:
+                self.perform_fit(print=print, plot=plot, **kwargs)
+
+    def find_initial_parameters(self, xvals, ydata, initial_parameters):
         pass
 
-    def perform_fit (self):
+    def perform_fit(self):
         pass
 
     def find_nearest_index(self, array, value):
         idx = np.abs(array - value).argmin()
         return array[idx]
 
-    def find_nearest_value(self, array, value):
-        return array[self.find_nearest_index(array, value)]
-
-    def perform_fit(self, xvals, ydata, initial_parameters={},
-                    fixed_parameters={}, weights=None,
-                    print=False, plot=None):
+    def get_parameters(self, xvals, ydata, initial_parameters={},
+                       fixed_parameters={}, weights=None):
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
         if isinstance(ydata, DataArray):
             ydata = ydata.ndarray
-
         # Filter out all NaNs
         non_nan_indices = ~(np.isnan(xvals) | np.isnan(ydata))
         xvals = xvals[non_nan_indices]
         ydata = ydata[non_nan_indices]
-
+        if weights is not None:
+            weights = weights[non_nan_indices]
+        self.xvals = xvals
+        self.ydata = ydata
+        self.weights = weights
         # Find initial parameters, also pass fixed parameters along so they are
         # not modified
-        parameters = self.find_initial_parameters(
+        self.parameters = self.find_initial_parameters(
             xvals, ydata, initial_parameters={**fixed_parameters,
                                               **initial_parameters})
 
         # Ensure that fixed parameters do not vary
         for key, value in fixed_parameters.items():
-            parameters[key].vary = False
+            self.parameters[key].vary = False
+        return self.parameters
 
-        self.fit_result = self.model.fit(ydata, params=parameters,
-                                         weights=weights,
-                                         **{self.sweep_parameter: xvals})
+    def find_nearest_value(self, array, value):
+        return array[self.find_nearest_index(array, value)]
+
+    def perform_fit(self, parameters=None, print=False, plot=None, **kwargs):
+        if parameters is None:
+            if kwargs:
+                self.get_parameters(**kwargs)
+            parameters = self.parameters
+
+        self.fit_result = self.model.fit(self.ydata, params=parameters,
+                                         weights=self.weights,
+                                         **{self.sweep_parameter: self.xvals})
 
         if print:
             self.print_results()
@@ -84,29 +99,36 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax):
-        self.plot_handle = ax.add(self.fit_result.best_fit,
-                                  x=next(iter(self.fit_result.userkws.values())),
-                                  **self.plot_kwargs)
+    def add_to_plot(self, ax, **kwargs):
+        x_vals = next(iter(self.fit_result.userkws.values()))
+        x_vals_full = np.linspace(min(x_vals), max(x_vals), 201)
+        y_vals_full = self.fit_result.eval(
+            **{self.sweep_parameter: x_vals_full})
+        plot_kwargs = {**self.plot_kwargs, **kwargs}
+        self.plot_handle = ax.add(y_vals_full,
+                                  x=x_vals_full,
+                                  **plot_kwargs)
         return self.plot_handle
 
 
 class ExponentialFit(Fit):
     sweep_parameter = 't'
+
     @staticmethod
-    def fit_function(t,  tau, amplitude, offset):
-        return amplitude * np.exp(-t/tau) + offset
+    def fit_function(t, tau, amplitude, offset):
+        return amplitude * np.exp(-t / tau) + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         if initial_parameters is None:
-            initial_parameters={}
+            initial_parameters = {}
 
-        parameters=Parameters()
+        parameters = Parameters()
         if not 'tau' in initial_parameters:
             initial_parameters['tau'] = -(xvals[1] - xvals[np.where(
-                self.find_nearest_index(ydata, ydata[0] / np.exp(1)) == ydata)[0][0]])
+                self.find_nearest_index(ydata, ydata[0] / np.exp(1)) == ydata)[
+                0][0]])
         if not 'amplitude' in initial_parameters:
             initial_parameters['amplitude'] = ydata[1]
         if not 'offset' in initial_parameters:
@@ -120,13 +142,14 @@ class ExponentialFit(Fit):
 
 class SineFit(Fit):
     sweep_parameter = 't'
+
     @staticmethod
     def fit_function(t, amplitude, frequency, phase, offset):
         return amplitude * np.sin(2 * np.pi * frequency * t + phase) + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -134,9 +157,9 @@ class SineFit(Fit):
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
-        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips)/2)]
+        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips) / 2)]
         fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(
-            fft_flips)/2)]
+            fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
         if 'frequency' not in initial_parameters:
@@ -161,6 +184,7 @@ class SineFit(Fit):
 
 class ExponentialSineFit(Fit):
     sweep_parameter = 't'
+
     @staticmethod
     def fit_function(t, amplitude, tau, frequency, phase, offset,
                      exponent_factor):
@@ -170,7 +194,7 @@ class ExponentialSineFit(Fit):
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -212,14 +236,15 @@ class ExponentialSineFit(Fit):
 
 class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
+
     @staticmethod
     def fit_function(f, f0, gamma, t):
-        Omega = np.sqrt(gamma**2 + (2*np.pi*(f - f0))**2 / 4)
-        return gamma**2 / Omega**2 * np.sin(Omega*t)**2
+        Omega = np.sqrt(gamma ** 2 + (2 * np.pi * (f - f0)) ** 2 / 4)
+        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         parameters = Parameters()
 
@@ -231,11 +256,14 @@ class RabiFrequencyFit(Fit):
 
         if 'gamma' not in initial_parameters:
             if 't' in initial_parameters:
-                initial_parameters['gamma'] = np.pi / initial_parameters['t'] / 2
+                initial_parameters['gamma'] = np.pi / initial_parameters[
+                    't'] / 2
             else:
                 FWHM_min_idx = np.argmax(xvals > max_frequency / 2)
-                FWHM_max_idx = len(xvals) - np.argmax((xvals > max_frequency / 2)[::-1]) - 1
-                initial_parameters['gamma'] = 2*np.pi * (xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
+                FWHM_max_idx = len(xvals) - np.argmax(
+                    (xvals > max_frequency / 2)[::-1]) - 1
+                initial_parameters['gamma'] = 2 * np.pi * (
+                xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
         if 't' not in initial_parameters:
             initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2

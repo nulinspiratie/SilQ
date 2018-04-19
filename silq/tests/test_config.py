@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import os
 
 import silq
 from silq.tools.config import *
@@ -31,8 +32,7 @@ class TestConfig(unittest.TestCase):
     def test_save_load_dir(self):
         self.config.save(folder=self.folder.name, save_as_dir=True)
 
-        filepath = os.path.join(self.folder.name,
-                                '{}.json'.format(self.config.name))
+        filepath = os.path.join(self.folder.name, f'{self.config.name}.json')
         folderpath = os.path.join(self.folder.name, self.config.name)
         self.assertFalse(os.path.exists(filepath))
         self.assertTrue(os.path.isdir(folderpath))
@@ -41,7 +41,7 @@ class TestConfig(unittest.TestCase):
             self.assertTrue(os.path.exists(filepath))
 
         config_loaded = DictConfig('env1', folder=self.folder.name)
-        self.assertTrue(config_loaded.save_as_dir)
+        self.assertFalse(config_loaded.save_as_dir)
         self.assertTrue(self.dicts_equal(self.config, config_loaded))
 
         new_folder = tempfile.TemporaryDirectory()
@@ -56,11 +56,19 @@ class TestConfig(unittest.TestCase):
         self.assertTrue(self.dicts_equal(self.config, config_loaded2))
         self.assertIsInstance(config_loaded2.connections, ListConfig)
 
+    def test_load_no_update(self):
+        self.config.save(folder=self.folder.name, save_as_dir=True)
+        self.config.pulses.pop('read')
+        old_config = self.config.load(update=False)
+        self.assertIn('read', old_config['pulses'])
+        self.assertNotIn('read', self.config.pulses)
+        self.assertEqual(old_config, self.d)
+        self.assertNotEqual(self.config, self.d)
+
     def test_save_load_file(self):
         self.config.save(folder=self.folder.name)
 
-        filepath = os.path.join(self.folder.name,
-                                '{}.json'.format(self.config.name))
+        filepath = os.path.join(self.folder.name, f'{self.config.name}.json')
         folderpath = os.path.join(self.folder.name, self.config.name)
         self.assertTrue(os.path.exists(filepath))
         self.assertFalse(os.path.exists(folderpath))
@@ -69,12 +77,88 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config_loaded.save_as_dir)
         self.assertTrue(self.dicts_equal(self.config, config_loaded))
 
+    def test_save_load_dependent(self):
+        self.config.pulses.read2 = {'t_start': 1,
+                                    't_stop': 'config:pulses.read.t_stop'}
+        self.assertEqual(self.config.pulses.read2.t_stop,
+                         self.config.pulses.read.t_stop)
+
+        self.assertEqual(dict.__getitem__(self.config.pulses.read2, 't_stop'),
+                         'config:pulses.read.t_stop')
+
+        self.config.save(folder=self.folder.name)
+
+        config_loaded = DictConfig('env1', folder=self.folder.name)
+        self.assertEqual(config_loaded.pulses.read2.t_stop,
+                         self.config.pulses.read.t_stop)
+        self.assertEqual(dict.__getitem__(config_loaded.pulses.read2, 't_stop'),
+                         'config:pulses.read.t_stop')
+
+    def test_refresh_add_list_config(self):
+        self.d['x'] = [1,2,3]
+        self.config.refresh(config=self.d)
+        self.assertIn('x', self.config)
+        self.assertEqual(self.config.x, self.d['x'])
+        self.assertEqual(self.config, self.d)
+
+    def test_refresh_add_list_subconfig(self):
+        self.d['pulses']['x'] = [1,2,3]
+        self.config.refresh(config=self.d)
+        self.assertIn('x', self.config.pulses)
+        self.assertEqual(self.config.pulses.x, self.d['pulses']['x'])
+        self.assertEqual(self.config, self.d)
+
+    def test_refresh_add_dict_config(self):
+        self.d['x'] = {'test': 'val'}
+        self.config.refresh(config=self.d)
+        self.assertIn('x', self.config)
+        self.assertEqual(self.config.x, self.d['x'])
+        self.assertEqual(self.config, self.d)
+
+    def test_refresh_add_dict_subconfig(self):
+        self.d['pulses']['x'] = {'test': 'val'}
+        self.config.refresh(config=self.d)
+        self.assertIn('x', self.config.pulses)
+        self.assertEqual(self.config.pulses.x, self.d['pulses']['x'])
+        self.assertEqual(self.config, self.d)
+
+    def test_override_refresh(self):
+        self.d['pulses']['read'] = {'test': 'val'}
+        self.config.refresh(config=self.d)
+        self.assertIn('read', self.config.pulses)
+        self.assertEqual(self.config, self.d)
+
+    def test_override_refresh_remove_DictConfig(self):
+        self.d['pulses'] = {'test': 'val'}
+        self.config.refresh(config=self.d)
+        self.assertEqual(self.config, self.d)
+
+    def test_refresh_exclusive_set(self):
+        # Override dict setitem to record all items that are set
+        dict_set_items = []
+        dict_setitem = DictConfig.__setitem__
+        def record_dict_setitem(self, key, val):
+            dict_set_items.append((key, val))
+            dict_setitem(self, key, val)
+        DictConfig.__setitem__ = record_dict_setitem
+
+        self.d['x'] = {'test': 'val'}
+        self.config.refresh(config=self.d)
+        self.assertEqual(dict_set_items, [('x', {'test': 'val'}),
+                                          ('test', 'val')])
+
+
     def test_add_SubConfig(self):
         subconfig = DictConfig(name='pulses',
                                folder=None,
                                config={'read': {}})
         config.env1 = {'pulses': subconfig}
+        self.assertIsInstance(config.env1, DictConfig)
         self.assertEqual(subconfig.config_path, 'config:env1.pulses')
+
+    def test_add_ListConfig(self):
+        config.env1 = [1,2,3]
+        self.assertIsInstance(config.env1, ListConfig)
 
     def dicts_equal(self, d1, d2):
         d1_keys = list(d1.keys())
@@ -92,6 +176,47 @@ class TestConfig(unittest.TestCase):
                 elif not d1_val == d2_val:
                     return False
         return True
+
+
+class TestConfigInheritance(unittest.TestCase):
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.d = {
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2']}
+        self.config = DictConfig('env1', folder=self.folder.name,
+                                 config=self.d)
+
+    def test_inherit_relative(self):
+        self.config.pulses.read2 = {'inherit': 'read'}
+        self.assertIn('t_start', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_start,
+                         self.config.pulses.read.t_start)
+        self.assertIn('t_stop', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_stop,
+                         self.config.pulses.read.t_stop)
+
+    def test_inherit_absolute(self):
+        self.config.pulses2 = {'read':
+                                   {'t_start': 1,
+                                    't_stop': 21}}
+        self.config.pulses.read2 = {'inherit': 'config:pulses2.read'}
+        self.assertIn('t_start', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_start,
+                         self.config.pulses2.read.t_start)
+        self.assertIn('t_stop', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_stop,
+                         self.config.pulses2.read.t_stop)
+
+    def test_override_inherit(self):
+        self.config.pulses.read2 = {'inherit': 'read', 't_stop': 20}
+        self.assertIn('t_start', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_start,
+                         self.config.pulses.read.t_start)
+        self.assertIn('t_stop', self.config.pulses.read2)
+        self.assertEqual(self.config.pulses.read2.t_stop, 20)
 
 
 

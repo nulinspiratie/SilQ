@@ -8,7 +8,7 @@ import copy
 import qcodes as qc
 from qcodes.config.config import DotDict
 
-__all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update']
+__all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
 
 class SubConfig:
     def __init__(self, name, folder=None, parent=None, save_as_dir=None):
@@ -33,22 +33,22 @@ class SubConfig:
                 parent_path += '.'
             return parent_path + self.name
 
-    def load(self, folder=None):
+    def load(self, folder=None, update=None):
         """
         Load config from folder.
-        The folder must either contain a {self.name}.json file, 
+        The folder must either contain a {self.name}.json file,
         or alternatively a folder containing config files/folders.
-        In the latter case, a dict is created, and all the files/folders in 
+        In the latter case, a dict is created, and all the files/folders in
         the folder will be elements of the dict.
-        
-        If `self.save_as_dir is None`, it will be updated to either True or 
-        False depending if there is a subfolder or file to load from the folder, 
-        respectively. 
-        
-        Note that load() returns a dict/list, which should then be added to 
-        the Subconfig object depending on the subclass. This should be 
+
+        If `self.save_as_dir is None`, it will be updated to either True or
+        False depending if there is a subfolder or file to load from the folder,
+        respectively.
+
+        Note that load() returns a dict/list, which should then be added to
+        the Subconfig object depending on the subclass. This should be
         implemented in the load() method of subclasses.
-         
+
         Args:
             folder: folder to look for. If not provided, uses self.folder.
 
@@ -58,7 +58,7 @@ class SubConfig:
         if folder is None:
             folder = self.folder
 
-        filepath = os.path.join(folder, '{}.json'.format(self.name))
+        filepath = os.path.join(folder, f'{self.name}.json')
         folderpath = os.path.join(folder, self.name)
 
         if os.path.exists(filepath):
@@ -78,7 +78,7 @@ class SubConfig:
 
             # Update self.save_as_dir to False unless explicitly set to True
             if self.save_as_dir is None:
-                self.save_as_dir = True
+                self.save_as_dir = False
 
             for file in os.listdir(folderpath):
                 filepath = os.path.join(folderpath, file)
@@ -115,22 +115,54 @@ class SubConfig:
 
         return config
 
-    def save(self, folder=None, save_as_dir=None):
+    def refresh(self, config=None):
+        if config is None:
+            config = self.load(update=False)
+
+        if isinstance(config, dict) and isinstance(self, dict):
+            for key, val in config.items():
+                if key in self:
+                    if isinstance(self[key], SubConfig):
+                        self[key].refresh(config=config[key])
+                    elif self[key] != val:
+                        self[key] = val
+
+                else:
+                    self[key] = config[key]
+
+            # Also remove any keys that are not in the new config
+            for key in list(self):
+                if key not in config:
+                    self.pop(key)
+
+        elif isinstance(config, list) and isinstance(self, list):
+            if config != self:
+                self.clear()
+                self += config
+        else:
+            raise TypeError(f'{self.config_path} has different type as refreshed '
+                            f'config {config}')
+
+    def save(self, folder=None, save_as_dir=None, dependent_value=False):
         if folder == None:
             folder = self.folder
         if save_as_dir == None:
             save_as_dir = self.save_as_dir
 
         if not save_as_dir:
-            filepath = os.path.join(folder, '{}.json'.format(self.name))
+            filepath = os.path.join(folder, f'{self.name}.json')
+            serialized_self = self.serialize(dependent_value=dependent_value)
             with open(filepath, 'w') as fp:
-                json.dump(self, fp, indent=4)
+                json.dump(serialized_self, fp, indent=4)
         else:
             folderpath = os.path.join(folder, self.name)
             if not os.path.isdir(folderpath):
                 os.mkdir((folderpath))
             for subconfig in self.values():
                 subconfig.save(folder=folderpath)
+
+    def serialize(self, dependent_value=False):
+        raise NotImplementedError('Implement in subclass')
 
 
 class DictConfig(SubConfig, DotDict):
@@ -143,14 +175,41 @@ class DictConfig(SubConfig, DotDict):
                            save_as_dir=save_as_dir)
 
         if config is not None:
-            update(self, config)
+            update_dict(self, config)
         elif folder is not None:
             self.load()
 
+    def __contains__(self, key):
+        if DotDict.__contains__(self, key):
+            return True
+        elif DotDict.__contains__(self, 'inherit'):
+            if 'config:' in self.inherit:
+                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
+            elif self.parent is not None:
+                # Inherit is sibling of current dict item
+                inherit_dict = self.parent[self.inherit]
+            else:
+                return False
+            return key in inherit_dict
+        else:
+            return False
+
     def __getitem__(self, key):
-        val = DotDict.__getitem__(self, key)
-        if isinstance(val, str) and 'config:' in val:
-            val = qc.config['user'].__getitem__(val[7:])
+        if DotDict.__contains__(self, key):
+            val = DotDict.__getitem__(self, key)
+            if key != 'inherit' and isinstance(val, str) and 'config:' in val:
+                val = qc.config['user'].__getitem__(val[7:])
+        elif 'inherit' in self:
+            if 'config:' in self.inherit:
+                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
+            elif self.parent is not None:
+                # Inherit is sibling of current dict item
+                inherit_dict = self.parent[self.inherit]
+            else:
+                raise KeyError
+            val = inherit_dict[key]
+        else:
+            raise KeyError
         return val
 
     def __setitem__(self, key, val):
@@ -199,8 +258,11 @@ class DictConfig(SubConfig, DotDict):
     def values(self):
         return [self[key] for key in self.keys()]
 
-    def items(self):
-        return {key: self[key] for key in self.keys()}.items()
+    def items(self, dependent_value=True):
+        if dependent_value:
+            return {key: self[key] for key in self.keys()}.items()
+        else:
+            return {key: dict.__getitem__(self, key) for key in self.keys()}.items()
 
     def get(self, key, default=None):
         """
@@ -225,7 +287,7 @@ class DictConfig(SubConfig, DotDict):
             listen_attr: name of attribute that is listened.
             _: sender object (not important)
             **kwargs: {'listened' attr: val}
-                The dependent attribute mirrors the value of the 'listened' 
+                The dependent attribute mirrors the value of the 'listened'
                 attribute
 
         Returns:
@@ -235,21 +297,26 @@ class DictConfig(SubConfig, DotDict):
         if sender_key == listen_attr:
             signal(self.config_path).send(self, **{dependent_attr: sender_val})
 
-    def load(self, folder=None):
-        self.clear()
+    def load(self, folder=None, update=True):
+        if update:
+            self.clear()
         config = super().load(folder=folder)
-        update(self, config)
+        if update:
+            update_dict(self, config)
+        return config
 
-    def to_dict(self):
+    def to_dict(self, dependent_value=True):
         d = {}
-        for key, val in self.items():
+        for key, val in self.items(dependent_value=dependent_value):
             if isinstance(val, DictConfig):
-                d[key] = val.to_dict()
+                d[key] = val.to_dict(dependent_value=dependent_value)
             elif isinstance(val, ListConfig):
-                d[key] = val.to_list()
+                d[key] = val.to_list(dependent_value=dependent_value)
             else:
                 d[key] = val
         return d
+
+    serialize = to_dict
 
     def __deepcopy__(self, memo):
         return copy.deepcopy(self.to_dict())
@@ -265,27 +332,32 @@ class ListConfig(SubConfig, list):
         elif folder is not None:
             self.load()
 
-    def load(self, folder=None):
-        self.clear()
+    def load(self, folder=None, update=True):
+        if update:
+            self.clear()
         config = super().load(folder=folder)
-        self += config
+        if update:
+            self += config
+        return config
 
-    def to_list(self):
+    def to_list(self, dependent_value=True):
         l = []
         for val in self:
             if isinstance(val, DictConfig):
-                l.append(val.to_dict())
+                l.append(val.to_dict(dependent_value=dependent_value))
             elif isinstance(val, ListConfig):
-                l.append(val.to_list())
+                l.append(val.to_list(dependent_value=dependent_value))
             else:
                 l.append(val)
         return l
 
+    serialize = to_list
+
     def __deepcopy__(self, memo):
         return copy.deepcopy(self.to_list())
 
-def update(d, u):
-    """ 
+def update_dict(d, u):
+    """
     Update dictionary recursively.
     this ensures that subdicts are also converted
     This is a modified version of the update function in qcodes config
@@ -293,6 +365,6 @@ def update(d, u):
     for k, v in u.items():
         if isinstance(v, collections.Mapping) and k in d:
             # Update existing dict in d with dict v
-            v = update(d.get(k, {}), v)
+            v = update_dict(d.get(k, {}), v)
         d[k] = v
     return d

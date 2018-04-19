@@ -95,7 +95,7 @@ def get_experiments_folder():
 
 def get_configurations():
     """
-    Retrieves configurations folder from experiments folder. This contains 
+    Retrieves configurations folder from experiments folder. This contains
     all configurations that can be used by silq.initialize.
     Filepath should be {experiments_folder/configurations.json}
     Returns:
@@ -108,7 +108,7 @@ def get_configurations():
         return json.load(file)
 
 
-def initialize(name=None, mode=None, select=None, ignore=None):
+def initialize(name=None, mode=None, select=[], ignore=[]):
     """
     Initializes the global namespace by executing a list of files.
     Possible configurations are taken from the dictionary _configurations in
@@ -153,8 +153,8 @@ def initialize(name=None, mode=None, select=None, ignore=None):
                         f'configurations are {get_configurations().keys()}')
 
     if mode is not None:
-        select = configuration['modes'][mode].get('select', None)
-        ignore = configuration['modes'][mode].get('ignore', None)
+        select += configuration['modes'][mode].get('select', [])
+        ignore += configuration['modes'][mode].get('ignore', [])
 
     folder = os.path.join(experiments_folder, configuration['folder'])
     config.__dict__['folder'] = os.path.join(experiments_folder, folder)
