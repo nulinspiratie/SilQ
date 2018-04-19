@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Union, Tuple
 import numpy as np
 from copy import copy, deepcopy
 from blinker import Signal
+from matplotlib import pyplot as plt
 
 __all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
            'PulseImplementation']
@@ -47,13 +48,15 @@ class PulseMatch():
     def __init__(self,
                  origin_pulse,
                  origin_pulse_attr: str,
-                 delay: float = 0):
+                 delay: float = 0,
+                 target_pulse=None,
+                 target_pulse_attr: str = None):
         self.origin_pulse = origin_pulse
         self.origin_pulse_attr = origin_pulse_attr
         self.delay = delay
 
-        self.target_pulse = None
-        self.target_pulse_attr = None
+        self.target_pulse = target_pulse
+        self.target_pulse_attr = target_pulse_attr
 
     @property
     def value(self):
@@ -400,7 +403,7 @@ class PulseSequence:
         if self.final_delay is not None:
             duration += self.final_delay
 
-        return duration
+        return np.round(duration, 11)
 
     @duration.setter
     def duration(self, duration):
@@ -417,7 +420,7 @@ class PulseSequence:
 
     @property
     def t_list(self):
-        return list(set(self.t_start_list + self.t_stop_list + [self.duration]))
+        return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def add(self, *pulses):
         """Adds pulse(s) to the PulseSequence.
@@ -513,6 +516,10 @@ class PulseSequence:
                 assert len(pulses_name) == 1, f'No unique pulse {pulse} found' \
                                               f', pulses: {len(pulses_name)}'
                 pulse = pulses_name[0]
+            else:
+                pulses = [p for p in self if p == pulse]
+                assert len(pulses) == 1, f'No unique pulse {pulse} found' \
+                                         f', pulses: {pulses}'
             self.pulses.remove(pulse)
             if pulse.enabled:
                 self.enabled_pulses.remove(pulse)
@@ -710,6 +717,60 @@ class PulseSequence:
 
         return shapes
 
+    def plot(self, output_arg=None, output_channel=None, dt=1e-6,
+             subplots=False, scale_ylim=True):
+        pulses = self.get_pulses(output_arg=output_arg,
+                                 output_channel=output_channel)
+
+        connections = {pulse.connection for pulse in pulses}
+        connections = sorted(connections,
+                             key=lambda connection: connection.output['str'])
+        if subplots:
+            fig, axes = plt.subplots(len(connections), sharex=True,
+                                     figsize=(10, 1.5 * len(connections)))
+        else:
+            fig, axes = plt.subplots(1, figsize=(10, 4))
+
+        t_list = np.arange(0, self.duration, dt)
+        voltages = {}
+        for k, connection in enumerate(connections):
+            connection_pulses = [pulse for pulse in pulses if
+                                 pulse.connection == connection]
+            #         print('connection_pulses', connection_pulses)
+            connection_voltages = np.nan * np.ones(len(t_list))
+            for pulse in connection_pulses:
+                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop, dt)
+                start_idx = np.argmax(t_list >= pulse.t_start)
+                # Determine max_pts because sometimes there is a rounding error
+                max_pts = len(connection_voltages[
+                              start_idx:start_idx + len(pulse_t_list)])
+                #             print('pulse', pulse, ', start_idx', start_idx, ', len(pulse_t_list)', len(pulse_t_list))
+                connection_voltages[
+                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
+                    pulse_t_list[:max_pts])
+            voltages[connection.output['str']] = connection_voltages
+
+            ax = axes[k] if isinstance(axes, np.ndarray) else axes
+            ax.plot(t_list, connection_voltages, label=connection.output["str"])
+            if not subplots:
+                ax.set_xlabel('Time (s)')
+            ax.set_ylabel('Amplitude (V)')
+            ax.set_xlim(0, self.duration)
+            ax.legend()
+
+        if scale_ylim:
+            min_voltage = np.nanmin(np.concatenate(tuple(voltages.values())))
+            max_voltage = np.nanmax(np.concatenate(tuple(voltages.values())))
+            voltage_difference = max_voltage - min_voltage
+            for ax in axes:
+                ax.set_ylim(min_voltage - 0.05 * voltage_difference,
+                            max_voltage + 0.05 * voltage_difference)
+
+        fig.tight_layout()
+        if subplots:
+            fig.subplots_adjust(hspace=0)
+        return t_list, voltages
+
     def up_to_date(self) -> bool:
         """Checks if a pulse sequence is up to date or needs to be generated.
 
@@ -759,6 +820,19 @@ class PulseImplementation:
         # List of conditions that a pulse must satisfy to be targeted
         self.pulse_requirements = [PulseRequirement(property, condition) for
                                  (property, condition) in pulse_requirements]
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
+        for attr in list(vars(self)):
+            if attr in exclude_attrs:
+                continue
+            elif not hasattr(other_pulse, attr) \
+                    or getattr(self, attr) != getattr(other_pulse, attr):
+                return False
+        else:
+            return True
 
     def add_pulse_requirement(self,
                               property: str,

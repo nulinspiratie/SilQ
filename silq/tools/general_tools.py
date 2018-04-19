@@ -553,7 +553,9 @@ def arreq_in_list(myarr: np.ndarray,
 
 
 def arreqclose_in_list(myarr: np.ndarray,
-                       list_arrays: List[np.ndarray]):
+                       list_arrays: List[np.ndarray],
+                       rtol: float = 1e-5,
+                       atol: float = 1e-8):
     """Get index of array in list of arrays, testing approximate equality
 
     Modified from https://stackoverflow.com/questions/23979146/
@@ -562,13 +564,15 @@ def arreqclose_in_list(myarr: np.ndarray,
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
+        rtol: relative tolerance when comparing array elements
+        atol: absolute tolerance when comparing array elements
 
     Returns:
         idx of array in list approximately equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if elem.size == myarr.size
-                 and np.allclose(elem, myarr)),
+                 and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
                 None)
 
 

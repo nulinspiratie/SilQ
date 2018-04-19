@@ -113,7 +113,8 @@ class ESRPulseSequence(PulseSequenceGenerator):
             'ESR_pulse': SinePulse('ESR'),
             'stage_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
-            'pulse_delay': 5e-3,
+            'pre_delay': 5e-3,
+            'post_delay': 5e-3,
             'ESR_pulses': ['ESR_pulse']}
 
         self.pulse_settings['EPR'] = self.EPR = {
@@ -123,9 +124,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
             DCPulse('plunge', acquire=True),
             DCPulse('read_long', acquire=True)]}
 
-        self.pulse_settings['post_pulses'] = self.post_pulses = []
-
-        self.final_delay = 1e-3
+        self.pulse_settings['post_pulses'] = self.post_pulses = [DCPulse('final')]
 
     def add_ESR_pulses(self, ESR_frequencies=None):
         if ESR_frequencies is None:
@@ -154,7 +153,9 @@ class ESRPulseSequence(PulseSequenceGenerator):
             plunge_pulse, = self.add(self.ESR['stage_pulse'])
             ESR_pulse, = self.add(ESR_pulse)
             ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                           delay=self.ESR['pulse_delay'])
+                                           delay=self.ESR['pre_delay'])
+            plunge_pulse.t_stop = PulseMatch(ESR_pulse, 't_stop',
+                                             delay=self.ESR['post_delay'])
             self.add(self.ESR['read_pulse'])
 
     def generate(self, ESR_frequencies=None):
@@ -434,8 +435,9 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'ESR_pulses': ['ESR_pulse'],
             'stage_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
-            'pulse_delay': 5e-3,
-            'inter_pulse_delay': 1e-3,
+            'pre_delay': 5e-3,
+            'post_delay': 5e-3,
+            'inter_delay': 1e-3,
             'shots_per_frequency': 25}
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = []
@@ -492,10 +494,11 @@ class NMRPulseSequence(PulseSequenceGenerator):
                     ESR_pulse, = pulse_sequence.add(ESR_pulse)
 
                     # Delay also depends on any previous ESR pulses
-                    delay = self.ESR['pulse_delay'] + \
-                            k * self.ESR['inter_pulse_delay']
+                    delay = self.ESR['pre_delay'] + k * self.ESR['inter_delay']
                     ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
                                                    delay=delay)
+                plunge_pulse.t_stop = PulseMatch(ESR_pulse, 't_stop',
+                                                 delay=self.ESR['post_delay'])
                 pulse_sequence.add(self.ESR['read_pulse'])
 
     def generate(self):
