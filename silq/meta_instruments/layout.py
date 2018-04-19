@@ -667,13 +667,14 @@ class Layout(Instrument):
         self.connections.append(connection)
         return connection
 
-    def load_connections(self, filepath: Union[str, None] = None):
+    def load_connections(self, filepath: Union[str, None] = None,
+                         connections_dicts: list = None):
         """Load connections from config or file
 
         Args:
             filepath: Path to JSON file containing JSON representation of
                 connections. If None, ``qc.config.user.connections`` is used.
-
+            connections_dicts: dict to load connections from.
         Returns:
             List[Connection]: Loaded connections
 
@@ -695,6 +696,8 @@ class Layout(Instrument):
                 filepath = os.path.join(silq.get_SilQ_folder(), filepath)
             with open(filepath, "r") as fp:
                 connections = json.load(fp)
+        elif connections_dicts is not None:
+            connections = connections_dicts
         else:
             connections = silq.config.get('connections', None)
             if connections is None:
@@ -955,7 +958,10 @@ class Layout(Instrument):
 
         # Set acquisition interface as first interface
         if not sorted_interfaces:
-            sorted_interfaces = [self.acquisition_interface]
+            if self.acquisition_interface is not None:
+                sorted_interfaces = [self.acquisition_interface]
+            else:
+                sorted_interfaces = []
 
         # Find all interfaces that have not been sorted yet
         remaining_interfaces = {
@@ -1016,6 +1022,9 @@ class Layout(Instrument):
             AssertionError
                 No unique connection can be found
         """
+        if pulse.connection is not None:
+           return pulse.connection
+
         connection_requirements = pulse.connection_requirements.copy()
 
         if interface is not None:
@@ -1081,6 +1090,10 @@ class Layout(Instrument):
         for pulse in pulses:
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, connections=self.connections)
+
+            assert targeted_pulse is not None, \
+                f"Interface {interface} could not target pulse {pulse} using " \
+                f"connection {connection}."
 
             self.targeted_pulse_sequence.add(targeted_pulse)
 
