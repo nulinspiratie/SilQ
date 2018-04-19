@@ -4,7 +4,11 @@ from qcodes import Instrument
 from qcodes.instrument.parameter import ManualParameter
 
 class Simrack(Instrument):
-    shared_kwargs = ['SIMs']
+    """Combiner of multiple SIM900 modules
+    
+    Note:
+        This module is not finished and has never been tested.
+    """
     def __init__(self, name, SIMs, **kwargs):
         super().__init__(name, **kwargs)
 

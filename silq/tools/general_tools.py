@@ -1,3 +1,4 @@
+from typing import Any, List
 import sys
 import operator
 from functools import partial, wraps
@@ -13,7 +14,7 @@ from qcodes.config.config import DotDict
 from qcodes.instrument.parameter import Parameter
 
 __all__ = ['execfile', 'is_between', 'get_truth', 'get_memory_usage',
-           'partial_from_attr', 'print_attr', 'SettingsClass', 'UpdateDotDict',
+           'SettingsClass', 'UpdateDotDict',
            'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
@@ -24,7 +25,17 @@ code_labels = {}
 properties_config = config['user'].get('properties', {})
 
 
-def execfile(filename, globals=None, locals=None):
+def execfile(filename: str,
+             globals: dict = None,
+             locals: dict = None):
+    """Execute code in .py file, adding new variables to globals/locals.
+
+    Args:
+        globals: Global variables dictionary. If not specified, uses globals
+            in first frame.
+        locals: Local variables dictionary. If not specified, uses locals in
+            first frame.
+        """
     if globals is None:
         globals = sys._getframe(1).f_globals
     if locals is None:
@@ -32,7 +43,7 @@ def execfile(filename, globals=None, locals=None):
     with open(filename, "r") as fh:
         exec(fh.read()+"\n", globals, locals)
 
-
+"""Comparison operators, used for `get_truth`"""
 ops = {'>': operator.gt,
        '<': operator.lt,
        '>=': operator.ge,
@@ -53,9 +64,11 @@ def is_between(val: float,
         return True
 
 
-def get_truth(test_val, target_val, relation='=='):
-    """
-    Tests if the test_val satisfies the relation to target_val.
+def get_truth(test_val: Any,
+              target_val: Any,
+              relation: str = '==') -> bool:
+    """Tests if the ``test_val`` satisfies the ``relation`` to ``target_val``.
+
     Args:
         test_val: lhs of relation with target_val.
         target_val: rhs of relation with test_val
@@ -63,13 +76,13 @@ def get_truth(test_val, target_val, relation='=='):
             Can be: '>', '<', '>=', '<=', '=='
 
     Returns:
-        Bool depending on if relation holds
+        True if relation holds
     """
     return ops[relation](test_val, target_val)
 
 
 def get_memory_usage():
-    # return the memory usage in MB
+    """return the memory usage in MB"""
     import os
     import psutil
     process = psutil.Process(os.getpid())
@@ -77,47 +90,24 @@ def get_memory_usage():
     return mem
 
 
-def partial_from_attr(func, obj, attr):
-    """
-    Returns a function that, when evaluated, evaluates func with arg obj.attr.
-    This functions was created to delay the evaluation of obj.attr
-    Args:
-        func: func to evaluate
-        obj: object from which to retrieve attr
-        attr: attr of object whose value should be used as arg for func
-
-    Returns:
-        function that upon evaluation is equal to func(obj.attr)
-    """
-    # def newfunc():
-    #     return func(getattr(obj, attr))
-    return partial(func, getattr(obj, attr))
-
-
-def print_attr(obj, attr):
-    if not hasattr(obj, attr):
-        print('Could not find attribute {} of {}'.format(attr, obj))
-    print('{}.{} = {}'.format(obj.__class__.__name__, attr, getattr(obj, attr)))
-
-
 class SettingsClass:
     """
     Class used to temporarily override attributes.
     This can be done through obj.single_settings() and obj.temporary_settings().
-    Any settings specified here will override the actual values of the object 
+    Any settings specified here will override the actual values of the object
     until settings are cleared
-    
+
     Settings can be cleared in two ways:
-    Using the decorator @clear_single_settings on a method, which will delete 
+    Using the decorator @clear_single_settings on a method, which will delete
     the single_settings.
-    Using obj.clear_settings(), which will clear both the single settings and 
+    Using obj.clear_settings(), which will clear both the single settings and
     temporary settings.
-    
+
     Furthermore, attribute_names can be added to ignore_if_set.
-    If the object's value of that attribute is not equal to None, [], or (), 
+    If the object's value of that attribute is not equal to None, [], or (),
     it cannot be overridden through single or temporary settings.
-    
-    Note that for all attributes, they must be set in the object before they 
+
+    Note that for all attributes, they must be set in the object before they
     can be overridden by single/temporary settings
     """
     _single_settings = {}
@@ -209,8 +199,11 @@ class SettingsClass:
 
 
 class UpdateDotDict(DotDict):
-    """
-    DotDict that can evaluate function upon updating
+    """DotDict that can evaluate function upon being updated.
+
+    Args:
+        update_function: Function that is called every time a value changes.
+        **kwargs: Unused kwargs.
     """
     exclude_from_dict = ['update_function', 'exclude_from_dict']
     def __init__(self, update_function=None, **kwargs):
@@ -226,12 +219,19 @@ class UpdateDotDict(DotDict):
             self.update_function()
 
 
-def attribute_from_config(item, config=properties_config):
-    """
-    Check if attribute exists somewhere in the config
-    It first ill check properties config if a key matches the item
-    with self.mode appended. This is only checked if the param has a mode.
-    Finally, it will check if properties_config contains the item
+def attribute_from_config(item: str, config: dict):
+    """Check if attribute exists is an item in the config
+
+    Args:
+        item: key in config to check
+        config: config to check
+
+    Returns:
+        Value in config. If dict-like, will be converted to dict.
+
+    Raises:
+        AttributeError: item not found.
+
     """
     # check if {item}_{self.mode} is in properties_config
     # if mode is None, mode_str='', in which case it checks for {item}
@@ -248,6 +248,11 @@ def attribute_from_config(item, config=properties_config):
 
 
 def clear_single_settings(f):
+    """`SettingsClass` wrapper to clear single_settings after running function.
+
+    Args:
+        f: function after which to clear ``single_settings`` attribute.
+    """
     @wraps(f)
     def clear_single_settings_decorator(self, *args, **kwargs):
         try:
@@ -270,7 +275,27 @@ def JSONListEncoder(l):
     return return_l
 
 
-def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
+def JSONEncoder(obj,
+                ignore_attrs: List[str] = [],
+                ignore_vals: List[str]=[]):
+    """Encode object as dict for JSON encoding.
+
+    Args:
+        ignore_attrs: Attributes that should not be included.
+        ignore_vals: Vals to be ignored.
+
+    Returns:
+        dict representation of object.
+
+    Notes:
+        # If one of its attributes is an object containing method ``_JSONEncoder``,
+          the method is called to get its JSON representation.
+        # Lists are encoded using `JSONListEncoder`, which has an additional
+          check for the method ``_JSONEncoder``.
+
+    Todo:
+        Ensure parameters etc. are encoded using their snapshot.
+    """
     return_dict = {}
     for attr, val in vars(obj).items():
         if attr in ignore_attrs:
@@ -281,6 +306,7 @@ def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
             val = JSONListEncoder(val)
 
         if isinstance(val, Parameter):
+            # TODO: is this right?
             return_dict[attr] = val.name
         elif val not in ignore_vals:
             return_dict[attr] = val
@@ -290,20 +316,24 @@ def JSONEncoder(obj, ignore_attrs=[], ignore_vals=[]):
 
 
 def run_code(label, **kwargs):
-    """
-    Creates cell to run code from global variable code_labels
+    """Creates cell to run code from global variable code_labels
+
     Code labels is a dictionary in which each key has a corresponding value
     that is a string representation of executable code.
     Note that the module variable code_labels must be set to equal the global
     variable code_labels.
+
     Args:
         label: label referring to code in dict code_labels
         **kwargs: Optional kwargs that are replaced in code
             i.e. for a given kwarg {var}=5, a line matching:
-            "{var} = {val}" will be replaced to {var} = 5" (Note whitespaces)
+            "{var} = {val}" will be replaced to "{var} = 5" (Note whitespaces)
 
     Returns:
         Creates cell at bottom of notebook and executes it
+
+    Note:
+        This function is not used anymore, though it should still work
     """
     from silq.tools.notebook_tools import create_cell
     code = code_labels[label]
@@ -314,26 +344,53 @@ def run_code(label, **kwargs):
     create_cell(code, 'bottom', execute=True)
 
 
-def get_exponent(val):
+def get_exponent(val: float):
+    """Get decimal exponent
+
+    Example:
+        >>> get_exponent(0.032)
+        -2
+
+    Args:
+        val: Val of which to get exponent
+
+    Returns:
+        Exponent
+    """
     if val <= 0:
         raise SyntaxError(f'Val {val} must be larger than zero')
     else:
         return int(np.floor(np.log10(val)))
 
 
-def get_first_digit(val):
+def get_first_digit(val: float):
+    """Get first nonzero digit.
+
+    Example:
+        >>> get_first_digit(0.032)
+        3
+
+    Args:
+        val: Val for which to get first nonzero digit
+
+    Returns:
+        First nonero digit.
+    """
     first_digit = int(np.floor(val * 10 ** -get_exponent(val)))
     return first_digit
 
 
 class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
-    """
-    TimedRotatingFileHandler with some modifications.
-    Files are stored with .log suffix, and dates are included in filename 
+    """Logging handler that creates a new log file every day.
+
+    Files are stored with .log suffix, and dates are included in filename
     from the beginning. Also allows multiple processes to access same log.
-    
-    From: https://stackoverflow.com/questions/24649789/how-to-force-a
-    -rotating-name-with-pythons-timedrotatingfilehandler
+
+    Note:
+        - From: https://stackoverflow.com/questions/24649789/how-to-force-a
+          -rotating-name-with-pythons-timedrotatingfilehandler
+        - Essentially a TimedRotatingFileHandler with some modifications.
+        - Haven't gone through the code, but it does the trick.
     """
     def __init__(self, filename, when='h', interval=1, backupCount=0,
                  encoding=None, delay=False, utc=False, postfix = ".log"):
@@ -452,15 +509,18 @@ class ParallelTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler
 
 
 def convert_setpoints(*args):
-    """
-    Convert setpoints to tuples, supporting multidimensional setpoints.
+    """Convert setpoints to tuples, supporting multidimensional setpoints.
+
     Temporary solution to make setpoints work (see issue #627).
+    Currently, setpoints need to be tuples (arrays etc. give issues). Further,
+    the second setpoint array needs to be 2D etc.
+
     Args:
-        *args: 1D setpoint arrays. each successive setpoints array gains an 
+        *args: 1D setpoint arrays. each successive setpoints array gains an
             extra dimension
 
     Returns:
-
+        Setpoint arrays converted to tuples.
     """
     if not args:
         return tuple()
@@ -474,6 +534,11 @@ def convert_setpoints(*args):
 
 
 class Singleton(type):
+    """Meta-class for classes that can only have a single instance.
+
+    If a second instance is created, it will instead return the already-existing
+    instance.
+    """
     _instances = {}
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -481,34 +546,42 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-def arreq_in_list(myarr, list_arrays):
-    """
-    Get index of array in list of arrays, testing equality
+def arreq_in_list(myarr: np.ndarray,
+                  list_arrays: List[np.ndarray]):
+    """Get index of array in list of arrays, testing equality
+
     Modified from https://stackoverflow.com/questions/23979146/
-                  check-if-numpy-array-is-in-list-of-numpy-arrays
+    check-if-numpy-array-is-in-list-of-numpy-arrays
+
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
 
     Returns:
-        idx of array in list equal to myarr, None if not found. 
+        idx of array in list equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if np.array_equal(elem, myarr)),
                 None)
 
 
-def arreqclose_in_list(myarr, list_arrays, rtol=1e-5, atol=1e-8):
-    """
-    Get index of array in list of arrays, testing approximate equality
+def arreqclose_in_list(myarr: np.ndarray,
+                       list_arrays: List[np.ndarray],
+                       rtol: float = 1e-5,
+                       atol: float = 1e-8):
+    """Get index of array in list of arrays, testing approximate equality
+
     Modified from https://stackoverflow.com/questions/23979146/
                   check-if-numpy-array-is-in-list-of-numpy-arrays
+
     Args:
         myarr: arr to be found in list
         list_arrays: List of numpy arrays
+        rtol: relative tolerance when comparing array elements
+        atol: absolute tolerance when comparing array elements
 
     Returns:
-        idx of array in list approximately equal to myarr, None if not found. 
+        idx of array in list approximately equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
                  if elem.size == myarr.size
@@ -517,8 +590,9 @@ def arreqclose_in_list(myarr, list_arrays, rtol=1e-5, atol=1e-8):
 
 
 class property_ignore_setter(object):
-    """
-    Decorator similar to @property that ignores setter
+    """Decorator similar to @property that ignores setter
+
+    The setter shouldn't be defined, and any setting of attribute is ignored.
     """
     def __init__(self, func, doc=None):
         self.func = func
@@ -532,6 +606,12 @@ class property_ignore_setter(object):
 
 
 def freq_to_str(frequency, fmt='{:.15g}'):
+    """Formats frequency, using right magnitude.
+
+    Note:
+        This will be superseded later on when all attributes are converted to
+        parameters.
+    """
     if abs(frequency) > 1e9:
         frequency_string = fmt.format(frequency/1e9) + ' GHz'
     elif abs(frequency) > 1e6:

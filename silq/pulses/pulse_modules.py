@@ -1,3 +1,4 @@
+from typing import List, Dict, Any, Union, Tuple
 import numpy as np
 from copy import copy, deepcopy
 from blinker import Signal
@@ -8,15 +9,48 @@ __all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
 
 
 class PulseMatch():
-    def __init__(self, origin_pulse, origin_pulse_attr, delay=0,
-                 target_pulse=None, target_pulse_attr=None):
-        """
-        Object used to match a pulse attribute to another pulse attribute
-        Args:
-            origin_pulse: Origin pulse that a target pulse is matched to
-            origin_pulse_attr: Attribute of origin pulse
-            delay: Offset from pulse attribute vavlue
-        """
+    """ Object to match a pulse attribute to another pulse attribute.
+
+    This is used toensure that pulses adapt when other pulses are modified,
+    e.g. to ensure that a pulse always starts after the previuos pulse.
+
+    Examples:
+        The following example shows how a PulseMatch can be used to ensure that
+        a pulse always starts after the previous pulse
+
+        >>> p1 = DCPulse('plunge', t_start=0, duration=1)
+        >>> p2 = DCPulse('read', t_start=PulseMatch(p1, 't_stop'), duration=1)
+        >>> p1.duration = 5 # Change duration of first pulse
+        >>> p2.t_start
+        5
+
+        A PulseMatch can also be used after initializing the pulse:
+
+        >>> p2.t_start = PulseMatch(p1, 't_stop')
+
+    Args:
+        origin_pulse: Pulse whose attribute to monitor
+        origin_pulse_attr: Attribute of ``origin_pulse`` to monitor
+        delay: Any delay (offset) to add to ``origin_pulse_attr``.
+
+    Parameters:
+        target_pulse: Pulse that monitors ``origin_pulse_attr``.
+            Will be set once a `Pulse` attribute is set to a PulseMatch.
+        target_pulse_attr: Attribute of pulse to be updated when
+            ``origin_pulse_attr`` changes. Will be set once a `Pulse` attribute
+            is set to a PulseMatch.
+
+    Notes:
+        * The matching of attributes only works one way, i.e. any changes in the
+          origin pulse are updated in the target pulse.
+        * The `Pulse`.signal parameter is used to transmit when a value changes.
+    """
+    def __init__(self,
+                 origin_pulse,
+                 origin_pulse_attr: str,
+                 delay: float = 0,
+                 target_pulse=None,
+                 target_pulse_attr: str = None):
         self.origin_pulse = origin_pulse
         self.origin_pulse_attr = origin_pulse_attr
         self.delay = delay
@@ -26,41 +60,73 @@ class PulseMatch():
 
     @property
     def value(self):
+        """Value that ``target_pulse_attr`` should have, including any delay."""
         return getattr(self.origin_pulse, self.origin_pulse_attr) + self.delay
 
     def __call__(self, sender, **kwargs):
-        """
-        Set value of target
-        Args:
-            sender:
-            **kwargs:
-
-        """
+        """Set value of `target_pulse_attr`, called by `Pulse`.signal"""
         if self.origin_pulse_attr in kwargs:
             setattr(self.target_pulse, self.target_pulse_attr, self)
 
 
 class PulseRequirement():
-    def __init__(self, property, requirement):
+    """`Pulse` attribute requirement for a `PulseImplementation`
+
+    This class is used in Interfaces when registering a `PulseImplementation`,
+    to impose additional constraints for implementing the pulse.
+
+    The class is never directly instantiated, but is instead created from a dict
+    passed to the ``pulse_requirements`` kwarg of a `PulseImplementation`.
+
+    Example:
+        For an AWG can apply sine pulses, but only up to its Nyquist limit
+        ``max_frequency``, the following implementation is used:
+
+        >>> SinePulseImplementation(
+                pulse_requirements=[('frequency', {'max': max_frequency})])
+
+    Args:
+        property: Pulse attribute for which to place a constraint.
+        requirement: Requirement that a property must satisfy.
+
+            * If a dict, allowed keys are ``min`` and ``max``, the value being
+              the minimum/maximum value.
+            * If a list, the property must be an element in the list.
+    """
+    def __init__(self,
+                 property: str,
+                 requirement: Union[list, Dict[str, Any]]):
         self.property = property
 
         self.verify_requirement(requirement)
         self.requirement = requirement
 
     def verify_requirement(self, requirement):
+        """Verifies that the requirement is valid.
+
+        A valid requirement is either a list, or a dict with keys ``min`` and/or
+        ``max``.
+
+        Raises:
+            AssertionError: Requirement is not valid.
+        """
         if type(requirement) is list:
             assert requirement, "Requirement must not be an empty list"
         elif type(requirement) is dict:
             assert ('min' in requirement or 'max' in requirement), \
                 "Dictionary condition must have either a 'min' or a 'max'"
 
-    def satisfies(self, pulse):
-        """
-        Checks if a given pulses satisfies this PulseRequirement
-        Args:
-            pulse: Pulse to be checked
+    def satisfies(self, pulse) -> bool:
+        """Checks if a given pulses satisfies this PulseRequirement.
 
-        Returns: Bool depending on if the pulses satisfies PulseRequirement
+        Args:
+            pulse: Pulse to be verified.
+
+        Returns:
+            True if pulse satisfies PulseRequirement.
+
+        Raises:
+            Exception: Pulse requirement cannot be interpreted.
 
         """
         property_value = getattr(pulse, self.property)
@@ -82,26 +148,118 @@ class PulseRequirement():
             else:
                 return True
         else:
-            raise Exception("Cannot interpret pulses requirement: {}".format(
-                self.requirement))
+            raise Exception(
+                "Cannot interpret pulses requirement: {self.requirement}")
 
 
 class PulseSequence:
-    def __init__(self, pulses=[], allow_untargeted_pulses=True,
-                 allow_targeted_pulses=True, allow_pulse_overlap=True,
-                 final_delay=None):
-        """
-        A PulseSequence object is a container for pulses.
-        It can be used to store untargeted or targeted pulses
-        Args:
-            allow_pulse_overlap:
-        """
+    """`Pulse` container that can be targeted in the `Layout`.
 
+    It can be used to store untargeted or targeted pulses.
+
+    If multiple pulses with the same name are added, `Pulse`.id is set for the
+    pulses sharing the same name, starting with 0 for the first pulse.
+
+    **Retrieving pulses**
+        To retrieve a pulse with name 'read':
+
+        >>> pulse_sequence['read']
+        >>> pulse_sequence.get_pulse(name='read')
+
+        Both methods work, but the latter is more versatile, as it also allows
+        filtering of pulses by discriminants other than name.
+
+        If there are multiple pulses with the same name, the methods above will
+        raise an error because there is no unique pulse with name ``read``.
+        Instead, the `Pulse`.id must also be passed to discriminate the pulses:
+
+        >>> pulse_sequence['read[0]']
+        >>> pulse_sequence.get_pulse(name='read', id=0)
+
+        Both methods return the first pulse added whose name is 'read'.
+
+    **Iterating over pulses**
+        Pulses in a pulse sequence can be iterated over via:
+
+        >>> for pulse in pulse_sequence:
+        >>>     # perform actions
+
+        This will return the pulses sorted by `Pulse`.t_start.
+        Pulses for which `Pulse`.enabled is False are ignored.
+
+    **Checking if pulse sequence contains a pulse**
+        Pulse sequences can be treated similar to a list, and so checking if a
+        pulse exists in a list is done as such:
+
+        >>> pulse in pulse_sequence
+
+        Note that this does not compare object equality, but only checks if all
+        attributes match.
+
+    **Checking if a pulse sequence contains pulses**
+        Checking if a pulse sequence contains pulses is similar to a list:
+
+        >>> if pulse_sequence:
+        >>>     # pulse_sequence contains pulses
+
+    **Targeting a pulse sequence in the `Layout`**
+        A pulse sequence can be targeted in the layout, which will distribute
+        the pulses among it's `InstrumentInterface` such that the pulse sequence
+        is executed. Targeting of a pulse sequence is straightforward:
+
+        >>> layout.pulse_sequence = pulse_sequence
+
+        After this, the instruments can be configured via `Layout.setup`.
+
+
+    Parameters:
+        pulses (List[Pulse]): `Pulse` list to place in PulseSequence.
+            Pulses can also be added later using `PulseSequence.add`.
+        allow_untargeted_pulses (bool): Allow untargeted pulses (without
+            corresponding `Pulse`.implementation) to be added to PulseSequence.
+            `InstrumentInterface`.pulse_sequence should have this unchecked.
+        allow_targeted_pulses (bool): Allow targeted pulses (with corresponding
+            `Pulse`.implementation) to be added to PulseSequence.
+            `InstrumentInterface`.pulse_sequence should have this checked.
+        allow_pulse_overlap (bool): Allow pulses to overlap in time. If False,
+            an error will be raised if a pulse is added that overlaps in time.
+            If pulse has a `Pulse`.connection, an error is only raised if
+            connections match as well.
+        final_delay (float): Final delay in pulse sequence after final pulse is
+            finished.
+        duration (float): Total duration of pulse sequence. Equal to
+            `Pulse`.t_stop of last pulse, plus any `PulseSequence`.final_delay.
+        enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
+            Updated when a pulse is added or `Pulse`.enabled is changed.
+        disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
+            Updated when a pulse is added or `Pulse`.enabled is changed.
+        t_start_list (List[float]): `Pulse`.t_start list for all enabled pulses.
+            Can contain duplicates if pulses share the same `Pulse`.t_start.
+        t_stop_list (List[float]): `Pulse`.t_stop list for all enabled pulses.
+            Can contain duplicates if pulses share the same `Pulse`.t_stop.
+        t_list (List[float]): Combined list of `Pulse`.t_start and
+            `Pulse`.t_stop for all enabled pulses. Does not contain duplicates.
+
+    Notes:
+        * If pulses are added without `Pulse`.t_start defined, the pulse is
+          assumed to start after the last pulse finishes, and a `PulseMatch`
+          is created to sync it's `Pulse`.t_start with `Pulse`.t_stop of the
+          previous pulse.
+        * All pulses in the pulse sequence are listened to via `Pulse`.signal.
+          Any time an attribute of a pulse changes, a signal will be emitted,
+          which can then be interpreted by the pulse sequence.
+    """
+    def __init__(self,
+                 pulses: list = [],
+                 allow_untargeted_pulses: bool = True,
+                 allow_targeted_pulses: bool = True,
+                 allow_pulse_overlap: bool = True,
+                 final_delay: float = None):
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
 
-        # These are needed to separate
+        # These are needed to separate pulse and connection conditions
         from silq.meta_instruments.layout import connection_conditions
         from silq.pulses import pulse_conditions
         self.connection_conditions = connection_conditions
@@ -162,17 +320,12 @@ class PulseSequence:
                f'duration: {self.duration}'
 
     def __eq__(self, other):
-        """
-        Overwrite comparison with other (self == other).
+        """Overwrite comparison with other (self == other).
+
         We want the comparison to return True if other is a pulse with the
         same attributes. This can be complicated since pulses can also be
         targeted, resulting in a pulse implementation. We therefore have to
         use a separate comparison when either is a Pulse implementation
-        Args:
-            other:
-
-        Returns:
-
         """
         if not isinstance(other, PulseSequence):
             return False
@@ -189,20 +342,33 @@ class PulseSequence:
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
         return [pulse.full_name for pulse in self.pulses]
 
-    def _matches_attrs(self, other_pulse_sequence, exclude_attrs=[]):
-            for attr in vars(self):
-                if attr in exclude_attrs:
-                    continue
-                elif not hasattr(other_pulse_sequence, attr) \
-                        or getattr(self, attr) != \
-                                getattr(other_pulse_sequence, attr):
-                    return False
-            else:
-                return True
+    def _matches_attrs(self,
+                       other_pulse_sequence: 'PulseSequence',
+                       exclude_attrs: List[str] = []) -> bool:
+        """Checks if another pulse sequence is the same (same attributes).
 
-    def _JSONEncoder(self):
+        This is used when comparing pulse sequences. Usually pulse sequences
+        are equal if their attributes are equal, not object equality.
+        This includes pulses.
+
+        Args:
+            other_pulse_sequence: Pulse sequence to compare.
+            exclude_attrs: Attributes to skip.
+
+        Returns:
+            True if all attributes are equal (except those in ``exclude_attrs``)
         """
-        Converts to JSON encoder for saving metadata
+        for attr in vars(self):
+            if attr in exclude_attrs:
+                continue
+            elif not hasattr(other_pulse_sequence, attr) \
+                    or getattr(self, attr) != getattr(other_pulse_sequence, attr):
+                return False
+        else:
+            return True
+
+    def _JSONEncoder(self) -> dict:
+        """Converts to JSON encoder for saving metadata
 
         Returns:
             JSON dict
@@ -215,6 +381,7 @@ class PulseSequence:
         }
 
     def _handle_signal(self, pulse, **kwargs):
+        """Handler for pulse signal (only handles attribute ``enabled``)"""
         key, val = kwargs.popitem()
         if key == 'enabled':
             if val is True:
@@ -258,35 +425,26 @@ class PulseSequence:
     def t_list(self):
         return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
-    def replace(self, pulse_sequence):
-        """
-        Replace all attributes of this pulse_sequence with another one
-        Args:
-            pulse_sequence: New pulse_sequence
-
-        Returns:
-            None
-        """
-        # Copy over all attributes from the pulse
-        for attr, val in vars(pulse_sequence).items():
-            setattr(self, attr, deepcopy(val))
-
     def add(self, *pulses):
-        """
-        Adds pulse(s) to the PulseSequence.
-        Pulses can be a list of pulses or a single pulse.
-        It performs the following additional checks before adding a pulse
-        - If the pulse overlaps with other pulses and
-            PulseSequence.allow_pulses_overlap is False, it raises a SyntaxError
-        - If the pulses are untargeted and PulseSequence.allow_untargeted_pulses
-            is False, it raises a SyntaxError
-        - If the pulses are targeted and PulseSequence.allow_targeted_pulses
-            is False, it raises a SyntaxError
+        """Adds pulse(s) to the PulseSequence.
+
         Args:
-            *pulses: pulses to add
+            *pulses (Pulse): Pulses to add
 
         Returns:
-            None
+            List[Pulse]: Added pulses, which are copies of the original pulses.
+
+        Raises:
+            SyntaxError: The added pulse overlaps with another pulses and
+                `PulseSequence`.allow_pulses_overlap is False
+            SyntaxError: The added pulse is untargeted and
+                `PulseSequence`.allow_untargeted_pulses is False
+            SyntaxError: The added pulse is targeted and
+                `PulseSequence`.allow_targeted_pulses is False
+
+        Note:
+            When a pulse is added, it is first copied, to ensure that the
+            original pulse remains unmodified.
         """
         added_pulses = []
 
@@ -347,21 +505,13 @@ class PulseSequence:
         return added_pulses
 
     def remove(self, *pulses):
-        """
-        Adds pulse(s) to the PulseSequence.
-        Pulses can be a list of pulses or a single pulse.
-        It performs the following additional checks before adding a pulse
-        - If the pulse overlaps with other pulses and
-            PulseSequence.allow_pulses_overlap is False, it raises a SyntaxError
-        - If the pulses are untargeted and PulseSequence.allow_untargeted_pulses
-            is False, it raises a SyntaxError
-        - If the pulses are targeted and PulseSequence.allow_targeted_pulses
-            is False, it raises a SyntaxError
-        Args:
-            pulses: pulse or list of pulses to add
+        """Removes `Pulse` or pulses from pulse sequence
 
-        Returns:
-            None
+        Args:
+            pulses: Pulse(s) to remove from PulseSequence
+
+        Raises:
+            AssertionError: No unique pulse found
         """
         for pulse in pulses:
             if isinstance(pulse, str):
@@ -382,30 +532,34 @@ class PulseSequence:
         self.sort()
 
     def sort(self):
+        """Sort pulses by `Pulse`.t_start"""
         self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
         self.enabled_pulses = sorted(self.enabled_pulses,
                                      key=lambda p: p.t_start)
 
     def clear(self):
+        """Clear all pulses from pulse sequence."""
         for pulse in self.pulses:
             pulse.signal.disconnect(self._handle_signal)
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
 
-    def pulses_overlap(self, pulse1, pulse2):
-        """
-        Tests if pulse1 and pulse2 overlap in time and connection.
-        If either of the pulses does not have a connection, this is not tested.
+    def pulses_overlap(self, pulse1, pulse2) -> bool:
+        """Tests if pulse1 and pulse2 overlap in time and connection.
+
         Args:
-            pulse1: First pulse
-            pulse2: Second pulse
+            pulse1 (Pulse): First pulse
+            pulse2 (Pulse): Second pulse
 
         Returns:
-            True or False depending on if they overlap
+            True if pulses overlap
+
+        Note:
+            If either of the pulses does not have a connection, this is not tested.
         """
         if (pulse1.t_stop <= pulse2.t_start) or \
-               (pulse1.t_start >= pulse2.t_stop):
+                (pulse1.t_start >= pulse2.t_stop):
             #
             return False
         elif pulse1.connection is not None and pulse2.connection is not None \
@@ -416,13 +570,25 @@ class PulseSequence:
             return True
 
     def get_pulses(self, enabled=True, **conditions):
+        """Get list of pulses in pulse sequence satisfying conditions
+
+        Args:
+            enabled: Pulse must be enabled
+            **conditions: Additional connection and pulse conditions.
+
+        Returns:
+            List[Pulse]: Pulses satisfying conditions
+
+        See Also:
+            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.
+        """
         pulses = self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions + ['pulse_class']}
         pulses = [pulse for pulse in pulses
                   if pulse.satisfies_conditions(
-                    enabled=enabled, **pulse_conditions)]
+                enabled=enabled, **pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
@@ -436,6 +602,20 @@ class PulseSequence:
         return pulses
 
     def get_pulse(self, **conditions):
+        """Get unique pulse in pulse sequence satisfying conditions.
+
+        Args:
+            **conditions: Connection and pulse conditions.
+
+        Returns:
+            Pulse: Unique pulse satisfying conditions
+
+        See Also:
+            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.
+
+        Raises:
+            RuntimeError: No unique pulse satisfying conditions
+        """
         pulses = self.get_pulses(**conditions)
 
         if not pulses:
@@ -443,28 +623,44 @@ class PulseSequence:
         elif len(pulses) == 1:
             return pulses[0]
         else:
-            raise RuntimeError('Found more than one pulse satisfiying '
-                               'conditions {}'.format(conditions))
+            raise RuntimeError(f'Found more than one pulse satisfiying {conditions}')
 
     def get_connection(self, **conditions):
+        """Get unique connections from any pulse satisfying conditions.
 
+        Args:
+            **conditions: Connection and pulse conditions.
+
+        Returns:
+            Connection: Unique Connection satisfying conditions
+
+        See Also:
+            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.
+
+        Raises:
+            AssertionError: No unique connection satisfying conditions.
+        """
         pulses = self.get_pulses(**conditions)
         connections = [pulse.connection for pulse in pulses]
         assert len(set(connections)) == 1, "Found {} connections instead of " \
                                            "one".format(len(set(connections)))
         return connections[0]
 
-    def get_transition_voltages(self, pulse=None, connection=None, t=None):
-        """
-        Finds the voltages at the transition between two pulses.
+    def get_transition_voltages(self,
+                                pulse = None,
+                                connection = None,
+                                t: float = None) -> Tuple[float, float]:
+        """Finds the voltages at the transition between two pulses.
+
         Args:
-            pulse: pulse starting at transition voltage. If not provided,
-                connection and t must both be provided
-            connection: connection along which the voltage transition occurs
-            t: Time at which the voltage transition occurs
+            pulse (Pulse): Pulse starting at transition voltage. If not
+                provided, ``connection`` and ``t`` must both be provided.
+            connection (Connection): connection along which the voltage
+                transition occurs
+            t (float): Time at which the voltage transition occurs.
 
         Returns:
-            Tuple with voltage before, after transition
+            (Voltage before transition, voltage after transition)
         """
         if pulse is not None:
             post_pulse = pulse
@@ -491,8 +687,22 @@ class PulseSequence:
 
         return pre_voltage, post_voltage
 
-    def get_trace_shapes(self, sample_rate, samples):
-        """ Obtain diction"""
+    def get_trace_shapes(self,
+                         sample_rate: int,
+                         samples: int):
+        """ Get dictionary of trace shapes for given sample rate and samples
+
+        Args:
+            sample_rate: Acquisition sample rate
+            samples: acquisition samples.
+
+        Returns:
+            Dict[str, tuple]:
+            {`Pulse`.full_name: trace_shape}
+
+        Note:
+            trace shape depends on `Pulse`.average
+        """
 
         shapes = {}
         for pulse in self:
@@ -564,12 +774,44 @@ class PulseSequence:
             fig.subplots_adjust(hspace=0)
         return t_list, voltages
 
-    def up_to_date(self):
-        """ Whether a pulse sequence needs to be generated.
-        Can be overridden in subclass """
+    def up_to_date(self) -> bool:
+        """Checks if a pulse sequence is up to date or needs to be generated.
+
+        Used by `PulseSequenceGenerator`.
+
+        Returns:
+            True by default, can be overridden in subclass.
+        """
         return True
 
+
 class PulseImplementation:
+    """`InstrumentInterface` implementation for a `Pulse`.
+
+    Each `InstrumentInterface` should have corresponding pulse implementations
+    for the pulses it can output. These should be subclasses of the
+    `PulseImplementation`.
+
+    When a `PulseSequence` is targeted in the Layout, each `Pulse` is directed
+    to the relevant `InstrumentInterface`, which will call target the pulse
+    using the corresponding PulseImplementation. During `Pulse` targeting,
+    a copy of the pulse is made, and the PulseImplementation is added to
+    `Pulse`.implementation.
+
+    **Creating a PulseImplementation**
+        A PulseImplementation is specific for a certain `Pulse`, which should
+        be defined in `PulseImplementation`.pulse_class.
+
+        A `PulseImplementation` subclass may override the following methods:
+
+        * `PulseImplementation.target_pulse`
+        * `PulseImplementation.get_additional_pulses`
+        * `PulseImplementation.implement`
+
+    Args:
+        pulse_requirements: Requirements that pulses must satisfy to allow
+            implementation.
+    """
     pulse_config = None
     pulse_class = None
 
@@ -595,19 +837,54 @@ class PulseImplementation:
         else:
             return True
 
-    def add_pulse_requirement(self, property, requirement):
+    def add_pulse_requirement(self,
+                              property: str,
+                              requirement: Union[list, Dict[str, Any]]):
+        """Add requirement that any pulse must satisfy to be targeted"""
         self.pulse_requirements += [PulseRequirement(property, requirement)]
 
-    def satisfies_requirements(self, pulse, match_class=True):
+    def satisfies_requirements(self,
+                               pulse,
+                               match_class: bool = True):
+        """Checks if a pulse satisfies pulse requirements
+
+        Args:
+            pulse (Pulse): Pulse that is checked
+            match_class: Pulse class must match
+                `PulseImplementation`.pulse_class
+        """
         if match_class and not self.pulse_class == pulse.__class__:
             return False
         else:
             return np.all([pulse_requirements.satisfies(pulse)
                            for pulse_requirements in self.pulse_requirements])
 
-    def target_pulse(self, pulse, interface, **kwargs):
-        """
-        This tailors a PulseImplementation to a specific pulse.
+    def target_pulse(self,
+                     pulse,
+                     interface,
+                     connections: list,
+                     **kwargs):
+        """Tailors a PulseImplementation to a specific pulse.
+
+        Targeting happens in three stages:
+
+        1. Both the pulse and pulse implementation are copied.
+        2. `PulseImplementation` of the copied pulse is set to the copied
+           pulse implementation, and `PulseImplementation`.pulse is set to the
+           copied pulse. This way, they can both reference each other.
+        3. The targeted pulse is returned
+
+        Args:
+            pulse (Pulse): Pulse to be targeted.
+            interface (InstrumentInterface) interface to which this
+                PulseImplementation belongs.
+            connections (List[Connection]): All connections in `Layout`.
+            **kwargs: Additional unused kwargs
+
+        Raises:
+            TypeError: Pulse class does not match
+                `PulseImplementation`.pulse_class
+
         """
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
@@ -619,8 +896,39 @@ class PulseImplementation:
         return targeted_pulse
 
     def get_additional_pulses(self, interface):
+        """Provide any additional pulses needed such as triggering pulses
+
+        The additional pulses can be requested should usually have
+        `Pulse`.connection_conditions specified to ensure that the pulse is
+        sent to the right connection.
+
+        Args:
+            interface (InstrumentInterface): Interface to which this
+                PulseImplementation belongs
+
+        Returns:
+            List[Pulse]: List of additional pulses needed.
+        """
         return []
 
-    def implement(self, **kwargs):
-        raise NotImplementedError(
-            'This method should be implemented in a subclass')
+    def implement(self, *args, **kwargs) -> Any:
+        """Implements a targeted pulse for an InstrumentInterface.
+
+        This method is called during `InstrumentInterface.setup`.
+
+        Implementation of a targeted pulse is very dependent on the interface.
+        For an AWG, this method may return a list of waveform points.
+        For a triggering source, this method may return the triggering time.
+        In very simple cases, this method may not even be necessary.
+
+        Args:
+            *args: Interface-specific args to use
+            **kwargs: Interface-specific kwargs to use
+
+        Returns:
+            Instrument-specific return values.
+
+        See Also:
+            Other interface source codes may serve as a guide for this method.
+        """
+        raise NotImplementedError('This method should be implemented in a subclass')

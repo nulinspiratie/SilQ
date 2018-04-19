@@ -85,14 +85,14 @@ When we assume that the PulseSequence will be upgraded according to the
 specifications laid out in PulseSequence specifications, a good strategy
 needs to be used to target a PulseSequence. The proposed strategy is as follows:
 
-The config maintains a list of `environments` (needs better word). Each
+The config maintains a list of ``environments`` (needs better word). Each
 environment has a name/label, and with it a list of associated connections.
 These connections each have a label within the environment, and can be linked to
-certain pulses (i.e. connection `qubit1.DC` corresponds to connection `DC` in
-environment `qubit1`). This environment furthermore can contain
+certain pulses (i.e. connection ``qubit1.DC`` corresponds to connection ``DC``
+in environment ``qubit1``). This environment furthermore can contain
 pulse-specific implementations, such as the duration and frequency of a
 pi-pulse. The idea is that the label of such an environment could be
-something like `qubit1`, which then contains information about the
+something like ``qubit1``, which then contains information about the
 connections used to send pulses to qubit 1, and also information on the
 pulses, such as the resonance frequency.
 
@@ -126,5 +126,5 @@ This strategy allows straightforward implementation of the desired features
 mentioned above. First of all, nested PulseSequences are also passed along,
 as they are part of the PulseSequence skeleton. The same holds for logic
 operations and PulseSequences with repetitions, as these also belong to the
-skeleton. Furthermore, the `environment` facilitates directing similar pulses
+skeleton. Furthermore, the ``environment`` facilitates directing similar pulses
 to different connections.
