@@ -32,9 +32,48 @@ measurement_config = config.get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
+    """Base class for parameters that perform measurements.
+
+    A `MeasurementParameter` usually consists of several acquisitions,
+    which it uses for complex sequences.
+
+    A `MeasurementParameter` usually uses a ``qcodes.Loop`` or a
+    ``qcodes.Measure`` or several in succession. The results in the ``DataSet``
+    are analysed and often some post-action is performed.
+
+    Example:
+        An example of a `MeasurementParameter` is a retuning sequence, which
+        uses an `AcquisitionParameter`, and from that determines how much
+        voltages have to be modified to retune the system
+        (e.g. `RetuneBlipsParameter`).
+
+    Note:
+        The MeasurementParameter needs to be updated. It was originally created
+        to be used with the `MeasurementSequence`, but this class turned out to
+        be too rigid. Instead, measurements should be programmed by subclassing
+        the MeasurementParameter.
+
+    Args:
+        Name: Parameter name
+        acquisition_parameter: Acquisition_parameter to use. Fails in case of
+            multiple or no acquisition parameters
+        discriminant: data array in dataset to discriminate. Fails if there is
+            no single discriminant.
+
+    Parameters:
+        silent (str): Print results during .get()
+
+    Todo:
+        * Clean up MeasurementParameter, remove attributes
+          ``MeasurementParameter.discriminant`` and
+          ``MeasurementParameter.acquisition_parameter``.
+
+    """
     layout = None
 
-    def __init__(self, name, acquisition_parameter=None,
+    def __init__(self,
+                 name,
+                 acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
         MultiParameter.__init__(self, name, snapshot_value=False, **kwargs)
@@ -54,13 +93,13 @@ class MeasurementParameter(SettingsClass, MultiParameter):
         self._meta_attrs.extend(['acquisition_parameter_name'])
 
     def __repr__(self):
-        return '{} measurement parameter'.format(self.name)
+        return f'{self.name} measurement parameter'
 
     def __getattribute__(self, item):
         try:
             return super().__getattribute__(item)
         except AttributeError:
-            return attribute_from_config(item)
+            return attribute_from_config(item, config.properties)
 
     @property
     def loc_provider(self):
@@ -78,6 +117,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def base_folder(self):
         """
         Obtain measurement base folder (if any).
+
         Returns:
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
@@ -120,8 +160,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
 
 class RetuneBlipsParameter(MeasurementParameter):
-    """
-    Parameter that retunes to a transition by analysing blips in a neural network
+    """Parameter that retunes by analysing blips using a neural network
 
     The first (optional) stage is to use a CoulombPeakParameter to find the
     center of the Coulomb peak.
@@ -135,12 +174,11 @@ class RetuneBlipsParameter(MeasurementParameter):
     More info: Experiments/personal/Serwan/Neural networks/Retune blips.ipynb
     The following Neural Network seems to produce decent results:
 
-    model = Sequential()
-    model.add(Dense(3, activation='linear', input_shape=(21,3)))
-    model.add(Flatten())
-    model.add(Dense(1, activation='linear'))
+    >>> model = Sequential()
+    >>> model.add(Dense(3, activation='linear', input_shape=(21,3)))
+    >>> model.add(Flatten())
+    >>> model.add(Dense(1, activation='linear'))
     """
-
     def __init__(self,
                  name='retune_blips',
                  coulomb_peak_parameter=None,

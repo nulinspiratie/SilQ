@@ -1,11 +1,27 @@
+from typing import List
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
-from silq.pulses import DCPulse, DCRampPulse, SinePulse, FrequencyRampPulse, \
-    TriggerPulse, MarkerPulse, PulseImplementation
+from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
+    FrequencyRampPulse, MarkerPulse, PulseImplementation
 
 from qcodes.utils import validators as vals
 
 class E8267DInterface(InstrumentInterface):
+    """ Interface for the Keysight E8267D
+    
+    When a `PulseSequence` is targeted in the `Layout`, the 
+    pulses are directed to the appropriate interface. Each interface is
+    responsible for translating all pulses directed to it into instrument 
+    commands. During the actual measurement, the instrument's operations will
+    correspond to that required by the pulse sequence.
+    
+    Args:
+        instrument_name: name of instrument for which this is an interface
+        
+    Note:    
+        For a given instrument, its associated interface can be found using
+            `get_instrument_interface` 
+    """
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -75,7 +91,12 @@ class E8267DInterface(InstrumentInterface):
                            initial_value=None,
                            vals=vals.Enum('on', 'off'))
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+        
+        Returns:
+            List of additional pulses, such as IQ modulation pulses
+        """
         if not self.pulse_sequence:
             return []
 
@@ -135,6 +156,11 @@ class E8267DInterface(InstrumentInterface):
         return additional_pulses
 
     def setup(self, **kwargs):
+        """Set up instrument after layout has been targeted by pulse sequence.
+        
+        Args:
+            **kwargs: Unused setup kwargs provided from Layout 
+        """
         self.instrument.RF_output('off')
         self.instrument.phase_modulation('off')
 
@@ -157,9 +183,11 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.internal_IQ_modulation(self.IQ_modulation())
 
     def start(self):
+        """Start instrument"""
         self.instrument.RF_output('on')
 
     def stop(self):
+        """Stop instrument"""
         self.instrument.RF_output('off')
 
 

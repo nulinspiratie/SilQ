@@ -19,7 +19,7 @@ def pulse_to_waveform_sequence(max_points: int,
                                point_offsets: List[int] = [-1, 0, 1, 2],
                                filters=[],
                                plot=False):
-    """ 
+    """
     This method can be used when generating a periodic signal with an AWG device. Given a frequency and duration of the
     desired signal, a general AWG can produce that signal by repeating one waveform (waveform_1) for a number of times
     (cycles) and ending with a second waveform (waveform_2). This is a practical way of generating periodic signals that
@@ -32,20 +32,20 @@ def pulse_to_waveform_sequence(max_points: int,
     This function calculates the minimum number n for which the error threshold is satisfied. Therefore minimizing the
     total amount of sample points that need to be stored by the AWG.
 
-        Args:
-            duration (float): duration of the signal in seconds
-            frequency (float): frequency of the signal in Hz
-            sampling_rate (float): the sampling rate of the waveform
-            threshold (float): threshold in relative period error
-            n_min (int): minimum number of signal periods that the waveform must contain
-            n_max (int): maximum number of signal periods that a waveform can contain
-            sample_points_multiple (int): the number of samples must be a multiple of
+    Args:
+        duration: duration of the signal in seconds
+        frequency: frequency of the signal in Hz
+        sampling_rate: the sampling rate of the waveform
+        threshold: threshold in relative period error
+        n_min: minimum number of signal periods that the waveform must contain
+        n_max: maximum number of signal periods that a waveform can contain
+        sample_points_multiple: the number of samples must be a multiple of
 
-        Returns:
-            (tuple):
-                n (int):        number of signal periods that are in one cycle of the repeating waveform
-                error (float):  relative error in the signal period
-                samples (int):  number of samples in one cycle of the repeating waveform
+    Returns:
+        Tuple:
+        * **n (int)**:        number of signal periods that are in one cycle of the repeating waveform
+        * **error (float)**:  relative error in the signal period
+        * **samples (int)**:  number of samples in one cycle of the repeating waveform
 
     """
     t_period = 1 / abs(frequency)

@@ -140,15 +140,13 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         Adds an acquisition controller to the available controllers.
         If another acquisition controller exists of the same class, it will
         be overwritten.
+
         Args:
             acquisition_controller_name: instrument name of controller.
                 Must be on same server as interface and Keysight digitizer
             cls_name: Optional name of class, which is used as controller key.
                 If no cls_name is provided, it is found from the instrument
                 class name
-
-        Returns:
-            None
         """
         acquisition_controller = self.find_instrument(acquisition_controller_name)
         if cls_name is None:
@@ -170,7 +168,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.instrument.parameters[f'coupling_{k}'].set('DC')  # DC Coupled
             self.instrument.parameters[f'full_scale_{k}'].set(3.0)  # 3.0 Volts
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self):
         if not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []

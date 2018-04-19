@@ -7,10 +7,41 @@ __all__ = ['SweepDependentValues', 'create_set_vals']
 
 
 class SweepDependentValues(SweepValues):
-    def __init__(self, parameter, step=None, step_percentage=None,
-                 num=None, window=None,
-                 center_val=None, min_val=None, max_val=None, reverse=False,
-                 fix=True):
+    """Sweep Parameter values with args that depend on current value.
+
+    This class is used in ``Parameter.sweep`` to extend the functionality to
+    allow choosing values that depend on the parameter's current value.
+
+    Not all arguments need to be specified. Instead, a subset can be chosen.
+
+    Args:
+        parameter: Parameter used for sweeping.
+        step: Parameter value step size
+        step_percentage: Percentage for step size. If this value is used,
+            ``silq.config.parameters.{parameter.name}.steps`` should be a list
+            with two elements, the first corresponding to ``step_percentage=0``,
+            the second to ``step_percentage=100``, with values in between being
+            the logarithmic equivalent.
+        num: Number of points.
+        window: Range of values around center value.
+        center_val: Center value, by default parameter's current value.
+        min_val: Minimum value.
+        max_val: Maximum value.
+        reverse: Reverse order of values.
+        fix: Fix values, if True, the center value is recorded and not updated
+            every iteration.
+    """
+    def __init__(self,
+                 parameter: qc.Parameter,
+                 step: float = None,
+                 step_percentage: float = None,
+                 num: int = None,
+                 window: float = None,
+                 center_val: float = None,
+                 min_val: float = None,
+                 max_val: float = None,
+                 reverse: bool = False,
+                 fix: bool = True):
 
         super().__init__(parameter)
 

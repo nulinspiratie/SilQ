@@ -1,8 +1,10 @@
+from typing import List
 import sys
 import os
 import warnings
 import logging
 import json
+
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
 from .tools.general_tools import SettingsClass
@@ -27,41 +29,37 @@ if 'ipykernel' in sys.modules:
                              magic_commands=register_magic)
 
 
-# Add saving of config to qcodes DataSet
-def _save_config(self, location=None):
-    try:
-        if location is None:
-            location = self.location
-        if not location and hasattr(self, '_location'):
-            # Location is False, dataset created in qc.Measure, ignore
-            return
-
-        if not os.path.isabs(location):
-            location = os.path.join(qc.DataSet.default_io.base_location, location)
-        config.save(location)
-    except Exception as e:
-        logger.error(f'Datasaving error: {e.args}')
-
-qc.DataSet.save_config = _save_config
-
-
-def get_silq_folder():
+def get_silq_folder() -> str:
+    """Get root folder of silq source code."""
     return os.path.split(__file__)[0]
 
 
-def get_SilQ_folder():
+def get_SilQ_folder() -> str:
+    """Get root folder of SilQ (containing source code)"""
     silq_folder = get_silq_folder()
     return os.path.join(silq_folder, r"../")
 
 
-def set_experiments_folder(folder):
-    """
-    Sets experiments folder, used by silq.initialize()
+def set_experiments_folder(folder: str):
+    """Sets experiments folder, used by `silq.initialize`.
+
+    Setting the experiments should only be done once, as it creates the file
+    ``experiments_folder.txt`` in the SilQ folder, which contains the
+    experiments folder.
+
+    The Experiments folder should contain one folder for each experiment.
+    An Experiment folder contains startup scripts, configuration, and usually
+    scripts and notebooks.
+    An experiment folder contains the following folders:
+
+    * **init**: Initialization .py scripts, executed in ascending order.
+      Each file is should have form ``{idx}_{name}``, where ``idx`` is a
+      zero-based that defines execution order, and ``name`` is the filename.
+    * **config**: SilQ config folder, wherein each item is either a .JSON file
+      or a folder containing .jSON files.
+
     Args:
-        folder: experiments folder
-
-    Returns:
-
+        folder: Experiments folder
     """
     experiments_filepath = os.path.join(get_SilQ_folder(),
                                         'experiments_folder.txt')
@@ -70,10 +68,13 @@ def set_experiments_folder(folder):
 
 
 def get_experiments_folder():
-    """
-    Gets experiments folder if found, raises error otherwise.
+    """Gets experiments folder
+
     Returns:
         experiments folder
+
+    Raises:
+        FileNotFoundError: No experiments_folder configured.
     """
     experiments_folder = os.getenv(silq_env_var, None)
     if experiments_folder is not None:
@@ -93,11 +94,12 @@ def get_experiments_folder():
                                     'silq.set_experiments_folder()')
 
 
-def get_configurations():
-    """
-    Retrieves configurations folder from experiments folder. This contains
-    all configurations that can be used by silq.initialize.
+def get_configurations() -> dict:
+    """Retrieves configurations folder from experiments folder.
+
+    This contains all configurations that can be used by `silq.initialize`.
     Filepath should be {experiments_folder/configurations.json}
+
     Returns:
         dict of configurations
     """
@@ -108,13 +110,16 @@ def get_configurations():
         return json.load(file)
 
 
-def initialize(name=None, mode=None, select=[], ignore=[]):
-    """
-    Initializes the global namespace by executing a list of files.
+def initialize(name: str = None,
+               mode: str = None,
+               select: List[str] = [],
+               ignore: List[str] = []):
+    """Runs experiment initialization .py scripts.
+
+    The initialization scripts should be in the ``init`` folder in the
+    experiment folder.
     Possible configurations are taken from the dictionary _configurations in
     the file configurations.py.
-    If name is not given, the computer's MAC address is used to
-    determine the default configuration_name.
 
     Args:
         name: name of the configuration, used to find the folder
@@ -125,8 +130,8 @@ def initialize(name=None, mode=None, select=[], ignore=[]):
         select: Files to select, all others will be ignored.
         ignore: Files to ignore, all others will be selected.
 
-    Returns:
-
+    Notes:
+        Scripts are run in the global namespace
     """
     # Determine base folder by looking at the silq package
 
@@ -206,6 +211,24 @@ def initialize(name=None, mode=None, select=[], ignore=[]):
 
 
 ### Override QCoDeS functions
+
+# Add saving of config to qcodes DataSet
+def _save_config(self, location=None):
+    try:
+        if location is None:
+            location = self.location
+        if not location and hasattr(self, '_location'):
+            # Location is False, dataset created in qc.Measure, ignore
+            return
+
+        if not os.path.isabs(location):
+            location = os.path.join(qc.DataSet.default_io.base_location, location)
+        config.save(location)
+    except Exception as e:
+        logger.error(f'Datasaving error: {e.args}')
+qc.DataSet.save_config = _save_config
+
+
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
           step_percentage=None, window=None):

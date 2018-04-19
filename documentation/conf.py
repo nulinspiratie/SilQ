@@ -42,6 +42,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
+    'sphinx.ext.autosummary',
     'sphinx_autodoc_typehints',
     'nbsphinx']
 
@@ -95,7 +96,8 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'classic'
+html_theme = "sphinx_rtd_theme"
+# html_theme = 'classic'
 # html_theme = 'julia'
 # html_theme_path = [juliadoc.get_theme_dir()]
 # html_sidebars = juliadoc.default_sidebars()
@@ -208,4 +210,8 @@ epub_exclude_files = ['search.html']
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {'https://docs.python.org/': None,
+                       # 'http://qcodes.github.io/Qcodes/': None}
+                       'qcodes': ('http://qcodes.github.io/Qcodes/', None)}
+
+default_role = 'any'
