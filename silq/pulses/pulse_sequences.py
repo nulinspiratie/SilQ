@@ -7,7 +7,7 @@ class PulseSequenceGenerator(PulseSequence):
     """Base class for a `PulseSequence` that is generated from settings.
     """
     def __init__(self, pulses=[], **kwargs):
-        super().__init__(self, pulses=pulses, **kwargs)
+        super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings = {}
         self._latest_pulse_settings = None
 

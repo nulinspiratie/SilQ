@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 import logging
 from qcodes.data.data_array import DataArray
 
-
 __all__ = ['Fit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
            'RabiFrequencyFit']
 
@@ -28,14 +27,21 @@ class Fit():
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, fit=True, print=False, plot=None, **kwargs):
         self.model = Model(self.fit_function)
         self.fit_result = None
 
         self.plot_handle = None
 
+        self.xvals = None
+        self.ydata = None
+        self.weights = None
+        self.parameters = None
+
         if kwargs:
-            self.perform_fit(**kwargs)
+            self.get_parameters(**kwargs)
+            if fit:
+                self.perform_fit(print=print, plot=plot, **kwargs)
 
     def fit_function(self, *args, **kwargs):
         raise NotImplementedError('This should be implemented in a subclass')
@@ -86,16 +92,9 @@ class Fit():
         """
         return array[self.find_nearest_index(array, value)]
 
-    def perform_fit(self,
-                    xvals:np.ndarray,
-                    ydata: np.ndarray,
-                    initial_parameters: dict = {},
-                    fixed_parameters: dict = {},
-                    weights: np.ndarray = None,
-                    print: bool = False,
-                    plot: bool = False) -> ModelResult:
-        """Perform fitting routine
-
+    def get_parameters(self, xvals, ydata, initial_parameters={},
+                       fixed_parameters={}, weights=None):
+        """Get parameters for fitting
         Args:
             xvals: x-coordinates of data points
             ydata: Data points
@@ -106,33 +105,51 @@ class Fit():
             fixed_parameters: {parameter: fixed_value} combination,
                 to specify parameters whose values should not be varied.
             weights: Weights for data points, must have same shape as ydata
-
-        Returns:
-            ModelResult object containing fitting results
         """
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
         if isinstance(ydata, DataArray):
             ydata = ydata.ndarray
-
         # Filter out all NaNs
         non_nan_indices = ~(np.isnan(xvals) | np.isnan(ydata))
         xvals = xvals[non_nan_indices]
         ydata = ydata[non_nan_indices]
-
+        if weights is not None:
+            weights = weights[non_nan_indices]
+        self.xvals = xvals
+        self.ydata = ydata
+        self.weights = weights
         # Find initial parameters, also pass fixed parameters along so they are
         # not modified
-        parameters = self.find_initial_parameters(
+        self.parameters = self.find_initial_parameters(
             xvals, ydata, initial_parameters={**fixed_parameters,
                                               **initial_parameters})
 
         # Ensure that fixed parameters do not vary
         for key, value in fixed_parameters.items():
-            parameters[key].vary = False
+            self.parameters[key].vary = False
+        return self.parameters
 
-        self.fit_result = self.model.fit(ydata, params=parameters,
-                                         weights=weights,
-                                         **{self.sweep_parameter: xvals})
+    def perform_fit(self, parameters=None, print=False, plot=None, **kwargs):
+        def perform_fit(self,
+                        parameters=None,
+                        print=False,
+                        plot=None,
+                        **kwargs) -> ModelResult:
+            """Perform fitting routine
+
+            Returns:
+                ModelResult object containing fitting results
+            """
+
+        if parameters is None:
+            if kwargs:
+                self.get_parameters(**kwargs)
+            parameters = self.parameters
+
+        self.fit_result = self.model.fit(self.ydata, params=parameters,
+                                         weights=self.weights,
+                                         **{self.sweep_parameter: self.xvals})
 
         if print:
             self.print_results()
@@ -154,10 +171,15 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax):
-        self.plot_handle = ax.add(self.fit_result.best_fit,
-                                  x=next(iter(self.fit_result.userkws.values())),
-                                  **self.plot_kwargs)
+    def add_to_plot(self, ax, **kwargs):
+        x_vals = next(iter(self.fit_result.userkws.values()))
+        x_vals_full = np.linspace(min(x_vals), max(x_vals), 201)
+        y_vals_full = self.fit_result.eval(
+            **{self.sweep_parameter: x_vals_full})
+        plot_kwargs = {**self.plot_kwargs, **kwargs}
+        self.plot_handle = ax.add(y_vals_full,
+                                  x=x_vals_full,
+                                  **plot_kwargs)
         return self.plot_handle
 
 
@@ -189,7 +211,7 @@ class ExponentialFit(Fit):
         Returns:
             exponential data points
         """
-        return amplitude * np.exp(-t/tau) + offset
+        return amplitude * np.exp(-t / tau) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -207,12 +229,13 @@ class ExponentialFit(Fit):
         Returns:
             Parameters object containing initial parameters.
         """
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
+
 
         if initial_parameters is None:
-            initial_parameters={}
+            initial_parameters = {}
 
-        parameters=Parameters()
+        parameters = Parameters()
         if not 'tau' in initial_parameters:
             nearest_idx = np.abs(ydata - ydata[0] / np.exp(1)).argmin()
             initial_parameters['tau'] = -(xvals[1] - xvals[np.where(
@@ -230,6 +253,7 @@ class ExponentialFit(Fit):
 
 class SineFit(Fit):
     sweep_parameter = 't'
+
     @staticmethod
     def fit_function(t: Union[float, np.ndarray],
                      amplitude: float,
@@ -264,7 +288,8 @@ class SineFit(Fit):
         Returns:
             Parameters object containing initial parameters.
         """
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
+
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -272,9 +297,9 @@ class SineFit(Fit):
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
-        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips)/2)]
+        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips) / 2)]
         fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(
-            fft_flips)/2)]
+            fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
         if 'frequency' not in initial_parameters:
@@ -299,6 +324,7 @@ class SineFit(Fit):
 
 class ExponentialSineFit(Fit):
     sweep_parameter = 't'
+
     @staticmethod
     def fit_function(t, amplitude, tau, frequency, phase, offset,
                      exponent_factor):
@@ -308,7 +334,7 @@ class ExponentialSineFit(Fit):
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
@@ -350,14 +376,15 @@ class ExponentialSineFit(Fit):
 
 class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
+
     @staticmethod
     def fit_function(f, f0, gamma, t):
-        Omega = np.sqrt(gamma**2 + (2*np.pi*(f - f0))**2 / 4)
-        return gamma**2 / Omega**2 * np.sin(Omega*t)**2
+        Omega = np.sqrt(gamma ** 2 + (2 * np.pi * (f - f0)) ** 2 / 4)
+        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().__init__()
+        super().find_initial_parameters(xvals, ydata, initial_parameters)
 
         parameters = Parameters()
 
@@ -369,11 +396,14 @@ class RabiFrequencyFit(Fit):
 
         if 'gamma' not in initial_parameters:
             if 't' in initial_parameters:
-                initial_parameters['gamma'] = np.pi / initial_parameters['t'] / 2
+                initial_parameters['gamma'] = np.pi / initial_parameters[
+                    't'] / 2
             else:
                 FWHM_min_idx = np.argmax(xvals > max_frequency / 2)
-                FWHM_max_idx = len(xvals) - np.argmax((xvals > max_frequency / 2)[::-1]) - 1
-                initial_parameters['gamma'] = 2*np.pi * (xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
+                FWHM_max_idx = len(xvals) - np.argmax(
+                    (xvals > max_frequency / 2)[::-1]) - 1
+                initial_parameters['gamma'] = 2 * np.pi * (
+                xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
         if 't' not in initial_parameters:
             initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
