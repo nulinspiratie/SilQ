@@ -126,7 +126,7 @@ class RetuneBlipsParameter(MeasurementParameter):
     The first (optional) stage is to use a CoulombPeakParameter to find the
     center of the Coulomb peak.
 
-    Second, a sweep parameter is varied for a range of sweep values. For each 
+    Second, a sweep parameter is varied for a range of sweep values. For each
     sweep point, a trace is acquired, and its blips measured in a BlipsParameter.
     This information is then analysed by a neural network, from which the
     optimal tuning position is predicted.
@@ -174,7 +174,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                 Coulomb peak
             tune_to_optimum: Tune to optimum values predicted by neural network.
                 If True, the offsets of the sweep parameter are also zeroed.
-            optimum_DC_offset: Additional offset to optimum determined from 
+            optimum_DC_offset: Additional offset to optimum determined from
                 neural network model. Used if the model is not trained properly
                 and has a constant offset in predictions.
                 If single value, combined parameter will be offset.
@@ -239,7 +239,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
     def create_loop(self):
         """
-        Create loop that sweep sweep_parameter over sweep_vals and measures 
+        Create loop that sweep sweep_parameter over sweep_vals and measures
         blips_parameter at each sweep point.
         Returns: loop
 
@@ -361,7 +361,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
             if isinstance(self.optimum_DC_offset, float):
                 self.sweep_parameter(self.optimum_DC_offset)
-            elif self.optimum_DC_offset is not None:
+            elif self.optimum_DC_offset:
                 for parameter, offset in zip(self.sweep_parameter.parameters,
                                              self.optimum_DC_offset):
                     parameter(parameter() + offset)

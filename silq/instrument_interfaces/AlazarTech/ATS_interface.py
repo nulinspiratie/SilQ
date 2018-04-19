@@ -2,19 +2,24 @@ import numpy as np
 import inspect
 import logging
 from functools import partial
+from time import sleep
 
 from qcodes.utils import validators as vals
 from qcodes.instrument_drivers.AlazarTech.ATS import AlazarTech_ATS, \
     ATSAcquisitionParameter
+from qcodes.station import Station
+from qcodes.instrument.base import Instrument
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import MeasurementPulse, SteeredInitialization, TriggerPulse,\
     MarkerPulse, TriggerWaitPulse, PulseImplementation
 
 
+logger = logging.getLogger(__name__)
+
 class ATSInterface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controller_names=[],
-                 **kwargs):
+                 default_settings={}, **kwargs):
         super().__init__(instrument_name, **kwargs)
         # Override untargeted pulse adding (measurement pulses can be added)
         self.pulse_sequence.allow_untargeted_pulses = True
@@ -41,20 +46,14 @@ class ATSInterface(InstrumentInterface):
 
         self.pulse_implementations = [
             SteeredInitializationImplementation(
-                pulse_requirements=[]
-            ),
+                pulse_requirements=[]),
             TriggerWaitPulseImplementation(
-                pulse_requirements=[]
-            )
-        ]
+                pulse_requirements=[])]
 
         # Organize acquisition controllers
         self.acquisition_controllers = {}
         for acquisition_controller_name in acquisition_controller_names:
             self.add_acquisition_controller(acquisition_controller_name)
-
-        self._configuration_settings = {}
-        self._acquisition_settings = {}
 
         # Obtain a list of all valid ATS configuration settings
         self._configuration_settings_names = sorted(list(
@@ -65,10 +64,25 @@ class ATSInterface(InstrumentInterface):
         self._settings_names = sorted(self._acquisition_settings_names +
                                       self._configuration_settings_names)
 
+        self.add_parameter(name='default_settings',
+                           get_cmd=None, set_cmd=None,
+                           initial_value=default_settings,
+                           docstring='Default settings to use when setting up '
+                                     'ATS for a pulse sequence')
+        initial_configuration_settings = {k: v for k, v in default_settings.items()
+                                          if k in self._configuration_settings_names}
         self.add_parameter(name='configuration_settings',
-                           get_cmd=lambda: self._configuration_settings)
+                           get_cmd=None,
+                           set_cmd=None,
+                           vals=vals.Dict(allowed_keys=self._configuration_settings_names),
+                           initial_value=initial_configuration_settings)
+        initial_acquisition_settings = {k: v for k, v in default_settings.items()
+                                        if k in self._acquisition_settings_names}
         self.add_parameter(name='acquisition_settings',
-                           get_cmd=lambda: self._acquisition_settings)
+                           get_cmd=None,
+                           set_cmd=None,
+                           vals=vals.Dict(allowed_keys=self._acquisition_settings_names),
+                           initial_value=initial_acquisition_settings)
 
         self.add_parameter(name="acquisition",
                            parameter_class=ATSAcquisitionParameter)
@@ -196,8 +210,12 @@ class ATSInterface(InstrumentInterface):
         self.acquisition_controller(self.default_acquisition_controller())
 
     def setup(self, samples=None, connections=None, **kwargs):
-        self._configuration_settings.clear()
-        self._acquisition_settings.clear()
+        self.configuration_settings({
+            k: v for k,v in self.default_settings().items()
+            if k in self._configuration_settings_names})
+        self.configuration_settings({
+            k: v for k, v in self.default_settings().items()
+            if k in self._acquisition_settings_names})
 
         if samples is not None:
             self.samples(samples)
@@ -258,7 +276,7 @@ class ATSInterface(InstrumentInterface):
 
         self.update_settings(channel_range=2,
                              coupling='DC')
-        self.instrument.config(**self._configuration_settings)
+        self.instrument.config(**self.configuration_settings())
 
     def setup_acquisition_controller(self):
         # Get duration of acquisition. Use flag acquire=True because
@@ -288,8 +306,8 @@ class ATSInterface(InstrumentInterface):
                                  allocated_buffers=allocated_buffers)
         elif self.acquisition_controller() == 'Continuous':
             # records_per_buffer and buffers_per_acquisition are fixed
-            self._acquisition_settings.pop('records_per_buffer', None)
-            self._acquisition_settings.pop('buffers_per_acquisition', None)
+            self.acquisition_settings().pop('records_per_buffer', None)
+            self.acquisition_settings().pop('buffers_per_acquisition', None)
 
             # TODO better way to decide on allocated buffers
             allocated_buffers = 20
@@ -301,8 +319,8 @@ class ATSInterface(InstrumentInterface):
             self._acquisition_controller.traces_per_acquisition(self.samples())
         elif self.acquisition_controller() == 'SteeredInitialization':
             # records_per_buffer and buffers_per_acquisition are fixed
-            self._acquisition_settings.pop('records_per_buffer', None)
-            self._acquisition_settings.pop('buffers_per_acquisition', None)
+            self.acquisition_settings().pop('records_per_buffer', None)
+            self.acquisition_settings().pop('buffers_per_acquisition', None)
 
             # Get steered initialization pulse
             initialization = self.pulse_sequence.get_pulse(initialize=True)
@@ -349,7 +367,7 @@ class ATSInterface(InstrumentInterface):
 
         # Update settings in acquisition controller
         self._acquisition_controller.set_acquisition_settings(
-            **self._acquisition_settings)
+            **self.acquisition_settings())
         self._acquisition_controller.average_mode('none')
         self._acquisition_controller.setup()
 
@@ -425,47 +443,13 @@ class ATSInterface(InstrumentInterface):
         """
         assert setting in self._settings_names, \
             "Kwarg {} is not a valid ATS acquisition setting".format(setting)
-        if setting in self._configuration_settings.keys():
-            return self._configuration_settings[setting]
-        elif setting in self._acquisition_settings.keys():
-            return self._acquisition_settings[setting]
+        if setting in self.configuration_settings():
+            return self.configuration_settings()[setting]
+        elif setting in self.acquisition_settings():
+            return self.acquisition_settings()[setting]
         else:
             # Must get latest value, since it may not be updated in ATS
             return self.instrument.parameters[setting]()
-
-    def set_configuration_settings(self, **settings):
-        """
-        Sets the configuration settings for the ATS through its controller.
-        It additionally checks if the settings are all actual ATS configuration
-        settings, and raises an error otherwise.
-
-        Args:
-            settings: configuration settings for the acquisition controller
-
-        Returns:
-            None
-        """
-        assert all([setting in self._configuration_settings_names
-                    for setting in settings]), \
-            "Settings are not all valid ATS configuration settings"
-        self._configuration_settings = settings
-
-    def set_acquisition_settings(self, **settings):
-        """
-        Sets the acquisition settings for the ATS through its controller.
-        It additionally checks if the settings are all actual ATS acquisition
-        settings, and raises an error otherwise.
-
-        Args:
-            settings: acquisition settings for the acquisition controller
-
-        Returns:
-            None
-        """
-        assert all([setting in self._acquisition_settings_names
-                    for setting in settings]), \
-            "Settings are not all valid ATS acquisition settings"
-        self._acquisition_settings = settings
 
     def update_settings(self, **settings):
         settings_valid = all(map(
@@ -476,11 +460,11 @@ class ATSInterface(InstrumentInterface):
 
         configuration_settings = {k: v for k, v in settings.items()
                                   if k in self._configuration_settings_names}
-        self._configuration_settings.update(**configuration_settings)
+        self.configuration_settings().update(**configuration_settings)
 
         acquisition_settings = {k: v for k, v in settings.items()
                                   if k in self._acquisition_settings_names}
-        self._acquisition_settings.update(**acquisition_settings)
+        self.acquisition_settings().update(**acquisition_settings)
 
 
 class SteeredInitializationImplementation(PulseImplementation):
@@ -544,4 +528,3 @@ class TriggerWaitPulseImplementation(PulseImplementation):
 
     def implement(self, **kwargs):
         pass
-

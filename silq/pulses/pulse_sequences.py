@@ -5,7 +5,7 @@ from copy import deepcopy
 
 class PulseSequenceGenerator(PulseSequence):
     def __init__(self, pulses=[], **kwargs):
-        super().__init__(self, pulses=pulses, **kwargs)
+        super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings = {}
         self._latest_pulse_settings = None
 
