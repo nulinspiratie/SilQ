@@ -7,7 +7,7 @@ def get_instrument_interface(instrument):
                           'class': 'ArbStudio1104Interface'},
         'MockArbStudio': {'module': '.lecroy.ArbStudio1104_interface',
                           'class': 'ArbStudio1104Interface'},
-        'PulseBlasterDDS' : {'module' : '.spincore.PulseBlasterDDS_interface', 
+        'PulseBlasterDDS' : {'module' : '.spincore.PulseBlasterDDS_interface',
                              'class' : 'PulseBlasterDDSInterface'},
         'PulseBlasterESRPRO': {'module': '.spincore.PulseBlasterESRPRO_interface',
                                'class': 'PulseBlasterESRPROInterface'},
@@ -28,7 +28,9 @@ def get_instrument_interface(instrument):
         'Keysight_M3300A_DIG': {'module': '.keysight',
                        'class': 'Keysight_SD_DIG_Interface'},
         'Keysight_M3300A_FPGA': {'module': '.keysight',
-                                 'class':'Keysight_SD_FPGA_Interface'}
+                                 'class':'Keysight_SD_FPGA_Interface'},
+        'Tektronix_AWG520': {'module': '.Tektronix.AWG520_interface',
+                             'class': 'AWG520Interface'}
     }
 
     instrument_class = instrument.__class__.__name__

@@ -13,8 +13,8 @@ from qcodes import config
 from qcodes.config.config import DotDict
 from qcodes.instrument.parameter import Parameter
 
-__all__ = ['execfile', 'get_truth', 'get_memory_usage', 'SettingsClass',
-           'UpdateDotDict',
+__all__ = ['execfile', 'is_between', 'get_truth', 'get_memory_usage',
+           'SettingsClass', 'UpdateDotDict',
            'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
@@ -49,6 +49,19 @@ ops = {'>': operator.gt,
        '>=': operator.ge,
        '<=': operator.le,
        '==': operator.eq}
+
+
+def is_between(val: float,
+            min_val: float = None,
+            max_val: float = None,
+            tolerance: float = 1e-13):
+    """ Check if value is between min and max, taking machine precision into account"""
+    if min_val is not None and np.min(val) < min_val - tolerance:
+        return False
+    elif max_val is not None and np.max(val) > max_val + tolerance:
+        return False
+    else:
+        return True
 
 
 def get_truth(test_val: Any,
@@ -599,11 +612,11 @@ def freq_to_str(frequency, fmt='{:.15g}'):
         This will be superseded later on when all attributes are converted to
         parameters.
     """
-    if frequency > 1e9:
+    if abs(frequency) > 1e9:
         frequency_string = fmt.format(frequency/1e9) + ' GHz'
-    elif frequency > 1e6:
+    elif abs(frequency) > 1e6:
         frequency_string = fmt.format(frequency/1e6) + ' MHz'
-    elif frequency > 1e3:
+    elif abs(frequency) > 1e3:
         frequency_string = fmt.format(frequency/1e3) + ' kHz'
     else:
         frequency_string = fmt.format(frequency) + ' Hz'
