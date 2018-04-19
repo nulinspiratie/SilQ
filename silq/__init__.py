@@ -112,8 +112,8 @@ def get_configurations() -> dict:
 
 def initialize(name: str = None,
                mode: str = None,
-               select: List[str] = None,
-               ignore: List[str] = None):
+               select: List[str] = [],
+               ignore: List[str] = []):
     """Runs experiment initialization .py scripts.
 
     The initialization scripts should be in the ``init`` folder in the
@@ -158,8 +158,8 @@ def initialize(name: str = None,
                         f'configurations are {get_configurations().keys()}')
 
     if mode is not None:
-        select = configuration['modes'][mode].get('select', None)
-        ignore = configuration['modes'][mode].get('ignore', None)
+        select += configuration['modes'][mode].get('select', [])
+        ignore += configuration['modes'][mode].get('ignore', [])
 
     folder = os.path.join(experiments_folder, configuration['folder'])
     config.__dict__['folder'] = os.path.join(experiments_folder, folder)

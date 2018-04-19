@@ -399,7 +399,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
             if isinstance(self.optimum_DC_offset, float):
                 self.sweep_parameter(self.optimum_DC_offset)
-            elif self.optimum_DC_offset is not None:
+            elif self.optimum_DC_offset:
                 for parameter, offset in zip(self.sweep_parameter.parameters,
                                              self.optimum_DC_offset):
                     parameter(parameter() + offset)

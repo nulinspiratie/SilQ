@@ -338,6 +338,10 @@ class PulseSequence:
     def __copy__(self, *args):
         return deepcopy(self)
 
+    def _ipython_key_completions_(self):
+        """Tab completion for IPython, i.e. pulse_sequence["p..."] """
+        return [pulse.full_name for pulse in self.pulses]
+
     def _matches_attrs(self,
                        other_pulse_sequence: 'PulseSequence',
                        exclude_attrs: List[str] = []) -> bool:

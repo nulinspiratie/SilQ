@@ -120,7 +120,7 @@ class TestATS(unittest.TestCase):
         self.ATS_interface.add_acquisition_controller(
             'basic_acquisition_controller')
 
-        self.ATS_interface.set_configuration_settings(trigger_slope1='positive')
+        self.ATS_interface._set_configuration_settings(trigger_slope1='positive')
         self.assertEqual(self.ATS_interface.setting('trigger_slope1'),
                          'positive')
 
