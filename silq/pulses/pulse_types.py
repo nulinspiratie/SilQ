@@ -1068,13 +1068,14 @@ class MarkerPulse(Pulse):
     """
     def __init__(self,
                  name: str = None,
+                 amplitude: float = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', 1.0)
+        self.amplitude = self._value_or_config('amplitude', amplitude, 1.0)
 
     def __repr__(self):
         try:
-            properties_str = 't_start={self.t_start}, duration={self.duration}'
+            properties_str = f't_start={self.t_start}, duration={self.duration}'
         except:
             properties_str = ''
         return super()._get_repr(properties_str)

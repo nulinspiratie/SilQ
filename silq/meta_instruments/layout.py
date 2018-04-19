@@ -10,7 +10,7 @@ from typing import Union, List, Sequence, Dict, Any
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import PulseSequence
-from silq.pulses.pulse_types import Pulse
+from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 from qcodes import Instrument, FormatLocation
 from qcodes.utils import validators as vals
@@ -571,33 +571,6 @@ class Layout(Instrument):
             return None
 
     @property
-    def acquisition_channels(self):
-        """Dict[str, str] {acquisition_label: acquisition_channel_name} pairs.
-
-        The ``acquisition_label`` is the label associated with a certain
-        acquisition channel, settable via ``Layout.acquisition_outputs``.
-        The ``acquisition_channel_name`` is the actual channel name of the
-        acquisition controller.
-
-        Example:
-            {'output': 'chA'}.
-
-        """
-
-        acquisition_channels = od()
-        for output_arg, output_label in self.acquisition_outputs():
-            # Use try/except in case not all connections exist
-            try:
-                connection = self.get_connection(
-                    output_arg=output_arg,
-                    input_instrument=self.acquisition_instrument())
-                acquisition_channels[output_label] = \
-                    connection.input['channel'].name
-            except:
-                return None
-        return acquisition_channels
-
-    @property
     def sample_rate(self):
         """Union[float, None]: Acquisition sample rate
 
@@ -1071,13 +1044,17 @@ class Layout(Instrument):
               pulse is modified.
 
         """
-        # Get default output instrument
-        connection = self.get_pulse_connection(pulse)
-        interface = self._interfaces[connection.output['instrument']]
-
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.add(pulse)
+
+        if isinstance(pulse, MeasurementPulse):
+            # Measurement pulses do not need to be output
+            return
+
+        # Get default output instrument
+        connection = self.get_pulse_connection(pulse)
+        interface = self._interfaces[connection.output['instrument']]
 
         # Return a list of pulses. The reason for not necessarily returing a
         # single pulse is that targeting by a CombinedConnection will target the
@@ -1223,6 +1200,7 @@ class Layout(Instrument):
     def setup(self,
               samples: int = None,
               repeat: bool = True,
+              ignore: List[str] = [],
               **kwargs):
         """Sets up all the instruments after having targeted a pulse sequence.
 
@@ -1247,6 +1225,7 @@ class Layout(Instrument):
         Args:
             samples: Number of samples (by default uses previous value)
             repeat: Whether to repeat pulse sequence indefinitely or stop at end
+            ignore: Interfaces to skip during setup
             **kwargs: additional kwargs sent to all interfaces being setup.
         """
 
@@ -1270,10 +1249,10 @@ class Layout(Instrument):
 
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
-                [ch_name for _, ch_name in self.acquisition_channels.items()])
+                [ch_name for ch_name, _ in self.acquisition_channels()])
 
         for interface in self._get_interfaces_hierarchical():
-            if interface.pulse_sequence:
+            if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
@@ -1300,7 +1279,7 @@ class Layout(Instrument):
         trace_shapes = self.pulse_sequence.get_trace_shapes(
             sample_rate=self.sample_rate, samples=self.samples())
         self.acquisition_shapes = {}
-        output_labels = [output[1] for output in self.acquisition_outputs()]
+        output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
@@ -1404,16 +1383,8 @@ class Layout(Instrument):
             for pulse, channel_traces in pulse_traces.items():
                 data[pulse] = {}
                 for channel, trace in channel_traces.items():
-                    # Find corresponding connection
-                    connection = self.get_connection(
-                        input_channel=channel,
-                        input_instrument=self.acquisition_instrument())
-                    # Get output arg (instrument.channel)
-                    output_arg = connection.output['str']
-                    # Find label corresponding to output arg
-                    output_label = next(
-                        item[1] for item in self.acquisition_outputs()
-                        if item[0] == output_arg)
+                    output_label = next(item[1] for item in self.acquisition_channels()
+                                        if item[0] == channel)
                     data[pulse][output_label] = trace
         except:
             # If any error occurs, stop all instruments
