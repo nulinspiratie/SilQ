@@ -42,22 +42,22 @@ def get_SilQ_folder() -> str:
 
 def set_experiments_folder(folder: str):
     """Sets experiments folder, used by `silq.initialize`.
-    
+
     Setting the experiments should only be done once, as it creates the file
-    ``experiments_folder.txt`` in the SilQ folder, which contains the 
+    ``experiments_folder.txt`` in the SilQ folder, which contains the
     experiments folder.
-    
+
     The Experiments folder should contain one folder for each experiment.
     An Experiment folder contains startup scripts, configuration, and usually
     scripts and notebooks.
     An experiment folder contains the following folders:
-    
+
     * **init**: Initialization .py scripts, executed in ascending order.
-      Each file is should have form ``{idx}_{name}``, where ``idx`` is a 
+      Each file is should have form ``{idx}_{name}``, where ``idx`` is a
       zero-based that defines execution order, and ``name`` is the filename.
     * **config**: SilQ config folder, wherein each item is either a .JSON file
       or a folder containing .jSON files.
-    
+
     Args:
         folder: Experiments folder
     """
@@ -69,10 +69,10 @@ def set_experiments_folder(folder: str):
 
 def get_experiments_folder():
     """Gets experiments folder
-    
+
     Returns:
         experiments folder
-        
+
     Raises:
         FileNotFoundError: No experiments_folder configured.
     """
@@ -95,11 +95,11 @@ def get_experiments_folder():
 
 
 def get_configurations() -> dict:
-    """Retrieves configurations folder from experiments folder. 
-    
+    """Retrieves configurations folder from experiments folder.
+
     This contains all configurations that can be used by `silq.initialize`.
     Filepath should be {experiments_folder/configurations.json}
-    
+
     Returns:
         dict of configurations
     """
@@ -115,9 +115,9 @@ def initialize(name: str = None,
                select: List[str] = None,
                ignore: List[str] = None):
     """Runs experiment initialization .py scripts.
-    
-    The initialization scripts should be in the ``init`` folder in the 
-    experiment folder. 
+
+    The initialization scripts should be in the ``init`` folder in the
+    experiment folder.
     Possible configurations are taken from the dictionary _configurations in
     the file configurations.py.
 
@@ -129,7 +129,7 @@ def initialize(name: str = None,
             be executed. Possible modes can be specified in _configurations.
         select: Files to select, all others will be ignored.
         ignore: Files to ignore, all others will be selected.
-        
+
     Notes:
         Scripts are run in the global namespace
     """
@@ -172,15 +172,15 @@ def initialize(name: str = None,
 
     for filename in init_filenames:
         # Remove prefix
-        name = filename.split('_', 1)[1]
+        filename_no_prefix = filename.split('_', 1)[1]
         # Remove .py extension
-        name = name.rsplit('.', 1)[0]
-        if select is not None and name not in select:
+        filename_no_prefix = filename_no_prefix.rsplit('.', 1)[0]
+        if select and filename_no_prefix not in select:
             continue
-        elif ignore is not None and name in ignore:
+        elif ignore and filename_no_prefix in ignore:
             continue
         else:
-            print(f'Initializing {name}')
+            print(f'Initializing {filename_no_prefix}')
             filepath = os.path.join(init_folder, filename)
             with open(filepath, "r") as fh:
                 exec_line = fh.read()
@@ -231,8 +231,8 @@ qc.DataSet.save_config = _save_config
 
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
-          step_percentage=None):
-    if step_percentage is None:
+          step_percentage=None, window=None):
+    if step_percentage is None and window is None:
         if start is None or stop is None:
             raise RuntimeError('Must provide start and stop')
         from qcodes.instrument.sweep_values import SweepFixedValues
@@ -240,14 +240,15 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
                                 step=step, num=num)
     else:
         return SweepDependentValues(parameter=self, step=step,
-                                    step_percentage=step_percentage, num=num)
+                                    step_percentage=step_percentage, num=num,
+                                    window=window)
 qc.Parameter.sweep = _sweep
 
 
 # Override ActiveLoop._run_wrapper to stop the layout and clear settings of
 # any accquisition parameters in the loop after the loop has completed.
 _qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
-def _run_wrapper(self, set_active=True, *args, **kwargs):
+def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
 
     def clear_all_acquisition_parameter_settings(loop):
         from silq.parameters import AcquisitionParameter
@@ -264,8 +265,9 @@ def _run_wrapper(self, set_active=True, *args, **kwargs):
     finally:
         try:
             layout = qc.Instrument.find_instrument('layout')
-            layout.stop()
-            logger.info('Stopped layout at end of loop')
+            if stop:
+                layout.stop()
+                logger.info('Stopped layout at end of loop')
         except KeyError:
             logger.warning(f'No layout found to stop')
 

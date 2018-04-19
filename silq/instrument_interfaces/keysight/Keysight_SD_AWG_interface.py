@@ -259,14 +259,15 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         self.instrument.flush_waveform()
 
         for ch in sorted(waveforms):
+            ch_idx = self._channels[ch].id
             self.instrument.awg_flush(self._channels[ch].id)
-            self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=self._channels[ch].id)
-            self.instrument.set_channel_amplitude(amplitude=1.5, channel_number=self._channels[ch].id)
+            self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=ch_idx)
+            self.instrument.set_channel_amplitude(amplitude=1.5, channel_number=ch_idx)
             waveform_array = waveforms[ch]
 
             ch_wf_counter = 0
             message = f'\n{ch} AWG Waveforms:\n'
-            total = 0
+            total_samples = 0
             # always play a priming pulse first
             next_wf_trigger = True
             for waveform in waveform_array:
@@ -289,12 +290,13 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 else:
                     trigger_mode = 0  # auto trigger for every wf that follows
 
-                self.instrument.awg_queue_waveform(self._channels[ch].id, waveform_counter, trigger_mode,
-                                                   0, int(waveform['cycles']), prescaler=int(waveform.get('prescaler', 0)))
+                self.instrument.awg_queue_waveform(ch_idx,
+                                                   waveform_counter,
+                                                   trigger_mode,
+                                                   0, int(waveform['cycles']),
+                                                   prescaler=int(waveform.get('prescaler', 0)))
                 waveform_counter += 1
                 ch_wf_counter += 1
-
-
 
                 message += f'\t{waveform.get("name"): <20}' + \
                            f'\tpoints = {int(waveform.get("points",-1)) : <20}' + \
@@ -303,9 +305,11 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                            f'\tprescaler = {int(waveform.get("prescaler", -1)): <20}' + \
                            f'delay  = {int(waveform.get("delay", -1)): <20}' + \
                            f'trigger_mode = {trigger_mode}\n'
-                total += int(waveform.get("points", 0) * waveform.get("cycles", 0))
+                total_samples += int(waveform.get("points", 0) * waveform.get("cycles", 0))
+            sample_rate = self.default_sampling_rates()[ch_idx]
+            duration = total_samples / sample_rate
 
-            message += f'\tTotal samples = {total} = {total/500e3}ms @ 500 MSPS'
+            message += f'\tTotal samples = {total_samples} = {duration*1e3} ms @ {sample_rate/1e6} MSPS'
             logger.debug(message)
 
             self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=self.cyclic_mode)
@@ -900,9 +904,7 @@ class TriggerPulseImplementation(PulseImplementation):
 
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
-    @property
-    def amplitude(self):
-        return 1.0
+    amplitude = 1.0
 
     def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):

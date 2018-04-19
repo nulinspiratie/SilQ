@@ -74,13 +74,15 @@ class CombinedParameter(Parameter):
         else:
             labels = []
             for k, parameter in enumerate(self.parameters):
-                if self.scales is not None:
-                    label = f'{self.scales[k]} * {parameter.name}'
+                if self.scales is not None and self.scales[k] != 1:
+                    label = f'{self.scales[k]:.3g} * {parameter.name}'
                 else:
                     label = parameter.name
 
                 if self.offsets is not None:
-                    label += f' + {self.offsets[k]}'
+                    label += f' + {self.offsets[k]:.4g}'
+
+                labels.append(label)
 
             return f'({", ".join(labels)})'
 
@@ -88,9 +90,14 @@ class CombinedParameter(Parameter):
     def label(self, label):
         self._label = label
 
-    def zero_offset(self):
+    def zero_offset(self, offset=0):
         """Use current values of parameters as offsets."""
-        self.offsets = [param() for param in self.parameters]
+        if self.scales is not None:
+            self.offsets = [param() - offset * scale for param, scale in
+                       zip(self.parameters, self.scales)]
+        else:
+            self.offsets = [param() for param in self.parameters]
+        return self.offsets
 
     def calculate_individual_values(self, value):
         """Calulate values of parameters from a combined value
