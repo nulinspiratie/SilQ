@@ -48,7 +48,7 @@ def pulse_to_waveform_sequence(max_points: int,
                 samples (int):  number of samples in one cycle of the repeating waveform
 
     """
-    t_period = 1 / frequency
+    t_period = 1 / abs(frequency)
     max_periods = int(max_points / sampling_rate / t_period)
     min_periods = int(np.ceil(min_points / sampling_rate / t_period))
     periods = np.arange(min_periods, max_periods + 1)
@@ -107,6 +107,9 @@ def pulse_to_waveform_sequence(max_points: int,
         remaining_results[errors != min_val] = 0
         min_idx = np.unravel_index(remaining_results.argmax(),
                                    remaining_results.shape)
+    modified_frequency = 1 / (points_cutoff_multiple[min_idx] / periods[min_idx[0]] / sampling_rate)
+    if frequency < 0:
+        modified_frequency *= -1
 
     optimum= {'error': errors[min_idx],
               'final_delay': final_delays[min_idx],
@@ -114,7 +117,7 @@ def pulse_to_waveform_sequence(max_points: int,
               'repetitions': repetitions_multiple[min_idx],
               'points': points_cutoff_multiple[min_idx],
               'idx': min_idx,
-              'modified_frequency': 1 / (points_cutoff_multiple[min_idx] / periods[min_idx[0]] / sampling_rate)}
+              'modified_frequency': modified_frequency}
 
     if plot:
         fig, axes = plt.subplots(2, sharex=True)
