@@ -411,4 +411,4 @@ class RabiFrequencyFit(Fit):
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
-        return parameter
+        return parameters

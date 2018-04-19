@@ -2072,7 +2072,7 @@ class FlipNucleusParameter(AcquisitionParameter):
             return
 
         self.ESR['ESR_pulses'] = []
-        self.NMR['pulses'] = self.get_NMR_pulses(initial_state, final_state)
+        self.NMR['NMR_pulses'] = self.get_NMR_pulses(initial_state, final_state)
         self.pulse_sequence.generate()
 
         if run:
