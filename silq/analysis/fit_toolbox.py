@@ -245,6 +245,8 @@ class ExponentialFit(Fit):
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[-1]
 
+        initial_parameters['tau'].min = 0
+
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
@@ -369,6 +371,7 @@ class ExponentialSineFit(Fit):
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
+        parameters['tau'].min = 0
         parameters['exponent_factor'].min = 0
 
         return parameters
