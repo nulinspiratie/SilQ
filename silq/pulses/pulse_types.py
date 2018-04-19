@@ -5,7 +5,6 @@ import collections
 from traitlets import HasTraits, Unicode, validate, TraitError
 from blinker import Signal, signal
 import logging
-from functools import partial
 
 from .pulse_modules import PulseMatch
 
@@ -116,6 +115,14 @@ class Pulse(HasTraits):
     average = Unicode()
     signal = Signal()
     _connected_attrs = {}
+    _skip_JSON_encoder_attrs = ['_connected_attrs',
+                                '_cross_validation_lock',
+                                '_trait_notifiers',
+                                '_trait_validators',
+                                '_trait_values',
+                                'signal',
+                                'pulse_config',
+                                'properties_config']
 
     def __init__(self,
                  name: str = None,
@@ -149,7 +156,7 @@ class Pulse(HasTraits):
         try:
             # Set pulse_config from SilQ environment config
             self.pulse_config = silq.config[self.environment].pulses[self.name]
-        except KeyError:
+        except (KeyError, TypeError):
             self.pulse_config = None
         try:
             # Set properties_config from SilQ environment config
@@ -173,10 +180,6 @@ class Pulse(HasTraits):
             self.properties_attrs = []
         self.properties_attrs += ['t_read', 't_skip']
 
-        # Set handler that only uses attributes in properties_attrs
-        self._handle_properties_config_signal = partial(
-            self._handle_config_signal,
-            select=self.properties_attrs)
         # Connect changes in properties config to handling method
         # If environment has no properties key, this will never be called.
         signal(f'config:{self.environment}.properties').connect(
@@ -243,6 +246,21 @@ class Pulse(HasTraits):
         key, val = kwargs.popitem()
         if select is None or key in select:
             setattr(self, key, val)
+
+    def _handle_properties_config_signal(self, arg, **kwargs):
+        """ Update attr when attr in properties config is modified.
+
+        Note:
+            This method has to be defined separately, and cannot simply be
+            defined using a partial on `_handle_config_signal`, as this will
+            somehow cause it to always reference itself, and thus never be gc'ed
+
+        Args:
+            arg: Ignored handle arg passed by signal.send.
+            **kwargs: handle kwargs
+
+        """
+        self._handle_config_signal(arg, select=self.properties_attrs, **kwargs)
 
     def __str__(self):
         # This is called by blinker.signal to get a repr. Instead of creating
@@ -512,7 +530,9 @@ class Pulse(HasTraits):
         """
         return_dict = {}
         for attr, val in vars(self).items():
-            return_dict[attr] = val
+            if attr not in self._skip_JSON_encoder_attrs:
+                strip_attr = attr.lstrip('_')
+                return_dict[strip_attr] = val
         return return_dict
 
     @property
@@ -740,8 +760,10 @@ class SinePulse(Pulse):
         assert self.t_start <= np.min(t) and np.max(t) <= self.t_stop, \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
-
-        return self.power * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        if self.phase is None:
+            return self.amplitude * np.sin(2 * np.pi * self.frequency * (t - self.t_start))
+        else:
+            return self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
@@ -861,7 +883,7 @@ class DCPulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
     """
     def __init__(self,
-                 name: str = None, amplitude=None, **kwargs):
+                 name: str = None, amplitude: float = None, **kwargs):
         super().__init__(name=name, **kwargs)
         self.amplitude = self._value_or_config('amplitude', amplitude)
 

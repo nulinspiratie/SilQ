@@ -4,7 +4,7 @@ import logging
 from typing import Union, Dict, Any, List, Sequence
 import collections
 
-__all__ = ['smooth', 'find_high_low', 'edge_voltage', 'find_up_proportion',
+__all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
 
 logger = logging.getLogger(__name__)
@@ -15,10 +15,16 @@ if 'analysis' not in config:
 analysis_config = config['analysis']
 
 
-def smooth(x: np.ndarray,
+
+
+def old_smooth(x: np.ndarray,
            window_len: int = 11,
            window: str = 'hanning') -> np.ndarray:
     """smooth the data using a window with requested size.
+    
+    Note:
+        This function is superseded by the Savitsky-Golay filter `smooth` for 
+        its superior performance.
 
     This method is based on the convolution of a scaled window with the signal.
     The signal is prepared by introducing reflected copies of the signal
@@ -343,6 +349,11 @@ def count_blips(traces: np.ndarray,
     low_blip_durations = np.array(low_blip_pts) / sample_rate
     high_blip_durations = np.array(high_blip_pts) / sample_rate
 
+    mean_low_blip_duration = np.NaN if not len(low_blip_durations) \
+        else np.mean(low_blip_durations)
+    mean_high_blip_duration = np.NaN if not len(high_blip_durations) \
+        else np.mean(high_blip_durations)
+
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
@@ -350,8 +361,8 @@ def count_blips(traces: np.ndarray,
             'blips_per_second': blips / duration,
             'low_blip_durations': low_blip_durations,
             'high_blip_durations': high_blip_durations,
-            'mean_low_blip_duration': np.mean(low_blip_durations),
-            'mean_high_blip_duration': np.mean(high_blip_durations)}
+            'mean_low_blip_duration': mean_low_blip_duration,
+            'mean_high_blip_duration': mean_high_blip_duration}
 
 
 def analyse_traces(traces: np.ndarray,
@@ -433,8 +444,12 @@ def analyse_traces(traces: np.ndarray,
                'mean_low_blip_duration': None,
                'mean_high_blip_duration': None}
 
+    # minimum trace idx to include (to discard initial capacitor spike)
+    start_idx = round(t_skip * sample_rate)
+
     # Histogram trace voltages to find two peaks corresponding to high and low
-    high_low_results = find_high_low(traces, threshold_method=threshold_method)
+    high_low_results = find_high_low(traces[:,start_idx:],
+                                     threshold_method=threshold_method)
     results['voltage_difference'] = high_low_results['voltage_difference']
     if threshold_voltage is None:
         # Use threshold voltage from high_low_results
@@ -455,8 +470,6 @@ def analyse_traces(traces: np.ndarray,
     results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
     results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
-    # minimum trace idx to include (to discard initial capacitor spike)
-    start_idx = round(t_skip * sample_rate)
 
     if filter == 'low':
         # Filter all traces that do not start with low voltage
@@ -518,7 +531,8 @@ def analyse_EPR(empty_traces: np.ndarray,
                 sample_rate: float,
                 t_skip: float,
                 t_read: float,
-                min_filter_proportion: float = 0.5):
+                min_filter_proportion: float = 0.5,
+                filter_traces=True):
     """ Analyse an empty-plunge-read sequence
 
     Args:
@@ -559,26 +573,26 @@ def analyse_EPR(empty_traces: np.ndarray,
     # Analyse empty stage
     results_empty = analyse_traces(traces=empty_traces,
                                    sample_rate=sample_rate,
-                                   filter='low',
+                                   filter='low' if filter_traces else None,
                                    min_filter_proportion=min_filter_proportion,
                                    t_skip=t_skip)
 
     # Analyse plunge stage
     results_load = analyse_traces(traces=plunge_traces,
                                   sample_rate=sample_rate,
-                                  filter='high',
+                                  filter='high' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
                                   t_skip=t_skip)
 
     # Analyse read stage
     results_read = analyse_traces(traces=read_traces,
                                   sample_rate=sample_rate,
-                                  filter='low',
+                                  filter='low' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
                                   t_skip=t_skip)
     results_read_begin = analyse_traces(traces=read_traces,
                                         sample_rate=sample_rate,
-                                        filter='low',
+                                        filter='low' if filter_traces else None,
                                         min_filter_proportion=min_filter_proportion,
                                         t_read=t_read,
                                         segment='begin',
@@ -601,6 +615,8 @@ def analyse_EPR(empty_traces: np.ndarray,
             'dark_counts': results_read_end['up_proportion'],
 
             'voltage_difference_read': results_read['voltage_difference'],
+            'num_traces': results_read['num_traces'],
+            'filtered_traces_idx': results_read['filtered_traces_idx'],
             'blips': results_read['blips'],
             'mean_low_blip_duration': results_read['mean_low_blip_duration'],
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}

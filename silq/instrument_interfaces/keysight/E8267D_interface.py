@@ -176,6 +176,7 @@ class SinePulseImplementation(PulseImplementation):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
+                        amplitude=3,
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
