@@ -308,7 +308,7 @@ class CombinedConnection(Connection):
                  connections: List[SingleConnection],
                  scale: List[float] = None,
                  **kwargs):
-        super().__init__(scale=scale, **kwargs)
+        super().__init__(scale=scale)
         self.connections = connections
 
         self.output['str'] = [connection.output['str']

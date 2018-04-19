@@ -207,9 +207,9 @@ class SubConfig:
                 a key. If ``None``, uses ``self.save_as_dir``. Automatically set
                 to ``None`` for all child SubConfigs.
         """
-        if folder == None:
+        if folder is None:
             folder = self.folder
-        if save_as_dir == None:
+        if save_as_dir is None:
             save_as_dir = self.save_as_dir
 
         if not save_as_dir:
