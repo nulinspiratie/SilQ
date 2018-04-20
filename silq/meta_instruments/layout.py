@@ -496,11 +496,8 @@ class Layout(Instrument):
                            set_cmd=None,
                            initial_value=None,
                            vals=vals.Enum(*self._interfaces.keys()))
-        self.add_parameter('acquisition_outputs',
+        self.add_parameter('acquisition_channels',
                            set_cmd=None,
-                           initial_value=([('chip.output', 'output')]
-                                          if 'chip' in self._interfaces.keys()
-                                          else []),
                            vals=vals.Anything())
 
         self.add_parameter(name='samples',
