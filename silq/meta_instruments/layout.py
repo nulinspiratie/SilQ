@@ -302,7 +302,7 @@ class CombinedConnection(Connection):
         connections: `SingleConnection` list to combine
         scale: List specifying the value by which the amplitude of a pulse
             should be scaled for each connection (by default no scaling).
-        **kwargs: Additional Connection kwargs.
+        **kwargs: Additional Connection keyword arguments.
     """
     def __init__(self,
                  connections: List[SingleConnection],
