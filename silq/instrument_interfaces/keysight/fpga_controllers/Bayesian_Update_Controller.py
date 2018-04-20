@@ -1,6 +1,6 @@
 # from qcodes.instrument_drivers.keysight.SD_common.SD_FPGA import SD_FPGA
 from qcodes.instrument.base import Instrument
-from qcodes.instrument_drivers.Keysight.M3300A import Keysight_M3300A_FPGA
+from qcodes.instrument_drivers.Keysight.SD_common.SD_FPGA import SD_FPGA
 from qcodes.utils.validators import Ints
 from scipy.interpolate import interp1d
 import numpy as np
@@ -11,10 +11,10 @@ class Bayesian_Update_FPGA(Instrument):
             of a Keysight digitizer board.
         """
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, FPGA, **kwargs):
         super().__init__(name, **kwargs)
 
-        self.fpga = Keysight_M3300A_FPGA('FPGA')
+        self.FPGA = FPGA
         self.port = 0
 
         self.write_port_signals = {
@@ -63,38 +63,38 @@ class Bayesian_Update_FPGA(Instrument):
         # v_max = 3
         # m = interp1d([v_min, v_max], [-0x8000, 0x7FFF])
         # threshold = m(threshold)
-        self.fpga.set_fpga_pc_port(self.port, [threshold],
-                              self.write_port_signals['blip_threshold']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [threshold],
+                                   self.write_port_signals['blip_threshold']['address'], 0, 1)
 
     def _set_blip_timeout(self, timeout):
         """ Sets the blip timeout for the trigger of the Bayesian update module. """
-        self.fpga.set_fpga_pc_port(self.port, [timeout],
-                              self.write_port_signals['blip_timeout']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [timeout],
+                                   self.write_port_signals['blip_timeout']['address'], 0, 1)
 
     def _set_trace_select(self, trace_sel):
-        self.fpga.set_fpga_pc_port(self.port, [trace_sel],
-                              self.write_port_signals['trace_sel']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [trace_sel],
+                                   self.write_port_signals['trace_sel']['address'], 0, 1)
 
     def _set_pxi_select(self, pxi_sel):
-        self.fpga.set_fpga_pc_port(self.port, [pxi_sel],
-                              self.write_port_signals['pxi_sel']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [pxi_sel],
+                                   self.write_port_signals['pxi_sel']['address'], 0, 1)
 
     def _get_counter_value(self):
-        return self.fpga.get_fpga_pc_port(self.port, 1,
-                                     self.read_port_signals['counter']['address'], 0, 1)
+        return self.FPGA.get_fpga_pc_port(self.port, 1,
+                                          self.read_port_signals['counter']['address'], 0, 1)
 
     def start(self):
         """ Starts the currently loaded FPGA firmware. """
         # Also pulls module out of reset
-        self.fpga.set_fpga_pc_port(self.port, [0, 1],
-                              self.write_port_signals['reset']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [0, 1],
+                                   self.write_port_signals['reset']['address'], 0, 1)
 
     def stop(self):
         """ Stops the currently loaded FPGA firmware. """
-        self.fpga.set_fpga_pc_port(self.port, [0],
-                              self.write_port_signals['enable']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [0],
+                                   self.write_port_signals['enable']['address'], 0, 1)
 
     def reset(self):
         """ Resets the currently loaded FPGA firmware. """
-        self.fpga.set_fpga_pc_port(self.port, [1],
-                              self.write_port_signals['reset']['address'], 0, 1)
+        self.FPGA.set_fpga_pc_port(self.port, [1],
+                                   self.write_port_signals['reset']['address'], 0, 1)
