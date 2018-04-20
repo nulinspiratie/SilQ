@@ -66,17 +66,6 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         self.add_parameter('channel_selection',
                            set_cmd=None)
 
-        self.add_parameter('trigger_channel',
-                           vals=vals.Enum(0, 1, 2, 3, 4, 5, 6, 7),
-                           set_cmd=None)
-
-        self.add_parameter('trigger_edge',
-                           vals=vals.Enum('rising', 'falling', 'both'),
-                           set_cmd=None)
-
-        self.add_parameter('trigger_threshold',
-                           set_cmd=None)
-
         self.add_parameter('minimum_timeout_interval',
                            unit='s',
                            vals=vals.Numbers(),
@@ -104,7 +93,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             data[name] = {}
             for ch_idx, ch in enumerate(self.channel_selection()):
                 ch_data = acquisition_data[ch_idx]
-                ch_name = 'ch{}'.format(ch)
+                ch_name = f'ch{ch}'
                 ts = (pulse.t_start - t_start, pulse.t_stop - t_start)
                 sample_range = [int(round(t * self.sample_rate())) for t in ts]
                 pts = len(sample_range)
@@ -120,15 +109,8 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                     data[name][ch_name] = np.mean(data[name][ch_name])
                 elif 'point_segment' in pulse.average:
                     segments = int(pulse.average.split(':')[1])
-                    pts = data[name][ch_name].shape[1]
-
-                    segments_idx = [int(round(pts * idx / segments))
-                                    for idx in np.arange(segments + 1)]
-                    pulse_traces = np.zeros(segments)
-                    for k in range(segments):
-                        pulse_traces[k] = np.mean(data[name][ch_name][:, segments_idx[k]:segments_idx[k + 1]])
-
-                    data[name][ch_name] = pulse_traces
+                    split_arrs = np.array_split(data[name][ch_name], segments, axis=1)
+                    data[name][ch_name] = np.mean(split_arrs, axis=(1,2))
                 else:
                     raise SyntaxError(f'average mode {pulse.average} not configured')
 
@@ -204,19 +186,16 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 bayesian_pulse = self.input_pulse_sequence.get_pulses(name='Bayes')[0]
                 for ch in range(8):
                     self.instrument.parameters[f'DAQ_trigger_delay_{ch}'].set(int(bayesian_pulse.t_start*2*self.sample_rate()))
-            # Get trigger connection to determine how to trigger the controller
-            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
-            trigger_connection = trigger_pulse.connection
-            self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
-            self.trigger_edge('rising')
 
             self.acquisition_controller().sample_rate(self.sample_rate())
             self.acquisition_controller().traces_per_acquisition(self.samples())
 
-            self.acquisition_controller().trigger_channel(trigger_connection.input['channel'].id)
-            self.acquisition_controller().trigger_threshold(self.trigger_threshold())
-            # Map the string value of trigger edge to a device integer
-            self.acquisition_controller().trigger_edge(self.trigger_edge())
+            # Setup triggering
+            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+            trigger_channel = trigger_pulse.connection.input['channel'].id
+            self.acquisition_controller().trigger_channel(trigger_channel)
+            self.acquisition_controller().trigger_threshold(trigger_pulse.amplitude / 2)
+            self.acquisition_controller().trigger_edge('rising')
 
             # Capture maximum number of samples on all channels
             t_start = min(self.pulse_sequence.t_start_list)
