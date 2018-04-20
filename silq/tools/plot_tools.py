@@ -680,8 +680,8 @@ class DCSweepPlot(ScanningPlot):
             self.gate_mapping = gate_mapping
 
         if parameter.trace_pulse.enabled:
-            subplots = {'nrows': 2, 'ncols': 1,
-                        'gridspec_kw': {'height_ratios': [2,1]}}
+            subplots = (2, 1)
+            kwargs['gridspec_kw'] = {'height_ratios': [2, 1]}
             kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
