@@ -88,6 +88,8 @@ def pulse_to_waveform_sequence(max_points: int,
             min_val = filter_arr[filtered_results].min()
             remaining_results = filtered_results.copy()
             remaining_results[filter_arr != min_val] = 0
+            # min_idx is a tuple containing the first element that minimizes
+            # according to the filter
             min_idx = np.unravel_index(remaining_results.argmax(),
                                        remaining_results.shape)
             log_str = f"Could not find any sine waveform decomposition with " \
