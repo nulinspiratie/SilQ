@@ -314,6 +314,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
             self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=self.cyclic_mode)
 
+        self.waveforms = waveforms
         # for ch in waveforms:
         #     waveform_array = waveforms[ch]
         #     for wf in waveform_array:
@@ -605,6 +606,8 @@ class SinePulseImplementation(PulseImplementation):
 
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
+    waveform_multiple = 5
+    waveform_minimum = 15  # the minimum size of a waveform
     def implement(self, instrument, default_sampling_rates, threshold):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
@@ -618,8 +621,6 @@ class DCPulseImplementation(PulseImplementation):
 
         # channel independent parameters
         duration = self.pulse.t_stop - self.pulse.t_start
-        waveform_multiple = 5
-        waveform_minimum = 15  # the minimum size of a waveform
 
         for ch_idx, ch in enumerate(channels):
 
@@ -627,7 +628,7 @@ class DCPulseImplementation(PulseImplementation):
             prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
             period_sample = 1 / sampling_rate
 
-            period = period_sample * waveform_multiple
+            period = period_sample * self.waveform_multiple
             max_cycles = int(duration // period)
 
             # This factor determines the number of points needed in the waveform
@@ -635,15 +636,15 @@ class DCPulseImplementation(PulseImplementation):
             n = int(np.ceil(max_cycles / 2 ** 16))
             if n < 3:
                 waveform_samples = firstFactorAboveN(int(round(duration / period_sample)),
-                                                     waveform_minimum, waveform_multiple)
+                                                     self.waveform_minimum, self.waveform_multiple)
             else:
-                waveform_samples = n * waveform_multiple
+                waveform_samples = n * self.waveform_multiple
 
             cycles = int(duration // (period_sample * waveform_samples))
-            if duration + threshold < waveform_minimum * period_sample:
+            if duration + threshold < self.waveform_minimum * period_sample:
                 raise RuntimeError(f'Waveform too short for {full_name}: '
                                    f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
-                                   f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
+                                   f'{self.waveform_minimum/sampling_rate*1e3:.3f}ms')
 
             # the first waveform (waveform_repeated) is repeated n times
             # the second waveform is for the final part of the total wave so the total wave looks like:
@@ -655,10 +656,10 @@ class DCPulseImplementation(PulseImplementation):
             waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
             waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
-            waveform_tail_samples = waveform_multiple * round(
-                ((self.pulse.t_stop - waveform_tail_start) / period_sample) / waveform_multiple)
+            waveform_tail_samples = self.waveform_multiple * round(
+                ((self.pulse.t_stop - waveform_tail_start) / period_sample) / self.waveform_multiple)
 
-            if waveform_tail_samples < waveform_minimum:
+            if waveform_tail_samples < self.waveform_minimum:
                 waveform_tail_samples = 0
 
             t_list_2 = np.linspace(waveform_tail_start,
