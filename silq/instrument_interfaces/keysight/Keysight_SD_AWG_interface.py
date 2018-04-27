@@ -1,6 +1,8 @@
+from typing import List
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse, AWGPulse,\
-                        CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
+from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
+    AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
@@ -340,7 +342,15 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             self.trigger_thread = threading.Timer(trigger_period, partial(self.trigger_self, trigger_period))
             self.trigger_thread.start()
 
-    def get_additional_pulses(self):
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List of additional pulses, empty by default.
+        """
         if self.is_primary():
             # Instrument does not require triggers
             return []
