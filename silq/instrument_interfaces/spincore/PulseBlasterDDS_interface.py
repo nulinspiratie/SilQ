@@ -64,8 +64,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
 
         Returns:
             List containing trigger pulse if not primary instrument

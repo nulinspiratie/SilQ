@@ -150,6 +150,8 @@ class SingleConnection(Connection):
         input_instrument: Name of output instrument.
         input_channel: Input channel object.
         trigger: Sets the output channel to trigger the input instrument.
+        trigger_start: The output only triggers at the start of the
+            `PulseSequence`. Ignored if trigger == False
         acquire: Sets if this connection is used for acquisition.
         software: Sets if this connection is a software connection.
             This is used for cases such as software triggering.
@@ -160,6 +162,7 @@ class SingleConnection(Connection):
                  input_instrument: str,
                  input_channel: Channel,
                  trigger: bool = False,
+                 trigger_start: bool = False,
                  acquire: bool = False,
                  software: bool = False,
                  **kwargs):
@@ -169,25 +172,25 @@ class SingleConnection(Connection):
 
         self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
-        self.output['str'] = '{}.{}'.format(output_instrument,
-                                            output_channel.name)
+        self.output['str'] = f'{output_instrument}.{output_channel.name}'
 
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
         self.input['str'] = f'{input_instrument}.{input_channel.name}'
 
         self.trigger = trigger
+        self.trigger_start = trigger_start
         # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
         self.software = software
 
     def __repr__(self):
-        output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument'], self.output['channel'].name,
-            self.input['instrument'], self.input['channel'].name)
+        output_str = f"Connection{{{self.output['str']}->{self.input['str']}}}("
         if self.trigger:
             output_str += ', trigger'
+            if self.trigger_start:
+                output_str += ' start'
         if self.acquire:
             output_str += ', acquire'
         if self.software:
@@ -289,7 +292,6 @@ class SingleConnection(Connection):
             return False
         else:
             return True
-
 
 
 class CombinedConnection(Connection):
@@ -1121,7 +1123,8 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_additional_pulses()
+            additional_pulses = interface.get_additional_pulses(
+                connections=self.connections)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 

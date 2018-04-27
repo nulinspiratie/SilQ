@@ -100,13 +100,6 @@ class Bayesian_Update_Interface(InstrumentInterface):
             docstring='The onboard clock frequency of the digitizer module.'
         )
 
-    #
-    #   Interface Functions
-    #
-
-    def get_additional_pulses(self):
-        return []
-
     def setup(self, **kwargs):
         ctrl = self.fpga_controller
         ctrl.reset()
