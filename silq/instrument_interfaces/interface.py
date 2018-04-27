@@ -180,6 +180,7 @@ class InstrumentInterface(Instrument):
 
     def setup(self,
               samples: Union[int, None] = None,
+              input_connections: list = [],
               output_connections: list = [],
               repeat: bool = True,
               **kwargs) -> Dict[str, Any]:
@@ -190,6 +191,8 @@ class InstrumentInterface(Instrument):
         Args:
             samples: Number of acquisition samples.
                 If None, it will use the previously set value.
+            input_connections: Input :class:`.Connection` list of
+                instrument, needed by some interfaces to setup the instrument.
             output_connections: Output :class:`.Connection` list of
                 instrument, needed by some interfaces to setup the instrument.
             repeat: Repeat the pulse sequence indefinitely. If False, calling
