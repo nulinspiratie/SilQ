@@ -1259,10 +1259,11 @@ class Layout(Instrument):
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
                 is_primary = self.primary_instrument() == interface.instrument.name
-                output_connections = self.get_connections(
-                    output_interface=interface)
+                input_connections = self.get_connections(input_interface=interface)
+                output_connections = self.get_connections(output_interface=interface)
 
                 flags = interface.setup(samples=self.samples(),
+                                        input_connections=input_connections,
                                         output_connections=output_connections,
                                         repeat=repeat,
                                         **setup_flags, **kwargs)
