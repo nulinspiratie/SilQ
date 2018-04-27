@@ -188,7 +188,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                      'trigger': True
                                  })]
 
-    def setup(self, samples=1, **kwargs):
+    def setup(self, samples=1, input_connections=[], **kwargs):
         self.samples(samples)
 
         # Find all unique pulse_connections to choose which channels to acquire on
@@ -200,13 +200,14 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         self.acquisition_controller().average_mode('none')
 
         if isinstance(self.acquisition_controller(), Triggered_Controller):
-            if self.input_pulse_sequence.get_pulses(name='Bayes'):
-                bayesian_pulse = self.input_pulse_sequence.get_pulses(name='Bayes')[0]
-                for ch in range(8):
-                    self.instrument.parameters[f'DAQ_trigger_delay_{ch}'].set(int(bayesian_pulse.t_start*2*self.sample_rate()))
-
             self.acquisition_controller().sample_rate(self.sample_rate())
             self.acquisition_controller().traces_per_acquisition(self.samples())
+
+            # Capture maximum number of samples on all channels
+            t_start = min(self.pulse_sequence.t_start_list)
+            t_stop = max(self.pulse_sequence.t_stop_list)
+            samples_per_trace = (t_stop - t_start) * self.sample_rate()
+            self.acquisition_controller().samples_per_trace(samples_per_trace)
 
             # Setup triggering
             trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
@@ -214,12 +215,14 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.acquisition_controller().trigger_channel(trigger_channel)
             self.acquisition_controller().trigger_threshold(trigger_pulse.amplitude / 2)
             self.acquisition_controller().trigger_edge('rising')
-
-            # Capture maximum number of samples on all channels
-            t_start = min(self.pulse_sequence.t_start_list)
-            t_stop = max(self.pulse_sequence.t_stop_list)
-            samples_per_trace = (t_stop - t_start) * self.sample_rate()
-            self.acquisition_controller().samples_per_trace(samples_per_trace)
+            if self.input_pulse_sequence.get_pulses(name='Bayes'):
+                bayesian_pulse = self.input_pulse_sequence.get_pulse(name='Bayes')
+                trigger_delay = int(bayesian_pulse.t_start * 2 * self.sample_rate())
+                self.acquisition_controller().trigger_delay(trigger_delay)
+            elif any(connection.trigger_start for connection in input_connections):
+                self.acquisition_controller().trigger_delay(t_start)
+            else:
+                self.acquisition_controller().trigger_delay(0)
 
             # Set read timeout interval, which is the interval for requesting
             # an acquisition. This allows us to interrupt an acquisition prematurely.
