@@ -1,5 +1,7 @@
+from typing import List
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses.pulse_types import TriggerPulse
+from silq.pulses.pulse_types import Pulse, TriggerPulse
 from qcodes.utils import validators as vals
 from qcodes import ManualParameter
 from qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller import Triggered_Controller
@@ -150,19 +152,35 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.instrument.parameters[f'coupling_{k}'].set('DC')  # DC Coupled
             self.instrument.parameters[f'full_scale_{k}'].set(3.0)  # 3.0 Volts
 
-    def get_additional_pulses(self):
-        if not self.pulse_sequence.get_pulses(acquire=True):
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List of additional pulses, empty by default.
+        """
+        if self.input_pulse_sequence.get_pulses(trigger=True):
+            logger.warning('SD digitizer has a manual trigger pulse defined.'
+                           'This should normally be done automatically instead.')
+            return []
+        elif not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
         else:
-            # Add a single trigger pulse when starting acquisition
-            t_start = min(pulse.t_start for pulse in
-                          self.pulse_sequence.get_pulses(acquire=True))
-            if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
-                logger.warning('Trigger manually defined for M3300A digitizer. '
-                               'This is inadvisable as this could limit the responsiveness'
-                               ' of the machine.')
-                return []
+            # A trigger pulse is needed
+            try:
+                trigger_connection = next(connection for connection in connections
+                                          if connection.trigger or connection.trigger_start)
+            except StopIteration:
+                logger.error('Could not find trigger connection for SD digitizer')
+
+            if trigger_connection.trigger:
+                t_start = min(pulse.t_start for pulse in
+                              self.pulse_sequence.get_pulses(acquire=True))
+            else: # connection.trigger_start
+                t_start = 0
 
             return [TriggerPulse(t_start=t_start, duration=15e-6,
                                  connection_requirements={
