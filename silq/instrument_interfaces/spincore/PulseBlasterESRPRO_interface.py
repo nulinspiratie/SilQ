@@ -186,9 +186,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         """Stop instrument"""
         self.instrument.stop()
 
-    def get_additional_pulses(self):
-        return []
-
 
 class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse

@@ -75,8 +75,11 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = list(set(active_channels))
         return active_channels
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
 
         Returns:
             List of additional pulses.
@@ -158,8 +161,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         """
         # TODO implement setup for modes other than stepped
 
-        if self.is_primary():
-            logger.warning('Arbstudio not programmed as primary instrument')
+        assert not self.is_primary(), 'Arbstudio is currently not programmed ' \
+                                      'to function as primary instrument'
 
         # Clear waveforms and sequences
         for ch in self._output_channels.values():

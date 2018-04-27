@@ -158,8 +158,11 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
 
         Returns:
             List of additional pulses, empty by default.

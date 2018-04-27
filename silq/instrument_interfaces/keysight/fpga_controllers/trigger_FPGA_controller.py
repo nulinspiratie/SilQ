@@ -1,7 +1,7 @@
-from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument.base import Instrument
 
 
-class TriggerFPGAController(InstrumentBase):
+class TriggerFPGAController(Instrument):
     def __init__(self, name, FPGA, **kwargs):
         super().__init__(name, **kwargs)
 
