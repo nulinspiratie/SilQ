@@ -12,6 +12,10 @@ from silq.tools.general_tools import get_truth, property_ignore_setter, \
     freq_to_str, is_between
 import silq
 
+from qcodes.instrument.parameter_node import ParameterNode, parameter
+from qcodes.instrument.parameter import Parameter
+from qcodes.utils import validators as vals
+
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
            'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
            'TriggerWaitPulse', 'MeasurementPulse', 'CombinationPulse',
@@ -27,7 +31,7 @@ Signal.__deepcopy__ = lambda self, memo: Signal()
 logger = logging.getLogger(__name__)
 
 
-class Pulse(HasTraits):
+class Pulse(ParameterNode):
     """ Representation of physical pulse, component in a `PulseSequence`.
 
     A Pulse is a representation of a physical pulse, usually one that is
@@ -139,20 +143,20 @@ class Pulse(HasTraits):
                  average: str = 'none',
                  connection_label: str = None,
                  connection_requirements: dict = {}):
+        super().__init__(use_as_attributes=True)
         # Initialize signals (to notify change of attributes)
         self.signal = Signal()
         # Dict of attrs that are connected via blinker.signal to other pulses
         self._connected_attrs = {}
-        super().__init__()
 
-        self.name = name
-        self.id = id
+        self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
+        self.id = Parameter(initial_value=id, vals=vals.Ints(), set_cmd=None)
+        self.full_name = Parameter()
 
         if environment == 'default':
             environment = silq.config.properties.get('default_environment',
                                                      'default')
-        self.environment = environment
-
+        self.environment = Parameter(initial_value=environment, vals=vals.Strings(), set_cmd=None)
         # Setup pulse config
         try:
             # Set pulse_config from SilQ environment config
@@ -189,11 +193,19 @@ class Pulse(HasTraits):
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
-        self.t_start = self._value_or_config('t_start', t_start)
-        self.duration = self._value_or_config('duration', duration)
-        self.t_stop = self._value_or_config('t_stop', t_stop)
-        self.connection_label = self._value_or_config('connection_label',
-                                                      connection_label)
+        self.t_start = Parameter(initial_value=self._value_or_config('t_start', t_start),
+                                 unit='s', set_cmd=None)
+        self.duration = Parameter(initial_value=self._value_or_config('duration', duration),
+                                  unit='s', set_cmd=None)
+        self.t_stop = Parameter(initial_value=self._value_or_config('t_stop', t_stop),
+                                unit='s')
+        # Since t_stop get/set cmd depends on t_start and duration, we perform
+        # another set to ensure that duration is also set if t_stop is not None
+        if self['t_stop'].raw_value is not None:
+            self.t_stop = self['t_stop'].raw_value
+        self.connection_label = Parameter(initial_value=self._value_or_config('connection_label',
+                                                                              connection_label),
+                                          set_cmd=None)
 
         # Set attributes that can also be retrieved from properties_config
         if self.properties_config is not None:
@@ -201,11 +213,11 @@ class Pulse(HasTraits):
                 setattr(self, attr, self.properties_config.get(attr, None))
 
         # Set attributes that should not be retrieved from pulse_config
-        self.acquire = acquire
-        self.initialize = initialize
-        self.enabled = enabled
-        self.connection = connection
-        self.average = average
+        self.acquire = Parameter(initial_value=acquire, vals=vals.Bool(), set_cmd=None)
+        self.initialize = Parameter(initial_value=initialize, vals=vals.Bool(), set_cmd=None)
+        self.enabled = Parameter(initial_value=enabled, vals=vals.Bool(), set_cmd=None)
+        self.connection = Parameter(initial_value=connection, set_cmd=None)
+        self.average = Parameter(initial_value=average, vals=vals.Strings(), set_cmd=None)
 
         # Pulses can have a PulseImplementation after targeting
         self.implementation = None
@@ -215,15 +227,46 @@ class Pulse(HasTraits):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-    @validate('average')
-    def _valid_average(self, proposal):
-        if proposal['value'] in ['none', 'trace', 'point']:
-            return proposal['value']
-        elif ('point_segment' in proposal['value'] or
-                      'trace_segment' in proposal['value']):
-            return proposal['value']
+    @parameter
+    def average_vals(self, parameter, value):
+        if value in ['none', 'trace', 'point']:
+            return True
+        elif ('point_segment' in value or 'trace_segment' in value):
+            return True
         else:
-            return TraitError
+            return False
+
+    @parameter
+    def full_name_get(self, parameter):
+        if self.id is None:
+            return self.name
+        else:
+            return f'{self.name}[{self.id}]'
+
+    @parameter
+    def t_start_set_parser(self, parameter, t_start):
+        if t_start is not None:
+            t_start = round(t_start, 11)
+        return t_start
+
+    @parameter
+    def duration_set_parser(self, parameter, duration):
+        if duration is not None:
+            duration = round(duration, 11)
+        return duration
+
+    @parameter
+    def t_stop_get(self, parameter):
+        if self.t_start is not None and self.duration is not None:
+            return round(self.t_start + self.duration, 11)
+        else:
+            return None
+
+    @parameter
+    def t_stop_set(self, parameter, t_stop):
+        if t_stop is not None:
+            # Setting duration sends a signal for duration and also t_stop
+            self.duration = round(t_stop - self.t_start, 11)
 
     def _matches_attrs(self, other_pulse, exclude_attrs=[]):
         for attr in list(vars(self)):
@@ -284,7 +327,9 @@ class Pulse(HasTraits):
         """
         exclude_attrs = ['connection', 'connection_requirements', 'signal',
                          '_handle_properties_config_signal', '_connected_attrs',
-                         'properties_config', 'pulse_config']
+                         'properties_config', 'pulse_config', 'parameters',
+                         'parameter_nodes', 'functions', 'submodules',
+                         'metadata', '_meta_attrs',]
 
         if not isinstance(other, self.__class__):
             return False
@@ -535,46 +580,6 @@ class Pulse(HasTraits):
                 strip_attr = attr.lstrip('_')
                 return_dict[strip_attr] = val
         return return_dict
-
-    @property
-    def full_name(self):
-        if self.id is None:
-            return self.name
-        else:
-            return f'{self.name}[{self.id}]'
-
-    @property
-    def t_start(self):
-        return self._t_start
-
-    @t_start.setter
-    def t_start(self, t_start):
-        if t_start is not None:
-            t_start = round(t_start, 11)
-        self._t_start = t_start
-
-    @property
-    def duration(self):
-        return self._duration
-
-    @duration.setter
-    def duration(self, duration):
-        if duration is not None:
-            duration = round(duration, 11)
-        self._duration = duration
-
-    @property
-    def t_stop(self):
-        if self.t_start is not None and self.duration is not None:
-            return round(self.t_start + self.duration, 11)
-        else:
-            return None
-
-    @t_stop.setter
-    def t_stop(self, t_stop):
-        if t_stop is not None:
-            # Setting duration sends a signal for duration and also t_stop
-            self.duration = round(t_stop - self.t_start, 11)
 
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
