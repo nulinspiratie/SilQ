@@ -55,6 +55,7 @@ class TestConfig(unittest.TestCase):
         config_loaded2 = DictConfig('env1', folder=new_folder.name)
         self.assertTrue(self.dicts_equal(self.config, config_loaded2))
         self.assertIsInstance(config_loaded2.connections, ListConfig)
+        new_folder.cleanup()
 
     def test_load_no_update(self):
         self.config.save(folder=self.folder.name, save_as_dir=True)
@@ -147,7 +148,6 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(dict_set_items, [('x', {'test': 'val'}),
                                           ('test', 'val')])
 
-
     def test_add_SubConfig(self):
         subconfig = DictConfig(name='pulses',
                                folder=None,
@@ -188,6 +188,9 @@ class TestConfigInheritance(unittest.TestCase):
             'connections': ['connection1', 'connection2']}
         self.config = DictConfig('env1', folder=self.folder.name,
                                  config=self.d)
+
+    def tearDown(self):
+        self.folder.cleanup()
 
     def test_inherit_relative(self):
         self.config.pulses.read2 = {'inherit': 'read'}
@@ -259,6 +262,36 @@ class TestPulseEnvironment(unittest.TestCase):
 
         self.p.environment = 'env1'
         self.assertEqual(self.p.t_start, 2)
+
+
+class TestConfigSignals(unittest.TestCase):
+    def setUp(self):
+        self.original_environment = getattr(silq, 'environment', False)
+        self.d = {
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2'],
+            'properties': {}}
+        self.config = DictConfig('env1', config=self.d)
+
+        self.emitted_signals = []
+        self.config.signal.connect(self.register_signal)
+
+    def tearDown(self):
+        # Restore original environment
+        if self.original_environment is False:
+            if hasattr(silq, 'environment'):
+                del silq.environment
+        else:
+            silq.environment = self.original_environment
+
+    def register_signal(self, sender, *args):
+        self.emitted_signals.append((sender, *args))
+
+    def test_simple_signal(self):
+        self.config.properties.x = 1
+        self.assertEqual(self.emitted_signals[0], ('properties.x', 1))
 
 if __name__ == '__main__':
     unittest.main()
