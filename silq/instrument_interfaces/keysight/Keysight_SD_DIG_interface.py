@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 import numpy as np
 
 class Keysight_SD_DIG_interface(InstrumentInterface):
-    def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
+    def __init__(self, instrument_name, acquisition_controllers=[], **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
         self.pulse_sequence.allow_pulse_overlap = True
@@ -37,7 +37,9 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         }
 
         # Organize acquisition controllers
-        self.acquisition_controllers = {}
+        self.acquisition_controllers = {
+            acquisition_controller.name: acquisition_controller
+            for acquisition_controller in acquisition_controllers}
         for acquisition_controller_name in acquisition_controller_names:
             self.add_acquisition_controller(acquisition_controller_name)
 
@@ -83,22 +85,23 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         """
         acquisition_data = self.acquisition_controller().acquisition()
 
-        acquisition_average_mode = self.acquisition_controller().average_mode()
+        # Set acquisition controller average mode to None
+        # Averaging is done below
+        self.acquisition_controller().average_mode('none')
 
         # The start of acquisition
-        t_start = min(self.pulse_sequence.t_start_list)
+        t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
         data = {}
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
             data[name] = {}
-            for ch_idx, ch in enumerate(self.channel_selection()):
-                ch_data = acquisition_data[ch_idx]
-                ch_name = f'ch{ch}'
-                ts = (pulse.t_start - t_start, pulse.t_stop - t_start)
-                sample_range = [int(round(t * self.sample_rate())) for t in ts]
-                pts = len(sample_range)
+            for k, ch_id in enumerate(self.channel_selection()):
+                ch_data = acquisition_data[k]
+                ch_name = f'ch{ch_id}'
+                sample_range = [int(round((t - t0) * self.sample_rate()))
+                                for t in [pulse.t_start, pulse.t_stop]]
 
                 # Extract pulse data from the channel data
                 data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
@@ -115,7 +118,6 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                     data[name][ch_name] = np.mean(split_arrs, axis=(1,2))
                 else:
                     raise SyntaxError(f'average mode {pulse.average} not configured')
-
         return data
 
     def add_acquisition_controller(self, acquisition_controller_name,
