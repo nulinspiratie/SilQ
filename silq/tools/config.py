@@ -1,13 +1,14 @@
 from typing import Any
 import os
 import collections
-from blinker import signal
+from blinker import signal, Signal
 import json
 from functools import partial
 import copy
 
 import qcodes as qc
 from qcodes.config.config import DotDict
+from qcodes.utils.helpers import SignalEmitter
 
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
 
@@ -57,8 +58,6 @@ class SubConfig:
                  folder: str = None,
                  parent: 'SubConfig' = None,
                  save_as_dir: bool = None):
-
-
         # Set through __dict__ since setattr may be overridden
         self.name = name
         self.folder = folder
@@ -228,7 +227,7 @@ class SubConfig:
         raise NotImplementedError('Implement in subclass')
 
 
-class DictConfig(SubConfig, DotDict):
+class DictConfig(SubConfig, DotDict, SignalEmitter):
     """`SubConfig` for dictionaries, extension of ``qcodes.config``.
 
     This is a SubConfig child class for dictionaries.
@@ -260,6 +259,7 @@ class DictConfig(SubConfig, DotDict):
         DotDict.__init__(self)
         SubConfig.__init__(self, name=name, folder=folder, parent=parent,
                            save_as_dir=save_as_dir)
+        SignalEmitter.__init__(self, initialize_signal=True)
 
         if config is not None:
             update_dict(self, config)
