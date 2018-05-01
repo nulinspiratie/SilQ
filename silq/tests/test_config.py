@@ -222,6 +222,56 @@ class TestConfigInheritance(unittest.TestCase):
         self.assertEqual(self.config.pulses.read2.t_stop, 20)
 
 
+class TestConfigEnvironment(unittest.TestCase):
+    def setUp(self):
+        self.original_environment = silq.environment
+        self.d = {
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2'],
+            'properties': {},
+            'env1': {'properties': {'x': 1, 'y': 2}}}
+        self.config = DictConfig('config', config=self.d)
+
+    def tearDown(self):
+        # Restore original environment
+        silq.environment = self.original_environment
+
+    def test_no_environment(self):
+        silq.environment = None
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'config:env1.properties')
+
+    def test_other_environment(self):
+        silq.environment = 'env2'
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'config:env1.properties')
+
+    def test_environment(self):
+        silq.environment = 'env1'
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'environment:properties')
+
+    def test_switch_environments(self):
+        silq.environment = 'env2'
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'config:env1.properties')
+        silq.environment = 'env1'
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'environment:properties')
+        silq.environment = None
+        self.assertEqual(self.config.config_path, 'config:')
+        self.assertEqual(self.config.properties.config_path, 'config:properties')
+        self.assertEqual(self.config.env1.properties.config_path, 'config:env1.properties')
+
+
+
 
 class TestPulseEnvironment(unittest.TestCase):
     def setUp(self):
@@ -266,7 +316,7 @@ class TestPulseEnvironment(unittest.TestCase):
 
 class TestConfigSignals(unittest.TestCase):
     def setUp(self):
-        self.original_environment = getattr(silq, 'environment', False)
+        self.original_environment = silq.environment
         self.d = {
             'pulses': {
                 'read': {'t_start': 0,
@@ -280,18 +330,63 @@ class TestConfigSignals(unittest.TestCase):
 
     def tearDown(self):
         # Restore original environment
-        if self.original_environment is False:
-            if hasattr(silq, 'environment'):
-                del silq.environment
-        else:
-            silq.environment = self.original_environment
+        silq.environment = self.original_environment
 
-    def register_signal(self, sender, *args):
-        self.emitted_signals.append((sender, *args))
+    def register_signal(self, sender, value):
+        self.emitted_signals.append((sender, value))
 
-    def test_simple_signal(self):
+    def test_simple_signal_no_environment(self):
         self.config.properties.x = 1
-        self.assertEqual(self.emitted_signals[0], ('properties.x', 1))
+        self.assertEqual(len(self.emitted_signals), 2)
+        self.assertEqual(self.emitted_signals[0], ('config:properties.x', 1))
+        self.assertEqual(self.emitted_signals[1], ('environment:properties.x', 1))
+
+    def test_simple_signal_environment(self):
+        silq.environment = 'env1'
+        self.config.properties.x = 1
+        self.assertEqual(len(self.emitted_signals), 1)
+        self.assertEqual(self.emitted_signals[0], ('config:properties.x', 1))
+
+        self.config.env1 = {'properties.y': 42}
+        self.emitted_signals = []
+
+        self.config.env1.properties.y = 43
+        self.assertEqual(len(self.emitted_signals), 1)
+        self.assertEqual(self.emitted_signals[0], ('environment:properties.y', 43))
+
+    def test_signal_mirroring(self):
+        with self.assertRaises(KeyError):
+            self.config.properties.x = 'config:properties.y'
+
+        self.config.properties.y = 1
+        self.config.properties.x = 'config:properties.y'
+        self.assertEqual(self.config.properties.x, 1)
+
+        self.emitted_signals = []
+        self.config.properties.y = 2
+        self.assertEqual(len(self.emitted_signals), 4)
+        self.assertEqual(self.config.properties.y, 2)
+        self.assertEqual(self.config.properties.x, 2)
+        self.assertEqual(self.emitted_signals[0], ('config:properties.y', 2))
+        self.assertEqual(self.emitted_signals[1], ('environment:properties.y', 2))
+        self.assertEqual(self.emitted_signals[2], ('config:properties.x', 2))
+        self.assertEqual(self.emitted_signals[3], ('environment:properties.x', 2))
+
+    def test_signal_mirroring_environment(self):
+        self.config.env1 = {'properties': {}}
+        silq.environment = 'env1'
+
+        self.config.env1.properties.y = 1
+        self.config.env1.properties.x = 'environment:properties.y'
+        self.assertEqual(self.config.env1.properties.x, 1)
+
+        self.emitted_signals = []
+        self.config.env1.properties.y = 2
+        self.assertEqual(self.config.env1.properties.y, 2)
+        self.assertEqual(self.config.env1.properties.x, 2)
+        self.assertEqual(self.emitted_signals[0], ('environment:properties.y', 2))
+        self.assertEqual(self.emitted_signals[1], ('environment:properties.x', 2))
+
 
 if __name__ == '__main__':
     unittest.main()
