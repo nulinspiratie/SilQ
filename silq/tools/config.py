@@ -268,6 +268,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                  config: dict = None,
                  save_as_dir: bool = None):
         self._mirrored_config_attrs = {}
+        self._inherited_configs = []
 
         DotDict.__init__(self)
         SubConfig.__init__(self, name=name, folder=folder, parent=parent,
@@ -281,18 +282,13 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             self.load()
 
     def __contains__(self, key):
-        # TODO: modify
         if DotDict.__contains__(self, key):
             return True
         elif DotDict.__contains__(self, 'inherit'):
-            if 'config:' in self.inherit:
-                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
-            elif self.parent is not None:
-                # Inherit is sibling of current dict item
-                inherit_dict = self.parent[self.inherit]
-            else:
+            try:
+                return key in self['inherit']
+            except KeyError:
                 return False
-            return key in inherit_dict
         else:
             return False
 
@@ -301,29 +297,37 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             if self.parent is None:
                 return self[key.strip('config:')]
             else:
+                # Pass config:path along to parent
                 return self.parent[key]
         elif key.startswith('environment:'):
             if self.parent is None:
-                return self[silq.environment][key.strip('environment:')]
+                if silq.environment is None:
+                    return self[key.strip('environment:')]
+                else:
+                    return self[silq.environment][key.strip('environment:')]
             else:
+                # Pass environment:path along to parent
                 return self.parent[key]
-        elif DotDict.__contains__(self, key):
+        elif key == 'inherit':
             val = DotDict.__getitem__(self, key)
-            if key != 'inherit' and isinstance(val, str) and (val.startswith('config:')
-                                                              or val.startswith('environment:')):
+            if val.startswith('config:') or val.startswith('environment:'):
                 return self[val]
-        elif 'inherit' in self:
-            if 'config:' in self.inherit:
-                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
             elif self.parent is not None:
                 # Inherit is sibling of current dict item
-                inherit_dict = self.parent[self.inherit]
+                return self.parent[val]
             else:
-                raise KeyError
-            val = inherit_dict[key]
+                raise KeyError('Could not find inheriting config')
+        elif DotDict.__contains__(self, key):
+            val = DotDict.__getitem__(self, key)
+            if isinstance(val, str) and (val.startswith('config:')
+                                         or val.startswith('environment:')):
+                return self[val]
+            else:
+                return val
+        elif 'inherit' in self:
+            return self['inherit'][key]
         else:
             raise KeyError
-        return val
 
     def __setitem__(self, key, val):
         if not isinstance(key, str):
@@ -338,17 +342,26 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
         else:
             if isinstance(val, SubConfig):
                 val.parent = self
+                dict.__setitem__(self, key, val)
             elif isinstance(val, dict):
-                val = DictConfig(name=key, config=val, parent=self)
+                # First set item, then update the dict. This avoids circular
+                # referencing from mirrored attributes
+                dict.__setitem__(self, key, DictConfig(name=key, parent=self))
+                update_dict(self[key], val)
             elif isinstance(val, list):
-                val = ListConfig(name=key, config=val, parent=self)
-            dict.__setitem__(self, key, val)
+                dict.__setitem__(self, key, ListConfig(name=key, parent=self))
+                self[key] += val
+            else:
+                dict.__setitem__(self, key, val)
+                if key == 'inherit':
+                    # Register inheritance for signal sending
+                    self[val]._inherited_configs.append(self.config_path)
 
         if isinstance(val, str) and (val.startswith('config:')
                                      or val.startswith('environment:')):
             # item should mirror another config item.
             if '.' in val:
-                target_config_path, target_attr = val.rsplit('.')
+                target_config_path, target_attr = val.rsplit('.', maxsplit=1)
             else:
                 target_config_path = ['environment:', 'config:'][val.startswith('config:')]
             target_config = self[target_config_path]
@@ -378,6 +391,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             updated_mirrored_config_attrs = []
             for (mirrored_config_path, mirrored_attr) in mirrored_config_attrs:
                 try:
+                    # Check if mirrored attr value still referencing current
+                    # attr. Getting the unreferenced value is a bit cumbersome
                     mirrored_config = self[mirrored_config_path]
                     mirrored_val = dict.__getitem__(mirrored_config, mirrored_attr)
                     if  mirrored_val == attr_config_path:
@@ -390,8 +405,6 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                             mirrored_attr_environment_path = mirrored_attr_path.replace(
                                 'config:', 'environment:')
                             self.signal.send(mirrored_attr_environment_path, value=self[key])
-
-
 
                         updated_mirrored_config_attrs.append((mirrored_config_path,
                                                               mirrored_attr))
@@ -527,7 +540,12 @@ def update_dict(d, u):
     """
     for k, v in u.items():
         if isinstance(v, collections.Mapping) and k in d:
+            existing_val = d.setdefault(k, {})
             # Update existing dict in d with dict v
-            v = update_dict(d.get(k, {}), v)
-        d[k] = v
+            v = update_dict(existing_val, v)
+        if k == 'inherit':
+            # Treat inherit specially, because it references another dict
+            dict.__setitem__(d, k, v)
+        else:
+            d[k] = v
     return d
