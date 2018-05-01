@@ -11,6 +11,11 @@ from .tools.general_tools import SettingsClass
 
 import qcodes as qc
 
+# Initially set the environment to None. Changing this will affect all
+# environment config listeners (see `DictConfig`)
+environment = None
+
+
 logger = logging.getLogger(__name__)
 
 # Dictionary of SilQ subconfigs
