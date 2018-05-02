@@ -517,6 +517,30 @@ class TestConfigSignals(unittest.TestCase):
         self.assertEqual(self.emitted_signals[1],
                          ('config:pulses.read2.t_start', 30))
 
+    def test_refresh_signals(self):
+        silq.environment = 'env1'
+        self.d['properties']['x'] = 2
+        self.config.refresh(self.d)
+        self.assertEqual(self.config.properties.x, 2)
+        self.assertEqual(len(self.emitted_signals), 1)
+        self.assertEqual(self.emitted_signals[0], ('config:properties.x', 2))
+
+        self.d.pop('properties')
+        self.config.refresh(self.d)
+        self.assertNotIn('properties', self.config)
+        self.assertEqual(len(self.emitted_signals), 1)
+
+        self.d['pulses']['read2'] = {'t_start': 1,
+                                     't_stop': 2}
+        self.config.refresh(self.d)
+        self.assertEqual(len(self.emitted_signals), 4)
+        self.assertEqual(self.emitted_signals[1], ('config:pulses.read2.t_start', 1))
+        self.assertEqual(self.emitted_signals[2], ('config:pulses.read2.t_stop', 2))
+        self.assertEqual(self.emitted_signals[3], ('config:pulses.read2',
+                                                   {'t_start': 1,
+                                                    't_stop': 2}))
+
+
 class test_connect_parameter_to_config(unittest.TestCase):
     def setUp(self):
         self.original_environment = silq.environment
