@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
+# Set qcodes.config.user.silq_config to the silq config
+qc.config.user.update({'silq_config': config})
+
 silq_env_var = 'SILQ_EXP_FOLDER'
 
 if 'ipykernel' in sys.modules:
