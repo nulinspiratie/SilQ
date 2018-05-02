@@ -67,8 +67,6 @@ class SubConfig:
         self.parent = parent
         self.save_as_dir = save_as_dir
 
-        qc.config.user.update({name: self})
-
     @property
     def config_path(self):
         """SubConfig path, e.g. ``config:dot.separated.path``"""
