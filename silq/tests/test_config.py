@@ -7,6 +7,9 @@ from silq.tools.config import *
 from silq import config
 from silq.pulses import Pulse
 
+import qcodes as qc
+from qcodes.instrument.parameter import Parameter
+
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
@@ -513,6 +516,69 @@ class TestConfigSignals(unittest.TestCase):
                          ('config:pulses.read.t_start', 30))
         self.assertEqual(self.emitted_signals[1],
                          ('config:pulses.read2.t_start', 30))
+
+class test_connect_parameter_to_config(unittest.TestCase):
+    def setUp(self):
+        self.original_environment = silq.environment
+        self.silq_config = silq.config
+
+        self.d = {
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2'],
+            'properties': {},
+            'env1': {'properties': {'x': 1, 'y': 2}}}
+        self.config = DictConfig('cfg', config=self.d)
+        qc.config.user.silq_config = silq.config = self.config
+
+        self.emitted_signals = []
+        self.config.signal.connect(self.register_signal)
+
+    def tearDown(self):
+        silq.environment = self.original_environment
+        qc.config.user.silq_config = silq.config = self.silq_config
+
+    def register_signal(self, sender, value):
+        self.emitted_signals.append((sender, value))
+
+    def test_simple_connect_parameter(self):
+        p = Parameter(name='param1', config_link='config:properties.x',
+                      set_cmd=None, initial_value=42)
+
+        silq.config.properties.x = 41
+        self.assertEqual(p(), 41)
+
+        def test_connect_parameter_to_environment(self):
+            p = Parameter(name='param1', config_link='config:properties.x',
+                          set_cmd=None, initial_value=42)
+
+            silq.config.properties.x = 41
+            self.assertEqual(p(), 41)
+
+    def test_connect_parameter_to_environment_config(self):
+        p = Parameter(name='param1', config_link='environment:properties.x',
+                      set_cmd=None, initial_value=42)
+        silq.config.env1.properties.x = 41
+        self.assertEqual(p(), 42)
+
+        silq.config.properties.x = 43
+        self.assertEqual(p(), 43)
+
+        silq.environment = 'env1'
+        silq.config.env1.properties.x = 44
+        self.assertEqual(p(), 44)
+
+        silq.config.properties.x = 45
+        self.assertEqual(p(), 44)
+
+        silq.environment = None
+        silq.config.env1.properties.x = 46
+        self.assertEqual(p(), 44)
+
+        silq.config.properties.x = 47
+        self.assertEqual(p(), 47)
+
 
 if __name__ == '__main__':
     unittest.main()
