@@ -259,7 +259,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             folder, each dict key being a separate JSON file.
     """
     exclude_from_dict = ['name', 'folder', 'parent',
-                         'signal', '_signal_chain',
+                         'signal', '_signal_chain', '_signal_modifiers',
                          '_mirrored_config_attrs', '_inherited_configs',
                          'save_as_dir', 'config_path']
 
