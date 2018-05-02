@@ -1,13 +1,16 @@
-from typing import Any
+from typing import Any, List, Union, Tuple
 import os
 import collections
-from blinker import signal
+from blinker import signal, Signal
 import json
 from functools import partial
 import copy
 
 import qcodes as qc
 from qcodes.config.config import DotDict
+from qcodes.utils.helpers import SignalEmitter
+
+import silq
 
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
 
@@ -57,27 +60,28 @@ class SubConfig:
                  folder: str = None,
                  parent: 'SubConfig' = None,
                  save_as_dir: bool = None):
-
-
         # Set through __dict__ since setattr may be overridden
         self.name = name
         self.folder = folder
-        self._connected_attrs = {}
+        # TODO: modify
         self.parent = parent
         self.save_as_dir = save_as_dir
-
-        qc.config.user.update({name: self})
 
     @property
     def config_path(self):
         """SubConfig path, e.g. ``config:dot.separated.path``"""
         if self.parent is None:
-            return f'{self.name}:'
+            return f'config:'
         else:
             parent_path = self.parent.config_path
-            if parent_path[-1] != ':':
-                parent_path += '.'
-            return parent_path + self.name
+            if parent_path == 'config:' and self.name == silq.environment:
+                return 'environment:'
+            else:
+                # Ancestor of either config: or environment:
+                if parent_path[-1] != ':':
+                    # Not direct ancestor
+                    parent_path += '.'
+                return parent_path + self.name
 
     def load(self,
              folder: str = None):
@@ -228,7 +232,7 @@ class SubConfig:
         raise NotImplementedError('Implement in subclass')
 
 
-class DictConfig(SubConfig, DotDict):
+class DictConfig(SubConfig, DotDict, SignalEmitter):
     """`SubConfig` for dictionaries, extension of ``qcodes.config``.
 
     This is a SubConfig child class for dictionaries.
@@ -249,17 +253,27 @@ class DictConfig(SubConfig, DotDict):
             in it are saved as a JSON file. If True, SubConfig is saved as a
             folder, each dict key being a separate JSON file.
     """
-    exclude_from_dict = ['name', 'folder', '_connected_attrs', 'parent',
+    exclude_from_dict = ['name', 'folder', 'parent',
+                         'signal', '_signal_chain',
+                         '_mirrored_config_attrs', '_inherited_configs',
                          'save_as_dir', 'config_path']
+
+    signal = Signal()
+
     def __init__(self,
                  name: str,
                  folder: str = None,
                  parent: SubConfig = None,
                  config: dict = None,
                  save_as_dir: bool = None):
-        DotDict.__init__(self)
+        self._mirrored_config_attrs = {}
+        self._inherited_configs = []
+
         SubConfig.__init__(self, name=name, folder=folder, parent=parent,
                            save_as_dir=save_as_dir)
+        DotDict.__init__(self)
+        SignalEmitter.__init__(self, initialize_signal=False)
+
 
         if config is not None:
             update_dict(self, config)
@@ -270,49 +284,58 @@ class DictConfig(SubConfig, DotDict):
         if DotDict.__contains__(self, key):
             return True
         elif DotDict.__contains__(self, 'inherit'):
-            if 'config:' in self.inherit:
-                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
-            elif self.parent is not None:
-                # Inherit is sibling of current dict item
-                inherit_dict = self.parent[self.inherit]
-            else:
+            try:
+                if self['inherit'].startswith('config:') or self['inherit'].startswith('environment:'):
+                    return key in self[self['inherit']]
+                else:
+                    return key in self.parent[self['inherit']]
+            except KeyError:
                 return False
-            return key in inherit_dict
         else:
             return False
 
     def __getitem__(self, key):
-        if DotDict.__contains__(self, key):
-            val = DotDict.__getitem__(self, key)
-            if key != 'inherit' and isinstance(val, str) and 'config:' in val:
-                val = qc.config['user'].__getitem__(val[7:])
-        elif 'inherit' in self:
-            if 'config:' in self.inherit:
-                inherit_dict = qc.config['user'].__getitem__(self.inherit[7:])
-            elif self.parent is not None:
-                # Inherit is sibling of current dict item
-                inherit_dict = self.parent[self.inherit]
+        if key.startswith('config:'):
+            if self.parent is not None:
+                # Let parent config deal with this
+                return self.parent[key]
+            elif key == 'config:':
+                return self
             else:
-                raise KeyError
-            val = inherit_dict[key]
+                return self[key.strip('config:')]
+        elif key.startswith('environment:'):
+            if self.parent is None:
+                environment_config = self if silq.environment is None else self[silq.environment]
+                if key == 'environment:':
+                    return environment_config
+                else:
+                    return environment_config[key.strip('environment:')]
+            else:
+                # Pass environment:path along to parent
+                return self.parent[key]
+        elif DotDict.__contains__(self, key):
+            val = DotDict.__getitem__(self, key)
+            if key == 'inherit':
+                return val
+            elif isinstance(val, str) and (val.startswith('config:')
+                                         or val.startswith('environment:')):
+                return self[val]
+            else:
+                return val
+        elif 'inherit' in self:
+            if self['inherit'].startswith('config:') or self['inherit'].startswith('environment:'):
+                return self[self['inherit']][key]
+            else:
+                return self.parent[self['inherit']][key]
         else:
             raise KeyError
-        return val
 
     def __setitem__(self, key, val):
-
-        # If previous value was dependent, remove connected function
-        try:
-            current_val = DotDict.__getitem__(self, key)
-            if isinstance(current_val, str) and 'config:' in current_val:
-                config_path, attr = current_val.rsplit('.', 1)
-                signal_function = self._connected_attrs.pop(key)
-                signal(config_path).disconnect(signal_function)
-        except KeyError:
-            pass
+        if not isinstance(key, str):
+            raise TypeError(f'Config key {key} must have type str, not {type(key)}')
 
         # Update item in dict (modified version of DotDict)
-        if type(key)==str and '.' in key:
+        if '.' in key:
             myKey, restOfKey = key.split('.', 1)
             self.setdefault(myKey, DictConfig(name=myKey,
                                               config={restOfKey: val},
@@ -320,27 +343,110 @@ class DictConfig(SubConfig, DotDict):
         else:
             if isinstance(val, SubConfig):
                 val.parent = self
+                dict.__setitem__(self, key, val)
             elif isinstance(val, dict):
-                val = DictConfig(name=key, config=val, parent=self)
+                # First set item, then update the dict. This avoids circular
+                # referencing from mirrored attributes
+                dict.__setitem__(self, key, DictConfig(name=key, parent=self))
+                update_dict(self[key], val)
             elif isinstance(val, list):
-                val = ListConfig(name=key, config=val, parent=self)
-            dict.__setitem__(self, key, val)
+                dict.__setitem__(self, key, ListConfig(name=key, parent=self))
+                self[key] += val
+            else:
+                dict.__setitem__(self, key, val)
+                if key == 'inherit':
+                    if (val.startswith('config:') or val.startswith('environment:')):
+                        config_path = val
+                    else:
+                        # inherit a neighbouring dict element
+                        config_path = join_config_path(self.parent.config_path, val)
 
-        if isinstance(val, str) and 'config:' in val:
-            # Attach update function if file is in config
-            config_path, attr = val.rsplit('.', 1)
-            signal_function = partial(self._handle_config_signal, key, attr)
-            signal(config_path).connect(signal_function)
-            self._connected_attrs[key] = signal_function
+                    # Register inheritance for signal sending
+                    self[config_path]._inherited_configs.append(self.config_path)
 
-        # Get val after setting, as it can be different if val is dependent,
-        # (i.e. contains 'config:'). Using if because if val is dependent,
-        # and the 'listened' property does not exist yet, hasattr=False.
+        if isinstance(val, str) and (val.startswith('config:')
+                                     or val.startswith('environment:')):
+            # item should mirror another config item.
+            target_config_path, target_attr = split_config_path(val)
+            target_config = self[target_config_path]
 
-        if hasattr(self, key):
-            get_val = self[key]
-            # print(f'cfg: sending {(key, val)} to {self.config_path}')
-            signal(self.config_path).send(self, **{key: get_val})
+            if not target_attr in target_config:
+                raise KeyError(f'{target_config} does not have {target_attr}')
+
+            if target_attr not in target_config._mirrored_config_attrs:
+                target_config._mirrored_config_attrs[target_attr] = []
+
+            target_config._mirrored_config_attrs[target_attr].append((self.config_path, key))
+
+        # Retrieve value from self, which also handles mirroring/inheriting
+        value = self[key]
+
+        # Add key to config path before sending
+        attr_config_path = join_config_path(self.config_path, key)
+
+        # We make sure to get the value, in case the original value is mirrored
+        self.signal.send(attr_config_path, value=value)
+        if silq.environment is None:
+            attr_environment_config_path = attr_config_path.replace(
+                'config:', 'environment:')
+            self.signal.send(attr_environment_config_path, value=value)
+
+        # If any other config attributes mirror the attribute being set,
+        # also send signals with sender being the mirrored attributes
+        if self._inherited_configs:
+            self._inherited_configs = self._send_ancillary_signals(
+                value=value, target_paths=self._inherited_configs,
+                attr=key, attr_path=attr_config_path)
+
+        # If any other config dicts inherit from this DictConfig via 'inherit',
+        # Also emit signals with sender being the inherited dicts
+        if self._mirrored_config_attrs.get(key, []):
+            updated_mirrored_config = self._send_ancillary_signals(
+                value=value, target_paths=self._mirrored_config_attrs[key],
+                attr=None, attr_path=attr_config_path)
+            if updated_mirrored_config:
+                self._mirrored_config_attrs[key] = updated_mirrored_config
+            else:
+                self._mirrored_config_attrs.pop(key, None)
+
+    def _send_ancillary_signals(self,
+                                value: Any,
+                                target_paths: List[Union[str, Tuple[str]]],
+                                attr: str = None,
+                                attr_path: str = None):
+        # mirrored_config_attrs = self._mirrored_config_attrs.get(key, [])
+        updated_target_paths = []
+        for target_full_path in target_paths:
+            try:
+                if attr is None: # Attr is the second argument of the full path
+                    target_path, target_attr = target_full_path
+                else: # Use default attr
+                    target_path, target_attr = target_full_path, attr
+
+                # Check if mirrored attr value still referencing current
+                # attr. Getting the unreferenced value is a bit cumbersome
+                target_config = self[target_path]
+
+                # Target either inherits all attrs of current dict, or one of
+                # its attributes mirrors this attribute. Here we check if this
+                # hasn't changed
+                inheritance = dict.get(target_config, 'inherit', None)
+                if inheritance == self.config_path \
+                        or dict.get(target_config, target_attr) == attr_path \
+                        or (inheritance == self.name and target_config.parent == self.parent):
+                    target_attr_path = join_config_path(target_path, target_attr)
+
+                    self.signal.send(target_attr_path, value=value)
+
+                    if silq.environment is None:
+                        target_attr_environment_path = target_attr_path.replace(
+                            'config:', 'environment:')
+                        self.signal.send(target_attr_environment_path, value=value)
+
+                    updated_target_paths.append(target_full_path)
+            except KeyError:
+                pass
+        return updated_target_paths
 
     def values(self):
         return [self[key] for key in self.keys()]
@@ -365,21 +471,7 @@ class DictConfig(SubConfig, DotDict):
         try:
             return self[key]
         except KeyError:
-            return None
-
-    def _handle_config_signal(self, dependent_attr,  listen_attr, _, **kwargs):
-        """Sends signal when listened property of dependent property is updated.
-
-        Args:
-            dependent_attr: name of dependent attribute
-            listen_attr: name of attribute that is listened.
-            _: sender object (not important)
-            **kwargs: {listened attr: val}
-                The dependent attribute mirrors the value of the listened
-        """
-        sender_key, sender_val = kwargs.popitem()
-        if sender_key == listen_attr:
-            signal(self.config_path).send(self, **{dependent_attr: sender_val})
+            return default
 
     def load(self,
              folder: str = None,
@@ -480,7 +572,31 @@ def update_dict(d, u):
     """
     for k, v in u.items():
         if isinstance(v, collections.Mapping) and k in d:
+            existing_val = d.setdefault(k, {})
             # Update existing dict in d with dict v
-            v = update_dict(d.get(k, {}), v)
+            v = update_dict(existing_val, v)
         d[k] = v
     return d
+
+
+def split_config_path(config_path):
+    """Splits a config path into the parent path and attr
+
+    Args:
+        config_path: Full config path
+
+    Returns:
+        parent_config_path: Everything except last element
+        config_attr: final part of config path
+    """
+    if '.' in config_path:
+        return config_path.rsplit('.', 1)
+    else:
+        # config path has form config:item, which should be ('config:', 'item')
+        parent_config_path, config_attr = config_path.split(':')
+        parent_config_path += ':'
+        return parent_config_path, config_attr
+
+def join_config_path(config_path, config_attr):
+    delimiter = '' if config_path.endswith(':') else '.'
+    return f'{config_path}{delimiter}{config_attr}'
