@@ -4,69 +4,7 @@ from copy import copy, deepcopy
 from blinker import Signal
 from matplotlib import pyplot as plt
 
-__all__ = ['PulseMatch', 'PulseRequirement', 'PulseSequence',
-           'PulseImplementation']
-
-
-class PulseMatch():
-    """ Object to match a pulse attribute to another pulse attribute.
-
-    This is used toensure that pulses adapt when other pulses are modified,
-    e.g. to ensure that a pulse always starts after the previuos pulse.
-
-    Examples:
-        The following example shows how a PulseMatch can be used to ensure that
-        a pulse always starts after the previous pulse
-
-        >>> p1 = DCPulse('plunge', t_start=0, duration=1)
-        >>> p2 = DCPulse('read', t_start=PulseMatch(p1, 't_stop'), duration=1)
-        >>> p1.duration = 5 # Change duration of first pulse
-        >>> p2.t_start
-        5
-
-        A PulseMatch can also be used after initializing the pulse:
-
-        >>> p2.t_start = PulseMatch(p1, 't_stop')
-
-    Args:
-        origin_pulse: Pulse whose attribute to monitor
-        origin_pulse_attr: Attribute of ``origin_pulse`` to monitor
-        delay: Any delay (offset) to add to ``origin_pulse_attr``.
-
-    Parameters:
-        target_pulse: Pulse that monitors ``origin_pulse_attr``.
-            Will be set once a `Pulse` attribute is set to a PulseMatch.
-        target_pulse_attr: Attribute of pulse to be updated when
-            ``origin_pulse_attr`` changes. Will be set once a `Pulse` attribute
-            is set to a PulseMatch.
-
-    Notes:
-        * The matching of attributes only works one way, i.e. any changes in the
-          origin pulse are updated in the target pulse.
-        * The `Pulse`.signal parameter is used to transmit when a value changes.
-    """
-    def __init__(self,
-                 origin_pulse,
-                 origin_pulse_attr: str,
-                 delay: float = 0,
-                 target_pulse=None,
-                 target_pulse_attr: str = None):
-        self.origin_pulse = origin_pulse
-        self.origin_pulse_attr = origin_pulse_attr
-        self.delay = delay
-
-        self.target_pulse = target_pulse
-        self.target_pulse_attr = target_pulse_attr
-
-    @property
-    def value(self):
-        """Value that ``target_pulse_attr`` should have, including any delay."""
-        return getattr(self.origin_pulse, self.origin_pulse_attr) + self.delay
-
-    def __call__(self, sender, **kwargs):
-        """Set value of `target_pulse_attr`, called by `Pulse`.signal"""
-        if self.origin_pulse_attr in kwargs:
-            setattr(self.target_pulse, self.target_pulse_attr, self)
+__all__ = ['PulseRequirement', 'PulseSequence', 'PulseImplementation']
 
 
 class PulseRequirement():
