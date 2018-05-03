@@ -160,14 +160,7 @@ class Pulse(ParameterNode):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-        # Connect all parameters to config
-        for parameter_name, parameter in self.parameters.items():
-            config_link = f'{self.config_link}.{self.name}.{parameter_name}'
-            config_value = parameter.set_config_link(config_link=config_link)
-
-            # Update parameter value if not yet set, and set in config
-            if parameter.raw_value is None and config_value is not None:
-                parameter(config_value)
+        self._connect_parameters_to_config()
 
     @parameter
     def average_vals(self, parameter, value):
@@ -249,7 +242,7 @@ class Pulse(ParameterNode):
 
         # Perform additional checks if either self or other has an implementation
         if self.implementation is None:
-            if other.implementation.implementation is None:
+            if other.implementation is None:
                 return True
             else:
                 return other.connection.satisfies_conditions(**self.connection_requirements)
@@ -348,6 +341,40 @@ class Pulse(ParameterNode):
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
 
+    def _connect_parameters_to_config(self, parameters=None):
+        """Connect Pulse parameters to config using Pulse.config_link.
+
+        By connecting a parameter, every time the corresponding config value
+        changes, this in turn changes the parameter value.
+
+        The config link is {Pulse.config_link}.{self.name}.{parameter.name}
+
+        Args:
+             parameters: Parameters to Connect. Can be
+
+             - None: Connect all parameters in self.parameters
+             - str list: Connect all parameter with given string names
+             - Parameter list: Connect all parameters in list
+        """
+        if isinstance(parameters, list):
+            if isinstance(parameters[0], str):
+                parameters = {parameter: self.parameters[parameter]
+                              for parameter in parameters}
+            else:
+                parameters = {parameter.name: parameter
+                              for parameter in parameters}
+        elif parameters is None:
+            parameters = self.parameters
+
+        for parameter_name, parameter in parameters.items():
+            config_link = f'{self.config_link}.{self.name}.{parameter_name}'
+            config_value = parameter.set_config_link(config_link=config_link)
+
+            # Update parameter value if not yet set, and set in config
+            if parameter.raw_value is None and config_value is not None:
+                parameter(config_value)
+
+
     def satisfies_conditions(self,
                              pulse_class = None,
                              name: str=None,
@@ -438,6 +465,8 @@ class SteeredInitialization(Pulse):
                  t_buffer: float = None,
                  readout_threshold_voltage: float = None,
                  **kwargs):
+        super().__init__(name=name, t_start=0, duration=0, initialize=True,
+                         **kwargs)
 
         self.t_no_blip = Parameter(initial_value=t_no_blip, unit='s',
                                    set_cmd=None, vals=vals.Numbers())
@@ -448,8 +477,9 @@ class SteeredInitialization(Pulse):
         self.readout_threshold_voltage = Parameter(initial_value=readout_threshold_voltage,
                                                    unit='V', set_cmd=None,
                                                    vals=vals.Numbers())
-        super().__init__(name=name, t_start=0, duration=0, initialize=True,
-                         **kwargs)
+
+        self._connect_parameters_to_config(
+            ['t_no_blip', 't_max_wait', 't_buffer', 'readout_threshold_voltage'])
 
     def __repr__(self):
         try:
@@ -500,6 +530,8 @@ class SinePulse(Pulse):
                  phase_reference: str = None,
                  **kwargs):
 
+        super().__init__(name=name, **kwargs)
+
         self.frequency = Parameter(initial_value=frequency, unit='Hz',
                                    set_cmd=None, vals=vals.Numbers())
         self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
@@ -518,7 +550,9 @@ class SinePulse(Pulse):
         self.phase_reference = Parameter(initial_value=phase_reference,
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
-        super().__init__(name=name, **kwargs)
+        self._connect_parameters_to_config(
+            ['frequency', 'phase', 'power', 'amplitude', 'offset',
+             'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
@@ -550,7 +584,6 @@ class SinePulse(Pulse):
 
         return super()._get_repr(properties_str)
 
-
     def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
         """Get voltage(s) at time(s) t.
 
@@ -571,6 +604,7 @@ class SinePulse(Pulse):
             waveform += self.offset
 
         return waveform
+
 
 class FrequencyRampPulse(Pulse):
     """Linearly increasing/decreasing frequency `Pulse`.
@@ -611,19 +645,21 @@ class FrequencyRampPulse(Pulse):
                  frequency_sideband: float = None,
                  sideband_mode=None,
                  **kwargs):
+        super().__init__(name=name, **kwargs)
+
         if frequency_start is not None and frequency_stop is not None:
             frequency = (frequency_start + frequency_stop) / 2
             frequency_deviation = (frequency_stop - frequency_start)
-
 
         self.frequency = Parameter(initial_value=frequency, unit='Hz',
                                    set_cmd=None, vals=vals.Numbers())
         self.frequency_deviation = Parameter(initial_value=frequency_deviation,
                                              unit='Hz', set_cmd=None,
                                              vals=vals.Numbers())
-        self.frequency_start = Parameter(initial_value=frequency_start,
-                                         unit='Hz', set_cmd=None,
+        self.frequency_start = Parameter(unit='Hz', set_cmd=None,
                                          vals=vals.Numbers())
+        self.frequency_stop = Parameter(unit='Hz', set_cmd=None,
+                                        vals=vals.Numbers())
         self.frequency_sideband = Parameter(initial_value=frequency_sideband,
                                             unit='Hz', set_cmd=None,
                                             vals=vals.Numbers())
@@ -634,10 +670,13 @@ class FrequencyRampPulse(Pulse):
         self.power = Parameter(initial_value=power, set_cmd=None,
                                vals=vals.Numbers())
 
-        super().__init__(name=name, **kwargs)
+        self._connect_parameters_to_config(
+            ['frequency', 'frequency_deviation', 'frequency_start',
+             'frequency_stop', 'frequency_sideband', 'sideband_mode',
+             'amplitude', 'power'])
 
-        # Set default value for sideband_mode after super().__init__, because
-        # its value may have been retrieved from config
+        # Set default value for sideband_mode after connecting parameters,
+        # because its value may have been retrieved from config
         if self.sideband_mode is not None:
             self.sideband_mode = 'IQ'
 
@@ -655,8 +694,8 @@ class FrequencyRampPulse(Pulse):
     def frequency_stop_get(self):
         return self.frequency + self.frequency_deviation
 
-    @frequency_stop_set
-    def frequency_stop(self, frequency_stop):
+    @parameter
+    def frequency_stop_set(self, frequency_stop):
         frequency_start = self.frequency_start
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
@@ -688,10 +727,13 @@ class DCPulse(Pulse):
     """
     def __init__(self,
                  name: str = None, amplitude: float = None, **kwargs):
+        super().__init__(name=name, **kwargs)
+
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
                                    set_cmd=None, vals=vals.Numbers())
 
-        super().__init__(name=name, **kwargs)
+        self._connect_parameters_to_config(['amplitude'])
+
 
     def __repr__(self):
         properties_str = ''
@@ -735,13 +777,15 @@ class DCRampPulse(Pulse):
                  amplitude_start: float = None,
                  amplitude_stop: float = None,
                  **kwargs):
+        super().__init__(name=name, **kwargs)
+
         self.amplitude_start = Parameter(initial_value=amplitude_start,
                                          unit='V', set_cmd=None,
                                          vals=vals.Numbers())
         self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
                                         set_cmd=None, vals=vals.Numbers())
 
-        super().__init__(name=name, **kwargs)
+        self._connect_parameters_to_config(['amplitude_start', 'amplitude_stop'])
 
     def __repr__(self):
         properties_str = ''
@@ -788,12 +832,14 @@ class TriggerPulse(Pulse):
     def __init__(self,
                  name: str = 'trigger',
                  duration: float = default_duration,
-                 amplitude: float = default_amplitude
+                 amplitude: float = default_amplitude,
                  **kwargs):
+        super().__init__(name=name, duration=duration, **kwargs)
+
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
                                    set_cmd=None, vals=vals.Numbers())
 
-        super().__init__(name=name, duration=duration, **kwargs)
+        self._connect_parameters_to_config(['amplitude'])
 
     def __repr__(self):
         try:
@@ -830,12 +876,22 @@ class MarkerPulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
 
     """
+
+    default_amplitude = 1.0
+
     def __init__(self,
                  name: str = None,
                  amplitude: float = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', amplitude, 1.0)
+
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+
+        self._connect_parameters_to_config(['amplitude'])
+
+        if self.amplitude is not None:
+            self.amplitude = self.default_amplitude
 
     def __repr__(self):
         try:
