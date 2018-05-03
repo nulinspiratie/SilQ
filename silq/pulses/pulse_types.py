@@ -166,7 +166,7 @@ class Pulse(ParameterNode):
             config_value = parameter.set_config_link(config_link=config_link)
 
             # Update parameter value if not yet set, and set in config
-            if self.raw_value is None and config_value is not None:
+            if parameter.raw_value is None and config_value is not None:
                 parameter(config_value)
 
     @parameter
@@ -438,14 +438,18 @@ class SteeredInitialization(Pulse):
                  t_buffer: float = None,
                  readout_threshold_voltage: float = None,
                  **kwargs):
+
+        self.t_no_blip = Parameter(initial_value=t_no_blip, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.t_max_wait = Parameter(initial_value=t_max_wait, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.t_buffer = Parameter(initial_value=t_buffer, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.readout_threshold_voltage = Parameter(initial_value=readout_threshold_voltage,
+                                                   unit='V', set_cmd=None,
+                                                   vals=vals.Numbers())
         super().__init__(name=name, t_start=0, duration=0, initialize=True,
                          **kwargs)
-
-        self.t_no_blip = self._value_or_config('t_no_blip', t_no_blip)
-        self.t_max_wait = self._value_or_config('t_max_wait', t_max_wait)
-        self.t_buffer = self._value_or_config('t_buffer', t_buffer)
-        self.readout_threshold_voltage = self._value_or_config(
-            'readout_threshold_voltage', readout_threshold_voltage)
 
     def __repr__(self):
         try:
@@ -495,21 +499,31 @@ class SinePulse(Pulse):
                  sideband_mode: float = None,
                  phase_reference: str = None,
                  **kwargs):
+
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
+                               vals=vals.Numbers())
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
         super().__init__(name=name, **kwargs)
 
-        self.frequency = self._value_or_config('frequency', frequency)
-        self.phase = self._value_or_config('phase', phase, 0)
-        self.power = self._value_or_config('power', power)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.offset = self._value_or_config('offset', offset)
-        self.frequency_sideband = self._value_or_config('frequency_sideband',
-                                                        frequency_sideband)
-        self.sideband_mode = self._value_or_config('sideband_mode',
-                                                   sideband_mode,
-                                                   'IQ')
-        self.phase_reference = self._value_or_config('phase_reference',
-                                                     phase_reference,
-                                                     'relative')
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
 
     def __repr__(self):
         properties_str = ''
@@ -592,68 +606,60 @@ class FrequencyRampPulse(Pulse):
                  frequency_stop: float = None,
                  frequency: float = None,
                  frequency_deviation: float = None,
-                 frequency_final: str = 'stop',
                  amplitude: float = None,
                  power: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
                  **kwargs):
+        if frequency_start is not None and frequency_stop is not None:
+            frequency = (frequency_start + frequency_stop) / 2
+            frequency_deviation = (frequency_stop - frequency_start)
+
+
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.frequency_deviation = Parameter(initial_value=frequency_deviation,
+                                             unit='Hz', set_cmd=None,
+                                             vals=vals.Numbers())
+        self.frequency_start = Parameter(initial_value=frequency_start,
+                                         unit='Hz', set_cmd=None,
+                                         vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.amplitude = Parameter(initial_value=amplitude, set_cmd=None,
+                                   vals=vals.Numbers())
+        self.power = Parameter(initial_value=power, set_cmd=None,
+                               vals=vals.Numbers())
+
         super().__init__(name=name, **kwargs)
 
-        if frequency_start is not None and frequency_stop is not None:
-            self.frequency = (frequency_start + frequency_stop) / 2
-            self.frequency_deviation = (frequency_stop - frequency_start)
-        else:
-            self.frequency = frequency
-            if self.frequency is None:
-                self.frequency = self.pulse_config.get('frequency', None)
+        # Set default value for sideband_mode after super().__init__, because
+        # its value may have been retrieved from config
+        if self.sideband_mode is not None:
+            self.sideband_mode = 'IQ'
 
-            self.frequency_deviation = frequency_deviation
-            if self.frequency_deviation is  None:
-                self.frequency_deviation = self.pulse_config.get(
-                    'frequency_deviation', None)
-
-        self._frequency_final = frequency_final
-        self.frequency_sideband = self._value_or_config('frequency_sideband',
-                                                        frequency_sideband)
-        self.sideband_mode = self._value_or_config('sideband_mode',
-                                                   sideband_mode, 'IQ')
-
-        self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.power = self._value_or_config('power', power)
-
-    @property
-    def frequency_start(self):
+    @parameter
+    def frequency_start_get(self):
         return self.frequency - self.frequency_deviation
 
-    @frequency_start.setter
-    def frequency_start(self, frequency_start):
+    @parameter
+    def frequency_start_set(self, frequency_start):
         frequency_stop = self.frequency_stop
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
 
-    @property
-    def frequency_stop(self):
+    @parameter
+    def frequency_stop_get(self):
         return self.frequency + self.frequency_deviation
 
-    @frequency_stop.setter
+    @frequency_stop_set
     def frequency_stop(self, frequency_stop):
         frequency_start = self.frequency_start
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
-
-    @property
-    def frequency_final(self):
-        if self._frequency_final == 'start':
-            return self.frequency_start
-        elif self._frequency_final == 'stop':
-            return self.frequency_stop
-        else:
-            return self._frequency_final
-
-    @frequency_final.setter
-    def frequency_final(self, frequency_final):
-        self._frequency_final = frequency_final
 
     def __repr__(self):
         properties_str = ''
@@ -682,12 +688,10 @@ class DCPulse(Pulse):
     """
     def __init__(self,
                  name: str = None, amplitude: float = None, **kwargs):
-        super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
 
-        if self.amplitude is None:
-            raise AttributeError("'{}' object has no attribute "
-                                 "'amplitude'".format(self.__class__.__name__))
+        super().__init__(name=name, **kwargs)
 
     def __repr__(self):
         properties_str = ''
@@ -731,12 +735,13 @@ class DCRampPulse(Pulse):
                  amplitude_start: float = None,
                  amplitude_stop: float = None,
                  **kwargs):
-        super().__init__(name=name, **kwargs)
+        self.amplitude_start = Parameter(initial_value=amplitude_start,
+                                         unit='V', set_cmd=None,
+                                         vals=vals.Numbers())
+        self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
+                                        set_cmd=None, vals=vals.Numbers())
 
-        self.amplitude_start = self._value_or_config('amplitude_start',
-                                                     amplitude_start)
-        self.amplitude_stop = self._value_or_config('amplitude_stop',
-                                                    amplitude_stop)
+        super().__init__(name=name, **kwargs)
 
     def __repr__(self):
         properties_str = ''
@@ -777,14 +782,18 @@ class TriggerPulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
 
     """
-    duration = 100e-9
+    default_duration = 100e-9
+    default_amplitude = 1
 
     def __init__(self,
                  name: str = 'trigger',
-                 duration: float = duration,
+                 duration: float = default_duration,
+                 amplitude: float = default_amplitude
                  **kwargs):
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+
         super().__init__(name=name, duration=duration, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', 1.0)
 
     def __repr__(self):
         try:
@@ -893,9 +902,6 @@ class MeasurementPulse(Pulse):
         name: Pulse name.
         acquire: Acquire pulse (default True)
         **kwargs: Additional parameters of `Pulse`.
-
-    Todo:
-        Verify that it is not directed to any other pulse.
     """
     def __init__(self, name=None, acquire=True, **kwargs):
         super().__init__(name=name, acquire=acquire, **kwargs)
