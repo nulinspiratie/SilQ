@@ -1,12 +1,7 @@
 from typing import Any, Union, Sequence, Callable
 import numpy as np
-from copy import deepcopy
 import collections
-from traitlets import HasTraits, Unicode, validate, TraitError
-from blinker import Signal, signal
 import logging
-
-from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter, \
     freq_to_str, is_between
@@ -23,11 +18,10 @@ __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
+pulse_conditions = ['name', 'id', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average']
 
-Signal.__deepcopy__ = lambda self, memo: Signal()
 logger = logging.getLogger(__name__)
 
 
@@ -117,22 +111,13 @@ class Pulse(ParameterNode):
         implementation (PulseImplementation): Pulse implementation for targeted
             pulse, see `PulseImplementation`.
     """
-    average = Unicode()
-    signal = Signal()
-    _connected_attrs = {}
-    _skip_JSON_encoder_attrs = ['_connected_attrs',
-                                '_cross_validation_lock',
-                                '_trait_notifiers',
-                                '_trait_validators',
-                                '_trait_values',
-                                'signal',
-                                'pulse_config',
-                                'properties_config']
+    # base config link to use for connecting pulse parameters to the config
+    # Changing this will only affect pulses instantiated after change
+    config_link = 'environment:pulses'
 
     def __init__(self,
                  name: str = None,
                  id: int = None,
-                 environment: str = 'default',
                  t_start: float = None,
                  t_stop: float = None,
                  duration: float = None,
@@ -144,73 +129,21 @@ class Pulse(ParameterNode):
                  connection_label: str = None,
                  connection_requirements: dict = {}):
         super().__init__(use_as_attributes=True)
-        # Initialize signals (to notify change of attributes)
-        self.signal = Signal()
-        # Dict of attrs that are connected via blinker.signal to other pulses
-        self._connected_attrs = {}
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
         self.id = Parameter(initial_value=id, vals=vals.Ints(), set_cmd=None)
         self.full_name = Parameter()
 
-        if environment == 'default':
-            environment = silq.config.properties.get('default_environment',
-                                                     'default')
-        self.environment = Parameter(initial_value=environment, vals=vals.Strings(), set_cmd=None)
-        # Setup pulse config
-        try:
-            # Set pulse_config from SilQ environment config
-            self.pulse_config = silq.config[self.environment].pulses[self.name]
-        except (KeyError, TypeError):
-            self.pulse_config = None
-        try:
-            # Set properties_config from SilQ environment config
-            self.properties_config = silq.config[self.environment].properties
-        except (KeyError, AttributeError):
-            self.properties_config = None
-
-        ### Setup signals
-        # Connect changes in pulse config to handling method
-        # If environment.pulses has no self.name key, this will never be called.
-        signal(f'config:{self.environment}.pulses.{self.name}').connect(
-            self._handle_config_signal)
-
-        # Setup properties config. If pulse requires additional
-        # properties_attrs, place them before calling Pulse.__init__,
-        # else they are not added to attrs.
-        # Make sure that self.properties_attrs is never replaced, only appended.
-        # Else it is no longer used for self._handle_properties_config_signal.
-        if not hasattr(self, 'properties_attrs'):
-            # Create attr if it does not already exist
-            self.properties_attrs = []
-        self.properties_attrs += ['t_read', 't_skip']
-
-        # Connect changes in properties config to handling method
-        # If environment has no properties key, this will never be called.
-        signal(f'config:{self.environment}.properties').connect(
-            self._handle_properties_config_signal)
-
-
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
-        self.t_start = Parameter(initial_value=self._value_or_config('t_start', t_start),
-                                 unit='s', set_cmd=None)
-        self.duration = Parameter(initial_value=self._value_or_config('duration', duration),
-                                  unit='s', set_cmd=None)
-        self.t_stop = Parameter(initial_value=self._value_or_config('t_stop', t_stop),
-                                unit='s')
+        self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None)
+        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None)
+        self.t_stop = Parameter(initial_value=t_stop, unit='s')
         # Since t_stop get/set cmd depends on t_start and duration, we perform
         # another set to ensure that duration is also set if t_stop is not None
         if self['t_stop'].raw_value is not None:
             self.t_stop = self['t_stop'].raw_value
-        self.connection_label = Parameter(initial_value=self._value_or_config('connection_label',
-                                                                              connection_label),
-                                          set_cmd=None)
-
-        # Set attributes that can also be retrieved from properties_config
-        if self.properties_config is not None:
-            for attr in self.properties_attrs:
-                setattr(self, attr, self.properties_config.get(attr, None))
+        self.connection_label = Parameter(initial_value=connection_label, set_cmd=None)
 
         # Set attributes that should not be retrieved from pulse_config
         self.acquire = Parameter(initial_value=acquire, vals=vals.Bool(), set_cmd=None)
@@ -226,6 +159,15 @@ class Pulse(ParameterNode):
         # These can be set so that the pulse can only be sent to connections
         # matching these requirements
         self.connection_requirements = connection_requirements
+
+        # Connect all parameters to config
+        for parameter_name, parameter in self.parameters.items():
+            config_link = f'{self.config_link}.{self.name}.{parameter_name}'
+            config_value = parameter.set_config_link(config_link=config_link)
+
+            # Update parameter value if not yet set, and set in config
+            if self.raw_value is None and config_value is not None:
+                parameter(config_value)
 
     @parameter
     def average_vals(self, parameter, value):
@@ -268,43 +210,15 @@ class Pulse(ParameterNode):
             # Setting duration sends a signal for duration and also t_stop
             self.duration = round(t_stop - self.t_start, 11)
 
-    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
-        for attr in list(vars(self)):
-            if attr in exclude_attrs:
+    def _matches_parameters(self, other_pulse, exclude_parameters=[]):
+        for parameter_name, parameter in self.parameters.items():
+            if parameter_name in exclude_parameters:
                 continue
-            elif not hasattr(other_pulse, attr) \
-                    or getattr(self, attr) != getattr(other_pulse, attr):
+            elif not parameter_name in other_pulse.parameters \
+                    or getattr(self, parameter_name) != getattr(other_pulse, parameter_name):
                 return False
         else:
             return True
-
-    def _handle_config_signal(self, _, select=None, **kwargs):
-        """Update attr when attr in pulse config is modified
-
-        Args:
-            _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set.
-                Will update any attribute if not specified.
-            **kwargs: {attr: new_val}
-        """
-        key, val = kwargs.popitem()
-        if select is None or key in select:
-            setattr(self, key, val)
-
-    def _handle_properties_config_signal(self, arg, **kwargs):
-        """ Update attr when attr in properties config is modified.
-
-        Note:
-            This method has to be defined separately, and cannot simply be
-            defined using a partial on `_handle_config_signal`, as this will
-            somehow cause it to always reference itself, and thus never be gc'ed
-
-        Args:
-            arg: Ignored handle arg passed by signal.send.
-            **kwargs: handle kwargs
-
-        """
-        self._handle_config_signal(arg, select=self.properties_attrs, **kwargs)
 
     def __str__(self):
         # This is called by blinker.signal to get a repr. Instead of creating
@@ -325,154 +239,35 @@ class Pulse(ParameterNode):
         Returns:
 
         """
-        exclude_attrs = ['connection', 'connection_requirements', 'signal',
-                         '_handle_properties_config_signal', '_connected_attrs',
-                         'properties_config', 'pulse_config', 'parameters',
-                         'parameter_nodes', 'functions', 'submodules',
-                         'metadata', '_meta_attrs',]
+        exclude_parameters = ['connection']
 
         if not isinstance(other, self.__class__):
             return False
 
-        if self.implementation is not None:
-            if other.implementation is not None:
-                # Both pulses have pulse implementations
-                # All attributes must match
-                return self._matches_attrs(other, exclude_attrs=exclude_attrs)
-            else:
-                # Only self has a pulse implementation
+        if not self._matches_parameters(other, exclude_parameters=exclude_parameters):
+            return False
 
-                # self is a pulse implementation, and so it must match all
-                # the attributes of other. The other way around does not
-                # necessarily hold, since a pulse implementation has more attrs
-                if not other._matches_attrs(self, exclude_attrs=exclude_attrs):
-                    return False
-                else:
-                    # Check if self.connections satisfies the connection
-                    # requirements of other
-                    return self.connection.satisfies_conditions(
-                        **other.connection_requirements)
-        elif other.implementation is not None:
-            # Only other has a pulse implementation
-
-            # other is a pulse implementation, and so it must match all
-            # the attributes of self. The other way around does not
-            # necessarily hold, since a pulse implementation has more attrs
-            if not self._matches_attrs(other, exclude_attrs=exclude_attrs):
-                return False
+        # Perform additional checks if either self or other has an implementation
+        if self.implementation is None:
+            if other.implementation.implementation is None:
+                return True
             else:
-                # Check if other.connections satisfies the connection
-                # requirements of self
-                return other.connection.satisfies_conditions(
-                    **self.connection_requirements)
-        else:
-            # Neither self nor other has a pulse implementation
-            # All attributes must match
-            return self._matches_attrs(other, exclude_attrs=exclude_attrs)
+                return other.connection.satisfies_conditions(**self.connection_requirements)
+        elif other.implementation is None:
+            return self.connection.satisfies_conditions(**other.connection_requirements)
+        else: # Both have an implementation
+            return self.connection == other.connection
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
         """Define custom hash, used for creating a set of unique elements"""
-        return hash(tuple(sorted(self.__dict__.items())))
+        return hash(tuple(sorted(self.parameters.items())))
 
     def __bool__(self):
         """Pulse is always equal to True"""
         return True
-
-    def __setattr__(self, key, value):
-        if isinstance(value, PulseMatch):
-            previous_pulse_match = self._connected_attrs.get(key, None)
-            if previous_pulse_match is not value:
-                # Either no previous pulse, or it was different from value
-                if isinstance(previous_pulse_match, PulseMatch):
-                    # Disconnect previous PulseMatch
-                    previous_pulse_match.origin_pulse.signal.disconnect(
-                        previous_pulse_match)
-
-            value.origin_pulse.signal.connect(value)
-            value.target_pulse = self
-            value.target_pulse_attr = key
-            self._connected_attrs[key] = value
-
-            super().__setattr__(key, value.value)
-
-        else:
-            if key == 'environment' and hasattr(self, key):
-                # Disconnect previous handlers if they existed
-                signal(f'config:{self.environment}.pulses.{self.name}'
-                       ).disconnect(self._handle_config_signal)
-                signal(f'config:{self.environment}.properties'
-                       ).disconnect(self._handle_properties_config_signal)
-
-                # Connect to new handlers
-                signal(f'config:{value}.pulses.{self.name}').connect(
-                    self._handle_config_signal)
-                signal(f'config:{value}.properties').connect(
-                    self._handle_properties_config_signal)
-
-                if self.name in silq.config[value].pulses:
-                    # Replace pulse_config
-                    self.pulse_config = silq.config[value].pulses[self.name]
-                    # Update all pulse attrs that exist in new pulse_config
-                    for env_key, env_val in self.pulse_config.items():
-                        if hasattr(self, env_key):
-                            setattr(self, env_key, env_val)
-                else:
-                    self.pulse_config = None
-
-                if 'properties' in silq.config[value]:
-                    # Repace properties_config
-                    self.properties_attrs = silq.config[value].properties
-                    # Replace all attrs in new properties_config if they are
-                    # in self.properties_attrs
-                    for attr in self.properties_attrs:
-                        if attr in silq.config[value].properties:
-                            setattr(self, attr, silq.config[value].properties[attr])
-
-            super().__setattr__(key, value)
-
-
-            if key in self._connected_attrs:
-                previous_pulse_match = self._connected_attrs.pop(key)
-                # Remove function from pulse signal because it no longer
-                # depends on other pulse
-                previous_pulse_match.origin_pulse.signal.disconnect(
-                    previous_pulse_match)
-
-        if self.signal.receivers:
-            # send signal to anyone listening that attribute has changed
-            self.signal.send(self, **{key: value})
-            if key in ['t_start', 'duration']:
-                # Also send signal that dependent property t_stop has changed
-                self.signal.send(self, t_stop=self.t_stop)
-
-    def _value_or_config(self,
-                         key: str,
-                         value: Any,
-                         default: Any=None):
-        """Decides what value to return depending on value and config.
-
-        Used for setting pulse attributes at the start
-
-        Args:
-            key: key to check in config
-            value: value to choose if not equal to None
-            default: default value if no value specified. None by default
-
-        Returns:
-            if value is not None, return value
-            elif config has key, return config[key]
-            else return None
-
-        """
-        if value is not None:
-            return value
-        elif self.pulse_config is not None and key in self.pulse_config:
-            return self.pulse_config[key]
-        else:
-            return default
 
     def __add__(self,
                 other: 'Pulse') -> 'CombinationPulse':
@@ -536,51 +331,6 @@ class Pulse(ParameterNode):
         name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
 
-    def __deepcopy__(self, *args):
-        """Creates a copy of a pulse.
-
-        Returns:
-            Copy of pulse
-        """
-
-        # Temporarily empty _connected_attrs as it may reference other pulses
-        _connected_attrs, self._connected_attrs = self._connected_attrs, {}
-
-        # Temporary remove __deepcopy__ to use deepcopy default method
-        _deepcopy = Pulse.__deepcopy__
-        try:
-            del Pulse.__deepcopy__
-            pulse_copy = deepcopy(self)
-        finally:
-            # restore __deepcopy__ and _connected_attrs
-            Pulse.__deepcopy__ = _deepcopy
-            self._connected_attrs = _connected_attrs
-
-        # Add receiver for config signals
-        if hasattr(self, 'environment'):
-            # For PulseImplementation
-            signal(f'config:{pulse_copy.environment}.pulses.'
-                   f'{pulse_copy.name}').connect(
-                pulse_copy._handle_config_signal)
-            signal(f'config:{pulse_copy.environment}.properties').connect(
-                pulse_copy._handle_properties_config_signal)
-        return pulse_copy
-
-    __copy__ = __deepcopy__
-
-    def _JSONEncoder(self):
-        """Converts to JSON encoder for saving metadata
-
-        Returns:
-            JSON dict
-        """
-        return_dict = {}
-        for attr, val in vars(self).items():
-            if attr not in self._skip_JSON_encoder_attrs:
-                strip_attr = attr.lstrip('_')
-                return_dict[strip_attr] = val
-        return return_dict
-
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
 
@@ -636,7 +386,7 @@ class Pulse(ParameterNode):
             elif property == 't':
                 if val < self.t_start or val >= self.t_stop:
                     return False
-            elif not hasattr(self, property):
+            elif property not in self.parameters:
                 return False
             else:
                 # If arg is a tuple, the first element specifies its relation
