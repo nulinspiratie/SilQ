@@ -15,36 +15,41 @@ import silq
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
 
 class SubConfig:
-    """Extended config used within ``qcodes.config``.
+    """Config with added functionality, used within ``qcodes.config.user``.
 
-    The SubConfig is a modified version of the qcodes config, the root being in
-    ``qcodes.config.user``. It is used as the SilQ config (silq.config),
-    initialized when silq is imported and populated during `silq.initialize`
-    with the respective experiment config.
+    The SubConfig is a modified version of the qcodes config, the root being
+    ``qcodes.config.user.silq_config``. It is used as the SilQ config
+    (silq.config), attached during importing silq, and initialized during
+    `silq.initialize` with the respective experiment config.
 
-    SubConfigs can be nested, and there is a SubConfig child class for each
-    type (`DictConfig` for dicts, `ListConfig` for lists, etc.). These should
-    be automatically instantiated when adding a dict/list to a SubConfig.
+    SubConfigs can be nested, and there is a SubConfig child class for subtypes
+    (`DictConfig` for dicts, `ListConfig` for lists). These are automatically
+    instantiated when adding a dict/list to a SubConfig.
 
-    The SubConfig contains two main extensions over the qcodes config:
+    The SubConfig contains the following main extensions over the qcodes config:
 
     1. Support for saving/loading the config as a JSON folder structure
        This simplifies editing part of the config in an editor.
        Each subconfig can be set to either save as a folder or as a file via the
        ``save_as_dir`` attribute.
+    3. Handling of an environment (set by silq.environment). The environment
+       (string) the key of a dict in silq.config (top-level). If the environment
+       (string) is set, any call to `environment:{path}` will access
+       `silq.config.{silq.environment}.{path}
+       This allows easy switching between config settings.
     2. Emit a signal when a value changes. The signal  uses ``blinker.signal``,
        the signal name being ``config:{config_path}``, where ``config_path`` is
        a dot-separated path to of the config. For example, setting:
 
-       >>> silq.config.environment1.key1 = val
+       >>> silq.config.properties.key1 = val
 
-       The config path is equal to ``qcodes.config.user.environment1.key1`` and
-       emits the following signal:
-
-       >>> signal('config:environment1').send(self, key1=val)
-
-       This signal can then by picked up by other objects such as `Pulse`, to
-       update its attribtues from the config.
+       The path is equal to ``qcodes.config.user.silq_config.properties.key1``
+       and emits a signal with sender `config:properties.key1` and keyword
+       argument `value=val`.
+       This signal can then by picked up by other objects, in particular by
+       parameters via its initialization kwarg `config_link`. This means that
+       whenever that specific config value changes, the parameter is updated
+       accordingly.
 
     Parameters:
         name: Config name. SilQ config root is ``config``.
@@ -254,7 +259,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             folder, each dict key being a separate JSON file.
     """
     exclude_from_dict = ['name', 'folder', 'parent',
-                         'signal', '_signal_chain',
+                         'signal', '_signal_chain', '_signal_modifiers',
                          '_mirrored_config_attrs', '_inherited_configs',
                          'save_as_dir', 'config_path']
 
@@ -302,14 +307,14 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             elif key == 'config:':
                 return self
             else:
-                return self[key.strip('config:')]
+                return self[key.replace('config:', '')]
         elif key.startswith('environment:'):
             if self.parent is None:
                 environment_config = self if silq.environment is None else self[silq.environment]
                 if key == 'environment:':
                     return environment_config
                 else:
-                    return environment_config[key.strip('environment:')]
+                    return environment_config[key.replace('environment:', '')]
             else:
                 # Pass environment:path along to parent
                 return self.parent[key]
