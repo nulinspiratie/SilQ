@@ -3,11 +3,32 @@ import tempfile
 from copy import deepcopy
 
 
-from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse, PulseMatch
+from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.config import *
-from silq import config
+import silq
+
+
+class TestPulse(unittest.TestCase):
+    def test_pulse_equality(self):
+        pulse1 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        self.assertTrue(pulse1)
+        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        self.assertEqual(pulse1, pulse2)
+        pulse3 = DCPulse(name='dc', amplitude=2.5, duration=10, t_start=0)
+        self.assertNotEqual(pulse1, pulse3)
+
+    def test_pulse_id(self):
+        p = Pulse(name='read')
+        self.assertEqual(p.id, None)
+
+        self.assertEqual(p.full_name, 'read')
+        p.id = 0
+        self.assertEqual(p.name, 'read')
+        self.assertEqual(p.full_name, 'read[0]')
+        self.assertTrue(p.satisfies_conditions(name='read', id=0))
+        self.assertTrue(p.satisfies_conditions(name='read[0]'))
 
 
 class TestPulseSignals(unittest.TestCase):
@@ -219,27 +240,6 @@ class TestPulseConfig(unittest.TestCase):
             self.assertEqual(pulse.duration, 20)
 
 
-class TestPulse(unittest.TestCase):
-    def test_pulse_equality(self):
-        pulse1 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        self.assertTrue(pulse1)
-        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        self.assertEqual(pulse1, pulse2)
-        pulse3 = DCPulse(name='dc', amplitude=2.5, duration=10, t_start=0)
-        self.assertNotEqual(pulse1, pulse3)
-
-    def test_pulse_id(self):
-        p = Pulse(name='read')
-        self.assertEqual(p.id, None)
-
-        self.assertEqual(p.full_name, 'read')
-        p.id = 0
-        self.assertEqual(p.name, 'read')
-        self.assertEqual(p.full_name, 'read[0]')
-        self.assertTrue(p.satisfies_conditions(name='read', id=0))
-        self.assertTrue(p.satisfies_conditions(name='read[0]'))
-
-
 class TestPulseSequence(unittest.TestCase):
     def setUp(self):
 
@@ -367,6 +367,7 @@ class TestPulseSequence(unittest.TestCase):
         p3_read = self.pulse_sequence['read[2]']
         self.assertNotEqual(p3_read, p1_read)
         self.assertNotEqual(p3_read, p2_read)
+
 
 if __name__ == '__main__':
     unittest.main()
