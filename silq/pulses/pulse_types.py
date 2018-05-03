@@ -131,7 +131,8 @@ class Pulse(ParameterNode):
         super().__init__(use_as_attributes=True)
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
-        self.id = Parameter(initial_value=id, vals=vals.Ints(), set_cmd=None)
+        self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
+                            set_cmd=None)
         self.full_name = Parameter()
 
         ### Set attributes
