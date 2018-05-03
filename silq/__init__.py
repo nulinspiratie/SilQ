@@ -200,9 +200,9 @@ def initialize(name: str = None,
 
     print("Initialization complete")
 
-    if 'default_environment' not in config.properties:
-        warnings.warn("'default_environment' should be specified "
-                      "in silq.config.properties")
+    if 'environment' in config.properties:
+        logger.info(f'Initialization: environment set to '
+                    f'{config.properties.environment}')
 
     if 'data_folder' in config.properties:
         logger.debug(f'using config data folder: '

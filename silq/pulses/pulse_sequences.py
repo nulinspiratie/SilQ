@@ -1,5 +1,5 @@
 from collections import Iterable
-from .pulse_modules import PulseSequence, PulseMatch
+from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
 from copy import deepcopy
 
