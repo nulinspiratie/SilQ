@@ -307,14 +307,14 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             elif key == 'config:':
                 return self
             else:
-                return self[key.strip('config:')]
+                return self[key.replace('config:', '')]
         elif key.startswith('environment:'):
             if self.parent is None:
                 environment_config = self if silq.environment is None else self[silq.environment]
                 if key == 'environment:':
                     return environment_config
                 else:
-                    return environment_config[key.strip('environment:')]
+                    return environment_config[key.replace('environment:', '')]
             else:
                 # Pass environment:path along to parent
                 return self.parent[key]
