@@ -4,6 +4,10 @@ from copy import copy, deepcopy
 from blinker import Signal
 from matplotlib import pyplot as plt
 
+from qcodes.instrument.parameter_node import parameter
+from qcodes import ParameterNode, Parameter
+from qcodes.utils import validators as vals
+
 __all__ = ['PulseRequirement', 'PulseSequence', 'PulseImplementation']
 
 
@@ -90,7 +94,7 @@ class PulseRequirement():
                 "Cannot interpret pulses requirement: {self.requirement}")
 
 
-class PulseSequence:
+class PulseSequence(ParameterNode):
     """`Pulse` container that can be targeted in the `Layout`.
 
     It can be used to store untargeted or targeted pulses.
@@ -187,31 +191,82 @@ class PulseSequence:
           Any time an attribute of a pulse changes, a signal will be emitted,
           which can then be interpreted by the pulse sequence.
     """
+
+    connection_conditions = None
+    pulse_conditions = None
     def __init__(self,
                  pulses: list = [],
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
-                 final_delay: float = None):
-        self.allow_untargeted_pulses = allow_untargeted_pulses
-        self.allow_targeted_pulses = allow_targeted_pulses
-        self.allow_pulse_overlap = allow_pulse_overlap
+                 final_delay: float = 0):
+        self.allow_untargeted_pulses = Parameter(initial_value=allow_untargeted_pulses,
+                                                 set_cmd=None,
+                                                 vals=vals.Bool())
+        self.allow_targeted_pulses = Parameter(initial_value=allow_targeted_pulses,
+                                               set_cmd=None,
+                                               vals=vals.Bool())
+        self.allow_pulse_overlap = Parameter(initial_value=allow_pulse_overlap,
+                                             set_cmd=None,
+                                             vals=vals.Bool())
 
-        # These are needed to separate pulse and connection conditions
-        from silq.meta_instruments.layout import connection_conditions
-        from silq.pulses import pulse_conditions
-        self.connection_conditions = connection_conditions
-        self.pulse_conditions = pulse_conditions
+        self.duration = Parameter(initial_value=None, unit='s')
+        self.final_delay = Parameter(initial_value=final_delay, unit='s',
+                                     set_cmd=None, vals=vals.Numbers())
+        self.t_list = Parameter()
+        self.t_start_list = Parameter()
+        self.t_stop_list = Parameter()
 
-        self._duration = None
-        self.final_delay = final_delay
+        self.enabled_pulses = Parameter(initial_value=[], set_cmd=None,
+                                        vals=vals.Lists)
+        self.disabled_pulses = Parameter(initial_value=[], set_cmd=None,
+                                         vals=vals.Lists())
+        self.pulses = Parameter(initial_value=[], vals=vals.Lists())
+        # Perform a separate set to ensure set method is called
+        self.pulses = pulses
 
-        self.pulses = []
-        self.enabled_pulses = []
-        self.disabled_pulses = []
+        # For PulseSequence.satisfies_conditions, we need to separate conditions
+        # into those relating to pulses and to connections. We perform an import
+        # here because it otherwise otherwise leads to circular imports
+        if self.connection_conditions is None or self.pulse_conditions is None:
+            from silq.meta_instruments.layout import connection_conditions
+            from silq.pulses import pulse_conditions
+            PulseSequence.connection_conditions = connection_conditions
+            PulseSequence.pulse_conditions = pulse_conditions
 
-        if pulses:
-            self.add(*pulses)
+    @parameter
+    def pulses_set(self, parameter, pulses):
+        self.clear()
+        self.add(*pulses)
+
+    @parameter
+    def duration_get(self, parameter):
+        if parameter.get_latest() is None:
+            return parameter.get_latest()
+        else:
+            if self.enabled_pulses:
+                duration = max(pulse.t_stop for pulse in self.enabled_pulses)
+            else:
+                duration = 0
+
+            duration += self.final_delay
+            return np.round(duration, 11)
+
+    @parameter
+    def duration_set_parser(self, parameter, duration):
+        return np.round(duration, 11)
+
+    @parameter
+    def t_start_list_get(self, parameter):
+        return sorted({pulse.t_start for pulse in self.enabled_pulses})
+
+    @parameter
+    def t_stop_list_get(self, parameter):
+        return sorted({pulse.t_stop for pulse in self.enabled_pulses})
+
+    @parameter
+    def t_list_get(self, parameter):
+        return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -317,51 +372,6 @@ class PulseSequence:
             'allow_pulse_overlap': self.allow_pulse_overlap,
             'pulses': [pulse._JSONEncoder() for pulse in self.pulses]
         }
-
-    def _handle_signal(self, pulse, **kwargs):
-        """Handler for pulse signal (only handles attribute ``enabled``)"""
-        key, val = kwargs.popitem()
-        if key == 'enabled':
-            if val is True:
-                if pulse not in self.enabled_pulses:
-                    self.enabled_pulses.append(pulse)
-                if pulse in self.disabled_pulses:
-                    self.disabled_pulses.remove(pulse)
-            elif val is False:
-                if pulse in self.enabled_pulses:
-                    self.enabled_pulses.remove(pulse)
-                if pulse not in self.disabled_pulses:
-                    self.disabled_pulses.append(pulse)
-
-    @property
-    def duration(self):
-        if self._duration is not None:
-            return self._duration
-        elif self.enabled_pulses:
-            duration = max(pulse.t_stop for pulse in self.enabled_pulses)
-        else:
-            duration = 0
-
-        if self.final_delay is not None:
-            duration += self.final_delay
-
-        return np.round(duration, 11)
-
-    @duration.setter
-    def duration(self, duration):
-        self._duration = duration
-
-    @property
-    def t_start_list(self):
-        return sorted({pulse.t_start for pulse in self.enabled_pulses})
-
-    @property
-    def t_stop_list(self):
-        return sorted({pulse.t_stop for pulse in self.enabled_pulses})
-
-    @property
-    def t_list(self):
-        return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def add(self, *pulses):
         """Adds pulse(s) to the PulseSequence.
