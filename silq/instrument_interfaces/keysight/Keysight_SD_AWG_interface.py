@@ -90,17 +90,16 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         return sorted(active_channels)
 
     @property
-    def active_instrument_channels(self):
-        return [self.instrument.channels[channel_name]
-                for channel_name in self.channel_selection()]
-
-    @property
     def active_channel_ids(self):
         """Sorted list of active channel id's"""
         # First create a set to ensure unique elements
         active_channel_ids = {pulse.connection.output['channel'].id
                               for pulse in self.pulse_sequence}
         return sorted(active_channel_ids)
+
+    @property
+    def active_instrument_channels(self):
+        return self.instrument.channels[self.active_channel_ids]
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
@@ -112,49 +111,113 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             while self.trigger_thread.is_alive():
                 sleep(.1)
 
-    def setup(self, **kwargs):
-        # TODO: Requires major rewrite
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Trigger pulses are requested if trigger mode is hardware.
+        Trigger at t_start is requested if there is a connection.trigger.
+        Trigger at t=0 is requested if there is a connection.trigger_start/
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List of additional pulses, empty by default.
+        """
+        if self.is_primary():
+            # Instrument does not require triggers
+            return []
+        elif not self.pulse_sequence:
+            # AWG does not output pulses
+            return []
+        elif self.trigger_mode() in ['software', 'none']:
+            return []
+        else: # Hardware trigger
+            t_start = min(self.pulse_sequence.t_start_list)
+            if self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start):
+                logger.warning(f'Trigger manually defined for {self.name}.')
+                return []
+
+            trigger_connection = next(
+                (connection.trigger or connection.trigger_start) and
+                connection.input['instrument'] == self.instrument_name()
+                for connection in connections)
+
+            if trigger_connection.trigger:
+                # Add a single trigger pulse when starting sequence
+                logger.debug(f'Creating trigger for Keysight SD AWG: {self.name}')
+                return [TriggerPulse(name=f'{self.name}_trigger',
+                                     t_start=t_start,
+                                     duration=15e-6,
+                                     connection_requirements={
+                                         'input_instrument': self.instrument_name(),
+                                         'trigger': True})]
+            else:  # trigger_connection.trigger_start
+                # Add a single trigger pulse at t=0, a trigger delay until the
+                # start of first pulse is configured for the first waveform
+                logger.debug(f'Requesting trigger at t=0 (connection.trigger_start)')
+                return [TriggerPulse(name=f'{self.name}_trigger',
+                                     t_start=0,
+                                     duration=15e-6,
+                                     connection_requirements={
+                                         'input_instrument': self.instrument_name(),
+                                         'trigger_start': True})]
+
+    def setup(self, error_threshold=1e-6, **kwargs):
+        # TODO: startdelay of first waveform
         # TODO: Handle sampling rates different from default
-        # TODO: figure out how we want to configure error_threshold
-        error_threshold = 1e-6
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
-        # flush the onboard RAM and reset waveform counter
+        self.instrument.off()
         self.instrument.flush_waveforms()
-        waveform_counter = 0
 
-        # Configure triggering
-        if self.trigger_mode() == 'hardware':
-            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
-            trigger_connection = trigger_pulse.connection
+        self.setup_trigger()
 
-            if not trigger_connection.input['channel'].name in self._channels.keys():
-                err = 'Cannot find trigger connection in channels'
-                logger.error(err)
-                raise RuntimeError(err)
+        self.waveforms = self.create_waveforms(error_threshold=error_threshold)
 
-            # Configure for PXI triggers
-            if trigger_connection.input['channel'].name in self._pxi_channels.keys():
-                for ch in self.active_channel_ids:
-                    self.instrument.awg_config_external_trigger(ch, trigger_connection.input['channel'].id, 3)
-            # Otherwise use external trigger port
-            else:
-                for ch in self.active_channel_ids:
-                    self.instrument.awg_config_external_trigger(ch, 0, 3)
-                self.instrument.config_trigger_io(1, 1)
-        elif self.trigger_mode() == 'software':
-            pass
-        elif self.trigger_mode() == 'none':
-            pass
+        self.load_waveforms(self.waveforms)
 
-        # for each pulse:
-        #   - implement
-        # for each channel:
-        #   - load waveforms
-        #   - queue waveforms
+    def setup_trigger(self):
+        """Sets up triggering of the AWG.
 
-        waveforms = dict()
+        Triggering setup is only necessary if trigger_mode == 'hardware'.
+        If the AWG is setup as the primary instrument, the trigger_mode cannot
+        be hardware, and so will be reset to 'software' here.
+        """
+        if self.is_primary() and self.trigger_mode() not in ['software', 'none']:
+            logger.warning('AWG.trigger_mode must be software or none when '
+                           'configured as primary instrument. setting to '
+                           'software')
+            self.trigger_mode('software')
 
+        # Only hardware mode needs configuration
+        if self.trigger_mode() == 'hardware':  # AWG is not primary instrument
+            try:
+                # First check if there is a triggering connection
+                trigger_connection = self.input_pulse_sequence.get_connection(
+                    trigger=True)
+            except AssertionError:
+                # Check if there is a connection that can trigger, but only
+                # at the start of the sequence
+                trigger_connection = self.input_pulse_sequence.get_connection(
+                    trigger_start=True)
+
+
+            trigger_source = trigger_connection.input['channel'].name
+
+            assert trigger_source in ['trig_in'] + self._pxi_channels.keys(), \
+                f"Trigger source {trigger_source} not allowed."
+
+            self.active_instrument_channels.trigger_source(trigger_source)
+            self.active_instrument_channels.trigger_mode('rising')
+
+            if trigger_source == 'trig_in':
+                self.instrument.trigger_direction('in')
+
+    def setup_waveforms(self, error_threshold):
+        waveforms = {ch: [] for ch in self.channel_selection()}
+
+        # Collect all the pulse implementations
         for pulse in self.pulse_sequence:
             channel_waveforms = pulse.implementation.implement(
                 instrument=self.instrument,
@@ -162,12 +225,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 threshold=error_threshold)
 
             for ch in channel_waveforms:
-                if ch in waveforms:
-                    waveforms[ch] += channel_waveforms[ch]
-                else:
-                    waveforms[ch] = channel_waveforms[ch]
+                waveforms[ch] += channel_waveforms[ch]
 
-        # Sort the list of waveforms for each channel and calculate delays or throw error on overlapping waveforms.
+        # Sort the list of waveforms for each channel and calculate delays or
+        # throw error on overlapping waveforms.
         for ch_idx, ch in enumerate(self.channel_selection()):
             waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
             global_t_start = min(pulse.t_start for pulse in self.pulse_sequence)
@@ -176,14 +237,14 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             prescaler = 0 if default_sampling_rate == 500e6 else 100e6 / default_sampling_rate
 
             insert_points = []
-            for i, wf in enumerate(waveforms[ch]):
-                if i == 0:
+            for k, waveform in enumerate(waveforms[ch]):
+                if k == 0:
                     # delay_duration = wf['t_start'] - global_t_start
-                    delay_duration = wf['t_start']
+                    delay_duration = waveform['t_start']
                     # print(wf['name'], wf['t_start'])
                     # print('global_t_start', global_t_start)
                 else:
-                    delay_duration = wf['t_start'] - waveforms[ch][i-1]['t_stop']
+                    delay_duration = waveform['t_start'] - waveforms[ch][k-1]['t_stop']
 
                 # a waveform delay is expressed in tens of ns
                 delay = int(round((delay_duration * 1e9) / 10))
@@ -191,70 +252,53 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 if delay > 6000:
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
-                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(wf['name'], delay_duration))
+                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(waveform['name'], delay_duration))
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                prescaler=prescaler)
 
-                    if i == 0:
+                    if k == 0:
                         zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
                         zero_waveforms[0]['t_start'] = global_t_start
                         if len(zero_waveforms) == 2:
                             zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                            zero_waveforms[1]['t_start'] = wf['t_start']
+                            zero_waveforms[1]['t_start'] = waveform['t_start']
                     else:
                         zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                        zero_waveforms[0]['t_start'] = waveforms[ch][i-1]['t_stop']
+                        zero_waveforms[0]['t_start'] = waveforms[ch][k-1]['t_stop']
                         if len(zero_waveforms) == 2:
                             zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                            zero_waveforms[1]['t_start'] = wf['t_start']
+                            zero_waveforms[1]['t_start'] = waveform['t_start']
 
-                    insertion = {'index': i, 'waveforms': zero_waveforms}
+                    insertion = {'index': k, 'waveforms': zero_waveforms}
                     insert_points.append(insertion)
-                    wf['delay'] = 0
+                    waveform['delay'] = 0
                 else:
-                    wf['delay'] = delay
+                    waveform['delay'] = delay
 
             # Add final waveform, should fill in space to the end of the whole pulse sequence.
             zero_waveforms = self.create_zero_waveform(
-                    duration=self.pulse_sequence.duration - wf['t_stop'],
+                    duration=self.pulse_sequence.duration - waveform['t_stop'],
                     prescaler=prescaler)
             # Only insert when a waveform is needed
             if zero_waveforms is not None:
                 zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                zero_waveforms[0]['t_start'] = wf['t_stop']
+                zero_waveforms[0]['t_start'] = waveform['t_stop']
                 if len(zero_waveforms) == 2:
                     zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
                     zero_waveforms[1]['t_start'] = self.pulse_sequence.duration
-                duration = self.pulse_sequence.duration - wf['t_stop']
+                duration = self.pulse_sequence.duration - waveform['t_stop']
                 logger.info(f'Adding a final delay waveform to {ch} for ' \
-                            f'{duration}s following {wf["name"]}')
-                insertion = {'index': i+1, 'waveforms': zero_waveforms}
+                            f'{duration}s following {waveform["name"]}')
+                insertion = {'index': k+1, 'waveforms': zero_waveforms}
                 insert_points.append(insertion)
 
             insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
 
             for insertion in insert_points:
-                i = insertion['index']
-                waveforms[ch][i:i] = insertion['waveforms']
+                k = insertion['index']
+                waveforms[ch][k:k] = insertion['waveforms']
 
-
-            # message = f'\n{ch} AWG Waveforms:\n'
-            # total = 0
-            # for wf in waveforms[ch]:
-            #     message += f'\t{wf.get("name"): <20}' + \
-            #                f'\tpoints = {int(wf.get("points",-1)) : <20}' + \
-            #                f'\tcycles = {int(wf.get("cycles", -1)): <20}\n'
-            #     message += f'\t{" "* 20}' \
-            #                f'\tprescaler = {int(wf.get("prescaler", -1)): <20}' + \
-            #                f'\tdelay     = {int(wf.get("delay", -1)): <20}\n'
-            #     total += int(wf.get("points", 0) * wf.get("cycles", 0))
-            # message += f'\tTotal samples = {total} = {total/500e3}ms @ 500 MSPS'
-            # logger.debug(message)
-
-
-        self.instrument.off()
-        self.instrument.flush_waveforms()
-
+    def load_waveforms(self, waveforms, waveform_counter=0):
         for ch in sorted(waveforms):
             ch_idx = self._channels[ch].id
             self.instrument.channels[ch_idx].flush_waveforms()
@@ -312,12 +356,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
             self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=self.cyclic_mode)
 
-        self.waveforms = waveforms
-        # for ch in waveforms:
-        #     waveform_array = waveforms[ch]
-        #     for wf in waveform_array:
-        #         del(wf['waveform'])
-
     def start(self):
         """Start selected channels, and auto-triggering if primary instrument
 
@@ -360,39 +398,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         else:
             logger.debug('Not continuing auto-triggering because '
                          'AWG_interface.started == false')
-
-    def get_additional_pulses(self, connections) -> List[Pulse]:
-        """Additional pulses needed by instrument after targeting of main pulses
-
-        Args:
-            connections: List of all connections in the layout
-
-        Returns:
-            List of additional pulses, empty by default.
-        """
-        if self.is_primary():
-            # Instrument does not require triggers
-            return []
-        elif not self.pulse_sequence:
-            # AWG does not output pulses
-            return []
-        elif self.trigger_mode() in ['software', 'none']:
-            return []
-        else: # Hardware trigger
-            # TODO handle if there is only a trigger_start connection
-
-            # Add a single trigger pulse when starting sequence
-            t_start = min(self.pulse_sequence.t_start_list)
-            if self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start):
-                logger.debug(f'Trigger manually defined for Keysight SD AWG : {self.name}.')
-                return []
-            logger.debug(f'Creating trigger for Keysight SD AWG: {self.name}')
-            return [TriggerPulse(name=f'{self.name}_trigger',
-                                         t_start=t_start,
-                                         duration=15e-6,
-                                         connection_requirements={
-                                             'input_instrument': self.instrument_name(),
-                                             'trigger': True})]
 
     def create_zero_waveform(self, duration, prescaler):
         # TODO: Check if right
