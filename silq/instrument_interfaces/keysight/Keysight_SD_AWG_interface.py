@@ -24,7 +24,49 @@ def first_factor_above_N(x, N, step):
     return N
 
 
+def find_approximate_divisor(N: int,
+                             max_cycles: int = 65535,
+                             points_multiple: int = 1,
+                             min_points: int = 15,
+                             max_points: int = 6000,
+                             max_remaining_points: int = 1000) -> Union[tuple, None]:
+    """Find an approximate divisor for a number
+
+    The divisor (points) is chosen such that points * cycles <= N, with
+    cycles as close as possible to max_cycles, with a low number of remaining
+    points
+
+    Args:
+        N: Number for which to find a divisor
+        max_cycles: Maximum number of cycles (for points * cycles)
+        points_multiple: Optional value that points must be a multiple of
+        max_points
+        max_remaining_points: Maximum number of remaining points.
+            Set to 0 to find an exact divisor
+
+    Returns:
+        If successful, a dict containing {'points', 'cycles', 'remaining_points'}
+        If unsuccessful, None
+    """
+    # Maximum cycles shouldn't be higher than N/points_multiple
+    max_cycles = min(max_cycles, int(N/points_multiple))
+    for cycles in range(max_cycles, 0, -1):
+        # Find points floor such that points*cycles <= N,
+        # but is as close to N as possible
+        points = N // cycles
+        # Ensure points is always a multiple of points_multiple
+        points -= points % points_multiple
+        remaining_points = N - points * cycles
+        if min_points <= points <= max_points & \
+                remaining_points <= max_remaining_points:
+            return int(points), int(cycles), int(remaining_points)
+    else:
+        return None
+
+
 class Keysight_SD_AWG_Interface(InstrumentInterface):
+    waveform_multiple = 5
+    waveform_minimum = 15
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -48,8 +90,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             'trig_out': Channel(instrument_name=self.instrument_name(),
                                 name='trig_out', output_TTL=(0, 3.3))}
 
-        # By default run in cyclic mode
-        self.cyclic_mode = True
         self.trigger_thread = None
 
         self.pulse_implementations = [
@@ -170,7 +210,11 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
 
         self.instrument.off()
-        self.instrument.flush_waveforms()
+
+        for channel in self.active_instrument_channels:
+            channel.wave_shape('arbitrary')
+            channel.amplitude(1.5)
+            channel.queue_mode('cyclic')
 
         self.setup_trigger()
 
@@ -184,12 +228,19 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         Triggering setup is only necessary if trigger_mode == 'hardware'.
         If the AWG is setup as the primary instrument, the trigger_mode cannot
         be hardware, and so will be reset to 'software' here.
+        Similarly, if the AWG is not the primary instrument, the trigger_mode
+        will be reset to hardware.
         """
         if self.is_primary() and self.trigger_mode() not in ['software', 'none']:
             logger.warning('AWG.trigger_mode must be software or none when '
                            'configured as primary instrument. setting to '
                            'software')
             self.trigger_mode('software')
+        elif not self.is_primary() and self.trigger_mode() != 'hardware':
+            logger.warning('AWG.trigger_mode must be hardware because the AWG '
+                           'is not the primary instrument, and must therefore '
+                           'receive external triggers. Setting to hardware')
+            self.trigger_mode('hardware')
 
         # Only hardware mode needs configuration
         if self.trigger_mode() == 'hardware':  # AWG is not primary instrument
@@ -215,7 +266,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             if trigger_source == 'trig_in':
                 self.instrument.trigger_direction('in')
 
-    def setup_waveforms(self, error_threshold):
+    def create_waveforms(self, error_threshold):
         waveforms = {ch: [] for ch in self.channel_selection()}
 
         # Collect all the pulse implementations
@@ -231,144 +282,76 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
-            ch = channel.name
-            waveforms[ch] = sorted(waveforms[channel.name],
-                                   key=lambda waveform: waveform['t_start'])
-            new_channel_waveforms = []
-
             sampling_rate = self.default_sampling_rates()[channel.id]
             prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
 
             # Handle delays between waveforms
-            insert_points = []
             t = 0 # TODO: what if trigger_start? t should depend on input trigger pulse
-            total_samples = 0
-            for k, waveform in enumerate(waveforms[channel.name]):
+            total_samples = 0 # TODO ensure properly updated
+            # TODO: ensure total_samples is always an int
+            for pulse in self.pulse_sequence.get_pulses(output_channel=channel.name):
+                # TODO: pulse implementation should return single channel only
+                pulse_waveforms = pulse.implementation.implement(
+                    instrument=self.instrument,
+                    default_sampling_rates=self.default_sampling_rates(),
+                    threshold=error_threshold)
 
-                start_samples = int(round((waveform['t_start'] * 1e9) / 10))
-                delay_samples = start_samples - total_samples
+                for waveform in pulse_waveforms:
+                    start_samples = int(round((waveform['t_start'] * 1e9) / 10))
+                    delay_samples = start_samples - total_samples
 
-                # Handle any delay between pulse and previous pulse
-                if delay_samples <= 6000:
-                    waveform['delay'] = delay_samples
-                else:  # Delay too long -> separate waveform needed at 0V
-                    logger.debug(f'Delay waveform needed for {waveform["name"]}'
-                                 f': duration {delay_samples-duration:.3f} s')
-                    zero_waveforms = self.create_zero_waveform(t_start=t,
-                                                               samples=delay_samples,
-                                                               prescaler=prescaler)
-                    # TODO: Ensure that properties are included in create_zero_waveform
-                    # zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                    # zero_waveforms[0]['t_start'] = t
-                    # if len(zero_waveforms) == 2:
-                    #     zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                    #     zero_waveforms[1]['t_start'] = waveform['t_start']
-                    #
-                    # insert_points.append({'index': k, 'waveforms': zero_waveforms})
+                    # Handle any delay between pulse and previous pulse
+                    if delay_samples <= 6000:
+                        waveform['delay'] = delay_samples
+                    else:  # Delay too long -> separate waveform needed at 0V
+                        logger.debug(f'Delay waveform needed for {waveform["name"]}'
+                                     f': duration {delay_samples-duration:.3f} s')
+                        zero_waveform = self.create_zero_waveform(samples=delay_samples,
+                                                                  prescaler=prescaler,
+                                                                  t_start=t)
+                        waveforms[channel.name].append(zero_waveform)
+                        total_samples += zero_waveform['delay'] + zero_waveform['points']
 
-                    new_channel_waveforms == zero_waveforms
-                    waveform['delay'] = 0
-                    new_channel_waveforms.append(waveform)
+                        waveform['delay'] = min(start_samples - total_samples, 0)
 
-                t = waveform['t_stop']
+                    waveforms[channel.name].append(waveform)
+
+                    t = waveform['t_stop']
 
             if self.trigger_mode() != 'hardware':
                 # Final 0V waveform may be necessary until end of pulse sequence
-
-                # TODO: zero waveform should use t_start, duration -> samples
                 end_samples = int(round((self.pulse_sequence.duration * 1e9) / 10))
                 delay_samples = end_samples - total_samples
-                zero_waveforms = self.create_zero_waveform(t_start=t,
-                                                           samples=delay_samples,
-                                                           prescaler=prescaler)
-                if zero_waveforms:
-                    new_channel_waveforms += zero_waveforms
+                zero_waveform = self.create_zero_waveform(t_start=t,
+                                                          samples=delay_samples,
+                                                          prescaler=prescaler)
+                if zero_waveform is not None:
+                    waveforms[channel.name].append(zero_waveform)
+        return waveforms
 
-            waveforms[ch] = new_channel_waveforms
+    def load_waveforms(self, waveforms):
+        self.instrument.flush_waveforms()
 
-                #
-                # # Only insert when a waveform is needed
-                # if zero_waveforms is not None:
-                #     zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                #     zero_waveforms[0]['t_start'] = waveform['t_stop']
-                #     if len(zero_waveforms) == 2:
-                #         zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                #         zero_waveforms[1]['t_start'] = self.pulse_sequence.duration
-                #     duration = self.pulse_sequence.duration - waveform['t_stop']
-                #     logger.info(f'Adding a final delay waveform to {ch} for ' \
-                #                 f'{duration}s following {waveform["name"]}')
-                #     insertion = {'index': k+1, 'waveforms': zero_waveforms}
-                #     insert_points.append(insertion)
+        for channel in self.active_instrument_channels:
+            channel_waveforms = waveforms[channel.name]
 
-            # insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
-            #
-            # for insertion in insert_points:
-            #     k = insertion['index']
-            #     waveforms[ch][k:k] = insertion['waveforms']
-
-    def load_waveforms(self, waveforms, waveform_counter=0):
-        for ch in sorted(waveforms):
-            ch_idx = self._channels[ch].id
-            self.instrument.channels[ch_idx].flush_waveforms()
-            self.instrument.set_channel_wave_shape(wave_shape=6, channel_number=ch_idx)
-            self.instrument.set_channel_amplitude(amplitude=1.5, channel_number=ch_idx)
-            waveform_array = waveforms[ch]
-
-            ch_wf_counter = 0
-            message = f'\n{ch} AWG Waveforms:\n'
-            total_samples = 0
             # always play a priming pulse first
-            next_wf_trigger = True
-            for waveform in waveform_array:
+            trigger_mode = ['none', 'software', 'hardware'].index(self.trigger_mode())
+            for waveform_idx, waveform in enumerate(channel_waveforms):
+                self.instrument.load_waveform(waveform['waveform'], waveform_idx)
 
-                self.instrument.load_waveform(waveform['waveform'], waveform_counter)
-                # import pdb; pdb.set_trace()
-                if waveform['t_start'] < 0:
-                    trigger_mode = 0
-                elif next_wf_trigger:
-                    next_wf_trigger = False
-                    # await trigger for first wf if trigger mode
-                    if self.trigger_mode() == 'hardware':
-                        trigger_mode = 2
-                    elif self.trigger_mode() == 'software':
-                        trigger_mode = 1
-                    else:
-                        trigger_mode = 0
-                else:
-                    trigger_mode = 0  # auto trigger for every wf that follows
-
-                self.instrument.channels[ch_idx].queue_waveform(
-                    waveform_number=waveform_counter,
-                    trigger_mode=trigger_mode,
-                    start_delay=0,
-                    cycles=int(waveform['cycles']),
-                    prescaler=int(waveform.get('prescaler', 0)))
-                waveform_counter += 1
-                ch_wf_counter += 1
-
-                message += f'\t{waveform.get("name"): <20}' + \
-                           f'\tpoints = {int(waveform.get("points",-1)) : <20}' + \
-                           f'\tcycles = {int(waveform.get("cycles", -1)): <20}\n'
-                message += f'\t{" "* 20}' \
-                           f'\tprescaler = {int(waveform.get("prescaler", -1)): <20}' + \
-                           f'delay  = {int(waveform.get("delay", -1)): <20}' + \
-                           f'trigger_mode = {trigger_mode}\n'
-                total_samples += int(waveform.get("points", 0) * waveform.get("cycles", 0))
-            sample_rate = self.default_sampling_rates()[ch_idx]
-            duration = total_samples / sample_rate
-
-            message += f'\tTotal samples = {total_samples} = {duration*1e3} ms @ {sample_rate/1e6} MSPS'
-            logger.debug(message)
-
-            self.instrument.awg.AWGqueueConfig(nAWG=self._channels[ch].id, mode=self.cyclic_mode)
+                channel.queue_waveform(waveform_number=waveform_idx,
+                                       trigger_mode=trigger_mode,
+                                       start_delay=0,
+                                       cycles=waveform['cycles'],
+                                       prescaler=waveform['prescaler'])
+                trigger_mode = 0  # auto trigger for every wf that follows first
 
     def start(self):
         """Start selected channels, and auto-triggering if primary instrument
 
         Auto-triggering is performed by creating a triggering thread
         """
-        for channel in self.active_instrument_channels:
-            channel.wave_shape('arbitrary')
 
         self.instrument.start_channels(self.active_channel_ids)
         if self.trigger_mode() == 'software':
@@ -405,73 +388,43 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             logger.debug('Not continuing auto-triggering because '
                          'AWG_interface.started == false')
 
-    def create_zero_waveform(self, duration, prescaler):
-        # TODO: Check if right
-        waveform_multiple = 5
-        waveform_minimum = 15  # the minimum size of a waveform
-
-        sampling_rate = 500e6 if prescaler == 0 else 100e6 / prescaler
-
-        if (duration < waveform_minimum / sampling_rate):
+    def create_zero_waveform(self, samples, prescaler, t_start):
+        # TODO: Test if startDelay actually sets to zero.
+        if samples < self.waveform_minimum:
             return None
 
-        period_sample = 1 / sampling_rate
+        # Determine optimal combination of points & cycles for zero pulse
+        # optimal means minimal points and remaining_points
+        # Remaining points become the waveform start_delay
+        # Iteratively loosen constraints until an appropriate divisor is found
+        for (max_points, max_remaining_points) in [(2000, 0), (2000, 10),
+                                                   (2000, 100), (10000, 1000)]:
+            approximate_divisor = find_approximate_divisor(
+                N=samples, max_cycles=2**16,
+                points_multiple=self.waveform_multiple,
+                min_points=self.waveform_minimum,
+                max_points=max_points,
+                max_remaining_points=max_remaining_points)
 
-        period = period_sample * waveform_multiple
-        cycles = int(duration // period)
-        if (cycles < 1):
-            return None
-
-        n = int(np.ceil(cycles / 2 ** 16))
-
-        if n < 3:
-            samples = first_factor_above_N(
-                int(round(duration / period_sample)),
-                waveform_minimum, waveform_multiple)
+            if approximate_divisor is not None:
+                points, cycles, remaining_points = approximate_divisor
+                break
         else:
-            samples = n * waveform_multiple
+            points = samples - samples % self.waveform_multiple
+            cycles = 1
+            remaining_points = samples % self.waveform_multiple
 
-        cycles = int(duration // (period_sample * samples))
-
-        waveform_repeated_period = period_sample * samples
-        waveform_repeated_cycles = cycles
-        waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
-
-        waveform_tail_samples = waveform_multiple * int(round(
-            ((duration - waveform_repeated_duration) / period_sample) / waveform_multiple))
-
-        if waveform_tail_samples < waveform_minimum:
-            waveform_tail_samples = 0
-
-        waveform_repeated = {}
-        waveform_tail = {}
-
-        waveform_repeated_data = np.zeros(samples)
-
-        waveform_repeated['waveform'] = self.instrument.new_waveform_from_double(waveform_type=0,
-                                                                          waveform_data_a=waveform_repeated_data)
-        waveform_repeated['name'] = 'zero_pulse'
-        waveform_repeated['points'] = samples
-        waveform_repeated['cycles'] = waveform_repeated_cycles
-        waveform_repeated['samples'] = samples
-        waveform_repeated['delay'] = 0
-        waveform_repeated['prescaler'] = prescaler
-        logger.debug(f'Delay waveform attrs: '
-                     f'cyc={waveform_repeated_cycles} len={samples} n={n}')
-        if waveform_tail_samples == 0:
-            return [waveform_repeated]
-        else:
-            waveform_tail_data = np.zeros(waveform_tail_samples)
-
-            waveform_tail['waveform'] = self.instrument.new_waveform_from_double(
-                waveform_type=0, waveform_data_a=waveform_tail_data)
-            waveform_tail['name'] = 'zero_pulse_tail'
-            waveform_tail['points'] = waveform_tail_samples
-            waveform_tail['cycles'] = 1
-            waveform_tail['delay'] = 0
-            waveform_tail['prescaler'] = prescaler
-
-            return [waveform_repeated, waveform_tail]
+        waveform = {
+            'name': 'zero_pulse',
+            'waveform': self.instrument.new_waveform_from_double(
+                waveform_type=0, waveform_data_a=np.zeros(samples)),
+            'points': points,
+            'cycles': cycles,
+            'delay': remaining_points,
+            'prescaler': prescaler,
+            't_start': t_start
+        }
+        return waveform
 
 
 class SinePulseImplementation(PulseImplementation):
