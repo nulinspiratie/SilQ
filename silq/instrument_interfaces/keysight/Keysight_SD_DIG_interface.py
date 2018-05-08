@@ -80,9 +80,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         self.initialize_driver()
 
     def acquisition(self):
-        """
-        Perform acquisition
-        """
+        """Perform acquisition"""
         acquisition_data = self.acquisition_controller().acquisition()
 
         # Set acquisition controller average mode to None
@@ -243,6 +241,6 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
 
     def stop(self):
         # Stop all DAQs
-        self.instrument.daq_stop_multiple((1 << 8) - 1)
+        self.instrument.stop_channels(range(8))
 
 
