@@ -1,8 +1,7 @@
 from typing import List
 from time import sleep
-from functools import partial
 import numpy as np
-import threading
+from threading import Timer
 import logging
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
@@ -54,9 +53,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         self.trigger_thread = None
 
         self.pulse_implementations = [
-            SinePulseImplementation(
-                pulse_requirements=[('frequency', {'min': 0, 'max': 200e6}),
-                                    ('amplitude', {'max': 1.5})]),
+            # SinePulseImplementation(
+            #     pulse_requirements=[('frequency', {'min': 0, 'max': 200e6}),
+            #                         ('amplitude', {'max': 1.5})]),
             AWGPulseImplementation(
                 pulse_requirements=[]),
             CombinationPulseImplementation(
@@ -107,11 +106,11 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # stop all AWG channels and sets FG channels to 'No Signal'
         self.started = False
         self.instrument.off()
-        if self.trigger_thread is not None:
+
+        if self.trigger_thread is not None and self.trigger_thread.is_alive():
             logger.debug('Waiting for trigger thread to close...')
             while self.trigger_thread.is_alive():
                 sleep(.1)
-            logger.debug('Done.')
 
     def setup(self, **kwargs):
         # TODO: Requires major rewrite
@@ -327,22 +326,40 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         for channel in self.active_instrument_channels:
             channel.wave_shape('arbitrary')
 
-        # TODO: do not perform auto-triggering if not primary instrument
         self.instrument.start_channels(self.active_channel_ids)
         if self.trigger_mode() == 'software':
             self.started = True
-            duration = self.pulse_sequence.duration
-            trigger_period = duration * 1.1
-            logger.debug(f'Starting self triggering of the M3201 AWG with interval {trigger_period*1100:.3f}ms.')
-            self.trigger_self(trigger_period)
+            trigger_period = self.pulse_sequence.duration * 1.1
+            logger.debug(f'Starting self triggering of the M3201 AWG with '
+                         f'interval {trigger_period*1e3:.3f}ms.')
+            self.start_auto_trigger(trigger_period)
 
-    def trigger_self(self, trigger_period):
-        # TODO: Create separate trigger object
-        self.software_trigger()
+    def start_auto_trigger(self, trigger_period: float):
+        """Starts auto-triggering of AWG, used if trigger_mode == 'software'
+
+        This method first restarts and triggers the AWG, and then starts a
+        thread that calls this method again after trigger_period.
+
+        If self.started == False, this method will not do anything, and so no
+        thread is started
+
+        Args:
+            trigger_period: Period before calling this method again
+        """
         if self.started:
-            self.trigger_thread = threading.Timer(trigger_period,
-                                                  partial(self.trigger_self, trigger_period))
+            # Restart current waveform queue
+            self.instrument.stop_channels(self.active_channel_ids)
+            self.instrument.start_channels(self.active_channel_ids)
+            self.instrument.trigger_channels(self.active_channel_ids)
+
+            # Create a threaded Timer that retriggers after trigger_period
+            self.trigger_thread = Timer(interval=trigger_period,
+                                        function=self.start_auto_trigger,
+                                        args=[trigger_period])
             self.trigger_thread.start()
+        else:
+            logger.debug('Not continuing auto-triggering because '
+                         'AWG_interface.started == false')
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
@@ -376,11 +393,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                                          connection_requirements={
                                              'input_instrument': self.instrument_name(),
                                              'trigger': True})]
-
-    def software_trigger(self):
-        self.instrument.awg_stop_multiple(self.active_channel_ids)
-        self.instrument.awg_start_multiple(self.active_channel_ids)
-        self.instrument.awg_trigger_multiple(self.active_channel_ids)
 
     def create_zero_waveform(self, duration, prescaler):
         # TODO: Check if right
