@@ -134,8 +134,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             return []
         else: # Hardware trigger
             t_start = min(self.pulse_sequence.t_start_list)
-            if self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start):
-                logger.warning(f'Trigger manually defined for {self.name}.')
+            if self.input_pulse_sequence.get_pulses(trigger=True):
+                logger.warning(f'Trigger(s) manually defined for {self.name}: '
+                               f'{self.input_pulse_sequence.get_pulses(trigger=True)}')
                 return []
 
             trigger_connection = next(
@@ -219,32 +220,30 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         # Collect all the pulse implementations
         for pulse in self.pulse_sequence:
-            channel_waveforms = pulse.implementation.implement(
+            pulse_channel_waveforms = pulse.implementation.implement(
                 instrument=self.instrument,
                 default_sampling_rates=self.default_sampling_rates(),
                 threshold=error_threshold)
 
-            for ch in channel_waveforms:
-                waveforms[ch] += channel_waveforms[ch]
+            for ch in pulse_channel_waveforms:
+                waveforms[ch] += pulse_channel_waveforms[ch]
 
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
-        for ch_idx, ch in enumerate(self.channel_selection()):
-            waveforms[ch] = sorted(waveforms[ch], key=lambda k: k['t_start'])
-            global_t_start = min(pulse.t_start for pulse in self.pulse_sequence)
+        for channel in self.active_instrument_channels:
+            waveforms[ch] = sorted(waveforms[channel.name],
+                                   key=lambda waveform: waveform['t_start'])
 
-            default_sampling_rate = self.default_sampling_rates()[ch_idx]
-            prescaler = 0 if default_sampling_rate == 500e6 else 100e6 / default_sampling_rate
+            ch = channel.name
 
+            sampling_rate = self.default_sampling_rates()[channel.id]
+            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+
+            # Handle delays between waveforms
             insert_points = []
-            for k, waveform in enumerate(waveforms[ch]):
-                if k == 0:
-                    # delay_duration = wf['t_start'] - global_t_start
-                    delay_duration = waveform['t_start']
-                    # print(wf['name'], wf['t_start'])
-                    # print('global_t_start', global_t_start)
-                else:
-                    delay_duration = waveform['t_start'] - waveforms[ch][k-1]['t_stop']
+            t = 0
+            for k, waveform in enumerate(waveforms[channel.name]):
+                delay_duration = waveform['t_start'] - t
 
                 # a waveform delay is expressed in tens of ns
                 delay = int(round((delay_duration * 1e9) / 10))
@@ -252,28 +251,24 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 if delay > 6000:
                     # create a zero pulse and keep track of where to insert it later
                     # (as a replacement for the long delay)
-                    logger.debug('Delay waveform needed for "{}" : duration {:.3f} s'.format(waveform['name'], delay_duration))
+                    logger.debug(f'Delay waveform needed for {waveform["name"]}'
+                                 f': duration {delay-duration:.3f} s')
                     zero_waveforms = self.create_zero_waveform(duration=delay_duration,
                                                                prescaler=prescaler)
 
-                    if k == 0:
-                        zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                        zero_waveforms[0]['t_start'] = global_t_start
-                        if len(zero_waveforms) == 2:
-                            zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                            zero_waveforms[1]['t_start'] = waveform['t_start']
-                    else:
-                        zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                        zero_waveforms[0]['t_start'] = waveforms[ch][k-1]['t_stop']
-                        if len(zero_waveforms) == 2:
-                            zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                            zero_waveforms[1]['t_start'] = waveform['t_start']
+                    zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
+                    zero_waveforms[0]['t_start'] = t
+                    if len(zero_waveforms) == 2:
+                        zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
+                        zero_waveforms[1]['t_start'] = waveform['t_start']
 
-                    insertion = {'index': k, 'waveforms': zero_waveforms}
-                    insert_points.append(insertion)
+                    insert_points.append({'index': k, 'waveforms': zero_waveforms})
                     waveform['delay'] = 0
                 else:
                     waveform['delay'] = delay
+
+                t = waveform['t_stop']
+
 
             # Add final waveform, should fill in space to the end of the whole pulse sequence.
             zero_waveforms = self.create_zero_waveform(
@@ -312,8 +307,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             # always play a priming pulse first
             next_wf_trigger = True
             for waveform in waveform_array:
-                # logger.debug('loading waveform-object {} in M3201A with waveform id {}'.format(id(waveform['waveform']),
-                #                                                                         waveform_counter))
 
                 self.instrument.load_waveform(waveform['waveform'], waveform_counter)
                 # import pdb; pdb.set_trace()
