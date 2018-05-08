@@ -231,67 +231,80 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
+            ch = channel.name
             waveforms[ch] = sorted(waveforms[channel.name],
                                    key=lambda waveform: waveform['t_start'])
-
-            ch = channel.name
+            new_channel_waveforms = []
 
             sampling_rate = self.default_sampling_rates()[channel.id]
             prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
 
             # Handle delays between waveforms
             insert_points = []
-            t = 0
+            t = 0 # TODO: what if trigger_start? t should depend on input trigger pulse
+            total_samples = 0
             for k, waveform in enumerate(waveforms[channel.name]):
-                delay_duration = waveform['t_start'] - t
 
-                # a waveform delay is expressed in tens of ns
-                delay = int(round((delay_duration * 1e9) / 10))
+                start_samples = int(round((waveform['t_start'] * 1e9) / 10))
+                delay_samples = start_samples - total_samples
 
-                if delay > 6000:
-                    # create a zero pulse and keep track of where to insert it later
-                    # (as a replacement for the long delay)
+                # Handle any delay between pulse and previous pulse
+                if delay_samples <= 6000:
+                    waveform['delay'] = delay_samples
+                else:  # Delay too long -> separate waveform needed at 0V
                     logger.debug(f'Delay waveform needed for {waveform["name"]}'
-                                 f': duration {delay-duration:.3f} s')
-                    zero_waveforms = self.create_zero_waveform(duration=delay_duration,
+                                 f': duration {delay_samples-duration:.3f} s')
+                    zero_waveforms = self.create_zero_waveform(t_start=t,
+                                                               samples=delay_samples,
                                                                prescaler=prescaler)
+                    # TODO: Ensure that properties are included in create_zero_waveform
+                    # zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
+                    # zero_waveforms[0]['t_start'] = t
+                    # if len(zero_waveforms) == 2:
+                    #     zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
+                    #     zero_waveforms[1]['t_start'] = waveform['t_start']
+                    #
+                    # insert_points.append({'index': k, 'waveforms': zero_waveforms})
 
-                    zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                    zero_waveforms[0]['t_start'] = t
-                    if len(zero_waveforms) == 2:
-                        zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                        zero_waveforms[1]['t_start'] = waveform['t_start']
-
-                    insert_points.append({'index': k, 'waveforms': zero_waveforms})
+                    new_channel_waveforms == zero_waveforms
                     waveform['delay'] = 0
-                else:
-                    waveform['delay'] = delay
+                    new_channel_waveforms.append(waveform)
 
                 t = waveform['t_stop']
 
+            if self.trigger_mode() != 'hardware':
+                # Final 0V waveform may be necessary until end of pulse sequence
 
-            # Add final waveform, should fill in space to the end of the whole pulse sequence.
-            zero_waveforms = self.create_zero_waveform(
-                    duration=self.pulse_sequence.duration - waveform['t_stop'],
-                    prescaler=prescaler)
-            # Only insert when a waveform is needed
-            if zero_waveforms is not None:
-                zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
-                zero_waveforms[0]['t_start'] = waveform['t_stop']
-                if len(zero_waveforms) == 2:
-                    zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
-                    zero_waveforms[1]['t_start'] = self.pulse_sequence.duration
-                duration = self.pulse_sequence.duration - waveform['t_stop']
-                logger.info(f'Adding a final delay waveform to {ch} for ' \
-                            f'{duration}s following {waveform["name"]}')
-                insertion = {'index': k+1, 'waveforms': zero_waveforms}
-                insert_points.append(insertion)
+                # TODO: zero waveform should use t_start, duration -> samples
+                end_samples = int(round((self.pulse_sequence.duration * 1e9) / 10))
+                delay_samples = end_samples - total_samples
+                zero_waveforms = self.create_zero_waveform(t_start=t,
+                                                           samples=delay_samples,
+                                                           prescaler=prescaler)
+                if zero_waveforms:
+                    new_channel_waveforms += zero_waveforms
 
-            insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
+            waveforms[ch] = new_channel_waveforms
 
-            for insertion in insert_points:
-                k = insertion['index']
-                waveforms[ch][k:k] = insertion['waveforms']
+                #
+                # # Only insert when a waveform is needed
+                # if zero_waveforms is not None:
+                #     zero_waveforms[0]['name'] = f'padding_pulse[{ch[-1]}]'
+                #     zero_waveforms[0]['t_start'] = waveform['t_stop']
+                #     if len(zero_waveforms) == 2:
+                #         zero_waveforms[1]['name'] = f'padding_pulse_tail[{ch[-1]}]'
+                #         zero_waveforms[1]['t_start'] = self.pulse_sequence.duration
+                #     duration = self.pulse_sequence.duration - waveform['t_stop']
+                #     logger.info(f'Adding a final delay waveform to {ch} for ' \
+                #                 f'{duration}s following {waveform["name"]}')
+                #     insertion = {'index': k+1, 'waveforms': zero_waveforms}
+                #     insert_points.append(insertion)
+
+            # insert_points = sorted(insert_points, key=lambda k: k['index'], reverse=True)
+            #
+            # for insertion in insert_points:
+            #     k = insertion['index']
+            #     waveforms[ch][k:k] = insertion['waveforms']
 
     def load_waveforms(self, waveforms, waveform_counter=0):
         for ch in sorted(waveforms):
