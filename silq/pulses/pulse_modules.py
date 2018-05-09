@@ -229,8 +229,7 @@ class PulseSequence:
             `Pulse`.t_stop of last pulse, unless explicitly set
         final_delay (Union[float, None]): Optional final delay at the end of
             the pulse sequence. The interface of the primary instrument should
-            incorporate any final delay. The default is None, in which case the
-            primary interface should use its default final_delay
+            incorporate any final delay. The default is .5 ms
         enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
             Updated when a pulse is added or `Pulse`.enabled is changed.
         disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
@@ -251,6 +250,8 @@ class PulseSequence:
           Any time an attribute of a pulse changes, a signal will be emitted,
           which can then be interpreted by the pulse sequence.
     """
+
+    final_delay = .5e-3
     def __init__(self,
                  pulses: list = [],
                  allow_untargeted_pulses: bool = True,
@@ -268,7 +269,8 @@ class PulseSequence:
         self.pulse_conditions = pulse_conditions
 
         self._duration = None
-        self.final_delay = final_delay
+        if final_delay is not None:
+            self.final_delay = final_delay
 
         self.pulses = []
         self.enabled_pulses = []
