@@ -87,6 +87,7 @@ the previous waveform finished.
 During start_delay, the output voltage is the last point of the previous 
 waveform. If there is no previous waveform, output voltage is zero.
 Start delay is independent of prescaler!
+The max value is 6000
 
 # Trigger
 Triggers are ignored if the system is not waiting for one. It is therefore 
@@ -96,9 +97,6 @@ trigger to ensure that the AWG is waiting for one.
 
 
 class Keysight_SD_AWG_Interface(InstrumentInterface):
-    waveform_multiple = 5
-    waveform_minimum = 15
-
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -310,47 +308,54 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
 
             # Handle delays between waveforms
-            t = 0 # TODO: what if trigger_start? t should depend on input trigger pulse
-            total_samples = 0 # TODO ensure properly updated
-            # TODO: ensure total_samples is always an int
+            t = 0
+            total_samples = 0 # At 100 MHz sampling rate
             for pulse in self.pulse_sequence.get_pulses(output_channel=channel.name):
                 # TODO: pulse implementation should return single channel only
+                assert pulse.t_start >= t, \
+                    f"Pulse {pulse} starts {pulse.t_start} < t={t}." \
+                    f"This likely means that pulses are overlapping"
+
+                pulse_samples_start = max(int(round(pulse.t_start * 100e6)),
+                                          total_samples)
+
+                if pulse.t_start > t:  # Add waveform at 0V
+                    logger.info(f'No pulse defined between t={t} s and next'
+                                f'{pulse} (pulse.t_start={pulse.t_start} s), '
+                                f'Adding DC pulse at 0V')
+                    # Use maximum value because potentially total samples could
+                    # be higher than t (rounding errors etc.)
+                    samples_start_0V = max(int(round(t * 100e6)),
+                                           total_samples)
+                    samples_0V = pulse_samples_start - samples_start_0V
+                    waveform_0V = self.create_DC_waveform(voltage=0,
+                                                          samples=samples_0V,
+                                                          prescaler=prescaler,
+                                                          t_start=t)
+                    if waveform_0V is not None:
+                        # Add any potential delay samples after previous pulse
+                        waveform_0V['delay'] = max(0, samples_start_0V - total_samples)
+                        waveforms[channel.name].append(waveform_0V)
+
+                        # Increase total samples to include 0V pulse points
+                        total_samples += waveform_0V['delay']
+                        total_samples += waveform_0V['points_100MHz']
+
                 pulse_waveforms = pulse.implementation.implement(
                     instrument=self.instrument,
-                    default_sampling_rates=self.default_sampling_rates(),
+                    default_sampling_rate=sampling_rate,
                     threshold=error_threshold)
 
                 for waveform in pulse_waveforms:
-                    start_samples = int(round((waveform['t_start'] * 1e9) / 10))
-                    delay_samples = start_samples - total_samples
+                    start_samples = int(round(waveform['t_start'] * 100e6))
 
-                    # Handle any delay between pulse and previous pulse
-                    if delay_samples <= 6000:
-                        waveform['delay'] = delay_samples
-                    else:  # Delay too long -> separate waveform needed at 0V
-                        logger.debug(f'Delay waveform needed for {waveform["name"]}'
-                                     f': duration {delay_samples-duration:.3f} s')
-                        zero_waveform = self.create_zero_waveform(samples=delay_samples,
-                                                                  prescaler=prescaler,
-                                                                  t_start=t)
-                        waveforms[channel.name].append(zero_waveform)
-                        total_samples += zero_waveform['delay'] + zero_waveform['points']
-
-                        waveform['delay'] = min(start_samples - total_samples, 0)
-
+                    waveform['delay'] = max(start_samples - total_samples, 0)
                     waveforms[channel.name].append(waveform)
 
-                    t = waveform['t_stop']
+                    total_samples += waveform['delay']
+                    total_samples += waveform['points_100MHz']
 
-            if self.trigger_mode() != 'hardware':
-                # Final 0V waveform may be necessary until end of pulse sequence
-                end_samples = int(round((self.pulse_sequence.duration * 1e9) / 10))
-                delay_samples = end_samples - total_samples
-                zero_waveform = self.create_zero_waveform(t_start=t,
-                                                          samples=delay_samples,
-                                                          prescaler=prescaler)
-                if zero_waveform is not None:
-                    waveforms[channel.name].append(zero_waveform)
+                t = pulse.t_stop
         return waveforms
 
     def load_waveforms(self, waveforms):
@@ -412,42 +417,44 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             logger.debug('Not continuing auto-triggering because '
                          'AWG_interface.started == false')
 
-    def create_zero_waveform(self, samples, prescaler, t_start):
-        # TODO: Test if startDelay actually sets to zero.
-        if samples < self.waveform_minimum:
+    def create_DC_waveform(self, voltage, samples, prescaler, t_start):
+        if samples < self.instrument.waveform_minimum:
             return None
 
-        # Determine optimal combination of points & cycles for zero pulse
-        # optimal means minimal points and remaining_points
-        # Remaining points become the waveform start_delay
-        # Iteratively loosen constraints until an appropriate divisor is found
-        for (max_points, max_remaining_points) in [(2000, 0), (2000, 10),
-                                                   (2000, 100), (10000, 1000)]:
+        assert -1.5 <= voltage <= 1.5
+
+        # Determine waveform with whose points and cycles satisfy:
+        # - Low points (iteratively increasing max_points until match is found)
+        # - Points >= waveform_minimum & points % waveform_multiple = 0
+        # - At most 2**16 cycles
+        # - Remaining points is 6000 (max) divided by prescaler since these
+        #   are included in the next pulses start delay
+        for max_points in [1000, 2000, 10000]:
             approximate_divisor = find_approximate_divisor(
                 N=samples, max_cycles=2**16,
-                points_multiple=self.waveform_multiple,
-                min_points=self.waveform_minimum,
+                points_multiple=self.instrument.waveform_multiple,
+                min_points=self.instrument.waveform_minimum,
                 max_points=max_points,
-                max_remaining_points=max_remaining_points)
+                max_remaining_points=6000 / prescaler)
 
             if approximate_divisor is not None:
-                points, cycles, remaining_points = approximate_divisor
+                points, cycles, _ = approximate_divisor
                 break
         else:
             logger.warning('Could not find suitable points, cycles for 0V '
                            f'pulse with {samples} points. Using single cycle '
                            f'with {samples} points, which may be very long')
-            points = samples - samples % self.waveform_multiple
+            points = samples - samples % self.instrument.waveform_multiple
             cycles = 1
-            remaining_points = samples % self.waveform_multiple
 
+        waveform_points = voltage / 1.5 * np.ones(samples)
         waveform = {
             'name': 'zero_pulse',
             'waveform': self.instrument.new_waveform_from_double(
-                waveform_type=0, waveform_data_a=np.zeros(samples)),
+                waveform_type=0, waveform_data_a=waveform_points),
             'points': points,
             'cycles': cycles,
-            'delay': remaining_points,
+            'delay': 0,
             'prescaler': prescaler,
             't_start': t_start
         }
@@ -907,28 +914,17 @@ class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
     amplitude = 1.0
 
-    def implement(self, instrument, default_sampling_rates, threshold):
-        if isinstance(self.pulse.connection, SingleConnection):
-            channel = self.pulse.connection.output['channel'].name
-        else:
-            raise Exception('No implementation for connection {}'.format(self.pulse.connection))
-
-        waveform_multiple = 5
-        waveform_minimum = 15
-
-        waveforms = {}
-
-        full_name = self.pulse.full_name or 'none'
+    def implement(self, instrument, default_sampling_rate, threshold):
         duration = self.pulse.duration
 
-        sampling_rate = default_sampling_rates[int(channel[-1])]
+        sampling_rate = default_sampling_rate
         prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
         period_sample = 1 / sampling_rate
 
         # Waveform must have at least waveform_multiple samples
-        waveform_samples = waveform_multiple * round(
-            (self.pulse.duration / period_sample) / waveform_multiple)
-        if duration + threshold < waveform_minimum * period_sample:
+        waveform_samples = instrument.waveform_multiple * round(
+            (self.pulse.duration / period_sample) / instrument.waveform_multiple)
+        if duration + threshold < instrument.waveform_minimum * period_sample:
             raise RuntimeError(f'Waveform too short for {full_name}: '
                 f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
                 f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
@@ -939,13 +935,11 @@ class MarkerPulseImplementation(PulseImplementation):
                     f'{len(waveform_data)} does not match needed samples {waveform_samples}'
         waveform = {'waveform': instrument.new_waveform_from_double(waveform_type=0,
                                                                     waveform_data_a=waveform_data),
-                    'name': full_name,
+                    'name': self.pulse.full_name or 'none',
                     'points': waveform_samples,
                     'cycles': 1,
                     't_start': self.pulse.t_start,
                     't_stop': self.pulse.t_stop,
                     'prescaler': prescaler}
 
-        waveforms[channel] = [waveform]
-
-        return waveforms
+        return waveform
