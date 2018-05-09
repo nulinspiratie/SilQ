@@ -64,9 +64,41 @@ def find_approximate_divisor(N: int,
         return None
 
 
+"""
+AWG behaviour:
+# Output voltage
+The waveform points are between -1 and 1, which correspond to the minimum, 
+maximum voltages, respectively.
+When waiting for a trigger to proceed to the next waveform, the output voltage
+of the final point in the previous waveform is maintained. If there is no 
+previous waveform, the voltage is zero. Similar for a waveform start_delay 
+(see below).
+Note that this can cause odd behaviour, namely that before the waveform queue is 
+played for the first time, the voltage is 0V, but after the queue has finished,
+the output voltage will be the that of the last point. This may affect the pulse
+sequence, if not handled correctly.
+
+# Start delay:
+The start delay is time between when a waveform should start and when it 
+actually starts. If the waveform requires a trigger, it will wait for 
+waveform_delay after it received a trigger.
+If the waveform doesn't need a trigger, it will still wait for start_delay after
+the previous waveform finished.
+During start_delay, the output voltage is the last point of the previous 
+waveform. If there is no previous waveform, output voltage is zero.
+Start delay is independent of prescaler!
+
+# Trigger
+Triggers are ignored if the system is not waiting for one. It is therefore 
+important to have some small dead-time built-in before the AWG receives the 
+trigger to ensure that the AWG is waiting for one.
+"""
+
+
 class Keysight_SD_AWG_Interface(InstrumentInterface):
     waveform_multiple = 5
     waveform_minimum = 15
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -90,9 +122,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             'trig_out': Channel(instrument_name=self.instrument_name(),
                                 name='trig_out', output_TTL=(0, 3.3))}
 
-        self.trigger_thread = None
-
         self.pulse_implementations = [
+            # TODO fix sinepulseimplementation by using pulse_to_waveform_sequence
             # SinePulseImplementation(
             #     pulse_requirements=[('frequency', {'min': 0, 'max': 200e6}),
             #                         ('amplitude', {'max': 1.5})]),
@@ -121,6 +152,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                            set_cmd=None,
                            vals=vals.Enum('none', 'hardware', 'software'),
                            docstring='Selects the method to run through the AWG queue.')
+
+        self.trigger_thread = None
+        self.waveforms = None
+        self.started = False
 
     def _get_active_channel_names(self):
         """Get sorted list of active channels"""
@@ -172,7 +207,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             return []
         elif self.trigger_mode() in ['software', 'none']:
             return []
-        else: # Hardware trigger
+        else:  # Hardware trigger
             t_start = min(self.pulse_sequence.t_start_list)
             if self.input_pulse_sequence.get_pulses(trigger=True):
                 logger.warning(f'Trigger(s) manually defined for {self.name}: '
@@ -254,10 +289,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 trigger_connection = self.input_pulse_sequence.get_connection(
                     trigger_start=True)
 
-
             trigger_source = trigger_connection.input['channel'].name
 
-            assert trigger_source in ['trig_in'] + self._pxi_channels.keys(), \
+            assert trigger_source in ['trig_in', *self._pxi_channels], \
                 f"Trigger source {trigger_source} not allowed."
 
             self.active_instrument_channels.trigger_source(trigger_source)
@@ -268,16 +302,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     def create_waveforms(self, error_threshold):
         waveforms = {ch: [] for ch in self.channel_selection()}
-
-        # Collect all the pulse implementations
-        for pulse in self.pulse_sequence:
-            pulse_channel_waveforms = pulse.implementation.implement(
-                instrument=self.instrument,
-                default_sampling_rates=self.default_sampling_rates(),
-                threshold=error_threshold)
-
-            for ch in pulse_channel_waveforms:
-                waveforms[ch] += pulse_channel_waveforms[ch]
 
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
@@ -410,6 +434,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 points, cycles, remaining_points = approximate_divisor
                 break
         else:
+            logger.warning('Could not find suitable points, cycles for 0V '
+                           f'pulse with {samples} points. Using single cycle '
+                           f'with {samples} points, which may be very long')
             points = samples - samples % self.waveform_multiple
             cycles = 1
             remaining_points = samples % self.waveform_multiple
@@ -428,7 +455,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
 
 class SinePulseImplementation(PulseImplementation):
+    # TODO fix sinepulseimplementation by using pulse_to_waveform_sequence
     pulse_class = SinePulse
+
     def implement(self, instrument, default_sampling_rates, threshold):
         """
         This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
@@ -579,14 +608,12 @@ class SinePulseImplementation(PulseImplementation):
 
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
-    waveform_multiple = 5
-    waveform_minimum = 15  # the minimum size of a waveform
+
     def implement(self, instrument, default_sampling_rates, threshold):
-        if isinstance(self.pulse.connection, SingleConnection):
-            channels = [self.pulse.connection.output['channel'].name]
-        else:
-            raise Exception('No implementation for connection {}'.format(
-                self.pulse.connection))
+        assert isinstance(self.pulse.connection, SingleConnection), \
+            "DC pulse can only be implemented for SingleConnection. " \
+            f"Connection: {self.pulse.connection}"
+        channel = self.pulse.connection.output['channel'].name
 
         waveforms = {}
 
