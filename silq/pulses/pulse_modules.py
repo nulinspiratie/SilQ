@@ -225,10 +225,8 @@ class PulseSequence:
             an error will be raised if a pulse is added that overlaps in time.
             If pulse has a `Pulse`.connection, an error is only raised if
             connections match as well.
-        final_delay (float): Final delay in pulse sequence after final pulse is
-            finished.
         duration (float): Total duration of pulse sequence. Equal to
-            `Pulse`.t_stop of last pulse, plus any `PulseSequence`.final_delay.
+            `Pulse`.t_stop of last pulse, unless explicitly set
         enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
             Updated when a pulse is added or `Pulse`.enabled is changed.
         disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
@@ -253,8 +251,7 @@ class PulseSequence:
                  pulses: list = [],
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
-                 allow_pulse_overlap: bool = True,
-                 final_delay: float = None):
+                 allow_pulse_overlap: bool = True):
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
@@ -266,7 +263,6 @@ class PulseSequence:
         self.pulse_conditions = pulse_conditions
 
         self._duration = None
-        self.final_delay = final_delay
 
         self.pulses = []
         self.enabled_pulses = []
@@ -403,9 +399,6 @@ class PulseSequence:
             duration = max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
             duration = 0
-
-        if self.final_delay is not None:
-            duration += self.final_delay
 
         return np.round(duration, 11)
 
