@@ -26,6 +26,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
 
+    One important issue with the DDS is that it requires an inverted trigger,
+    i.e. high voltage is the default, and a low voltage indicates a trigger.
+    Not every interface has been programmed to handle this (so far only the
+    PulseBlaster ESRPRO has).
+
     The interface also contains a list of all available channels in the
     instrument.
 
@@ -35,7 +40,6 @@ class PulseBlasterDDSInterface(InstrumentInterface):
     Note:
         For a given instrument, its associated interface can be found using
             `get_instrument_interface`
-
     """
 
     def __init__(self, instrument_name, **kwargs):
@@ -184,8 +188,8 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         if self.is_primary():
             # Insert delay until end of pulse sequence
             # NOTE: This will disable all output channels and use default registers
-            delay_duration = max(self.pulse_sequence.duration - t, 0)
-            if delay_duration:
+            delay_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay - t
+            if delay_duration > 1e-11:
                 delay_cycles = round(delay_duration * s_to_ns)
                 if delay_cycles < 1e9:
                     inst = DEFAULT_INSTR + (0, 'continue', 0, delay_cycles)

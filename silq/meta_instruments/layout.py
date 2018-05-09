@@ -304,7 +304,7 @@ class CombinedConnection(Connection):
         connections: `SingleConnection` list to combine
         scale: List specifying the value by which the amplitude of a pulse
             should be scaled for each connection (by default no scaling).
-        **kwargs: Additional Connection kwargs.
+        **kwargs: Additional Connection keyword arguments.
     """
     def __init__(self,
                  connections: List[SingleConnection],
@@ -1107,13 +1107,16 @@ class Layout(Instrument):
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
         self.targeted_pulse_sequence.duration = pulse_sequence.duration
+        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
             interface.pulse_sequence.duration = pulse_sequence.duration
+            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
             interface.input_pulse_sequence.duration = pulse_sequence.duration
+            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -1259,7 +1262,6 @@ class Layout(Instrument):
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
-                is_primary = self.primary_instrument() == interface.instrument.name
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
