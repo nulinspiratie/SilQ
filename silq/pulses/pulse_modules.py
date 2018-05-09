@@ -227,6 +227,10 @@ class PulseSequence:
             connections match as well.
         duration (float): Total duration of pulse sequence. Equal to
             `Pulse`.t_stop of last pulse, unless explicitly set
+        final_delay (Union[float, None]): Optional final delay at the end of
+            the pulse sequence. The interface of the primary instrument should
+            incorporate any final delay. The default is None, in which case the
+            primary interface should use its default final_delay
         enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
             Updated when a pulse is added or `Pulse`.enabled is changed.
         disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
@@ -251,7 +255,8 @@ class PulseSequence:
                  pulses: list = [],
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
-                 allow_pulse_overlap: bool = True):
+                 allow_pulse_overlap: bool = True,
+                 final_delay: float = None):
         self.allow_untargeted_pulses = allow_untargeted_pulses
         self.allow_targeted_pulses = allow_targeted_pulses
         self.allow_pulse_overlap = allow_pulse_overlap
@@ -263,6 +268,7 @@ class PulseSequence:
         self.pulse_conditions = pulse_conditions
 
         self._duration = None
+        self.final_delay = final_delay
 
         self.pulses = []
         self.enabled_pulses = []
