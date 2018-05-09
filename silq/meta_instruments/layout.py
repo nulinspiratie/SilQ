@@ -680,12 +680,13 @@ class Layout(Instrument):
             connection = connection.copy()
             if 'combine' in connection:
                 # Create CombinedConnection. connection['combine'] consists of
-                # output args of the SingleConnections
-                output_args = connection.pop('combine')
+                # (output_arg, input_arg) combinations of the SingleConnections
+                combined_args = connection.pop('combine')
                 # Must add actual Connection objects, so retrieving them from
                 #  Layout
-                nested_connections = [self.get_connection(output_arg=output_arg)
-                                      for output_arg in output_args]
+                nested_connections = [self.get_connection(output_arg=output_arg,
+                                                          input_arg=input_arg)
+                                      for output_arg, input_arg in combined_args]
                 # Remaining properties in connection dict are kwargs
                 self.combine_connections(*nested_connections, **connection)
             else:

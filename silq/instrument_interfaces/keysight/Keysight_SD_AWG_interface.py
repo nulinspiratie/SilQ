@@ -57,7 +57,7 @@ def find_approximate_divisor(N: int,
         # Ensure points is always a multiple of points_multiple
         points -= points % points_multiple
         remaining_points = N - points * cycles
-        if min_points <= points <= max_points & \
+        if min_points <= points <= max_points and \
                 remaining_points <= max_remaining_points:
             return int(points), int(cycles), int(remaining_points)
     else:
@@ -108,7 +108,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         ]
 
         self.add_parameter('channel_selection',
-                           vals=vals.Lists,
+                           vals=vals.Lists(),
                            get_cmd=self._get_active_channel_names)
 
         self.add_parameter('default_sampling_rates', set_cmd=None,
@@ -116,6 +116,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.add_parameter('trigger_mode',
                            set_cmd=None,
+                           initial_value='software',
                            vals=vals.Enum('none', 'hardware', 'software'),
                            docstring='Selects the method to run through the AWG queue.')
 
@@ -269,11 +270,16 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
     def create_waveforms(self, error_threshold):
         waveforms = {ch: [] for ch in self.channel_selection()}
 
+        total_duration = self.pulse_sequence.duration
+        if self.pulse_sequence.final_delay is not None:
+            total_duration -= self.pulse_sequence.final_delay
+        total_duration = np.round(total_duration, 11)
+
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
             sampling_rate = self.default_sampling_rates()[channel.id]
-            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
 
             # Handle delays between waveforms
             t = 0
@@ -307,9 +313,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
                         # Increase total samples to include 0V pulse points
                         total_samples += waveform_0V['delay']
-                        total_samples += waveform_0V['points_100MHz']
+                        total_samples += waveform_0V['points_100MHz'] * waveform_0V['cycles']
 
                 pulse_waveforms = pulse.implementation.implement(
+                    interface=self,
                     instrument=self.instrument,
                     default_sampling_rate=sampling_rate,
                     threshold=error_threshold)
@@ -321,28 +328,42 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     waveforms[channel.name].append(waveform)
 
                     total_samples += waveform['delay']
-                    total_samples += waveform['points_100MHz']
+                    total_samples += waveform['points_100MHz'] * waveform['cycles']
 
                 t = pulse.t_stop
+
+            if t <= total_duration:
+                final_samples = int(round(total_duration * 100e6))
+                remaining_samples = final_samples - total_samples
+                waveform_0V = self.create_DC_waveform(voltage=0,
+                                                      samples=remaining_samples,
+                                                      prescaler=prescaler,
+                                                      t_start=t)
+                if waveform_0V:
+                    waveforms[channel.name].append(waveform_0V)
+
         return waveforms
 
     def load_waveforms(self, waveforms):
         self.instrument.flush_waveforms()
 
+        waveform_idx = 0
         for channel in self.active_instrument_channels:
+            channel.flush_waveforms()
             channel_waveforms = waveforms[channel.name]
 
             # always play a priming pulse first
             trigger_mode = ['none', 'software', 'hardware'].index(self.trigger_mode())
-            for waveform_idx, waveform in enumerate(channel_waveforms):
+            for waveform in channel_waveforms:
                 self.instrument.load_waveform(waveform['waveform'], waveform_idx)
 
                 channel.queue_waveform(waveform_number=waveform_idx,
                                        trigger_mode=trigger_mode,
-                                       start_delay=0,
+                                       start_delay=waveform['delay'],
                                        cycles=waveform['cycles'],
                                        prescaler=waveform['prescaler'])
                 trigger_mode = 0  # auto trigger for every wf that follows first
+                waveform_idx += 1
 
     def start(self):
         """Start selected channels, and auto-triggering if primary instrument
@@ -351,8 +372,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         """
 
         self.instrument.start_channels(self.active_channel_ids)
+        self.started = True
         if self.trigger_mode() == 'software':
-            self.started = True
             trigger_period = self.pulse_sequence.duration * 1.1
             logger.debug(f'Starting self triggering of the M3201 AWG with '
                          f'interval {trigger_period*1e3:.3f}ms.')
@@ -390,7 +411,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                            samples: int,
                            prescaler: int,
                            t_start: float,
-                           max_cycles: int = 2**16):
+                           max_cycles: int = 2**16,
+                           final_voltage=None):
         if samples < self.instrument.waveform_minimum:
             return None
 
@@ -417,15 +439,25 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             logger.warning('Could not find suitable points, cycles for 0V '
                            f'pulse with {samples} points. Using single cycle '
                            f'with {samples} points, which may be very long')
+            logger.warning(dict(
+                N=samples, max_cycles=max_cycles,
+                points_multiple=self.instrument.waveform_multiple,
+                min_points=self.instrument.waveform_minimum,
+                max_points=max_points,
+                max_remaining_points=int(6000 / prescaler)))
             points = samples - samples % self.instrument.waveform_multiple
             cycles = 1
 
-        waveform_points = voltage / 1.5 * np.ones(samples)
+        waveform_points = voltage / 1.5 * np.ones(points)
+        if final_voltage is not None:
+            waveform_points[-1] = final_voltage
         waveform = {
             'name': 'zero_pulse',
             'waveform': self.instrument.new_waveform_from_double(
                 waveform_type=0, waveform_data_a=waveform_points),
+            'waveform_points': waveform_points,
             'points': points,
+            'points_100MHz': int(points / 5) if prescaler == 0 else points * prescaler,
             'cycles': cycles,
             'delay': 0,
             'prescaler': prescaler,
@@ -505,7 +537,7 @@ class SinePulseImplementation(PulseImplementation):
         for ch_idx, ch in enumerate(channels):
 
             sampling_rate = default_sampling_rates[ch_idx]
-            prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+            prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
             period_sample = 1 / sampling_rate
             assert self.pulse.frequency < sampling_rate / 2, \
                 f'Sine frequency {self.pulse.frequency} is too high for' \
@@ -591,7 +623,7 @@ class DCPulseImplementation(PulseImplementation):
 
     def implement(self, interface, instrument, default_sampling_rate, threshold):
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         samples = int(self.pulse.duration * sampling_rate)
         assert samples >= instrument.waveform_minimum, \
             f"pulse {self.pulse} too short"
@@ -599,8 +631,7 @@ class DCPulseImplementation(PulseImplementation):
         waveform = interface.create_DC_waveform(voltage=self.pulse.amplitude,
                                                 samples=samples,
                                                 prescaler=prescaler,
-                                                t_start=self.pulse.t_start,
-                                                max_cycles=1)
+                                                t_start=self.pulse.t_start)
 
         if self.pulse.full_name:
             waveform['name'] = self.pulse.full_name
@@ -615,7 +646,7 @@ class DCRampPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -628,6 +659,10 @@ class DCRampPulseImplementation(PulseImplementation):
 
         waveform = {'waveform': instrument.new_waveform_from_double(
             waveform_type=0, waveform_data_a=waveform_data),
+                    'waveform_points': waveform_data,
+                    'points': samples,
+                    'points_100MHz': (int(samples / 5) if prescaler == 0
+                                      else samples * prescaler),
                     'name': full_name,
                     'points': samples,
                     'cycles': 1,
@@ -645,7 +680,7 @@ class AWGPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else (100e6 / sampling_rate)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -659,6 +694,10 @@ class AWGPulseImplementation(PulseImplementation):
         waveform = {'waveform': instrument.new_waveform_from_double(
             waveform_type=0,
             waveform_data_a=waveform_data),
+                    'waveform_points': waveform_data,
+                    'points': samples,
+                    'points_100MHz': (int(samples / 5) if prescaler == 0
+                                      else samples * prescaler),
                     'name':full_name,
                     'cycles': 1,
                     't_start': self.pulse.t_start,
@@ -675,7 +714,7 @@ class CombinationPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -688,6 +727,10 @@ class CombinationPulseImplementation(PulseImplementation):
 
         waveform = {'waveform': instrument.new_waveform_from_double(
             waveform_type=0, waveform_data_a=waveform_data),
+                    'waveform_points': waveform_data,
+                    'points': samples,
+                    'points_100MHz': (int(samples / 5) if prescaler == 0
+                                      else samples * prescaler),
                     'name': full_name,
                     'cycles': 1,
                     't_start': self.pulse.t_start,
@@ -703,7 +746,7 @@ class TriggerPulseImplementation(PulseImplementation):
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         samples = int(self.pulse.duration * sampling_rate)
         if samples < instrument.waveform_minimum:
             logger.warning(f'Trigger pulse {self.pulse} too short, setting to'
@@ -716,7 +759,7 @@ class TriggerPulseImplementation(PulseImplementation):
                                                 prescaler=prescaler,
                                                 t_start=self.pulse.t_start,
                                                 max_cycles=1)
-
+                                                # final_voltage=0)
         if self.pulse.full_name:
             waveform['name'] = self.pulse.full_name
 
@@ -729,7 +772,7 @@ class MarkerPulseImplementation(PulseImplementation):
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else 100e6 / sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         samples = int(self.pulse.duration * sampling_rate)
         assert samples >= instrument.waveform_minimum, \
             f"pulse {self.pulse} too short"
@@ -737,8 +780,7 @@ class MarkerPulseImplementation(PulseImplementation):
         waveform = interface.create_DC_waveform(voltage=self.amplitude,
                                                 samples=samples,
                                                 prescaler=prescaler,
-                                                t_start=self.pulse.t_start,
-                                                max_cycles=1)
+                                                t_start=self.pulse.t_start)
 
         if self.pulse.full_name:
             waveform['name'] = self.pulse.full_name
