@@ -10,11 +10,10 @@ class TriggerFPGAInterface(InstrumentInterface):
         # Setup channels
         self._output_channels = {
             f'pxi{k}': Channel(instrument_name=self.instrument_name(),
-                               name=f'pxi{k}', id=k, trigger=True)
+                               name=f'pxi{k}', id=k)
             for k in range(8)}
         self._output_channels['trig_out'] = Channel(instrument_name=self.instrument_name(),
                                                     name='trig_out',
-                                                    trigger=True,
                                                     output_TTL=(0, 2))
         self._channels = self._output_channels
 
@@ -32,7 +31,7 @@ class TriggerFPGAInterface(InstrumentInterface):
                            set_cmd=None)
 
     def setup(self,
-              repeat: bool = True,**kwargs) -> Dict[str, Any]:
+              repeat: bool = True,**kwargs):
         assert repeat, "FPGA trigger source can only work in repeat mode"
         assert self.is_primary(), "FPGA trigger source can only function as " \
                                   "primary instrument"
