@@ -76,6 +76,12 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                            initial_value=5,
                            set_cmd=None)
 
+        self.add_parameter('trigger_in_duration',
+                           unit='s',
+                           vals=vals.Numbers(),
+                           initial_value=15e-6,
+                           set_cmd=None)
+
         # Set up the driver to a known default state
         self.initialize_driver()
 
@@ -182,7 +188,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             else: # connection.trigger_start
                 t_start = 0
 
-            return [TriggerPulse(t_start=t_start, duration=15e-6,
+            return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
                                  connection_requirements={
                                      'input_instrument': self.instrument_name(),
                                      'trigger': True

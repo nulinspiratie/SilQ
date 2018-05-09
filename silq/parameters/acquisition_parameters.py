@@ -1219,8 +1219,8 @@ class VariableReadParameter(AcquisitionParameter):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='plunge', acquire=True, average='trace'),
             DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='empty', acquire=True, average='trace'),
-            DCPulse(name='final')])
+            DCPulse(name='empty', acquire=True, average='trace')])
+        self.pulse_sequence.final_delay = .05e-3
 
         super().__init__(name=name,
                          names=('read_voltage',),
