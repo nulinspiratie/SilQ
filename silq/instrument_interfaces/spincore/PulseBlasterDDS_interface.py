@@ -185,9 +185,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         if self.is_primary():
             # Insert delay until end of pulse sequence
             # NOTE: This will disable all output channels and use default registers
-            delay_duration = self.pulse_sequence.duration - t
-            if self.pulse_sequence.final_delay is not None:
-                delay_duration += self.pulse_sequence.final_delay
+            delay_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay - t
             if delay_duration > 1e-11:
                 delay_cycles = round(delay_duration * s_to_ns)
                 if delay_cycles < 1e9:
