@@ -1,15 +1,16 @@
 from typing import List
+import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses.pulse_types import Pulse, TriggerPulse
+
 from qcodes.utils import validators as vals
-from qcodes import ManualParameter
-from qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller import Triggered_Controller
+from qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller \
+    import Triggered_Controller
 
 import logging
 logger = logging.getLogger(__name__)
 
-import numpy as np
 
 class Keysight_SD_DIG_interface(InstrumentInterface):
     def __init__(self, instrument_name, acquisition_controllers=[], **kwargs):
@@ -39,26 +40,19 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         # Organize acquisition controllers
         self.acquisition_controllers = {
             acquisition_controller.name: acquisition_controller
-            for acquisition_controller in acquisition_controllers}
-        for acquisition_controller_name in acquisition_controller_names:
-            self.add_acquisition_controller(acquisition_controller_name)
-
-        self.add_parameter(name='default_acquisition_controller',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
-                           vals=vals.Enum(None, *self.acquisition_controllers.keys()))
+            for acquisition_controller in acquisition_controllers
+        }
 
         self.add_parameter(name='acquisition_controller',
                            set_cmd=None)
 
-        # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
-                           parameter_class=ManualParameter,
                            initial_value=[],
-                           vals=vals.Anything())
+                           set_cmd=None,
+                           vals=vals.Lists(),
+                           docstring='Names of acquisition channels '
+                                     '[chA, chB, etc.]. Set by the layout')
 
-        # Add ManualParameters which will be distributed to the active acquisition
-        # controller during the setup routine
         self.add_parameter('sample_rate',
                            vals=vals.Numbers(),
                            set_cmd=None)
@@ -88,10 +82,7 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
     def acquisition(self):
         """Perform acquisition"""
         acquisition_data = self.acquisition_controller().acquisition()
-
-        # Set acquisition controller average mode to None
-        # Averaging is done below
-        self.acquisition_controller().average_mode('none')
+        self.stop()
 
         # The start of acquisition
         t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
@@ -124,39 +115,15 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                     raise SyntaxError(f'average mode {pulse.average} not configured')
         return data
 
-    def add_acquisition_controller(self, acquisition_controller_name,
-                                   cls_name=None):
-        """
-        Adds an acquisition controller to the available controllers.
-        If another acquisition controller exists of the same class, it will
-        be overwritten.
-
-        Args:
-            acquisition_controller_name: instrument name of controller.
-                Must be on same server as interface and Keysight digitizer
-            cls_name: Optional name of class, which is used as controller key.
-                If no cls_name is provided, it is found from the instrument
-                class name
-        """
-        acquisition_controller = self.find_instrument(acquisition_controller_name)
-        if cls_name is None:
-            cls_name = acquisition_controller.__class__.__name__
-        # Remove _Controller from cls_name
-
-        cls_name = cls_name.replace('_Controller', '')
-
-        self.acquisition_controllers[cls_name] = acquisition_controller
-
     def initialize_driver(self):
         """
             Puts driver into a known initial state. Further configuration will
             be done in the configure_driver and get_additional_pulses
             functions.
         """
-        for k in range(self.instrument.n_channels):
-            self.instrument.parameters[f'impedance_{k}'].set('50') # 50 Ohm impedance
-            self.instrument.parameters[f'coupling_{k}'].set('DC')  # DC Coupled
-            self.instrument.parameters[f'full_scale_{k}'].set(3.0)  # 3.0 Volts
+        self.instrument.channels.impedance('50') # 50 Ohm impedance
+        self.instrument.channels.coupling('DC')  # DC Coupled
+        self.instrument.channels.full_scale(3.0)  # 3.0 Volts
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
@@ -182,25 +149,26 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             except StopIteration:
                 logger.error('Could not find trigger connection for SD digitizer')
 
+            connection_requirements = {'input_instrument': self.instrument_name()}
+
             if trigger_connection.trigger:
+                connection_requirements['trigger'] = True
                 t_start = min(pulse.t_start for pulse in
                               self.pulse_sequence.get_pulses(acquire=True))
             else: # connection.trigger_start
+                connection_requirements['trigger_start'] = True
                 t_start = 0
 
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
-                                 connection_requirements={
-                                     'input_instrument': self.instrument_name(),
-                                     'trigger': True
-                                 })]
+                                 connection_requirements=connection_requirements)]
 
-    def setup(self, samples=1, input_connections=[], **kwargs):
+    def setup(self, samples=1, input_connections=(), **kwargs):
         self.samples(samples)
 
-        # Find all unique pulse_connections to choose which channels to acquire on
+        # Select the channels to acquire
         channel_selection = [int(ch_name[-1]) for ch_name in self.acquisition_channels()]
-        self.channel_selection(sorted(channel_selection))
-        self.acquisition_controller().channel_selection(self.channel_selection())
+        self.channel_selection(channel_selection)
+        self.acquisition_controller().channel_selection(channel_selection)
 
         # Pulse averaging is done in the interface, not the controller
         self.acquisition_controller().average_mode('none')
@@ -212,26 +180,12 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             # Capture maximum number of samples on all channels
             t_start = min(self.pulse_sequence.t_start_list)
             t_stop = max(self.pulse_sequence.t_stop_list)
-            samples_per_trace = (t_stop - t_start) * self.sample_rate()
+            samples_per_trace = int(np.ceil((t_stop - t_start) * self.sample_rate()))
             self.acquisition_controller().samples_per_trace(samples_per_trace)
 
-            # Setup triggering
-            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
-            trigger_channel = trigger_pulse.connection.input['channel'].id
-            self.acquisition_controller().trigger_channel(trigger_channel)
-            self.acquisition_controller().trigger_threshold(trigger_pulse.amplitude / 2)
-            self.acquisition_controller().trigger_edge('rising')
-            if self.input_pulse_sequence.get_pulses(name='Bayes'):
-                bayesian_pulse = self.input_pulse_sequence.get_pulse(name='Bayes')
-                trigger_delay = int(bayesian_pulse.t_start * 2 * self.sample_rate())
-                self.acquisition_controller().trigger_delay(trigger_delay)
-            elif any(connection.trigger_start for connection in input_connections):
-                self.acquisition_controller().trigger_delay(t_start)
-            else:
-                self.acquisition_controller().trigger_delay(0)
-
-            # Set read timeout interval, which is the interval for requesting
-            # an acquisition. This allows us to interrupt an acquisition prematurely.
+            # Set read timeout interval
+            # This is the interval for requesting an acquisition.
+            # This allows us to interrupt an acquisition prematurely.
             timeout_interval = max(2.1 * self.pulse_sequence.duration,
                                    self.minimum_timeout_interval())
             self.acquisition_controller().timeout_interval(timeout_interval)
@@ -241,9 +195,40 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             # Traces per read should not be longer than the timeout interval
             traces_per_read = max(timeout_interval // self.pulse_sequence.duration, 1)
             self.acquisition_controller().traces_per_read(traces_per_read)
+
+            self.setup_trigger(t_start, input_connections)
         else:
             raise RuntimeError('No setup configured for acquisition controller '
                                f'{self.acquisition_controller()}')
+
+    def setup_trigger(self, t_start, input_connections):
+        # Setup triggering
+        trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+        if trigger_pulse is None:
+            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger_start=True)
+        assert trigger_pulse is not None, "No trigger pulse found for digitizer"
+        trigger_channel = trigger_pulse.connection.input['channel'].name
+        # Also sets trigger mode, etc.
+        self.acquisition_controller().trigger_channel(trigger_channel)
+        if trigger_channel.startswith('ch'):
+            self.acquisition_controller().analog_trigger_edge('rising')
+            self.acquisition_controller().analog_trigger_threshold(
+                trigger_pulse.amplitude / 2)
+
+        elif trigger_channel == 'trig_in':
+            self.acquisition_controller().digital_trigger_mode('rising')
+        else:  # PXI channel
+            self.acquisition_controller().digital_trigger_mode('rising')
+
+        if self.input_pulse_sequence.get_pulses(name='Bayes'):
+            bayesian_pulse = self.input_pulse_sequence.get_pulse(name='Bayes')
+            trigger_delay = int(bayesian_pulse.t_start * 2 * self.sample_rate())
+            trigger_delay_samples = int(round(trigger_delay * self.sample_rate()))
+        elif any(connection.trigger_start for connection in input_connections):
+            trigger_delay_samples = int(round(t_start * self.sample_rate()))
+        else:
+            trigger_delay_samples = 0
+        self.acquisition_controller().trigger_delay_samples(trigger_delay_samples)
 
     def stop(self):
         # Stop all DAQs

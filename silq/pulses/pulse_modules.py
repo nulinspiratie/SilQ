@@ -643,8 +643,9 @@ class PulseSequence:
         """
         pulses = self.get_pulses(**conditions)
         connections = [pulse.connection for pulse in pulses]
-        assert len(set(connections)) == 1, "Found {} connections instead of " \
-                                           "one".format(len(set(connections)))
+        assert len(set(connections)) == 1, f"Found {len(set(connections))} " \
+                                           f"connections instead of one " \
+                                           f"satisfying {conditions}"
         return connections[0]
 
     def get_transition_voltages(self,

@@ -175,36 +175,21 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         elif self.trigger_mode() in ['software', 'none']:
             return []
         else:  # Hardware trigger
-            t_start = min(self.pulse_sequence.t_start_list)
-            if self.input_pulse_sequence.get_pulses(trigger=True):
+            if self.input_pulse_sequence.get_pulses(trigger=True) \
+                    or self.input_pulse_sequence.get_pulses(trigger_start=True):
                 logger.warning(f'Trigger(s) manually defined for {self.name}: '
                                f'{self.input_pulse_sequence.get_pulses(trigger=True)}')
                 return []
 
             trigger_connection = next(
-                (connection.trigger or connection.trigger_start) and
-                connection.input['instrument'] == self.instrument_name()
-                for connection in connections)
+                connection for connection in connections
+                if (connection.trigger or connection.trigger_start) and
+                connection.input['instrument'] == self.instrument_name())
 
-            if trigger_connection.trigger:
-                # Add a single trigger pulse when starting sequence
-                logger.debug(f'Creating trigger for Keysight SD AWG: {self.name}')
-                return [TriggerPulse(name=f'{self.name}_trigger',
-                                     t_start=t_start,
-                                     duration=15e-6,
-                                     connection_requirements={
-                                         'input_instrument': self.instrument_name(),
-                                         'trigger': True})]
-            else:  # trigger_connection.trigger_start
-                # Add a single trigger pulse at t=0, a trigger delay until the
-                # start of first pulse is configured for the first waveform
-                logger.debug(f'Requesting trigger at t=0 (connection.trigger_start)')
-                return [TriggerPulse(name=f'{self.name}_trigger',
-                                     t_start=0,
-                                     duration=15e-6,
-                                     connection_requirements={
-                                         'input_instrument': self.instrument_name(),
-                                         'trigger_start': True})]
+            return [TriggerPulse(name=f'{self.name}_trigger',
+                                 t_start=0,
+                                 duration=15e-6,
+                                 connection=trigger_connection)]
 
     def setup(self, error_threshold=1e-6, **kwargs):
         # TODO: startdelay of first waveform
@@ -270,11 +255,6 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
     def create_waveforms(self, error_threshold):
         waveforms = {ch: [] for ch in self.channel_selection()}
 
-        total_duration = self.pulse_sequence.duration
-        if self.pulse_sequence.final_delay is not None:
-            total_duration -= self.pulse_sequence.final_delay
-        total_duration = np.round(total_duration, 11)
-
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
@@ -332,8 +312,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
                 t = pulse.t_stop
 
-            if t <= total_duration:
-                final_samples = int(round(total_duration * 100e6))
+            if t <= self.pulse_sequence.duration:
+                final_samples = int(round(self.pulse_sequence.duration * 100e6))
                 remaining_samples = final_samples - total_samples
                 waveform_0V = self.create_DC_waveform(voltage=0,
                                                       samples=remaining_samples,
