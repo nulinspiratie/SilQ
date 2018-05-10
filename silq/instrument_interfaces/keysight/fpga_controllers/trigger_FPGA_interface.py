@@ -36,11 +36,13 @@ class TriggerFPGAInterface(InstrumentInterface):
         assert self.is_primary(), "FPGA trigger source can only function as " \
                                   "primary instrument"
 
-        pxi_ports = {pulse.connection['output_channel']
+        pxi_ports = {pulse.connection.output['channel'].name
                        for pulse in self.pulse_sequence}
         assert len(pxi_ports) == 1, "Only one PXI output can be configured " \
                                     "for triggering"
-        self.instrument.pxi_port(next(pxi_ports))
+        pxi_channel = next(iter(pxi_ports))
+        pxi_number = int(pxi_channel[-1])
+        self.instrument.pxi_port(pxi_number)
 
         trigger_interval = self.pulse_sequence.duration + self.final_delay()
         self.instrument.trigger_interval(trigger_interval)

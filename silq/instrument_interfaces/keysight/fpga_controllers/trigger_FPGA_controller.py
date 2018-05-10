@@ -43,7 +43,7 @@ class TriggerFPGAController(Instrument):
 
     def stop(self):
         # Also set trigger duration to zero because signal otherwise goes to high
-        self.trigger_duration(0)
+        self._set_trigger_duration(0)
         self.FPGA.set_fpga_pc_port(port=0,
                                    data=[1, 0],
                                    address=0,
