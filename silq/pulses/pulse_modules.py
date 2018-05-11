@@ -398,8 +398,6 @@ class PulseSequence(ParameterNode):
             When a pulse is added, it is first copied, to ensure that the
             original pulse remains unmodified.
         """
-        # TODO: update
-
         added_pulses = []
 
         for pulse in pulses:
@@ -475,21 +473,21 @@ class PulseSequence(ParameterNode):
         """
         for pulse in pulses:
             if isinstance(pulse, str):
-                pulses_name = [p for p in self.pulses if p.full_name==pulse]
-                assert len(pulses_name) == 1, f'No unique pulse {pulse} found' \
-                                              f', pulses: {len(pulses_name)}'
-                pulse = pulses_name[0]
+                pulses_same_name = [p for p in self.pulses if p.full_name==pulse]
             else:
-                pulses = [p for p in self if p == pulse]
-                assert len(pulses) == 1, f'No unique pulse {pulse} found' \
-                                         f', pulses: {pulses}'
-            self.pulses.remove(pulse)
-            if pulse.enabled:
-                self.enabled_pulses.remove(pulse)
-            else:
-                self.disabled_pulses.remove(pulse)
-            pulse.signal.disconnect(self._handle_signal)
+                pulses_same_name = [p for p in self if p == pulse]
+
+            assert len(pulses_same_name) == 1, \
+                f'No unique pulse {pulse} found, pulses: {pulses}'
+            pulse_same_name = pulses_same_name[0]
+
+            self.pulses.remove(pulse_same_name)
+
+            # TODO disconnect all pulse attributes
+            pulse_same_name['enabled'].disconnect(self._update_enabled_disabled_pulses)
+
         self.sort()
+        self._update_enabled_disabled_pulses()
 
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
