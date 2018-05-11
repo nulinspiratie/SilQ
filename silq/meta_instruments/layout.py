@@ -33,11 +33,12 @@ class Connection:
             Scale 1/x means the signal at the input is x times lower than
             emitted from the output
     """
-    def __init__(self, scale: float = None):
+    def __init__(self, scale: float = None, label: str = None):
 
         self.input = {}
         self.output = {}
         self.scale = scale
+        self.label = label
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -183,9 +184,10 @@ class SingleConnection(Connection):
         self.software = software
 
     def __repr__(self):
-        output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument'], self.output['channel'].name,
-            self.input['instrument'], self.input['channel'].name)
+        output_str = f"Connection{{"
+        if self.label:
+            output_str += f'{self.label}: '
+        output_str += f'{self.output["str"]}->{self.input["str"]}}}('
         if self.trigger:
             output_str += ', trigger'
         if self.acquire:
