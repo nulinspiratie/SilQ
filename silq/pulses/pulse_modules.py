@@ -337,6 +337,7 @@ class PulseSequence(ParameterNode):
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
         return [pulse.full_name for pulse in self.pulses]
 
+    # TODO update
     def _matches_attrs(self,
                        other_pulse_sequence: 'PulseSequence',
                        exclude_attrs: List[str] = []) -> bool:
@@ -353,7 +354,6 @@ class PulseSequence(ParameterNode):
         Returns:
             True if all attributes are equal (except those in ``exclude_attrs``)
         """
-        # TODO update
         for attr in vars(self):
             if attr in exclude_attrs:
                 continue
@@ -363,13 +363,13 @@ class PulseSequence(ParameterNode):
         else:
             return True
 
+    # TODO: update
     def _JSONEncoder(self) -> dict:
         """Converts to JSON encoder for saving metadata
 
         Returns:
             JSON dict
         """
-        # TODO: update
         return {
             'allow_untargeted_pulses': self.allow_untargeted_pulses,
             'allow_targeted_pulses': self.allow_targeted_pulses,
@@ -441,7 +441,7 @@ class PulseSequence(ParameterNode):
                     relevant_pulses = [p for p in self.pulses
                                        if label == p.connection_label
                                        or label == getattr(p.connection,
-                                                           'connection_label',
+                                                           'label',
                                                            None)]
                 if relevant_pulses:
                     # Connect pulse to t_stop of last relevant pulse
@@ -489,16 +489,17 @@ class PulseSequence(ParameterNode):
         self.sort()
         self._update_enabled_disabled_pulses()
 
+    # TODO: update
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
         self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
-        self.enabled_pulses = sorted(self.enabled_pulses,
-                                     key=lambda p: p.t_start)
+        self.enabled_pulses = sorted(self.enabled_pulses, key=lambda p: p.t_start)
 
     def clear(self):
         """Clear all pulses from pulse sequence."""
         for pulse in self.pulses:
-            pulse.signal.disconnect(self._handle_signal)
+            # TODO: remove all signal connections
+            pulse['enabled'].disconnect(self._update_enabled_disabled_pulses)
         self.pulses = []
         self.enabled_pulses = []
         self.disabled_pulses = []
@@ -516,14 +517,19 @@ class PulseSequence(ParameterNode):
         Note:
             If either of the pulses does not have a connection, this is not tested.
         """
-        if (pulse1.t_stop <= pulse2.t_start) or \
-                (pulse1.t_start >= pulse2.t_stop):
-            #
+        if (pulse1.t_stop <= pulse2.t_start) or (pulse1.t_start >= pulse2.t_stop):
             return False
-        elif pulse1.connection is not None and pulse2.connection is not None \
-                and pulse1.connection != pulse2.connection:
-            # If the outputs are different, they don't overlap
-            return False
+        elif pulse1.connection_label is not None:
+            # Overlap if the pulse connection labels overlap
+            labels = [pulse2.connection_label, getattr(pulse2.connection, 'label', None)]
+            return pulse1.connection_label in labels
+        elif pulse1.connection is not None:
+            if pulse2.connection is not None:
+                return pulse1.connection == pulse2.connection
+            elif pulse2.connection_label is not None:
+                return pulse1.connection.label == pulse2.connection_label
+            else:
+                return False
         else:
             return True
 
