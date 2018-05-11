@@ -434,15 +434,8 @@ class PulseSequence(ParameterNode):
             # the end of the last pulse on the same connection(_label)
             if pulse_copy.t_start is None and self.pulses:
                 # Find relevant pulses that share same connection(_label)
-                if pulse.connection is None and pulse.connection_label is None:
-                    relevant_pulses = self.pulses
-                else:
-                    label = pulse.connection_label or pulse.connection.label
-                    relevant_pulses = [p for p in self.pulses
-                                       if label == p.connection_label
-                                       or label == getattr(p.connection,
-                                                           'label',
-                                                           None)]
+                relevant_pulses = self.get_pulses(connection=pulse.connection,
+                                                  connection_label=pulse.connection_label)
                 if relevant_pulses:
                     # Connect pulse to t_stop of last relevant pulse
                     t_stop_max = max(pulse.t_stop for pulse in relevant_pulses)
@@ -489,7 +482,6 @@ class PulseSequence(ParameterNode):
         self.sort()
         self._update_enabled_disabled_pulses()
 
-    # TODO: update
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
         self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
@@ -533,11 +525,13 @@ class PulseSequence(ParameterNode):
         else:
             return True
 
-    def get_pulses(self, enabled=True, **conditions):
+    def get_pulses(self, enabled=True, connection=None, connection_label=None,
+                   **conditions):
         """Get list of pulses in pulse sequence satisfying conditions
 
         Args:
             enabled: Pulse must be enabled
+            connection: pulse must have connection
             **conditions: Additional connection and pulse conditions.
 
         Returns:
@@ -549,19 +543,28 @@ class PulseSequence(ParameterNode):
         pulses = self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
-                            if k in self.pulse_conditions + ['pulse_class']}
+                            if k in self.pulse_conditions + ['pulse_class']
+                            and v is not None}
         pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(
-                enabled=enabled, **pulse_conditions)]
+                  if pulse.satisfies_conditions(enabled=enabled, **pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
-                                 if k in self.connection_conditions}
+                                 if k in self.connection_conditions
+                                 and v is not None}
+
+        if connection:
+            pulses = [pulse for pulse in pulses if
+                      pulse.connection == connection or
+                      pulse.connection_label == connection.label]
+            return pulses  # No further filtering required
+        elif connection_label is not None:
+            connection_conditions['label'] = connection_label
+
         if connection_conditions:
             pulses = [pulse for pulse in pulses if
                       pulse.connection is not None and
-                      pulse.connection.satisfies_conditions(
-                          **connection_conditions)]
+                      pulse.connection.satisfies_conditions(**connection_conditions)]
 
         return pulses
 
@@ -605,9 +608,10 @@ class PulseSequence(ParameterNode):
             AssertionError: No unique connection satisfying conditions.
         """
         pulses = self.get_pulses(**conditions)
-        connections = [pulse.connection for pulse in pulses]
-        assert len(set(connections)) == 1, "Found {} connections instead of " \
-                                           "one".format(len(set(connections)))
+        connections = {pulse.connection for pulse in pulses}
+        assert len(connections) == 1, \
+            f"No unique connection found satisfying {conditions}. " \
+            f"Connections: {connections}"
         return connections[0]
 
     def get_transition_voltages(self,
