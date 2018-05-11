@@ -200,6 +200,7 @@ class PulseSequence(ParameterNode):
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
                  final_delay: float = 0):
+        super().__init__(use_as_attributes=True)
         self.allow_untargeted_pulses = Parameter(initial_value=allow_untargeted_pulses,
                                                  set_cmd=None,
                                                  vals=vals.Bool())
@@ -218,10 +219,11 @@ class PulseSequence(ParameterNode):
         self.t_stop_list = Parameter()
 
         self.enabled_pulses = Parameter(initial_value=[], set_cmd=None,
-                                        vals=vals.Lists)
+                                        vals=vals.Lists())
         self.disabled_pulses = Parameter(initial_value=[], set_cmd=None,
                                          vals=vals.Lists())
         self.pulses = Parameter(initial_value=[], vals=vals.Lists())
+
         # Perform a separate set to ensure set method is called
         self.pulses = pulses
 
@@ -286,8 +288,8 @@ class PulseSequence(ParameterNode):
 
     def __contains__(self, item):
         if isinstance(item, str):
-            pulses = [pulse for pulse in self.pulses if pulse.name == item]
-            return len(pulses) > 0
+            return any(pulse for pulse in self.pulses
+                      if item in [pulse.name, pulse.full_name])
         else:
             return item in self.pulses
 
@@ -351,6 +353,7 @@ class PulseSequence(ParameterNode):
         Returns:
             True if all attributes are equal (except those in ``exclude_attrs``)
         """
+        # TODO update
         for attr in vars(self):
             if attr in exclude_attrs:
                 continue
@@ -366,6 +369,7 @@ class PulseSequence(ParameterNode):
         Returns:
             JSON dict
         """
+        # TODO: update
         return {
             'allow_untargeted_pulses': self.allow_untargeted_pulses,
             'allow_targeted_pulses': self.allow_targeted_pulses,
@@ -394,61 +398,69 @@ class PulseSequence(ParameterNode):
             When a pulse is added, it is first copied, to ensure that the
             original pulse remains unmodified.
         """
+        # TODO: update
+
         added_pulses = []
 
         for pulse in pulses:
-
-            if not self.allow_pulse_overlap and \
-                    any(self.pulses_overlap(pulse, p)
-                        for p in self.enabled_pulses):
-                raise SyntaxError(
-                    'Cannot add pulse because it overlaps.\n'
-                    'Pulse 1: {}\n\nPulse2: {}'.format(
-                        pulse, [p for p in self.enabled_pulses
-                                if self.pulses_overlap(pulse, p)]))
-            elif pulse.implementation is None and \
-                    not self.allow_untargeted_pulses:
+            # Perform checks to see if pulse can be added
+            if not self.allow_pulse_overlap and any(self.pulses_overlap(pulse, p)
+                                                    for p in self.enabled_pulses):
+                overlapping_pulses = [p for p in self.enabled_pulses
+                                      if self.pulses_overlap(pulse, p)]
+                raise SyntaxError(f'Cannot add pulse {pulse} because it overlaps '
+                                  f' with {overlapping_pulses}')
+            elif pulse.implementation is None and not self.allow_untargeted_pulses:
                 raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
-            elif pulse.implementation is not None and \
-                    not self.allow_targeted_pulses:
+            elif pulse.implementation is not None and not self.allow_targeted_pulses:
                 raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
             elif pulse.duration is None:
                 raise SyntaxError(f'Pulse {pulse} duration must be specified')
-            else:
-                # Check if pulse with same name exists
-                pulse_copy = copy(pulse)
-                pulse_copy.id = None # Remove any pre-existing pulse id
-                if pulse.name is not None:
-                    pulses_same_name = self.get_pulses(name=pulse.name)
-                    if pulses_same_name:
-                        # Ensure id is unique
-                        if pulses_same_name[0].id is None:
-                            pulses_same_name[0].id = 0
-                            pulse_copy.id = 1
-                        else:
-                            max_id = max(p.id for p in pulses_same_name)
-                            pulse_copy.id = max_id + 1
 
-                if pulse_copy.t_start is None:
-                    if self: # There exist pulses in this pulse_sequence
-                        # Add last pulse of this pulse_sequence to the pulse
-                        # the previous_pulse.t_stop will be used as t_start
-                        t_stop_max = max(self.t_stop_list)
-                        last_pulse = self.get_pulses(t_stop=t_stop_max,
-                                                     enabled=True)[-1]
+            # Copy pulse to ensure original pulse is unmodified
+            pulse_copy = copy(pulse)
+            pulse_copy.id = None  # Remove any pre-existing pulse id
 
-                        pulse_copy.t_start = PulseMatch(last_pulse, 't_stop')
+            # Check if pulse with same name exists, if so ensure unique id
+            if pulse.name is not None:
+                pulses_same_name = self.get_pulses(name=pulse.name)
+                if pulses_same_name:
+                    if pulses_same_name[0].id is None:
+                        pulses_same_name[0].id = 0
+                        pulse_copy.id = 1
                     else:
-                        pulse_copy.t_start = 0
-                self.pulses.append(pulse_copy)
-                pulse_copy.signal.connect(self._handle_signal)
-                added_pulses.append(pulse_copy)
+                        max_id = max(p.id for p in pulses_same_name)
+                        pulse_copy.id = max_id + 1
 
-                if pulse_copy.enabled:
-                    self.enabled_pulses.append(pulse_copy)
+            # If pulse does not have t_start defined, it will be attached to
+            # the end of the last pulse on the same connection(_label)
+            if pulse_copy.t_start is None and self.pulses:
+                # Find relevant pulses that share same connection(_label)
+                if pulse.connection is None and pulse.connection_label is None:
+                    relevant_pulses = self.pulses
                 else:
-                    self.disabled_pulses.append(pulse_copy)
+                    label = pulse.connection_label or pulse.connection.label
+                    relevant_pulses = [p for p in self.pulses
+                                       if label == p.connection_label
+                                       or label == getattr(p.connection,
+                                                           'connection_label',
+                                                           None)]
+                if relevant_pulses:
+                    # Connect pulse to t_stop of last relevant pulse
+                    t_stop_max = max(pulse.t_stop for pulse in relevant_pulses)
+                    last_pulse = self.get_pulses(t_stop=t_stop_max, enabled=True)[-1]
+                    last_pulse['t_stop'].connect(pulse['t_start'], update=True)
+
+            if pulse_copy.t_start is None:  # No relevant pulses found
+                    pulse_copy.t_start = 0
+
+            self.pulses.append(pulse_copy)
+            added_pulses.append(pulse_copy)
+            # TODO attach pulsesequence to some of the pulse attributes
+            pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses)
+
         self.sort()
+        self._update_enabled_disabled_pulses()
 
         return added_pulses
 
@@ -731,6 +743,10 @@ class PulseSequence(ParameterNode):
             True by default, can be overridden in subclass.
         """
         return True
+
+    def _update_enabled_disabled_pulses(self, *args):
+        self.enabled_pulses = [pulse for pulse in self.pulses if pulse.enabled]
+        self.disabled_pulses = [pulse for pulse in self.pulses if not pulse.enabled]
 
 
 class PulseImplementation:
