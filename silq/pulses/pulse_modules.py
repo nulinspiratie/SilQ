@@ -201,6 +201,16 @@ class PulseSequence(ParameterNode):
                  allow_pulse_overlap: bool = True,
                  final_delay: float = 0):
         super().__init__(use_as_attributes=True)
+
+        # For PulseSequence.satisfies_conditions, we need to separate conditions
+        # into those relating to pulses and to connections. We perform an import
+        # here because it otherwise otherwise leads to circular imports
+        if self.connection_conditions is None or self.pulse_conditions is None:
+            from silq.meta_instruments.layout import connection_conditions
+            from silq.pulses import pulse_conditions
+            PulseSequence.connection_conditions = connection_conditions
+            PulseSequence.pulse_conditions = pulse_conditions
+
         self.allow_untargeted_pulses = Parameter(initial_value=allow_untargeted_pulses,
                                                  set_cmd=None,
                                                  vals=vals.Bool())
@@ -222,24 +232,19 @@ class PulseSequence(ParameterNode):
                                         vals=vals.Lists())
         self.disabled_pulses = Parameter(initial_value=[], set_cmd=None,
                                          vals=vals.Lists())
-        self.pulses = Parameter(initial_value=[], vals=vals.Lists())
+        self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
+                                set_cmd=None)
 
         # Perform a separate set to ensure set method is called
         self.pulses = pulses or []
 
-        # For PulseSequence.satisfies_conditions, we need to separate conditions
-        # into those relating to pulses and to connections. We perform an import
-        # here because it otherwise otherwise leads to circular imports
-        if self.connection_conditions is None or self.pulse_conditions is None:
-            from silq.meta_instruments.layout import connection_conditions
-            from silq.pulses import pulse_conditions
-            PulseSequence.connection_conditions = connection_conditions
-            PulseSequence.pulse_conditions = pulse_conditions
-
     @parameter
-    def pulses_set(self, parameter, pulses):
+    def pulses_set_parser(self, parameter, pulses):
+        # We modify the set_parser instead of set, since we don't want to set
+        # pulses to the original pulses, but to the added (copied) pulses
         self.clear()
-        self.add(*pulses)
+        added_pulses = self.add(*pulses)
+        return added_pulses
 
     @parameter
     def duration_get(self, parameter):
@@ -406,14 +411,13 @@ class PulseSequence(ParameterNode):
                                                     for p in self.enabled_pulses):
                 overlapping_pulses = [p for p in self.enabled_pulses
                                       if self.pulses_overlap(pulse, p)]
-                raise SyntaxError(f'Cannot add pulse {pulse} because it overlaps '
-                                  f' with {overlapping_pulses}')
-            elif pulse.implementation is None and not self.allow_untargeted_pulses:
-                raise SyntaxError(f'Cannot add untargeted pulse {pulse}')
-            elif pulse.implementation is not None and not self.allow_targeted_pulses:
-                raise SyntaxError(f'Not allowed to add targeted pulse {pulse}')
-            elif pulse.duration is None:
-                raise SyntaxError(f'Pulse {pulse} duration must be specified')
+                raise AssertionError(f'Cannot add pulse {pulse} because it '
+                                     f'overlaps with {overlapping_pulses}')
+            assert pulse.implementation is not None or self.allow_untargeted_pulses, \
+                f'Cannot add untargeted pulse {pulse}'
+            assert pulse.implementation is None or self.allow_targeted_pulses, \
+                f'Not allowed to add targeted pulse {pulse}'
+            assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
 
             # Copy pulse to ensure original pulse is unmodified
             pulse_copy = copy(pulse)
@@ -443,7 +447,7 @@ class PulseSequence(ParameterNode):
                     last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
 
             if pulse_copy.t_start is None:  # No relevant pulses found
-                    pulse_copy.t_start = 0
+                pulse_copy.t_start = 0
 
             self.pulses.append(pulse_copy)
             added_pulses.append(pulse_copy)
@@ -543,8 +547,7 @@ class PulseSequence(ParameterNode):
         pulses = self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
-                            if k in self.pulse_conditions + ['pulse_class']
-                            and v is not None}
+                            if k in self.pulse_conditions and v is not None}
         pulses = [pulse for pulse in pulses
                   if pulse.satisfies_conditions(enabled=enabled, **pulse_conditions)]
 
@@ -559,7 +562,10 @@ class PulseSequence(ParameterNode):
                       pulse.connection_label == connection.label]
             return pulses  # No further filtering required
         elif connection_label is not None:
-            connection_conditions['label'] = connection_label
+            pulses = [pulse for pulse in pulses if
+                      getattr(pulse.connection, 'label', None) == connection_label or
+                      pulse.connection_label == connection_label]
+            return pulses # No further filtering required
 
         if connection_conditions:
             pulses = [pulse for pulse in pulses if
