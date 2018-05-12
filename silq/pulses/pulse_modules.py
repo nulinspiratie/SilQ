@@ -454,8 +454,8 @@ class PulseSequence(ParameterNode):
             # TODO attach pulsesequence to some of the pulse attributes
             pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses)
 
-        self.sort()
         self._update_enabled_disabled_pulses()
+        self.sort()
 
         return added_pulses
 

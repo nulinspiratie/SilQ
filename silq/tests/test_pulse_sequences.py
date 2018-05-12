@@ -320,8 +320,20 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
             pulse_sequence.remove('dc2')
         self.assertEqual(len(pulse_sequence.pulses), 1)
 
+    def test_add_disabled_pulse(self):
+        pulse_sequence = PulseSequence()
+        pulses = []
+        for pulse in [Pulse(name='p1', duration=1),
+                      Pulse(name='p2', duration=1, enabled=False),
+                      Pulse(name='p3', duration=1)]:
+            pulses += [pulse_sequence.add(pulse)[0]]
 
-class TestPulseSequenceLinkedTimes(unittest.TestCase):
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
+                                                         pulses[2]])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+
+
+class TestPulseSequenceIndirectTstart(unittest.TestCase):
     def test_first_pulse_no_tstart(self):
         p = Pulse(duration=1)
         pulse_sequence = PulseSequence(pulses=[p])
@@ -340,6 +352,8 @@ class TestPulseSequenceLinkedTimes(unittest.TestCase):
         self.assertEqual(pulse_sequence[0].t_start, 0)
         self.assertEqual(pulse_sequence[1].t_start, 1)
 
+
+class TestPulseSequenceSignalling(unittest.TestCase):
     def test_change_first_t_stop(self):
         p = Pulse(duration=1)
         pulse_sequence = PulseSequence(pulses=[p, p])
@@ -369,7 +383,7 @@ class TestPulseSequenceLinkedTimes(unittest.TestCase):
         self.assertEqual(pulse_sequence[1].t_start, 4)
         self.assertEqual(pulse_sequence[2].t_start, 5)
 
-    def test_connected_pulses_offset(self):
+    def test_connected_pulses_t_startoffset(self):
         pulse_sequence = PulseSequence()
 
         p = Pulse(duration=1)
@@ -391,6 +405,27 @@ class TestPulseSequenceLinkedTimes(unittest.TestCase):
         pulse1.t_stop = 5
         self.assertEqual(pulse2.t_start, 6)
         self.assertEqual(registrar.values, [1, 2, 3, 6])
+
+    def test_change_enabled_pulses(self):
+        pulse_sequence = PulseSequence()
+        pulses = []
+        for pulse in [Pulse(name='p1', duration=1),
+                      Pulse(name='p2', duration=1, enabled=False),
+                      Pulse(name='p3', duration=1)]:
+            pulses += [pulse_sequence.add(pulse)[0]]
+
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
+                                                         pulses[2]])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+
+        pulses[0].enabled = False
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[2]])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[0], pulses[1]])
+
+        pulses[0].enabled = True
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
+                                                         pulses[2]])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
 
 
 if __name__ == '__main__':
