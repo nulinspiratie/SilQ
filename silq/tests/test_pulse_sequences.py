@@ -7,6 +7,14 @@ from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
 
 
+class Registrar:
+    def __init__(self):
+        self.values = []
+
+    def __call__(self, value):
+        self.values.append(value)
+
+
 class TestPulseSequence(unittest.TestCase):
     def test_pulse_sequence_bool(self):
         pulse_sequence = PulseSequence()
@@ -360,6 +368,29 @@ class TestPulseSequenceLinkedTimes(unittest.TestCase):
         self.assertEqual(pulse_sequence[0].t_stop, 4)
         self.assertEqual(pulse_sequence[1].t_start, 4)
         self.assertEqual(pulse_sequence[2].t_start, 5)
+
+    def test_connected_pulses_offset(self):
+        pulse_sequence = PulseSequence()
+
+        p = Pulse(duration=1)
+        pulse1, pulse2 = pulse_sequence.add(p, p)
+
+        # also connect to t_start to measure how often it's called
+        registrar = Registrar()
+        pulse2['t_start'].connect(registrar)
+        self.assertEqual(registrar.values, [1])
+
+        pulse1.t_stop = 2
+        self.assertEqual(registrar.values, [1, 2])
+        self.assertEqual(pulse2.t_start, 2)
+
+        pulse1['t_stop'].connect(pulse2['t_start'], offset=1)
+        self.assertEqual(pulse2.t_start, 3)
+        self.assertEqual(registrar.values, [1, 2, 3])
+
+        pulse1.t_stop = 5
+        self.assertEqual(pulse2.t_start, 6)
+        self.assertEqual(registrar.values, [1, 2, 3, 6])
 
 
 if __name__ == '__main__':
