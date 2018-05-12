@@ -195,7 +195,7 @@ class PulseSequence(ParameterNode):
     connection_conditions = None
     pulse_conditions = None
     def __init__(self,
-                 pulses: list = [],
+                 pulses: list = None,
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
@@ -225,7 +225,7 @@ class PulseSequence(ParameterNode):
         self.pulses = Parameter(initial_value=[], vals=vals.Lists())
 
         # Perform a separate set to ensure set method is called
-        self.pulses = pulses
+        self.pulses = pulses or []
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
         # into those relating to pulses and to connections. We perform an import
@@ -440,7 +440,7 @@ class PulseSequence(ParameterNode):
                     # Connect pulse to t_stop of last relevant pulse
                     t_stop_max = max(pulse.t_stop for pulse in relevant_pulses)
                     last_pulse = self.get_pulses(t_stop=t_stop_max, enabled=True)[-1]
-                    last_pulse['t_stop'].connect(pulse['t_start'], update=True)
+                    last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
 
             if pulse_copy.t_start is None:  # No relevant pulses found
                     pulse_copy.t_start = 0
