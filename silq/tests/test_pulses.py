@@ -261,5 +261,33 @@ class TestPulseConfig(unittest.TestCase):
 #         self.assertNotEqual(p3_read, p2_read)
 
 
+class TestPulseEquality(unittest.TestCase):
+    def test_same_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p)
+
+    def test_reinstantiated_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
+
+    def test_pulse_inequality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=3, amplitude=2, duration=1)
+        self.assertNotEqual(p, p2) # pulses should no longer be equal
+
+    def test_pulse_inequality_new_attribute(self):
+        p = DCPulse(t_start=2, duration=1)
+        p2 = DCPulse(t_start=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
+        p2.amplitude = 1
+        self.assertNotEqual(p, p2)
+
+    def test_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+        self.assertEqual(p, p_copy)
+
+
 if __name__ == '__main__':
     unittest.main()
