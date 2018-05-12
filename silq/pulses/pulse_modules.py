@@ -484,17 +484,17 @@ class PulseSequence(ParameterNode):
 
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
-        self.pulses = sorted(self.pulses, key=lambda p: p.t_start)
-        self.enabled_pulses = sorted(self.enabled_pulses, key=lambda p: p.t_start)
+        self.pulses.sort(key=lambda p: p.t_start)
+        self.enabled_pulses.sort(key=lambda p: p.t_start)
 
     def clear(self):
         """Clear all pulses from pulse sequence."""
         for pulse in self.pulses:
             # TODO: remove all signal connections
             pulse['enabled'].disconnect(self._update_enabled_disabled_pulses)
-        self.pulses = []
-        self.enabled_pulses = []
-        self.disabled_pulses = []
+        self.pulses.clear()
+        self.enabled_pulses.clear()
+        self.disabled_pulses.clear()
 
     def pulses_overlap(self, pulse1, pulse2) -> bool:
         """Tests if pulse1 and pulse2 overlap in time and connection.
