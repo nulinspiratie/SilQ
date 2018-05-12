@@ -214,12 +214,6 @@ class Pulse(ParameterNode):
         else:
             return True
 
-    def __str__(self):
-        # This is called by blinker.signal to get a repr. Instead of creating
-        # a full repr which requires several attrs, this is much faster.
-        pulse_class = self.__class__.__name__
-        return f'{pulse_class}({self.full_name})'
-
     def __eq__(self, other):
         """Overwrite comparison with other (self == other).
 
@@ -233,7 +227,7 @@ class Pulse(ParameterNode):
         Returns:
 
         """
-        exclude_parameters = ['connection']
+        exclude_parameters = ['connection', 'id', 'full_name']
 
         if not isinstance(other, self.__class__):
             return False
