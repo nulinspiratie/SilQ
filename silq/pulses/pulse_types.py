@@ -20,7 +20,7 @@ __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
 # useful when multiple objects have distinct satisfies_conditions kwargs
 pulse_conditions = ['name', 'id', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
-                    'amplitude', 'enabled', 'average']
+                    'amplitude', 'enabled', 'average', 'pulse_class']
 
 logger = logging.getLogger(__name__)
 
@@ -186,10 +186,22 @@ class Pulse(ParameterNode):
         return t_start
 
     @parameter
+    def t_start_set(self, parameter, t_start):
+        # Emit a t_stop signal when t_start is set
+        self['t_start']._latest['raw_value'] = t_start
+        self['t_stop'].set(self.t_stop, evaluate=False)
+
+    @parameter
     def duration_set_parser(self, parameter, duration):
         if duration is not None:
             duration = round(duration, 11)
         return duration
+
+    @parameter
+    def duration_set(self, parameter, duration):
+        # Emit a t_stop signal when duration is set
+        self['duration']._latest['raw_value'] = duration
+        self['t_stop'].set(self.t_stop, evaluate=False)
 
     @parameter
     def t_stop_get(self, parameter):
@@ -201,8 +213,10 @@ class Pulse(ParameterNode):
     @parameter
     def t_stop_set(self, parameter, t_stop):
         if t_stop is not None:
-            # Setting duration sends a signal for duration and also t_stop
-            self.duration = round(t_stop - self.t_start, 11)
+            # Setting duration sends a signal for duration
+            # do not evaluate as it otherwise sends a second t_stop signal
+            self['duration'].set(round(t_stop - self.t_start, 11),
+                                 evaluate=False)
 
     def _matches_parameters(self, other_pulse, exclude_parameters=[]):
         for parameter_name, parameter in self.parameters.items():
