@@ -31,12 +31,19 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
 
     def test_add_multiple_pulses(self):
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10)
+        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=10)
         pulse_sequence = PulseSequence()
         pulse_sequence.add(pulse, pulse2)
         self.assertEqual(len(pulse_sequence), 2)
         self.assertEqual(pulse_sequence.pulses[0], pulse)
         self.assertEqual(pulse_sequence.pulses[1], pulse2)
+
+        pulse3 = DCPulse(name='dc', amplitude=1.5, duration=10)
+        pulse3_added, = pulse_sequence.add(pulse3)
+        # This one shouldn't be equal since t_stop was not set
+        self.assertNotEqual(pulse_sequence.pulses[2], pulse3)
+        pulse3.t_start = pulse3_added.t_start
+        self.assertEqual(pulse_sequence.pulses[2], pulse3)
 
     def test_remove_pulse_clear(self):
         # Remove pulses using clear
@@ -54,7 +61,7 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
         pulse_sequence.remove(pulse)
         self.assertEqual(len(pulse_sequence.pulses), 0)
 
-    def test_remove_wrong_pulse_remove(self):
+    def test_remove_reinstantiated_pulse(self):
         # Remove other pulse using .remove
         pulse_sequence = PulseSequence()
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
@@ -69,23 +76,42 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
         pulse_sequence.add(pulse)
         pulse2 = DCPulse(name='dc', amplitude=2, duration=10, t_start=0)
-        pulse_sequence.remove(pulse2) # Should not work since different amplitude
+        with self.assertRaises(AssertionError):
+            pulse_sequence.remove(pulse2) # Should not work since different amplitude
         self.assertEqual(len(pulse_sequence.pulses), 1)
 
     def test_remove_pulse_by_name(self):
         # Remove pulses using .remove
         pulse_sequence = PulseSequence()
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        pulse_sequence.add(pulse)
+        self.assertEqual(pulse.name, 'dc')
+        self.assertEqual(pulse.full_name, 'dc')
+        added_pulse, = pulse_sequence.add(pulse)
+        self.assertEqual(added_pulse.full_name, 'dc')
+
         pulse_sequence.remove('dc')
         self.assertEqual(len(pulse_sequence.pulses), 0)
+
+    def test_add_same_name_pulses_sequentially(self):
+        pulse_sequence = PulseSequence()
+        p = Pulse('DC', duration=5)
+        added_pulse, = pulse_sequence.add(p)
+        self.assertEqual(added_pulse.id, None)
+        self.assertEqual(added_pulse.full_name, 'DC')
+
+        added_pulse2, = pulse_sequence.add(p)
+        self.assertEqual(added_pulse.id, 0)
+        self.assertEqual(added_pulse.full_name, 'DC[0]')
+        self.assertEqual(added_pulse2.id, 1)
+        self.assertEqual(added_pulse2.full_name, 'DC[1]')
 
     def test_remove_wrong_pulse_by_name(self):
         # Remove pulses using .remove
         pulse_sequence = PulseSequence()
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
         pulse_sequence.add(pulse)
-        pulse_sequence.remove('dc2')
+        with self.assertRaises(AssertionError):
+            pulse_sequence.remove('dc2')
         self.assertEqual(len(pulse_sequence.pulses), 1)
 
 
@@ -99,6 +125,17 @@ class TestPulseSequence(unittest.TestCase):
 
         pulse_sequence.clear()
         self.assertFalse(pulse_sequence)
+
+    def test_pulse_full_name(self):
+        p = Pulse('pulse1')
+        self.assertEqual(p.full_name, 'pulse1')
+        p.id = 2
+        self.assertEqual(p.full_name, 'pulse1[2]')
+
+        p = DCPulse('pulse2')
+        self.assertEqual(p.full_name, 'pulse2')
+        p.id = 2
+        self.assertEqual(p.full_name, 'pulse2[2]')
 
     def test_sort(self):
         pulse_sequence = PulseSequence()
