@@ -5,10 +5,6 @@ from copy import copy, deepcopy
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
-from silq.tools.config import *
-import silq
-
-import qcodes as qc
 
 
 class TestPulseSequence(unittest.TestCase):
@@ -173,6 +169,43 @@ class TestPulseSequence(unittest.TestCase):
         self.assertEqual(
             len(pulse_sequence.get_pulses(connection=connection)), 2)
 
+    def test_transition_voltages(self):
+        # To test transitions, pulses must be on the same connection
+        channel_out = Channel('arbstudio', 'ch1', id=1, output=True)
+        channel_in = Channel('device', 'input', id=1, output=True)
+        c1 = SingleConnection(output_instrument='arbstudio',
+                              output_channel=channel_out,
+                              input_instrument='device',
+                              input_channel=channel_in)
+        pulses = [DCPulse(name='dc1', amplitude=0, duration=5, t_start=0,
+                          connection=c1),
+                  DCPulse(name='dc2', amplitude=1, duration=10, t_start=5,
+                          connection=c1),
+                  DCPulse(name='dc3', amplitude=2, duration=8, t_start=15,
+                          connection=c1),
+                  DCPulse(name='dc4', amplitude=3, duration=7, t_start=12,
+                          connection=c1)]
+
+        pulse_sequence = PulseSequence(pulses)
+
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages)
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages,
+                          connection=c1)
+        self.assertRaises(TypeError, pulse_sequence.get_transition_voltages,
+                          t=5)
+
+        transition_voltage = pulse_sequence.get_transition_voltages(
+            pulse=pulses[1])
+        self.assertTupleEqual(transition_voltage, (0, 1))
+
+        transition_voltage = pulse_sequence.get_transition_voltages(
+            connection=c1, t=5)
+        self.assertTupleEqual(transition_voltage, (0, 1))
+
+        transition_voltage = pulse_sequence.get_transition_voltages(
+            connection=c1, t=15)
+        self.assertTupleEqual(transition_voltage, (1, 2))
+
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
     def test_add_remove_pulse(self):
@@ -308,43 +341,25 @@ class TestPulseSequenceLinkedTimes(unittest.TestCase):
         self.assertEqual(pulse_sequence[0].t_stop, 2)
         self.assertEqual(pulse_sequence[1].t_start, 2)
 
-# class TestPulseSequenceOld(unittest.TestCase):
-#     def test_transition_voltages(self):
-#         # To test transitions, pulses must be on the same connection
-#         channel_out = Channel('arbstudio', 'ch1', id=1, output=True)
-#         channel_in = Channel('device', 'input', id=1, output=True)
-#         c1 = SingleConnection(output_instrument='arbstudio',
-#                               output_channel=channel_out,
-#                               input_instrument='device',
-#                               input_channel=channel_in)
-#         pulses = [DCPulse(name='dc1', amplitude=0, duration=5, t_start=0,
-#                           connection=c1),
-#                   DCPulse(name='dc2', amplitude=1, duration=10, t_start=5,
-#                           connection=c1),
-#                   DCPulse(name='dc3', amplitude=2, duration=8, t_start=15,
-#                           connection=c1),
-#                   DCPulse(name='dc4', amplitude=3, duration=7, t_start=12,
-#                           connection=c1)]
-#
-#         self.pulse_sequence.add(*pulses)
-#
-#         self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages)
-#         self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages,
-#                           connection=c1)
-#         self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages,
-#                           t=5)
-#
-#         transition_voltage = self.pulse_sequence.get_transition_voltages(
-#             pulse=pulses[1])
-#         self.assertTupleEqual(transition_voltage, (0, 1))
-#
-#         transition_voltage = self.pulse_sequence.get_transition_voltages(
-#             connection=c1, t=5)
-#         self.assertTupleEqual(transition_voltage, (0, 1))
-#
-#         transition_voltage = self.pulse_sequence.get_transition_voltages(
-#             connection=c1, t=15)
-#         self.assertTupleEqual(transition_voltage, (1, 2))
+        pulse_sequence[0].t_start = 2
+        self.assertEqual(pulse_sequence[0].t_stop, 4)
+        self.assertEqual(pulse_sequence[1].t_start, 4)
+
+    def test_change_first_t_stop_three_pulses(self):
+        p = Pulse(duration=1)
+        pulse_sequence = PulseSequence(pulses=[p, p, p])
+        self.assertEqual(pulse_sequence[1].t_start, 1)
+        self.assertEqual(pulse_sequence[2].t_start, 2)
+
+        pulse_sequence[0].duration = 2
+        self.assertEqual(pulse_sequence[0].t_stop, 2)
+        self.assertEqual(pulse_sequence[1].t_start, 2)
+        self.assertEqual(pulse_sequence[2].t_start, 3)
+
+        pulse_sequence[0].t_start = 2
+        self.assertEqual(pulse_sequence[0].t_stop, 4)
+        self.assertEqual(pulse_sequence[1].t_start, 4)
+        self.assertEqual(pulse_sequence[2].t_start, 5)
 
 
 if __name__ == '__main__':
