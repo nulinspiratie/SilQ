@@ -200,7 +200,7 @@ class PulseSequence(ParameterNode):
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
                  final_delay: float = 0):
-        super().__init__(use_as_attributes=True)
+        super().__init__(use_as_attributes=True, log_changes=False)
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
         # into those relating to pulses and to connections. We perform an import
