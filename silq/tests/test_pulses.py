@@ -37,6 +37,38 @@ class TestPulse(unittest.TestCase):
         p.duration = 4
         self.assertEqual(p.t_stop, 5)
 
+    def test_pulse_no_id(self):
+        p = Pulse('name')
+        p.id = None
+
+    def test_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+        p.id = 0
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC[0]')
+
+        p.id = None
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+    def test_copied_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+
+        p_copy = copy(p)
+        p_copy.name = 'DC2'
+
+        p.id = 0
+        self.assertEqual('DC', p.name)
+        self.assertEqual('DC[0]', p.full_name)
+
+        p_copy.id = 1
+        p_copy.full_name
+        self.assertEqual('DC2', p_copy.name)
+        self.assertEqual('DC2[1]', p_copy.full_name)
+
 
 class TestPulseSignals(unittest.TestCase):
     def test_signal_emit(self):
