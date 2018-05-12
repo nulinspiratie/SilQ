@@ -9,6 +9,16 @@ from silq.tools.config import *
 import silq
 
 import qcodes as qc
+from qcodes.instrument.parameter import Parameter
+
+
+class Registrar:
+    """Class that registers values it is called with (for signal connecting)"""
+    def __init__(self):
+        self.values = []
+
+    def __call__(self, value):
+        self.values.append(value)
 
 class TestPulse(unittest.TestCase):
     def test_pulse_equality(self):
@@ -111,6 +121,30 @@ class TestPulseSignals(unittest.TestCase):
         self.assertEqual(p2.t_start, 2)
         self.assertEqual(p3.t_start, 1)
         self.assertEqual(p4.t_start, 1)
+
+    def test_t_stop_signal_emit_indirect(self):
+        pulse = Pulse(t_start=1, duration=2)
+
+        parameter_measure_t_stop = Parameter(set_cmd=None)
+        pulse['t_stop'].connect(parameter_measure_t_stop, update=True)
+        self.assertEqual(parameter_measure_t_stop(), 3)
+
+        pulse.t_start=2
+        self.assertEqual(parameter_measure_t_stop(), 4)
+
+        pulse.duration=3
+        self.assertEqual(parameter_measure_t_stop(), 5)
+
+    def test_number_of_t_stop_signals(self):
+        p = Pulse(t_start=0, duration=1)
+        registrar = Registrar()
+        p['t_stop'].connect(registrar)
+
+        p.duration = 2
+        self.assertEqual(registrar.values, [1, 2])
+
+        p.t_stop = 3
+        self.assertEqual(registrar.values, [1, 2, 3])
 
 
 class TestPulseConfig(unittest.TestCase):
