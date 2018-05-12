@@ -37,6 +37,38 @@ class TestPulse(unittest.TestCase):
         p.duration = 4
         self.assertEqual(p.t_stop, 5)
 
+    def test_pulse_no_id(self):
+        p = Pulse('name')
+        p.id = None
+
+    def test_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+        p.id = 0
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC[0]')
+
+        p.id = None
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+    def test_copied_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+
+        p_copy = copy(p)
+        p_copy.name = 'DC2'
+
+        p.id = 0
+        self.assertEqual('DC', p.name)
+        self.assertEqual('DC[0]', p.full_name)
+
+        p_copy.id = 1
+        p_copy.full_name
+        self.assertEqual('DC2', p_copy.name)
+        self.assertEqual('DC2[1]', p_copy.full_name)
+
 
 class TestPulseSignals(unittest.TestCase):
     def test_signal_emit(self):
@@ -259,6 +291,34 @@ class TestPulseConfig(unittest.TestCase):
 #         p3_read = self.pulse_sequence['read[2]']
 #         self.assertNotEqual(p3_read, p1_read)
 #         self.assertNotEqual(p3_read, p2_read)
+
+
+class TestPulseEquality(unittest.TestCase):
+    def test_same_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p)
+
+    def test_reinstantiated_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
+
+    def test_pulse_inequality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=3, amplitude=2, duration=1)
+        self.assertNotEqual(p, p2) # pulses should no longer be equal
+
+    def test_pulse_inequality_new_attribute(self):
+        p = DCPulse(t_start=2, duration=1)
+        p2 = DCPulse(t_start=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
+        p2.amplitude = 1
+        self.assertNotEqual(p, p2)
+
+    def test_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+        self.assertEqual(p, p_copy)
 
 
 if __name__ == '__main__':
