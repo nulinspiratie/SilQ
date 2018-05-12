@@ -11,17 +11,7 @@ import silq
 import qcodes as qc
 
 
-class TestPulseSequence(unittest.TestCase):
-    def test_pulse_sequence_bool(self):
-        pulse_sequence = PulseSequence()
-        self.assertFalse(pulse_sequence)
-
-        pulse_sequence.add(Pulse(duration=5))
-        self.assertTrue(pulse_sequence)
-
-        pulse_sequence.clear()
-        self.assertFalse(pulse_sequence)
-
+class TestPulseSequenceAddRemove(unittest.TestCase):
     def test_add_remove_pulse(self):
         pulse_sequence = PulseSequence()
         self.assertFalse(pulse_sequence)
@@ -31,16 +21,83 @@ class TestPulseSequence(unittest.TestCase):
         self.assertIn(pulse, pulse_sequence)
         self.assertTrue(pulse_sequence)
 
+    def test_initialize_with_pulses(self):
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10)
+        pulse_sequence = PulseSequence(pulses=[pulse, pulse2])
+        self.assertEqual(len(pulse_sequence), 2)
+        self.assertEqual(pulse_sequence.pulses[0], pulse)
+        self.assertEqual(pulse_sequence.pulses[1], pulse2)
+
+    def test_add_multiple_pulses(self):
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10)
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(pulse, pulse2)
+        self.assertEqual(len(pulse_sequence), 2)
+        self.assertEqual(pulse_sequence.pulses[0], pulse)
+        self.assertEqual(pulse_sequence.pulses[1], pulse2)
+
+    def test_remove_pulse_clear(self):
         # Remove pulses using clear
+        pulse_sequence = PulseSequence()
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.add(pulse)
         pulse_sequence.clear()
         self.assertEqual(len(pulse_sequence.pulses), 0)
-        self.assertFalse(pulse_sequence)
 
+    def test_remove_pulse_remove(self):
         # Remove pulses using .remove
+        pulse_sequence = PulseSequence()
         pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
         pulse_sequence.add(pulse)
         pulse_sequence.remove(pulse)
         self.assertEqual(len(pulse_sequence.pulses), 0)
+
+    def test_remove_wrong_pulse_remove(self):
+        # Remove other pulse using .remove
+        pulse_sequence = PulseSequence()
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.add(pulse)
+        pulse2 = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.remove(pulse2) # Should work since all attributes match
+        self.assertEqual(len(pulse_sequence.pulses), 0)
+
+    def test_remove_wrong_pulse_remove(self):
+        # Remove other pulse using .remove
+        pulse_sequence = PulseSequence()
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.add(pulse)
+        pulse2 = DCPulse(name='dc', amplitude=2, duration=10, t_start=0)
+        pulse_sequence.remove(pulse2) # Should not work since different amplitude
+        self.assertEqual(len(pulse_sequence.pulses), 1)
+
+    def test_remove_pulse_by_name(self):
+        # Remove pulses using .remove
+        pulse_sequence = PulseSequence()
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.add(pulse)
+        pulse_sequence.remove('dc')
+        self.assertEqual(len(pulse_sequence.pulses), 0)
+
+    def test_remove_wrong_pulse_by_name(self):
+        # Remove pulses using .remove
+        pulse_sequence = PulseSequence()
+        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
+        pulse_sequence.add(pulse)
+        pulse_sequence.remove('dc2')
+        self.assertEqual(len(pulse_sequence.pulses), 1)
+
+
+class TestPulseSequence(unittest.TestCase):
+    def test_pulse_sequence_bool(self):
+        pulse_sequence = PulseSequence()
+        self.assertFalse(pulse_sequence)
+
+        pulse_sequence.add(Pulse(duration=5))
+        self.assertTrue(pulse_sequence)
+
+        pulse_sequence.clear()
         self.assertFalse(pulse_sequence)
 
     def test_sort(self):
