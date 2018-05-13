@@ -248,8 +248,32 @@ class TestPulseSequence(unittest.TestCase):
         self.assertEqual(pulse_sequence.t_stop_list, [])
 
 
-# class TestPulseSequenceEquality(unittest.TestCase)
+class TestPulseSequenceEquality(unittest.TestCase):
+    def empty_pulse_sequence_equality(self):
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence, pulse_sequence)
 
+        pulse_sequence2 = PulseSequence()
+        self.assertEqual(pulse_sequence, pulse_sequence2)
+
+    def non_empty_pulse_sequence_equality(self):
+        pulse_sequence = PulseSequence([DCPulse('read', duration=1, amplitude=2)])
+        self.assertEqual(pulse_sequence, pulse_sequence)
+
+        pulse_sequence2 = PulseSequence([DCPulse('read', duration=1, amplitude=2)])
+        self.assertEqual(pulse_sequence, pulse_sequence2)
+
+        pulse_sequence2['read'].duration = 2
+        self.assertNotEqual(pulse_sequence, pulse_sequence2)
+
+        pulse_sequence2['read'].duration = 1
+        pulse_sequence2.allow_pulse_overlap = False
+        self.assertNotEqual(pulse_sequence, pulse_sequence2)
+
+        pulse_sequence2.allow_pulse_overlap = True
+        self.assertEqual(pulse_sequence, pulse_sequence)
+        pulse_sequence2.duration = 5
+        self.assertNotEqual(pulse_sequence, pulse_sequence2)
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
     def test_add_remove_pulse(self):
@@ -381,6 +405,7 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
         self.assertEqual(pulse_sequence.final_delay, 2)
 
         PulseSequence.default_final_delay = original_final_delay
+
 
 class TestPulseSequenceIndirectTstart(unittest.TestCase):
     def test_first_pulse_no_tstart(self):
