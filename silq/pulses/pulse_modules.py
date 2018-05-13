@@ -225,10 +225,11 @@ class PulseSequence:
             an error will be raised if a pulse is added that overlaps in time.
             If pulse has a `Pulse`.connection, an error is only raised if
             connections match as well.
-        final_delay (float): Final delay in pulse sequence after final pulse is
-            finished.
         duration (float): Total duration of pulse sequence. Equal to
-            `Pulse`.t_stop of last pulse, plus any `PulseSequence`.final_delay.
+            `Pulse`.t_stop of last pulse, unless explicitly set
+        final_delay (Union[float, None]): Optional final delay at the end of
+            the pulse sequence. The interface of the primary instrument should
+            incorporate any final delay. The default is .5 ms
         enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
             Updated when a pulse is added or `Pulse`.enabled is changed.
         disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
@@ -249,6 +250,8 @@ class PulseSequence:
           Any time an attribute of a pulse changes, a signal will be emitted,
           which can then be interpreted by the pulse sequence.
     """
+
+    final_delay = .5e-3
     def __init__(self,
                  pulses: list = [],
                  allow_untargeted_pulses: bool = True,
@@ -266,7 +269,8 @@ class PulseSequence:
         self.pulse_conditions = pulse_conditions
 
         self._duration = None
-        self.final_delay = final_delay
+        if final_delay is not None:
+            self.final_delay = final_delay
 
         self.pulses = []
         self.enabled_pulses = []
@@ -403,9 +407,6 @@ class PulseSequence:
             duration = max(pulse.t_stop for pulse in self.enabled_pulses)
         else:
             duration = 0
-
-        if self.final_delay is not None:
-            duration += self.final_delay
 
         return np.round(duration, 11)
 
@@ -642,8 +643,9 @@ class PulseSequence:
         """
         pulses = self.get_pulses(**conditions)
         connections = [pulse.connection for pulse in pulses]
-        assert len(set(connections)) == 1, "Found {} connections instead of " \
-                                           "one".format(len(set(connections)))
+        assert len(set(connections)) == 1, f"Found {len(set(connections))} " \
+                                           f"connections instead of one " \
+                                           f"satisfying {conditions}"
         return connections[0]
 
     def get_transition_voltages(self,

@@ -66,6 +66,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 started last, which ensures that other instrument have the right
                 voltage.
         """
+        if not self.pulse_sequence:
+            return
+
         # Determine points per time unit
         core_clock = self.instrument.core_clock.get_latest()
         # Factor of 2 needed because apparently the core clock is not the same
@@ -80,18 +83,12 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         # Set up instrument, includes counting boards
         self.instrument.setup(initialize=False)
 
-
         output_channels = [connection.output['channel']
                            for connection in output_connections]
         assert len(output_channels) == len(output_connections), \
             "Number of output channels and connections do not match"
 
         self.instrument.start_programming()
-
-        if not self.pulse_sequence:
-            # No pulse sequence, stop programming
-            self.instrument.stop_programming()
-            return
 
         instructions = []
 
@@ -143,31 +140,31 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 instructions.append((channel_mask, 'long_delay', divisor, delay))
 
             t = t_next
-        else:
-            # Add final instructions
 
-            # Wait until end of pulse sequence
-            wait_duration = max(self.pulse_sequence.duration - t, 0)
-            if wait_duration:
-                wait_cycles = round(wait_duration * sample_rate)
-                if wait_cycles < 1e9:
-                    instructions.append((inactive_channel_mask, 'continue', 0, wait_cycles))
-                else:
-                    instructions.append((inactive_channel_mask, 'continue', 0, 100))
-                    duration = round(wait_cycles - 100)
-                    divisor = int(np.ceil(duration / 1e9))
-                    delay = int(duration / divisor)
-                    instructions.append((inactive_channel_mask, 'long_delay', divisor, delay))
+        # Add final instructions
+        # Wait until end of pulse sequence
+        wait_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay - t
 
-            if repeat:
-                if inactive_channel_mask == 0:
-                    # Return back to first action
-                    instructions.append((inactive_channel_mask, 'branch', 0, 50))
-                else:
-                    # Return to third instruction, since first two are one-time actions
-                    instructions.append((inactive_channel_mask, 'branch', 2, 50))
+        if wait_duration > 0:
+            wait_cycles = round(wait_duration * sample_rate)
+            if wait_cycles < 1e9:
+                instructions.append((inactive_channel_mask, 'continue', 0, wait_cycles))
             else:
-                instructions.append((inactive_channel_mask, 'stop', 0, 50))
+                instructions.append((inactive_channel_mask, 'continue', 0, 100))
+                duration = round(wait_cycles - 100)
+                divisor = int(np.ceil(duration / 1e9))
+                delay = int(duration / divisor)
+                instructions.append((inactive_channel_mask, 'long_delay', divisor, delay))
+
+        if repeat:
+            if inactive_channel_mask == 0:
+                # Return back to first action
+                instructions.append((inactive_channel_mask, 'branch', 0, 50))
+            else:
+                # Return to third instruction, since first two are one-time actions
+                instructions.append((inactive_channel_mask, 'branch', 2, 50))
+        else:
+            instructions.append((inactive_channel_mask, 'stop', 0, 50))
 
 
         self.instrument.send_instructions(*instructions)
@@ -185,9 +182,6 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     def stop(self):
         """Stop instrument"""
         self.instrument.stop()
-
-    def get_additional_pulses(self):
-        return []
 
 
 class TriggerPulseImplementation(PulseImplementation):
