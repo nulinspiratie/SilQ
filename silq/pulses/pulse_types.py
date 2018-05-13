@@ -1,11 +1,10 @@
-from typing import Any, Union, Sequence, Callable
+from typing import Union, Sequence, Callable
 import numpy as np
 import collections
 import logging
 
 from silq.tools.general_tools import get_truth, property_ignore_setter, \
     freq_to_str, is_between
-import silq
 
 from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
@@ -128,11 +127,14 @@ class Pulse(ParameterNode):
                  average: str = 'none',
                  connection_label: str = None,
                  connection_requirements: dict = {}):
-        super().__init__(use_as_attributes=True)
+        super().__init__(use_as_attributes=True,
+                         log_changes=False,
+                         simplify_snapshot=True)
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
         self.id = Parameter(initial_value=id, vals=vals.Ints(), set_cmd=None)
         self.full_name = Parameter()
+        self.full_name
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
