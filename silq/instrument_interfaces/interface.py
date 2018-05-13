@@ -158,8 +158,11 @@ class InstrumentInterface(Instrument):
         else:
             return None
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
 
         Returns:
             List of additional pulses, empty by default.
@@ -177,6 +180,7 @@ class InstrumentInterface(Instrument):
 
     def setup(self,
               samples: Union[int, None] = None,
+              input_connections: list = [],
               output_connections: list = [],
               repeat: bool = True,
               **kwargs) -> Dict[str, Any]:
@@ -187,6 +191,8 @@ class InstrumentInterface(Instrument):
         Args:
             samples: Number of acquisition samples.
                 If None, it will use the previously set value.
+            input_connections: Input :class:`.Connection` list of
+                instrument, needed by some interfaces to setup the instrument.
             output_connections: Output :class:`.Connection` list of
                 instrument, needed by some interfaces to setup the instrument.
             repeat: Repeat the pulse sequence indefinitely. If False, calling
