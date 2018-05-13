@@ -622,7 +622,6 @@ class DCParameter(AcquisitionParameter):
         - ``DCParameter.continuous`` is True by default
 
     Todo:
-        Remove ``final`` pulse once ``PulseSequence.final_delay`` is verified.
         implement continuous acquisition in the ATS interface
     """
     def __init__(self,
@@ -1211,16 +1210,12 @@ class VariableReadParameter(AcquisitionParameter):
         continuous (bool): If True, instruments keep running after acquisition.
             Useful if stopping/starting instruments takes a considerable amount
             of time.
-
-    Todo:
-        Replace ``final`` pulse with ``PulseSequence.final_delay``.
     """
     def __init__(self, name='variable_read', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='plunge', acquire=True, average='trace'),
             DCPulse(name='read', acquire=True, average='trace'),
-            DCPulse(name='empty', acquire=True, average='trace'),
-            DCPulse(name='final')])
+            DCPulse(name='empty', acquire=True, average='trace')])
 
         super().__init__(name=name,
                          names=('read_voltage',),
@@ -1301,18 +1296,12 @@ class EPRParameter(AcquisitionParameter):
     Note:
         A ``read_long`` pulse is used instead of ``read`` because this allows
         comparison of the start and end of the pulse, giving the ``contrast``.
-
-    Todo:
-        Remove ``final`` pulse, double check that ``PulseSequence.final_delay``
-            also works.
-
     """
     def __init__(self, name='EPR', **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse('empty', acquire=True),
             DCPulse('plunge', acquire=True),
-            DCPulse('read_long', acquire=True),
-            DCPulse('final')])
+            DCPulse('read_long', acquire=True)])
 
         super().__init__(name=name,
                          names=['contrast', 'dark_counts',
