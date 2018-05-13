@@ -153,7 +153,7 @@ class TestPulseSequence(unittest.TestCase):
         self.assertEqual(
             len(pulse_sequence.get_pulses(connection_label='connection')), 2)
 
-    def test_get_pulses_connection_label_from_connection(self):
+    def test_get_pulses_connection(self):
         connection = SingleConnection(output_instrument='ins1',
                                       output_channel=Channel('ins1', 'ch1'),
                                       input_instrument='ins2',
@@ -213,6 +213,42 @@ class TestPulseSequence(unittest.TestCase):
         transition_voltage = pulse_sequence.get_transition_voltages(
             connection=c1, t=15)
         self.assertTupleEqual(transition_voltage, (1, 2))
+
+    def test_pulse_sequence_duration(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.duration
+        self.assertEqual(pulse_sequence.duration, 0)
+
+        pulse_sequence.duration = None
+        self.assertEqual(pulse_sequence.duration, 0)
+
+        pulse_sequence.duration = 1
+        self.assertEqual(pulse_sequence.duration, 1)
+
+        pulse_sequence.add(DCPulse(duration=5))
+        self.assertEqual(pulse_sequence.duration, 5)
+
+        pulse_sequence.clear()
+        self.assertEqual(pulse_sequence.duration, 0)
+
+    def test_t_list(self):
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.t_list, [0])
+        self.assertEqual(pulse_sequence.t_start_list, [])
+        self.assertEqual(pulse_sequence.t_stop_list, [])
+
+        pulse_sequence.add(Pulse(t_start=1, duration=5))
+        self.assertEqual(pulse_sequence.t_list, [1, 6])
+        self.assertEqual(pulse_sequence.t_start_list, [1])
+        self.assertEqual(pulse_sequence.t_stop_list, [6])
+
+        pulse_sequence.clear()
+        self.assertEqual(pulse_sequence.t_list, [0])
+        self.assertEqual(pulse_sequence.t_start_list, [])
+        self.assertEqual(pulse_sequence.t_stop_list, [])
+
+
+# class TestPulseSequenceEquality(unittest.TestCase)
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
@@ -327,11 +363,24 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
                       Pulse(name='p2', duration=1, enabled=False),
                       Pulse(name='p3', duration=1)]:
             pulses += [pulse_sequence.add(pulse)[0]]
-
         self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
                                                          pulses[2]])
         self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
 
+    def test_final_delay(self):
+        original_final_delay = PulseSequence.default_final_delay
+
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.final_delay, original_final_delay)
+
+        PulseSequence.default_final_delay = 1
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.final_delay, 1)
+
+        pulse_sequence = PulseSequence(final_delay=2)
+        self.assertEqual(pulse_sequence.final_delay, 2)
+
+        PulseSequence.default_final_delay = original_final_delay
 
 class TestPulseSequenceIndirectTstart(unittest.TestCase):
     def test_first_pulse_no_tstart(self):

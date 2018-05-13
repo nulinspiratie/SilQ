@@ -223,8 +223,7 @@ class PulseSequence(ParameterNode):
                                              set_cmd=None,
                                              vals=vals.Bool())
 
-        self.duration = Parameter(initial_value=None, unit='s')
-
+        self.duration = Parameter(unit='s', set_cmd=None)
         self.final_delay = Parameter(unit='s', set_cmd=None, vals=vals.Numbers())
         if final_delay is not None:
             self.final_delay = final_delay
@@ -242,6 +241,7 @@ class PulseSequence(ParameterNode):
         self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
                                 set_cmd=None)
 
+        self.duration = None  # Initial set to ensure it chooses max(pulse.t_stop)
         # Perform a separate set to ensure set method is called
         self.pulses = pulses or []
 
@@ -255,11 +255,11 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def duration_get(self, parameter):
-        if parameter.get_latest() is None:
-            return parameter.get_latest()
+        if parameter._duration is not None:
+            return parameter._duration
         else:
             if self.enabled_pulses:
-                duration = max(pulse.t_stop for pulse in self.enabled_pulses)
+                duration = max([0] + self.t_stop_list)
             else:
                 duration = 0
 
@@ -268,9 +268,11 @@ class PulseSequence(ParameterNode):
     @parameter
     def duration_set_parser(self, parameter, duration):
         if duration is None:
+            parameter._duration = None
             return max([0] + self.t_stop_list)
         else:
-            return np.round(duration, 11)
+            parameter._duration = np.round(duration, 11)
+            return parameter._duration
 
     @parameter
     def t_start_list_get(self, parameter):
@@ -338,6 +340,15 @@ class PulseSequence(ParameterNode):
         """
         if not isinstance(other, PulseSequence):
             return False
+
+        for parameter_name, parameter in self.parameters.items():
+            if not hasattr(other.parameters, parameter_name):
+                return False
+            elif parameter() != getattr(other, parameter_name):
+                return False
+        # All parameters match
+        return True
+
         # All attributes must match
         return self._matches_attrs(other)
 
@@ -465,6 +476,7 @@ class PulseSequence(ParameterNode):
 
         self._update_enabled_disabled_pulses()
         self.sort()
+        self.duration = None  # Calculate duration based on last t_stop
 
         return added_pulses
 
@@ -492,8 +504,9 @@ class PulseSequence(ParameterNode):
             # TODO disconnect all pulse attributes
             pulse_same_name['enabled'].disconnect(self._update_enabled_disabled_pulses)
 
-        self.sort()
         self._update_enabled_disabled_pulses()
+        self.sort()
+        self.duration = None  # Calculate duration based on last t_stop
 
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
@@ -508,6 +521,7 @@ class PulseSequence(ParameterNode):
         self.pulses.clear()
         self.enabled_pulses.clear()
         self.disabled_pulses.clear()
+        self.duration = None  # Calculate duration based on last t_stop (0)
 
     def pulses_overlap(self, pulse1, pulse2) -> bool:
         """Tests if pulse1 and pulse2 overlap in time and connection.
