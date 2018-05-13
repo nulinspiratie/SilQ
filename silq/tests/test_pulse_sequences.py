@@ -247,6 +247,23 @@ class TestPulseSequence(unittest.TestCase):
         self.assertEqual(pulse_sequence.t_start_list, [])
         self.assertEqual(pulse_sequence.t_stop_list, [])
 
+    def test_getitem(self):
+        pulse_sequence = PulseSequence()
+        pulse1, = pulse_sequence.add(DCPulse('DC', duration=1))
+
+        self.assertIs(pulse_sequence['DC'], pulse1)
+        self.assertIs(pulse_sequence['duration'],
+                      pulse_sequence.parameters['duration'])
+
+        pulse1.id=0
+        self.assertIs(pulse_sequence['DC'], pulse1)
+        self.assertIs(pulse_sequence['DC[0]'], pulse1)
+
+        pulse2, = pulse_sequence.add(DCPulse('DC', duration=1))
+        self.assertIs(pulse_sequence['DC[0]'], pulse1)
+        self.assertIs(pulse_sequence['DC[1]'], pulse2)
+        with self.assertRaises(KeyError):
+            pulse_sequence['DC']
 
 class TestPulseSequenceEquality(unittest.TestCase):
     def empty_pulse_sequence_equality(self):
@@ -274,7 +291,6 @@ class TestPulseSequenceEquality(unittest.TestCase):
         self.assertEqual(pulse_sequence, pulse_sequence)
         pulse_sequence2.duration = 5
         self.assertNotEqual(pulse_sequence, pulse_sequence2)
-
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
@@ -428,7 +444,7 @@ class TestPulseSequenceIndirectTstart(unittest.TestCase):
         self.assertEqual(pulse_sequence[0].t_start, 0)
         self.assertEqual(pulse_sequence[1].t_start, 1)
 
-    def test_add_pulse_separate_connection_label(self):
+    def test_add_pulse_separate_connection(self):
         pulse_sequence = PulseSequence()
         pulse1, = pulse_sequence.add(Pulse(duration=1))
         self.assertEqual(pulse1.t_start, 0)
