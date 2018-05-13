@@ -349,9 +349,6 @@ class PulseSequence(ParameterNode):
         # All parameters match
         return True
 
-        # All attributes must match
-        return self._matches_attrs(other)
-
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -361,32 +358,6 @@ class PulseSequence(ParameterNode):
     def _ipython_key_completions_(self):
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
         return [pulse.full_name for pulse in self.pulses]
-
-    # TODO update
-    def _matches_attrs(self,
-                       other_pulse_sequence: 'PulseSequence',
-                       exclude_attrs: List[str] = []) -> bool:
-        """Checks if another pulse sequence is the same (same attributes).
-
-        This is used when comparing pulse sequences. Usually pulse sequences
-        are equal if their attributes are equal, not object equality.
-        This includes pulses.
-
-        Args:
-            other_pulse_sequence: Pulse sequence to compare.
-            exclude_attrs: Attributes to skip.
-
-        Returns:
-            True if all attributes are equal (except those in ``exclude_attrs``)
-        """
-        for attr in vars(self):
-            if attr in exclude_attrs:
-                continue
-            elif not hasattr(other_pulse_sequence, attr) \
-                    or getattr(self, attr) != getattr(other_pulse_sequence, attr):
-                return False
-        else:
-            return True
 
     # TODO: update
     def _JSONEncoder(self) -> dict:
