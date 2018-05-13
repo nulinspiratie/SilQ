@@ -167,10 +167,11 @@ class PulseSequence(ParameterNode):
             an error will be raised if a pulse is added that overlaps in time.
             If pulse has a `Pulse`.connection, an error is only raised if
             connections match as well.
-        final_delay (float): Final delay in pulse sequence after final pulse is
-            finished.
         duration (float): Total duration of pulse sequence. Equal to
-            `Pulse`.t_stop of last pulse, plus any `PulseSequence`.final_delay.
+            `Pulse`.t_stop of last pulse, unless explicitly set
+        final_delay (Union[float, None]): Optional final delay at the end of
+            the pulse sequence. The interface of the primary instrument should
+            incorporate any final delay. The default is .5 ms
         enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.
             Updated when a pulse is added or `Pulse`.enabled is changed.
         disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.
@@ -194,12 +195,13 @@ class PulseSequence(ParameterNode):
 
     connection_conditions = None
     pulse_conditions = None
+    default_final_delay = .5e-3
     def __init__(self,
                  pulses: list = None,
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
-                 final_delay: float = 0):
+                 final_delay: float = None):
         super().__init__(use_as_attributes=True, log_changes=False)
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
@@ -222,8 +224,13 @@ class PulseSequence(ParameterNode):
                                              vals=vals.Bool())
 
         self.duration = Parameter(initial_value=None, unit='s')
-        self.final_delay = Parameter(initial_value=final_delay, unit='s',
-                                     set_cmd=None, vals=vals.Numbers())
+
+        self.final_delay = Parameter(unit='s', set_cmd=None, vals=vals.Numbers())
+        if final_delay is not None:
+            self.final_delay = final_delay
+        else:
+            self.final_delay = self.default_final_delay
+
         self.t_list = Parameter()
         self.t_start_list = Parameter()
         self.t_stop_list = Parameter()
@@ -256,12 +263,14 @@ class PulseSequence(ParameterNode):
             else:
                 duration = 0
 
-            duration += self.final_delay
             return np.round(duration, 11)
 
     @parameter
     def duration_set_parser(self, parameter, duration):
-        return np.round(duration, 11)
+        if duration is None:
+            return max([0] + self.t_stop_list)
+        else:
+            return np.round(duration, 11)
 
     @parameter
     def t_start_list_get(self, parameter):
