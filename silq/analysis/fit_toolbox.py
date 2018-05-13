@@ -229,9 +229,6 @@ class ExponentialFit(Fit):
         Returns:
             Parameters object containing initial parameters.
         """
-        super().find_initial_parameters(xvals, ydata, initial_parameters)
-
-
         if initial_parameters is None:
             initial_parameters = {}
 
@@ -290,9 +287,6 @@ class SineFit(Fit):
         Returns:
             Parameters object containing initial parameters.
         """
-        super().find_initial_parameters(xvals, ydata, initial_parameters)
-
-
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
             initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
@@ -336,8 +330,6 @@ class ExponentialSineFit(Fit):
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().find_initial_parameters(xvals, ydata, initial_parameters)
-
         parameters = Parameters()
         if 'amplitude' not in initial_parameters:
             initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
@@ -387,8 +379,6 @@ class RabiFrequencyFit(Fit):
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
-        super().find_initial_parameters(xvals, ydata, initial_parameters)
-
         parameters = Parameters()
 
         max_idx = np.argmax(ydata)
