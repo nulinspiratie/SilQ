@@ -275,6 +275,8 @@ class TestPulseSequenceEquality(unittest.TestCase):
         pulse_sequence2.duration = 5
         self.assertNotEqual(pulse_sequence, pulse_sequence2)
 
+
+
 class TestPulseSequenceAddRemove(unittest.TestCase):
     def test_add_remove_pulse(self):
         pulse_sequence = PulseSequence()
@@ -425,6 +427,34 @@ class TestPulseSequenceIndirectTstart(unittest.TestCase):
         pulse_sequence.add(p)
         self.assertEqual(pulse_sequence[0].t_start, 0)
         self.assertEqual(pulse_sequence[1].t_start, 1)
+
+    def test_add_pulse_separate_connection_label(self):
+        pulse_sequence = PulseSequence()
+        pulse1, = pulse_sequence.add(Pulse(duration=1))
+        self.assertEqual(pulse1.t_start, 0)
+
+        pulse2, = pulse_sequence.add(Pulse(duration=2, connection_label='output'))
+        self.assertEqual(pulse2.t_start, 0)
+
+        pulse3, = pulse_sequence.add(Pulse(duration=2, connection_label='output'))
+        self.assertEqual(pulse3.t_start, 2)
+
+        connection = SingleConnection(output_instrument='ins1',
+                                      output_channel=Channel('ins1', 'ch1'),
+                                      input_instrument='ins2',
+                                      input_channel=Channel('ins2', 'ch1'))
+        pulse4, = pulse_sequence.add(Pulse(duration=5, connection=connection))
+        self.assertEqual(pulse4.t_start, 0)
+        pulse5, = pulse_sequence.add(Pulse(duration=5, connection=connection))
+        self.assertEqual(pulse5.t_start, 5)
+
+        output_connection = SingleConnection(output_instrument='ins1',
+                                             output_channel=Channel('ins1', 'ch1'),
+                                             input_instrument='ins2',
+                                             input_channel=Channel('ins2', 'ch1'),
+                                             label='output')
+        pulse6, = pulse_sequence.add(Pulse(duration=5, connection=output_connection))
+        self.assertEqual(pulse6.t_start, 4)
 
 
 class TestPulseSequenceSignalling(unittest.TestCase):
