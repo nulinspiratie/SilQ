@@ -292,9 +292,13 @@ class PulseSequence(ParameterNode):
         elif isinstance(index, str):
             pulses = [p for p in self.pulses
                       if p.satisfies_conditions(name=index)]
-            assert len(pulses) == 1, f"Could not find unique pulse with name " \
-                                     f"{index}, pulses found:\n{pulses}"
-            return pulses[0]
+            if pulses:
+                if len(pulses) != 1:
+                    raise KeyError(f"Could not find unique pulse with name "
+                                   f"{index}, pulses found:\n{pulses}")
+                return pulses[0]
+            else:
+                return super().__getitem__(index)
 
     def __len__(self):
         return len(self.enabled_pulses)
