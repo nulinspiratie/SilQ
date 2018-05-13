@@ -22,6 +22,9 @@ class AWG520Interface(InstrumentInterface):
           waveform because this is the value used when the previous waveform
           ended and is waiting for triggers.
         - Amplitude significantly decreases above 400 MHz at 1 GHz sampling.
+        - The interface receives a trigger at the end of the sequence, ignoring
+          any final_delay. This means that the pulse sequence will already have
+          restarted during any final delay, which may cause issues.
     Todo:
         Check if only channel 2 can be programmed
         Add marker channels
@@ -50,16 +53,10 @@ class AWG520Interface(InstrumentInterface):
                                                                        'max': 1})])
         ]
 
-        self.add_parameter('final_delay',
+        self.add_parameter('pulse_final_delay',
                            unit='s',
                            set_cmd=None,
                            initial_value=.1e-6,
-                           docstring='Time subtracted from each waveform to ensure '
-                               'that it is finished once next trigger arrives.')
-        self.add_parameter('max_final_delay',
-                           unit='s',
-                           set_cmd=None,
-                           initial_value=10e-6,
                            docstring='Time subtracted from each waveform to ensure '
                                'that it is finished once next trigger arrives.')
         self.add_parameter('trigger_in_duration',
@@ -197,9 +194,8 @@ class AWG520Interface(InstrumentInterface):
 
         return additional_pulses
 
-    def setup(self, is_primary=False, **kwargs):
-        if is_primary:
-            raise RuntimeError('AWG520 cannot function as primary instrument')
+    def setup(self, **kwargs):
+        assert not self.is_primary(), 'AWG520 not programmed as primary instrument'
 
         self.active_channels(list({pulse.connection.output['channel'].name
                                    for pulse in self.pulse_sequence}))
@@ -234,7 +230,7 @@ class AWG520Interface(InstrumentInterface):
             # Here we find out the number of points needed
             pulse_pts = [pulse.implementation.pts for pulse in pulse.values()]
             if None in pulse_pts:
-                waveform_pts = int(round((pulse1.t_stop - self.final_delay() -
+                waveform_pts = int(round((pulse1.t_stop - self.pulse_final_delay() -
                                           pulse1.t_start) * self.sampling_rate()))
             else:
                 waveform_pts = int(round(max(pulse_pts)))

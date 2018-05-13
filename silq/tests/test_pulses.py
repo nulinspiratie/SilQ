@@ -1,3 +1,4 @@
+import logging
 import unittest
 from copy import copy, deepcopy
 
@@ -16,6 +17,19 @@ class Registrar:
 
     def __call__(self, value):
         self.values.append(value)
+
+
+class ListHandler(logging.Handler):  # Inherit from logging.Handler
+    """Class that adds log messages to a list"""
+    def __init__(self, log_list):
+        # run the regular Handler __init__
+        logging.Handler.__init__(self)
+        # Our custom argument
+        self.log_list = log_list
+
+    def emit(self, record):
+        # record.message is the log message
+        self.log_list.append(record.msg)
 
 
 class TestPulse(unittest.TestCase):
@@ -76,6 +90,20 @@ class TestPulse(unittest.TestCase):
         p_copy.full_name
         self.assertEqual('DC2', p_copy.name)
         self.assertEqual('DC2[1]', p_copy.full_name)
+
+    def test_pulse_snapshotting(self):
+        pulse = DCPulse('DC', duration=2)
+        snapshot = pulse.snapshot()
+
+        for parameter_name, parameter in pulse.parameters.items():
+            if parameter.unit:
+                parameter_name += f' ({parameter.unit})'
+            self.assertIn(parameter_name, snapshot)
+            self.assertEqual(snapshot.pop(parameter_name),
+                             parameter())
+        self.assertEqual('silq.pulses.pulse_types.DCPulse',
+                         snapshot.pop('__class__'))
+        self.assertFalse(snapshot)
 
 
 class TestPulseSignals(unittest.TestCase):
@@ -222,6 +250,29 @@ class TestPulseEquality(unittest.TestCase):
         p = DCPulse(t_start=2, duration=1)
         p_copy = deepcopy(p)
         self.assertEqual(p, p_copy)
+
+
+class TestPulseLogging(unittest.TestCase):
+    def setUp(self):
+        logging.basicConfig(level=logging.DEBUG)
+        self.log_list = []
+        self.handler = ListHandler(self.log_list)
+        logging.getLogger().addHandler(self.handler)
+
+    def tearDown(self):
+        logging.getLogger().removeHandler(self.handler)
+
+    def test_no_logging(self):
+        pulse = DCPulse(t_start=1, amplitude=42)
+        pulse.t_start = 2
+        self.assertEqual(len(self.log_list), 0)
+
+    def test_no_logging_copy(self):
+        pulse = DCPulse(t_start=1, amplitude=42)
+        self.assertEqual(len(self.log_list), 0)
+        pulse_copy = copy(pulse)
+        pulse_copy.t_start = 2
+        self.assertEqual(len(self.log_list), 0)
 
 
 if __name__ == '__main__':
