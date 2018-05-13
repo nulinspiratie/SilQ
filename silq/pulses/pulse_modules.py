@@ -553,7 +553,7 @@ class PulseSequence(ParameterNode):
         if connection:
             pulses = [pulse for pulse in pulses if
                       pulse.connection == connection or
-                      pulse.connection_label == connection.label]
+                      pulse.connection_label == connection.label != None]
             return pulses  # No further filtering required
         elif connection_label is not None:
             pulses = [pulse for pulse in pulses if
