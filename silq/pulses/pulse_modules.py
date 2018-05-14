@@ -202,7 +202,9 @@ class PulseSequence(ParameterNode):
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
                  final_delay: float = None):
-        super().__init__(use_as_attributes=True, log_changes=False)
+        super().__init__(use_as_attributes=True,
+                         log_changes=False,
+                         simplify_snapshot=True)
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
         # into those relating to pulses and to connections. We perform an import
@@ -230,8 +232,8 @@ class PulseSequence(ParameterNode):
         else:
             self.final_delay = self.default_final_delay
 
-        self.t_list = Parameter()
-        self.t_start_list = Parameter()
+        self.t_list = Parameter(initial_value=[0])
+        self.t_start_list = Parameter(initial_value=[])
         self.t_stop_list = Parameter()
 
         self.enabled_pulses = Parameter(initial_value=[], set_cmd=None,

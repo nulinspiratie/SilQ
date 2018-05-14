@@ -265,15 +265,28 @@ class TestPulseSequence(unittest.TestCase):
         with self.assertRaises(KeyError):
             pulse_sequence['DC']
 
+    def test_snapshot(self):
+        from pprint import pprint
+        pulse_sequence = PulseSequence()
+        pprint(pulse_sequence['duration'].snapshot())
+        snapshot = pulse_sequence.snapshot()
+        for parameter_name, parameter in pulse_sequence.parameters.items():
+            if parameter.unit:
+                parameter_name += f' ({parameter.unit})'
+            self.assertEqual(snapshot.pop(parameter_name), parameter())
+
+        self.assertEqual(len(snapshot), 1)
+
+
 class TestPulseSequenceEquality(unittest.TestCase):
-    def empty_pulse_sequence_equality(self):
+    def test_empty_pulse_sequence_equality(self):
         pulse_sequence = PulseSequence()
         self.assertEqual(pulse_sequence, pulse_sequence)
 
         pulse_sequence2 = PulseSequence()
         self.assertEqual(pulse_sequence, pulse_sequence2)
 
-    def non_empty_pulse_sequence_equality(self):
+    def test_non_empty_pulse_sequence_equality(self):
         pulse_sequence = PulseSequence([DCPulse('read', duration=1, amplitude=2)])
         self.assertEqual(pulse_sequence, pulse_sequence)
 
@@ -291,6 +304,20 @@ class TestPulseSequenceEquality(unittest.TestCase):
         self.assertEqual(pulse_sequence, pulse_sequence)
         pulse_sequence2.duration = 5
         self.assertNotEqual(pulse_sequence, pulse_sequence2)
+
+    def test_copy_pulse_sequence_equality(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence_copy = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence, pulse_sequence_copy)
+
+        pulse = DCPulse('read', duration=1, amplitude=2)
+        pulse_sequence.add(pulse)
+        self.assertNotEqual(pulse_sequence, pulse_sequence_copy)
+        pulse_sequence_copy_2 = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence, pulse_sequence_copy_2)
+
+        self.assertEqual(pulse_sequence_copy_2, PulseSequence([pulse]))
+
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
