@@ -251,6 +251,9 @@ class TestPulseEquality(unittest.TestCase):
         p_copy = deepcopy(p)
         self.assertEqual(p, p_copy)
 
+    def test_pulse_differing_connections(self):
+        self.assertTrue(False)
+        # TODO also check for connection + connection label
 
 class TestPulseLogging(unittest.TestCase):
     def setUp(self):
