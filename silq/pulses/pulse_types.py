@@ -432,7 +432,8 @@ class Pulse(ParameterNode):
                     relation, val = val
                 else:
                     relation = '=='
-                if not get_truth(test_val=getattr(self, property),
+                if not get_truth(test_val=self.parameters[property].get_latest(),
+                        # test_val=getattr(self, property),
                                  target_val=val,
                                  relation=relation):
                     return False
