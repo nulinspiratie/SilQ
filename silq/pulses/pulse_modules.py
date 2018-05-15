@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Union, Tuple
+from typing import List, Dict, Any, Union, Tuple, Sequence
 import numpy as np
 from copy import copy, deepcopy
 from blinker import Signal
@@ -243,7 +243,7 @@ class PulseSequence(ParameterNode):
         self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
                                 set_cmd=None)
 
-        self.duration = None  # Initial set to ensure it chooses max(pulse.t_stop)
+        self.duration = None  # Reset duration to t_stop of last pulse
         # Perform a separate set to ensure set method is called
         self.pulses = pulses or []
 
@@ -365,19 +365,33 @@ class PulseSequence(ParameterNode):
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
         return [pulse.full_name for pulse in self.pulses]
 
-    # TODO: update
-    def _JSONEncoder(self) -> dict:
-        """Converts to JSON encoder for saving metadata
+    def snapshot_base(self, update: bool=False,
+                      params_to_skip_update: Sequence[str]=None):
+        """
+        State of the pulse sequence as a JSON-compatible dict.
+
+        Args:
+            update (bool): If True, update the state by querying the
+                instrument. If False, just use the latest values in memory.
+            params_to_skip_update: List of parameter names that will be skipped
+                in update even if update is True. This is useful if you have
+                parameters that are slow to update but can be updated in a
+                different way (as in the qdac)
 
         Returns:
-            JSON dict
+            dict: base snapshot
         """
-        return {
-            'allow_untargeted_pulses': self.allow_untargeted_pulses,
-            'allow_targeted_pulses': self.allow_targeted_pulses,
-            'allow_pulse_overlap': self.allow_pulse_overlap,
-            'pulses': [pulse._JSONEncoder() for pulse in self.pulses]
-        }
+        # Ensure the following paraeters have the latest values
+        for parameter_name in ['duration', 't_list', 't_start_list', 't_stop_list']:
+            self.parameters[parameter_name].get()
+
+        snap = super().snapshot_base(update=update,
+                                     params_to_skip_update=params_to_skip_update)
+
+        snap['pulses'] = [pulse.snapshot(update=update,
+                                         params_to_skip_update=params_to_skip_update)
+                          for pulse in self.pulses]
+        return snap
 
     def add(self, *pulses):
         """Adds pulse(s) to the PulseSequence.
@@ -453,7 +467,7 @@ class PulseSequence(ParameterNode):
 
         self._update_enabled_disabled_pulses()
         self.sort()
-        self.duration = None  # Calculate duration based on last t_stop
+        self.duration = None  # Reset duration to t_stop of last pulse
 
         return added_pulses
 
@@ -483,7 +497,7 @@ class PulseSequence(ParameterNode):
 
         self._update_enabled_disabled_pulses()
         self.sort()
-        self.duration = None  # Calculate duration based on last t_stop
+        self.duration = None  # Reset duration to t_stop of last pulse
 
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
@@ -498,7 +512,7 @@ class PulseSequence(ParameterNode):
         self.pulses.clear()
         self.enabled_pulses.clear()
         self.disabled_pulses.clear()
-        self.duration = None  # Calculate duration based on last t_stop (0)
+        self.duration = None  # Reset duration to t_stop of last pulse
 
     def pulses_overlap(self, pulse1, pulse2) -> bool:
         """Tests if pulse1 and pulse2 overlap in time and connection.

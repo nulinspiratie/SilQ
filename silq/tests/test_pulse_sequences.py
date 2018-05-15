@@ -266,9 +266,7 @@ class TestPulseSequence(unittest.TestCase):
             pulse_sequence['DC']
 
     def test_snapshot(self):
-        from pprint import pprint
         pulse_sequence = PulseSequence()
-        pprint(pulse_sequence['duration'].snapshot())
         snapshot = pulse_sequence.snapshot()
         for parameter_name, parameter in pulse_sequence.parameters.items():
             if parameter.unit:
@@ -276,6 +274,19 @@ class TestPulseSequence(unittest.TestCase):
             self.assertEqual(snapshot.pop(parameter_name), parameter())
 
         self.assertEqual(len(snapshot), 1)
+
+        pulse_sequence.add(Pulse(duration=5))
+
+        snapshot = pulse_sequence.snapshot()
+        for parameter_name, parameter in pulse_sequence.parameters.items():
+            if parameter_name == 'pulses':
+                continue
+            if parameter.unit:
+                parameter_name += f' ({parameter.unit})'
+            self.assertEqual(snapshot.pop(parameter_name), parameter())
+
+        for k, pulse_snapshot in enumerate(snapshot['pulses']):
+            self.assertEqual(pulse_snapshot, pulse_sequence.pulses[k].snapshot())
 
 
 class TestPulseSequenceEquality(unittest.TestCase):
