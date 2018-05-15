@@ -439,6 +439,7 @@ class PulseSequence(ParameterNode):
             # Check if pulse with same name exists, if so ensure unique id
             if pulse.name is not None:
                 pulses_same_name = self.get_pulses(name=pulse.name)
+
                 if pulses_same_name:
                     if pulses_same_name[0].id is None:
                         pulses_same_name[0].id = 0
@@ -454,9 +455,8 @@ class PulseSequence(ParameterNode):
                 relevant_pulses = self.get_pulses(connection=pulse.connection,
                                                   connection_label=pulse.connection_label)
                 if relevant_pulses:
-                    # Connect pulse to t_stop of last relevant pulse
-                    t_stop_max = max(pulse.t_stop for pulse in relevant_pulses)
-                    last_pulse = self.get_pulses(t_stop=t_stop_max, enabled=True)[-1]
+                    last_pulse = max(relevant_pulses,
+                                     key=lambda pulse: pulse.parameters['t_stop'].raw_value)
                     last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
 
             if pulse_copy.t_start is None:  # No relevant pulses found
@@ -465,7 +465,8 @@ class PulseSequence(ParameterNode):
             self.pulses.append(pulse_copy)
             added_pulses.append(pulse_copy)
             # TODO attach pulsesequence to some of the pulse attributes
-            pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses)
+            pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses,
+                                          update=False)
 
         self._update_enabled_disabled_pulses()
         self.sort()
