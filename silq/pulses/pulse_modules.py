@@ -514,7 +514,8 @@ class PulseSequence(ParameterNode):
         self.disabled_pulses.clear()
         self.duration = None  # Reset duration to t_stop of last pulse
 
-    def pulses_overlap(self, pulse1, pulse2) -> bool:
+    @staticmethod
+    def pulses_overlap(pulse1, pulse2) -> bool:
         """Tests if pulse1 and pulse2 overlap in time and connection.
 
         Args:
@@ -628,7 +629,7 @@ class PulseSequence(ParameterNode):
             AssertionError: No unique connection satisfying conditions.
         """
         pulses = self.get_pulses(**conditions)
-        connections = {pulse.connection for pulse in pulses}
+        connections = list({pulse.connection for pulse in pulses})
         assert len(connections) == 1, \
             f"No unique connection found satisfying {conditions}. " \
             f"Connections: {connections}"
@@ -639,6 +640,10 @@ class PulseSequence(ParameterNode):
                                 connection = None,
                                 t: float = None) -> Tuple[float, float]:
         """Finds the voltages at the transition between two pulses.
+
+        Note:
+            This method can potentially cause issues, and should be avoided
+            until it's better thought through
 
         Args:
             pulse (Pulse): Pulse starting at transition voltage. If not
