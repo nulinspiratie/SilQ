@@ -168,7 +168,9 @@ class PulseSequence(ParameterNode):
             If pulse has a `Pulse`.connection, an error is only raised if
             connections match as well.
         duration (float): Total duration of pulse sequence. Equal to
-            `Pulse`.t_stop of last pulse, unless explicitly set
+            `Pulse`.t_stop of last pulse, unless explicitly set.
+            Can be reset to t_stop of last pulse by setting to None, and will
+            automatically be reset every time a pulse is added/removed.
         final_delay (Union[float, None]): Optional final delay at the end of
             the pulse sequence. The interface of the primary instrument should
             incorporate any final delay. The default is .5 ms
