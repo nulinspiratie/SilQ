@@ -35,6 +35,7 @@ class CombinedParameter(Parameter):
             of elements as parameters
         scales: Optional scale for parameters. If set, must have equal number
             of elements as parameters.
+        full_label: Add scales and offsets for all parameters to the label
         **kwargs: Additional kwargs passed to ``Parameter``.
 
     Note:
@@ -50,6 +51,7 @@ class CombinedParameter(Parameter):
                  unit: str = None,
                  offsets: List[float] = None,
                  scales: List[float] = None,
+                 full_label: bool = True,
                  **kwargs):
         if name is None:
             name = '_'.join([parameter.name for parameter in parameters])
@@ -62,7 +64,11 @@ class CombinedParameter(Parameter):
         self.offsets = offsets
         self.scales = scales
 
+        self.full_label = full_label
+
         super().__init__(name, label=label, unit=unit, **kwargs)
+
+        self._meta_attrs += ['offsets', 'scales']
 
     @property
     def label(self):
@@ -74,7 +80,11 @@ class CombinedParameter(Parameter):
         else:
             labels = []
             for k, parameter in enumerate(self.parameters):
-                if self.scales is not None and self.scales[k] != 1:
+                if not self.full_label:
+                    labels.append(parameter.name)
+                    continue
+
+                if  self.scales is not None and self.scales[k] != 1:
                     label = f'{self.scales[k]:.3g} * {parameter.name}'
                 else:
                     label = parameter.name
