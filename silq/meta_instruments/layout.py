@@ -1148,10 +1148,11 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_additional_pulses(
-                connections=self.connections)
-            for pulse in additional_pulses:
-                self._target_pulse(pulse)
+            if interface.pulse_sequence or interface == self.acquisition_interface:
+                additional_pulses = interface.get_additional_pulses(
+                    connections=self.connections)
+                for pulse in additional_pulses:
+                    self._target_pulse(pulse)
 
         # Update pulse sequence
         self._pulse_sequence = copy(pulse_sequence)
@@ -1309,7 +1310,8 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self, auto_stop: Union[bool, float] = False):
+    def start(self, auto_stop: Union[bool, float] = False,
+              ignore: List[str] = ()):
         """Starts all the instruments except the acquisition instrument.
 
         The interface start order is by hierarchy, i.e. instruments that trigger
@@ -1320,6 +1322,7 @@ class Layout(Instrument):
                 If not specified, uses value from flags (default is False).
                 If set to True, waits 3 times the pulse sequence duration
                 If set to a value, waits for that amount of seconds.
+            ignore: List of instrument names not to start
 
         Note:
             Does not start instruments that have the flag ``skip_start``
@@ -1331,6 +1334,8 @@ class Layout(Instrument):
             elif interface.instrument_name() in self.flags['skip_start']:
                 logger.info('Skipping starting {interface.name} (flag skip_start)')
                 continue
+            elif interface.instrument_name() in ignore:
+                logger.info('Skipping starting {interface.name} (name in ignore list)')
             elif interface in self.flags['start_last']:
                 logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
