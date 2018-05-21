@@ -31,7 +31,7 @@ class TriggerFPGAInterface(InstrumentInterface):
                            set_cmd=None)
 
     def setup(self,
-              repeat: bool = True,**kwargs):
+              repeat: bool = True, **kwargs):
         assert repeat, "FPGA trigger source can only work in repeat mode"
         assert self.is_primary(), "FPGA trigger source can only function as " \
                                   "primary instrument"
