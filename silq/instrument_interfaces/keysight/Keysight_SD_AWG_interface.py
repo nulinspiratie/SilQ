@@ -350,7 +350,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         Auto-triggering is performed by creating a triggering thread
         """
-
+        for channel in self.active_instrument_channels:
+            channel.wave_shape('arbitrary')
         self.instrument.start_channels(self.active_channel_ids)
         self.started = True
         if self.trigger_mode() == 'software':
