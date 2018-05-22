@@ -91,8 +91,11 @@ class E8267DInterface(InstrumentInterface):
                            initial_value=None,
                            vals=vals.Enum('on', 'off'))
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
         
         Returns:
             List of additional pulses, such as IQ modulation pulses
