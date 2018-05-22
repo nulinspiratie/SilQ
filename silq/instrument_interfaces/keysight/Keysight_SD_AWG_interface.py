@@ -729,8 +729,8 @@ class TriggerPulseImplementation(PulseImplementation):
         prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         samples = int(self.pulse.duration * sampling_rate)
         if samples < instrument.waveform_minimum:
-            logger.warning(f'Trigger pulse {self.pulse} too short, setting to'
-                           f'minimum duration')
+            logger.warning(f'Trigger pulse {self.pulse} too short, setting to '
+                           f'minimum duration of 15 samples')
             samples = 15
 
         # Set max cycles to 1 since trigger pulses should be very short
