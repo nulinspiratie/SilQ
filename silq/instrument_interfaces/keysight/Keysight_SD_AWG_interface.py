@@ -350,7 +350,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         Auto-triggering is performed by creating a triggering thread
         """
-
+        for channel in self.active_instrument_channels:
+            channel.wave_shape('arbitrary')
         self.instrument.start_channels(self.active_channel_ids)
         self.started = True
         if self.trigger_mode() == 'software':
@@ -729,8 +730,8 @@ class TriggerPulseImplementation(PulseImplementation):
         prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         samples = int(self.pulse.duration * sampling_rate)
         if samples < instrument.waveform_minimum:
-            logger.warning(f'Trigger pulse {self.pulse} too short, setting to'
-                           f'minimum duration')
+            logger.warning(f'Trigger pulse {self.pulse} too short, setting to '
+                           f'minimum duration of 15 samples')
             samples = 15
 
         # Set max cycles to 1 since trigger pulses should be very short

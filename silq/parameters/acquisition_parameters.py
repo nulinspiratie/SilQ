@@ -441,7 +441,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
-    def plot_traces(self, filter=None, channels=['output']):
+    def plot_traces(self, filter=None, channels=['output'], **kwargs):
         plot_traces = OrderedDict()
         for pulse_name, trace in self.traces.items():
             if filter is not None:
@@ -456,7 +456,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             subplots = (len(plot_traces), len(channels))
         else:
             subplots = len(plot_traces)
-        plot = MatPlot(subplots=subplots)
+        plot = MatPlot(subplots=subplots, **kwargs)
 
         k = 0
         for pulse_name, traces in plot_traces.items():
@@ -1304,7 +1304,8 @@ class EPRParameter(AcquisitionParameter):
             DCPulse('read_long', acquire=True)])
 
         super().__init__(name=name,
-                         names=['contrast', 'dark_counts',
+                         names=['contrast', 'up_proportion',
+                                'dark_counts',
                                 'voltage_difference_read',
                                 'fidelity_empty', 'fidelity_load'],
                          snapshot_value=False,

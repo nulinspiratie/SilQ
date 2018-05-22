@@ -23,7 +23,7 @@ class TriggerFPGAInterface(InstrumentInterface):
 
         self.add_parameter('final_delay',
                            unit='s',
-                           initial_value=5e-3,
+                           initial_value=None,
                            set_cmd=None)
         self.add_parameter('trigger_duration',
                            unit='s',
@@ -44,7 +44,11 @@ class TriggerFPGAInterface(InstrumentInterface):
         pxi_number = int(pxi_channel[-1])
         self.instrument.pxi_port(pxi_number)
 
-        trigger_interval = self.pulse_sequence.duration + self.final_delay()
+        trigger_interval = self.pulse_sequence.duration
+        if self.final_delay() is not None:
+            trigger_interval += self.final_delay()
+        else:
+            trigger_interval += self.pulse_sequence.final_delay
         self.instrument.trigger_interval(trigger_interval)
         self.instrument.trigger_duration(self.trigger_duration())
 

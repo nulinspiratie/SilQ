@@ -188,7 +188,7 @@ def initialize(name: str = None,
                     exec(exec_line+"\n", globals, locals)
                 except:
                     raise RuntimeError(f'SilQ initialization error in '
-                                       f'{filepath}')
+                                       f'{filepath} line {exec_line}')
 
     print("Initialization complete")
 

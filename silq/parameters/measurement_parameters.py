@@ -190,6 +190,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                  optimum_DC_offset=None,
                  model_filepath=None,
                  voltage_limit=None,
+                 optimum_method='neural_network',
                  **kwargs):
         """
         Args:
@@ -228,6 +229,7 @@ class RetuneBlipsParameter(MeasurementParameter):
         """
         # Load model here because it takes quite a while to load
         from keras.models import load_model
+        import tensorflow as tf
 
         super().__init__(name=name,
                          names=['optimal_vals', 'offsets'],
@@ -246,9 +248,14 @@ class RetuneBlipsParameter(MeasurementParameter):
         self.initial_offsets = None
         self.voltage_limit = voltage_limit
 
+        assert optimum_method in ['neural_network', 'max_blips']
+        self.optimum_method = optimum_method
+
         self.model_filepath = model_filepath
         if model_filepath is not None:
             self.model = load_model(self.model_filepath)
+            self.model._make_predict_function()
+            self.graph = tf.get_default_graph()
         else:
             logger.warning(f'No neural network model loaded for {self}')
             self.model = None
@@ -291,16 +298,23 @@ class RetuneBlipsParameter(MeasurementParameter):
         Calculate optimum of dataset from neural network
         Returns: optimal voltage of combined set parameter
         """
-        if self.model is None:
-            logger.warning('No Neural network model provided. skipping retune')
-            return None
-
         blips_per_second = self.data.blips_per_second.ndarray
         blips_per_second = np.nan_to_num(blips_per_second)
         mean_low_blip_duration = self.data.mean_low_blip_duration.ndarray
         mean_low_blip_duration = np.nan_to_num(mean_low_blip_duration)
         mean_high_blip_duration = self.data.mean_high_blip_duration.ndarray
         mean_high_blip_duration = np.nan_to_num(mean_high_blip_duration)
+
+        if self.optimum_method == 'max_blips':
+            if not np.nanmax(blips_per_second):
+                return None
+            else:
+                max_idx = np.nanargmax(blips_per_second)
+                return self.sweep_vals[max_idx]
+
+        if self.model is None:
+            logger.warning('No Neural network model provided. skipping retune')
+            return None
 
         if len(blips_per_second) != 21:
             raise RuntimeError(
@@ -310,8 +324,11 @@ class RetuneBlipsParameter(MeasurementParameter):
 
         # normalize data
         # Blips per second gets a gaussian normalization
-        data[:, 0] = (blips_per_second - np.mean(blips_per_second)) / np.std(
-            blips_per_second)
+        if np.std(blips_per_second):
+            data[:, 0] = (blips_per_second - np.mean(blips_per_second)) / np.std(
+                blips_per_second)
+        else:
+            return None
 
         # blip durations get a logarithmic normalization, since the region
         # of interest has a low value
@@ -326,7 +343,13 @@ class RetuneBlipsParameter(MeasurementParameter):
         data = np.expand_dims(data, 0)
 
         # Predict optimum value
-        self.neural_network_results = self.model.predict(data)[0, 0]
+        try:
+            with self.graph.as_default():
+                self.neural_network_results = self.model.predict(data)[0, 0]
+        except Exception as e:
+            import traceback
+            logger.error(traceback.print_exc())
+            return
 
         # Scale results
         # Neural network output is between -1 (sweep_vals[0]) and +1 (sweep_vals[-1])

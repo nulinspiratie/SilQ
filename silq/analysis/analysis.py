@@ -447,28 +447,32 @@ def analyse_traces(traces: np.ndarray,
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = round(t_skip * sample_rate)
 
-    # Histogram trace voltages to find two peaks corresponding to high and low
-    high_low_results = find_high_low(traces[:,start_idx:],
-                                     threshold_method=threshold_method)
-    results['voltage_difference'] = high_low_results['voltage_difference']
+
     if threshold_voltage is None:
+        # Histogram trace voltages to find two peaks corresponding to high and low
+        high_low_results = find_high_low(traces[:,start_idx:],
+                                         threshold_method=threshold_method)
+        results['voltage_difference'] = high_low_results['voltage_difference']
         # Use threshold voltage from high_low_results
         threshold_voltage = high_low_results['threshold_voltage']
 
-    results['threshold_voltage'] = threshold_voltage
+        results['threshold_voltage'] = threshold_voltage
 
-    if threshold_voltage is None:
-        logger.debug('Could not determine threshold voltage')
-        return results
+        if threshold_voltage is None:
+            logger.debug('Could not determine threshold voltage')
+            return results
+    else:
+        # We don't know voltage difference since we skip a high_low measure.
+        results['voltage_difference'] = None
 
-    # Analyse blips
-    blips_results = count_blips(traces=traces,
-                                sample_rate=sample_rate,
-                                threshold_voltage=threshold_voltage,
-                                t_skip=t_skip)
-    results['blips'] = blips_results['blips']
-    results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
-    results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
+    # Analyse blips (disabled because it's very slow)
+    # blips_results = count_blips(traces=traces,
+    #                             sample_rate=sample_rate,
+    #                             threshold_voltage=threshold_voltage,
+    #                             t_skip=t_skip)
+    # results['blips'] = blips_results['blips']
+    # results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
+    # results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
 
     if filter == 'low':
