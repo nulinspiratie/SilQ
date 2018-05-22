@@ -27,7 +27,7 @@ class PCDDSInterface(InstrumentInterface):
         self.pulse_implementations = [
             DCPulseImplementation(),
             SinePulseImplementation(),
-            FrequencyRampPulseImplementation
+            FrequencyRampPulseImplementation()
         ]
 
         self.add_parameter('use_trig_in',
@@ -37,6 +37,11 @@ class PCDDSInterface(InstrumentInterface):
                                      "All DDS channels listen simultaneosly to"
                                      "trig_in, while the pxi channels can "
                                      "trigger individual dds channels")
+
+        self.add_parameter('trigger_in_duration',
+                           initial_value=.1e-6,
+                           set_cmd=None,
+                           docstring="Duration for a trigger input")
 
     @property
     def active_channel_ids(self):
@@ -59,7 +64,7 @@ class PCDDSInterface(InstrumentInterface):
         # Get list of unique pulse start and stop times
         t_list = self.pulse_sequence.t_list
         trigger_pulses = [TriggerPulse(t_start=t,
-                                       duration=self.trigger_duration(),
+                                       duration=self.trigger_in_duration(),
                                        connection_requirements={
                                            'input_instrument': self.instrument.name,
                                            'input_channel': self._input_channels['trig_in']
@@ -68,6 +73,8 @@ class PCDDSInterface(InstrumentInterface):
         return trigger_pulses
 
     def setup(self, **kwargs):
+        for channel in self.instrument.channels:
+            channel.instruction_sequence().clear()
         self.instrument.channels.output_enable(False)
         self.instrument.channels.pcdds_enable(True)
 
@@ -81,21 +88,23 @@ class PCDDSInterface(InstrumentInterface):
         }
         for channel in self.active_instrument_channels:
             current_pulse = current_pulses[channel.name]
-            pulse_implementation = current_pulse.implement()
+            pulse_implementation = current_pulse.implementation.implement()
             pulse_implementation['pulse_idx'] = 0
             pulse_implementation['next_pulse'] = 1
             channel.write_instr(pulse_implementation)
 
         total_instructions = len(self.pulse_sequence.t_list)
         for pulse_idx, t in enumerate(self.pulse_sequence.t_list):
+            print(f'idx {pulse_idx}\tt={t}')
             pulse_idx += 1  # We start with 1 since we have initial 0V pulse
             for channel in self.active_instrument_channels:
-                active_pulse = self.pulse_sequence.get_pulses(t_start=t,
-                                                              channel=channel)
+                active_pulse = self.pulse_sequence.get_pulse(t_start=t,
+                                                             output_channel=channel.name)
                 if active_pulse is not None:  # New pulse starts
+                    print(f'channel {channel.name} updating to {active_pulse}')
                     current_pulses[channel.name] = active_pulse
 
-                pulse_implementation = current_pulses[channel.name].implement()
+                pulse_implementation = current_pulses[channel.name].implementation.implement()
                 pulse_implementation['pulse_idx'] = pulse_idx
                 if pulse_idx + 1 < total_instructions:
                     pulse_implementation['next_pulse'] = pulse_idx + 1
@@ -105,6 +114,7 @@ class PCDDSInterface(InstrumentInterface):
                 channel.write_instr(pulse_implementation)
 
     def start(self):
+        self.active_instrument_channels.set_next_pulse(pulse=0, update=True)
         self.active_instrument_channels.output_enable(True)
 
     def stop(self):
@@ -115,7 +125,7 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
     def implement(self, *args, **kwargs):
-        return {'instr': 'DC',
+        return {'instr': 'dc',
                 'amp': self.pulse.amplitude}
 
 
@@ -134,6 +144,7 @@ class SinePulseImplementation(PulseImplementation):
                 'amp': self.pulse.amplitude,
                 'phase': phase
                 }
+
 
 class FrequencyRampPulseImplementation(PulseImplementation):
     pulse_class = FrequencyRampPulse
