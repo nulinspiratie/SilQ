@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 # useful when multiple objects have distinct satisfies_conditions kwargs
 connection_conditions = ['input_arg', 'input_instrument', 'input_channel',
                          'input_interface', 'output_arg', 'output_instrument',
-                         'output_channel', 'output_interface', 'trigger']
+                         'output_channel', 'output_interface', 'trigger',
+                         'trigger_start']
 
 
 class Connection:
@@ -33,11 +34,12 @@ class Connection:
             Scale 1/x means the signal at the input is x times lower than
             emitted from the output
     """
-    def __init__(self, scale: float = None):
+    def __init__(self, scale: float = None, label: str = None):
 
         self.input = {}
         self.output = {}
         self.scale = scale
+        self.label = label
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -150,6 +152,8 @@ class SingleConnection(Connection):
         input_instrument: Name of output instrument.
         input_channel: Input channel object.
         trigger: Sets the output channel to trigger the input instrument.
+        trigger_start: The output only triggers at the start of the
+            `PulseSequence`. Ignored if trigger == False
         acquire: Sets if this connection is used for acquisition.
         software: Sets if this connection is a software connection.
             This is used for cases such as software triggering.
@@ -160,6 +164,7 @@ class SingleConnection(Connection):
                  input_instrument: str,
                  input_channel: Channel,
                  trigger: bool = False,
+                 trigger_start: bool = False,
                  acquire: bool = False,
                  software: bool = False,
                  **kwargs):
@@ -169,25 +174,28 @@ class SingleConnection(Connection):
 
         self.output['instrument'] = output_instrument
         self.output['channel'] = output_channel
-        self.output['str'] = '{}.{}'.format(output_instrument,
-                                            output_channel.name)
+        self.output['str'] = f'{output_instrument}.{output_channel.name}'
 
         self.input['instrument'] = input_instrument
         self.input['channel'] = input_channel
         self.input['str'] = f'{input_instrument}.{input_channel.name}'
 
         self.trigger = trigger
+        self.trigger_start = trigger_start
         # TODO add this connection to input_instrument.trigger
 
         self.acquire = acquire
         self.software = software
 
     def __repr__(self):
-        output_str = "Connection{{{}.{}->{}.{}}}(".format(
-            self.output['instrument'], self.output['channel'].name,
-            self.input['instrument'], self.input['channel'].name)
+        output_str = "Connection{{"
+        if self.label:
+            output_str += f'{self.label}: '
+        output_str += f"{self.output['str']}->{self.input['str']}}}("
         if self.trigger:
             output_str += ', trigger'
+            if self.trigger_start:
+                output_str += ' start'
         if self.acquire:
             output_str += ', acquire'
         if self.software:
@@ -236,6 +244,7 @@ class SingleConnection(Connection):
                              output_arg: str = None,
                              input_arg: str = None,
                              trigger: bool = None,
+                             trigger_start: bool = None,
                              acquire: bool = None,
                              software: bool = None,
                              **kwargs) -> bool:
@@ -283,13 +292,14 @@ class SingleConnection(Connection):
             return False
         elif trigger is not None and self.trigger != trigger:
             return False
+        elif trigger_start is not None and self.trigger_start != trigger_start:
+            return False
         elif acquire is not None and self.acquire != acquire:
             return False
         elif software is not None and self.software != software:
             return False
         else:
             return True
-
 
 
 class CombinedConnection(Connection):
@@ -328,6 +338,9 @@ class CombinedConnection(Connection):
             self.input['instrument'] = self.input['instruments'][0]
             self.input['channels'] = list(set([connection.input['channel']
                                                for connection in connections]))
+
+        self.trigger = False
+        self.trigger_start = False
 
     def __repr__(self):
         output = 'CombinedConnection\n'
@@ -371,6 +384,7 @@ class CombinedConnection(Connection):
                              output_arg: str = None,
                              input_arg: str = None,
                              trigger: bool = None,
+                             trigger_start: bool = None,
                              acquire: bool = None,
                              **kwargs):
         """Checks if this connection satisfies conditions
@@ -397,6 +411,7 @@ class CombinedConnection(Connection):
             input_channel: Connection must have input_channel.
                 (either Channel object, or channel name)
             trigger: Connection is used for triggering
+            trigger_start:
             acquire: Connection is used for acquisition
 
         Returns:
@@ -441,6 +456,8 @@ class CombinedConnection(Connection):
         if not super().satisfies_conditions(**kwargs):
             return False
         elif trigger is not None:
+            return False
+        elif trigger_start is not None:
             return False
         elif acquire is not None and self.acquire != acquire:
             return False
@@ -678,12 +695,13 @@ class Layout(Instrument):
             connection = connection.copy()
             if 'combine' in connection:
                 # Create CombinedConnection. connection['combine'] consists of
-                # output args of the SingleConnections
-                output_args = connection.pop('combine')
+                # (output_arg, input_arg) combinations of the SingleConnections
+                combined_args = connection.pop('combine')
                 # Must add actual Connection objects, so retrieving them from
                 #  Layout
-                nested_connections = [self.get_connection(output_arg=output_arg)
-                                      for output_arg in output_args]
+                nested_connections = [self.get_connection(output_arg=output_arg,
+                                                          input_arg=input_arg)
+                                      for output_arg, input_arg in combined_args]
                 # Remaining properties in connection dict are kwargs
                 self.combine_connections(*nested_connections, **connection)
             else:
@@ -703,6 +721,7 @@ class Layout(Instrument):
                         input_instrument: Instrument = None,
                         input_channel: Union[Channel, str] = None,
                         trigger: bool = None,
+                        trigger_start: bool = None,
                         acquire: bool = None,
                         software: bool = None) -> List[Connection]:
         """Get all connections that satisfy connection conditions
@@ -740,6 +759,8 @@ class Layout(Instrument):
             input_instrument: Connections must have input_instrument name
             input_channel: either Channel or channel name
             trigger: Connection is used for triggering
+            trigger_start: Connection is used for triggering, but can only
+                trigger at the start of the sequence
             acquire: Connection is used for acquisition
             software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
@@ -774,6 +795,7 @@ class Layout(Instrument):
                         input_instrument=input_instrument,
                         input_channel=input_channel,
                         trigger=trigger,
+                        trigger_start=trigger_start,
                         acquire=acquire,
                         software=software):
                     satisfied_connections.append(connection)
@@ -792,6 +814,7 @@ class Layout(Instrument):
                        input_instrument: Instrument = None,
                        input_channel: Union[Channel, str] = None,
                        trigger: bool = None,
+                       trigger_start: bool = None,
                        acquire: bool = None,
                        software: bool = None):
         """Get unique connection that satisfies conditions.
@@ -830,6 +853,8 @@ class Layout(Instrument):
             input_instrument: Connections must have input_instrument name
             input_channel: either Channel or channel name
             trigger: Connection is used for triggering
+            trigger_start: Connection is used for triggering, but can only
+                trigger at the start of the sequence
             acquire: Connection is used for acquisition
             software: Connection is not an actual hardware connection. Used
                 when a software trigger needs to be sent
@@ -879,21 +904,24 @@ class Layout(Instrument):
         else:
             # Extract from conditions other than environment and
             # connection_label
-            connections = self.get_connections(
-                output_arg=output_arg,
-                output_interface=output_interface,
-                output_instrument=output_instrument,
-                output_channel=output_channel,
-                input_arg=input_arg,
-                input_interface=input_interface,
-                input_instrument=input_instrument,
-                input_channel=input_channel,
-                trigger=trigger,
-                acquire=acquire,
-                software=software)
+            conditions = dict(output_arg=output_arg,
+                              output_interface=output_interface,
+                              output_instrument=output_instrument,
+                              output_channel=output_channel,
+                              input_arg=input_arg,
+                              input_interface=input_interface,
+                              input_instrument=input_instrument,
+                              input_channel=input_channel,
+                              trigger=trigger,
+                              trigger_start=trigger_start,
+                              acquire=acquire,
+                              software=software)
+            connections = self.get_connections(**conditions)
+            filtered_conditions = {key: val for key, val in conditions.items()
+                                   if val is not None}
             assert len(connections) == 1, \
-                f"Found {len(connections)} connections " \
-                f"instead of one satisfying conditions"
+                f"Found {len(connections)} connections instead of one satisfying " \
+                f"{filtered_conditions}"
             return connections[0]
 
     def _set_primary_instrument(self, primary_instrument: str):
@@ -1104,13 +1132,16 @@ class Layout(Instrument):
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
         self.targeted_pulse_sequence.duration = pulse_sequence.duration
+        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
             interface.pulse_sequence.duration = pulse_sequence.duration
+            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
             interface.input_pulse_sequence.duration = pulse_sequence.duration
+            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -1121,7 +1152,8 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_additional_pulses()
+            additional_pulses = interface.get_additional_pulses(
+                connections=self.connections)
             for pulse in additional_pulses:
                 self._target_pulse(pulse)
 
@@ -1255,11 +1287,11 @@ class Layout(Instrument):
                 if setup_flags:
                     logger.debug(f'{interface.name} setup flags: {setup_flags}')
 
-                is_primary = self.primary_instrument() == interface.instrument.name
-                output_connections = self.get_connections(
-                    output_interface=interface)
+                input_connections = self.get_connections(input_interface=interface)
+                output_connections = self.get_connections(output_interface=interface)
 
                 flags = interface.setup(samples=self.samples(),
+                                        input_connections=input_connections,
                                         output_connections=output_connections,
                                         repeat=repeat,
                                         **setup_flags, **kwargs)
@@ -1281,7 +1313,7 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self, auto_stop: Union[bool, float] = None):
+    def start(self, auto_stop: Union[bool, float] = False):
         """Starts all the instruments except the acquisition instrument.
 
         The interface start order is by hierarchy, i.e. instruments that trigger
@@ -1366,6 +1398,9 @@ class Layout(Instrument):
             logger.info(f'Performing acquisition, stop when finished: {stop}')
             if not self.active():
                 self.start()
+
+            assert self.acquisition_interface.pulse_sequence, \
+                "None of the pulses have acquire=True, nothing to acquire"
 
             # Obtain traces from acquisition interface as dict
             pulse_traces = self.acquisition_interface.acquisition()

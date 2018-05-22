@@ -34,6 +34,16 @@ class ArbStudio1104Interface(InstrumentInterface):
     Todo:
         * Add modes other than stepped.
         * Add use as primary instrument.
+
+
+    # Arbstudio interface information
+    The interface is programmed for stepped mode, meaning that the arbstudio
+    needs a triger after every pulse. Consequently, the interface is not
+    programmed to be the primary instrument.
+    The arbstudio needs a trigger at the end of the sequence to restart.
+    Note that this means that during any final delay, the arbstudio will
+    already have restarted its sequence. Not sure how to best deal with this.
+
     """
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
@@ -61,9 +71,15 @@ class ArbStudio1104Interface(InstrumentInterface):
                            set_cmd=None,
                            unit='s',
                            initial_value=100e-9)
-        self.add_parameter('final_delay',
+        self.add_parameter('pulse_final_delay',
                            set_cmd=None,
-                           unit='s', initial_value=1e-6)
+                           unit='s', initial_value=1e-6,
+                           docstring='Final delay up to the end of pulses that '
+                                     'have full waveforms, to ensure that the '
+                                     'waveform is finished before the next '
+                                     'trigger arrives. This does not count for '
+                                     'pulses such as DCPulse, which only have '
+                                     'four points')
 
         self.add_parameter('active_channels', get_cmd=self._get_active_channels)
 
@@ -75,8 +91,11 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = list(set(active_channels))
         return active_channels
 
-    def get_additional_pulses(self) -> List[Pulse]:
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
 
         Returns:
             List of additional pulses.
@@ -158,8 +177,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         """
         # TODO implement setup for modes other than stepped
 
-        if self.is_primary():
-            logger.warning('Arbstudio not programmed as primary instrument')
+        assert not self.is_primary(), 'Arbstudio is currently not programmed ' \
+                                      'to function as primary instrument'
 
         # Clear waveforms and sequences
         for ch in self._output_channels.values():
@@ -294,7 +313,7 @@ class SinePulseImplementation(PulseImplementation):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
-        targeted_pulse.final_delay = interface.final_delay()
+        targeted_pulse.implementation.final_delay = interface.pulse_final_delay()
         return targeted_pulse
 
     def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
@@ -406,7 +425,7 @@ class DCRampPulseImplementation(PulseImplementation):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
-        targeted_pulse.final_delay = interface.final_delay()
+        targeted_pulse.implementation.final_delay = interface.pulse_final_delay()
         return targeted_pulse
 
     def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
@@ -443,7 +462,7 @@ class DCRampPulseImplementation(PulseImplementation):
         sequences = {}
         for ch in channels:
             total_points = self.pulse.duration * sampling_rates[ch]
-            final_points = self.pulse.final_delay * sampling_rates[ch]
+            final_points = self.final_delay * sampling_rates[ch]
             # Waveform points subtract the final waveform delay
             waveform_points = int(round(total_points - final_points))
 
