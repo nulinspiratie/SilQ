@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
-
+from copy import copy
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, SinePulse, FrequencyRampPulse, \
-    TriggerPulse, PulseImplementation
+    TriggerPulse, PulseImplementation, MarkerPulse
 
 
 class PCDDSInterface(InstrumentInterface):
@@ -27,7 +27,8 @@ class PCDDSInterface(InstrumentInterface):
         self.pulse_implementations = [
             DCPulseImplementation(),
             SinePulseImplementation(),
-            FrequencyRampPulseImplementation()
+            FrequencyRampPulseImplementation(),
+            MarkerPulseImplementation()
         ]
 
         self.add_parameter('use_trig_in',
@@ -69,7 +70,7 @@ class PCDDSInterface(InstrumentInterface):
                                            'input_instrument': self.instrument.name,
                                            'input_channel': self._input_channels['trig_in']
                                        })
-                          for t in t_list]
+                          for t in t_list if t != self.pulse_sequence.duration]
         return trigger_pulses
 
     def setup(self, **kwargs):
@@ -81,11 +82,19 @@ class PCDDSInterface(InstrumentInterface):
         assert self.use_trig_in(), "Interface not yet programmed for pxi triggering"
 
         # First pulses are 0V DC pulses
-        current_pulses = {
-            channel.name: self.get_pulse_implementation(
-                DCPulse('initial_0V', amplitude=0))
-            for channel in self.active_instrument_channels
-        }
+        # t_start and duration must be set but are irrelevant
+        DC_0V_pulse = self.get_pulse_implementation(DCPulse('initial_0V',
+                                                            t_start=0,
+                                                            duration=0,
+                                                            amplitude=0))
+        current_pulses = {channel.name: DC_0V_pulse
+                          for channel in self.active_instrument_channels}
+        # for channel in self.active_instrument_channels:
+            # current_pulses[channel.name]: copy(DC_0V_pulse)
+            # current_pulses[channel.name].t_start = 0
+            # next_pulse = next(self.pulse_sequence.get_pulses(output_channel=channel.name))
+            # current_pulses[channel.name].t_stop = next_pulse.t_start
+
         for channel in self.active_instrument_channels:
             current_pulse = current_pulses[channel.name]
             pulse_implementation = current_pulse.implementation.implement()
@@ -95,14 +104,16 @@ class PCDDSInterface(InstrumentInterface):
 
         total_instructions = len(self.pulse_sequence.t_list)
         for pulse_idx, t in enumerate(self.pulse_sequence.t_list):
-            print(f'idx {pulse_idx}\tt={t}')
+            if t == self.pulse_sequence.duration:
+                continue
             pulse_idx += 1  # We start with 1 since we have initial 0V pulse
             for channel in self.active_instrument_channels:
                 active_pulse = self.pulse_sequence.get_pulse(t_start=t,
                                                              output_channel=channel.name)
                 if active_pulse is not None:  # New pulse starts
-                    print(f'channel {channel.name} updating to {active_pulse}')
                     current_pulses[channel.name] = active_pulse
+                elif t >= current_pulses[channel.name].t_stop:
+                    current_pulses[channel.name] = DC_0V_pulse
 
                 pulse_implementation = current_pulses[channel.name].implementation.implement()
                 pulse_implementation['pulse_idx'] = pulse_idx
@@ -123,6 +134,14 @@ class PCDDSInterface(InstrumentInterface):
 
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
+
+    def implement(self, *args, **kwargs):
+        return {'instr': 'dc',
+                'amp': self.pulse.amplitude}
+
+
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
 
     def implement(self, *args, **kwargs):
         return {'instr': 'dc',
