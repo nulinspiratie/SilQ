@@ -723,7 +723,6 @@ class CombinationPulseImplementation(PulseImplementation):
 
 class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
-    amplitude = 1.0
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
         sampling_rate = default_sampling_rate
@@ -735,7 +734,7 @@ class TriggerPulseImplementation(PulseImplementation):
             samples = 15
 
         # Set max cycles to 1 since trigger pulses should be very short
-        waveform = interface.create_DC_waveform(voltage=self.amplitude,
+        waveform = interface.create_DC_waveform(voltage=self.pulse.amplitude,
                                                 samples=samples,
                                                 prescaler=prescaler,
                                                 t_start=self.pulse.t_start,
@@ -749,7 +748,6 @@ class TriggerPulseImplementation(PulseImplementation):
 
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
-    amplitude = 1.0
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
         sampling_rate = default_sampling_rate
@@ -758,7 +756,7 @@ class MarkerPulseImplementation(PulseImplementation):
         assert samples >= instrument.waveform_minimum, \
             f"pulse {self.pulse} too short"
 
-        waveform = interface.create_DC_waveform(voltage=self.amplitude,
+        waveform = interface.create_DC_waveform(voltage=self.pulse.amplitude,
                                                 samples=samples,
                                                 prescaler=prescaler,
                                                 t_start=self.pulse.t_start)
