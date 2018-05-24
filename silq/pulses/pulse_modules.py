@@ -722,12 +722,20 @@ class PulseSequence:
 
         return shapes
 
-    def plot(self, output_arg=None, output_channel=None, dt=1e-6,
-             subplots=False, scale_ylim=True):
-        pulses = self.get_pulses(output_arg=output_arg,
-                                 output_channel=output_channel)
+    def plot(self, dt=1e-6, subplots=False, scale_ylim=True, **connection_kwargs):
+        pulses = self.get_pulses(**connection_kwargs)
 
-        connections = {pulse.connection for pulse in pulses}
+        connections = []
+        for pulse in pulses:
+            if pulse.connection is not None:
+                connections.append(pulse.connection)
+            elif pulse.connection_label is not None:
+                connection = self.layout.get_connection(
+                    connection_label=pulse.connection_label)
+                connections.append(connection)
+            else:
+                connections.append(None)
+        connections = {connections}  # Create unique set
         connections = sorted(connections,
                              key=lambda connection: connection.output['str'])
         if subplots:
@@ -735,6 +743,8 @@ class PulseSequence:
                                      figsize=(10, 1.5 * len(connections)))
         else:
             fig, axes = plt.subplots(1, figsize=(10, 4))
+        if not isinstance(axes, list):
+            axes = [axes]
 
         t_list = np.arange(0, self.duration, dt)
         voltages = {}
