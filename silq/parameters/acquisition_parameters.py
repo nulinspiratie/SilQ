@@ -437,7 +437,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         return self.traces
 
     def analyse(self,
-                traces: Dict[str, Dict[str, np.ndarray]]) -> Dict[str, Any]:
+                traces: Dict[str, Dict[str, np.ndarray]] = None) -> Dict[str, Any]:
         """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
@@ -546,7 +546,10 @@ class PulseSequenceAcquisitionParameter(AcquisitionParameter):
 
         return [tuple(trace_shapes[name]) for name in self.names]
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
+        if traces is None:
+            traces = self.traces
+
         tile_indices = {name: 0 for name in self.names}
 
         tiled_traces = {acquire_pulse_name: np.zeros(shape)
@@ -640,7 +643,9 @@ class DCParameter(AcquisitionParameter):
                          **kwargs)
         self.samples = 1
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
+        if traces is None:
+            traces = self.traces
         return {'DC_voltage': traces['DC']['output']}
 
 
@@ -789,7 +794,6 @@ class TraceParameter(AcquisitionParameter):
         else:
             return (('s', ), ) * len(self.layout.acquisition_channels())
 
-
     def setup(self, start=None, **kwargs):
         """ Modifies provided pulse sequence by creating a single
         pulse which overlaps all other pulses with acquire=True and
@@ -840,8 +844,11 @@ class TraceParameter(AcquisitionParameter):
 
         return traces
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
         """Rearrange traces to match ``AcquisitionParameter.names``"""
+        if traces is None:
+            traces = self.traces
+
         return {self.names[k] : traces[name] if isinstance(traces[name], float)
                 else traces[name].tolist()[0]
                 for k, name in enumerate(traces)}
@@ -1151,7 +1158,7 @@ class DCSweepParameter(AcquisitionParameter):
         self.pulse_sequence.final_delay = self.final_delay
 
     def analyse(self,
-                traces: Dict[str, Dict[str, np.ndarray]]):
+                traces: Dict[str, Dict[str, np.ndarray]] = None):
         """Analyse traces, ensuring resulting dimensionality is correct
 
         Args:
@@ -1166,6 +1173,9 @@ class DCSweepParameter(AcquisitionParameter):
               Only used if ``DCSweepParameter.trace_pulse.enabled``.
               Trace in ``output`` connection label is returned.
         """
+        if traces is None:
+            traces = self.traces
+
         DC_voltages = np.array(
             [traces[pulse.full_name]['output'] for pulse in
              self.pulse_sequence.get_pulses(name='DC_inner')])
@@ -1240,11 +1250,14 @@ class VariableReadParameter(AcquisitionParameter):
                   for pulse_name in ['plunge', 'read', 'empty'])
         return (pts,),
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
+        if traces is None:
+            traces = self.traces
+
         return {'read_voltage':
-                    np.concatenate([self.traces['plunge']['output'],
-                                    self.traces['read']['output'],
-                                    self.traces['empty']['output']])}
+                    np.concatenate([traces['plunge']['output'],
+                                    traces['read']['output'],
+                                    traces['empty']['output']])}
 
 
 class EPRParameter(AcquisitionParameter):
@@ -1315,12 +1328,15 @@ class EPRParameter(AcquisitionParameter):
                          **kwargs)
 
     def analyse(self,
-                traces: Dict[str, Dict[str, np.ndarray]]) -> Dict[str, Any]:
+                traces: Dict[str, Dict[str, np.ndarray]] = None) -> Dict[str, Any]:
         """Analyse traces using `analyse_EPR`"""
+        if traces is None:
+            traces = self.traces
+
         return analysis.analyse_EPR(
-            empty_traces=self.traces['empty']['output'],
-            plunge_traces=self.traces['plunge']['output'],
-            read_traces=self.traces['read_long']['output'],
+            empty_traces=traces['empty']['output'],
+            plunge_traces=traces['plunge']['output'],
+            read_traces=traces['read_long']['output'],
             sample_rate=self.sample_rate,
             t_skip=self.t_skip,
             t_read=self.t_read,
@@ -1505,7 +1521,7 @@ class ESRParameter(AcquisitionParameter):
 
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -1514,6 +1530,9 @@ class ESRParameter(AcquisitionParameter):
         from `analyse_EPR` are also added, as well as ``contrast_{pulse.name}``
         (plus a suffix if there are several ESR pulses).
         """
+        if traces is None:
+            traces = self.traces
+
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
@@ -1666,7 +1685,7 @@ class T2ElectronParameter(AcquisitionParameter):
     def inter_delay(self, inter_delay):
         self.ESR['inter_delay'] = inter_delay
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -1675,6 +1694,9 @@ class T2ElectronParameter(AcquisitionParameter):
         from `analyse_EPR` are also added, as well as `contrast_{pulse.name}`
         (plus a suffix if there are several ESR pulses).
         """
+        if traces is None:
+            traces = self.traces
+
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
@@ -1897,7 +1919,7 @@ class NMRParameter(AcquisitionParameter):
         for pulse, ESR_frequency in zip(self.ESR['ESR_pulses'], ESR_frequencies):
             pulse.frequency = ESR_frequency
 
-    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]]):
+    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
         """Analyse flipping events between nuclear states
 
         Returns:
@@ -1925,6 +1947,9 @@ class NMRParameter(AcquisitionParameter):
 
               :filtered_scans_{idx1}{idx2}:
         """
+        if traces is None:
+            traces = self.traces
+
         results = {'results_read': []}
 
         # Calculate threshold voltages from combined read traces
@@ -2168,10 +2193,13 @@ class BlipsParameter(AcquisitionParameter):
     def duration(self, duration):
         self.pulse_sequence[self.pulse_name].duration = duration
 
-    def analyse(self, traces):
+    def analyse(self, traces = None):
         """`count_blips` analysis."""
+        if traces is None:
+            traces = self.traces
+
         return analysis.count_blips(
-            traces=self.traces[self.pulse_name]['output'],
+            traces=traces[self.pulse_name]['output'],
             t_skip=0,
             sample_rate=self.sample_rate,
             threshold_voltage=self.threshold_voltage)
