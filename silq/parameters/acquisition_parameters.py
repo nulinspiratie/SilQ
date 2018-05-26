@@ -938,18 +938,18 @@ class DCSweepParameter(AcquisitionParameter):
             sweep_dict = next(iter_sweep_parameters)
             sweep_voltages = sweep_dict.sweep_voltages
             if sweep_dict.offset_parameter is not None:
-                sweep_voltages = sweep_voltages + sweep_dict.offset_parameter.get_latest()
+                sweep_voltages = sweep_voltages + sweep_dict.offset_parameter()
             setpoints = (convert_setpoints(sweep_voltages),),
 
         elif len(self.sweep_parameters) == 2:
             inner_sweep_dict = next(iter_sweep_parameters)
             inner_sweep_voltages = inner_sweep_dict.sweep_voltages
             if inner_sweep_dict.offset_parameter is not None:
-                inner_sweep_voltages = inner_sweep_voltages + inner_sweep_dict.offset_parameter.get_latest()
+                inner_sweep_voltages = inner_sweep_voltages + inner_sweep_dict.offset_parameter()
             outer_sweep_dict = next(iter_sweep_parameters)
             outer_sweep_voltages = outer_sweep_dict.sweep_voltages
             if outer_sweep_dict.offset_parameter is not None:
-                outer_sweep_voltages = outer_sweep_voltages + outer_sweep_dict.offset_parameter.get_latest()
+                outer_sweep_voltages = outer_sweep_voltages + outer_sweep_dict.offset_parameter()
 
             setpoints = (convert_setpoints(outer_sweep_voltages,
                                            inner_sweep_voltages)),
@@ -1455,6 +1455,8 @@ class ESRParameter(AcquisitionParameter):
         else:
             # Ignore all names, only add the ESR up proportions
             names = []
+            if 'voltage_difference' in self._names:
+                names.append('voltage_difference')
 
         ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
                            for pulse in self.ESR['ESR_pulses']]
@@ -1556,6 +1558,9 @@ class ESRParameter(AcquisitionParameter):
                 # Add contrast obtained by subtracting EPR dark counts
                 contrast = ESR_results['up_proportion'] - results['dark_counts']
                 results[f'contrast_{pulse_label}'] = contrast
+
+        results['voltage_difference'] = np.mean([ESR_result['voltage_difference']
+                                                 for ESR_result in results['ESR_results']])
 
         self.results = results
         return results
