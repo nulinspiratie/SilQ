@@ -1328,7 +1328,8 @@ class EPRParameter(AcquisitionParameter):
                          **kwargs)
 
     def analyse(self,
-                traces: Dict[str, Dict[str, np.ndarray]] = None) -> Dict[str, Any]:
+                traces: Dict[str, Dict[str, np.ndarray]] = None,
+                plot: bool = False) -> Dict[str, Any]:
         """Analyse traces using `analyse_EPR`"""
         if traces is None:
             traces = self.traces
@@ -1341,7 +1342,8 @@ class EPRParameter(AcquisitionParameter):
             t_skip=self.t_skip,
             t_read=self.t_read,
             min_filter_proportion=self.min_filter_proportion,
-            filter_traces=self.filter_traces)
+            filter_traces=self.filter_traces,
+            plot=plot)
 
 
 class ESRParameter(AcquisitionParameter):
@@ -1521,7 +1523,7 @@ class ESRParameter(AcquisitionParameter):
 
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
-    def analyse(self, traces = None):
+    def analyse(self, traces = None, plot=False):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -1559,7 +1561,8 @@ class ESRParameter(AcquisitionParameter):
                 filter='low' if self.filter_traces else None,
                 min_filter_proportion=self.min_filter_proportion,
                 t_skip=self.t_skip,
-                t_read=self.t_read)
+                t_read=self.t_read,
+                plot=plot)
             results['ESR_results'].append(ESR_results)
 
             # Extract ESR pulse labels
