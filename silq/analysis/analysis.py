@@ -575,8 +575,9 @@ def analyse_traces(traces: np.ndarray,
         up_proportion_arr[~filtered_traces_idx] = 0
         up_proportion_arr = up_proportion_arr.reshape(-1, 1)  # Make array 2D
 
-        ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
-                      up_proportion_arr, cmap='RdYlGn')
+        mesh = ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
+                             up_proportion_arr, cmap='RdYlGn')
+        mesh.set_clim(-1, 1)
 
         # Add vertical line for t_read
         ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle='--',
