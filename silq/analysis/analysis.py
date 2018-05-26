@@ -4,9 +4,9 @@ import peakutils
 import logging
 from typing import Union, Dict, Any, List, Sequence
 import collections
+from matplotlib import pyplot as plt
 
 from qcodes import MatPlot
-
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
@@ -17,8 +17,6 @@ from silq import config
 if 'analysis' not in config:
     config['analysis'] = {}
 analysis_config = config['analysis']
-
-
 
 
 def old_smooth(x: np.ndarray,
@@ -157,12 +155,12 @@ def find_high_low(traces: np.ndarray,
             # print(f'Found {len(peaks_idx)} peaks instead of two, '
             #        'increasing threshold')
             threshold_peak *= 1.5
-        else:
-            return {'low': None,
-                    'high': None,
-                    'threshold_voltage': None,
-                    'voltage_difference': None,
-                    'DC_voltage': DC_voltage}
+    else:
+        return {'low': None,
+                'high': None,
+                'threshold_voltage': None,
+                'voltage_difference': None,
+                'DC_voltage': DC_voltage}
 
     # Find mean voltage, used to determine which points are low/high
     mean_voltage_idx = int(np.round(np.mean(peaks_idx)))
@@ -192,18 +190,21 @@ def find_high_low(traces: np.ndarray,
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
     if min_SNR is None:
         min_SNR = analysis_config.min_SNR
-    if SNR < min_SNR:
+    if min_SNR is not None and SNR < min_SNR:
         logger.info(f'Signal to noise ratio {SNR} is too low')
         threshold_voltage = None
 
     # Plotting
-    if plot:
-        from matplotlib import pyplot as plt
-        plt.figure()
+    if plot is not False:
+        if plot is True:
+            plt.figure()
+        else:
+            plt.sca(plot)
         for k, signal in enumerate([low, high]):
             sub_hist, sub_bin_edges = np.histogram(np.ravel(signal['traces']), bins=10)
             plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
-            plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
+            if k < len(peaks_idx):
+                plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
 
     return {'low': low,
             'high': high,
@@ -378,7 +379,8 @@ def analyse_traces(traces: np.ndarray,
                    segment: str = 'begin',
                    threshold_voltage: Union[float, None] = None,
                    threshold_method: str = 'config',
-                   plot: Union[bool, matplotlib.axis.Axis] = False):
+                   plot: Union[bool, matplotlib.axis.Axis] = False,
+                   plot_high_low: Union[bool, matplotlib.axis.Axis] = False):
     """ Analyse voltage, up proportions, and blips of acquisition traces
 
     Args:
@@ -461,7 +463,7 @@ def analyse_traces(traces: np.ndarray,
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = round(t_skip * sample_rate)
 
-    if plot is not False:
+    if plot is not False:  # Create plot for traces
         ax = MatPlot()[0] if plot is True else plot
         t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0]))
         print(ax.get_xlim())
@@ -478,11 +480,12 @@ def analyse_traces(traces: np.ndarray,
             xpadding_range = [xlim[1], xlim[1] + xpadding]
             ax.set_xlim(xlim[0], xlim[1] + xpadding)
 
-            # Calculate threshold voltage if not provided
-    if threshold_voltage is None:
+    if threshold_voltage is None:  # Calculate threshold voltage if not provided
         # Histogram trace voltages to find two peaks corresponding to high and low
         high_low_results = find_high_low(traces[:, start_idx:],
-                                         threshold_method=threshold_method)
+                                         threshold_method=threshold_method,
+                                         plot=plot_high_low)
+        results['high_low_results'] = high_low_results
         results['voltage_difference'] = high_low_results['voltage_difference']
         # Use threshold voltage from high_low_results
         threshold_voltage = high_low_results['threshold_voltage']
