@@ -297,8 +297,8 @@ def find_up_proportion(traces: np.ndarray,
                   for trace in traces]
 
     # Filter out the traces that contain one or more peaks
-    traces_up_electron = [np.any(trace[start_idx:] > threshold_voltage)
-                          for trace in traces]
+    traces_up_electron = np.array([np.any(trace[start_idx:] > threshold_voltage)
+                                   for trace in traces])
 
     if not return_array:
         return sum(traces_up_electron) / len(traces)
