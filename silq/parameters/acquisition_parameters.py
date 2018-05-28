@@ -1492,6 +1492,7 @@ class ESRParameter(AcquisitionParameter):
             names.append(f'up_proportion_{name}')
             if self.EPR['enabled']:
                 names.append(f'contrast_{name}')
+            names.append(f'num_traces_{name}')
         return names
 
     @names.setter
@@ -1580,9 +1581,15 @@ class ESRParameter(AcquisitionParameter):
                 # Add contrast obtained by subtracting EPR dark counts
                 contrast = ESR_results['up_proportion'] - results['dark_counts']
                 results[f'contrast_{pulse_label}'] = contrast
+            results[f'num_traces_{pulse_label}'] = ESR_results['num_traces']
 
-        results['voltage_difference'] = np.mean([ESR_result['voltage_difference']
-                                                 for ESR_result in results['ESR_results']])
+        voltage_differences = [ESR_result['voltage_difference']
+                               for ESR_result in results['ESR_results']
+                               if ESR_result['voltage_difference'] is not None]
+        if voltage_differences:
+            results['voltage_difference'] = np.mean(voltage_differences)
+        else:
+            results['voltage_difference'] = np.nan
 
         self.results = results
         return results
