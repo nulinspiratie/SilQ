@@ -122,6 +122,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.trigger_thread = None
         self.waveforms = None
+        self.waveform_queue = None
         self.started = False
 
     def _get_active_channel_names(self):
@@ -205,7 +206,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.setup_trigger()
 
-        self.waveforms = self.create_waveforms(error_threshold=error_threshold)
+        self.waveforms, self.waveform_queue = self.create_waveforms(error_threshold)
+
+
 
         self.load_waveforms(self.waveforms)
 
@@ -327,23 +330,25 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
     def load_waveforms(self, waveforms):
         self.instrument.flush_waveforms()
 
-        waveform_idx = 0
+        for waveform_idx, waveform in enumerate(waveforms):
+            self.instrument.load_waveform(waveform['waveform'], waveform_idx)
+
+    def load_waveform_queue(self, waveforms):
+        self.instrument.flush_waveforms()
+
         for channel in self.active_instrument_channels:
-            channel.flush_waveforms()
             channel_waveforms = waveforms[channel.name]
 
             # always play a priming pulse first
             trigger_mode = ['none', 'software', 'hardware'].index(self.trigger_mode())
             for waveform in channel_waveforms:
-                self.instrument.load_waveform(waveform['waveform'], waveform_idx)
 
-                channel.queue_waveform(waveform_number=waveform_idx,
+                channel.queue_waveform(waveform_number=waveform['idx'],
                                        trigger_mode=trigger_mode,
                                        start_delay=waveform['delay'],
                                        cycles=waveform['cycles'],
                                        prescaler=waveform['prescaler'])
                 trigger_mode = 0  # auto trigger for every wf that follows first
-                waveform_idx += 1
 
     def start(self):
         """Start selected channels, and auto-triggering if primary instrument
