@@ -95,44 +95,49 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                      'sequence. Useful if the full traces need '
                                      'to be stored')
 
+        self.traces = []  # List of raw traces, unsegmented for pulses
+        self.pulse_traces = {}  # Segmented traces, shape [pulse_name][channel_name]
+
         # Set up the driver to a known default state
         self.initialize_driver()
 
     def acquisition(self):
         """Perform acquisition"""
-        acquisition_data = self.acquisition_controller().acquisition()
+        self.traces = self.acquisition_controller().acquisition()
         self.stop()
 
         # The start of acquisition
         t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
-        data = {}
+        pulse_traces = {}
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
-            data[name] = {}
+            pulse_traces[name] = {}
             for k, ch_id in enumerate(self.channel_selection()):
-                ch_data = acquisition_data[k]
+                ch_data = self.traces[k]
                 ch_name = f'ch{ch_id}'
                 sample_range = [int(round((t - t0) * self.sample_rate()))
                                 for t in [pulse.t_start, pulse.t_stop]]
 
                 # Extract pulse data from the channel data
-                data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                pulse_traces[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
                 # Further average the pulse data
                 if pulse.average == 'none':
                     pass
                 elif pulse.average == 'trace':
-                    data[name][ch_name] = np.mean(data[name][ch_name], axis=0)
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name], axis=0)
                 elif pulse.average == 'point':
-                    data[name][ch_name] = np.mean(data[name][ch_name])
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name])
                 elif 'point_segment' in pulse.average:
                     segments = int(pulse.average.split(':')[1])
-                    split_arrs = np.array_split(data[name][ch_name], segments, axis=1)
-                    data[name][ch_name] = np.mean(split_arrs, axis=(1,2))
+                    split_arrs = np.array_split(pulse_traces[name][ch_name], segments, axis=1)
+                    pulse_traces[name][ch_name] = np.mean(split_arrs, axis=(1,2))
                 else:
                     raise SyntaxError(f'average mode {pulse.average} not configured')
-        return data
+
+        self.pulse_traces = pulse_traces
+        return pulse_traces
 
     def initialize_driver(self):
         """
