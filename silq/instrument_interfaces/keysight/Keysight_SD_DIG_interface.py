@@ -58,8 +58,8 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         self.add_parameter('samples',
                            vals=vals.Numbers(),
                            set_cmd=None,
-                           docstring='Number of samples to acquire. One sample '
-                                     'is one repetition of a pulse sequence.')
+                           docstring='Number of times to acquire the pulse '
+                                     'sequence.')
 
         self.add_parameter('channel_selection',
                            set_cmd=None,
@@ -92,8 +92,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                            vals=vals.Bool(),
                            set_cmd=None,
                            docstring='Capture from t=0 to end of pulse '
-                                     'sequence. Useful if the full traces need '
-                                     'to be stored')
+                                     'sequence. False by default, in which '
+                                     'case start and stop times correspond to '
+                                     'min(t_start) and max(t_stop) of all '
+                                     'pulses with the flag acquire=True, '
+                                     'respectively.')
 
         self.traces = []  # List of raw traces, unsegmented for pulses
         self.pulse_traces = {}  # Segmented traces, shape [pulse_name][channel_name]
