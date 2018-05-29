@@ -9,6 +9,7 @@ from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
     AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
 from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
+from silq.tools.general_tools import arreqclose_in_list
 
 from qcodes import validators as vals
 
@@ -40,7 +41,8 @@ def find_approximate_divisor(N: int,
         N: Number for which to find a divisor
         max_cycles: Maximum number of cycles (for points * cycles)
         points_multiple: Optional value that points must be a multiple of
-        max_points
+        min_points: Minimum number of waveform points.
+        max_points: Maximum number of waveform points.
         max_remaining_points: Maximum number of remaining points.
             Set to 0 to find an exact divisor
 
@@ -48,17 +50,13 @@ def find_approximate_divisor(N: int,
         If successful, a dict containing {'points', 'cycles', 'remaining_points'}
         If unsuccessful, None
     """
-    # Maximum cycles shouldn't be higher than N/points_multiple
-    max_cycles = min(max_cycles, int(N/points_multiple))
-    for cycles in range(max_cycles, 0, -1):
-        # Find points floor such that points*cycles <= N,
-        # but is as close to N as possible
-        points = N // cycles
-        # Ensure points is always a multiple of points_multiple
-        points -= points % points_multiple
+    # Minimum points can't be less than N/max_cycles, and must be in multiples
+    min_points = max(int(np.ceil(N / max_cycles)), min_points)
+    min_points += (points_multiple - min_points) % points_multiple
+    for points in range(min_points, max_points, points_multiple):
+        cycles = N // points
         remaining_points = N - points * cycles
-        if min_points <= points <= max_points and \
-                remaining_points <= max_remaining_points:
+        if min_points <= points <= max_points and remaining_points <= max_remaining_points:
             return int(points), int(cycles), int(remaining_points)
     else:
         return None
@@ -122,6 +120,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.trigger_thread = None
         self.waveforms = None
+        self.waveform_queue = None
         self.started = False
 
     def _get_active_channel_names(self):
@@ -205,9 +204,11 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.setup_trigger()
 
-        self.waveforms = self.create_waveforms(error_threshold=error_threshold)
+        self.waveforms, self.waveform_queue = self.create_waveforms(error_threshold)
 
         self.load_waveforms(self.waveforms)
+
+        self.load_waveform_queue(self.waveform_queue)
 
     def setup_trigger(self):
         """Sets up triggering of the AWG.
@@ -253,7 +254,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 self.instrument.trigger_direction('in')
 
     def create_waveforms(self, error_threshold):
-        waveforms = {ch: [] for ch in self.channel_selection()}
+        waveform_queue = {ch: [] for ch in self.channel_selection()}
 
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
@@ -289,7 +290,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     if waveform_0V is not None:
                         # Add any potential delay samples after previous pulse
                         waveform_0V['delay'] = max(0, samples_start_0V - total_samples)
-                        waveforms[channel.name].append(waveform_0V)
+                        waveform_queue[channel.name].append(waveform_0V)
 
                         # Increase total samples to include 0V pulse points
                         total_samples += waveform_0V['delay']
@@ -305,7 +306,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     start_samples = int(round(waveform['t_start'] * 100e6))
 
                     waveform['delay'] = max(start_samples - total_samples, 0)
-                    waveforms[channel.name].append(waveform)
+                    waveform_queue[channel.name].append(waveform)
 
                     total_samples += waveform['delay']
                     total_samples += waveform['points_100MHz'] * waveform['cycles']
@@ -320,30 +321,44 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                                                       prescaler=prescaler,
                                                       t_start=t)
                 if waveform_0V:
-                    waveforms[channel.name].append(waveform_0V)
+                    waveform_queue[channel.name].append(waveform_0V)
 
-        return waveforms
+        waveforms = []
+        for channel, channel_waveform_queue in waveform_queue.items():
+            for waveform_info in channel_waveform_queue:
+                waveform = waveform_info.pop('waveform')
+                waveform_idx = arreqclose_in_list(waveform,
+                                                  waveforms,
+                                                  rtol=1e-4, atol=1e-4)
+                if waveform_idx is None:  # Add waveform to list
+                    waveforms.append(waveform)
+                    waveform_idx = len(waveforms) - 1
+                waveform_info['idx'] = waveform_idx
+
+        return waveforms, waveform_queue
 
     def load_waveforms(self, waveforms):
         self.instrument.flush_waveforms()
 
-        waveform_idx = 0
+        for waveform_idx, waveform in enumerate(waveforms):
+            self.instrument.load_waveform(waveform['waveform'], waveform_idx)
+
+    def load_waveform_queue(self, waveform_queue):
+        self.instrument.flush_waveforms()
+
         for channel in self.active_instrument_channels:
-            channel.flush_waveforms()
-            channel_waveforms = waveforms[channel.name]
+            channel_waveforms = waveform_queue[channel.name]
 
             # always play a priming pulse first
             trigger_mode = ['none', 'software', 'hardware'].index(self.trigger_mode())
             for waveform in channel_waveforms:
-                self.instrument.load_waveform(waveform['waveform'], waveform_idx)
 
-                channel.queue_waveform(waveform_number=waveform_idx,
+                channel.queue_waveform(waveform_number=waveform['idx'],
                                        trigger_mode=trigger_mode,
                                        start_delay=waveform['delay'],
                                        cycles=waveform['cycles'],
                                        prescaler=waveform['prescaler'])
                 trigger_mode = 0  # auto trigger for every wf that follows first
-                waveform_idx += 1
 
     def start(self):
         """Start selected channels, and auto-triggering if primary instrument
