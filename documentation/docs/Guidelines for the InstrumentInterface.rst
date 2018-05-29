@@ -39,3 +39,46 @@ This file is used for importing (possibly multiple) interface(s) of a specific
 company. Add a new line to do so::
 
   from .<model>_interface import <model>Interface
+
+--------------------------------
+Instrument Interfaces guidelines
+--------------------------------
+
+::::::::::
+Triggering
+::::::::::
+The duration of a trigger pulse is specified by the receiving instrument
+interface. Therefore, if the interface needs to be or can be triggered by
+another instrument, it should have a parameter called ``trigger_in_duration``.
+This value can be set by the user, and is used when requesting additional
+trigger pulses.
+
+
+::::::::::::::::::::::
+Acquisition interfaces
+::::::::::::::::::::::
+Should have the following parameters:
+
+acquisition_channels
+  Names of acquisition channels [chA, chB, etc.]. Set by the layout.
+
+sample rate
+  Acquisition sampling rate (Hz)
+
+samples
+  Number of times to acquire the pulse sequence.
+
+capture_full_trace
+  Capture from t=0 to end of pulse sequence. False by default, in which case
+  start and stop times correspond to min(t_start) and max(t_stop) of all pulses
+  with the flag acquire=True, respectively. Setting to True is useful for
+  viewing/storing the full traces.
+
+Should furthermore have the the attributes:
+
+traces
+  Dictionary of raw unsegemnted traces, of shape {channel_name: channel_traces}
+
+pulse_traces
+  Dictionary containing traces segmented per pulse.
+  Shape is: {pulse_name: {channel_name: pulse_channel_traces}}
