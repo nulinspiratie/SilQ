@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Keysight_SD_DIG_interface(InstrumentInterface):
-    def __init__(self, instrument_name, acquisition_controllers=[], **kwargs):
+    def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
         self.pulse_sequence.allow_pulse_overlap = True
@@ -37,14 +37,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                name='trig_in', input=True),
         }
 
-        # Organize acquisition controllers
-        self.acquisition_controllers = {
-            acquisition_controller.name: acquisition_controller
-            for acquisition_controller in acquisition_controllers
-        }
-
         self.add_parameter(name='acquisition_controller',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition controller for acquiring '
+                                     'data with SD digitizer. '
+                                     'Must be acquisition controller object.')
 
         self.add_parameter(name='acquisition_channels',
                            initial_value=[],
@@ -55,31 +52,48 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
 
         self.add_parameter('sample_rate',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition sampling rate (Hz)')
 
         self.add_parameter('samples',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Number of samples to acquire. One sample '
+                                     'is one repetition of a pulse sequence.')
 
         self.add_parameter('channel_selection',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Active channel indices to acquire. '
+                                     'Zero-based index (chA -> 0, etc.). '
+                                     'Set during setup and should not be set'
+                                     'manually.')
 
         self.add_parameter('minimum_timeout_interval',
                            unit='s',
                            vals=vals.Numbers(),
                            initial_value=5,
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Minimum value for timeout when acquiring '
+                                     'data. If 2.1 * pulse_sequence.duration '
+                                     'is lower than this value, it will be '
+                                     'used instead')
 
         self.add_parameter('trigger_in_duration',
                            unit='s',
                            vals=vals.Numbers(),
                            initial_value=15e-6,
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring="Duration for a receiving trigger signal. "
+                                     "This is passed the the interface that is "
+                                     "sending the triggers to this instrument.")
 
         self.add_parameter('capture_full_trace',
                            initial_value=False,
                            vals=vals.Bool(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Capture from t=0 to end of pulse '
+                                     'sequence. Useful if the full traces need '
+                                     'to be stored')
 
         # Set up the driver to a known default state
         self.initialize_driver()
