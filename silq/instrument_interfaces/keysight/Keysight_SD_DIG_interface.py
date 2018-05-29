@@ -76,6 +76,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                            initial_value=15e-6,
                            set_cmd=None)
 
+        self.add_parameter('capture_full_trace',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           set_cmd=None)
+
         # Set up the driver to a known default state
         self.initialize_driver()
 
@@ -178,8 +183,15 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.acquisition_controller().traces_per_acquisition(self.samples())
 
             # Capture maximum number of samples on all channels
-            t_start = min(self.pulse_sequence.t_start_list)
-            t_stop = max(self.pulse_sequence.t_stop_list)
+            if not self.capture_full_trace():
+                t_start = min(self.pulse_sequence.t_start_list)
+                t_stop = max(self.pulse_sequence.t_stop_list)
+            else:
+                # Capture full trace, even if no pulses have acquire=True
+                # Mainly done so that the full trace can be stored.
+                t_start = 0
+                t_stop = self.pulse_sequence.duration
+
             samples_per_trace = int(np.ceil((t_stop - t_start) * self.sample_rate()))
             samples_per_trace += samples_per_trace % 2
             self.acquisition_controller().samples_per_trace(samples_per_trace)
