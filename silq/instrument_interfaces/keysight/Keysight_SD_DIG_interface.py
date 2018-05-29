@@ -97,17 +97,20 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                      'min(t_start) and max(t_stop) of all '
                                      'pulses with the flag acquire=True, '
                                      'respectively.')
-
-        self.traces = []  # List of raw traces, unsegmented for pulses
-        self.pulse_traces = {}  # Segmented traces, shape [pulse_name][channel_name]
+        # dict of raw unsegmented traces {ch_name: ch_traces}
+        self.traces = {}
+        # Segmented traces per pulse, {pulse_name: {channel_name: {ch_pulse_traces}}
+        self.pulse_traces = {}
 
         # Set up the driver to a known default state
         self.initialize_driver()
 
     def acquisition(self):
         """Perform acquisition"""
-        self.traces = self.acquisition_controller().acquisition()
+        traces = self.acquisition_controller().acquisition()
         self.stop()
+        self.traces = {ch: ch_traces for ch, ch_traces
+                       in zip(self.acquisition_channels(), traces)}
 
         # The start of acquisition
         t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
@@ -117,9 +120,8 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
             pulse_traces[name] = {}
-            for k, ch_id in enumerate(self.channel_selection()):
-                ch_data = self.traces[k]
-                ch_name = f'ch{ch_id}'
+            for k, ch_name in enumerate(self.acquisition_channels()):
+                ch_data = self.traces[ch_name]
                 sample_range = [int(round((t - t0) * self.sample_rate()))
                                 for t in [pulse.t_start, pulse.t_stop]]
 
