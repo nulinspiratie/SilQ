@@ -182,8 +182,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 connection_requirements['trigger'] = True
                 t_start = min(pulse.t_start for pulse in
                               self.pulse_sequence.get_pulses(acquire=True))
-            else: # connection.trigger_start
+            else: # connection.trigger_start or capture full trace
                 connection_requirements['trigger_start'] = True
+                t_start = 0
+
+            if self.capture_full_trace():  # Override t_start to capture full trace
                 t_start = 0
 
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
