@@ -144,6 +144,10 @@ class ATSInterface(InstrumentInterface):
                            docstring='Number of times to acquire the pulse '
                                      'sequence.')
 
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: self._acquisition_controller.samples_per_trace(),
+                           docstring='Number of points in a trace.')
+
         self.add_parameter(name='trigger_channel',
                            set_cmd=None,
                            initial_value='trig_in',
