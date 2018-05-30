@@ -61,6 +61,10 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                            docstring='Number of times to acquire the pulse '
                                      'sequence.')
 
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: self.acquisition_controller().samples_per_trace(),
+                           docstring='Number of points in a trace.')
+
         self.add_parameter('channel_selection',
                            set_cmd=None,
                            docstring='Active channel indices to acquire. '
