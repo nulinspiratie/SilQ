@@ -74,6 +74,9 @@ capture_full_trace
   with the flag acquire=True, respectively. Setting to True is useful for
   viewing/storing the full traces.
 
+points_per_trace
+  Number of points in a trace.
+
 Should furthermore have the the attributes:
 
 traces
