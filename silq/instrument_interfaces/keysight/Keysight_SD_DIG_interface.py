@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Keysight_SD_DIG_interface(InstrumentInterface):
+class Keysight_SD_DIG_Interface(InstrumentInterface):
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
