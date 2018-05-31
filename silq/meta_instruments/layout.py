@@ -1445,10 +1445,28 @@ class Layout(Instrument):
 
         return data
 
-    def initialize_trace_file(self, name=None, folder=None, channels=None):
-        """Initialize an HDF5 file for saving traces"""
+    def initialize_trace_file(self,
+                              name: str,
+                              folder: str = None,
+                              channels: List[str] = None):
+        """Initialize an HDF5 file for saving traces
+
+        Args:
+            name: Name of trace file.
+            folder: Folder path for trace file. If not set, the folder of the
+                active loop dataset is used, with subfolder 'traces'.
+            channels: List of channel labels to acquire. The channel labels must
+                be defined as the second arg of an element in
+                ``Layout.acquisition_channels``
+
+        Raises:
+            AssertionError if folder is not provided and no active dataset
+        """
         if channels is None:
             channels = self.save_trace_channels()
+
+        active_loop = qc.active_loop()
+        assert active_loop is not None, "No active loop found for saving traces"
 
         if folder is None:
             dataset = qc.active_data_set()
@@ -1459,7 +1477,6 @@ class Layout(Instrument):
             folder = os.path.join(dataset_path, 'traces')
             if not os.path.isdir(folder):  # Create traces subfolder if necessary
                 os.mkdir(folder)
-
         # Create new hdf5 file
         filepath = os.path.join(folder, f'{name}.hdf5')
         assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
@@ -1474,22 +1491,46 @@ class Layout(Instrument):
 
         # Create traces group and initialize arrays
         file.create_group('traces')
-        data_shape = ActiveLoop.loop_shape[ActiveLoop.action_indices]
-        data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
+        data_shape = active_loop.loop_shape[ActiveLoop.action_indices]
+        # Data is saved in chunks, which is one acquisition
+        data_chunk = (self.samples(), self.acquisition_interface.points_per_trace())
+        data_shape += data_chunk
         for channel in channels:
-            file.create_dataset(name=channel, shep=data_shape, dtype=float)
+            file.create_dataset(name=channel, shape=data_shape, dtype=float,
+                                chunks=data_chunk, compression='gzip')
 
+        file.flush()
         return file
 
-    def save_traces(self, name=None, folder=None, channels=None):
-        """Save traces to an HDF5 file."""
+    def save_traces(self,
+                    name: str = None,
+                    folder: str = None,
+                    channels: str = None):
+        """Save traces to an HDF5 file.
+
+        The HDF5 file contains a group 'traces', which contains a dataset for
+        each channel. These datasets can be massive depending on the size of the
+        loop, but shouldn't be an issue since HDF5 can save/load portions of the
+        dataset.
+
+        Args:
+            name: Name of trace file.
+                If not set, the name of the current loop parameter is used
+            folder: Folder path for trace file. If not set, the folder of the
+                active loop dataset is used, with subfolder 'traces'.
+            channels: List of channel labels to acquire. The channel labels must
+                be defined as the second arg of an element in
+                ``Layout.acquisition_channels``"""
         if channels is None:
             channels = self.save_trace_channels()
 
+        active_loop = qc.active_loop()
+        assert active_loop is not None, "No active loop found for saving traces"
+
         # Create unique action traces name
         if name is None:  # Set name to current loop action
-            active_action = ActiveLoop.active_action
-            action_indices = ActiveLoop.action_indices
+            active_action = active_loop.active_action
+            action_indices = active_loop.action_indices
             action_indices_str = '_'.join(map(str, action_indices))
             name = f"{active_action.name}_{action_indices_str}"
 
@@ -1504,7 +1545,7 @@ class Layout(Instrument):
             # Get corresponding acquisition output channel name (chA etc.)
             ch = next(ch_pair[0] for ch_pair in self.acquisition_channels()
                       if ch_pair[1] == channel)
-            trace_file['traces'][channel][ActiveLoop.loop_indices] = traces[ch]
+            trace_file['traces'][channel][active_loop.loop_indices] = traces[ch]
 
         return trace_file
 
