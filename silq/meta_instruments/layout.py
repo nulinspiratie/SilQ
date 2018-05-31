@@ -18,6 +18,7 @@ from qcodes import Instrument, FormatLocation
 from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
 from qcodes.data.io import DiskIO
+from qcodes.data.hdf5_format import HDF5Format
 
 logger = logging.getLogger(__name__)
 
@@ -1445,7 +1446,6 @@ class Layout(Instrument):
 
         return data
 
-    save_metadata=True
     def initialize_trace_file(self,
                               name: str,
                               folder: str = None,
@@ -1489,16 +1489,17 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        if self.save_metadata:
-            file.attrs['sample_rate'] = self.sample_rate
-            file.attrs['samples'] = self.samples()
-            file.attrs['pulse_sequence'] = self.pulse_sequence._JSONEncoder()
-            file.attrs['pulse_shapes'] = self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())
+        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['samples'] = self.samples()
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_sequence': self.pulse_sequence._JSONEncoder()}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
+                sample_rate=self.sample_rate, samples=self.samples())}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
-        data_shape = active_loop.loop_shape[ActiveLoop.action_indices]
+        data_shape = active_loop.loop_shape[active_loop.action_indices]
         # Data is saved in chunks, which is one acquisition
         data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
         for channel in channels:
