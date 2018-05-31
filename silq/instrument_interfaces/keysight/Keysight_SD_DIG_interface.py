@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Keysight_SD_DIG_interface(InstrumentInterface):
-    def __init__(self, instrument_name, acquisition_controllers=[], **kwargs):
+    def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
         self.pulse_sequence.allow_pulse_overlap = True
@@ -37,14 +37,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                name='trig_in', input=True),
         }
 
-        # Organize acquisition controllers
-        self.acquisition_controllers = {
-            acquisition_controller.name: acquisition_controller
-            for acquisition_controller in acquisition_controllers
-        }
-
         self.add_parameter(name='acquisition_controller',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition controller for acquiring '
+                                     'data with SD digitizer. '
+                                     'Must be acquisition controller object.')
 
         self.add_parameter(name='acquisition_channels',
                            initial_value=[],
@@ -55,65 +52,101 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
 
         self.add_parameter('sample_rate',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition sampling rate (Hz)')
 
         self.add_parameter('samples',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Number of times to acquire the pulse '
+                                     'sequence.')
+
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: self.acquisition_controller().samples_per_trace(),
+                           docstring='Number of points in a trace.')
 
         self.add_parameter('channel_selection',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Active channel indices to acquire. '
+                                     'Zero-based index (chA -> 0, etc.). '
+                                     'Set during setup and should not be set'
+                                     'manually.')
 
         self.add_parameter('minimum_timeout_interval',
                            unit='s',
                            vals=vals.Numbers(),
                            initial_value=5,
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Minimum value for timeout when acquiring '
+                                     'data. If 2.1 * pulse_sequence.duration '
+                                     'is lower than this value, it will be '
+                                     'used instead')
 
         self.add_parameter('trigger_in_duration',
                            unit='s',
                            vals=vals.Numbers(),
                            initial_value=15e-6,
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring="Duration for a receiving trigger signal. "
+                                     "This is passed the the interface that is "
+                                     "sending the triggers to this instrument.")
+
+        self.add_parameter('capture_full_trace',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           set_cmd=None,
+                           docstring='Capture from t=0 to end of pulse '
+                                     'sequence. False by default, in which '
+                                     'case start and stop times correspond to '
+                                     'min(t_start) and max(t_stop) of all '
+                                     'pulses with the flag acquire=True, '
+                                     'respectively.')
+        # dict of raw unsegmented traces {ch_name: ch_traces}
+        self.traces = {}
+        # Segmented traces per pulse, {pulse_name: {channel_name: {ch_pulse_traces}}
+        self.pulse_traces = {}
 
         # Set up the driver to a known default state
         self.initialize_driver()
 
     def acquisition(self):
         """Perform acquisition"""
-        acquisition_data = self.acquisition_controller().acquisition()
+        traces = self.acquisition_controller().acquisition()
         self.stop()
+        self.traces = {ch: ch_traces for ch, ch_traces
+                       in zip(self.acquisition_channels(), traces)}
 
         # The start of acquisition
         t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
-        data = {}
+        pulse_traces = {}
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
-            data[name] = {}
-            for k, ch_id in enumerate(self.channel_selection()):
-                ch_data = acquisition_data[k]
-                ch_name = f'ch{ch_id}'
+            pulse_traces[name] = {}
+            for k, ch_name in enumerate(self.acquisition_channels()):
+                ch_data = self.traces[ch_name]
                 sample_range = [int(round((t - t0) * self.sample_rate()))
                                 for t in [pulse.t_start, pulse.t_stop]]
 
                 # Extract pulse data from the channel data
-                data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                pulse_traces[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
                 # Further average the pulse data
                 if pulse.average == 'none':
                     pass
                 elif pulse.average == 'trace':
-                    data[name][ch_name] = np.mean(data[name][ch_name], axis=0)
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name], axis=0)
                 elif pulse.average == 'point':
-                    data[name][ch_name] = np.mean(data[name][ch_name])
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name])
                 elif 'point_segment' in pulse.average:
                     segments = int(pulse.average.split(':')[1])
-                    split_arrs = np.array_split(data[name][ch_name], segments, axis=1)
-                    data[name][ch_name] = np.mean(split_arrs, axis=(1,2))
+                    split_arrs = np.array_split(pulse_traces[name][ch_name], segments, axis=1)
+                    pulse_traces[name][ch_name] = np.mean(split_arrs, axis=(1,2))
                 else:
                     raise SyntaxError(f'average mode {pulse.average} not configured')
-        return data
+
+        self.pulse_traces = pulse_traces
+        return pulse_traces
 
     def initialize_driver(self):
         """
@@ -155,8 +188,11 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                 connection_requirements['trigger'] = True
                 t_start = min(pulse.t_start for pulse in
                               self.pulse_sequence.get_pulses(acquire=True))
-            else: # connection.trigger_start
+            else: # connection.trigger_start or capture full trace
                 connection_requirements['trigger_start'] = True
+                t_start = 0
+
+            if self.capture_full_trace():  # Override t_start to capture full trace
                 t_start = 0
 
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
@@ -178,8 +214,15 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             self.acquisition_controller().traces_per_acquisition(self.samples())
 
             # Capture maximum number of samples on all channels
-            t_start = min(self.pulse_sequence.t_start_list)
-            t_stop = max(self.pulse_sequence.t_stop_list)
+            if not self.capture_full_trace():
+                t_start = min(self.pulse_sequence.t_start_list)
+                t_stop = max(self.pulse_sequence.t_stop_list)
+            else:
+                # Capture full trace, even if no pulses have acquire=True
+                # Mainly done so that the full trace can be stored.
+                t_start = 0
+                t_stop = self.pulse_sequence.duration
+
             samples_per_trace = int(np.ceil((t_stop - t_start) * self.sample_rate()))
             samples_per_trace += samples_per_trace % 2
             self.acquisition_controller().samples_per_trace(samples_per_trace)
