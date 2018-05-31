@@ -7,8 +7,8 @@ from functools import partial
 import logging
 import re
 
-from qcodes import DataSet, DataArray, MultiParameter, active_data_set, \
-    Parameter, Instrument
+from qcodes import DataSet, MultiParameter, active_data_set, active_loop, \
+    Parameter
 from qcodes.data import hdf5_format
 from qcodes import Instrument, MatPlot
 
@@ -90,8 +90,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -119,7 +117,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     layout = None
     formatter = h5fmt
-    store_trace_channels = ['output']
 
     def __init__(self,
                  continuous: bool = False,
@@ -259,124 +256,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if select is None or key in select:
             setattr(self, key, val)
 
-    def store_traces(self,
-                     pulse_traces: dict,
-                     base_folder: str = None,
-                     subfolder: str = None,
-                     channels: List[str] = None,
-                     setpoints: bool = False):
-        """Store acquisition traces as a DataSet to file.
-
-        Args:
-            pulse_traces: Trace dictionary with shape
-                {``pulse.full_name``: {acquisition_channel: trace}}
-            base_folder: base folder in which to store traces.
-                If not specified, will be equal to the active measurement data
-                folder if it's running, else the main data folder.
-            subfolder: Subfolder within the main data folder. Can be useful if
-                you want to separate the traces by a certain property.
-            channels: Acquisition channels. If not specified, uses
-                `AcquisitionParameter.store_trace_channels`.
-            setpoints: Also store setpoints, False by default to save space.
-        """
-
-        if channels is None:
-            channels = self.store_trace_channels
-
-        # Store raw traces
-        if base_folder is None:
-            # Extract base_folder from dataset of currently active loop
-            active_dataset = active_data_set()
-            if self.base_folder is not None:
-                base_folder = self.base_folder
-            elif getattr(active_dataset, 'location', None):
-                base_folder = active_dataset.location
-            elif hasattr(active_dataset, '_location'):
-                base_folder = active_dataset._location
-            else:
-                base_folder = DataSet.location_provider(DataSet.default_io)
-                subfolder = None
-
-        if subfolder is None and base_folder is not None:
-                subfolder = f'traces_{self.name}'
-
-        self.dataset = data_tools.create_data_set(name='traces',
-                                                  base_folder=base_folder,
-                                                  subfolder=subfolder,
-                                                  formatter=self.formatter)
-
-        traces_dict = {}
-        for pulse_name, channel_traces in pulse_traces.items():
-            for channel in channels:
-                traces_name = f'{pulse_name}_{channel}'
-                traces = channel_traces[channel]
-                traces_dict[traces_name] = traces
-
-        if setpoints:
-            # Create dictionary of set arrays
-            set_arrs = {}
-            for traces_name, traces in traces_dict.items():
-                number_of_traces, points_per_trace = traces.shape
-
-                if traces.shape not in set_arrs:
-                    time_step = 1 / self.sample_rate
-                    t_list = np.arange(0, points_per_trace * time_step,
-                                       time_step)
-                    t_list_arr = DataArray(
-                        name='time',
-                        array_id='time',
-                        label=' Time',
-                        unit='s',
-                        shape=traces.shape,
-                        preset_data=np.full(traces.shape, t_list),
-                        is_setpoint=True)
-
-                    trace_num_arr = DataArray(
-                        name='trace_num',
-                        array_id='trace_num',
-                        label='Trace',
-                        unit='num',
-                        shape=(number_of_traces, ),
-                        preset_data=np.arange(number_of_traces,
-                                              dtype=np.float64),
-                        is_setpoint=True)
-                    set_arrs[traces.shape] = (trace_num_arr, t_list_arr)
-
-            # Add set arrays to dataset
-            for k, (t_list_arr, trace_num_arr) in enumerate(set_arrs.values()):
-                for arr in (t_list_arr, trace_num_arr):
-                    if len(set_arrs) > 1:
-                        # Need to give individual array_ids to each of the set arrays
-                        arr.array_id += '_{}'.format(k)
-                    self.dataset.add_array(arr)
-            set_arrays = (t_list_arr, trace_num_arr)
-        else:
-            set_arrays = ()
-
-        # Add trace arrs to dataset
-        for traces_name, traces in traces_dict.items():
-            # Must transpose traces array
-            trace_arr = DataArray(name=traces_name,
-                                  array_id=traces_name,
-                                  label=traces_name + ' signal',
-                                  unit='V',
-                                  shape=traces.shape,
-                                  preset_data=traces,
-                                  set_arrays=set_arrays)
-            self.dataset.add_array(trace_arr)
-
-        self.dataset.finalize(write_metadata=False)
-
-    def print_results(self):
-        """Print results whose keys are in ``AcquisitionParameter.names``"""
-        names = self.names if self.names is not None else [self.name]
-        for name in names:
-            value = self.results[name]
-            if isinstance(value, (int, float)):
-                print(f'{name}: {value:.3f}')
-            else:
-                print(f'{name}: {value}')
-
     def setup(self,
               start: bool = None,
               **kwargs):
@@ -404,6 +283,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def acquire(self,
                 stop: bool = None,
                 setup: bool = None,
+                save_traces: bool = None,
                 **kwargs) -> Dict[str, Dict[str, np.ndarray]]:
         """Performs a `Layout.acquisition`.
 
@@ -412,6 +292,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 stop if ``AcquisitionParameter.continuous`` is False.
             setup: Whether to setup layout before acquisition.
                 If not specified, it will setup if pulse_sequences are different
+            save_traces: whether to save traces during
             **kwargs: Additional kwargs to be given to `Layout.acquisition`.
 
         Returns:
@@ -431,9 +312,15 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 self.layout.samples() != self.samples:
             self.setup()
 
+        if save_traces is None:
+            save_traces = self.save_traces
+        if save_traces and active_loop() is None:
+            logger.warning('Cannot save traces since there is no active loop')
+            save_traces = False
 
         # Perform acquisition
-        self.traces = self.layout.acquisition(stop=stop, **kwargs)
+        self.traces = self.layout.acquisition(stop=stop,
+                                              save_traces=save_traces,**kwargs)
         return self.traces
 
     def analyse(self,
@@ -482,9 +369,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.traces = self.acquire()
 
         self.results = self.analyse(self.traces)
-
-        if self.save_traces:
-            self.store_traces(self.traces)
 
         if not self.silent:
             self.print_results()
@@ -612,8 +496,6 @@ class DCParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -681,8 +563,6 @@ class TraceParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -900,8 +780,6 @@ class DCSweepParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -1297,8 +1175,6 @@ class EPRParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -1433,8 +1309,6 @@ class ESRParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -1663,8 +1537,6 @@ class T2ElectronParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -1833,8 +1705,6 @@ class NMRParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
@@ -2156,8 +2026,6 @@ class BlipsParameter(AcquisitionParameter):
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        store_trace_channels (List[str]): acquisition channel labels for which
-            to store traces. the Layout has a list of acquisition labels.
         dataset (DataSet): Traces DataSet
         base_folder (str): Base folder in which to save traces. If not specified,
             and acquisition is part of a measurement, the base folder is the
