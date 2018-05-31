@@ -341,7 +341,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         self.instrument.flush_waveforms()
 
         for waveform_idx, waveform in enumerate(waveforms):
-            self.instrument.load_waveform(waveform['waveform'], waveform_idx)
+            waveform_object = self.instrument.new_waveform_from_double(
+                waveform_type=0, waveform_data_a=waveform)
+            self.instrument.load_waveform(waveform_object, waveform_idx)
 
     def load_waveform_queue(self, waveform_queue):
         self.instrument.flush_waveforms()
@@ -449,9 +451,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             waveform_points[-1] = final_voltage
         waveform = {
             'name': 'zero_pulse',
-            'waveform': self.instrument.new_waveform_from_double(
-                waveform_type=0, waveform_data_a=waveform_points),
-            'waveform_points': waveform_points,
+            'waveform': waveform_points,
             'points': points,
             'points_100MHz': int(points / 5) if prescaler == 0 else points * prescaler,
             'cycles': cycles,
@@ -584,9 +584,7 @@ class SinePulseImplementation(PulseImplementation):
 
             waveform_repeated_data = self.pulse.get_voltage(t_list_1) / 1.5
 
-            waveform_repeated['waveform'] = instrument.new_waveform_from_double(
-                waveform_type=0,
-                waveform_data_a=waveform_repeated_data)
+            waveform_repeated['waveform'] = waveform_repeated_data
             waveform_repeated['name'] = full_name
             waveform_repeated['points'] = waveform_samples
             waveform_repeated['cycles'] = waveform_repeated_cycles
@@ -599,9 +597,7 @@ class SinePulseImplementation(PulseImplementation):
             else:
                 waveform_tail_data = self.pulse.get_voltage(t_list_2) / 1.5
 
-                waveform_tail['waveform'] = instrument.new_waveform_from_double(
-                    waveform_type=0,
-                    waveform_data_a=waveform_tail_data)
+                waveform_tail['waveform'] = waveform_tail_data
                 waveform_tail['name'] = full_name + '_tail'
                 waveform_tail['points'] = waveform_tail_samples
                 waveform_tail['cycles'] = 1
@@ -653,9 +649,7 @@ class DCRampPulseImplementation(PulseImplementation):
 
         waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
-        waveform = {'waveform': instrument.new_waveform_from_double(
-            waveform_type=0, waveform_data_a=waveform_data),
-                    'waveform_points': waveform_data,
+        waveform = {'waveform': waveform_data,
                     'points': samples,
                     'points_100MHz': (int(samples / 5) if prescaler == 0
                                       else samples * prescaler),
@@ -687,10 +681,7 @@ class AWGPulseImplementation(PulseImplementation):
 
         waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
-        waveform = {'waveform': instrument.new_waveform_from_double(
-            waveform_type=0,
-            waveform_data_a=waveform_data),
-                    'waveform_points': waveform_data,
+        waveform = {'waveform': waveform_data,
                     'points': samples,
                     'points_100MHz': (int(samples / 5) if prescaler == 0
                                       else samples * prescaler),
@@ -721,9 +712,7 @@ class CombinationPulseImplementation(PulseImplementation):
 
         waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
-        waveform = {'waveform': instrument.new_waveform_from_double(
-            waveform_type=0, waveform_data_a=waveform_data),
-                    'waveform_points': waveform_data,
+        waveform = {'waveform': waveform_data,
                     'points': samples,
                     'points_100MHz': (int(samples / 5) if prescaler == 0
                                       else samples * prescaler),
