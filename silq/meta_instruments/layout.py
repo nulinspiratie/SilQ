@@ -1445,10 +1445,13 @@ class Layout(Instrument):
 
         return data
 
+    save_metadata=True
     def initialize_trace_file(self,
                               name: str,
                               folder: str = None,
-                              channels: List[str] = None):
+                              channels: List[str] = None,
+                              precision: Union[int, None] = 3,
+                              compression: int = 4):
         """Initialize an HDF5 file for saving traces
 
         Args:
@@ -1458,6 +1461,9 @@ class Layout(Instrument):
             channels: List of channel labels to acquire. The channel labels must
                 be defined as the second arg of an element in
                 ``Layout.acquisition_channels``
+            precision: Number of digits after the decimal points to retain.
+                Set to 0 for lossless compression
+            compression_level: gzip compression level, min=0, max=9
 
         Raises:
             AssertionError if folder is not provided and no active dataset
@@ -1483,29 +1489,32 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
-        file.attrs['samples'] = self.samples()
-        file.attrs['pulse_sequence'] = self.pulse_sequence._JSONEncoder()
-        file.attrs['pulse_shapes'] = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+        if self.save_metadata:
+            file.attrs['sample_rate'] = self.sample_rate
+            file.attrs['samples'] = self.samples()
+            file.attrs['pulse_sequence'] = self.pulse_sequence._JSONEncoder()
+            file.attrs['pulse_shapes'] = self.pulse_sequence.get_trace_shapes(
+                sample_rate=self.sample_rate, samples=self.samples())
 
         # Create traces group and initialize arrays
         file.create_group('traces')
         data_shape = active_loop.loop_shape[ActiveLoop.action_indices]
         # Data is saved in chunks, which is one acquisition
-        data_chunk = (self.samples(), self.acquisition_interface.points_per_trace())
-        data_shape += data_chunk
+        data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
         for channel in channels:
-            file.create_dataset(name=channel, shape=data_shape, dtype=float,
-                                chunks=data_chunk, compression='gzip')
-
+            file['traces'].create_dataset(name=channel, shape=data_shape,
+                                          dtype=float, scaleoffset=precision,
+                                          chunks=True, compression='gzip',
+                                          compression_opts=compression)
         file.flush()
         return file
 
     def save_traces(self,
                     name: str = None,
                     folder: str = None,
-                    channels: str = None):
+                    channels: str = None,
+                    precision: Union[int, None] = 3,
+                    compression: int = 4):
         """Save traces to an HDF5 file.
 
         The HDF5 file contains a group 'traces', which contains a dataset for
