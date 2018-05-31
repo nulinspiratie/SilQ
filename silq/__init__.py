@@ -268,6 +268,7 @@ def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
             if stop:
                 layout.stop()
                 logger.info('Stopped layout at end of loop')
+                layout.close_trace_files()
         except KeyError:
             logger.warning(f'No layout found to stop')
 
