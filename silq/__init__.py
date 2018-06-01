@@ -4,6 +4,7 @@ import os
 import warnings
 import logging
 import json
+import h5py
 
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
@@ -227,6 +228,35 @@ def _save_config(self, location=None):
     except Exception as e:
         logger.error(f'Datasaving error: {e.args}')
 qc.DataSet.save_config = _save_config
+
+
+def _load_traces(self, name=None):
+    """Load traces HDF5 file from a dataset
+
+    Args:
+        name: Optional name to specify traces file. Should be used if more than
+            one parameter is used in the measurement that saves traces.
+        """
+    data_path = self.io.to_path(self.location)
+    trace_path = os.path.join(data_path, 'traces')
+    trace_filenames = os.listdir(trace_path)
+    assert trace_filenames, f"No trace files found in {traces_path}"
+
+    if name is None and len(trace_filenames) == 1:
+        trace_filename = trace_filenames[0]
+    else:
+        assert name is not None, f"No unique trace file found: {trace_filenames}. " \
+                                 "Trace filename must be provided"
+        filtered_trace_filenames = [filename for filename in trace_filenames
+                                    if name in filename]
+        assert len(filtered_trace_filenames) == 1, \
+            f"No unique trace file found: {trace_filenames}."
+        trace_filename = filtered_trace_filenames[0]
+
+    trace_filepath = os.path.join(trace_path, trace_filename)
+    trace_file = h5py.File(trace_filepath, 'r')
+    return trace_file
+qc.DataSet.load_traces = _load_traces()
 
 
 # parameter.sweep
