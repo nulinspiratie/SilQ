@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import numpy as np
 from collections import OrderedDict, Iterable
 from copy import copy
@@ -328,7 +328,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
-    def plot_traces(self, filter=None, channels=['output'], **kwargs):
+    def plot_traces(self, filter=None, channels=['output'],
+                    t_skip: Union[bool, float] = True,
+                    **kwargs):
+
         plot_traces = OrderedDict()
         for pulse_name, trace in self.traces.items():
             if filter is not None:
@@ -338,6 +341,13 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                     continue
 
             plot_traces[pulse_name] = trace
+
+        if t_skip is False:
+            start_idx = 0
+        elif t_skip is True:
+            start_idx = int(self.sample_rate * self.t_skip)
+        else:
+            start_idx = int(self.sample_rate * t_skip)
 
         if len(channels) > 1:
             subplots = (len(plot_traces), len(channels))
@@ -353,10 +363,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 t_list = np.linspace(0, pts / self.sample_rate, pts,
                                      endpoint=False)
                 if trace_arr.ndim == 2:
-                    plot[k].add(traces[channel], x=t_list,
+                    plot[k].add(traces[channel][:,start_idx:], x=t_list[start_idx:],
                                 y=np.arange(trace_arr.shape[0], dtype=float))
                 else:
-                    plot[k].add(traces[channel], x=t_list)
+                    plot[k].add(traces[channel][start_idx:], x=t_list[start_idx:])
                 plot[k].set_xlabel('Time (s)')
                 plot[k].set_title(pulse_name)
                 k += 1
