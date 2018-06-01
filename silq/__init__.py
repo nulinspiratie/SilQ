@@ -256,7 +256,7 @@ def _load_traces(self, name=None):
     trace_filepath = os.path.join(trace_path, trace_filename)
     trace_file = h5py.File(trace_filepath, 'r')
     return trace_file
-qc.DataSet.load_traces = _load_traces()
+qc.DataSet.load_traces = _load_traces
 
 
 # parameter.sweep
