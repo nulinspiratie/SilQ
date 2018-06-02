@@ -1556,6 +1556,7 @@ class Layout(Instrument):
             ch = next(ch_pair[0] for ch_pair in self.acquisition_channels()
                       if ch_pair[1] == channel)
             trace_file['traces'][channel][active_loop.loop_indices] = traces[ch]
+        trace_file.attrs['final_loop_indices'] = active_loop.loop_indices
 
         return trace_file
 
