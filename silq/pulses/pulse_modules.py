@@ -350,7 +350,7 @@ class PulseSequence(ParameterNode):
             return False
 
         for parameter_name, parameter in self.parameters.items():
-            if not hasattr(other.parameters, parameter_name):
+            if not parameter_name in other.parameters:
                 return False
             elif parameter() != getattr(other, parameter_name):
                 return False
@@ -361,7 +361,18 @@ class PulseSequence(ParameterNode):
         return not self.__eq__(other)
 
     def __copy__(self, *args):
-        return deepcopy(self)
+        # Temporarily remove pulses from parameter so they won't be deepcopied
+        pulses = self.pulses
+        self.parameters['pulses']._latest['value'] = []
+        self.parameters['pulses']._latest['raw_value'] = []
+
+        self_copy = super().__copy__()
+
+        self.parameters['pulses']._latest['value'] = pulses
+        self.parameters['pulses']._latest['raw_value'] = pulses
+
+        self_copy.pulses = [copy(pulse) for pulse in self.pulses]
+        return self_copy
 
     def _ipython_key_completions_(self):
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
