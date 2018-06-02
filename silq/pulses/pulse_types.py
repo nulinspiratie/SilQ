@@ -135,7 +135,7 @@ class Pulse(ParameterNode):
         self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
                             set_cmd=None)
         self.full_name = Parameter()
-        self.full_name
+        self.full_name  # Update to latest value
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
