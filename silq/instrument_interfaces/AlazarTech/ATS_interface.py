@@ -134,11 +134,19 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='acquisition_channels',
                            set_cmd=None,
                            initial_value=[],
-                           vals=vals.Anything())
+                           vals=vals.Anything(),
+                           docstring='Names of acquisition channels '
+                                     '[chA, chB, etc.]. Set by the layout')
 
         self.add_parameter(name='samples',
                            set_cmd=None,
-                           initial_value=1)
+                           initial_value=1,
+                           docstring='Number of times to acquire the pulse '
+                                     'sequence.')
+
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: self._acquisition_controller.samples_per_trace(),
+                           docstring='Number of points in a trace.')
 
         self.add_parameter(name='trigger_channel',
                            set_cmd=None,
@@ -156,7 +164,22 @@ class ATSInterface(InstrumentInterface):
                            unit='samples/sec',
                            get_cmd=partial(self.setting, 'sample_rate'),
                            set_cmd=lambda x:self.update_settings(sample_rate=x),
-                           vals=vals.Numbers())
+                           vals=vals.Numbers(),
+                           docstring='Acquisition sampling rate (Hz)')
+
+        self.add_parameter('capture_full_trace',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           set_cmd=None,
+                           docstring='Capture from t=0 to end of pulse '
+                                     'sequence. False by default, in which '
+                                     'case start and stop times correspond to '
+                                     'min(t_start) and max(t_stop) of all '
+                                     'pulses with the flag acquire=True, '
+                                     'respectively.')
+
+        self.traces = {}
+        self.pulse_traces = {}
 
     @property
     def _acquisition_controller(self):
@@ -218,8 +241,11 @@ class ATSInterface(InstrumentInterface):
             return []
         elif self.acquisition_controller() == 'Triggered':
             # Add a single trigger pulse when starting acquisition
-            t_start = min(pulse.t_start for pulse in
-                          self.pulse_sequence.get_pulses(acquire=True))
+            if not self.capture_full_trace():
+                t_start = min(pulse.t_start for pulse in
+                              self.pulse_sequence.get_pulses(acquire=True))
+            else:
+                t_start = 0
             return [TriggerPulse(t_start=t_start,
                                  connection_requirements={
                                      'input_instrument': self.instrument_name(),
@@ -379,10 +405,15 @@ class ATSInterface(InstrumentInterface):
         """
         # Get duration of acquisition. Use flag acquire=True because
         # otherwise initialization Pulses would be taken into account as well
-        t_start = min(pulse.t_start for pulse in
-                      self.pulse_sequence.get_pulses(acquire=True))
-        t_stop = max(pulse.t_stop for pulse in
-                     self.pulse_sequence.get_pulses(acquire=True))
+        if not self.capture_full_trace():
+            t_start = min(pulse.t_start for pulse in
+                          self.pulse_sequence.get_pulses(acquire=True))
+            t_stop = max(pulse.t_stop for pulse in
+                         self.pulse_sequence.get_pulses(acquire=True))
+        else:  # Capture from t = 0 to end of pulse sequence.
+            t_start = 0
+            t_start = self.pulse_sequence.duration
+
         acquisition_duration = t_stop - t_start
 
         samples_per_trace = self.sample_rate() * acquisition_duration
@@ -491,9 +522,8 @@ class ATSInterface(InstrumentInterface):
         """
         traces = self._acquisition_controller.acquisition()
         # Convert list of channel traces to a {ch_id: trace} dict
-        traces_dict = {
-            ch: trace for ch, trace in zip(self.acquisition_channels(), traces)}
-        pulse_traces = self.segment_traces(traces_dict)
+        self.traces = {ch: trace for ch, trace in zip(self.acquisition_channels(), traces)}
+        self.pulse_traces = self.segment_traces(self.traces)
         return pulse_traces
 
     def segment_traces(self, traces: Dict[str, np.ndarray]):

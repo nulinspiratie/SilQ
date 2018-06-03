@@ -6,15 +6,19 @@ from copy import copy
 import pickle
 from time import sleep
 from typing import Union, List, Sequence, Dict, Any
+import h5py
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import PulseSequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
+import qcodes as qc
 from qcodes import Instrument, FormatLocation
+from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
 from qcodes.data.io import DiskIO
+from qcodes.data.hdf5_format import HDF5Format
 
 logger = logging.getLogger(__name__)
 
@@ -515,7 +519,7 @@ class Layout(Instrument):
                            vals=vals.Enum(*self._interfaces.keys()))
         self.add_parameter('acquisition_channels',
                            set_cmd=None,
-                           vals=vals.Anything())
+                           vals=vals.Lists())
 
         self.add_parameter(name='samples',
                            set_cmd=None,
@@ -525,6 +529,12 @@ class Layout(Instrument):
                            set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool())
+
+        self.add_parameter('save_trace_channels',
+                           set_cmd=None,
+                           initial_value=['output'],
+                           vals=vals.Lists(vals.Strings())
+                           )
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -544,6 +554,8 @@ class Layout(Instrument):
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
 
         self.acquisition_shapes = {}
+
+        self.trace_files = {}
 
     @property
     def pulse_sequence(self):
@@ -1152,10 +1164,11 @@ class Layout(Instrument):
         # triggering instruments (e.g. triggering pulses that can only be
         # defined once all other pulses have been given)
         for interface in self._get_interfaces_hierarchical():
-            additional_pulses = interface.get_additional_pulses(
-                connections=self.connections)
-            for pulse in additional_pulses:
-                self._target_pulse(pulse)
+            if interface.pulse_sequence or interface == self.acquisition_interface:
+                additional_pulses = interface.get_additional_pulses(
+                    connections=self.connections)
+                for pulse in additional_pulses:
+                    self._target_pulse(pulse)
 
         # Update pulse sequence
         self._pulse_sequence = copy(pulse_sequence)
@@ -1313,7 +1326,8 @@ class Layout(Instrument):
             self.acquisition_shapes[pulse_name] = {
                 label: shape for label in output_labels}
 
-    def start(self, auto_stop: Union[bool, float] = False):
+    def start(self, auto_stop: Union[bool, float] = False,
+              ignore: List[str] = ()):
         """Starts all the instruments except the acquisition instrument.
 
         The interface start order is by hierarchy, i.e. instruments that trigger
@@ -1324,6 +1338,7 @@ class Layout(Instrument):
                 If not specified, uses value from flags (default is False).
                 If set to True, waits 3 times the pulse sequence duration
                 If set to a value, waits for that amount of seconds.
+            ignore: List of instrument names not to start
 
         Note:
             Does not start instruments that have the flag ``skip_start``
@@ -1335,6 +1350,8 @@ class Layout(Instrument):
             elif interface.instrument_name() in self.flags['skip_start']:
                 logger.info('Skipping starting {interface.name} (flag skip_start)')
                 continue
+            elif interface.instrument_name() in ignore:
+                logger.info('Skipping starting {interface.name} (name in ignore list)')
             elif interface in self.flags['start_last']:
                 logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
@@ -1378,7 +1395,8 @@ class Layout(Instrument):
         logger.debug('Layout stopped')
 
     def acquisition(self,
-                    stop: bool = True) -> Dict[str, Dict[str, np.ndarray]]:
+                    stop: bool = True,
+                    save_traces: bool = False) -> Dict[str, Dict[str, np.ndarray]]:
         """Performs an acquisition.
 
         By default this includes starting and stopping of all the instruments.
@@ -1386,6 +1404,7 @@ class Layout(Instrument):
         Args:
             stop: Whether to stop instruments after finishing
                 measurements (True by default)
+            save_traces: Whether to save unsegmented acquisition traces
 
         Returns:
             Dictionary of the form
@@ -1393,6 +1412,9 @@ class Layout(Instrument):
 
         Note:
             Stops all instruments if an error occurs during acquisition.
+
+        See Also:
+            `Layout.save_traces`
         """
         try:
             logger.info(f'Performing acquisition, stop when finished: {stop}')
@@ -1418,9 +1440,135 @@ class Layout(Instrument):
                     output_label = next(item[1] for item in self.acquisition_channels()
                                         if item[0] == channel)
                     data[pulse][output_label] = trace
+
+            if save_traces:
+                self.save_traces()
         except:
             # If any error occurs, stop all instruments
             self.stop()
             raise
 
         return data
+
+    def initialize_trace_file(self,
+                              name: str,
+                              folder: str = None,
+                              channels: List[str] = None,
+                              precision: Union[int, None] = 3,
+                              compression: int = 4):
+        """Initialize an HDF5 file for saving traces
+
+        Args:
+            name: Name of trace file.
+            folder: Folder path for trace file. If not set, the folder of the
+                active loop dataset is used, with subfolder 'traces'.
+            channels: List of channel labels to acquire. The channel labels must
+                be defined as the second arg of an element in
+                ``Layout.acquisition_channels``
+            precision: Number of digits after the decimal points to retain.
+                Set to 0 for lossless compression
+            compression_level: gzip compression level, min=0, max=9
+
+        Raises:
+            AssertionError if folder is not provided and no active dataset
+        """
+        if channels is None:
+            channels = self.save_trace_channels()
+
+        active_loop = qc.active_loop()
+        assert active_loop is not None, "No active loop found for saving traces"
+
+        if folder is None:
+            dataset = qc.active_data_set()
+            assert dataset is not None, "No dataset found to save traces to. " \
+                                        "Set add_to_dataset=False to save to " \
+                                        "separate folder."
+            dataset_path = dataset.io.to_path(dataset.location)
+            folder = os.path.join(dataset_path, 'traces')
+            if not os.path.isdir(folder):  # Create traces subfolder if necessary
+                os.mkdir(folder)
+        # Create new hdf5 file
+        filepath = os.path.join(folder, f'{name}.hdf5')
+        assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
+        file = h5py.File(filepath, 'w')
+
+        # Save metadata to traces file
+        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['samples'] = self.samples()
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_sequence': self.pulse_sequence._JSONEncoder()}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
+                sample_rate=self.sample_rate, samples=self.samples())}, file)
+
+        # Create traces group and initialize arrays
+        file.create_group('traces')
+        data_shape = active_loop.loop_shape[active_loop.action_indices]
+        # Data is saved in chunks, which is one acquisition
+        data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
+        for channel in channels:
+            file['traces'].create_dataset(name=channel, shape=data_shape,
+                                          dtype=float, scaleoffset=precision,
+                                          chunks=True, compression='gzip',
+                                          compression_opts=compression)
+        file.flush()
+        return file
+
+    def save_traces(self,
+                    name: str = None,
+                    folder: str = None,
+                    channels: str = None,
+                    precision: Union[int, None] = 3,
+                    compression: int = 4):
+        """Save traces to an HDF5 file.
+
+        The HDF5 file contains a group 'traces', which contains a dataset for
+        each channel. These datasets can be massive depending on the size of the
+        loop, but shouldn't be an issue since HDF5 can save/load portions of the
+        dataset.
+
+        Args:
+            name: Name of trace file.
+                If not set, the name of the current loop parameter is used
+            folder: Folder path for trace file. If not set, the folder of the
+                active loop dataset is used, with subfolder 'traces'.
+            channels: List of channel labels to acquire. The channel labels must
+                be defined as the second arg of an element in
+                ``Layout.acquisition_channels``"""
+        if channels is None:
+            channels = self.save_trace_channels()
+
+        active_loop = qc.active_loop()
+        assert active_loop is not None, "No active loop found for saving traces"
+
+        # Create unique action traces name
+        if name is None:  # Set name to current loop action
+            active_action = active_loop.active_action
+            action_indices = active_loop.action_indices
+            action_indices_str = '_'.join(map(str, action_indices))
+            name = f"{active_action.name}_{action_indices_str}"
+
+        if name in self.trace_files:  # Use existing trace file
+            trace_file = self.trace_files[name]
+        else:  # Create new trace file
+            trace_file = self.initialize_trace_file(name=name, folder=folder)
+            self.trace_files[name] = trace_file
+
+        traces = self.acquisition_interface.traces
+        for channel in channels:
+            # Get corresponding acquisition output channel name (chA etc.)
+            ch = next(ch_pair[0] for ch_pair in self.acquisition_channels()
+                      if ch_pair[1] == channel)
+            trace_file['traces'][channel][active_loop.loop_indices] = traces[ch]
+
+        return trace_file
+
+    def close_trace_files(self) -> None:
+        """Close all opened HDF5 trace files.
+
+         See also:
+             Layout.save_traces
+        """
+        for trace_file in self.trace_files.values():
+            trace_file.close()
+        self.trace_files.clear()

@@ -658,6 +658,7 @@ class FrequencyRampPulse(Pulse):
                  frequency_deviation: float = None,
                  amplitude: float = None,
                  power: float = None,
+                 phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
                  **kwargs):
@@ -665,7 +666,7 @@ class FrequencyRampPulse(Pulse):
 
         if frequency_start is not None and frequency_stop is not None:
             frequency = (frequency_start + frequency_stop) / 2
-            frequency_deviation = (frequency_stop - frequency_start)
+            frequency_deviation = (frequency_stop - frequency_start) / 2
 
         self.frequency = Parameter(initial_value=frequency, unit='Hz',
                                    set_cmd=None, vals=vals.Numbers())
@@ -690,6 +691,10 @@ class FrequencyRampPulse(Pulse):
             ['frequency', 'frequency_deviation', 'frequency_start',
              'frequency_stop', 'frequency_sideband', 'sideband_mode',
              'amplitude', 'power'])
+
+        self.amplitude = self._value_or_config('amplitude', amplitude)
+        self.phase = self._value_or_config('phase', phase, 0)
+        self.power = self._value_or_config('power', power)
 
         # Set default value for sideband_mode after connecting parameters,
         # because its value may have been retrieved from config
@@ -843,7 +848,7 @@ class TriggerPulse(Pulse):
 
     """
     default_duration = 100e-9
-    default_amplitude = 1
+    default_amplitude = 1.0
 
     def __init__(self,
                  name: str = 'trigger',
@@ -892,12 +897,11 @@ class MarkerPulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
 
     """
-
     default_amplitude = 1.0
 
     def __init__(self,
                  name: str = None,
-                 amplitude: float = None,
+                 amplitude: float = default_amplitude,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
