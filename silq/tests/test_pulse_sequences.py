@@ -120,7 +120,6 @@ class TestPulseSequence(unittest.TestCase):
             Pulse('pulse1', duration=1, connection_label='connection'),
             Pulse('pulse1', duration=2)
         )
-
         retrieved_pulse = pulse_sequence.get_pulse(
             connection_label='connection')
         self.assertEqual(retrieved_pulse, pulse1)
