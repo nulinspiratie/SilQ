@@ -196,7 +196,7 @@ def initialize(name: str = None,
                     exec(exec_line+"\n", globals, locals)
                 except:
                     raise RuntimeError(f'SilQ initialization error in '
-                                       f'{filepath}')
+                                       f'{filepath} line {exec_line}')
 
     print("Initialization complete")
 
@@ -276,6 +276,7 @@ def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
             if stop:
                 layout.stop()
                 logger.info('Stopped layout at end of loop')
+                layout.close_trace_files()
         except KeyError:
             logger.warning(f'No layout found to stop')
 

@@ -29,8 +29,10 @@ def get_instrument_interface(instrument):
                     'class':'Keysight_SD_FPGA_Interface'},
         'Tektronix_AWG520': {'module': '.Tektronix.AWG520_interface',
                              'class': 'AWG520Interface'},
-        'TriggerFPGAController': {'module': '.keysight.fpga_controllers',
-                                  'class': 'TriggerFPGAInterface'}
+        'TriggerFPGAController': {'module': '.keysight.fpga_interfaces.trigger_FPGA_interface',
+                                  'class': 'TriggerFPGAInterface'},
+        'PCDDS': {'module': '.keysight.fpga_interfaces.PCDDS_interface',
+                  'class': 'PCDDSInterface'}
     }
 
     instrument_class = instrument.__class__.__name__
