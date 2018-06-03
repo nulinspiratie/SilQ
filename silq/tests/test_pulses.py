@@ -107,6 +107,13 @@ class TestPulse(unittest.TestCase):
                          snapshot.pop('__class__'))
         self.assertFalse(snapshot)
 
+    def test_pulse_parameter_name(self):
+        pulse = DCPulse('pulse1', amplitude=10)
+        self.assertEqual(str(pulse['amplitude']), 'pulse1_amplitude')
+
+        pulse_no_name = DCPulse(amplitude=10)
+        self.assertEqual(str(pulse_no_name['amplitude']), 'None_amplitude')
+
 
 class TestPulseSignals(unittest.TestCase):
     def test_signal_emit(self):
