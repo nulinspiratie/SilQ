@@ -2,6 +2,8 @@ import logging
 import unittest
 from copy import copy, deepcopy
 
+from silq.meta_instruments.layout import SingleConnection
+from silq.instrument_interfaces.interface import Channel
 from silq.pulses import DCPulse, Pulse
 from silq.tools.config import *
 import silq
@@ -104,6 +106,13 @@ class TestPulse(unittest.TestCase):
         self.assertEqual('silq.pulses.pulse_types.DCPulse',
                          snapshot.pop('__class__'))
         self.assertFalse(snapshot)
+
+    def test_pulse_parameter_name(self):
+        pulse = DCPulse('pulse1', amplitude=10)
+        self.assertEqual(str(pulse['amplitude']), 'pulse1_amplitude')
+
+        pulse_no_name = DCPulse(amplitude=10)
+        self.assertEqual(str(pulse_no_name['amplitude']), 'None_amplitude')
 
 
 class TestPulseSignals(unittest.TestCase):
@@ -252,8 +261,24 @@ class TestPulseEquality(unittest.TestCase):
         self.assertEqual(p, p_copy)
 
     def test_pulse_differing_connections(self):
-        self.assertTrue(False)
-        # TODO also check for connection + connection label
+        connection = SingleConnection(output_instrument='ins1',
+                                      output_channel=Channel('ins1', 'ch1'),
+                                      input_instrument='ins2',
+                                      input_channel=Channel('ins2', 'ch1'))
+
+        p_no_connection = Pulse()
+        p_connection_label = Pulse(connection_label='arb')
+        p_connection = Pulse(connection=connection)
+
+        self.assertNotEqual(p_no_connection, p_connection_label)
+        self.assertNotEqual(p_no_connection, p_connection)
+        self.assertNotEqual(p_connection_label, p_connection)
+
+        connection.label = 'arb'
+        self.assertNotEqual(p_no_connection, p_connection_label)
+        self.assertNotEqual(p_no_connection, p_connection)
+        self.assertEqual(p_connection_label, p_connection)
+
 
 class TestPulseLogging(unittest.TestCase):
     def setUp(self):
