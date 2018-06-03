@@ -258,10 +258,6 @@ def initialize(name: str = None,
     if not silent:
         print("Initialization complete")
 
-    if 'environment' in config.properties:
-        logger.info(f'Initialization: environment set to '
-                    f'{config.properties.environment}')
-
     if 'data_folder' in config.properties:
         logger.debug(f'using config data folder: '
                      f'{config.properties.data_folder}')
