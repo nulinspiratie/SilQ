@@ -258,7 +258,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             in it are saved as a JSON file. If True, SubConfig is saved as a
             folder, each dict key being a separate JSON file.
     """
-    exclude_from_dict = ['name', 'folder', 'parent',
+    exclude_from_dict = ['name', 'folder', 'parent', 'initializing',
                          'signal', '_signal_chain', '_signal_modifiers',
                          '_mirrored_config_attrs', '_inherited_configs',
                          'save_as_dir', 'config_path']
@@ -271,6 +271,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                  parent: SubConfig = None,
                  config: dict = None,
                  save_as_dir: bool = None):
+        self.initializing = True
         self._mirrored_config_attrs = {}
         self._inherited_configs = []
 
@@ -279,11 +280,13 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
         DotDict.__init__(self)
         SignalEmitter.__init__(self, initialize_signal=False)
 
-
         if config is not None:
             update_dict(self, config)
         elif folder is not None:
             self.load()
+
+        if self.parent is None:
+            self._attach_mirrored_items()
 
     def __contains__(self, key):
         if DotDict.__contains__(self, key):
@@ -352,13 +355,25 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             elif isinstance(val, dict):
                 # First set item, then update the dict. This avoids circular
                 # referencing from mirrored attributes
-                dict.__setitem__(self, key, DictConfig(name=key, parent=self))
+                sub_dict = DictConfig(name=key, parent=self)
+                dict.__setitem__(self, key, sub_dict)
                 update_dict(self[key], val)
+                # If self.initializing, sub_dict._attach_mirrored_items will be
+                # called at the end of initialization, otherwise call now
+                if not self.initializing:
+                    sub_dict._attach_mirrored_items()
             elif isinstance(val, list):
                 dict.__setitem__(self, key, ListConfig(name=key, parent=self))
                 self[key] += val
             else:
                 dict.__setitem__(self, key, val)
+                if (self.initializing
+                        and (key == 'inherit'
+                             or (isinstance(val, str)
+                                 and (val.startswith('config:')
+                                      or val.startswith('environment:'))))):
+                    return
+
                 if key == 'inherit':
                     if (val.startswith('config:') or val.startswith('environment:')):
                         config_path = val
@@ -452,6 +467,25 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             except KeyError:
                 pass
         return updated_target_paths
+
+    def _attach_mirrored_items(self):
+        """Attach mirrored items, to be done at the end of initialization.
+
+        Mirrored items are those that inherit, or whose values start with
+        ``config:`` or ``environment:``
+
+        Note:
+            Attribute ``initializing`` will be set to False
+            """
+        self.initializing = False
+        for key, val in self.items(dependent_value=False):
+            if isinstance(val, DictConfig):
+                val._attach_mirrored_items()
+            elif (key == 'inherit'
+                  or (isinstance(val, str)
+                      and (val.startswith('config:')
+                           or val.startswith('environment:')))):
+                self[key] = val
 
     def values(self):
         return [self[key] for key in self.keys()]
