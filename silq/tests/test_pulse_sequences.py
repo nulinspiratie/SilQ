@@ -120,7 +120,6 @@ class TestPulseSequence(unittest.TestCase):
             Pulse('pulse1', duration=1, connection_label='connection'),
             Pulse('pulse1', duration=2)
         )
-
         retrieved_pulse = pulse_sequence.get_pulse(
             connection_label='connection')
         self.assertEqual(retrieved_pulse, pulse1)
@@ -289,6 +288,15 @@ class TestPulseSequence(unittest.TestCase):
             self.assertEqual(pulse_snapshot, pulse_sequence.pulses[k].snapshot())
 
 
+class TestCopyPulseSequence(unittest.TestCase):
+    def test_copy_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence_copy = copy(pulse_sequence)
+
+        pulse_sequence.duration = 10
+        self.assertNotEqual(pulse_sequence_copy.duration, 10)
+
+
 class TestPulseSequenceEquality(unittest.TestCase):
     def test_empty_pulse_sequence_equality(self):
         pulse_sequence = PulseSequence()
@@ -329,6 +337,23 @@ class TestPulseSequenceEquality(unittest.TestCase):
 
         self.assertEqual(pulse_sequence_copy_2, PulseSequence([pulse]))
 
+    def test_pulse_signalling_after_copy(self):
+        pulse_sequence = PulseSequence()
+        pulse, = pulse_sequence.add(DCPulse('read', duration=1, amplitude=2))
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.disabled_pulses, [])
+
+        pulse.enabled = False
+        self.assertEqual(pulse_sequence.enabled_pulses, [])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+
+        pulse_sequence_copy = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence.enabled_pulses, [])
+        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+
+        pulse.enabled = True
+        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.disabled_pulses, [])
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
