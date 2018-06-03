@@ -98,6 +98,16 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(dict.__getitem__(config_loaded.pulses.read2, 't_stop'),
                          'config:pulses.read.t_stop')
 
+    def test_load_dependent(self):
+        self.d = {
+            't_start': 'config:pulses.read.t_start',
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2']}
+        config = DictConfig('env1', folder=self.folder.name,
+                                 config=self.d)
+
     def test_refresh_add_list_config(self):
         self.d['x'] = [1,2,3]
         self.config.refresh(config=self.d)
