@@ -135,7 +135,7 @@ class Pulse(ParameterNode):
         self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
                             set_cmd=None)
         self.full_name = Parameter()
-        self.full_name  # Update to latest value
+        self['full_name'].get()  # Update to latest value
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
@@ -220,47 +220,51 @@ class Pulse(ParameterNode):
             self['duration'].set(round(t_stop - self.t_start, 11),
                                  evaluate=False)
 
-    def _matches_parameters(self, other_pulse, exclude_parameters=[]):
-        for parameter_name, parameter in self.parameters.items():
-            if parameter_name in exclude_parameters:
-                continue
-            elif not parameter_name in other_pulse.parameters \
-                    or getattr(self, parameter_name) != getattr(other_pulse, parameter_name):
-                return False
-        else:
-            return True
-
     def __eq__(self, other):
-        """Overwrite comparison with other (self == other).
+        """Comparison when pulses are equal
 
-        We want the comparison to return True if other is a pulse with the
-        same attributes. This can be complicated since pulses can also be
-        targeted, resulting in a pulse implementation. We therefore have to
-        use a separate comparison when either is a Pulse implementation
-        Args:
-            other:
+        Pulses are equal if all of their parameters (excluding list below) are
+        equal. Furthermore, their classes need to be identical, which further
+        means that any non-pulse object will never be equal.
+
+        Connections are handled slightly differently. For pulses to be the same,
+        they must either have the same connection or connection_label.
+        Alternatively, if one pulse has a connection and the other a connection
+        label, the label of the first pulse's connection is compared instead.
+        If one pulse has a connection/connection label, and the other has
+        neither, the pulses are not equal.
+
+        Excluded parameters:
+            - id
+            - connection_requirements
 
         Returns:
-
+            True if all above conditions hold, False otherwise.
         """
-        exclude_parameters = ['connection', 'id', 'full_name']
+        exclude_parameters = ['connection', 'connection_label', 'id', 'full_name']
 
-        if not isinstance(other, self.__class__):
+        if not self.matches_parameter_node(other, exclude_parameters=exclude_parameters):
             return False
 
-        if not self._matches_parameters(other, exclude_parameters=exclude_parameters):
-            return False
-
-        # Perform additional checks if either self or other has an implementation
-        if self.implementation is None:
-            if other.implementation is None:
-                return True
+        # Perform additional checks based on connection (labels).
+        # Pulses are equal if they have the same connection, or has a matching
+        # label, or if both pulses don't have a connection and connection label.
+        if self.connection is not None:
+            if other.connection is not None:
+                return self.connection == other.connection
+            elif other.connection_label is not None:
+                return self.connection.label == other.connection_label
             else:
-                return other.connection.satisfies_conditions(**self.connection_requirements)
-        elif other.implementation is None:
-            return self.connection.satisfies_conditions(**other.connection_requirements)
-        else: # Both have an implementation
-            return self.connection == other.connection
+                return False
+        elif self.connection_label is not None:
+            if other.connection is not None:
+                return self.connection_label == other.connection.label
+            elif other.connection_label is not None:
+                return self.connection_label == other.connection_label
+            else:
+                return False
+        else:
+            return other.connection is None and other.connection_label is None
 
     def __ne__(self, other):
         return not self.__eq__(other)
