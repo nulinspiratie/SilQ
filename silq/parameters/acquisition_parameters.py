@@ -15,9 +15,8 @@ from qcodes import Instrument, MatPlot
 from silq import config
 from silq.pulses import *
 from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
-    T2ElectronPulseSequence
+    T2ElectronPulseSequence, FlipFlopPulseSequence
 from silq.analysis import analysis
-from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
     property_ignore_setter
@@ -25,7 +24,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'VariableReadParameter',
-           'BlipsParameter', 'FlipNucleusParameter',
+           'BlipsParameter', 'FlipNucleusParameter', 'FlipFlopParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)
@@ -1989,6 +1988,32 @@ class FlipNucleusParameter(AcquisitionParameter):
             self.setup(repeat=False)
             self.layout.start()
             self.layout.stop()
+
+
+class FlipFlopParameter(AcquisitionParameter):
+    """Parameter for performing flip-flopping, not meant for acquiring data"""
+    def __init__(self, name='flip_flop', **kwargs):
+        super().__init__(name=name, wrap_set=False, names=[], shapes=(),
+                         **kwargs)
+        self.pulse_sequence = FlipFlopPulseSequence()
+
+        self.ESR = self.pulse_sequence.ESR
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+
+    def analyse(self, traces=None):
+        return
+
+    def set(self, frequencies=None, pre_flip=None):
+        if frequencies is not None:
+            self.ESR['frequencies'] = frequencies
+        if pre_flip is not None:
+            self.ESR['pre_flip'] = pre_flip
+
+        if frequencies is not None or pre_flip is not None:
+            self.pulse_sequence.generate()
+
+        return self.get()
 
 
 class BlipsParameter(AcquisitionParameter):
