@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 import logging
 from qcodes.data.data_array import DataArray
 
-__all__ = ['Fit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
-           'RabiFrequencyFit']
+__all__ = ['Fit', 'LinearFit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
+           'RabiFrequencyFit', 'AMSineFit']
 
 logger = logging.getLogger(__name__)
 
@@ -171,9 +171,9 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax, **kwargs):
+    def add_to_plot(self, ax, N=201, **kwargs):
         x_vals = next(iter(self.fit_result.userkws.values()))
-        x_vals_full = np.linspace(min(x_vals), max(x_vals), 201)
+        x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
         y_vals_full = self.fit_result.eval(
             **{self.sweep_parameter: x_vals_full})
         plot_kwargs = {**self.plot_kwargs, **kwargs}
@@ -181,6 +181,66 @@ class Fit():
                                   x=x_vals_full,
                                   **plot_kwargs)
         return self.plot_handle
+
+
+class LinearFit(Fit):
+    """Fitting class for an exponential function.
+
+        To fit data to a function, use the method `Fit.perform_fit`.
+        This will find its initial parameters via `Fit.find_initial_parameters`,
+        after which it will fit the data to `Fit.fit_function`.
+
+        Note:
+            The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+        """
+    sweep_parameter = 't'
+
+    @staticmethod
+    def fit_function(t: Union[float, np.ndarray],
+                     gradient: float,
+                     offset: float) -> Union[float, np.ndarray]:
+        """Exponential function using time as x-coordinate
+
+        Args:
+            t: Time.
+            gradient:
+            offset:
+
+        Returns:
+            linear data points
+        """
+        return gradient * t + offset
+
+    def find_initial_parameters(self,
+                                xvals: np.ndarray,
+                                ydata: np.ndarray,
+                                initial_parameters: dict) -> Parameters:
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        if initial_parameters is None:
+            initial_parameters = {}
+
+        parameters = Parameters()
+        if not 'gradient' in initial_parameters:
+            initial_parameters['gradient'] = (ydata[-1] - ydata[0]) / \
+                                            (xvals[-1] - xvals[0])
+        if not 'offset' in initial_parameters:
+            initial_parameters['offset'] = ydata[0]
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        return parameters
 
 
 class ExponentialFit(Fit):
@@ -315,6 +375,113 @@ class SineFit(Fit):
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
+        # Amplitude is a positive real.
+        parameters['amplitude'].set(min=0)
+
+        return parameters
+
+
+class AMSineFit(Fit):
+    sweep_parameter = 't'
+
+    @staticmethod
+    def fit_function(t: Union[float, np.ndarray],
+                     amplitude: float,
+                     frequency: float,
+                     phase: float,
+                     offset: float,
+                     amplitude_AM: float,
+                     frequency_AM: float,
+                     phase_AM: float,
+                     ) -> Union[float, np.ndarray]:
+        """ Amplitude-Modulated Sinusoidal fit using time as x-coordinates
+
+        Args:
+            t: Time
+            amplitude:
+            frequency:
+            phase:
+            offset:
+            amplitude_AM:
+            frequency_AM:
+            phase_AM:
+
+        Returns:
+            Amplitude-Modulated Sinusoidal data points
+        """
+        return (1 + amplitude_AM) * np.sin(
+            2 * np.pi * frequency_AM * t + phase_AM) \
+               * amplitude * np.sin(2 * np.pi * frequency * t + phase) + offset
+
+    def find_initial_parameters(self, xvals, ydata, initial_parameters={},
+                                plot=False):
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        parameters = Parameters()
+        if 'amplitude' not in initial_parameters:
+            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+
+        dt = (xvals[1] - xvals[0])
+        fft_flips = np.fft.fft(ydata)
+        fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips) / 2)]
+        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(
+            fft_flips) / 2)]
+        frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
+
+        if 'frequency' not in initial_parameters:
+            frequency = fft_freqs[frequency_idx]
+            initial_parameters['frequency'] = frequency
+
+            if plot:
+                plt.figure()
+                plt.plot(fft_freqs, fft_flips_abs, 'o')
+                plt.plot(frequency, fft_flips_abs[frequency_idx], 'o', ms=8)
+        if 'phase' not in initial_parameters:
+            phase = np.pi / 2 + np.angle(fft_flips[frequency_idx])
+            initial_parameters['phase'] = phase
+        if 'offset' not in initial_parameters:
+            initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+
+        if 'amplitude_AM' not in initial_parameters:
+            initial_parameters['amplitude_AM'] = 0.1
+
+        if 'frequency_AM' not in initial_parameters:
+            frequency_AM = fft_freqs[frequency_idx]
+            initial_parameters['frequency_AM'] = frequency_AM
+
+            if plot:
+                plt.figure()
+                plt.plot(fft_freqs, fft_flips_abs, 'o')
+                plt.plot(frequency_AM, fft_flips_abs[frequency_idx], 'o', ms=8)
+
+        if 'phase_AM' not in initial_parameters:
+            phase_AM = 0
+            initial_parameters['phase_AM'] = phase_AM
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        parameters['amplitude'].set(expr='(1-offset)/(1+amplitude_AM)')
+        parameters['amplitude_AM'].set(min=0, max=1)
+
+        parameters['frequency'].set(min=0, max=np.Inf)
+        parameters['frequency_AM'].set(min=0, max=np.Inf)
+
+        parameters['phase'].set(min=0, max=2 * np.pi)
+        parameters['phase_AM'].set(min=0, max=2 * np.pi)
+
+        parameters['offset'].set(min=0, max=1)
+
         return parameters
 
 
@@ -403,5 +570,8 @@ class RabiFrequencyFit(Fit):
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
+
+        parameters.add('f_Rabi', expr='gamma/2/pi')
+        # parameters.add('amplitude', expr='gamma^2/ Omega^2')
 
         return parameters
