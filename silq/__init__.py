@@ -110,10 +110,65 @@ def get_configurations() -> dict:
         return json.load(file)
 
 
+def execute_file(filepath, globals=None, locals=None):
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    with open(filepath, "r") as fh:
+        exec_line = fh.read()
+        try:
+            exec(exec_line + "\n", globals, locals)
+        except:
+            raise RuntimeError(
+                f'SilQ initialization error in {filepath} line {exec_line}')
+
+
+def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None):
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    experiments_folder = get_experiments_folder()
+
+    try:
+        configuration = next(val for key, val in get_configurations().items()
+                             if key.lower() == name.lower())
+    except StopIteration:
+        raise NameError(f'Configuration {name} not found. Allowed '
+                        f'configurations are {get_configurations().keys()}')
+    folder = os.path.join(experiments_folder, configuration['folder'])
+
+    scripts_folder = os.path.join(folder, 'scripts')
+    assert os.path.exists(scripts_folder), f"No scripts folder found at {scripts_folder}"
+
+    for script_file in os.listdir(scripts_folder):
+        script_filepath = os.path.join(scripts_folder, script_file)
+        # Only execute scripts in subfolders if folder name matches mode
+        if os.path.isdir(script_filepath):
+            if script_file == mode:
+                for subscript_file in os.listdir(script_filepath):
+                    subscript_filepath = os.path.join(script_filepath, subscript_file)
+
+                    if not silent:
+                        script_file_no_ext = os.path.splitext(script_file)[0]
+                        print(f'Running script {script_file}/{script_file_no_ext}')
+                    execute_file(subscript_filepath, globals=globals, locals=locals)
+        else:  # Execute file
+            if not silent:
+                script_file_no_ext = os.path.splitext(script_file)[0]
+                print(f'Running script {script_file_no_ext}')
+            execute_file(script_filepath, globals=globals, locals=locals)
+
+
 def initialize(name: str = None,
                mode: str = None,
                select: List[str] = [],
-               ignore: List[str] = []):
+               ignore: List[str] = [],
+               scripts=True,
+               silent=False):
     """Runs experiment initialization .py scripts.
 
     The initialization scripts should be in the ``init`` folder in the
@@ -133,11 +188,11 @@ def initialize(name: str = None,
     Notes:
         Scripts are run in the global namespace
     """
-    # Determine base folder by looking at the silq package
-
+    # Register globals and locals of the above frame (for code execution)
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
+    # Determine base folder by looking at the silq package
     experiments_folder = get_experiments_folder()
     configurations = get_configurations()
 
@@ -174,23 +229,22 @@ def initialize(name: str = None,
         # Remove prefix
         filename_no_prefix = filename.split('_', 1)[1]
         # Remove .py extension
-        filename_no_prefix = filename_no_prefix.rsplit('.', 1)[0]
+        filename_no_prefix = os.path.splitext(filename_no_prefix)[0]
         if select and filename_no_prefix not in select:
             continue
         elif ignore and filename_no_prefix in ignore:
             continue
         else:
-            print(f'Initializing {filename_no_prefix}')
+            if not silent:
+                print(f'Initializing {filename_no_prefix}')
             filepath = os.path.join(init_folder, filename)
-            with open(filepath, "r") as fh:
-                exec_line = fh.read()
-                try:
-                    exec(exec_line+"\n", globals, locals)
-                except:
-                    raise RuntimeError(f'SilQ initialization error in '
-                                       f'{filepath} line {exec_line}')
+            execute_file(filepath, globals=globals, locals=locals)
 
-    print("Initialization complete")
+    if scripts:
+        run_scripts(name=name, mode=mode, globals=globals, locals=locals)
+
+    if not silent:
+        print("Initialization complete")
 
     if 'default_environment' not in config.properties:
         warnings.warn("'default_environment' should be specified "
