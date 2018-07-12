@@ -261,7 +261,7 @@ qc.DataSet.load_traces = _load_traces
 
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
-          step_percentage=None, window=None):
+          step_percentage=None, window=None, fix=True):
     if step_percentage is None and window is None:
         if start is None or stop is None:
             raise RuntimeError('Must provide start and stop')
@@ -271,7 +271,7 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
     else:
         return SweepDependentValues(parameter=self, step=step,
                                     step_percentage=step_percentage, num=num,
-                                    window=window)
+                                    window=window, fix=fix)
 qc.Parameter.sweep = _sweep
 
 
@@ -298,7 +298,8 @@ def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
             if stop:
                 layout.stop()
                 logger.info('Stopped layout at end of loop')
-                layout.close_trace_files()
+                if set_active:
+                    layout.close_trace_files()
         except KeyError:
             logger.warning(f'No layout found to stop')
 
