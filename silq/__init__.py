@@ -5,6 +5,8 @@ import warnings
 import logging
 import json
 import h5py
+import pickle
+from time import strptime
 
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
@@ -311,6 +313,39 @@ def _load_traces(self, name=None):
     trace_file = h5py.File(trace_filepath, 'r')
     return trace_file
 qc.DataSet.load_traces = _load_traces
+
+
+
+def _get_pulse_sequence(self, idx=0):
+    """Load pulse sequence after measurement started
+
+    Args:
+        idx: index of pulse sequence after measurement started
+
+    Returns:
+        Pulse sequence
+    """
+    date, measurement_name = self.location.split('\\')
+    measurement_time = strptime(measurement_name[-8:], '%H-%M-%S')
+
+    pulse_sequence_path = os.path.join(self.default_io.base_location,
+                                       r'pulse_sequences\data', date)
+    pulse_sequence_files = os.listdir(pulse_sequence_path)
+    for k, pulse_sequence_file in enumerate(pulse_sequence_files):
+        pulse_sequence_time = strptime(pulse_sequence_file[-15:-7], '%H-%M-%S')
+        if pulse_sequence_time > measurement_time:
+            pulse_sequence_files = pulse_sequence_files[k:]
+            break
+    else:
+        raise StopIteration('No pulse sequences found')
+
+    pulse_sequence_file = pulse_sequence_files[idx]
+    pulse_sequence_filepath = os.path.join(pulse_sequence_path,
+                                           pulse_sequence_file)
+    with open(pulse_sequence_filepath, 'rb') as f:
+        pulse_sequence = pickle.load(f)
+    return pulse_sequence
+qc.DataSet.get_pulse_sequence = _get_pulse_sequence
 
 
 # parameter.sweep
