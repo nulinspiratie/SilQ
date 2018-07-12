@@ -1491,6 +1491,7 @@ class Layout(Instrument):
         # Save metadata to traces file
         file.attrs['sample_rate'] = self.sample_rate
         file.attrs['samples'] = self.samples()
+        file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence._JSONEncoder()}, file)
         HDF5Format.write_dict_to_hdf5(
