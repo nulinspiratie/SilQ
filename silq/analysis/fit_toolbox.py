@@ -1,8 +1,9 @@
-from typing import Union
+from typing import Union, Tuple
 import numpy as np
 from lmfit import Parameters, Model
 from lmfit.model import ModelResult
 from matplotlib import pyplot as plt
+from matplotlib.axis import Axis
 import logging
 from qcodes.data.data_array import DataArray
 
@@ -171,9 +172,38 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax, N=201, xscale=1, yscale=1, **kwargs):
-        x_vals = self.xvals
-        x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
+    def add_to_plot(self,
+                    ax: Axis,
+                    N: int = 201,
+                    xrange: Tuple[float] = None,
+                    x_range: Tuple[float] = None,
+                    xscale: float = 1,
+                    yscale: float = 1,
+                    **kwargs):
+        """Add fit to existing plot axis
+
+        Args:
+            ax: Axis to add plot to
+            N: number of points to use as x values (to smoothe fit curve)
+            xrange: Optional range for x values (min, max)
+            x_range: Same as xrange (deprecated)
+            xscale: value to multiple x values by to rescale axis
+            yscale: value to multiple y values by to rescale axis
+            kwargs: Additional plot kwargs. By default Fit.plot_kwargs are used
+
+        Returns:
+            plot_handle of fit curve
+        """
+        if x_range is not None:
+            DeprecationWarning('Please use xrange instead of x_range')
+            xrange = x_range
+
+        if xrange is None:
+            x_vals = next(iter(self.fit_result.userkws.values()))
+            x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
+        else:
+            x_vals_full = np.linspace(*x_range, N)
+
         y_vals_full = self.fit_result.eval(
             **{self.sweep_parameter: x_vals_full})
         x_vals_full *= xscale
@@ -295,19 +325,21 @@ class ExponentialFit(Fit):
             initial_parameters = {}
 
         parameters = Parameters()
-        if not 'tau' in initial_parameters:
-            nearest_idx = np.abs(ydata - ydata[0] / np.exp(1)).argmin()
-            initial_parameters['tau'] = -(xvals[1] - xvals[np.where(
-                nearest_idx == ydata)[0][0]])
         if not 'amplitude' in initial_parameters:
-            initial_parameters['amplitude'] = ydata[1]
+            initial_parameters['amplitude'] = ydata[1] - ydata[-1]
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[-1]
 
-        initial_parameters['tau'].min = 0
+        if not 'tau' in initial_parameters:
+            exponent_val = (initial_parameters['offset']
+                            + initial_parameters['amplitude'] / np.exp(1))
+            nearest_idx = np.abs(ydata - exponent_val).argmin()
+            initial_parameters['tau'] = -(xvals[1] - xvals[nearest_idx])
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
+
+        parameters['tau'].min = 0
 
         return parameters
 
