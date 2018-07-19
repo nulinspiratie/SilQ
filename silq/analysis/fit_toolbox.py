@@ -171,9 +171,13 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax, N=201, **kwargs):
-        x_vals = next(iter(self.fit_result.userkws.values()))
-        x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
+    def add_to_plot(self, ax, N=201, x_range=None, **kwargs):
+        if x_range is None:
+            x_vals = next(iter(self.fit_result.userkws.values()))
+            x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
+        else:
+            x_vals_full = np.linspace(*x_range, N)
+
         y_vals_full = self.fit_result.eval(
             **{self.sweep_parameter: x_vals_full})
         plot_kwargs = {**self.plot_kwargs, **kwargs}
@@ -293,19 +297,21 @@ class ExponentialFit(Fit):
             initial_parameters = {}
 
         parameters = Parameters()
-        if not 'tau' in initial_parameters:
-            nearest_idx = np.abs(ydata - ydata[0] / np.exp(1)).argmin()
-            initial_parameters['tau'] = -(xvals[1] - xvals[np.where(
-                nearest_idx == ydata)[0][0]])
         if not 'amplitude' in initial_parameters:
-            initial_parameters['amplitude'] = ydata[1]
+            initial_parameters['amplitude'] = ydata[1] - ydata[-1]
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[-1]
 
-        initial_parameters['tau'].min = 0
+        if not 'tau' in initial_parameters:
+            exponent_val = (initial_parameters['offset']
+                            + initial_parameters['amplitude'] / np.exp(1))
+            nearest_idx = np.abs(ydata - exponent_val).argmin()
+            initial_parameters['tau'] = -(xvals[1] - xvals[nearest_idx])
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
+
+        parameters['tau'].min = 0
 
         return parameters
 
