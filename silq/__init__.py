@@ -157,8 +157,8 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
                     subscript_filepath = os.path.join(script_filepath, subscript_file)
 
                     if not silent:
-                        script_file_no_ext = os.path.splitext(script_file)[0]
-                        print(f'Running script {script_file}/{script_file_no_ext}')
+                        subscript_file_no_ext = os.path.splitext(subscript_file)[0]
+                        print(f'Running script {script_file}/{subscript_file_no_ext}')
                     execute_file(subscript_filepath, globals=globals, locals=locals)
         else:  # Execute file
             if not silent:
