@@ -4,7 +4,7 @@ from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
 import pickle
-from time import sleep
+from time import sleep, time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
 
@@ -1273,7 +1273,7 @@ class Layout(Instrument):
             raise RuntimeError("Cannot setup with an empty PulseSequence.")
 
         if self.active():
-            self.stop()
+            self.stop(ignore=ignore)
 
         # Initialize with empty flags, used for instructions between interfaces
         self.flags = {'setup': {},
@@ -1299,11 +1299,13 @@ class Layout(Instrument):
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
+                t0 = time()
                 flags = interface.setup(samples=self.samples(),
                                         input_connections=input_connections,
                                         output_connections=output_connections,
                                         repeat=repeat,
                                         **setup_flags, **kwargs)
+                logger.debug(f'{interface.name} setup time taken: {time() - t0:.2f}')
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
@@ -1382,11 +1384,12 @@ class Layout(Instrument):
 
             self.stop()
 
-    def stop(self):
+    def stop(self, ignore: List[str] = []):
         """Stops all instruments."""
         for interface in self._get_interfaces_hierarchical():
-            interface.stop()
-            logger.debug(f'{interface} stopped')
+            if interface.instrument_name() not in ignore:
+                interface.stop()
+                logger.debug(f'{interface} stopped')
         self.active(False)
         logger.debug('Layout stopped')
 
