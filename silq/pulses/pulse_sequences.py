@@ -1,3 +1,4 @@
+import numpy as np
 from collections import Iterable
 from .pulse_modules import PulseSequence, PulseMatch
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
@@ -577,8 +578,8 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 
         self.pulse_settings['ESR'] = self.ESR = {
             'frequencies': [28e9, 28e9],
-            # 'hyperfine': 50e6,
-            'nuclear_zeeman': 5.5e6,
+            'hyperfine': None,
+            'nuclear_zeeman': -5.5e6,
             'stage_pulse': DCPulse('plunge', acquire=True),
             'pre_flip_ESR_pulse': SinePulse('ESR'),
             'flip_flop_pulse': SinePulse('ESR'),
@@ -594,34 +595,32 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 
     def add_ESR_pulses(self):
         stage_pulse, = self.add(self.ESR['stage_pulse'])
+        ESR_t_start = PulseMatch(stage_pulse, 't_start', delay=self.ESR['pre_delay'])
 
         if self.ESR['pre_flip']:
-            pre_flip_ESR1_pulse, = self.add(self.ESR['pre_flip_ESR_pulse'])
+            # First add the pre-flip the ESR pulses (start with excited electron)
+            for ESR_frequency in self.ESR['frequencies']:
+                pre_flip_ESR_pulse, = self.add(self.ESR['pre_flip_ESR_pulse'])
+                pre_flip_ESR_pulse.frequency = ESR_frequency
+                pre_flip_ESR_pulse.t_start = ESR_t_start
 
-            pre_flip_ESR1_pulse.frequency = self.ESR['frequencies'][0]
-            pre_flip_ESR1_pulse.t_start = PulseMatch(stage_pulse, 't_start',
-                                                    delay=self.ESR['pre_delay'])
+                # Update t_start of next ESR pulse
+                ESR_t_start = PulseMatch(pre_flip_ESR_pulse, 't_stop',
+                                         delay=self.ESR['inter_delay'])
 
-            pre_flip_ESR2_pulse, = self.add(self.ESR['pre_flip_ESR_pulse'])
+        flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
+        flip_flop_ESR_pulse.t_start = ESR_t_start
 
-            pre_flip_ESR2_pulse.frequency = self.ESR['frequencies'][1]
-            pre_flip_ESR2_pulse.t_start = PulseMatch(pre_flip_ESR1_pulse, 't_stop',
-                                                     delay=self.ESR[
-                                                         'inter_delay'])
+        # Calculate flip-flop frequency
+        ESR_max_frequency = np.max(self.ESR['frequencies'])
+        hyperfine = self.ESR['hyperfine']
+        if hyperfine is None:
+            # Choose difference between two ESR frequencies
+            hyperfine = float(np.abs(np.diff(self.ESR['frequencies'])))
 
-            flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
-            flip_flop_ESR_pulse.t_start = PulseMatch(pre_flip_ESR2_pulse,
-                                                     't_stop', delay=self.ESR[
-                    'inter_delay'])
-        else:
-            flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
-            flip_flop_ESR_pulse.t_start = PulseMatch(stage_pulse, 't_start',
-                                                     delay=self.ESR[
-                                                         'pre_delay'])
-
-        flip_flop_ESR_pulse.frequency = ((self.ESR['frequencies'][0] +
-                                          self.ESR['frequencies'][1]) / 2
-                                         + self.ESR['nuclear_zeeman'])
+        flip_flop_ESR_pulse.frequency = (ESR_max_frequency
+                                         - hyperfine / 2
+                                         - self.ESR['nuclear_zeeman'])
         stage_pulse.t_stop = PulseMatch(flip_flop_ESR_pulse, 't_stop',
                                         delay=self.ESR['post_delay'])
 
