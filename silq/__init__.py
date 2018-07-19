@@ -6,7 +6,8 @@ import logging
 import json
 import h5py
 import pickle
-from time import strptime
+from datetime import timedelta
+from datetime import datetime
 
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
@@ -316,7 +317,7 @@ qc.DataSet.load_traces = _load_traces
 
 
 
-def _get_pulse_sequence(self, idx=0):
+def _get_pulse_sequence(self, idx=0, pulse_name=None):
     """Load pulse sequence after measurement started
 
     Args:
@@ -325,26 +326,45 @@ def _get_pulse_sequence(self, idx=0):
     Returns:
         Pulse sequence
     """
-    date, measurement_name = self.location.split('\\')
-    measurement_time = strptime(measurement_name[-8:], '%H-%M-%S')
 
-    pulse_sequence_path = os.path.join(self.default_io.base_location,
-                                       r'pulse_sequences\data', date)
-    pulse_sequence_files = os.listdir(pulse_sequence_path)
-    for k, pulse_sequence_file in enumerate(pulse_sequence_files):
-        pulse_sequence_time = strptime(pulse_sequence_file[-15:-7], '%H-%M-%S')
-        if pulse_sequence_time > measurement_time:
-            pulse_sequence_files = pulse_sequence_files[k:]
-            break
-    else:
+    def get_next_pulse_sequence(date_time, max_date_delta=1):
+        current_date = date_time
+        while current_date <= date_time + timedelta(days=max_date_delta):
+            date_str = date_time.strftime("%Y-%m-%d")
+            pulse_sequence_path = os.path.join(self.default_io.base_location,
+                                               r'pulse_sequences\data', date_str)
+            pulse_sequence_files = os.listdir(pulse_sequence_path)
+            # Sort by their idx (i.e. #095 at start of filename)
+            pulse_sequence_files = sorted(pulse_sequence_files, key=lambda file: int(file.split('_')[0][1:]))
+            for k, pulse_sequence_file in enumerate(pulse_sequence_files):
+                pulse_sequence_date_time = datetime.strptime(f'{date_str}:{pulse_sequence_file[-15:-7]}', '%Y-%m-%d:%H-%M-%S')
+                if pulse_sequence_date_time > current_date:
+                    pulse_sequence_filepath = os.path.join(pulse_sequence_path,
+                                                           pulse_sequence_file)
+                    with open(pulse_sequence_filepath, 'rb') as f:
+                        pulse_sequence = pickle.load(f)
+                    current_date = pulse_sequence_date_time
+                    yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+            else:
+                # Goto next date
+                current_date = datetime.combine(current_date.date() + timedelta(days=1),
+                                                datetime.min.time())
+
+    date, measurement_name = self.location.split('\\')
+    measurement_date_time = datetime.strptime(f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S')
+
+    try:
+        for k in range(idx+1):
+            pulse_sequence, pulse_sequence_filename = next(
+                pulse_sequence for pulse_sequence in
+                get_next_pulse_sequence(measurement_date_time)
+                if (not pulse_name or pulse_name in pulse_sequence[0]))
+    except StopIteration:
         raise StopIteration('No pulse sequences found')
 
-    pulse_sequence_file = pulse_sequence_files[idx]
-    pulse_sequence_filepath = os.path.join(pulse_sequence_path,
-                                           pulse_sequence_file)
-    with open(pulse_sequence_filepath, 'rb') as f:
-        pulse_sequence = pickle.load(f)
+    print(f'Pulse sequence file: {pulse_sequence_filename}')
     return pulse_sequence
+
 qc.DataSet.get_pulse_sequence = _get_pulse_sequence
 
 
