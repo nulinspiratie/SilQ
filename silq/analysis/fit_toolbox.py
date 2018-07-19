@@ -171,11 +171,13 @@ class Fit():
         lines = '\n'.join(lines)
         print(lines)
 
-    def add_to_plot(self, ax, N=201, **kwargs):
-        x_vals = next(iter(self.fit_result.userkws.values()))
+    def add_to_plot(self, ax, N=201, xscale=1, yscale=1, **kwargs):
+        x_vals = self.xvals
         x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
         y_vals_full = self.fit_result.eval(
             **{self.sweep_parameter: x_vals_full})
+        x_vals_full *= xscale
+        y_vals_full *= yscale
         plot_kwargs = {**self.plot_kwargs, **kwargs}
         self.plot_handle = ax.add(y_vals_full,
                                   x=x_vals_full,
