@@ -2004,7 +2004,7 @@ class FlipFlopParameter(AcquisitionParameter):
     def analyse(self, traces=None):
         return
 
-    def set(self, frequencies=None, pre_flip=None):
+    def set(self, frequencies=None, pre_flip=None, evaluate=True, **kwargs):
         if frequencies is not None:
             self.ESR['frequencies'] = frequencies
         if pre_flip is not None:
@@ -2013,7 +2013,9 @@ class FlipFlopParameter(AcquisitionParameter):
         if frequencies is not None or pre_flip is not None:
             self.pulse_sequence.generate()
 
-        return self.get()
+        if evaluate:
+            self.setup(**kwargs)
+            return self.get(**kwargs)
 
 
 class BlipsParameter(AcquisitionParameter):
