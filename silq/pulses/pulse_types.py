@@ -746,7 +746,7 @@ class SinePulse(Pulse):
         self.phase = self._value_or_config('phase', phase, 0)
         self.power = self._value_or_config('power', power)
         self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.offset = self._value_or_config('offset', offset)
+        self.offset = self._value_or_config('offset', offset, 0)
         self.frequency_sideband = self._value_or_config('frequency_sideband',
                                                         frequency_sideband)
         self.sideband_mode = self._value_or_config('sideband_mode',
@@ -768,7 +768,7 @@ class SinePulse(Pulse):
             if self.amplitude is not None:
                 properties_str += f', A={self.amplitude} V'
 
-            if self.offset is not None:
+            if self.offset:
                 properties_str += f', offset={self.offset} V'
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
@@ -797,9 +797,7 @@ class SinePulse(Pulse):
             t = t - self.t_start
 
         waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
-
-        if self.offset is not None:
-            waveform += self.offset
+        waveform += self.offset
 
         return waveform
 
@@ -821,6 +819,7 @@ class FrequencyRampPulse(Pulse):
             the corresponding instrument/interface is programmed).
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
+        offset: amplitude offset, zero by default
         frequency_sideband: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
         sideband_mode: Type of mixer sideband ('IQ' by default)
@@ -840,6 +839,7 @@ class FrequencyRampPulse(Pulse):
                  frequency_final: str = 'stop',
                  amplitude: float = None,
                  power: float = None,
+                 offset: float = None,
                  phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
@@ -866,6 +866,8 @@ class FrequencyRampPulse(Pulse):
                                                    sideband_mode, 'IQ')
 
         self.amplitude = self._value_or_config('amplitude', amplitude)
+        self.offset = self._value_or_config('offset', offset, 0)
+
         self.phase = self._value_or_config('phase', phase, 0)
         self.power = self._value_or_config('power', power)
 
@@ -910,7 +912,16 @@ class FrequencyRampPulse(Pulse):
             if self.frequency_sideband is not None:
                 properties_str += f', f_sb={freq_to_str(self.frequency_sideband)}' \
                                   f'{self.sideband_mode}'
-            properties_str += f', power={self.power}'
+
+            if self.power is not None:
+                properties_str += f', power={self.power} dBm'
+
+            if self.amplitude is not None:
+                properties_str += f', A={self.amplitude} V'
+
+            if self.offset:
+                properties_str += f', offset={self.offset} V'
+
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
         except:
