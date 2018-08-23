@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import numpy as np
 from collections import OrderedDict, Iterable
 from copy import copy
@@ -15,9 +15,8 @@ from qcodes import Instrument, MatPlot
 from silq import config
 from silq.pulses import *
 from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
-    T2ElectronPulseSequence
+    T2ElectronPulseSequence, FlipFlopPulseSequence
 from silq.analysis import analysis
-from silq.tools import data_tools
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
     property_ignore_setter
@@ -25,7 +24,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'VariableReadParameter',
-           'BlipsParameter', 'FlipNucleusParameter',
+           'BlipsParameter', 'FlipNucleusParameter', 'FlipFlopParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter']
 
 logger = logging.getLogger(__name__)
@@ -328,7 +327,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Analyse traces, should be implemented in subclass"""
         raise NotImplementedError('`analyse` must be implemented in subclass')
 
-    def plot_traces(self, filter=None, channels=['output'], **kwargs):
+    def plot_traces(self, filter=None, channels=['output'],
+                    t_skip: Union[bool, float] = True,
+                    **kwargs):
+
         plot_traces = OrderedDict()
         for pulse_name, trace in self.traces.items():
             if filter is not None:
@@ -338,6 +340,13 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                     continue
 
             plot_traces[pulse_name] = trace
+
+        if t_skip is False:
+            start_idx = 0
+        elif t_skip is True:
+            start_idx = int(self.sample_rate * self.t_skip)
+        else:
+            start_idx = int(self.sample_rate * t_skip)
 
         if len(channels) > 1:
             subplots = (len(plot_traces), len(channels))
@@ -353,10 +362,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 t_list = np.linspace(0, pts / self.sample_rate, pts,
                                      endpoint=False)
                 if trace_arr.ndim == 2:
-                    plot[k].add(traces[channel], x=t_list,
+                    plot[k].add(traces[channel][:,start_idx:], x=t_list[start_idx:],
                                 y=np.arange(trace_arr.shape[0], dtype=float))
                 else:
-                    plot[k].add(traces[channel], x=t_list)
+                    plot[k].add(traces[channel][start_idx:], x=t_list[start_idx:])
                 plot[k].set_xlabel('Time (s)')
                 plot[k].set_title(pulse_name)
                 k += 1
@@ -1979,6 +1988,34 @@ class FlipNucleusParameter(AcquisitionParameter):
             self.setup(repeat=False)
             self.layout.start()
             self.layout.stop()
+
+
+class FlipFlopParameter(AcquisitionParameter):
+    """Parameter for performing flip-flopping, not meant for acquiring data"""
+    def __init__(self, name='flip_flop', **kwargs):
+        super().__init__(name=name, wrap_set=False, names=[], shapes=(),
+                         **kwargs)
+        self.pulse_sequence = FlipFlopPulseSequence()
+
+        self.ESR = self.pulse_sequence.ESR
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+
+    def analyse(self, traces=None):
+        return
+
+    def set(self, frequencies=None, pre_flip=None, evaluate=True, **kwargs):
+        if frequencies is not None:
+            self.ESR['frequencies'] = frequencies
+        if pre_flip is not None:
+            self.ESR['pre_flip'] = pre_flip
+
+        if frequencies is not None or pre_flip is not None:
+            self.pulse_sequence.generate()
+
+        if evaluate:
+            self.setup(**kwargs)
+            return self.get(**kwargs)
 
 
 class BlipsParameter(AcquisitionParameter):

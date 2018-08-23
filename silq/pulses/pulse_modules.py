@@ -740,7 +740,7 @@ class PulseSequence(ParameterNode):
                 connections.append(connection)
             else:
                 connections.append(None)
-        connections = {connections}  # Create unique set
+        connections = set(connections)  # Create unique set
         connections = sorted(connections,
                              key=lambda connection: connection.output['str'])
         if subplots:

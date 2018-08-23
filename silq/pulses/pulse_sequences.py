@@ -1,3 +1,4 @@
+import numpy as np
 from collections import Iterable
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
@@ -502,9 +503,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
                 pulse_sequence.add(self.ESR['read_pulse'])
 
     def generate(self):
-        """
-        Updates the pulse sequence
-        """
+        """Updates the pulse sequence"""
 
         # Initialize pulse sequence
         self.clear()
@@ -519,3 +518,118 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
         # Create copy of current pulse settings for comparison later
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
+
+
+class FlipFlopPulseSequence(PulseSequenceGenerator):
+    """`PulseSequenceGenerator` for hitting the flip-flop transition
+
+    The flip-flop transition is the one where both the electron and nucleus flip
+    in opposite direction, thus keeping the total spin constant.
+
+    This pulse sequence is mainly used to flip the nucleus to a certain state
+    without having to perform NMR or even having to measure the electron.
+
+    The flip-flop transitions between a nuclear spin state S1 and (S1+1) is:
+
+    f_ESR(S1) + A/2 + gamma_n * B_0,
+
+    where f_ESR(S1) is the ESR frequency for nuclear state S1, A is the
+    hyperfine, gamma_n is the nuclear Zeeman, and B_0 is the static magnetic
+    field. The transition will flip (electron down, nucleus S+1) to
+    (electron up, nucleus S) and vice versa.
+
+    Parameters:
+        ESR (dict): Pulse settings for the ESR part of the pulse sequence.
+            Contains the following items:
+
+            * ``frequency`` (float): ESR frequency below the flip-flop
+              transition (Hz).
+            * ``hyperfine`` (float): Hyperfine interaction (Hz).
+            * ``nuclear_zeeman`` (float): Nuclear zeeman strength (gamma_n*B_0)
+            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR
+              (e.g. plunge). Default is `DCPulse`('plunge').
+            * ``pre_flip_ESR_pulse`` (Pulse): ESR pulse to use before the
+              flip-flop pulse to pre-flip the electron to spin-up,
+              which allows the nucleus to be flipped to a higher state.
+              Default is `SinePulse`('ESR').
+            * ``flip_flop_pulse`` (Pulse): Flip-flop ESR pulse, whose
+              frequency will be set to A/2 + gamma_n*B_0 higher than the
+              ``frequency`` setting. Default pulse is `SinePulse`('ESR')
+            * ``pre_flip`` (bool): Whether to pre-flip the electron, to
+              transition to a higher nuclear state. Default is False.
+            * ``pre_delay`` (float): Delay between start of stage pulse and
+              first pulse (``pre_flip_ESR_pulse`` or ``flip_flop_pulse``).
+            * ``inter_delay`` (float): Delay between ``pre_flip_ESR_pulse`` and
+              ``flip_flop_pulse``. Ignored if pre_flip is False
+            * ``post_delay`` (float): Delay after last frequency pulse and end
+              of stage pulse.
+
+        pre_pulses (List[Pulse]): Pulses before main pulse sequence.
+            Empty by default.
+        post_pulses (List[Pulse]): Pulses after main pulse sequence.
+            Empty by default.
+        pulse_settings (dict): Dict containing all pulse settings.
+        **kwargs: Additional kwargs to `PulseSequence`.
+
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pulse_settings['ESR'] = self.ESR = {
+            'frequencies': [28e9, 28e9],
+            'hyperfine': None,
+            'nuclear_zeeman': -5.5e6,
+            'stage_pulse': DCPulse('plunge', acquire=True),
+            'pre_flip_ESR_pulse': SinePulse('ESR'),
+            'flip_flop_pulse': SinePulse('ESR'),
+            'pre_flip': False,
+            'pre_delay': 5e-3,
+            'inter_delay': 1e-3,
+            'post_delay': 5e-3}
+
+        self.pulse_settings['pre_pulses'] = self.pre_pulses = []
+        self.pulse_settings['post_pulses'] = self.post_pulses = [DCPulse('read')]
+
+        self.generate()
+
+    def add_ESR_pulses(self):
+        stage_pulse, = self.add(self.ESR['stage_pulse'])
+        ESR_t_start = PulseMatch(stage_pulse, 't_start', delay=self.ESR['pre_delay'])
+
+        if self.ESR['pre_flip']:
+            # First add the pre-flip the ESR pulses (start with excited electron)
+            for ESR_frequency in self.ESR['frequencies']:
+                pre_flip_ESR_pulse, = self.add(self.ESR['pre_flip_ESR_pulse'])
+                pre_flip_ESR_pulse.frequency = ESR_frequency
+                pre_flip_ESR_pulse.t_start = ESR_t_start
+
+                # Update t_start of next ESR pulse
+                ESR_t_start = PulseMatch(pre_flip_ESR_pulse, 't_stop',
+                                         delay=self.ESR['inter_delay'])
+
+        flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
+        flip_flop_ESR_pulse.t_start = ESR_t_start
+
+        # Calculate flip-flop frequency
+        ESR_max_frequency = np.max(self.ESR['frequencies'])
+        hyperfine = self.ESR['hyperfine']
+        if hyperfine is None:
+            # Choose difference between two ESR frequencies
+            hyperfine = float(np.abs(np.diff(self.ESR['frequencies'])))
+
+        flip_flop_ESR_pulse.frequency = (ESR_max_frequency
+                                         - hyperfine / 2
+                                         - self.ESR['nuclear_zeeman'])
+        stage_pulse.t_stop = PulseMatch(flip_flop_ESR_pulse, 't_stop',
+                                        delay=self.ESR['post_delay'])
+
+    def generate(self):
+        """Updates the pulse sequence"""
+        self.clear()
+
+        self.add(*self.pulse_settings['pre_pulses'])
+
+        self.add_ESR_pulses()
+
+        self.add(*self.pulse_settings['post_pulses'])
