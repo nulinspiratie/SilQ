@@ -1,4 +1,5 @@
 from typing import List
+from time import sleep
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
@@ -98,12 +99,15 @@ class E8267DInterface(InstrumentInterface):
         self.add_parameter('frequency_carrier_choice',
                            set_cmd=None,
                            initial_value='center',
-                           vals=vals.Enum('min', 'center', 'max'),
+                           vals=vals.MultiType(vals.Enum('min', 'center', 'max'),
+                                           vals.Numbers()),
                            docstring='The choice for the microwave frequency, '
                                      'This is used if pulses with multiple '
                                      'frequencies are used, or if frequency '
                                      'modulation is needed. Ignored if '
-                                     'fix_frequency = True')
+                                     'fix_frequency = True. Can be either "max",'
+                                     '"min", or "center", or a number which is '
+                                     'the offset from the center')
         self.add_parameter('frequency',
                            unit='Hz',
                            set_cmd=None,
@@ -191,8 +195,11 @@ class E8267DInterface(InstrumentInterface):
                 frequency_carrier = int(round((min_frequency + max_frequency) / 2))
             elif self.frequency_carrier_choice() == 'min':
                 frequency_carrier = min_frequency
-            else:  # 'max'
+            elif self.frequency_carrier_choice() == 'max':
                 frequency_carrier = max_frequency
+            else:  # value away from center
+                frequency_carrier = int(round((min_frequency + max_frequency) / 2))
+                frequency_carrier += self.frequency_carrier_choice()
             self.frequency(frequency_carrier)
 
         if not self.fix_frequency_deviation():
@@ -225,9 +232,9 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.frequency(self.frequency())
         self.instrument.power(powers[0])
 
-        self.instrument.frequency_deviation(self.frequency_deviation())
         if self.frequency_deviation() > 0 and self.FM_mode() == 'ramp':
-                self.instrument.frequency_modulation('on')
+            self.instrument.frequency_modulation('on')
+            self.instrument.frequency_deviation(self.frequency_deviation())
         else:
             self.instrument.frequency_modulation('off')
 
@@ -243,6 +250,7 @@ class E8267DInterface(InstrumentInterface):
     def start(self):
         """Start instrument"""
         self.instrument.RF_output('on')
+        sleep(0.4)  # Sleep a short while for the RF to output
 
     def stop(self):
         """Stop instrument"""

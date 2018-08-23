@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from time import sleep
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import TriggerPulse, PulseImplementation
@@ -29,12 +30,13 @@ class TriggerFPGAInterface(InstrumentInterface):
                            unit='s',
                            initial_value=100e-9,
                            set_cmd=None)
+        self.repeat = True
 
     def setup(self,
               repeat: bool = True, **kwargs):
-        assert repeat, "FPGA trigger source can only work in repeat mode"
         assert self.is_primary(), "FPGA trigger source can only function as " \
                                   "primary instrument"
+        self.repeat = repeat
 
         pxi_ports = {pulse.connection.output['channel'].name
                        for pulse in self.pulse_sequence}
@@ -44,16 +46,23 @@ class TriggerFPGAInterface(InstrumentInterface):
         pxi_number = int(pxi_channel[-1])
         self.instrument.pxi_port(pxi_number)
 
-        trigger_interval = self.pulse_sequence.duration
-        if self.final_delay() is not None:
-            trigger_interval += self.final_delay()
+        if self.repeat:
+            trigger_interval = self.pulse_sequence.duration
+            if self.final_delay() is not None:
+                trigger_interval += self.final_delay()
+            else:
+                trigger_interval += self.pulse_sequence.final_delay
         else:
-            trigger_interval += self.pulse_sequence.final_delay
+            trigger_interval = .4  # Crazy high number to ensure we stop it on time
+
         self.instrument.trigger_interval(trigger_interval)
         self.instrument.trigger_duration(self.trigger_duration())
 
     def start(self):
         self.instrument.start()
+        if not self.repeat:
+            sleep(0.6)
+            self.stop()
 
     def stop(self):
         self.instrument.stop()
