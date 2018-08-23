@@ -117,7 +117,10 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
                        in zip(self.acquisition_channels(), traces)}
 
         # The start of acquisition
-        t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
+        if self.capture_full_trace():
+            t0 = 0
+        else:
+            t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
         pulse_traces = {}
@@ -126,11 +129,11 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             pulse_traces[name] = {}
             for k, ch_name in enumerate(self.acquisition_channels()):
                 ch_data = self.traces[ch_name]
-                sample_range = [int(round((t - t0) * self.sample_rate()))
-                                for t in [pulse.t_start, pulse.t_stop]]
+                start_idx = int(round((pulse.t_start - t0) * self.sample_rate()))
+                stop_idx = start_idx + int(round(pulse.duration * self.sample_rate()))
 
                 # Extract pulse data from the channel data
-                pulse_traces[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                pulse_traces[name][ch_name] = ch_data[:, start_idx:stop_idx]
                 # Further average the pulse data
                 if pulse.average == 'none':
                     pass
@@ -223,7 +226,8 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
                 t_start = 0
                 t_stop = self.pulse_sequence.duration
 
-            samples_per_trace = int(np.ceil((t_stop - t_start) * self.sample_rate()))
+            #  !!! Changed np.ceil to np.round !!!
+            samples_per_trace = int(np.round((t_stop - t_start) * self.sample_rate()))
             samples_per_trace += samples_per_trace % 2
             self.acquisition_controller().samples_per_trace(samples_per_trace)
 

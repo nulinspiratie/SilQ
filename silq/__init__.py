@@ -4,6 +4,10 @@ import os
 import warnings
 import logging
 import json
+import h5py
+import pickle
+from datetime import timedelta
+from datetime import datetime
 
 from .tools.config import DictConfig, ListConfig
 from .tools.parameter_tools import SweepDependentValues
@@ -118,10 +122,65 @@ def get_configurations() -> dict:
         return json.load(file)
 
 
+def execute_file(filepath, globals=None, locals=None):
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    with open(filepath, "r") as fh:
+        exec_line = fh.read()
+        try:
+            exec(exec_line + "\n", globals, locals)
+        except:
+            raise RuntimeError(
+                f'SilQ initialization error in {filepath} line {exec_line}')
+
+
+def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None):
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    experiments_folder = get_experiments_folder()
+
+    try:
+        configuration = next(val for key, val in get_configurations().items()
+                             if key.lower() == name.lower())
+    except StopIteration:
+        raise NameError(f'Configuration {name} not found. Allowed '
+                        f'configurations are {get_configurations().keys()}')
+    folder = os.path.join(experiments_folder, configuration['folder'])
+
+    scripts_folder = os.path.join(folder, 'scripts')
+    assert os.path.exists(scripts_folder), f"No scripts folder found at {scripts_folder}"
+
+    for script_file in os.listdir(scripts_folder):
+        script_filepath = os.path.join(scripts_folder, script_file)
+        # Only execute scripts in subfolders if folder name matches mode
+        if os.path.isdir(script_filepath):
+            if script_file == mode:
+                for subscript_file in os.listdir(script_filepath):
+                    subscript_filepath = os.path.join(script_filepath, subscript_file)
+
+                    if not silent:
+                        subscript_file_no_ext = os.path.splitext(subscript_file)[0]
+                        print(f'Running script {script_file}/{subscript_file_no_ext}')
+                    execute_file(subscript_filepath, globals=globals, locals=locals)
+        else:  # Execute file
+            if not silent:
+                script_file_no_ext = os.path.splitext(script_file)[0]
+                print(f'Running script {script_file_no_ext}')
+            execute_file(script_filepath, globals=globals, locals=locals)
+
+
 def initialize(name: str = None,
                mode: str = None,
                select: List[str] = [],
-               ignore: List[str] = []):
+               ignore: List[str] = [],
+               scripts=True,
+               silent=False):
     """Runs experiment initialization .py scripts.
 
     The initialization scripts should be in the ``init`` folder in the
@@ -141,11 +200,11 @@ def initialize(name: str = None,
     Notes:
         Scripts are run in the global namespace
     """
-    # Determine base folder by looking at the silq package
-
+    # Register globals and locals of the above frame (for code execution)
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
+    # Determine base folder by looking at the silq package
     experiments_folder = get_experiments_folder()
     configurations = get_configurations()
 
@@ -182,23 +241,22 @@ def initialize(name: str = None,
         # Remove prefix
         filename_no_prefix = filename.split('_', 1)[1]
         # Remove .py extension
-        filename_no_prefix = filename_no_prefix.rsplit('.', 1)[0]
+        filename_no_prefix = os.path.splitext(filename_no_prefix)[0]
         if select and filename_no_prefix not in select:
             continue
         elif ignore and filename_no_prefix in ignore:
             continue
         else:
-            print(f'Initializing {filename_no_prefix}')
+            if not silent:
+                print(f'Initializing {filename_no_prefix}')
             filepath = os.path.join(init_folder, filename)
-            with open(filepath, "r") as fh:
-                exec_line = fh.read()
-                try:
-                    exec(exec_line+"\n", globals, locals)
-                except:
-                    raise RuntimeError(f'SilQ initialization error in '
-                                       f'{filepath} line {exec_line}')
+            execute_file(filepath, globals=globals, locals=locals)
 
-    print("Initialization complete")
+    if scripts:
+        run_scripts(name=name, mode=mode, globals=globals, locals=locals)
+
+    if not silent:
+        print("Initialization complete")
 
     if 'environment' in config.properties:
         logger.info(f'Initialization: environment set to '
@@ -237,9 +295,90 @@ def _save_config(self, location=None):
 qc.DataSet.save_config = _save_config
 
 
+def _load_traces(self, name=None):
+    """Load traces HDF5 file from a dataset
+
+    Args:
+        name: Optional name to specify traces file. Should be used if more than
+            one parameter is used in the measurement that saves traces.
+        """
+    data_path = self.io.to_path(self.location)
+    trace_path = os.path.join(data_path, 'traces')
+    trace_filenames = os.listdir(trace_path)
+    assert trace_filenames, f"No trace files found in {traces_path}"
+
+    if name is None and len(trace_filenames) == 1:
+        trace_filename = trace_filenames[0]
+    else:
+        assert name is not None, f"No unique trace file found: {trace_filenames}. " \
+                                 "Trace filename must be provided"
+        filtered_trace_filenames = [filename for filename in trace_filenames
+                                    if name in filename]
+        assert len(filtered_trace_filenames) == 1, \
+            f"No unique trace file found: {trace_filenames}."
+        trace_filename = filtered_trace_filenames[0]
+
+    trace_filepath = os.path.join(trace_path, trace_filename)
+    trace_file = h5py.File(trace_filepath, 'r')
+    return trace_file
+qc.DataSet.load_traces = _load_traces
+
+
+
+def _get_pulse_sequence(self, idx=0, pulse_name=None):
+    """Load pulse sequence after measurement started
+
+    Args:
+        idx: index of pulse sequence after measurement started
+
+    Returns:
+        Pulse sequence
+    """
+
+    def get_next_pulse_sequence(date_time, max_date_delta=1):
+        current_date = date_time
+        while current_date <= date_time + timedelta(days=max_date_delta):
+            date_str = date_time.strftime("%Y-%m-%d")
+            pulse_sequence_path = os.path.join(self.default_io.base_location,
+                                               r'pulse_sequences\data', date_str)
+            pulse_sequence_files = os.listdir(pulse_sequence_path)
+            # Sort by their idx (i.e. #095 at start of filename)
+            pulse_sequence_files = sorted(pulse_sequence_files, key=lambda file: int(file.split('_')[0][1:]))
+            for k, pulse_sequence_file in enumerate(pulse_sequence_files):
+                pulse_sequence_date_time = datetime.strptime(f'{date_str}:{pulse_sequence_file[-15:-7]}', '%Y-%m-%d:%H-%M-%S')
+                if pulse_sequence_date_time > current_date:
+                    pulse_sequence_filepath = os.path.join(pulse_sequence_path,
+                                                           pulse_sequence_file)
+                    with open(pulse_sequence_filepath, 'rb') as f:
+                        pulse_sequence = pickle.load(f)
+                    current_date = pulse_sequence_date_time
+                    yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+            else:
+                # Goto next date
+                current_date = datetime.combine(current_date.date() + timedelta(days=1),
+                                                datetime.min.time())
+
+    date, measurement_name = self.location.split('\\')
+    measurement_date_time = datetime.strptime(f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S')
+
+    try:
+        for k in range(idx+1):
+            pulse_sequence, pulse_sequence_filename = next(
+                pulse_sequence for pulse_sequence in
+                get_next_pulse_sequence(measurement_date_time)
+                if (not pulse_name or pulse_name in pulse_sequence[0]))
+    except StopIteration:
+        raise StopIteration('No pulse sequences found')
+
+    print(f'Pulse sequence file: {pulse_sequence_filename}')
+    return pulse_sequence
+
+qc.DataSet.get_pulse_sequence = _get_pulse_sequence
+
+
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
-          step_percentage=None, window=None):
+          step_percentage=None, window=None, fix=True):
     if step_percentage is None and window is None:
         if start is None or stop is None:
             raise RuntimeError('Must provide start and stop')
@@ -249,7 +388,7 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
     else:
         return SweepDependentValues(parameter=self, step=step,
                                     step_percentage=step_percentage, num=num,
-                                    window=window)
+                                    window=window, fix=fix)
 qc.Parameter.sweep = _sweep
 
 
@@ -276,7 +415,8 @@ def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
             if stop:
                 layout.stop()
                 logger.info('Stopped layout at end of loop')
-                layout.close_trace_files()
+                if set_active:
+                    layout.close_trace_files()
         except KeyError:
             logger.warning(f'No layout found to stop')
 

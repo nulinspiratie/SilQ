@@ -524,7 +524,7 @@ class ATSInterface(InstrumentInterface):
         # Convert list of channel traces to a {ch_id: trace} dict
         self.traces = {ch: trace for ch, trace in zip(self.acquisition_channels(), traces)}
         self.pulse_traces = self.segment_traces(self.traces)
-        return pulse_traces
+        return self.pulse_traces
 
     def segment_traces(self, traces: Dict[str, np.ndarray]):
         """ Segment traces by acquisition pulses.
@@ -543,8 +543,12 @@ class ATSInterface(InstrumentInterface):
 
         """
         pulse_traces = {}
-        t_start_initial = min(p.t_start for p in
-                              self.pulse_sequence.get_pulses(acquire=True))
+
+        if self.capture_full_traces():
+            t_start_initial = 0
+        else:
+            t_start_initial = min(p.t_start for p in
+                                  self.pulse_sequence.get_pulses(acquire=True))
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             delta_t_start = pulse.t_start - t_start_initial
             start_idx = int(round(delta_t_start * self.sample_rate()))
