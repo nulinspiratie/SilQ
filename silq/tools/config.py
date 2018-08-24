@@ -327,7 +327,10 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 return val
             elif isinstance(val, str) and (val.startswith('config:')
                                          or val.startswith('environment:')):
-                return self[val]
+                try:
+                    return self[val]
+                except KeyError:
+                    raise KeyError(f"Couldn't retrieve mirrored key {key} -> {val}")
             else:
                 return val
         elif 'inherit' in self:
@@ -336,7 +339,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             else:
                 return self.parent[self['inherit']][key]
         else:
-            raise KeyError
+            raise KeyError(f"Couldn't retrieve key {key}")
 
     def __setitem__(self, key, val):
         if not isinstance(key, str):
