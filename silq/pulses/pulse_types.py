@@ -339,6 +339,9 @@ class Pulse(ParameterNode):
         name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
 
+    def __str__(self):
+        return repr(self)
+
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
 
@@ -692,31 +695,27 @@ class FrequencyRampPulse(Pulse):
              'frequency_stop', 'frequency_sideband', 'sideband_mode',
              'amplitude', 'power'])
 
-        self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.phase = self._value_or_config('phase', phase, 0)
-        self.power = self._value_or_config('power', power)
-
         # Set default value for sideband_mode after connecting parameters,
         # because its value may have been retrieved from config
         if self.sideband_mode is not None:
             self.sideband_mode = 'IQ'
 
     @parameter
-    def frequency_start_get(self):
+    def frequency_start_get(self, parameter):
         return self.frequency - self.frequency_deviation
 
     @parameter
-    def frequency_start_set(self, frequency_start):
+    def frequency_start_set(self, parameter, frequency_start):
         frequency_stop = self.frequency_stop
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
 
     @parameter
-    def frequency_stop_get(self):
+    def frequency_stop_get(self, parameter):
         return self.frequency + self.frequency_deviation
 
     @parameter
-    def frequency_stop_set(self, frequency_stop):
+    def frequency_stop_set(self, parameter, frequency_stop):
         frequency_start = self.frequency_start
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
