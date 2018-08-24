@@ -187,9 +187,9 @@ class PulseSequence(ParameterNode):
 
     Notes:
         * If pulses are added without `Pulse`.t_start defined, the pulse is
-          assumed to start after the last pulse finishes, and a `PulseMatch`
-          is created to sync it's `Pulse`.t_start with `Pulse`.t_stop of the
-          previous pulse.
+          assumed to start after the last pulse finishes, and a connection is
+          made with the attribute `t_stop` of the last pulse, such that if the
+          last pulse t_stop changes, t_start is changed accordingly.
         * All pulses in the pulse sequence are listened to via `Pulse`.signal.
           Any time an attribute of a pulse changes, a signal will be emitted,
           which can then be interpreted by the pulse sequence.
@@ -544,10 +544,6 @@ class PulseSequence(ParameterNode):
         """
         if (pulse1.t_stop <= pulse2.t_start) or (pulse1.t_start >= pulse2.t_stop):
             return False
-        elif pulse1.connection_label is not None:
-            # Overlap if the pulse connection labels overlap
-            labels = [pulse2.connection_label, getattr(pulse2.connection, 'label', None)]
-            return pulse1.connection_label in labels
         elif pulse1.connection is not None:
             if pulse2.connection is not None:
                 return pulse1.connection == pulse2.connection
@@ -555,6 +551,10 @@ class PulseSequence(ParameterNode):
                 return pulse1.connection.label == pulse2.connection_label
             else:
                 return False
+        elif pulse1.connection_label is not None:
+            # Overlap if the pulse connection labels overlap
+            labels = [pulse2.connection_label, getattr(pulse2.connection, 'label', None)]
+            return pulse1.connection_label in labels
         else:
             return True
 
