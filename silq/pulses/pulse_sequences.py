@@ -1,3 +1,4 @@
+from functools import partial
 import numpy as np
 from collections import Iterable
 from .pulse_modules import PulseSequence
@@ -153,10 +154,10 @@ class ESRPulseSequence(PulseSequenceGenerator):
             # Add a plunge and read pulse for each frequency
             plunge_pulse, = self.add(self.ESR['stage_pulse'])
             ESR_pulse, = self.add(ESR_pulse)
-            ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                           delay=self.ESR['pre_delay'])
-            plunge_pulse.t_stop = PulseMatch(ESR_pulse, 't_stop',
-                                             delay=self.ESR['post_delay'])
+            plunge_pulse['t_start'].connect(ESR_pulse['t_start'],
+                                            offset=self.ESR['pre_delay'])
+            ESR_pulse['t_stop'].connect(plunge_pulse['t_stop'],
+                                        offset=self.ESR['post_delay'])
             self.add(self.ESR['read_pulse'])
 
     def generate(self, ESR_frequencies=None):
@@ -459,11 +460,11 @@ class NMRPulseSequence(PulseSequenceGenerator):
             NMR_pulse, = pulse_sequence.add(pulse)
 
             if not NMR_pulses:
-                NMR_pulse.t_start = PulseMatch(NMR_stage_pulse, 't_start',
-                                               delay=self.NMR['pre_delay'])
+                NMR_stage_pulse['t_start'].connect(NMR_pulse['t_start'],
+                                                   offset=self.NMR['pre_delay'])
             else:
-                NMR_pulse.t_start = PulseMatch(NMR_pulses[-1], 't_stop',
-                                               delay=self.NMR['inter_delay'])
+                NMR_pulses[-1]['t_stop'].connect(NMR_pulse['t_start'],
+                                                 offset=self.NMR['inter_delay'])
             NMR_pulses.append(NMR_pulse)
 
         NMR_stage_pulse.duration = self.NMR['pre_delay']
@@ -496,10 +497,10 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
                     # Delay also depends on any previous ESR pulses
                     delay = self.ESR['pre_delay'] + k * self.ESR['inter_delay']
-                    ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                                   delay=delay)
-                plunge_pulse.t_stop = PulseMatch(ESR_pulse, 't_stop',
-                                                 delay=self.ESR['post_delay'])
+                    plunge_pulse['t_start'].connect(ESR_pulse['t_start'],
+                                                    offset=delay)
+                ESR_pulse['t_stop'].connect(plunge_pulse['t_stop'],
+                                            offset=self.ESR['post_delay'])
                 pulse_sequence.add(self.ESR['read_pulse'])
 
     def generate(self):
@@ -595,7 +596,9 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 
     def add_ESR_pulses(self):
         stage_pulse, = self.add(self.ESR['stage_pulse'])
-        ESR_t_start = PulseMatch(stage_pulse, 't_start', delay=self.ESR['pre_delay'])
+        stage_pulse['t_start'].connect()
+        ESR_t_start = partial(stage_pulse['t_start'].connect,
+                              offset=self.ESR['pre_delay'])
 
         if self.ESR['pre_flip']:
             # First add the pre-flip the ESR pulses (start with excited electron)
@@ -605,8 +608,8 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
                 pre_flip_ESR_pulse.t_start = ESR_t_start
 
                 # Update t_start of next ESR pulse
-                ESR_t_start = PulseMatch(pre_flip_ESR_pulse, 't_stop',
-                                         delay=self.ESR['inter_delay'])
+                ESR_t_start = partial(pre_flip_ESR_pulse['t_stop'].connect,
+                                      offset=self.ESR['inter_delay'])
 
         flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
         flip_flop_ESR_pulse.t_start = ESR_t_start
@@ -621,8 +624,8 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         flip_flop_ESR_pulse.frequency = (ESR_max_frequency
                                          - hyperfine / 2
                                          - self.ESR['nuclear_zeeman'])
-        stage_pulse.t_stop = PulseMatch(flip_flop_ESR_pulse, 't_stop',
-                                        delay=self.ESR['post_delay'])
+        flip_flop_ESR_pulse['t_stop'].connect(stage_pulse.t_stop,
+                                              delay=self.ESR['post_delay'])
 
     def generate(self):
         """Updates the pulse sequence"""
