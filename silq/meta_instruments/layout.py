@@ -320,9 +320,10 @@ class CombinedConnection(Connection):
     """
     def __init__(self,
                  connections: List[SingleConnection],
+                 label: str = None,
                  scale: List[float] = None,
                  **kwargs):
-        super().__init__(scale=scale)
+        super().__init__(scale=scale, label=label)
         self.connections = connections
 
         self.output['str'] = [connection.output['str']
@@ -347,9 +348,11 @@ class CombinedConnection(Connection):
         self.trigger_start = False
 
     def __repr__(self):
-        output = 'CombinedConnection\n'
+        output = 'CombinedConnection'
+        if self.label:
+            output += f' {self.label}'
         for connection in self.connections:
-            output += '\t' + repr(connection) + '\n'
+            output += '\n\t' + repr(connection)
         return output
 
     def target_pulse(self,
@@ -816,7 +819,6 @@ class Layout(Instrument):
 
     def get_connection(self,
                        connection_label: str = None,
-                       environment: str = None,
                        output_arg: str = None,
                        output_interface: InstrumentInterface = None,
                        output_instrument: Instrument = None,
@@ -833,13 +835,7 @@ class Layout(Instrument):
 
         Args:
             connection_label: label specifying specific connection.
-                Connection labels are provided as dict in
-                ``qcodes.config.user.{environment}.connections``, where
-                environment the config environment.
                 If provided, all other conditions are ignored.
-            environment: config environment, only used if connection_label is
-                provided. If not provided but connection_label is provided,
-                ``qcodes.config.user.properties.default_environment`` is used.
             output_arg: string representation of output.
 
                 * SingleConnection has form ``{instrument}.{channel}``
@@ -879,43 +875,15 @@ class Layout(Instrument):
 
         Raises:
             AssertionError
-                ``connection_label`` is provided, but no environment,
-                and ``default_environment`` not specified
-            AssertionError
                 ``connection_label`` is specified but not found
             AssertionError
                 No unique connection is found
         """
         if connection_label is not None:
-            if environment is None:
-                # Determine environment, either from connection label or
-                # default_environment
-                if '.' in connection_label:
-                    # connection label has form {environment}.{connection_label}
-                    environment, connection_label = connection_label.split('.')
-                else:
-                    # Use default environment defined in config
-                    assert 'default_environment' in silq.config.properties, \
-                        "No environment nor default environment provided"
-                    environment = silq.config.properties.default_environment
-
-            # Obtain list of connections from environment
-            environment_connections = silq.config[environment].connections
-
-            # Find connection from environment connections
-            assert connection_label in environment_connections, \
-                f"Could not find connection {connection_label} in " \
-                f"environment {environment}"
-            connection_attrs = environment_connections[connection_label]
-
-            connection_output_str, connection_input_str = connection_attrs
-
-            connection = self.get_connection(output_arg=connection_output_str,
-                                             input_arg=connection_input_str)
-            return connection
+            return next(connection for connection in self.connections
+                        if connection.label == connection_label)
         else:
-            # Extract from conditions other than environment and
-            # connection_label
+            # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
                               output_interface=output_interface,
                               output_instrument=output_instrument,
@@ -1044,7 +1012,6 @@ class Layout(Instrument):
 
         if pulse.connection_label is not None:
             connection = self.get_connection(
-                environment=pulse.environment,
                 connection_label=pulse.connection_label,
                 **connection_requirements,
                 **kwargs)
