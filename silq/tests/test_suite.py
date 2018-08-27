@@ -1,8 +1,8 @@
 import unittest
 
-from .test_pulses import *
-from .test_config import *
-from .test_pulse_sequences import *
+from silq.tests.test_pulses import *
+from silq.tests.test_config import *
+from silq.tests.test_pulse_sequences import *
 from qcodes.tests.test_parameter_node import *
 from qcodes.tests.test_parameter import (TestCopyParameter,
                                          TestParameterSignal,
