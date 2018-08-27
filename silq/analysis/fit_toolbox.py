@@ -199,10 +199,10 @@ class Fit():
             xrange = x_range
 
         if xrange is None:
-            x_vals = next(iter(self.fit_result.userkws.values()))
+            x_vals = self.xvals
             x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
         else:
-            x_vals_full = np.linspace(*x_range, N)
+            x_vals_full = np.linspace(*xrange, N)
 
         y_vals_full = self.fit_result.eval(
             **{self.sweep_parameter: x_vals_full})
