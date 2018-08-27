@@ -1,6 +1,6 @@
 import unittest
-import tempfile
 from copy import copy, deepcopy
+import pickle
 
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
@@ -610,6 +610,11 @@ class TestPulseSequenceSignalling(unittest.TestCase):
         self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
                                                          pulses[2]])
         self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+
+class TestPulseSequencePickling(unittest.TestCase):
+    def test_pickle_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        pickle.dumps(pulse_sequence)
 
 
 if __name__ == '__main__':
