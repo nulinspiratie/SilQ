@@ -56,10 +56,17 @@ class TestPulse(unittest.TestCase):
 
     def test_pulse_duration_t_stop(self):
         p = Pulse(t_start=1, t_stop=3)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
         self.assertEqual(p.duration, 2)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
+        self.assertEqual(p.t_stop, 3)
 
         p.duration = 4
         self.assertEqual(p.t_stop, 5)
+
+        p = Pulse(t_start=1, duration=2)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
+        self.assertEqual(p.t_stop, 3)
 
     def test_pulse_no_id(self):
         p = Pulse('name')
@@ -112,7 +119,7 @@ class TestPulse(unittest.TestCase):
         self.assertEqual(str(pulse['amplitude']), 'pulse1_amplitude')
 
         pulse_no_name = DCPulse(amplitude=10)
-        self.assertEqual(str(pulse_no_name['amplitude']), 'None_amplitude')
+        self.assertEqual(str(pulse_no_name['amplitude']), 'amplitude')
 
 
 class TestPulseSignals(unittest.TestCase):
