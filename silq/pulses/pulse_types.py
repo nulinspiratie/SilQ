@@ -141,7 +141,12 @@ class Pulse(ParameterNode):
         # Set attributes that can also be retrieved from pulse_config
         self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None)
         self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None)
-        self.t_stop = Parameter(initial_value=t_stop, unit='s')
+        self.t_stop = Parameter(unit='s')
+
+        # We separately set and get t_stop to ensure duration is also updated
+        self.t_stop = t_stop
+        self['t_stop'].get()
+
         # Since t_stop get/set cmd depends on t_start and duration, we perform
         # another set to ensure that duration is also set if t_stop is not None
         if self['t_stop'].raw_value is not None:
@@ -338,9 +343,6 @@ class Pulse(ParameterNode):
         """
         name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
-
-    def __str__(self):
-        return repr(self)
 
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
