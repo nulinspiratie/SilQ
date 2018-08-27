@@ -82,6 +82,7 @@ class TestPulseSequence(unittest.TestCase):
         pulse_sequence.add(pulse1, pulse2, pulse3)
 
         subset_pulses = pulse_sequence.get_pulses()
+        self.assertEqual(subset_pulses[0], pulse1)
         self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
         subset_pulses = pulse_sequence.get_pulses(t_start=1)
         self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
