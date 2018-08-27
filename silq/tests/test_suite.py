@@ -7,7 +7,8 @@ from qcodes.tests.test_parameter_node import *
 from qcodes.tests.test_parameter import (TestCopyParameter,
                                          TestParameterSignal,
                                          TestParameterLogging,
-                                         TestParameterSnapshotting)
+                                         TestParameterSnapshotting,
+                                         TestParameterPickling)
 
 if __name__ == '__main__':
     unittest.main()
