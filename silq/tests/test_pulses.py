@@ -1,6 +1,7 @@
 import logging
 import unittest
 from copy import copy, deepcopy
+import pickle
 
 from silq.meta_instruments.layout import SingleConnection
 from silq.instrument_interfaces.interface import Channel
@@ -264,8 +265,87 @@ class TestPulseEquality(unittest.TestCase):
 
     def test_copy_pulse_equality(self):
         p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+        self.assertEqual(p, p_copy)
+
+        p_copy.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+        p_copy.duration = 1
+        self.assertEqual(p, p_copy)
+
+        p.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+    def test_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
         p_copy = deepcopy(p)
         self.assertEqual(p, p_copy)
+
+        p_copy.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+        p_copy.duration = 1
+        self.assertEqual(p, p_copy)
+
+        p.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+    def test_double_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_double_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = copy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_double_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+
+    def test_copy_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_deepcopy_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = copy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
 
     def test_pulse_differing_connections(self):
         connection = SingleConnection(output_instrument='ins1',
@@ -308,6 +388,20 @@ class TestPulseLogging(unittest.TestCase):
         pulse_copy = copy(pulse)
         pulse_copy.t_start = 2
         self.assertEqual(len(self.log_list), 0)
+
+
+class TestPulsePickling(unittest.TestCase):
+    def test_pickle_empty_pulse(self):
+        p = Pulse()
+        pickle_dump = pickle.dumps(p)
+        pickled_pulse = pickle.loads(pickle_dump)
+
+    def test_pickle_DC_pulse(self):
+        p = DCPulse()
+        pickle_dump = pickle.dumps(p)
+        pickled_pulse = pickle.loads(pickle_dump)
+
+
 
 
 if __name__ == '__main__':
