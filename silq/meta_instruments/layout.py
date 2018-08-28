@@ -1321,7 +1321,7 @@ class Layout(Instrument):
                 continue
             elif interface.instrument_name() in ignore:
                 logger.info('Skipping starting {interface.name} (name in ignore list)')
-            elif interface in self.flags['start_last']:
+            elif interface.instrument_name() in self.flags['start_last']:
                 logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
