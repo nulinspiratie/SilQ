@@ -186,6 +186,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         return self.layout.sample_rate
 
     def _attach_to_config(self,
+                          path: str,
                           select_attrs: List[str] = None):
         """Attach parameter to a subconfig (within silq config).
 
