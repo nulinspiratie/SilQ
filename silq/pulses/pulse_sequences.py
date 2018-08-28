@@ -596,7 +596,6 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 
     def add_ESR_pulses(self):
         stage_pulse, = self.add(self.ESR['stage_pulse'])
-        stage_pulse['t_start'].connect()
         ESR_t_start = partial(stage_pulse['t_start'].connect,
                               offset=self.ESR['pre_delay'])
 
@@ -605,14 +604,14 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
             for ESR_frequency in self.ESR['frequencies']:
                 pre_flip_ESR_pulse, = self.add(self.ESR['pre_flip_ESR_pulse'])
                 pre_flip_ESR_pulse.frequency = ESR_frequency
-                pre_flip_ESR_pulse.t_start = ESR_t_start
+                ESR_t_start(pre_flip_ESR_pulse['t_start'])
 
                 # Update t_start of next ESR pulse
                 ESR_t_start = partial(pre_flip_ESR_pulse['t_stop'].connect,
                                       offset=self.ESR['inter_delay'])
 
         flip_flop_ESR_pulse, = self.add(self.ESR['flip_flop_pulse'])
-        flip_flop_ESR_pulse.t_start = ESR_t_start
+        ESR_t_start(flip_flop_ESR_pulse['t_start'])
 
         # Calculate flip-flop frequency
         ESR_max_frequency = np.max(self.ESR['frequencies'])
@@ -624,8 +623,8 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         flip_flop_ESR_pulse.frequency = (ESR_max_frequency
                                          - hyperfine / 2
                                          - self.ESR['nuclear_zeeman'])
-        flip_flop_ESR_pulse['t_stop'].connect(stage_pulse.t_stop,
-                                              delay=self.ESR['post_delay'])
+        flip_flop_ESR_pulse['t_stop'].connect(stage_pulse['t_stop'],
+                                              offset=self.ESR['post_delay'])
 
     def generate(self):
         """Updates the pulse sequence"""
