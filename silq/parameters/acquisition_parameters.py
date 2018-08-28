@@ -247,7 +247,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             setattr(self, key, val)
 
     def setup(self,
-                          path: str,
               start: bool = None,
               **kwargs):
         """Setup instruments with current pulse sequence.
