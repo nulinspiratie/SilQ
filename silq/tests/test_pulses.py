@@ -396,12 +396,31 @@ class TestPulsePickling(unittest.TestCase):
         pickle_dump = pickle.dumps(p)
         pickled_pulse = pickle.loads(pickle_dump)
 
-    def test_pickle_DC_pulse(self):
+    def test_pickle_pulse(self):
+        p = Pulse('pulse', t_start=1, duration=2)
+        pickle_dump = pickle.dumps(p)
+
+        pickled_pulse = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse.name, 'pulse')
+        self.assertEqual(pickled_pulse.t_start, 1)
+        self.assertEqual(pickled_pulse.duration, 2)
+        self.assertEqual(pickled_pulse.t_stop, 3)
+
+    def test_pickle_empty_DC_pulse(self):
         p = DCPulse()
         pickle_dump = pickle.dumps(p)
         pickled_pulse = pickle.loads(pickle_dump)
 
+    def test_pickle_DC_pulse(self):
+        p = DCPulse('pulse', t_start=1, duration=2, amplitude=5)
+        pickle_dump = pickle.dumps(p)
 
+        pickled_pulse = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse.name, 'pulse')
+        self.assertEqual(pickled_pulse.t_start, 1)
+        self.assertEqual(pickled_pulse.duration, 2)
+        self.assertEqual(pickled_pulse.t_stop, 3)
+        self.assertEqual(pickled_pulse.amplitude, 5)
 
 
 if __name__ == '__main__':
