@@ -611,10 +611,53 @@ class TestPulseSequenceSignalling(unittest.TestCase):
                                                          pulses[2]])
         self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
 
+
 class TestPulseSequencePickling(unittest.TestCase):
     def test_pickle_empty_pulse_sequence(self):
         pulse_sequence = PulseSequence()
-        pickle.dumps(pulse_sequence)
+        pickle_dump = pickle.dumps(pulse_sequence)
+        pickled_pulse_sequence = pickle.loads(pickle_dump)
+
+    def test_pickle_pulse_sequence_single_pulse(self):
+        p = DCPulse('pulse', duration=2, amplitude=3)
+        pulse_sequence = PulseSequence(pulses=[p])
+        self.assertEqual(pulse_sequence.pulses[0].name, 'pulse')
+        self.assertEqual(pulse_sequence.pulses[0].t_start, 0)
+        self.assertEqual(pulse_sequence.pulses[0].duration, 2)
+        self.assertEqual(pulse_sequence.pulses[0].amplitude, 3)
+        self.assertEqual(pulse_sequence.duration, 2)
+
+        pickle_dump = pickle.dumps(pulse_sequence)
+        pickled_pulse_sequence = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].name, 'pulse')
+        self.assertEqual(pickled_pulse_sequence.pulses[0].t_start, 0)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].duration, 2)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].amplitude, 3)
+        self.assertEqual(pickled_pulse_sequence.duration, 2)
+
+    def test_pickle_pulse_sequence_two_pulses(self):
+        p = DCPulse('pulse', duration=2, amplitude=3)
+        pulse_sequence = PulseSequence(pulses=[p, p])
+        self.assertEqual(pulse_sequence.pulses[0].full_name, 'pulse[0]')
+        self.assertEqual(pulse_sequence.pulses[1].full_name, 'pulse[1]')
+        self.assertEqual(pulse_sequence.pulses[0].t_start, 0)
+        self.assertEqual(pulse_sequence.pulses[0].duration, 2)
+        self.assertEqual(pulse_sequence.pulses[0].amplitude, 3)
+        self.assertEqual(pulse_sequence.duration, 4)
+
+        pickle_dump = pickle.dumps(pulse_sequence)
+        pickled_pulse_sequence = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].full_name, 'pulse[0]')
+        self.assertEqual(pickled_pulse_sequence.pulses[0].t_start, 0)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].duration, 2)
+        self.assertEqual(pickled_pulse_sequence.pulses[0].amplitude, 3)
+
+        self.assertEqual(pickled_pulse_sequence.pulses[1].full_name, 'pulse[1]')
+        self.assertEqual(pickled_pulse_sequence.pulses[1].t_start, 2)
+        self.assertEqual(pickled_pulse_sequence.pulses[1].duration, 2)
+        self.assertEqual(pickled_pulse_sequence.pulses[1].amplitude, 3)
+
+        self.assertEqual(pickled_pulse_sequence.duration, 4)
 
 
 if __name__ == '__main__':
