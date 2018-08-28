@@ -779,7 +779,7 @@ class MeasureNucleusParameter(MeasurementParameter):
             frequency_vals = self._frequency_vals
         else:
             frequency_vals = {int(key): val for key, val
-                              in config[f'{environment}:properties.ESR_vals.items()']}
+                              in config[f'environment:properties.ESR_vals'].items()}
         return frequency_vals
 
     @frequency_vals.setter
