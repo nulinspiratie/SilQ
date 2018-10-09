@@ -209,8 +209,8 @@ class Fit():
         x_vals_full *= xscale
         y_vals_full *= yscale
         plot_kwargs = {**self.plot_kwargs, **kwargs}
-        self.plot_handle = ax.add(y_vals_full,
-                                  x=x_vals_full,
+        self.plot_handle = ax.plot(x_vals_full,
+                                   y_vals_full,
                                   **plot_kwargs)
         return self.plot_handle
 
