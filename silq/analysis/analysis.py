@@ -314,7 +314,8 @@ def find_up_proportion(traces: np.ndarray,
 def count_blips(traces: np.ndarray,
                 threshold_voltage: float,
                 sample_rate: float,
-                t_skip: float):
+                t_skip: float,
+                ignore_final: bool = False):
     """ Count number of blips and durations in high/low state.
 
     Args:
@@ -335,6 +336,7 @@ def count_blips(traces: np.ndarray,
     low_blip_pts, high_blip_pts = [], []
     start_idx = round(t_skip * sample_rate)
 
+    blip_events = [[] for _ in range(len(traces))]
     for k, trace in enumerate(traces):
         idx = start_idx
         while idx < len(trace):
@@ -344,11 +346,16 @@ def count_blips(traces: np.ndarray,
             else:
                 next_idx = np.argmax(trace[idx:] < threshold_voltage)
                 blip_list = high_blip_pts
-            if next_idx == 0:
-                blip_list.append(len(trace) - idx)
+
+            if next_idx == 0:  # Reached end of trace
+                next_idx = len(trace) - idx
+                blip_list.append(next_idx)
+                if not ignore_final:
+                    blip_events[k].append((int(trace[idx] >= threshold_voltage), next_idx))
                 break
             else:
                 blip_list.append(next_idx)
+                blip_events[k].append((int(trace[idx] >= threshold_voltage), next_idx))
                 idx += next_idx
 
     low_blip_durations = np.array(low_blip_pts) / sample_rate
@@ -363,6 +370,7 @@ def count_blips(traces: np.ndarray,
 
     duration = len(traces[0]) / sample_rate
     return {'blips': blips,
+            'blip_events': blip_events,
             'blips_per_second': blips / duration,
             'low_blip_durations': low_blip_durations,
             'high_blip_durations': high_blip_durations,
