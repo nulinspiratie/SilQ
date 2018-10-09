@@ -572,13 +572,17 @@ class SinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'phase', 'power', 'amplitude', 'offset',
+            ['frequency', 'phase', 'power', 'amplitude', 'phase', 'offset',
              'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
             self.phase_reference = 'relative'
+        if self.phase is None:
+            self.phase = 0
+        if self.offset is None:
+            self.offset = 0
 
     def __repr__(self):
         properties_str = ''
@@ -592,7 +596,7 @@ class SinePulse(Pulse):
             if self.amplitude is not None:
                 properties_str += f', A={self.amplitude} V'
 
-            if self.offset is not None:
+            if self.offset:
                 properties_str += f', offset={self.offset} V'
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
@@ -620,9 +624,7 @@ class SinePulse(Pulse):
             t = t - self.t_start
 
         waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
-
-        if self.offset is not None:
-            waveform += self.offset
+        waveform += self.offset
 
         return waveform
 
@@ -645,6 +647,7 @@ class FrequencyRampPulse(Pulse):
             the corresponding instrument/interface is programmed).
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
+        offset: amplitude offset, zero by default
         frequency_sideband: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
         sideband_mode: Type of mixer sideband ('IQ' by default)
@@ -663,6 +666,7 @@ class FrequencyRampPulse(Pulse):
                  frequency_deviation: float = None,
                  amplitude: float = None,
                  power: float = None,
+                 offset: float = None,
                  phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
@@ -691,16 +695,24 @@ class FrequencyRampPulse(Pulse):
                                    vals=vals.Numbers())
         self.power = Parameter(initial_value=power, set_cmd=None,
                                vals=vals.Numbers())
+        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
+                               vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
 
         self._connect_parameters_to_config(
             ['frequency', 'frequency_deviation', 'frequency_start',
              'frequency_stop', 'frequency_sideband', 'sideband_mode',
-             'amplitude', 'power'])
+             'amplitude', 'power', 'phase', 'offset'])
 
         # Set default value for sideband_mode after connecting parameters,
         # because its value may have been retrieved from config
         if self.sideband_mode is not None:
             self.sideband_mode = 'IQ'
+        if self.phase is None:
+            self.phase = 0
+        if self.offset is None:
+            self.offset = 0
 
     @parameter
     def frequency_start_get(self, parameter):
@@ -730,7 +742,16 @@ class FrequencyRampPulse(Pulse):
             if self.frequency_sideband is not None:
                 properties_str += f', f_sb={freq_to_str(self.frequency_sideband)}' \
                                   f'{self.sideband_mode}'
-            properties_str += f', power={self.power}'
+
+            if self.power is not None:
+                properties_str += f', power={self.power} dBm'
+
+            if self.amplitude is not None:
+                properties_str += f', A={self.amplitude} V'
+
+            if self.offset:
+                properties_str += f', offset={self.offset} V'
+
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
         except:
