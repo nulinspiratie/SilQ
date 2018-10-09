@@ -18,6 +18,13 @@ class TriggerFPGAController(Instrument):
         self.sample_rate = 100e6
         self.stop()
 
+    def _get_counter_vals(self, num_vals):
+        return self.FPGA.get_fpga_pc_port(port=0,
+                                   data_size=num_vals,
+                                   address=0,
+                                   address_mode=1, # don't auto-increment
+                                   access_mode=1)
+
     def _set_trigger_interval(self, trigger_interval):
         interval_cycles = int(round(trigger_interval * self.sample_rate))
         self.FPGA.set_fpga_pc_port(port=0,
@@ -44,10 +51,11 @@ class TriggerFPGAController(Instrument):
     def stop(self):
         # Also set trigger duration to zero because signal otherwise goes to high
         self._set_trigger_duration(0)
+        # Set: Reset = 1, Enable = 0
         self.FPGA.set_fpga_pc_port(port=0,
                                    data=[1, 0],
                                    address=0,
-                                   address_mode=0,
+                                   address_mode=0, # auto-increment
                                    access_mode=1)
 
     def start(self):
@@ -57,9 +65,10 @@ class TriggerFPGAController(Instrument):
 
         # Reset trigger duration because it's set to 0 during stop
         self._set_trigger_duration(self.trigger_duration())
+        # Set: Reset = 0, Enable = 1
         self.FPGA.set_fpga_pc_port(port=0,
                                    data=[0, 1],
                                    address=0,
-                                   address_mode=0,
+                                   address_mode=0, # auto-increment
                                    access_mode=1)
 
