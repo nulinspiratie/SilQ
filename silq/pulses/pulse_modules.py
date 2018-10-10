@@ -379,7 +379,7 @@ class PulseSequence(ParameterNode):
         return [pulse.full_name for pulse in self.pulses]
 
     def snapshot_base(self, update: bool=False,
-                      params_to_skip_update: Sequence[str]=None):
+                      params_to_skip_update: Sequence[str]=[]):
         """
         State of the pulse sequence as a JSON-compatible dict.
 
@@ -400,6 +400,7 @@ class PulseSequence(ParameterNode):
 
         snap = super().snapshot_base(update=update,
                                      params_to_skip_update=params_to_skip_update)
+        snap.pop('enabled_pulses', None)
 
         snap['pulses'] = [pulse.snapshot(update=update,
                                          params_to_skip_update=params_to_skip_update)
