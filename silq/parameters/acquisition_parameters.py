@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Sequence
 import numpy as np
 from collections import OrderedDict, Iterable
 from copy import copy
@@ -184,6 +184,15 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     def sample_rate(self):
         """ Acquisition sample rate """
         return self.layout.sample_rate
+
+    def snapshot_base(self, update: bool=False,
+                      params_to_skip_update: Sequence[str]=None,
+                      simplify: bool = False):
+        snapshot = super().snapshot_base(update=update,
+                                         params_to_skip_update=params_to_skip_update,
+                                         simplify=simplify)
+        snapshot['pulse_sequence'] = snapshot['pulse_sequence'].snapshot()
+        return snapshot
 
     def _attach_to_config(self,
                           path: str,
