@@ -394,6 +394,11 @@ class Pulse(ParameterNode):
             if parameter.raw_value is None and config_value is not None:
                 parameter(config_value)
 
+    def snapshot_base(self, update: bool=False,
+                      params_to_skip_update: Sequence[str]=None):
+        snapshot = super().snapshot_base()
+        snapshot['connection'] = repr(snapshot['connection'])
+        return snapshot
 
     def satisfies_conditions(self,
                              pulse_class = None,
