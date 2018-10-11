@@ -1117,10 +1117,6 @@ class Layout(Instrument):
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
-            interface.pulse_sequence.duration = pulse_sequence.duration
-            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
-            interface.input_pulse_sequence.duration = pulse_sequence.duration
-            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in pulse_sequence:
@@ -1136,6 +1132,12 @@ class Layout(Instrument):
                     connections=self.connections)
                 for pulse in additional_pulses:
                     self._target_pulse(pulse)
+
+        for interface in self._interfaces.values():
+            interface.pulse_sequence.duration = pulse_sequence.duration
+            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
+            interface.input_pulse_sequence.duration = pulse_sequence.duration
+            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Update pulse sequence
         self._pulse_sequence = copy(pulse_sequence)
