@@ -280,11 +280,15 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def t_start_list_get(self, parameter):
-        return sorted({pulse.t_start for pulse in self.enabled_pulses})
+        # Use get_latest for speedup
+        return sorted({pulse['t_start'].get_latest()
+                       for pulse in self.enabled_pulses})
 
     @parameter
     def t_stop_list_get(self, parameter):
-        return sorted({pulse.t_stop for pulse in self.enabled_pulses})
+        # Use get_latest for speedup
+        return sorted({pulse['t_stop'].get_latest()
+                       for pulse in self.enabled_pulses})
 
     @parameter
     def t_list_get(self, parameter):
