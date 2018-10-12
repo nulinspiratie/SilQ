@@ -139,9 +139,9 @@ class Pulse(ParameterNode):
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
-        self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None)
-        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None)
-        self.t_stop = Parameter(unit='s')
+        self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None, wrap_get=False)
+        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
+        self.t_stop = Parameter(unit='s', wrap_get=False)
 
         # We separately set and get t_stop to ensure duration is also updated
         self.t_stop = t_stop
@@ -213,9 +213,11 @@ class Pulse(ParameterNode):
     @parameter
     def t_stop_get(self, parameter):
         if self.t_start is not None and self.duration is not None:
-            return round(self.t_start + self.duration, 11)
+            val = round(self.t_start + self.duration, 11)
         else:
-            return None
+            val = None
+        parameter._save_val(val)  # Explicit save_val since we don't wrap_get
+        return val
 
     @parameter
     def t_stop_set(self, parameter, t_stop):
