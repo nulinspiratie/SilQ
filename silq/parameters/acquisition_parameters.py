@@ -372,6 +372,15 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         plot.tight_layout()
         return plot
 
+    def print_results(self):
+        """Print results whose keys are in ``AcquisitionParameter.names``"""
+        names = self.names if self.names is not None else [self.name]
+        for name in names:
+            value = self.results[name]
+            if isinstance(value, (int, float)):
+                print(f'{name}: {value:.3f}')
+            else:
+                print(f'{name}: {value}')
 
     @clear_single_settings
     def get_raw(self):
