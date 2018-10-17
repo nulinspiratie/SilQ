@@ -108,12 +108,14 @@ class TestPulse(unittest.TestCase):
         for parameter_name, parameter in pulse.parameters.items():
             if parameter.unit:
                 parameter_name += f' ({parameter.unit})'
-            self.assertIn(parameter_name, snapshot)
+            self.assertIn(parameter_name, snapshot, msg=f'{parameter_name} not present')
+            if snapshot[parameter_name] != parameter():
+                print('hi')
             self.assertEqual(snapshot.pop(parameter_name),
-                             parameter())
+                             parameter(), msg=f'{parameter} not equal')
         self.assertEqual('silq.pulses.pulse_types.DCPulse',
                          snapshot.pop('__class__'))
-        self.assertFalse(snapshot)
+        self.assertFalse(snapshot, f'snapshot exists')
 
     def test_pulse_parameter_name(self):
         pulse = DCPulse('pulse1', amplitude=10)
