@@ -271,7 +271,9 @@ class TestPulseSequence(unittest.TestCase):
         for parameter_name, parameter in pulse_sequence.parameters.items():
             if parameter.unit:
                 parameter_name += f' ({parameter.unit})'
-            self.assertEqual(snapshot.pop(parameter_name), parameter())
+            if parameter_name in ['enabled_pulses']:
+                continue
+            self.assertEqual(snapshot.pop(parameter_name), parameter(), msg=parameter_name)
 
         self.assertEqual(len(snapshot), 1)
 
@@ -279,14 +281,14 @@ class TestPulseSequence(unittest.TestCase):
 
         snapshot = pulse_sequence.snapshot()
         for parameter_name, parameter in pulse_sequence.parameters.items():
-            if parameter_name == 'pulses':
+            if parameter_name in ['pulses', 'enabled_pulses']:
                 continue
             if parameter.unit:
                 parameter_name += f' ({parameter.unit})'
-            self.assertEqual(snapshot.pop(parameter_name), parameter())
+            self.assertEqual(snapshot.pop(parameter_name), parameter(), msg=parameter_name)
 
         for k, pulse_snapshot in enumerate(snapshot['pulses']):
-            self.assertEqual(pulse_snapshot, pulse_sequence.pulses[k].snapshot())
+            self.assertEqual(pulse_snapshot, pulse_sequence.pulses[k].snapshot(), msg=repr(pulse_sequence.pulses[k]))
 
 
 class TestCopyPulseSequence(unittest.TestCase):
