@@ -793,6 +793,7 @@ class DCSweepParameter(AcquisitionParameter):
     Todo:
         Convert pulse sequence and generator into `PulseSequenceGenerator`
     """
+    connect_to_config = True  # Whether pulses should connect to config (speedup)
     def __init__(self, name='DC_sweep', **kwargs):
 
         self.sweep_parameters = OrderedDict()
@@ -950,13 +951,15 @@ class DCSweepParameter(AcquisitionParameter):
                                       amplitude_stop=sweep_voltages[-1],
                                       acquire=True,
                                       average=f'point_segment:{sweep_points}',
-                                      connection_label=connection_label)]
+                                      connection_label=connection_label,
+                                      connect_to_config=self.connect_to_config)]
             else:
                 pulses = [
                     DCPulse('DC_inner', duration=self.pulse_duration,
                             acquire=True, average='point',
                             amplitude=sweep_voltage,
-                            connection_label=connection_label)
+                            connection_label=connection_label,
+                            connect_to_config=self.connect_to_config)
                 for sweep_voltage in sweep_voltages]
 
             self.pulse_sequence = PulseSequence(pulses=pulses)
@@ -983,7 +986,8 @@ class DCSweepParameter(AcquisitionParameter):
                             DCPulse('DC_read', duration=self.pulse_duration,
                                     acquire=True, amplitude=sweep_voltage,
                                     average='point',
-                                    connection_label=outer_connection_label))
+                                    connection_label=outer_connection_label,
+                                    connect_to_config=self.connect_to_config))
             else:
                 t = 0
                 sweep_duration = self.pulse_duration * len(inner_sweep_voltages)
@@ -992,13 +996,15 @@ class DCSweepParameter(AcquisitionParameter):
                         DCPulse('DC_outer', t_start=t,
                                 duration=sweep_duration + self.inter_delay,
                                 amplitude=outer_sweep_voltage,
-                                connection_label=outer_connection_label))
+                                connection_label=outer_connection_label,
+                                connect_to_config=self.connect_to_config))
                     if self.inter_delay > 0:
                         pulses.append(
                             DCPulse('DC_inter_delay', t_start=t,
                                     duration=self.inter_delay,
                                     amplitude=inner_sweep_voltages[0],
-                                    connection_label=inner_connection_label))
+                                    connection_label=inner_connection_label,
+                                    connect_to_config=self.connect_to_config))
                         t += self.inter_delay
 
                     if self.use_ramp:
@@ -1010,7 +1016,8 @@ class DCSweepParameter(AcquisitionParameter):
                                         amplitude_stop=inner_sweep_voltages[-1],
                                         acquire=True,
                                         average=f'point_segment:{sweep_points}',
-                                        connection_label=inner_connection_label)
+                                        connection_label=inner_connection_label,
+                                        connect_to_config=self.connect_to_config)
                         )
                         t += sweep_duration
                     else:
@@ -1020,7 +1027,8 @@ class DCSweepParameter(AcquisitionParameter):
                                         duration=self.pulse_duration,
                                         acquire=True, average='point',
                                         amplitude=inner_sweep_voltage,
-                                        connection_label=inner_connection_label)
+                                        connection_label=inner_connection_label,
+                                        connect_to_config=self.connect_to_config)
                             )
                             t += self.pulse_duration
 

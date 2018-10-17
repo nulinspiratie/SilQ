@@ -109,6 +109,7 @@ class Pulse(ParameterNode):
             Should be defined in ``__init__`` before calling ``Pulse.__init__``.
         implementation (PulseImplementation): Pulse implementation for targeted
             pulse, see `PulseImplementation`.
+        connect_to_config: Connect parameters to the config (default True)
     """
     # base config link to use for connecting pulse parameters to the config
     # Changing this will only affect pulses instantiated after change
@@ -126,7 +127,8 @@ class Pulse(ParameterNode):
                  enabled: bool = True,
                  average: str = 'none',
                  connection_label: str = None,
-                 connection_requirements: dict = {}):
+                 connection_requirements: dict = {},
+                 connect_to_config: bool = True):
         super().__init__(use_as_attributes=True,
                          log_changes=False,
                          simplify_snapshot=True)
@@ -168,7 +170,8 @@ class Pulse(ParameterNode):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-        self._connect_parameters_to_config()
+        if connect_to_config:
+            self._connect_parameters_to_config()
 
     @parameter
     def average_vals(self, parameter, value):
@@ -399,7 +402,8 @@ class Pulse(ParameterNode):
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=None):
         snapshot = super().snapshot_base()
-        snapshot['connection'] = repr(snapshot['connection'])
+        if snapshot['connection']:
+            snapshot['connection'] = repr(snapshot['connection'])
         return snapshot
 
     def satisfies_conditions(self,
@@ -446,12 +450,12 @@ class Pulse(ParameterNode):
                 # If arg is a tuple, the first element specifies its relation
                 if isinstance(val, (list, tuple)):
                     relation, val = val
-                else:
-                    relation = '=='
-                if not get_truth(test_val=self.parameters[property].get_latest(),
-                        # test_val=getattr(self, property),
-                                 target_val=val,
-                                 relation=relation):
+                    if not get_truth(test_val=self.parameters[property].get_latest(),
+                            # test_val=getattr(self, property),
+                                     target_val=val,
+                                     relation=relation):
+                        return False
+                elif self.parameters[property]._latest['value'] != val:
                     return False
         else:
             return True
