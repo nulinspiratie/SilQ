@@ -366,16 +366,23 @@ class PulseSequence(ParameterNode):
 
     def __copy__(self, *args):
         # Temporarily remove pulses from parameter so they won't be deepcopied
-        pulses = self.pulses
-        self.parameters['pulses']._latest['value'] = []
-        self.parameters['pulses']._latest['raw_value'] = []
+        pulses = self.parameters['pulses']._latest
+        enabled_pulses = self.parameters['enabled_pulses']._latest
+        disabled_pulses = self.parameters['disabled_pulses']._latest
+        try:
+            self.parameters['pulses']._latest = {'value': [], 'raw_value': []}
+            self.parameters['enabled_pulses']._latest = {'value': [], 'raw_value': []}
+            self.parameters['disabled_pulses']._latest = {'value': [], 'raw_value': []}
 
-        self_copy = super().__copy__()
+            self_copy = super().__copy__()
+        finally:
+            # Restore pulses
+            self.parameters['pulses']._latest = pulses
+            self.parameters['enabled_pulses']._latest = enabled_pulses
+            self.parameters['disabled_pulses']._latest = disabled_pulses
 
-        self.parameters['pulses']._latest['value'] = pulses
-        self.parameters['pulses']._latest['raw_value'] = pulses
-
-        self_copy.pulses = [copy(pulse) for pulse in self.pulses]
+        # Add pulses (which will create copies)
+        self_copy.pulses = self.pulses
         return self_copy
 
     def _ipython_key_completions_(self):
@@ -479,12 +486,15 @@ class PulseSequence(ParameterNode):
                 pulse_copy.t_start = 0
 
             self.pulses.append(pulse_copy)
+            if pulse_copy.enabled:
+                self.enabled_pulses.append(pulse_copy)
+            else:
+                self.disabled_pulses.append(pulse_copy)
             added_pulses.append(pulse_copy)
             # TODO attach pulsesequence to some of the pulse attributes
             pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses,
                                           update=False)
 
-        self._update_enabled_disabled_pulses()
         self.sort()
         self.duration = None  # Reset duration to t_stop of last pulse
 
@@ -578,12 +588,11 @@ class PulseSequence(ParameterNode):
         See Also:
             `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.
         """
-        pulses = self.pulses
+        pulses = self.enabled_pulses if enabled else self.pulses
         # Filter pulses by pulse conditions
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions and v is not None}
-        pulses = [pulse for pulse in pulses
-                  if pulse.satisfies_conditions(enabled=enabled, **pulse_conditions)]
+        pulses = [pulse for pulse in pulses if pulse.satisfies_conditions(**pulse_conditions)]
 
         # Filter pulses by pulse connection conditions
         connection_conditions = {k: v for k, v in conditions.items()
