@@ -135,7 +135,7 @@ class Pulse(ParameterNode):
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
         self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
-                            set_cmd=None)
+                            set_cmd=None, wrap_get=False)
         self.full_name = Parameter()
         self['full_name'].get()  # Update to latest value
 
@@ -355,6 +355,8 @@ class Pulse(ParameterNode):
         Should be appended in each Pulse subclass."""
         if self.connection:
             properties_str += f'\n\tconnection: {self.connection}'
+        elif self.connection_label:
+            properties_str += f'\n\tconnection_label: {self.connection_label}'
         if self.connection_requirements:
             properties_str += f'\n\trequirements: {self.connection_requirements}'
         if hasattr(self, 'additional_pulses') and self.additional_pulses:
