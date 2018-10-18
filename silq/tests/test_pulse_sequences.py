@@ -1,7 +1,8 @@
 import unittest
 from copy import copy, deepcopy
 import pickle
-
+import numpy as np
+import random
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
@@ -289,6 +290,147 @@ class TestPulseSequence(unittest.TestCase):
 
         for k, pulse_snapshot in enumerate(snapshot['pulses']):
             self.assertEqual(pulse_snapshot, pulse_sequence.pulses[k].snapshot(), msg=repr(pulse_sequence.pulses[k]))
+
+    def test_pulse_overlap(self):
+        pulse_sequence = PulseSequence(allow_pulse_overlap=False)
+        pulse1 = DCPulse(t_start=0, duration=10e-3)
+        pulse2 = DCPulse(t_start=5e-3, duration=10e-3)
+        with self.assertRaises(AssertionError):
+            pulse_sequence.add(pulse1, pulse2)
+
+    def test_pulse_overlap_no_t_start(self):
+        pulse_sequence = PulseSequence(allow_pulse_overlap=False)
+        pulse1 = DCPulse(duration=10e-3)
+        pulse_sequence.add(pulse1, pulse1)
+
+    def test_pulse_overlap_no_t_start_sequential(self):
+        pulse_sequence = PulseSequence(allow_pulse_overlap=False)
+        pulse1 = DCPulse(duration=10e-3)
+        pulse_sequence.add(pulse1)
+        pulse_sequence.add(pulse1)
+
+
+class TestPulseSequenceQuickAdd(unittest.TestCase):
+    def test_quick_add_pulses(self):
+        pulses = [DCPulse(duration=10),
+                  DCPulse(duration=10)]
+        pulse_sequence = PulseSequence()
+        added_pulses = pulse_sequence.quick_add(*pulses)
+
+        self.assertNotEqual(pulses, added_pulses)
+        self.assertEqual(pulses[0].t_start, None)
+        self.assertEqual(added_pulses[0].t_start, 0)
+        self.assertEqual(added_pulses[1].t_start, 10)
+
+        self.assertEqual(pulse_sequence.duration, 20)
+
+    def test_quick_add_pulse_id(self):
+        pulses = [DCPulse('DC', duration=10),
+                  DCPulse('DC', duration=10),
+                  DCPulse('DC2', duration=10)]
+        pulse_sequence = PulseSequence()
+        added_pulses = pulse_sequence.quick_add(*pulses)
+        pulse_sequence.finish_quick_add()
+
+        self.assertNotEqual(pulses, added_pulses)
+        self.assertEqual(pulses[0].t_start, None)
+        self.assertEqual(added_pulses[0].t_start, 0)
+        self.assertEqual(added_pulses[1].t_start, 10)
+        self.assertEqual(added_pulses[2].t_start, 20)
+
+        self.assertEqual(pulses[0].full_name, 'DC')
+        self.assertEqual(pulses[1].full_name, 'DC')
+        self.assertEqual(pulses[2].full_name, 'DC2')
+
+        self.assertEqual(added_pulses[0].full_name, 'DC[0]')
+        self.assertEqual(added_pulses[1].full_name, 'DC[1]')
+        self.assertEqual(added_pulses[2].full_name, 'DC2')
+
+        self.assertEqual(pulse_sequence.duration, 30)
+
+    def test_quick_add_unsorted_pulses(self):
+        pulses = []
+
+        t = 0
+        for k in range(30):
+            duration = np.round(np.random.rand(), 11)
+            pulses.append(DCPulse('DC', t_start=t, duration=duration))
+            t += duration
+        random.shuffle(pulses)
+
+        pulse_sequence = PulseSequence()
+        added_pulses = pulse_sequence.quick_add(*pulses)
+
+        for pulse in added_pulses:
+            self.assertEqual(pulse.id, None)
+
+        pulse_sequence.finish_quick_add()
+
+        t = 0
+        for k, pulse in enumerate(pulse_sequence.pulses):
+            self.assertEqual(pulse.id, k)
+            self.assertAlmostEqual(pulse.t_start, t)
+            t += pulse.duration
+
+        self.assertAlmostEqual(pulse_sequence.duration, t)
+
+    def test_overlapping_pulses(self):
+        pulses = [DCPulse(t_start=0, duration=10),
+                  DCPulse(t_start=5, duration=10)]
+        pulse_sequence = PulseSequence()
+        pulse_sequence.quick_add(*pulses)
+
+        with self.assertRaises(AssertionError):
+            pulse_sequence.finish_quick_add()
+
+    def test_overlapping_pulses_different_connection_label(self):
+        pulses = [DCPulse(t_start=0, duration=10, connection_label='con1'),
+                  DCPulse(t_start=5, duration=10, connection_label='con2')]
+        pulse_sequence = PulseSequence()
+        pulse_sequence.quick_add(*pulses)
+        pulse_sequence.finish_quick_add()
+
+    def test_overlapping_random_pulses(self):
+        pulses = []
+        t = 0
+        for k in range(30):
+            duration = np.round(np.random.rand(), 11)
+            pulses.append(DCPulse('DC', t_start=t, duration=duration,
+                                  connection_label='connection1'))
+            t += duration
+        random.shuffle(pulses)
+
+        pulse_sequence = PulseSequence()
+        pulse_sequence.quick_add(*pulses)
+        pulse_sequence.finish_quick_add()  # No overlap
+
+        # Add pulses with connection label
+        second_pulses = []
+        t = 0
+        for k in range(30):
+            duration = np.round(np.random.rand(), 11)
+            second_pulses.append(DCPulse('DC', t_start=t, duration=duration,
+                                         connection_label='connection2'))
+            t += duration
+        random.shuffle(second_pulses)
+
+        pulse_sequence.quick_add(*second_pulses)
+        pulse_sequence.finish_quick_add()  # No overlap
+
+        for connection_label in ['connection1', 'connection2', 'connection3', None]:
+            # Add pulse that overlaps
+            overlapping_pulse = DCPulse(t_start=pulse_sequence.duration / 2, duration=1e-5,
+                                        connection_label=connection_label)
+            overlapping_pulse_copy, = pulse_sequence.quick_add(overlapping_pulse)
+
+            if connection_label in ['connection1', 'connection2', None]:
+                with self.assertRaises(AssertionError):
+                    pulse_sequence.finish_quick_add()
+            else:
+                pulse_sequence.finish_quick_add()
+
+            pulse_sequence.remove(overlapping_pulse_copy)
+            pulse_sequence.finish_quick_add()
 
 
 class TestCopyPulseSequence(unittest.TestCase):
