@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Union, Tuple, Sequence
 import numpy as np
 from copy import copy, deepcopy
+copy_alias = copy  # Alias for functions that have copy as a kwarg
 from blinker import Signal
 from matplotlib import pyplot as plt
 
@@ -438,13 +439,16 @@ class PulseSequence(ParameterNode):
         Note:
             When a pulse is added, it is first copied, to ensure that the
             original pulse remains unmodified.
+            For an speed-optimized version, see `PulseSequence.quick_add`
         """
         added_pulses = []
 
         for pulse in pulses:
             # Perform checks to see if pulse can be added
-            if not self.allow_pulse_overlap and any(self.pulses_overlap(pulse, p)
-                                                    for p in self.enabled_pulses):
+            if (not self.allow_pulse_overlap
+                    and pulse.t_start is not None
+                    and any(p for p in self.enabled_pulses
+                            if self.pulses_overlap(pulse, p))):
                 overlapping_pulses = [p for p in self.enabled_pulses
                                       if self.pulses_overlap(pulse, p)]
                 raise AssertionError(f'Cannot add pulse {pulse} because it '
@@ -499,6 +503,111 @@ class PulseSequence(ParameterNode):
         self.duration = None  # Reset duration to t_stop of last pulse
 
         return added_pulses
+
+    def quick_add(self, *pulses, copy=True):
+        """"Quickly add pulses to a sequence skipping steps and checks.
+
+        This method is used in the during the `Layout` targeting of a pulse
+        sequence, and should generally only be used if speed is a crucial factor.
+
+        Note:
+            When using this method, make sure to finish adding pulses with
+            `PulseSequence.finish_quick_add`.
+
+        Steps skipped:
+
+        - Copying of the pulse if ``copy`` is False
+        - Assigning a unique pulse id if multiple pulses share the same name
+          (done in `PulseSequence.finish_quick_add`)
+        - Connecting to t_stop of last pulse if t_start is not set
+        - Sorting pulses (done in `PulseSequence.finish_quick_add`)
+        - Ensuring no pulses overlapped (done in `PulseSequence.finish_quick_add`)
+
+        Args:
+            *pulses: List of pulses to be added. Note that these won't be copied
+                if ``copy`` is False, and so the t_start may be set
+            copy: Whether to copy the pulse before applying operations
+
+        Returns:
+            Added pulses. If copy is False, the original pulses are returned.
+
+        Note:
+            If copy is False, the id of original pulses may be set when calling
+            `PulseSequence.quick_add`.
+
+        """
+        added_pulses = []
+        for pulse in pulses:
+            assert pulse.implementation is not None or self.allow_untargeted_pulses, \
+                f'Cannot add untargeted pulse {pulse}'
+            assert pulse.implementation is None or self.allow_targeted_pulses, \
+                f'Not allowed to add targeted pulse {pulse}'
+            assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
+
+            if copy:
+                pulse = copy_alias(pulse)
+
+            # TODO set t_start if not set
+            # If pulse does not have t_start defined, it will be attached to
+            # the end of the last pulse on the same connection(_label)
+            if pulse.t_start is None and self.pulses:
+                # Find relevant pulses that share same connection(_label)
+                relevant_pulses = self.get_pulses(connection=pulse.connection,
+                                                  connection_label=pulse.connection_label)
+                if relevant_pulses:
+                    pulse.t_start = max(pulse.parameters['t_stop'].raw_value
+                                        for pulse in relevant_pulses)
+            if pulse.t_start is None:  # No relevant pulses found
+                pulse.t_start = 0
+
+            self.pulses.append(pulse)
+            added_pulses.append(pulse)
+            if pulse.enabled:
+                self.enabled_pulses.append(pulse)
+            else:
+                self.disabled_pulses.append(pulse)
+
+        self.duration = None  # Reset duration to t_stop of last pulse
+
+        return added_pulses
+
+    def finish_quick_add(self):
+        """Finish adding pulses via `PulseSequence.quick_add`
+
+        Steps performed:
+
+        - Sorting of pulses
+        - Checking that pulses do not overlap
+        - Adding unique id's to pulses in case a name is shared by pulses
+
+        """
+        self.sort()
+
+        # Check pulse overlap
+        active_pulses = []
+        for pulse in self.enabled_pulses:
+            new_active_pulses = []
+            for active_pulse in active_pulses:
+                if active_pulse.t_stop <= pulse.t_start:
+                    continue
+                else:
+                    new_active_pulses.append(active_pulse)
+                assert not self.pulses_overlap(pulse, active_pulse), \
+                    f"Pulses overlap:\n\t{repr(pulse)}\n\t{repr(active_pulse)}"
+
+            new_active_pulses.append(pulse)
+            active_pulses = new_active_pulses
+
+        # Ensure all pulses have a unique full_name. This is done by attaching
+        # a unique id if multiple pulses share the same name
+        unique_names = set(pulse.name for pulse in self.pulses)
+        for name in unique_names:
+            same_name_pulses = self.get_pulses(name=name)
+
+            # Add ``id`` if several pulses share the same name
+            if len(same_name_pulses) > 1:
+                for k, pulse in enumerate(same_name_pulses):
+                    pulse.id = k
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
