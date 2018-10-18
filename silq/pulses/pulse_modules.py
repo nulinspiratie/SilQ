@@ -255,7 +255,8 @@ class PulseSequence(ParameterNode):
         # We modify the set_parser instead of set, since we don't want to set
         # pulses to the original pulses, but to the added (copied) pulses
         self.clear()
-        added_pulses = self.add(*pulses)
+        added_pulses = self.quick_add(*pulses)
+        self.finish_quick_add()
         return added_pulses
 
     @parameter
@@ -504,7 +505,7 @@ class PulseSequence(ParameterNode):
 
         return added_pulses
 
-    def quick_add(self, *pulses, copy=True):
+    def quick_add(self, *pulses, copy=True, connect=True):
         """"Quickly add pulses to a sequence skipping steps and checks.
 
         This method is used in the during the `Layout` targeting of a pulse
@@ -514,14 +515,12 @@ class PulseSequence(ParameterNode):
             When using this method, make sure to finish adding pulses with
             `PulseSequence.finish_quick_add`.
 
-        Steps skipped:
+        The following steps are skipped and are performed in
+        `PulseSequence.finish_quick_add`:
 
-        - Copying of the pulse if ``copy`` is False
         - Assigning a unique pulse id if multiple pulses share the same name
-          (done in `PulseSequence.finish_quick_add`)
-        - Connecting to t_stop of last pulse if t_start is not set
-        - Sorting pulses (done in `PulseSequence.finish_quick_add`)
-        - Ensuring no pulses overlapped (done in `PulseSequence.finish_quick_add`)
+        - Sorting pulses
+        - Ensuring no pulses overlapped
 
         Args:
             *pulses: List of pulses to be added. Note that these won't be copied
@@ -555,8 +554,11 @@ class PulseSequence(ParameterNode):
                 relevant_pulses = self.get_pulses(connection=pulse.connection,
                                                   connection_label=pulse.connection_label)
                 if relevant_pulses:
-                    pulse.t_start = max(pulse.parameters['t_stop'].raw_value
-                                        for pulse in relevant_pulses)
+                    last_pulse = max(relevant_pulses,
+                                     key=lambda pulse: pulse.parameters['t_stop'].raw_value)
+                    pulse.t_start = last_pulse.t_stop
+                    if connect:
+                        last_pulse['t_stop'].connect(pulse['t_start'], update=False)
             if pulse.t_start is None:  # No relevant pulses found
                 pulse.t_start = 0
 
@@ -566,6 +568,11 @@ class PulseSequence(ParameterNode):
                 self.enabled_pulses.append(pulse)
             else:
                 self.disabled_pulses.append(pulse)
+
+            # TODO attach pulsesequence to some of the pulse attributes
+            if connect:
+                pulse['enabled'].connect(self._update_enabled_disabled_pulses,
+                                         update=False)
 
         self.duration = None  # Reset duration to t_stop of last pulse
 
@@ -581,33 +588,37 @@ class PulseSequence(ParameterNode):
         - Adding unique id's to pulses in case a name is shared by pulses
 
         """
-        self.sort()
+        try:
+            self.sort()
 
-        # Check pulse overlap
-        active_pulses = []
-        for pulse in self.enabled_pulses:
-            new_active_pulses = []
-            for active_pulse in active_pulses:
-                if active_pulse.t_stop <= pulse.t_start:
-                    continue
-                else:
-                    new_active_pulses.append(active_pulse)
-                assert not self.pulses_overlap(pulse, active_pulse), \
-                    f"Pulses overlap:\n\t{repr(pulse)}\n\t{repr(active_pulse)}"
+            if not self.allow_pulse_overlap:  # Check pulse overlap
+                active_pulses = []
+                for pulse in self.enabled_pulses:
+                    new_active_pulses = []
+                    for active_pulse in active_pulses:
+                        if active_pulse.t_stop <= pulse.t_start:
+                            continue
+                        else:
+                            new_active_pulses.append(active_pulse)
+                        assert not self.pulses_overlap(pulse, active_pulse), \
+                            f"Pulses overlap:\n\t{repr(pulse)}\n\t{repr(active_pulse)}"
 
-            new_active_pulses.append(pulse)
-            active_pulses = new_active_pulses
+                    new_active_pulses.append(pulse)
+                    active_pulses = new_active_pulses
 
-        # Ensure all pulses have a unique full_name. This is done by attaching
-        # a unique id if multiple pulses share the same name
-        unique_names = set(pulse.name for pulse in self.pulses)
-        for name in unique_names:
-            same_name_pulses = self.get_pulses(name=name)
+            # Ensure all pulses have a unique full_name. This is done by attaching
+            # a unique id if multiple pulses share the same name
+            unique_names = set(pulse.name for pulse in self.pulses)
+            for name in unique_names:
+                same_name_pulses = self.get_pulses(name=name)
 
-            # Add ``id`` if several pulses share the same name
-            if len(same_name_pulses) > 1:
-                for k, pulse in enumerate(same_name_pulses):
-                    pulse.id = k
+                # Add ``id`` if several pulses share the same name
+                if len(same_name_pulses) > 1:
+                    for k, pulse in enumerate(same_name_pulses):
+                        pulse.id = k
+        except AssertionError:  # Likely error is that pulses overlap
+            self.clear()
+            raise
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
@@ -625,7 +636,7 @@ class PulseSequence(ParameterNode):
                 pulses_same_name = [p for p in self if p == pulse]
 
             assert len(pulses_same_name) == 1, \
-                f'No unique pulse {pulse} found, pulses: {pulses}'
+                f'No unique pulse {pulse} found, pulses: {pulses_same_name}'
             pulse_same_name = pulses_same_name[0]
 
             self.pulses.remove(pulse_same_name)
