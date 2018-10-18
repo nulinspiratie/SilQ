@@ -377,7 +377,7 @@ class TestPulseSequenceQuickAdd(unittest.TestCase):
     def test_overlapping_pulses(self):
         pulses = [DCPulse(t_start=0, duration=10),
                   DCPulse(t_start=5, duration=10)]
-        pulse_sequence = PulseSequence()
+        pulse_sequence = PulseSequence(allow_pulse_overlap=False)
         pulse_sequence.quick_add(*pulses)
 
         with self.assertRaises(AssertionError):
@@ -386,39 +386,39 @@ class TestPulseSequenceQuickAdd(unittest.TestCase):
     def test_overlapping_pulses_different_connection_label(self):
         pulses = [DCPulse(t_start=0, duration=10, connection_label='con1'),
                   DCPulse(t_start=5, duration=10, connection_label='con2')]
-        pulse_sequence = PulseSequence()
+        pulse_sequence = PulseSequence(allow_pulse_overlap=False)
         pulse_sequence.quick_add(*pulses)
         pulse_sequence.finish_quick_add()
 
     def test_overlapping_random_pulses(self):
-        pulses = []
-        t = 0
-        for k in range(30):
-            duration = np.round(np.random.rand(), 11)
-            pulses.append(DCPulse('DC', t_start=t, duration=duration,
-                                  connection_label='connection1'))
-            t += duration
-        random.shuffle(pulses)
-
-        pulse_sequence = PulseSequence()
-        pulse_sequence.quick_add(*pulses)
-        pulse_sequence.finish_quick_add()  # No overlap
-
-        # Add pulses with connection label
-        second_pulses = []
-        t = 0
-        for k in range(30):
-            duration = np.round(np.random.rand(), 11)
-            second_pulses.append(DCPulse('DC', t_start=t, duration=duration,
-                                         connection_label='connection2'))
-            t += duration
-        random.shuffle(second_pulses)
-
-        pulse_sequence.quick_add(*second_pulses)
-        pulse_sequence.finish_quick_add()  # No overlap
-
         for connection_label in ['connection1', 'connection2', 'connection3', None]:
-            # Add pulse that overlaps
+            pulses = []
+            t = 0
+            for k in range(30):
+                duration = np.round(np.random.rand(), 11)
+                pulses.append(DCPulse('DC', t_start=t, duration=duration,
+                                      connection_label='connection1'))
+                t += duration
+            random.shuffle(pulses)
+
+            pulse_sequence = PulseSequence(allow_pulse_overlap=False)
+            pulse_sequence.quick_add(*pulses)
+            pulse_sequence.finish_quick_add()  # No overlap
+
+            # Add pulses with connection label
+            second_pulses = []
+            t = 0
+            for k in range(30):
+                duration = np.round(np.random.rand(), 11)
+                second_pulses.append(DCPulse('DC', t_start=t, duration=duration,
+                                             connection_label='connection2'))
+                t += duration
+            random.shuffle(second_pulses)
+
+            pulse_sequence.quick_add(*second_pulses)
+            pulse_sequence.finish_quick_add()  # No overlap
+
+            # Add pulse that potentially overlaps based on connection_label
             overlapping_pulse = DCPulse(t_start=pulse_sequence.duration / 2, duration=1e-5,
                                         connection_label=connection_label)
             overlapping_pulse_copy, = pulse_sequence.quick_add(overlapping_pulse)
@@ -428,9 +428,8 @@ class TestPulseSequenceQuickAdd(unittest.TestCase):
                     pulse_sequence.finish_quick_add()
             else:
                 pulse_sequence.finish_quick_add()
-
-            pulse_sequence.remove(overlapping_pulse_copy)
-            pulse_sequence.finish_quick_add()
+                pulse_sequence.remove(overlapping_pulse_copy)
+                pulse_sequence.finish_quick_add()
 
 
 class TestCopyPulseSequence(unittest.TestCase):
