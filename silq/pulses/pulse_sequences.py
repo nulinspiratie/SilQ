@@ -1,8 +1,13 @@
 import numpy as np
+import logging
 from collections import Iterable
 from .pulse_modules import PulseSequence, PulseMatch
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
 from copy import deepcopy
+
+
+logger = logging.getLogger(__name__)
+
 
 class PulseSequenceGenerator(PulseSequence):
     """Base class for a `PulseSequence` that is generated from settings.
@@ -115,6 +120,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
             'pre_delay': 5e-3,
+            'inter_delay': 5e-3,
             'post_delay': 5e-3,
             'ESR_pulses': ['ESR_pulse']}
 
@@ -128,33 +134,85 @@ class ESRPulseSequence(PulseSequenceGenerator):
         self.pulse_settings['post_pulses'] = self.post_pulses = [DCPulse('final')]
 
     def add_ESR_pulses(self, ESR_frequencies=None):
-        if ESR_frequencies is None:
-            ESR_frequencies = [pulse.frequency if isinstance(pulse, Pulse)
-                               else self.ESR[pulse].frequency
-                               for pulse in self.ESR['ESR_pulses']]
+        # Manually set ESR frequencies if not explicitly provided, and a pulse
+        # sequence has not yet been generated or the ``ESR['ESR_pulse']`` has
+        # been modified
+        if ESR_frequencies is None and \
+                (self._latest_pulse_settings is None or
+                 self.ESR['ESR_pulse'] != self._latest_pulse_settings['ESR']['ESR_pulse']):
+            ESR_frequencies = []
+            for pulse in self.ESR['ESR_pulses']:
+                if isinstance(pulse, Pulse):
+                    ESR_frequencies.append(pulse.frequency)
+                elif isinstance(pulse, str):
+                    ESR_frequencies.append(self.ESR[pulse].frequency)
+                elif isinstance(pulse, list):
+                    # Pulse is a list containing other pulses
+                    # These pulses will be joined in a single plunge
+                    ESR_subfrequencies = []
+                    for subpulse in pulse:
+                        if isinstance(subpulse, Pulse):
+                            ESR_subfrequencies.append(subpulse.frequency)
+                        elif isinstance(subpulse, str):
+                            ESR_subfrequencies.append(self.ESR[subpulse].frequency)
+                        else:
+                            raise RuntimeError('ESR subpulse must be a pulse or'
+                                               f'a string: {repr(subpulse)}')
+                    ESR_frequencies.append(ESR_subfrequencies)
+                else:
+                    raise RuntimeError('ESR pulse must be Pulse, str, or list '
+                                       f'of pulses: {pulse}')
 
-        if self._latest_pulse_settings is None or \
-                (self.ESR['ESR_pulse'] != self._latest_pulse_settings['ESR']['ESR_pulse']) \
-                or (len(ESR_frequencies) != len(self.ESR['ESR_pulses'])):
-            # Resetting ESR pulses
-            self.ESR['ESR_pulses'] = [deepcopy(self.ESR['ESR_pulse'])
-                                  for _ in range(len(ESR_frequencies))]
-        else:
-            # Convert any pulse strings to pulses if necessary
-            self.ESR['ESR_pulses'] = [
-                deepcopy(self.ESR[p]) if isinstance(p, str) else p
-                for p in self.ESR['ESR_pulses']]
+        if ESR_frequencies is not None:
+            logger.warning("Resetting all ESR pulses to default ESR['ESR_pulse']")
+            self.ESR['ESR_pulses'] = []
+            for ESR_frequency in ESR_frequencies:
+                if isinstance(ESR_frequency, float):
+                    ESR_pulse = deepcopy(self.ESR['ESR_pulse'])
+                    ESR_pulse.frequency = ESR_frequency
+                elif isinstance(ESR_frequency, list):
+                    ESR_pulse = []
+                    for ESR_subfrequency in ESR_frequency:
+                        ESR_subpulse = deepcopy(self.ESR['ESR_pulse'])
+                        ESR_subpulse.frequency = ESR_subfrequency
+                        ESR_pulse.append(ESR_subpulse)
+                else:
+                    raise RuntimeError('Each ESR frequency must be a float or a'
+                                       f' list of floats. {ESR_frequencies}')
+                self.ESR['ESR_pulses'].append(ESR_pulse)
 
-        # Make sure all pulses have proper ESR frequency
-        for pulse, ESR_frequency in zip(self.ESR['ESR_pulses'], ESR_frequencies):
-            pulse.frequency = ESR_frequency
+        # Convert any pulse strings to pulses if necessary
+        for k, pulse in enumerate(self.ESR['ESR_pulses']):
+            if isinstance(pulse, str):
+                pulse_copy = deepcopy(self.ESR[pulse])
+                self.ESR['ESR_pulses'][k] = pulse_copy
+            elif isinstance(pulse, list):
+                # Pulse is a list containing other pulses
+                # These pulses will be joined in a single plunge
+                for kk, subpulse in enumerate(pulse):
+                    if isinstance(subpulse, str):
+                        subpulse_copy = deepcopy(self.ESR[subpulse])
+                        self.ESR['ESR_pulses'][k][kk] = subpulse_copy
 
-        for ESR_pulse in self.ESR['ESR_pulses']:
-            # Add a plunge and read pulse for each frequency
+        # Add pulses to pulse sequence
+        for single_plunge_ESR_pulses in self.ESR['ESR_pulses']:
+            # Each element should be the ESR pulses to apply within a single
+            # plunge, between elements there is a read
+
+            if not isinstance(single_plunge_ESR_pulses, list):
+                # Single ESR pulse provided, turn into list
+                single_plunge_ESR_pulses = [single_plunge_ESR_pulses]
+
             plunge_pulse, = self.add(self.ESR['stage_pulse'])
-            ESR_pulse, = self.add(ESR_pulse)
-            ESR_pulse.t_start = PulseMatch(plunge_pulse, 't_start',
-                                           delay=self.ESR['pre_delay'])
+            previous_t_stop = PulseMatch(plunge_pulse, 't_start',
+                                         delay=self.ESR['pre_delay'])
+            for ESR_subpulse in single_plunge_ESR_pulses:
+                # Add a plunge and read pulse for each frequency
+                ESR_pulse, = self.add(ESR_subpulse)
+                ESR_pulse.t_start = previous_t_stop
+                previous_t_stop = PulseMatch(ESR_pulse, 't_stop',
+                                             delay=self.ESR['inter_delay'])
+
             plunge_pulse.t_stop = PulseMatch(ESR_pulse, 't_stop',
                                              delay=self.ESR['post_delay'])
             self.add(self.ESR['read_pulse'])
