@@ -1050,7 +1050,7 @@ class Layout(Instrument):
         """
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.quick_add(pulse)
+            self.acquisition_interface.pulse_sequence.quick_add(pulse, connect=False)
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1076,14 +1076,14 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            self.targeted_pulse_sequence.quick_add(targeted_pulse)
+            self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False)
 
-            interface.pulse_sequence.quick_add(targeted_pulse)
+            interface.pulse_sequence.quick_add(targeted_pulse, connect=False)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            input_interface.input_pulse_sequence.quick_add(targeted_pulse)
+            input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False)
 
     def _target_pulse_sequence(self,
                                pulse_sequence: PulseSequence):
