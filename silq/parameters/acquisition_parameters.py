@@ -1410,10 +1410,6 @@ class ESRParameter(AcquisitionParameter):
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies: List[float]):
-        if len(ESR_frequencies) != len(self.ESR['ESR_pulses']):
-            logger.warning('Different number of frequencies. '
-                           'Reprogramming ESR pulses to default ESR_pulse')
-
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
     def analyse(self, traces = None, plot=False):
