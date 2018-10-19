@@ -1050,7 +1050,7 @@ class Layout(Instrument):
         """
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.add(pulse)
+            self.acquisition_interface.pulse_sequence.quick_add(pulse)
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1076,14 +1076,14 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            self.targeted_pulse_sequence.add(targeted_pulse)
+            self.targeted_pulse_sequence.quick_add(targeted_pulse)
 
-            interface.pulse_sequence.add(targeted_pulse)
+            interface.pulse_sequence.quick_add(targeted_pulse)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            input_interface.input_pulse_sequence.add(targeted_pulse)
+            input_interface.input_pulse_sequence.quick_add(targeted_pulse)
 
     def _target_pulse_sequence(self,
                                pulse_sequence: PulseSequence):
@@ -1110,8 +1110,6 @@ class Layout(Instrument):
 
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
-        self.targeted_pulse_sequence.duration = pulse_sequence.duration
-        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
@@ -1133,7 +1131,17 @@ class Layout(Instrument):
                 for pulse in additional_pulses:
                     self._target_pulse(pulse)
 
+
+        # Finish setting up the pulse sequences
+        self.targeted_pulse_sequence.finish_quick_add()
+        self.targeted_pulse_sequence.duration = pulse_sequence.duration
+        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
         for interface in self._interfaces.values():
+            # Finish adding pulses, which performs final steps such as sorting
+            # and checking for overlaps
+            interface.pulse_sequence.finish_quick_add()
+            interface.input_pulse_sequence.finish_quick_add()
+
             interface.pulse_sequence.duration = pulse_sequence.duration
             interface.pulse_sequence.final_delay = pulse_sequence.final_delay
             interface.input_pulse_sequence.duration = pulse_sequence.duration
