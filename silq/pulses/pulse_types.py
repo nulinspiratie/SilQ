@@ -788,6 +788,9 @@ class FrequencyRampPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
+    def get_voltage(self, t):
+        frequency_rate = (self.frequency_stop - self.frequency_start) / self.duration
+        return np.sin(2 * np.pi * (self.frequency_start * t + frequency_rate * np.power(t,2) / 2))
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
