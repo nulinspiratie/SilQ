@@ -369,6 +369,11 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None):
                                                            pulse_sequence_file)
                     with open(pulse_sequence_filepath, 'rb') as f:
                         pulse_sequence = pickle.load(f)
+
+                    # Pulse sequence duration needs to be reset
+                    duration = pulse_sequence['duration']._latest['raw_value']
+                    pulse_sequence['duration']._latest['value'] = duration
+
                     current_date = pulse_sequence_date_time
                     yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
             else:
