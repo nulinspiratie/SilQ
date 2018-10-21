@@ -870,8 +870,8 @@ class PulseSequence(ParameterNode):
             if pulse.connection_label is not None:
                 connection_label = pulse.connection_label
             elif pulse.connection is not None:
-                if pulse.connection.connection_label is not None:
-                    connection_label = pulse.connection.connection_label
+                if pulse.connection.label is not None:
+                    connection_label = pulse.connection.label
                 else:
                     connection_label = pulse.connection.output['str']
             else:
