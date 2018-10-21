@@ -861,51 +861,62 @@ class PulseSequence(ParameterNode):
 
         return shapes
 
-    def plot(self, dt=1e-6, subplots=False, scale_ylim=True, **connection_kwargs):
+    def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
+             **connection_kwargs):
         pulses = self.get_pulses(**connection_kwargs)
 
-        connections = []
+        connection_pulse_list = {}
         for pulse in pulses:
-            if pulse.connection is not None:
-                connections.append(pulse.connection)
-            elif pulse.connection_label is not None:
-                connection = self.layout.get_connection(
-                    connection_label=pulse.connection_label)
-                connections.append(connection)
+            if pulse.connection_label is not None:
+                connection_label = pulse.connection_label
+            elif pulse.connection is not None:
+                if pulse.connection.connection_label is not None:
+                    connection_label = pulse.connection.connection_label
+                else:
+                    connection_label = pulse.connection.output['str']
             else:
-                connections.append(None)
-        connections = set(connections)  # Create unique set
-        connections = sorted(connections,
-                             key=lambda connection: connection.output['str'])
-        if subplots:
-            fig, axes = plt.subplots(len(connections), sharex=True,
-                                     figsize=(10, 1.5 * len(connections)))
-        else:
-            fig, axes = plt.subplots(1, figsize=(10, 4))
-        if not isinstance(axes, list):
-            axes = [axes]
+                connection_label = 'Other'
 
-        t_list = np.arange(0, self.duration, dt)
+            if connection_label not in connection_pulse_list:
+                connection_pulse_list[connection_label] = [pulse]
+            else:
+                connection_pulse_list[connection_label].append(pulse)
+
+        if subplots:
+            fig, axes = plt.subplots(len(connection_pulse_list), 1, sharex=True,
+                                     figsize=(
+                                     10, 1.5 * len(connection_pulse_list)))
+        else:
+            fig, ax = plt.subplots(1, figsize=(10, 4))
+            axes = [ax]
+
+        # Generate t_list
+        if t_range is None:
+            t_range = (0, self.duration)
+        sample_rate = (t_range[1] - t_range[0]) / points
+        t_list = np.linspace(*t_range, points)
+
         voltages = {}
-        for k, connection in enumerate(connections):
-            connection_pulses = [pulse for pulse in pulses if
-                                 pulse.connection == connection]
-            #         print('connection_pulses', connection_pulses)
+        for k, (connection_label, connection_pulses) in enumerate(
+                connection_pulse_list.items()):
+
             connection_voltages = np.nan * np.ones(len(t_list))
             for pulse in connection_pulses:
-                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop, dt)
+                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop,
+                                         sample_rate)
                 start_idx = np.argmax(t_list >= pulse.t_start)
                 # Determine max_pts because sometimes there is a rounding error
                 max_pts = len(connection_voltages[
                               start_idx:start_idx + len(pulse_t_list)])
-                #             print('pulse', pulse, ', start_idx', start_idx, ', len(pulse_t_list)', len(pulse_t_list))
                 connection_voltages[
                 start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
                     pulse_t_list[:max_pts])
-            voltages[connection.output['str']] = connection_voltages
+            voltages[connection_label] = connection_voltages
 
-            ax = axes[k] if isinstance(axes, np.ndarray) else axes
-            ax.plot(t_list, connection_voltages, label=connection.output["str"])
+            if subplots:
+                ax = axes[k]
+
+            ax.plot(t_list, connection_voltages, label=connection_label)
             if not subplots:
                 ax.set_xlabel('Time (s)')
             ax.set_ylabel('Amplitude (V)')
@@ -923,7 +934,7 @@ class PulseSequence(ParameterNode):
         fig.tight_layout()
         if subplots:
             fig.subplots_adjust(hspace=0)
-        return t_list, voltages
+        return t_list, voltages, fig, axes
 
     def up_to_date(self) -> bool:
         """Checks if a pulse sequence is up to date or needs to be generated.
