@@ -196,7 +196,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
             logger.warning("Resetting all ESR pulses to default ESR['ESR_pulse']")
             self.ESR['ESR_pulses'] = []
             for ESR_frequency in ESR_frequencies:
-                if isinstance(ESR_frequency, float):
+                if isinstance(ESR_frequency, (float, int)):
                     ESR_pulse = deepcopy(self.ESR['ESR_pulse'])
                     ESR_pulse.frequency = ESR_frequency
                 elif isinstance(ESR_frequency, list):
@@ -206,8 +206,8 @@ class ESRPulseSequence(PulseSequenceGenerator):
                         ESR_subpulse.frequency = ESR_subfrequency
                         ESR_pulse.append(ESR_subpulse)
                 else:
-                    raise RuntimeError('Each ESR frequency must be a float or a'
-                                       f' list of floats. {ESR_frequencies}')
+                    raise RuntimeError('Each ESR frequency must be a number or a'
+                                       f' list of numbers. {ESR_frequencies}')
                 self.ESR['ESR_pulses'].append(ESR_pulse)
 
         # Convert any pulse strings to pulses if necessary
@@ -259,9 +259,9 @@ class ESRPulseSequence(PulseSequenceGenerator):
         self.add_ESR_pulses(ESR_frequencies=ESR_frequencies)
 
         if self.EPR['enabled']:
-            self.add(*self.EPR['pulses'])
+            self._EPR_pulses = self.add(*self.EPR['pulses'])
 
-        self.add(*self.post_pulses)
+        self._ESR_pulses = self.add(*self.post_pulses)
 
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
