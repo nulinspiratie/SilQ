@@ -242,6 +242,19 @@ class TestPulseConfig(unittest.TestCase):
         self.assertEqual(p.t_start, 5)
         self.assertEqual(p.t_stop, 10)
 
+    def test_set_item_copied(self):
+        silq.environment = None
+
+        p = Pulse('read')
+        p_copy = copy(p)
+        self.assertEqual(p_copy.t_start, 0)
+        self.assertEqual(p_copy.t_stop, 10)
+
+        self.config.pulses.read.t_start = 5
+
+        self.assertEqual(p_copy.t_start, 5)
+        self.assertEqual(p_copy.t_stop, 15)
+
 
 class TestPulseEquality(unittest.TestCase):
     def test_same_pulse_equality(self):
