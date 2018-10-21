@@ -1108,6 +1108,24 @@ class Layout(Instrument):
         if self.active():
             self.stop()
 
+        # Create a copy of the pulse sequence
+        try:
+            # Temporarily set all _connected_to_config to False such that
+            # copying the pulse sequence won't attach the copied pulses to the
+            # config.
+            _connected_to_config_list = []
+            for pulse in pulse_sequence.pulses:
+                _connected_to_config_list.append(pulse._connected_to_config)
+                pulse._connected_to_config = False
+
+            # Copy the pulse sequence
+            self._pulse_sequence = copy(pulse_sequence)
+        finally:
+            # Restore original pulse._connected_to_config values
+            for pulse, _connected_to_config in zip(pulse_sequence.pulses,
+                                                   _connected_to_config_list):
+                pulse._connected_to_config = _connected_to_config
+
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
 
@@ -1117,7 +1135,7 @@ class Layout(Instrument):
             interface.initialize()
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in pulse_sequence:
+        for pulse in self.pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
@@ -1146,9 +1164,6 @@ class Layout(Instrument):
             interface.pulse_sequence.final_delay = pulse_sequence.final_delay
             interface.input_pulse_sequence.duration = pulse_sequence.duration
             interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
-
-        # Update pulse sequence
-        self._pulse_sequence = copy(pulse_sequence)
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
