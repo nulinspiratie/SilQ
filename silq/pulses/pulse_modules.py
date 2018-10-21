@@ -420,11 +420,14 @@ class PulseSequence(ParameterNode):
                           for pulse in self.pulses]
         return snap
 
-    def add(self, *pulses):
+    def add(self, *pulses,
+            reset_duration: bool = True):
         """Adds pulse(s) to the PulseSequence.
 
         Args:
             *pulses (Pulse): Pulses to add
+            reset_duration: Reset duration of pulse sequence to t_stop of final
+                pulse
 
         Returns:
             List[Pulse]: Added pulses, which are copies of the original pulses.
@@ -501,11 +504,16 @@ class PulseSequence(ParameterNode):
                                           update=False)
 
         self.sort()
-        self.duration = None  # Reset duration to t_stop of last pulse
+
+        if reset_duration:  # Reset duration to t_stop of last pulse
+            self.duration = None
 
         return added_pulses
 
-    def quick_add(self, *pulses, copy=True, connect=True):
+    def quick_add(self, *pulses,
+                  copy: bool = True,
+                  connect: bool = True,
+                  reset_duration: bool = True):
         """"Quickly add pulses to a sequence skipping steps and checks.
 
         This method is used in the during the `Layout` targeting of a pulse
@@ -526,6 +534,8 @@ class PulseSequence(ParameterNode):
             *pulses: List of pulses to be added. Note that these won't be copied
                 if ``copy`` is False, and so the t_start may be set
             copy: Whether to copy the pulse before applying operations
+            reset_duration: Reset duration of pulse sequence to t_stop of final
+                pulse
 
         Returns:
             Added pulses. If copy is False, the original pulses are returned.
@@ -574,7 +584,8 @@ class PulseSequence(ParameterNode):
                 pulse['enabled'].connect(self._update_enabled_disabled_pulses,
                                          update=False)
 
-        self.duration = None  # Reset duration to t_stop of last pulse
+        if reset_duration:  # Reset duration to t_stop of last pulse
+            self.duration = None
 
         return added_pulses
 
