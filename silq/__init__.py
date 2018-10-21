@@ -128,6 +128,8 @@ def execute_file(filepath, globals=None, locals=None):
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
+    assert filepath.endswith('.py')
+
     with open(filepath, "r") as fh:
         exec_line = fh.read()
         try:
@@ -151,16 +153,34 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
     except StopIteration:
         raise NameError(f'Configuration {name} not found. Allowed '
                         f'configurations are {get_configurations().keys()}')
-    folder = os.path.join(experiments_folder, configuration['folder'])
+    experiment_folder = os.path.join(experiments_folder, configuration['folder'])
 
-    scripts_folder = os.path.join(folder, 'scripts')
-    assert os.path.exists(scripts_folder), f"No scripts folder found at {scripts_folder}"
+    script_folders = [os.path.join(experiment_folder, 'scripts')]
 
-    for script_file in os.listdir(scripts_folder):
-        script_filepath = os.path.join(scripts_folder, script_file)
-        # Only execute scripts in subfolders if folder name matches mode
-        if os.path.isdir(script_filepath):
-            if script_file == mode:
+    # Add script folders in current directory and parent directories thereof
+    for k in range(4):
+        relative_directory = '.' if not k else '../' * k
+        if os.path.samefile(relative_directory, experiment_folder):  # Reached experiment folder
+            break
+
+        script_folder_path = os.path.join(relative_directory, 'scripts')
+        if os.path.isdir(script_folder_path):
+            script_folders.append(script_folder_path)
+
+        relative_directory = os.path.split(relative_directory)[0]
+        print(f'relative_directory: {relative_directory}')
+    print(script_folders)
+
+    for script_folder in script_folders:
+        assert os.path.exists(script_folder), f"No scripts folder found at {script_folder}"
+        for script_file in os.listdir(script_folder):
+            script_filepath = os.path.join(script_folder, script_file)
+            # Only execute scripts in subfolders if folder name matches mode
+            if os.path.isdir(script_filepath):
+                if script_file != mode:
+                    continue
+
+                # Run each file in the subfolder
                 for subscript_file in os.listdir(script_filepath):
                     subscript_filepath = os.path.join(script_filepath, subscript_file)
 
@@ -168,11 +188,13 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
                         subscript_file_no_ext = os.path.splitext(subscript_file)[0]
                         print(f'Running script {script_file}/{subscript_file_no_ext}')
                     execute_file(subscript_filepath, globals=globals, locals=locals)
-        else:  # Execute file
-            if not silent:
-                script_file_no_ext = os.path.splitext(script_file)[0]
-                print(f'Running script {script_file_no_ext}')
-            execute_file(script_filepath, globals=globals, locals=locals)
+            else:  # Execute file
+                if not silent:
+                    script_file_no_ext = os.path.splitext(script_file)[0]
+                    print(f'Running script {script_file_no_ext}')
+
+                print(script_filepath)
+                execute_file(script_filepath, globals=globals, locals=locals)
 
 
 def initialize(name: str = None,
@@ -358,11 +380,11 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None):
     measurement_date_time = datetime.strptime(f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S')
 
     try:
+        pulse_sequence_iterator = (pulse_sequence for pulse_sequence in
+                                   get_next_pulse_sequence(measurement_date_time)
+                                   if (not pulse_name or pulse_name in pulse_sequence[0]))
         for k in range(idx+1):
-            pulse_sequence, pulse_sequence_filename = next(
-                pulse_sequence for pulse_sequence in
-                get_next_pulse_sequence(measurement_date_time)
-                if (not pulse_name or pulse_name in pulse_sequence[0]))
+            pulse_sequence, pulse_sequence_filename = next(pulse_sequence_iterator)
     except StopIteration:
         raise StopIteration('No pulse sequences found')
 
