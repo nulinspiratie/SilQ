@@ -381,7 +381,7 @@ class CombinedConnection(Connection):
                         else:
                             setattr(targeted_pulse, attr, val[0])
                     elif self.scale is not None:
-                        setattr(targeted_pulse, attr, val / self.scale[k])
+                        setattr(targeted_pulse, attr, val * self.scale[k])
             targeted_pulse = connection.target_pulse(targeted_pulse,
                                                      copy_pulse=False)
             pulses.append(targeted_pulse)
