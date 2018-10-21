@@ -1404,10 +1404,16 @@ class ESRParameter(AcquisitionParameter):
     @property
     def ESR_frequencies(self):
         """Apply default ESR pulse for each ESR frequency given."""
-        return self.pulse_sequence.ESR_frequencies
+        return [pulse.frequency if isinstance(pulse, Pulse)
+                else self.ESR[pulse].frequency
+                for pulse in self.ESR['ESR_pulses']]
 
     @ESR_frequencies.setter
     def ESR_frequencies(self, ESR_frequencies: List[float]):
+        if len(ESR_frequencies) != len(self.ESR['ESR_pulses']):
+            logger.warning('Different number of frequencies. '
+                           'Reprogramming ESR pulses to default ESR_pulse')
+
         self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
 
     def analyse(self, traces = None, plot=False):
@@ -1436,11 +1442,11 @@ class ESRParameter(AcquisitionParameter):
         else:
             results = {}
 
-        ESR_pulses = self.pulse_sequence.primary_ESR_pulses
-        ESR_pulse_names = [pulse.name for pulse in ESR_pulses]
+        ESR_pulse_names = [pulse if isinstance(pulse, str) else pulse.name
+                           for pulse in self.ESR['ESR_pulses']]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
         results['ESR_results'] = []
-        for read_pulse, ESR_pulse in zip(read_pulses, ESR_pulses):
+        for read_pulse, ESR_pulse in zip(read_pulses, self.ESR['ESR_pulses']):
             read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analysis.analyse_traces(
                 traces=read_traces,
