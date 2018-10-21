@@ -1418,9 +1418,9 @@ class ESRParameter(AcquisitionParameter):
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
-                empty_traces=traces['empty']['output'],
-                plunge_traces=traces['plunge']['output'],
-                read_traces=traces['read_long']['output'],
+                empty_traces=traces[self.pulse_sequence._EPR_pulses[0].full_name]['output'],
+                plunge_traces=traces[self.pulse_sequence._EPR_pulses[1].full_name]['output'],
+                read_traces=traces[self.pulse_sequence._EPR_pulses[2].full_name]['output'],
                 sample_rate=self.sample_rate,
                 min_filter_proportion=self.min_filter_proportion,
                 filter_traces=self.filter_traces,
