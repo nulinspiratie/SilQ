@@ -170,7 +170,9 @@ class Pulse(ParameterNode):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
+        self._connected_to_config = False
         if connect_to_config:
+            # Sets _connected_to_config to True
             self._connect_parameters_to_config()
 
     @parameter
@@ -349,6 +351,18 @@ class Pulse(ParameterNode):
         name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
 
+    def __copy__(self):
+        """Create a copy of the pulse.
+
+        Aside from using the default copy feature of the ParameterNode, this
+        also connects the copied parameters to the config if the original ones
+        are also connected
+        """
+        self_copy = super().__copy__()
+        if self._connected_to_config:
+            self_copy._connect_parameters_to_config()
+        return self_copy
+
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
 
@@ -400,6 +414,8 @@ class Pulse(ParameterNode):
             # Update parameter value if not yet set, and set in config
             if parameter.raw_value is None and config_value is not None:
                 parameter(config_value)
+
+        self._connected_to_config = True
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=None):
