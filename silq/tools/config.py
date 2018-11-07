@@ -261,7 +261,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
     exclude_from_dict = ['name', 'folder', 'parent', 'initializing',
                          'signal', '_signal_chain', '_signal_modifiers',
                          '_mirrored_config_attrs', '_inherited_configs',
-                         'save_as_dir', 'config_path']
+                         'save_as_dir', 'config_path',
+                         'sender', 'multiple_senders']
 
     signal = Signal()
 
