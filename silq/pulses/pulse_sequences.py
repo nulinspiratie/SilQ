@@ -589,8 +589,8 @@ class NMRPulseSequence(PulseSequenceGenerator):
                     delay = self.ESR['pre_delay'] + k * self.ESR['inter_delay']
                     plunge_pulse['t_start'].connect(ESR_pulse['t_start'],
                                                     offset=delay)
-                ESR_pulse['t_stop'].connect(plunge_pulse['t_stop'],
-                                            offset=self.ESR['post_delay'])
+                ESR_pulse['duration'].connect(plunge_pulse['t_stop'],
+                                            offset=lambda p: p.parent.t_start + self.ESR['post_delay'])
                 pulse_sequence.add(self.ESR['read_pulse'])
 
     def generate(self):
