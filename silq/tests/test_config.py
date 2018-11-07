@@ -178,16 +178,19 @@ class TestConfig(unittest.TestCase):
         d1_keys = list(d1.keys())
         for d2_key, d2_val in d2.items():
             if d2_key not in d1_keys:
+                print(f'Key {d2_key} missing in d1')
                 return False
             else:
                 d1_keys.remove(d2_key)
                 d1_val = d1[d2_key]
                 if isinstance(d1_val, dict):
                     if not isinstance(d2_val, dict):
+                        print(f'Key {d2_key} not dict in d2')
                         return False
                     if not self.dicts_equal(d1_val, d2_val):
                         return False
                 elif not d1_val == d2_val:
+                    print(f'Key {d2_key} differ ({d1_val} != {d2_val})')
                     return False
         return True
 
