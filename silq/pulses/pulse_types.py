@@ -114,6 +114,7 @@ class Pulse(ParameterNode):
     # base config link to use for connecting pulse parameters to the config
     # Changing this will only affect pulses instantiated after change
     config_link = 'environment:pulses'
+    multiple_senders = False
 
     def __init__(self,
                  name: str = None,
