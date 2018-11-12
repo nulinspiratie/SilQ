@@ -313,12 +313,13 @@ def _save_config(self, location=None):
 qc.DataSet.save_config = _save_config
 
 
-def _load_traces(self, name=None):
+def _load_traces(self, name: str = None, mode: str = 'r'):
     """Load traces HDF5 file from a dataset
 
     Args:
         name: Optional name to specify traces file. Should be used if more than
             one parameter is used in the measurement that saves traces.
+        mode: Open mode (default is 'r' for read-only)
         """
     data_path = self.io.to_path(self.location)
     trace_path = os.path.join(data_path, 'traces')
@@ -337,7 +338,7 @@ def _load_traces(self, name=None):
         trace_filename = filtered_trace_filenames[0]
 
     trace_filepath = os.path.join(trace_path, trace_filename)
-    trace_file = h5py.File(trace_filepath, 'r')
+    trace_file = h5py.File(trace_filepath, mode)
     return trace_file
 qc.DataSet.load_traces = _load_traces
 
