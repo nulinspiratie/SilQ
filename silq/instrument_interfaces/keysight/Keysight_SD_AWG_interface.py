@@ -271,16 +271,16 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     f"Pulse {pulse} starts {pulse.t_start} < t={t}." \
                     f"This likely means that pulses are overlapping"
 
-                pulse_samples_start = max(int(round(pulse.t_start * 100e6)),
+                pulse_samples_start = max(int(round(pulse.t_start * sampling_rate)),
                                           total_samples)
 
                 if pulse.t_start > t:  # Add waveform at 0V
-                    logger.info(f'No pulse defined between t={t} s and next'
+                    logger.info(f'No pulse defined between t={t} s and next '
                                 f'{pulse} (pulse.t_start={pulse.t_start} s), '
                                 f'Adding DC pulse at 0V')
                     # Use maximum value because potentially total samples could
                     # be higher than t (rounding errors etc.)
-                    samples_start_0V = max(int(round(t * 100e6)),
+                    samples_start_0V = max(int(round(t * sampling_rate)),
                                            total_samples)
                     samples_0V = pulse_samples_start - samples_start_0V
                     waveform_0V = self.create_DC_waveform(voltage=0,
@@ -303,18 +303,18 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     threshold=error_threshold)
 
                 for waveform in pulse_waveforms:
-                    start_samples = int(round(waveform['t_start'] * 100e6))
+                    start_samples = int(round(waveform['t_start'] * sampling_rate))
 
                     waveform['delay'] = max(start_samples - total_samples, 0)
                     waveform_queue[channel.name].append(waveform)
 
                     total_samples += waveform['delay']
-                    total_samples += waveform['points_100MHz'] * waveform['cycles']
+                    total_samples += waveform['points'] * waveform['cycles']
 
                 t = pulse.t_stop
 
             if t <= self.pulse_sequence.duration:
-                final_samples = int(round(self.pulse_sequence.duration * 100e6))
+                final_samples = int(round(self.pulse_sequence.duration * sampling_rate))
                 remaining_samples = final_samples - total_samples
                 waveform_0V = self.create_DC_waveform(voltage=0,
                                                       samples=remaining_samples,
@@ -428,7 +428,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 points_multiple=self.instrument.waveform_multiple,
                 min_points=self.instrument.waveform_minimum,
                 max_points=max_points,
-                max_remaining_points=int(6000 / prescaler))
+                max_remaining_points=int(6000 / (prescaler+1)))
 
             if approximate_divisor is not None:
                 points, cycles, _ = approximate_divisor
