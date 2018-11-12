@@ -790,8 +790,9 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        frequency_rate = (self.frequency_stop - self.frequency_start) / self.duration
-        return np.sin(2 * np.pi * (self.frequency_start * t + frequency_rate * np.power(t,2) / 2))
+        frequency_rate = self.frequency_deviation / self.duration
+        frequency_start = self.frequency - self.frequency_deviation
+        return np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
@@ -806,7 +807,7 @@ class DCPulse(Pulse):
         super().__init__(name=name, **kwargs)
 
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
-                                   set_cmd=None, vals=vals.Numbers())
+                                   set_cmd=None)
 
         self._connect_parameters_to_config(['amplitude'])
 
