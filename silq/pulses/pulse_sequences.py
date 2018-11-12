@@ -541,29 +541,24 @@ class NMRPulseSequence(PulseSequenceGenerator):
             pulse_sequence = self
 
         NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
+        t_connect = partial(NMR_stage_pulse['t_start'].connect,
+                            offset=self.NMR['pre_delay'])
 
-        NMR_pulses = []
         for pulse in self.NMR['NMR_pulses']:
             if isinstance(pulse, str):
                 # Pulse is a reference to some pulse in self.NMR
                 pulse = self.NMR[pulse]
             NMR_pulse, = pulse_sequence.add(pulse)
 
-            if not NMR_pulses:
-                NMR_stage_pulse['t_start'].connect(NMR_pulse['t_start'],
-                                                   offset=self.NMR['pre_delay'])
-            else:
-                NMR_pulses[-1]['t_stop'].connect(NMR_pulse['t_start'],
-                                                 offset=self.NMR['inter_delay'])
-            NMR_pulses.append(NMR_pulse)
+            t_connect(NMR_pulse['t_start'])
+            t_connect = partial(NMR_pulse['t_stop'].connect,
+                                offset=self.NMR['inter_delay'])
 
-        NMR_stage_pulse.duration = self.NMR['pre_delay']
-        NMR_stage_pulse.duration += (len(NMR_pulses) - 1) * self.NMR['inter_delay']
-        NMR_stage_pulse.duration += sum(pulse.duration for pulse in NMR_pulses)
-        NMR_stage_pulse.duration += self.NMR['post_delay']
+        NMR_pulse['t_stop'].connect(NMR_stage_pulse['t_stop'],
+                                    offset=self.NMR['post_delay'])
         return pulse_sequence
 
-    def add_ESR_pulses(self, pulse_sequence=None):
+    def add_ESR_pulses(self, pulse_sequence=None, previous_pulse=None):
         if pulse_sequence is None:
             pulse_sequence = self
 
