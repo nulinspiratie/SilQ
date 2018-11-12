@@ -604,6 +604,7 @@ class RabiFrequencyFit(Fit):
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
+        parameters['gamma'].min = 0
 
         parameters.add('f_Rabi', expr='gamma/2/pi')
         # parameters.add('amplitude', expr='gamma^2/ Omega^2')
