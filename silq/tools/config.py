@@ -5,6 +5,7 @@ from blinker import signal, Signal
 import json
 from functools import partial
 import copy
+import logging
 
 import qcodes as qc
 from qcodes.config.config import DotDict
@@ -13,6 +14,10 @@ from qcodes.utils.helpers import SignalEmitter
 import silq
 
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
+
+
+logger = logging.getLogger(__name__)
+
 
 class SubConfig:
     """Config with added functionality, used within ``qcodes.config.user``.
@@ -173,7 +178,16 @@ class SubConfig:
 
     def refresh(self, config=None):
         if config is None:
-            config = self.load(update=False)
+            # Temporarily remove signal so it doesn't send many signals
+            signal, DictConfig.signal = DictConfig.signal, Signal()
+
+            config = DictConfig(name=self.name,
+                                folder=self.folder,
+                                parent=None,
+                                save_as_dir=self.save_as_dir)
+
+            # Restore signal
+            DictConfig.signal = signal
 
         if isinstance(config, dict) and isinstance(self, dict):
             for key, val in config.items():
@@ -181,18 +195,23 @@ class SubConfig:
                     if isinstance(self[key], SubConfig):
                         self[key].refresh(config=config[key])
                     elif self[key] != val:
+                        logger.info(f'{self.config_path}.{key} changed from '
+                                    f'{self[key]} to {val}')
                         self[key] = val
 
                 else:
-                    self[key] = config[key]
+                    logger.info(f'New key {self.config_path}.{key} = val')
+                    self[key] = val
 
             # Also remove any keys that are not in the new config
             for key in list(self):
                 if key not in config:
+                    logger.info(f'{self.config_path}.{key} not in new config')
                     self.pop(key)
 
         elif isinstance(config, list) and isinstance(self, list):
             if config != self:
+                logger.info(f'{self.config_path} list differs to {config}')
                 self.clear()
                 self += config
         else:
