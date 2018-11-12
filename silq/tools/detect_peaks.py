@@ -39,7 +39,7 @@ def max_index(M: np.ndarray) -> Tuple[int, int]:
     return np.unravel_index(np.argmax(M), M.shape)
 
 
-def calculate_theta_matrix(Z: np.ndarray, filter: bool = False) -> np.ndarray:
+def calculate_gradient(Z: np.ndarray, filter: bool = False) -> np.ndarray:
     """Computes the theta matrix for a 2-dimensional charge stability diagram.
 
     The theta matrix indicates the direction of the 2-dimensional gradient.
@@ -60,6 +60,7 @@ def calculate_theta_matrix(Z: np.ndarray, filter: bool = False) -> np.ndarray:
         filter: Enables filtering during the calculations.
 
     Returns:
+        magnitude: Magnitude of gradient
         theta: 2-dimensional theta matrix.
     """
 
@@ -101,9 +102,12 @@ def calculate_theta_matrix(Z: np.ndarray, filter: bool = False) -> np.ndarray:
         GY = convolve2d(GY, Gfil, mode='valid')
         GX = convolve2d(GX, Gfil, mode='valid')
 
+    # Calculate gradient magnitude
+    magnitude = np.sqrt(GY**2 + GX**2)
+
     #Calculate gradient direction.
     theta = np.arctan(GY / GX)
-    return theta
+    return magnitude, theta
 
 
 def find_matrix_mode(M: np.ndarray, bins: int = 100) -> float:
@@ -329,7 +333,7 @@ def find_transitions(Z: np.ndarray,
         dI_y      (array): An array of y-indices corresponding to the points in dI.
     """
 
-    theta = calculate_theta_matrix(Z, filter=True)
+    _, theta = calculate_gradient(Z, filter=True)
     theta_mode = find_matrix_mode(theta)
     theta_deviation = calculate_theta_deviation(theta,theta_mode)
 
