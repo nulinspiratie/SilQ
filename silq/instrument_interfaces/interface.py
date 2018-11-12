@@ -1,10 +1,14 @@
 from typing import Union, List, Dict, Any, Tuple
+import logging
 
 from qcodes import Instrument
 from qcodes.utils import validators as vals
 
 from silq.pulses.pulse_sequences import PulseSequence
 from silq.pulses.pulse_types import Pulse
+
+
+logger = logging.getLogger(__name__)
 
 
 class Channel:
@@ -156,6 +160,16 @@ class InstrumentInterface(Instrument):
                 return pulse_implementation.target_pulse(
                     pulse, interface=self, connections=connections)
         else:
+            try:
+                pulse_implementation = next(
+                    pulse_implementation for pulse_implementation
+                    in self.pulse_implementations
+                if pulse_implementation.pulse_class == pulse.__class__)
+                logger.warning(f'Pulse requirements not satisfied.\n'
+                               f'Requirements: {pulse_implementation.pulse_requirements}\n'
+                               f'Pulse: {repr(pulse)}')
+            except:
+                logger.warning(f'Could not target pulse {repr(pulse)}')
             return None
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
