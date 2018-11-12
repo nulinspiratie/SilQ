@@ -129,7 +129,8 @@ class Connection:
 
         # Test conditions
         if (output_instrument is not None) and \
-                (self.output['instrument'] not in output_instrument):
+                (('instrument' not in self.output) or
+                (self.output['instrument'] not in output_instrument)):
             return False
         elif (output_channel is not None) and \
                 (('channel' not in self.output) or
@@ -1059,17 +1060,21 @@ class Layout(Instrument):
 
         # Get default output instrument
         connection = self.get_pulse_connection(pulse)
-        interface = self._interfaces[connection.output['instrument']]
 
         # Return a list of pulses. The reason for not necessarily returing a
         # single pulse is that targeting by a CombinedConnection will target the
         # pulse to each of its connections it's composed of.
+        # Copies pulse (multiple times if type is CombinedConnection)
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
             # Convert to list
             pulses = [pulses]
 
         for pulse in pulses:
+            instrument = pulse.connection.output['instrument']
+            interface = self._interfaces[instrument]
+
+            # Copies pulse via PulseImplementation.target_pulse
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, connections=self.connections)
 
@@ -1077,15 +1082,18 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
+            # Copies pulse
             self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False,
                                                    reset_duration=False)
 
+            # Copies pulse
             interface.pulse_sequence.quick_add(targeted_pulse, connect=False,
                                                reset_duration=False)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
+            # Copies pulse
             input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False,
                                                            reset_duration=False)
 
@@ -1497,7 +1505,7 @@ class Layout(Instrument):
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
-            {'pulse_sequence': self.pulse_sequence._JSONEncoder()}, file)
+            {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
                 sample_rate=self.sample_rate, samples=self.samples())}, file)
