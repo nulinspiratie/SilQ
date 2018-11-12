@@ -44,6 +44,9 @@ class PulseRequirement():
         self.verify_requirement(requirement)
         self.requirement = requirement
 
+    def __repr__(self):
+        return f'{self.property} - {self.requirement}'
+
     def verify_requirement(self, requirement):
         """Verifies that the requirement is valid.
 
