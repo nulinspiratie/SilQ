@@ -1964,7 +1964,6 @@ class FlipNucleusParameter(AcquisitionParameter):
 
         return [SinePulse(pulse_name) for pulse_name in pulse_names]
 
-
     def set(self, initial_state, final_state, run=True):
         if initial_state == final_state:
             # No need to perform any pulse sequence
