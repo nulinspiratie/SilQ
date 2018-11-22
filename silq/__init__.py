@@ -15,10 +15,18 @@ from .tools.general_tools import SettingsClass
 
 import qcodes as qc
 
+# Initially set the environment to None. Changing this will affect all
+# environment config listeners (see `DictConfig`)
+environment = None
+
+
 logger = logging.getLogger(__name__)
 
 # Dictionary of SilQ subconfigs
 config = DictConfig(name='config', save_as_dir=True, config={'properties': {}})
+# Set qcodes.config.user.silq_config to the silq config
+qc.config.user.update({'silq_config': config})
+
 silq_env_var = 'SILQ_EXP_FOLDER'
 
 if 'ipykernel' in sys.modules:
@@ -272,10 +280,6 @@ def initialize(name: str = None,
     if not silent:
         print("Initialization complete")
 
-    if 'default_environment' not in config.properties:
-        warnings.warn("'default_environment' should be specified "
-                      "in silq.config.properties")
-
     if 'data_folder' in config.properties:
         logger.debug(f'using config data folder: '
                      f'{config.properties.data_folder}')
@@ -309,12 +313,13 @@ def _save_config(self, location=None):
 qc.DataSet.save_config = _save_config
 
 
-def _load_traces(self, name=None):
+def _load_traces(self, name: str = None, mode: str = 'r'):
     """Load traces HDF5 file from a dataset
 
     Args:
         name: Optional name to specify traces file. Should be used if more than
             one parameter is used in the measurement that saves traces.
+        mode: Open mode (default is 'r' for read-only)
         """
     data_path = self.io.to_path(self.location)
     trace_path = os.path.join(data_path, 'traces')
@@ -333,7 +338,7 @@ def _load_traces(self, name=None):
         trace_filename = filtered_trace_filenames[0]
 
     trace_filepath = os.path.join(trace_path, trace_filename)
-    trace_file = h5py.File(trace_filepath, 'r')
+    trace_file = h5py.File(trace_filepath, mode)
     return trace_file
 qc.DataSet.load_traces = _load_traces
 
@@ -365,6 +370,14 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None):
                                                            pulse_sequence_file)
                     with open(pulse_sequence_filepath, 'rb') as f:
                         pulse_sequence = pickle.load(f)
+
+                    # Pulse sequence duration needs to be reset
+                    try:
+                        duration = pulse_sequence['duration']._latest['raw_value']
+                        pulse_sequence['duration']._latest['value'] = duration
+                    except:
+                        pass
+
                     current_date = pulse_sequence_date_time
                     yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
             else:

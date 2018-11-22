@@ -1,16 +1,14 @@
-from typing import Any, Union, Sequence, Callable
+from typing import Union, Sequence, Callable
 import numpy as np
-from copy import deepcopy
 import collections
-from traitlets import HasTraits, Unicode, validate, TraitError
-from blinker import Signal, signal
 import logging
-
-from .pulse_modules import PulseMatch
 
 from silq.tools.general_tools import get_truth, property_ignore_setter, \
     freq_to_str, is_between
-import silq
+
+from qcodes.instrument.parameter_node import ParameterNode, parameter
+from qcodes.instrument.parameter import Parameter
+from qcodes.utils import validators as vals
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
            'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
@@ -19,15 +17,14 @@ __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['name', 'id', 'environment', 't', 't_start', 't_stop',
+pulse_conditions = ['name', 'id', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
-                    'amplitude', 'enabled', 'average']
+                    'amplitude', 'enabled', 'average', 'pulse_class']
 
-Signal.__deepcopy__ = lambda self, memo: Signal()
 logger = logging.getLogger(__name__)
 
 
-class Pulse(HasTraits):
+class Pulse(ParameterNode):
     """ Representation of physical pulse, component in a `PulseSequence`.
 
     A Pulse is a representation of a physical pulse, usually one that is
@@ -112,23 +109,16 @@ class Pulse(HasTraits):
             Should be defined in ``__init__`` before calling ``Pulse.__init__``.
         implementation (PulseImplementation): Pulse implementation for targeted
             pulse, see `PulseImplementation`.
+        connect_to_config: Connect parameters to the config (default True)
     """
-    average = Unicode()
-    signal = Signal()
-    _connected_attrs = {}
-    _skip_JSON_encoder_attrs = ['_connected_attrs',
-                                '_cross_validation_lock',
-                                '_trait_notifiers',
-                                '_trait_validators',
-                                '_trait_values',
-                                'signal',
-                                'pulse_config',
-                                'properties_config']
+    # base config link to use for connecting pulse parameters to the config
+    # Changing this will only affect pulses instantiated after change
+    config_link = 'environment:pulses'
+    multiple_senders = False
 
     def __init__(self,
                  name: str = None,
                  id: int = None,
-                 environment: str = 'default',
                  t_start: float = None,
                  t_stop: float = None,
                  duration: float = None,
@@ -138,74 +128,40 @@ class Pulse(HasTraits):
                  enabled: bool = True,
                  average: str = 'none',
                  connection_label: str = None,
-                 connection_requirements: dict = {}):
-        # Initialize signals (to notify change of attributes)
-        self.signal = Signal()
-        # Dict of attrs that are connected via blinker.signal to other pulses
-        self._connected_attrs = {}
-        super().__init__()
+                 connection_requirements: dict = {},
+                 connect_to_config: bool = True):
+        super().__init__(use_as_attributes=True,
+                         log_changes=False,
+                         simplify_snapshot=True)
 
-        self.name = name
-        self.id = id
-
-        if environment == 'default':
-            environment = silq.config.properties.get('default_environment',
-                                                     'default')
-        self.environment = environment
-
-        # Setup pulse config
-        try:
-            # Set pulse_config from SilQ environment config
-            self.pulse_config = silq.config[self.environment].pulses[self.name]
-        except (KeyError, TypeError):
-            self.pulse_config = None
-        try:
-            # Set properties_config from SilQ environment config
-            self.properties_config = silq.config[self.environment].properties
-        except (KeyError, AttributeError, TypeError):
-            self.properties_config = None
-
-        ### Setup signals
-        # Connect changes in pulse config to handling method
-        # If environment.pulses has no self.name key, this will never be called.
-        signal(f'config:{self.environment}.pulses.{self.name}').connect(
-            self._handle_config_signal)
-
-        # Setup properties config. If pulse requires additional
-        # properties_attrs, place them before calling Pulse.__init__,
-        # else they are not added to attrs.
-        # Make sure that self.properties_attrs is never replaced, only appended.
-        # Else it is no longer used for self._handle_properties_config_signal.
-        if not hasattr(self, 'properties_attrs'):
-            # Create attr if it does not already exist
-            self.properties_attrs = []
-        self.properties_attrs += ['t_read', 't_skip']
-
-        # Connect changes in properties config to handling method
-        # If environment has no properties key, this will never be called.
-        signal(f'config:{self.environment}.properties').connect(
-            self._handle_properties_config_signal)
-
+        self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
+        self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
+                            set_cmd=None, wrap_get=False)
+        self.full_name = Parameter()
+        self['full_name'].get()  # Update to latest value
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
-        self.t_start = self._value_or_config('t_start', t_start)
-        self.duration = self._value_or_config('duration', duration)
-        self.t_stop = self._value_or_config('t_stop', t_stop)
-        self.connection_label = self._value_or_config('connection_label',
-                                                      connection_label)
+        self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None, wrap_get=False)
+        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
+        self.t_stop = Parameter(unit='s', wrap_get=False)
 
-        # Set attributes that can also be retrieved from properties_config
-        if self.properties_config is not None:
-            for attr in self.properties_attrs:
-                setattr(self, attr, self.properties_config.get(attr, None))
+        # We separately set and get t_stop to ensure duration is also updated
+        self.t_stop = t_stop
+        self['t_stop'].get()
+
+        # Since t_stop get/set cmd depends on t_start and duration, we perform
+        # another set to ensure that duration is also set if t_stop is not None
+        if self['t_stop'].raw_value is not None:
+            self.t_stop = self['t_stop'].raw_value
+        self.connection_label = Parameter(initial_value=connection_label, set_cmd=None)
 
         # Set attributes that should not be retrieved from pulse_config
-        self.acquire = acquire
-        self.initialize = initialize
-        self.enabled = enabled
-        self.connection = connection
-        self.average = average
+        self.acquire = Parameter(initial_value=acquire, vals=vals.Bool(), set_cmd=None)
+        self.initialize = Parameter(initial_value=initialize, vals=vals.Bool(), set_cmd=None)
+        self.enabled = Parameter(initial_value=enabled, vals=vals.Bool(), set_cmd=None)
+        self.connection = Parameter(initial_value=connection, set_cmd=None)
+        self.average = Parameter(initial_value=average, vals=vals.Strings(), set_cmd=None)
 
         # Pulses can have a PulseImplementation after targeting
         self.implementation = None
@@ -215,219 +171,124 @@ class Pulse(HasTraits):
         # matching these requirements
         self.connection_requirements = connection_requirements
 
-    @validate('average')
-    def _valid_average(self, proposal):
-        if proposal['value'] in ['none', 'trace', 'point']:
-            return proposal['value']
-        elif ('point_segment' in proposal['value'] or
-                      'trace_segment' in proposal['value']):
-            return proposal['value']
-        else:
-            return TraitError
+        self._connected_to_config = False
+        if connect_to_config:
+            # Sets _connected_to_config to True
+            self._connect_parameters_to_config()
 
-    def _matches_attrs(self, other_pulse, exclude_attrs=[]):
-        for attr in list(vars(self)):
-            if attr in exclude_attrs:
-                continue
-            elif not hasattr(other_pulse, attr) \
-                    or getattr(self, attr) != getattr(other_pulse, attr):
-                return False
-        else:
+    @parameter
+    def average_vals(self, parameter, value):
+        if value in ['none', 'trace', 'point']:
             return True
-
-    def _handle_config_signal(self, _, select=None, **kwargs):
-        """Update attr when attr in pulse config is modified
-
-        Args:
-            _: sender config (unused)
-            select (Optional(List(str): list of attrs that can be set.
-                Will update any attribute if not specified.
-            **kwargs: {attr: new_val}
-        """
-        key, val = kwargs.popitem()
-        if select is None or key in select:
-            setattr(self, key, val)
-
-    def _handle_properties_config_signal(self, arg, **kwargs):
-        """ Update attr when attr in properties config is modified.
-
-        Note:
-            This method has to be defined separately, and cannot simply be
-            defined using a partial on `_handle_config_signal`, as this will
-            somehow cause it to always reference itself, and thus never be gc'ed
-
-        Args:
-            arg: Ignored handle arg passed by signal.send.
-            **kwargs: handle kwargs
-
-        """
-        self._handle_config_signal(arg, select=self.properties_attrs, **kwargs)
-
-    def __str__(self):
-        # This is called by blinker.signal to get a repr. Instead of creating
-        # a full repr which requires several attrs, this is much faster.
-        pulse_class = self.__class__.__name__
-        return f'{pulse_class}({self.full_name})'
-
-    def __eq__(self, other):
-        """Overwrite comparison with other (self == other).
-
-        We want the comparison to return True if other is a pulse with the
-        same attributes. This can be complicated since pulses can also be
-        targeted, resulting in a pulse implementation. We therefore have to
-        use a separate comparison when either is a Pulse implementation
-        Args:
-            other:
-
-        Returns:
-
-        """
-        exclude_attrs = ['connection', 'connection_requirements', 'signal',
-                         '_handle_properties_config_signal', '_connected_attrs',
-                         'properties_config', 'pulse_config']
-
-        if not isinstance(other, self.__class__):
+        elif ('point_segment' in value or 'trace_segment' in value):
+            return True
+        else:
             return False
 
-        if self.implementation is not None:
-            if other.implementation is not None:
-                # Both pulses have pulse implementations
-                # All attributes must match
-                return self._matches_attrs(other, exclude_attrs=exclude_attrs)
-            else:
-                # Only self has a pulse implementation
-
-                # self is a pulse implementation, and so it must match all
-                # the attributes of other. The other way around does not
-                # necessarily hold, since a pulse implementation has more attrs
-                if not other._matches_attrs(self, exclude_attrs=exclude_attrs):
-                    return False
-                else:
-                    # Check if self.connections satisfies the connection
-                    # requirements of other
-                    return self.connection.satisfies_conditions(
-                        **other.connection_requirements)
-        elif other.implementation is not None:
-            # Only other has a pulse implementation
-
-            # other is a pulse implementation, and so it must match all
-            # the attributes of self. The other way around does not
-            # necessarily hold, since a pulse implementation has more attrs
-            if not self._matches_attrs(other, exclude_attrs=exclude_attrs):
-                return False
-            else:
-                # Check if other.connections satisfies the connection
-                # requirements of self
-                return other.connection.satisfies_conditions(
-                    **self.connection_requirements)
+    @parameter
+    def full_name_get(self, parameter):
+        if self.id is None:
+            return self.name
         else:
-            # Neither self nor other has a pulse implementation
-            # All attributes must match
-            return self._matches_attrs(other, exclude_attrs=exclude_attrs)
+            return f'{self.name}[{self.id}]'
+
+    @parameter
+    def t_start_set_parser(self, parameter, t_start):
+        if t_start is not None:
+            t_start = round(t_start, 11)
+        return t_start
+
+    @parameter
+    def t_start_set(self, parameter, t_start):
+        # Emit a t_stop signal when t_start is set
+        self['t_start']._latest['raw_value'] = t_start
+        self['t_stop'].set(self.t_stop, evaluate=False)
+
+    @parameter
+    def duration_set_parser(self, parameter, duration):
+        if duration is not None:
+            duration = round(duration, 11)
+        return duration
+
+    @parameter
+    def duration_set(self, parameter, duration):
+        # Emit a t_stop signal when duration is set
+        self['duration']._latest['raw_value'] = duration
+        self['t_stop'].set(self.t_stop, evaluate=False)
+
+    @parameter
+    def t_stop_get(self, parameter):
+        if self.t_start is not None and self.duration is not None:
+            val = round(self.t_start + self.duration, 11)
+        else:
+            val = None
+        parameter._save_val(val)  # Explicit save_val since we don't wrap_get
+        return val
+
+    @parameter
+    def t_stop_set(self, parameter, t_stop):
+        if t_stop is not None:
+            # Setting duration sends a signal for duration
+            # do not evaluate as it otherwise sends a second t_stop signal
+            self['duration'].set(round(t_stop - self.t_start, 11),
+                                 evaluate=False)
+
+    def __eq__(self, other):
+        """Comparison when pulses are equal
+
+        Pulses are equal if all of their parameters (excluding list below) are
+        equal. Furthermore, their classes need to be identical, which further
+        means that any non-pulse object will never be equal.
+
+        Connections are handled slightly differently. For pulses to be the same,
+        they must either have the same connection or connection_label.
+        Alternatively, if one pulse has a connection and the other a connection
+        label, the label of the first pulse's connection is compared instead.
+        If one pulse has a connection/connection label, and the other has
+        neither, the pulses are not equal.
+
+        Excluded parameters:
+            - id
+            - connection_requirements
+
+        Returns:
+            True if all above conditions hold, False otherwise.
+        """
+        exclude_parameters = ['connection', 'connection_label', 'id', 'full_name']
+
+        if not self.matches_parameter_node(other, exclude_parameters=exclude_parameters):
+            return False
+
+        # Perform additional checks based on connection (labels).
+        # Pulses are equal if they have the same connection, or has a matching
+        # label, or if both pulses don't have a connection and connection label.
+        if self.connection is not None:
+            if other.connection is not None:
+                return self.connection == other.connection
+            elif other.connection_label is not None:
+                return self.connection.label == other.connection_label
+            else:
+                return False
+        elif self.connection_label is not None:
+            if other.connection is not None:
+                return self.connection_label == other.connection.label
+            elif other.connection_label is not None:
+                return self.connection_label == other.connection_label
+            else:
+                return False
+        else:
+            return other.connection is None and other.connection_label is None
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
         """Define custom hash, used for creating a set of unique elements"""
-        return hash(tuple(sorted(self.__dict__.items())))
+        return hash(tuple(sorted(self.parameters.items())))
 
     def __bool__(self):
         """Pulse is always equal to True"""
         return True
-
-    def __setattr__(self, key, value):
-        if isinstance(value, PulseMatch):
-            previous_pulse_match = self._connected_attrs.get(key, None)
-            if previous_pulse_match is not value:
-                # Either no previous pulse, or it was different from value
-                if isinstance(previous_pulse_match, PulseMatch):
-                    # Disconnect previous PulseMatch
-                    previous_pulse_match.origin_pulse.signal.disconnect(
-                        previous_pulse_match)
-
-            value.origin_pulse.signal.connect(value)
-            value.target_pulse = self
-            value.target_pulse_attr = key
-            self._connected_attrs[key] = value
-
-            super().__setattr__(key, value.value)
-
-        else:
-            if key == 'environment' and hasattr(self, key):
-                # Disconnect previous handlers if they existed
-                signal(f'config:{self.environment}.pulses.{self.name}'
-                       ).disconnect(self._handle_config_signal)
-                signal(f'config:{self.environment}.properties'
-                       ).disconnect(self._handle_properties_config_signal)
-
-                # Connect to new handlers
-                signal(f'config:{value}.pulses.{self.name}').connect(
-                    self._handle_config_signal)
-                signal(f'config:{value}.properties').connect(
-                    self._handle_properties_config_signal)
-
-                if self.name in silq.config[value].pulses:
-                    # Replace pulse_config
-                    self.pulse_config = silq.config[value].pulses[self.name]
-                    # Update all pulse attrs that exist in new pulse_config
-                    for env_key, env_val in self.pulse_config.items():
-                        if hasattr(self, env_key):
-                            setattr(self, env_key, env_val)
-                else:
-                    self.pulse_config = None
-
-                if 'properties' in silq.config[value]:
-                    # Repace properties_config
-                    self.properties_attrs = silq.config[value].properties
-                    # Replace all attrs in new properties_config if they are
-                    # in self.properties_attrs
-                    for attr in self.properties_attrs:
-                        if attr in silq.config[value].properties:
-                            setattr(self, attr, silq.config[value].properties[attr])
-
-            super().__setattr__(key, value)
-
-
-            if key in self._connected_attrs:
-                previous_pulse_match = self._connected_attrs.pop(key)
-                # Remove function from pulse signal because it no longer
-                # depends on other pulse
-                previous_pulse_match.origin_pulse.signal.disconnect(
-                    previous_pulse_match)
-
-        if self.signal.receivers:
-            # send signal to anyone listening that attribute has changed
-            self.signal.send(self, **{key: value})
-            if key in ['t_start', 'duration']:
-                # Also send signal that dependent property t_stop has changed
-                self.signal.send(self, t_stop=self.t_stop)
-
-    def _value_or_config(self,
-                         key: str,
-                         value: Any,
-                         default: Any=None):
-        """Decides what value to return depending on value and config.
-
-        Used for setting pulse attributes at the start
-
-        Args:
-            key: key to check in config
-            value: value to choose if not equal to None
-            default: default value if no value specified. None by default
-
-        Returns:
-            if value is not None, return value
-            elif config has key, return config[key]
-            else return None
-
-        """
-        if value is not None:
-            return value
-        elif self.pulse_config is not None and key in self.pulse_config:
-            return self.pulse_config[key]
-        else:
-            return default
 
     def __add__(self,
                 other: 'Pulse') -> 'CombinationPulse':
@@ -491,90 +352,17 @@ class Pulse(HasTraits):
         name = f'CombinationPulse_{id(self)+id(other)}'
         return CombinationPulse(name, self, other, '*')
 
-    def __deepcopy__(self, *args):
-        """Creates a copy of a pulse.
+    def __copy__(self):
+        """Create a copy of the pulse.
 
-        Returns:
-            Copy of pulse
+        Aside from using the default copy feature of the ParameterNode, this
+        also connects the copied parameters to the config if the original ones
+        are also connected
         """
-
-        # Temporarily empty _connected_attrs as it may reference other pulses
-        _connected_attrs, self._connected_attrs = self._connected_attrs, {}
-
-        # Temporary remove __deepcopy__ to use deepcopy default method
-        _deepcopy = Pulse.__deepcopy__
-        try:
-            del Pulse.__deepcopy__
-            pulse_copy = deepcopy(self)
-        finally:
-            # restore __deepcopy__ and _connected_attrs
-            Pulse.__deepcopy__ = _deepcopy
-            self._connected_attrs = _connected_attrs
-
-        # Add receiver for config signals
-        if hasattr(self, 'environment'):
-            # For PulseImplementation
-            signal(f'config:{pulse_copy.environment}.pulses.'
-                   f'{pulse_copy.name}').connect(
-                pulse_copy._handle_config_signal)
-            signal(f'config:{pulse_copy.environment}.properties').connect(
-                pulse_copy._handle_properties_config_signal)
-        return pulse_copy
-
-    __copy__ = __deepcopy__
-
-    def _JSONEncoder(self):
-        """Converts to JSON encoder for saving metadata
-
-        Returns:
-            JSON dict
-        """
-        return_dict = {}
-        for attr, val in vars(self).items():
-            if attr not in self._skip_JSON_encoder_attrs:
-                strip_attr = attr.lstrip('_')
-                return_dict[strip_attr] = val
-        return return_dict
-
-    @property
-    def full_name(self):
-        if self.id is None:
-            return self.name
-        else:
-            return f'{self.name}[{self.id}]'
-
-    @property
-    def t_start(self):
-        return self._t_start
-
-    @t_start.setter
-    def t_start(self, t_start):
-        if t_start is not None:
-            t_start = round(t_start, 11)
-        self._t_start = t_start
-
-    @property
-    def duration(self):
-        return self._duration
-
-    @duration.setter
-    def duration(self, duration):
-        if duration is not None:
-            duration = round(duration, 11)
-        self._duration = duration
-
-    @property
-    def t_stop(self):
-        if self.t_start is not None and self.duration is not None:
-            return round(self.t_start + self.duration, 11)
-        else:
-            return None
-
-    @t_stop.setter
-    def t_stop(self, t_stop):
-        if t_stop is not None:
-            # Setting duration sends a signal for duration and also t_stop
-            self.duration = round(t_stop - self.t_start, 11)
+        self_copy = super().__copy__()
+        if self._connected_to_config:
+            self_copy._connect_parameters_to_config()
+        return self_copy
 
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
@@ -582,6 +370,8 @@ class Pulse(HasTraits):
         Should be appended in each Pulse subclass."""
         if self.connection:
             properties_str += f'\n\tconnection: {self.connection}'
+        elif self.connection_label:
+            properties_str += f'\n\tconnection_label: {self.connection_label}'
         if self.connection_requirements:
             properties_str += f'\n\trequirements: {self.connection_requirements}'
         if hasattr(self, 'additional_pulses') and self.additional_pulses:
@@ -592,6 +382,48 @@ class Pulse(HasTraits):
 
         pulse_class = self.__class__.__name__
         return f'{pulse_class}({self.full_name}, {properties_str})'
+
+    def _connect_parameters_to_config(self, parameters=None):
+        """Connect Pulse parameters to config using Pulse.config_link.
+
+        By connecting a parameter, every time the corresponding config value
+        changes, this in turn changes the parameter value.
+
+        The config link is {Pulse.config_link}.{self.name}.{parameter.name}
+
+        Args:
+             parameters: Parameters to Connect. Can be
+
+             - None: Connect all parameters in self.parameters
+             - str list: Connect all parameter with given string names
+             - Parameter list: Connect all parameters in list
+        """
+        if isinstance(parameters, list):
+            if isinstance(parameters[0], str):
+                parameters = {parameter: self.parameters[parameter]
+                              for parameter in parameters}
+            else:
+                parameters = {parameter.name: parameter
+                              for parameter in parameters}
+        elif parameters is None:
+            parameters = self.parameters
+
+        for parameter_name, parameter in parameters.items():
+            config_link = f'{self.config_link}.{self.name}.{parameter_name}'
+            config_value = parameter.set_config_link(config_link=config_link)
+
+            # Update parameter value if not yet set, and set in config
+            if parameter.raw_value is None and config_value is not None:
+                parameter(config_value)
+
+        self._connected_to_config = True
+
+    def snapshot_base(self, update: bool=False,
+                      params_to_skip_update: Sequence[str]=None):
+        snapshot = super().snapshot_base()
+        if snapshot['connection']:
+            snapshot['connection'] = repr(snapshot['connection'])
+        return snapshot
 
     def satisfies_conditions(self,
                              pulse_class = None,
@@ -631,17 +463,18 @@ class Pulse(HasTraits):
             elif property == 't':
                 if val < self.t_start or val >= self.t_stop:
                     return False
-            elif not hasattr(self, property):
+            elif property not in self.parameters:
                 return False
             else:
                 # If arg is a tuple, the first element specifies its relation
                 if isinstance(val, (list, tuple)):
                     relation, val = val
-                else:
-                    relation = '=='
-                if not get_truth(test_val=getattr(self, property),
-                                 target_val=val,
-                                 relation=relation):
+                    if not get_truth(test_val=self.parameters[property].get_latest(),
+                            # test_val=getattr(self, property),
+                                     target_val=val,
+                                     relation=relation):
+                        return False
+                elif self.parameters[property]._latest['value'] != val:
                     return False
         else:
             return True
@@ -686,11 +519,18 @@ class SteeredInitialization(Pulse):
         super().__init__(name=name, t_start=0, duration=0, initialize=True,
                          **kwargs)
 
-        self.t_no_blip = self._value_or_config('t_no_blip', t_no_blip)
-        self.t_max_wait = self._value_or_config('t_max_wait', t_max_wait)
-        self.t_buffer = self._value_or_config('t_buffer', t_buffer)
-        self.readout_threshold_voltage = self._value_or_config(
-            'readout_threshold_voltage', readout_threshold_voltage)
+        self.t_no_blip = Parameter(initial_value=t_no_blip, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.t_max_wait = Parameter(initial_value=t_max_wait, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.t_buffer = Parameter(initial_value=t_buffer, unit='s',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.readout_threshold_voltage = Parameter(initial_value=readout_threshold_voltage,
+                                                   unit='V', set_cmd=None,
+                                                   vals=vals.Numbers())
+
+        self._connect_parameters_to_config(
+            ['t_no_blip', 't_max_wait', 't_buffer', 'readout_threshold_voltage'])
 
     def __repr__(self):
         try:
@@ -740,21 +580,39 @@ class SinePulse(Pulse):
                  sideband_mode: float = None,
                  phase_reference: str = None,
                  **kwargs):
+
         super().__init__(name=name, **kwargs)
 
-        self.frequency = self._value_or_config('frequency', frequency)
-        self.phase = self._value_or_config('phase', phase, 0)
-        self.power = self._value_or_config('power', power)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.offset = self._value_or_config('offset', offset)
-        self.frequency_sideband = self._value_or_config('frequency_sideband',
-                                                        frequency_sideband)
-        self.sideband_mode = self._value_or_config('sideband_mode',
-                                                   sideband_mode,
-                                                   'IQ')
-        self.phase_reference = self._value_or_config('phase_reference',
-                                                     phase_reference,
-                                                     'relative')
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
+                               vals=vals.Numbers())
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
+        self._connect_parameters_to_config(
+            ['frequency', 'phase', 'power', 'amplitude', 'phase', 'offset',
+             'frequency_sideband', 'sideband_mode', 'phase_reference'])
+
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
+        if self.phase is None:
+            self.phase = 0
+        if self.offset is None:
+            self.offset = 0
 
     def __repr__(self):
         properties_str = ''
@@ -768,7 +626,7 @@ class SinePulse(Pulse):
             if self.amplitude is not None:
                 properties_str += f', A={self.amplitude} V'
 
-            if self.offset is not None:
+            if self.offset:
                 properties_str += f', offset={self.offset} V'
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
@@ -780,7 +638,6 @@ class SinePulse(Pulse):
             pass
 
         return super()._get_repr(properties_str)
-
 
     def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
         """Get voltage(s) at time(s) t.
@@ -797,11 +654,10 @@ class SinePulse(Pulse):
             t = t - self.t_start
 
         waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
-
-        if self.offset is not None:
-            waveform += self.offset
+        waveform += self.offset
 
         return waveform
+
 
 class FrequencyRampPulse(Pulse):
     """Linearly increasing/decreasing frequency `Pulse`.
@@ -821,6 +677,7 @@ class FrequencyRampPulse(Pulse):
             the corresponding instrument/interface is programmed).
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
+        offset: amplitude offset, zero by default
         frequency_sideband: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
         sideband_mode: Type of mixer sideband ('IQ' by default)
@@ -837,9 +694,9 @@ class FrequencyRampPulse(Pulse):
                  frequency_stop: float = None,
                  frequency: float = None,
                  frequency_deviation: float = None,
-                 frequency_final: str = 'stop',
                  amplitude: float = None,
                  power: float = None,
+                 offset: float = None,
                  phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
@@ -847,60 +704,65 @@ class FrequencyRampPulse(Pulse):
         super().__init__(name=name, **kwargs)
 
         if frequency_start is not None and frequency_stop is not None:
-            self.frequency = (frequency_start + frequency_stop) / 2
-            self.frequency_deviation = (frequency_stop - frequency_start) / 2
-        else:
-            self.frequency = frequency
-            if self.frequency is None:
-                self.frequency = self.pulse_config.get('frequency', None)
+            frequency = (frequency_start + frequency_stop) / 2
+            frequency_deviation = (frequency_stop - frequency_start) / 2
 
-            self.frequency_deviation = frequency_deviation
-            if self.frequency_deviation is  None:
-                self.frequency_deviation = self.pulse_config.get(
-                    'frequency_deviation', None)
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.frequency_deviation = Parameter(initial_value=frequency_deviation,
+                                             unit='Hz', set_cmd=None,
+                                             vals=vals.Numbers())
+        self.frequency_start = Parameter(unit='Hz', set_cmd=None,
+                                         vals=vals.Numbers())
+        self.frequency_stop = Parameter(unit='Hz', set_cmd=None,
+                                        vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.amplitude = Parameter(initial_value=amplitude, set_cmd=None,
+                                   vals=vals.Numbers())
+        self.power = Parameter(initial_value=power, set_cmd=None,
+                               vals=vals.Numbers())
+        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
+                               vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
 
-        self._frequency_final = frequency_final
-        self.frequency_sideband = self._value_or_config('frequency_sideband',
-                                                        frequency_sideband)
-        self.sideband_mode = self._value_or_config('sideband_mode',
-                                                   sideband_mode, 'IQ')
+        self._connect_parameters_to_config(
+            ['frequency', 'frequency_deviation', 'frequency_start',
+             'frequency_stop', 'frequency_sideband', 'sideband_mode',
+             'amplitude', 'power', 'phase', 'offset'])
 
-        self.amplitude = self._value_or_config('amplitude', amplitude)
-        self.phase = self._value_or_config('phase', phase, 0)
-        self.power = self._value_or_config('power', power)
+        # Set default value for sideband_mode after connecting parameters,
+        # because its value may have been retrieved from config
+        if self.sideband_mode is not None:
+            self.sideband_mode = 'IQ'
+        if self.phase is None:
+            self.phase = 0
+        if self.offset is None:
+            self.offset = 0
 
-    @property
-    def frequency_start(self):
+    @parameter
+    def frequency_start_get(self, parameter):
         return self.frequency - self.frequency_deviation
 
-    @frequency_start.setter
-    def frequency_start(self, frequency_start):
+    @parameter
+    def frequency_start_set(self, parameter, frequency_start):
         frequency_stop = self.frequency_stop
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
 
-    @property
-    def frequency_stop(self):
+    @parameter
+    def frequency_stop_get(self, parameter):
         return self.frequency + self.frequency_deviation
 
-    @frequency_stop.setter
-    def frequency_stop(self, frequency_stop):
+    @parameter
+    def frequency_stop_set(self, parameter, frequency_stop):
         frequency_start = self.frequency_start
         self.frequency = (frequency_start + frequency_stop) / 2
         self.frequency_deviation = (frequency_stop - frequency_start) / 2
-
-    @property
-    def frequency_final(self):
-        if self._frequency_final == 'start':
-            return self.frequency_start
-        elif self._frequency_final == 'stop':
-            return self.frequency_stop
-        else:
-            return self._frequency_final
-
-    @frequency_final.setter
-    def frequency_final(self, frequency_final):
-        self._frequency_final = frequency_final
 
     def __repr__(self):
         properties_str = ''
@@ -910,7 +772,16 @@ class FrequencyRampPulse(Pulse):
             if self.frequency_sideband is not None:
                 properties_str += f', f_sb={freq_to_str(self.frequency_sideband)}' \
                                   f'{self.sideband_mode}'
-            properties_str += f', power={self.power}'
+
+            if self.power is not None:
+                properties_str += f', power={self.power} dBm'
+
+            if self.amplitude is not None:
+                properties_str += f', A={self.amplitude} V'
+
+            if self.offset:
+                properties_str += f', offset={self.offset} V'
+
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
         except:
@@ -918,6 +789,10 @@ class FrequencyRampPulse(Pulse):
 
         return super()._get_repr(properties_str)
 
+    def get_voltage(self, t):
+        frequency_rate = self.frequency_deviation / self.duration
+        frequency_start = self.frequency - self.frequency_deviation
+        return np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
@@ -930,11 +805,12 @@ class DCPulse(Pulse):
     def __init__(self,
                  name: str = None, amplitude: float = None, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
 
-        if self.amplitude is None:
-            raise AttributeError("'{}' object has no attribute "
-                                 "'amplitude'".format(self.__class__.__name__))
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None)
+
+        self._connect_parameters_to_config(['amplitude'])
+
 
     def __repr__(self):
         properties_str = ''
@@ -980,10 +856,13 @@ class DCRampPulse(Pulse):
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
-        self.amplitude_start = self._value_or_config('amplitude_start',
-                                                     amplitude_start)
-        self.amplitude_stop = self._value_or_config('amplitude_stop',
-                                                    amplitude_stop)
+        self.amplitude_start = Parameter(initial_value=amplitude_start,
+                                         unit='V', set_cmd=None,
+                                         vals=vals.Numbers())
+        self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
+                                        set_cmd=None, vals=vals.Numbers())
+
+        self._connect_parameters_to_config(['amplitude_start', 'amplitude_stop'])
 
     def __repr__(self):
         properties_str = ''
@@ -1024,16 +903,20 @@ class TriggerPulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
 
     """
-    duration = 100e-9
+    default_duration = 100e-9
     default_amplitude = 1.0
 
     def __init__(self,
                  name: str = 'trigger',
-                 duration: float = duration,
+                 duration: float = default_duration,
                  amplitude: float = default_amplitude,
                  **kwargs):
         super().__init__(name=name, duration=duration, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
+
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+
+        self._connect_parameters_to_config(['amplitude'])
 
     def __repr__(self):
         try:
@@ -1077,7 +960,14 @@ class MarkerPulse(Pulse):
                  amplitude: float = default_amplitude,
                  **kwargs):
         super().__init__(name=name, **kwargs)
-        self.amplitude = self._value_or_config('amplitude', amplitude)
+
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+
+        self._connect_parameters_to_config(['amplitude'])
+
+        if self.amplitude is not None:
+            self.amplitude = self.default_amplitude
 
     def __repr__(self):
         try:
@@ -1144,9 +1034,6 @@ class MeasurementPulse(Pulse):
         name: Pulse name.
         acquire: Acquire pulse (default True)
         **kwargs: Additional parameters of `Pulse`.
-
-    Todo:
-        Verify that it is not directed to any other pulse.
     """
     def __init__(self, name=None, acquire=True, **kwargs):
         super().__init__(name=name, acquire=acquire, **kwargs)
