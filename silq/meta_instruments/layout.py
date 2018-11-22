@@ -38,11 +38,12 @@ class Connection:
             Scale 1/x means the signal at the input is x times lower than
             emitted from the output
     """
-    def __init__(self, scale: float = None):
+    def __init__(self, scale: float = None, label: str = None):
 
         self.input = {}
         self.output = {}
         self.scale = scale
+        self.label = label
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -128,7 +129,8 @@ class Connection:
 
         # Test conditions
         if (output_instrument is not None) and \
-                (self.output['instrument'] not in output_instrument):
+                (('instrument' not in self.output) or
+                (self.output['instrument'] not in output_instrument)):
             return False
         elif (output_channel is not None) and \
                 (('channel' not in self.output) or
@@ -191,7 +193,10 @@ class SingleConnection(Connection):
         self.software = software
 
     def __repr__(self):
-        output_str = f"Connection{{{self.output['str']}->{self.input['str']}}}("
+        output_str = "Connection{{"
+        if self.label:
+            output_str += f'{self.label}: '
+        output_str += f"{self.output['str']}->{self.input['str']}}}("
         if self.trigger:
             output_str += ', trigger'
             if self.trigger_start:
@@ -316,9 +321,10 @@ class CombinedConnection(Connection):
     """
     def __init__(self,
                  connections: List[SingleConnection],
+                 label: str = None,
                  scale: List[float] = None,
                  **kwargs):
-        super().__init__(scale=scale)
+        super().__init__(scale=scale, label=label)
         self.connections = connections
 
         self.output['str'] = [connection.output['str']
@@ -343,9 +349,11 @@ class CombinedConnection(Connection):
         self.trigger_start = False
 
     def __repr__(self):
-        output = 'CombinedConnection\n'
+        output = 'CombinedConnection'
+        if self.label:
+            output += f' {self.label}'
         for connection in self.connections:
-            output += '\t' + repr(connection) + '\n'
+            output += '\n\t' + repr(connection)
         return output
 
     def target_pulse(self,
@@ -374,7 +382,7 @@ class CombinedConnection(Connection):
                         else:
                             setattr(targeted_pulse, attr, val[0])
                     elif self.scale is not None:
-                        setattr(targeted_pulse, attr, val / self.scale[k])
+                        setattr(targeted_pulse, attr, val * self.scale[k])
             targeted_pulse = connection.target_pulse(targeted_pulse,
                                                      copy_pulse=False)
             pulses.append(targeted_pulse)
@@ -812,7 +820,6 @@ class Layout(Instrument):
 
     def get_connection(self,
                        connection_label: str = None,
-                       environment: str = None,
                        output_arg: str = None,
                        output_interface: InstrumentInterface = None,
                        output_instrument: Instrument = None,
@@ -829,13 +836,7 @@ class Layout(Instrument):
 
         Args:
             connection_label: label specifying specific connection.
-                Connection labels are provided as dict in
-                ``qcodes.config.user.{environment}.connections``, where
-                environment the config environment.
                 If provided, all other conditions are ignored.
-            environment: config environment, only used if connection_label is
-                provided. If not provided but connection_label is provided,
-                ``qcodes.config.user.properties.default_environment`` is used.
             output_arg: string representation of output.
 
                 * SingleConnection has form ``{instrument}.{channel}``
@@ -875,43 +876,15 @@ class Layout(Instrument):
 
         Raises:
             AssertionError
-                ``connection_label`` is provided, but no environment,
-                and ``default_environment`` not specified
-            AssertionError
                 ``connection_label`` is specified but not found
             AssertionError
                 No unique connection is found
         """
         if connection_label is not None:
-            if environment is None:
-                # Determine environment, either from connection label or
-                # default_environment
-                if '.' in connection_label:
-                    # connection label has form {environment}.{connection_label}
-                    environment, connection_label = connection_label.split('.')
-                else:
-                    # Use default environment defined in config
-                    assert 'default_environment' in silq.config.properties, \
-                        "No environment nor default environment provided"
-                    environment = silq.config.properties.default_environment
-
-            # Obtain list of connections from environment
-            environment_connections = silq.config[environment].connections
-
-            # Find connection from environment connections
-            assert connection_label in environment_connections, \
-                f"Could not find connection {connection_label} in " \
-                f"environment {environment}"
-            connection_attrs = environment_connections[connection_label]
-
-            connection_output_str, connection_input_str = connection_attrs
-
-            connection = self.get_connection(output_arg=connection_output_str,
-                                             input_arg=connection_input_str)
-            return connection
+            return next(connection for connection in self.connections
+                        if connection.label == connection_label)
         else:
-            # Extract from conditions other than environment and
-            # connection_label
+            # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
                               output_interface=output_interface,
                               output_instrument=output_instrument,
@@ -1040,7 +1013,6 @@ class Layout(Instrument):
 
         if pulse.connection_label is not None:
             connection = self.get_connection(
-                environment=pulse.environment,
                 connection_label=pulse.connection_label,
                 **connection_requirements,
                 **kwargs)
@@ -1079,7 +1051,8 @@ class Layout(Instrument):
         """
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.add(pulse)
+            self.acquisition_interface.pulse_sequence.quick_add(pulse, connect=False,
+                                                                reset_duration=False)
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1087,17 +1060,21 @@ class Layout(Instrument):
 
         # Get default output instrument
         connection = self.get_pulse_connection(pulse)
-        interface = self._interfaces[connection.output['instrument']]
 
         # Return a list of pulses. The reason for not necessarily returing a
         # single pulse is that targeting by a CombinedConnection will target the
         # pulse to each of its connections it's composed of.
+        # Copies pulse (multiple times if type is CombinedConnection)
         pulses = connection.target_pulse(pulse)
         if not isinstance(pulses, list):
             # Convert to list
             pulses = [pulses]
 
         for pulse in pulses:
+            instrument = pulse.connection.output['instrument']
+            interface = self._interfaces[instrument]
+
+            # Copies pulse via PulseImplementation.target_pulse
             targeted_pulse = interface.get_pulse_implementation(
                 pulse, connections=self.connections)
 
@@ -1105,14 +1082,20 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            self.targeted_pulse_sequence.add(targeted_pulse)
+            # Copies pulse
+            self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False,
+                                                   reset_duration=False)
 
-            interface.pulse_sequence.add(targeted_pulse)
+            # Copies pulse
+            interface.pulse_sequence.quick_add(targeted_pulse, connect=False,
+                                               reset_duration=False)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            input_interface.input_pulse_sequence.add(targeted_pulse)
+            # Copies pulse
+            input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False,
+                                                           reset_duration=False)
 
     def _target_pulse_sequence(self,
                                pulse_sequence: PulseSequence):
@@ -1137,6 +1120,24 @@ class Layout(Instrument):
         if self.active():
             self.stop()
 
+        # Create a copy of the pulse sequence
+        try:
+            # Temporarily set all _connected_to_config to False such that
+            # copying the pulse sequence won't attach the copied pulses to the
+            # config.
+            _connected_to_config_list = []
+            for pulse in pulse_sequence.pulses:
+                _connected_to_config_list.append(pulse._connected_to_config)
+                pulse._connected_to_config = False
+
+            # Copy the pulse sequence
+            self._pulse_sequence = copy(pulse_sequence)
+        finally:
+            # Restore original pulse._connected_to_config values
+            for pulse, _connected_to_config in zip(pulse_sequence.pulses,
+                                                   _connected_to_config_list):
+                pulse._connected_to_config = _connected_to_config
+
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
         self.targeted_pulse_sequence.duration = pulse_sequence.duration
@@ -1146,13 +1147,15 @@ class Layout(Instrument):
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
+
+            # Fix duration of pulse sequence and input pulse sequence
             interface.pulse_sequence.duration = pulse_sequence.duration
             interface.pulse_sequence.final_delay = pulse_sequence.final_delay
             interface.input_pulse_sequence.duration = pulse_sequence.duration
             interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
-        for pulse in pulse_sequence:
+        for pulse in self.pulse_sequence:
             self._target_pulse(pulse)
 
         # Setup each of the instruments hierarchically using its pulse_sequence
@@ -1166,8 +1169,14 @@ class Layout(Instrument):
                 for pulse in additional_pulses:
                     self._target_pulse(pulse)
 
-        # Update pulse sequence
-        self._pulse_sequence = copy(pulse_sequence)
+
+        # Finish setting up the pulse sequences
+        self.targeted_pulse_sequence.finish_quick_add()
+        for interface in self._interfaces.values():
+            # Finish adding pulses, which performs final steps such as sorting
+            # and checking for overlaps
+            interface.pulse_sequence.finish_quick_add()
+            interface.input_pulse_sequence.finish_quick_add()
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
@@ -1350,7 +1359,7 @@ class Layout(Instrument):
                 continue
             elif interface.instrument_name() in ignore:
                 logger.info('Skipping starting {interface.name} (name in ignore list)')
-            elif interface in self.flags['start_last']:
+            elif interface.instrument_name() in self.flags['start_last']:
                 logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
@@ -1496,7 +1505,7 @@ class Layout(Instrument):
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
-            {'pulse_sequence': self.pulse_sequence._JSONEncoder()}, file)
+            {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
                 sample_rate=self.sample_rate, samples=self.samples())}, file)
