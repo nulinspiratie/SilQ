@@ -1,222 +1,38 @@
+import logging
 import unittest
-import tempfile
-from copy import deepcopy
+from copy import copy, deepcopy
+import pickle
 
-
-from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse, PulseMatch
-from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
+from silq.instrument_interfaces.interface import Channel
+from silq.pulses import DCPulse, Pulse
 from silq.tools.config import *
-from silq import config
+import silq
+
+import qcodes as qc
+from qcodes.instrument.parameter import Parameter
 
 
-class TestPulseSignals(unittest.TestCase):
-    def setUp(self):
-        self.is_set = False
-        self.dict = {}
+class Registrar:
+    """Class that registers values it is called with (for signal connecting)"""
+    def __init__(self):
+        self.values = []
 
-    def set_val(self, _, **kwargs):
-        self.is_set = True
-
-    def set_dict(self, _, **kwargs):
-        self.dict.update(**kwargs)
-
-    def test_set_val(self):
-        self.assertFalse(self.is_set)
-        self.set_val(self)
-        self.assertTrue(self.is_set)
-
-    def test_signal_emit(self):
-        p = Pulse()
-        p.signal.connect(self.set_dict)
-        self.assertFalse('t_start' in self.dict)
-        p.t_start = 1
-        self.assertEqual(1, self.dict['t_start'])
-
-    def test_subsequent_pulses(self):
-        p1 = Pulse(t_start=0, t_stop=10)
-        self.assertEqual(p1.t_start, 0)
-        self.assertEqual(p1.duration, 10)
-        self.assertEqual(p1.t_stop, 10)
-
-        p2 = Pulse(t_start=PulseMatch(p1, 't_stop', delay=1), duration=4)
-        self.assertEqual(p2.t_start, 11)
-        self.assertEqual(p2.duration, 4)
-        self.assertEqual(p2.t_stop, 15)
-
-        p1.t_stop = 14
-        self.assertEqual(p1.t_start, 0)
-        self.assertEqual(p1.duration, 14)
-        self.assertEqual(p1.t_stop, 14)
-
-        self.assertEqual(p2.t_start, 15)
-        self.assertEqual(p2.duration, 4)
-        self.assertEqual(p2.t_stop, 19)
-
-        p1.t_stop = 16
-        self.assertEqual(p1.t_start, 0)
-        self.assertEqual(p1.duration, 16)
-        self.assertEqual(p1.t_stop, 16)
-
-        self.assertEqual(p2.t_start, 17)
-        self.assertEqual(p2.duration, 4)
-        self.assertEqual(p2.t_stop, 21)
-
-        p2.t_start = 0
-        self.assertEqual(p2.t_start, 0)
-        self.assertEqual(p2.duration, 4)
-        self.assertEqual(p2.t_stop, 4)
-
-        p1.t_stop = 20
-        self.assertEqual(p2.t_start, 0)
-        self.assertEqual(p2.duration, 4)
-        self.assertEqual(p2.t_stop, 4)
+    def __call__(self, value):
+        self.values.append(value)
 
 
-class TestPulseConfig(unittest.TestCase):
-    def setUp(self):
-        self.signal = signal('config:env.pulses.read')
+class ListHandler(logging.Handler):  # Inherit from logging.Handler
+    """Class that adds log messages to a list"""
+    def __init__(self, log_list):
+        # run the regular Handler __init__
+        logging.Handler.__init__(self)
+        # Our custom argument
+        self.log_list = log_list
 
-        config.clear()
-        config.properties = {'default_environment': 'env'}
-
-        self.dict = {}
-
-        self.pulses_config = DictConfig(name='pulses',
-                                        folder=None,
-                                        config={'read': {}})
-        config.env = {'pulses': self.pulses_config,
-                      'properties': {}}
-        self.pulse_config = self.pulses_config.read
-
-    def tearDown(self):
-        for key in self.pulses_config:
-            signal('config:pulses.' + key).receivers = {}
-
-    def set_dict(self, sender, **kwargs):
-        self.dict.update(**kwargs)
-
-    def test_set_item(self):
-        with self.assertRaises(KeyError):
-            _ = self.pulse_config['duration']
-        self.pulse_config['duration'] = 1
-        self.assertEqual(self.pulse_config['duration'], 1)
-        self.assertEqual(self.pulse_config.duration, 1)
-
-    def test_signal(self):
-        self.signal.connect(self.set_dict)
-        self.pulse_config.duration = 1
-        self.assertIn('duration', self.pulse_config)
-        self.assertEqual(self.pulse_config.duration, 1)
-
-        self.pulses_config.read2 = {'t_start':
-                                        'config:env.pulses.read.duration'}
-        self.assertIsInstance(self.pulses_config.read2, DictConfig)
-
-        self.assertEqual(self.pulses_config.read2.t_start, 1)
-
-        signal('config:env.pulses.read').connect(self.set_dict)
-        signal('config:env.pulses.read2').connect(self.set_dict)
-
-        self.pulse_config.duration = 3
-        self.assertEqual(self.dict['duration'], 3)
-        self.assertEqual(self.dict['t_start'], 3)
-
-        self.pulses_config.read2.t_start = 20
-        self.dict = {}
-        self.pulse_config.duration = 5
-        self.assertEqual(self.dict['duration'], 5)
-        self.assertNotIn('t_start', self.dict)
-
-    def test_config(self):
-        self.assertIsInstance(self.pulse_config, DictConfig)
-        self.pulse_config.t_start = 4
-        self.assertEqual(self.pulse_config.t_start, 4)
-        self.assertEqual(self.pulses_config.read.t_start, 4)
-
-        # Create new dict
-        d = {'read2': {'t_start': 1, 'subdict': {'t_start': 2}}}
-        dict_config = DictConfig(name='iterdict', config=d)
-        self.assertIsInstance(dict_config.read2, DictConfig)
-        self.assertIsInstance(dict_config.read2.subdict, DictConfig)
-        self.assertEqual(dict_config.read2.t_start, 1)
-        self.assertEqual(dict_config.read2.subdict.t_start, 2)
-
-    def test_pulse_from_config(self):
-        self.pulse_config.t_start = 10
-        p = Pulse(name='read', duration = 10)
-        pseq = PulseSequence([p])
-        self.assertEqual(p.t_start, 10)
-        self.assertEqual(pseq['read'].t_start, 10)
-
-        p.t_start = 20
-        self.assertEqual(p.t_start, 20)
-
-        self.pulse_config.t_start = 0
-        self.assertEqual(p.t_start, 0)
-        self.assertEqual(pseq['read'].t_start, 0)
-
-        self.pulse_config.t_start = 'config:env.pulses.read.t_stop'
-        with self.assertRaises(AttributeError):
-            self.pulse_config.t_start
-
-        self.pulse_config.t_stop = 50
-        self.assertEqual(self.pulse_config.t_start, 50)
-        self.assertEqual(p.t_start, 50)
-        self.assertEqual(pseq['read'].t_start, 50)
-
-        self.pulse_config.t_start = 40
-        self.assertEqual(self.pulse_config.t_start, 40)
-        self.assertEqual(p.t_start, 40)
-        self.assertEqual(pseq['read'].t_start, 40)
-
-        self.pulse_config.t_stop = 60
-        self.assertEqual(self.pulse_config.t_start, 40)
-        self.assertEqual(p.t_start, 40)
-        self.assertEqual(pseq['read'].t_start, 40)
-
-    def test_pulse_from_properties_config(self):
-        read_pulse = Pulse(name='read', duration=10)
-        pseq = PulseSequence([read_pulse])
-
-        self.assertEqual(read_pulse.t_skip, None)
-        self.assertEqual(pseq['read'].t_skip, None)
-
-        config.env.properties = {'t_skip': 1}
-        self.assertEqual(read_pulse.t_skip, 1)
-        self.assertEqual(pseq['read'].t_skip, 1)
-
-        config.env.properties = {'t_skip': 2}
-        self.assertEqual(read_pulse.t_skip, 2)
-        self.assertEqual(pseq['read'].t_skip, 2)
-
-        read_pulse = Pulse(name='read', duration=10)
-        pseq = PulseSequence([read_pulse])
-        self.assertEqual(read_pulse.t_skip, 2)
-        self.assertEqual(pseq['read'].t_skip, 2)
-
-        config.env.properties = {'t_skip': 1}
-        self.assertEqual(read_pulse.t_skip, 1)
-        self.assertEqual(pseq['read'].t_skip, 1)
-
-    def test_pulse_attr_after_load(self):
-        self.pulse_config.duration = 10
-        pulse = Pulse('read')
-        self.assertEqual(pulse.duration, 10)
-
-        config.env.pulses.read.duration = 20
-
-        # Save config to temporary folder
-        with tempfile.TemporaryDirectory() as folderpath:
-            config.save(folder=folderpath)
-            config.env.pulses.read.duration = 10
-
-            # Pulse duration has not yet been updated
-            self.assertEqual(pulse.duration, 10)
-
-            config.load(folderpath)
-            # Pulse duration has not yet been updated
-            self.assertEqual(pulse.duration, 20)
+    def emit(self, record):
+        # record.message is the log message
+        self.log_list.append(record.msg)
 
 
 class TestPulse(unittest.TestCase):
@@ -239,134 +55,388 @@ class TestPulse(unittest.TestCase):
         self.assertTrue(p.satisfies_conditions(name='read', id=0))
         self.assertTrue(p.satisfies_conditions(name='read[0]'))
 
+    def test_pulse_duration_t_stop(self):
+        p = Pulse(t_start=1, t_stop=3)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
+        self.assertEqual(p.duration, 2)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
+        self.assertEqual(p.t_stop, 3)
 
-class TestPulseSequence(unittest.TestCase):
+        p.duration = 4
+        self.assertEqual(p.t_stop, 5)
+
+        p = Pulse(t_start=1, duration=2)
+        self.assertEqual(p['t_stop'].get_latest(), 3)
+        self.assertEqual(p.t_stop, 3)
+
+    def test_pulse_no_id(self):
+        p = Pulse('name')
+        p.id = None
+
+    def test_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+        p.id = 0
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC[0]')
+
+        p.id = None
+        self.assertEqual(p.name, 'DC')
+        self.assertEqual(p.full_name, 'DC')
+
+    def test_copied_pulse_full_name(self):
+        p = Pulse('DC', t_start=1)
+
+        p_copy = copy(p)
+        p_copy.name = 'DC2'
+
+        p.id = 0
+        self.assertEqual('DC', p.name)
+        self.assertEqual('DC[0]', p.full_name)
+
+        p_copy.id = 1
+        p_copy.full_name
+        self.assertEqual('DC2', p_copy.name)
+        self.assertEqual('DC2[1]', p_copy.full_name)
+
+    def test_pulse_snapshotting(self):
+        pulse = DCPulse('DC', duration=2)
+        snapshot = pulse.snapshot()
+
+        for parameter_name, parameter in pulse.parameters.items():
+            if parameter.unit:
+                parameter_name += f' ({parameter.unit})'
+            self.assertIn(parameter_name, snapshot, msg=f'{parameter_name} not present')
+            if snapshot[parameter_name] != parameter():
+                print('hi')
+            self.assertEqual(snapshot.pop(parameter_name),
+                             parameter(), msg=f'{parameter} not equal')
+        self.assertEqual('silq.pulses.pulse_types.DCPulse',
+                         snapshot.pop('__class__'))
+        self.assertFalse(snapshot, f'snapshot exists')
+
+    def test_pulse_parameter_name(self):
+        pulse = DCPulse('pulse1', amplitude=10)
+        self.assertEqual(str(pulse['amplitude']), 'pulse1_amplitude')
+
+        pulse_no_name = DCPulse(amplitude=10)
+        self.assertEqual(str(pulse_no_name['amplitude']), 'amplitude')
+
+
+class TestPulseSignals(unittest.TestCase):
+    def test_signal_emit(self):
+        p = Pulse(t_start=1, t_stop=2)
+
+        p2 = Pulse(duration=3)
+        p['t_start'].connect(p2['t_start'], offset=5)
+        self.assertEqual(p2.t_start, 6)
+        self.assertEqual(p2.duration, 3)
+        self.assertEqual(p2.t_stop, 9)
+
+        p.t_start = 3
+        self.assertEqual(p.t_stop, 4)
+        self.assertEqual(p2.t_start, 8)
+        self.assertEqual(p2.t_stop, 11)
+
+        p2.t_start = 5
+        self.assertEqual(p2.t_start, 5)
+        self.assertEqual(p2.duration, 3)
+        self.assertEqual(p2.t_stop, 8)
+
+        # The signal connection remains even after changing its value
+        p.t_start = 10
+        self.assertEqual(p2.t_start, 15)
+
+    def test_signal_copy(self):
+        p = Pulse(t_start=1)
+
+        p2 = Pulse()
+        p['t_start'].connect(p2['t_start'])
+        self.assertEqual(p2.t_start, 1)
+
+        p3 = copy(p2)
+        self.assertEqual(p3.t_start, 1)
+
+        p4 = deepcopy(p2)
+        self.assertEqual(p4.t_start, 1)
+
+        p.t_start = 2
+        self.assertEqual(p2.t_start, 2)
+        self.assertEqual(p3.t_start, 1)
+        self.assertEqual(p4.t_start, 1)
+
+    def test_t_stop_signal_emit_indirect(self):
+        pulse = Pulse(t_start=1, duration=2)
+
+        parameter_measure_t_stop = Parameter(set_cmd=None)
+        pulse['t_stop'].connect(parameter_measure_t_stop, update=True)
+        self.assertEqual(parameter_measure_t_stop(), 3)
+
+        pulse.t_start=2
+        self.assertEqual(parameter_measure_t_stop(), 4)
+
+        pulse.duration=3
+        self.assertEqual(parameter_measure_t_stop(), 5)
+
+    def test_number_of_t_stop_signals(self):
+        p = Pulse(t_start=0, duration=1)
+        registrar = Registrar()
+        p['t_stop'].connect(registrar)
+
+        p.duration = 2
+        self.assertEqual(registrar.values, [1, 2])
+
+        p.t_stop = 3
+        self.assertEqual(registrar.values, [1, 2, 3])
+
+
+class TestPulseConfig(unittest.TestCase):
     def setUp(self):
+        self.silq_environment = silq.environment
+        self.silq_config = silq.config
 
-        config.clear()
-        config.properties = {}
+        self.d = {
+            'pulses': {
+                'read': {'t_start': 0,
+                         't_stop': 10}},
+            'connections': ['connection1', 'connection2'],
+            'properties': {},
+            'env1': {'properties': {'x': 1, 'y': 2}}}
+        self.config = DictConfig('cfg', config=self.d)
+        qc.config.user.silq_config = silq.config = self.config
 
-        self.pulse_sequence = PulseSequence()
+    def tearDown(self):
+        silq.environment = self.silq_environment
+        qc.config.user.silq_config = silq.config = self.silq_config
 
-    def test_add_remove_pulse(self):
-        if self.pulse_sequence:
-            isempty = False
-        else:
-            isempty = True
-        self.assertTrue(isempty)
+    def test_set_item(self):
+        silq.environment = None
 
-        pulse = DCPulse(name='dc', amplitude=1.5, duration=10, t_start=0)
-        self.pulse_sequence.add(pulse)
-        self.assertIn(pulse, self.pulse_sequence)
+        p = Pulse('read')
+        self.assertEqual(p.t_start, 0)
+        self.assertEqual(p.t_stop, 10)
 
-        if self.pulse_sequence:
-            isempty = False
-        else:
-            isempty = True
-        self.assertFalse(isempty)
+        self.config.pulses.read.t_start = 5
 
-        # Remove pulses
-        self.pulse_sequence.clear()
-        self.assertEqual(len(self.pulse_sequence.pulses), 0)
+        self.assertEqual(p.t_start, 5)
+        self.assertEqual(p.t_stop, 15)
 
-        if self.pulse_sequence:
-            isempty = False
-        else:
-            isempty = True
-        self.assertTrue(isempty)
+    def test_set_item_environment(self):
+        silq.environment = 'env1'
 
-    def test_sort(self):
-        pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
-        pulse2 = DCPulse(name='dc2', amplitude=1.5, duration=10, t_start=0)
-        self.pulse_sequence.add(pulse1, pulse2)
+        p = Pulse('read')
+        self.assertEqual(p.t_start, None)
+        self.assertEqual(p.t_stop, None)
 
-        self.assertEqual(pulse2, self.pulse_sequence[0])
+        self.config.pulses.read.t_start = 5
+        self.assertEqual(p.t_start, None)
+        self.assertEqual(p.t_stop, None)
 
-    def test_get_pulses(self):
-        self.assertListEqual(self.pulse_sequence.get_pulses(), [])
-        pulse1 = DCPulse(name='dc1', amplitude=1.5, duration=10, t_start=1)
-        pulse2 = DCPulse(name='dc2', amplitude=2.5, duration=10, t_start=1)
-        pulse3 = TriggerPulse(name='trig', duration=12, t_start=1)
-        self.pulse_sequence.add(pulse1, pulse2, pulse3)
+        self.config.env1 = {'pulses': {'read': {'t_start': 5}}}
+        self.assertEqual(p.t_start, 5)
+        self.assertEqual(p.t_stop, None)
 
-        subset_pulses = self.pulse_sequence.get_pulses()
-        self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
-        subset_pulses = self.pulse_sequence.get_pulses(t_start=1)
-        self.assertListEqual(subset_pulses, [pulse1, pulse2, pulse3])
-        subset_pulses = self.pulse_sequence.get_pulses(duration=10)
-        self.assertListEqual(subset_pulses, [pulse1, pulse2])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=1.5)
-        self.assertListEqual(subset_pulses, [pulse1])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=('>', 1.5))
-        self.assertListEqual(subset_pulses, [pulse2])
-        subset_pulses = self.pulse_sequence.get_pulses(amplitude=('>=', 1.5))
-        self.assertListEqual(subset_pulses, [pulse1, pulse2])
+        self.config.env1.pulses.read.t_stop = 10
+        self.assertEqual(p.t_start, 5)
+        self.assertEqual(p.t_stop, 10)
 
-        pulse = self.pulse_sequence.get_pulse(amplitude=1.5)
-        self.assertEqual(pulse, pulse1)
-        pulse = self.pulse_sequence.get_pulse(duration=12)
-        self.assertEqual(pulse, pulse3)
-        with self.assertRaises(RuntimeError):
-            self.pulse_sequence.get_pulse(duration=10)
+    def test_set_item_copied(self):
+        silq.environment = None
 
-    def test_transition_voltages(self):
-        # To test transitions, pulses must be on the same connection
-        channel_out = Channel('arbstudio', 'ch1', id=1, output=True)
-        channel_in = Channel('device', 'input', id=1, output=True)
-        c1 = SingleConnection(output_instrument='arbstudio',
-                              output_channel=channel_out,
-                              input_instrument='device',
-                              input_channel=channel_in)
-        pulses = [DCPulse(name='dc1', amplitude=0, duration=5, t_start=0,
-                          connection=c1),
-                  DCPulse(name='dc2', amplitude=1, duration=10, t_start=5,
-                          connection=c1),
-                  DCPulse(name='dc3', amplitude=2, duration=8, t_start=15,
-                          connection=c1),
-                  DCPulse(name='dc4', amplitude=3, duration=7, t_start=12,
-                          connection=c1)]
+        p = Pulse('read')
+        p_copy = copy(p)
+        self.assertEqual(p_copy.t_start, 0)
+        self.assertEqual(p_copy.t_stop, 10)
 
-        self.pulse_sequence.add(*pulses)
+        self.config.pulses.read.t_start = 5
 
-        self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages)
-        self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages,
-                          connection=c1)
-        self.assertRaises(TypeError, self.pulse_sequence.get_transition_voltages,
-                          t=5)
+        self.assertEqual(p_copy.t_start, 5)
+        self.assertEqual(p_copy.t_stop, 15)
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
-            pulse=pulses[1])
-        self.assertTupleEqual(transition_voltage, (0, 1))
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
-            connection=c1, t=5)
-        self.assertTupleEqual(transition_voltage, (0, 1))
+class TestPulseEquality(unittest.TestCase):
+    def test_same_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p)
 
-        transition_voltage = self.pulse_sequence.get_transition_voltages(
-            connection=c1, t=15)
-        self.assertTupleEqual(transition_voltage, (1, 2))
+    def test_reinstantiated_pulse_equality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=2, amplitude=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
 
-    def test_pulse_sequence_id(self):
-        self.pulse_sequence.add(Pulse(name='read', duration=1))
-        p1_read = self.pulse_sequence['read']
-        self.assertIsNone(p1_read.id)
+    def test_pulse_inequality(self):
+        p = DCPulse(t_start=2, amplitude=2, duration=1)
+        p2 = DCPulse(t_start=3, amplitude=2, duration=1)
+        self.assertNotEqual(p, p2) # pulses should no longer be equal
 
-        self.pulse_sequence.add(Pulse(name='load', duration=1))
-        self.assertIsNone(p1_read.id)
+    def test_pulse_inequality_new_attribute(self):
+        p = DCPulse(t_start=2, duration=1)
+        p2 = DCPulse(t_start=2, duration=1)
+        self.assertEqual(p, p2) # pulses should still be equal
+        p2.amplitude = 1
+        self.assertNotEqual(p, p2)
 
-        self.pulse_sequence.add(Pulse(name='read', duration=1))
-        self.assertEqual(p1_read.id, 0)
-        self.assertEqual(self.pulse_sequence.get_pulse(name='read', id=0),
-                         p1_read)
-        self.assertEqual(self.pulse_sequence.get_pulse(name='read[0]'),
-                         p1_read)
-        p2_read = self.pulse_sequence['read[1]']
-        self.assertNotEqual(p2_read, p1_read)
+    def test_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+        self.assertEqual(p, p_copy)
 
-        self.pulse_sequence.add(Pulse(name='read', duration=1))
-        p3_read = self.pulse_sequence['read[2]']
-        self.assertNotEqual(p3_read, p1_read)
-        self.assertNotEqual(p3_read, p2_read)
+        p_copy.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+        p_copy.duration = 1
+        self.assertEqual(p, p_copy)
+
+        p.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+    def test_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+        self.assertEqual(p, p_copy)
+
+        p_copy.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+        p_copy.duration = 1
+        self.assertEqual(p, p_copy)
+
+        p.duration = 2
+        self.assertNotEqual(p, p_copy)
+
+    def test_double_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_double_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = copy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_double_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+
+    def test_copy_deepcopy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = copy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = deepcopy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_deepcopy_copy_pulse_equality(self):
+        p = DCPulse(t_start=2, duration=1)
+        p_copy = deepcopy(p)
+
+        p_copy.t_start = 3
+        p_copy2 = copy(p_copy)
+
+        self.assertNotEqual(p, p_copy)
+        self.assertNotEqual(p, p_copy2)
+        self.assertEqual(p_copy, p_copy2)
+
+    def test_pulse_differing_connections(self):
+        connection = SingleConnection(output_instrument='ins1',
+                                      output_channel=Channel('ins1', 'ch1'),
+                                      input_instrument='ins2',
+                                      input_channel=Channel('ins2', 'ch1'))
+
+        p_no_connection = Pulse()
+        p_connection_label = Pulse(connection_label='arb')
+        p_connection = Pulse(connection=connection)
+
+        self.assertNotEqual(p_no_connection, p_connection_label)
+        self.assertNotEqual(p_no_connection, p_connection)
+        self.assertNotEqual(p_connection_label, p_connection)
+
+        connection.label = 'arb'
+        self.assertNotEqual(p_no_connection, p_connection_label)
+        self.assertNotEqual(p_no_connection, p_connection)
+        self.assertEqual(p_connection_label, p_connection)
+
+
+class TestPulseLogging(unittest.TestCase):
+    def setUp(self):
+        logging.basicConfig(level=logging.DEBUG)
+        self.log_list = []
+        self.handler = ListHandler(self.log_list)
+        logging.getLogger().addHandler(self.handler)
+
+    def tearDown(self):
+        logging.getLogger().removeHandler(self.handler)
+
+    def test_no_logging(self):
+        pulse = DCPulse(t_start=1, amplitude=42)
+        pulse.t_start = 2
+        self.assertEqual(len(self.log_list), 0)
+
+    def test_no_logging_copy(self):
+        pulse = DCPulse(t_start=1, amplitude=42)
+        self.assertEqual(len(self.log_list), 0)
+        pulse_copy = copy(pulse)
+        pulse_copy.t_start = 2
+        self.assertEqual(len(self.log_list), 0)
+
+
+class TestPulsePickling(unittest.TestCase):
+    def test_pickle_empty_pulse(self):
+        p = Pulse()
+        pickle_dump = pickle.dumps(p)
+        pickled_pulse = pickle.loads(pickle_dump)
+
+    def test_pickle_pulse(self):
+        p = Pulse('pulse', t_start=1, duration=2)
+        pickle_dump = pickle.dumps(p)
+
+        pickled_pulse = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse.name, 'pulse')
+        self.assertEqual(pickled_pulse.t_start, 1)
+        self.assertEqual(pickled_pulse.duration, 2)
+        self.assertEqual(pickled_pulse.t_stop, 3)
+
+    def test_pickle_empty_DC_pulse(self):
+        p = DCPulse()
+        pickle_dump = pickle.dumps(p)
+        pickled_pulse = pickle.loads(pickle_dump)
+
+    def test_pickle_DC_pulse(self):
+        p = DCPulse('pulse', t_start=1, duration=2, amplitude=5)
+        pickle_dump = pickle.dumps(p)
+
+        pickled_pulse = pickle.loads(pickle_dump)
+        self.assertEqual(pickled_pulse.name, 'pulse')
+        self.assertEqual(pickled_pulse.t_start, 1)
+        self.assertEqual(pickled_pulse.duration, 2)
+        self.assertEqual(pickled_pulse.t_stop, 3)
+        self.assertEqual(pickled_pulse.amplitude, 5)
+
 
 if __name__ == '__main__':
     unittest.main()
