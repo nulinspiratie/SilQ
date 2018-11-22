@@ -7,8 +7,14 @@ from matplotlib.axis import Axis
 import logging
 from qcodes.data.data_array import DataArray
 
-__all__ = ['Fit', 'LinearFit', 'ExponentialFit', 'SineFit', 'ExponentialSineFit',
-           'RabiFrequencyFit', 'AMSineFit']
+__all__ = ['Fit',
+           'LinearFit',
+           'ExponentialFit',
+           'SineFit',
+           'ExponentialSineFit',
+           'DoubleExponentialFit',
+           'RabiFrequencyFit',
+           'AMSineFit']
 
 logger = logging.getLogger(__name__)
 
@@ -340,6 +346,90 @@ class ExponentialFit(Fit):
             parameters.add(key, initial_parameters[key])
 
         parameters['tau'].min = 0
+
+        return parameters
+
+
+class DoubleExponentialFit(Fit):
+    """Fitting class for a double exponential function.
+
+    To fit data to a function, use the method `Fit.perform_fit`.
+    This will find its initial parameters via `Fit.find_initial_parameters`,
+    after which it will fit the data to `Fit.fit_function`.
+
+    Note:
+        The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+    """
+    sweep_parameter = 't'
+
+    @staticmethod
+    def fit_function(t: Union[float, np.ndarray],
+                     tau_1: float,
+                     A_1: float,
+                     A_2: float,
+                     tau_2: float,
+                     offset: float) -> Union[float, np.ndarray]:
+        """Exponential function using time as x-coordinate
+
+        Args:
+            t: Time.
+            tau_1: First decay constant.
+            tau_2: Second decay constant.
+            A_1: Amplitude of first decay
+            A_2: Amplitude of second decay
+            offset: Offset of double exponential (t -> infinity)
+
+        Returns:
+            exponential data points
+        """
+        return A_1 * np.exp(-t / tau_1) + A_2 * np.exp(-t / tau_2) + offset
+
+    def find_initial_parameters(self,
+                                xvals: np.ndarray,
+                                ydata: np.ndarray,
+                                initial_parameters: dict) -> Parameters:
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        if initial_parameters is None:
+            initial_parameters = {}
+
+        parameters = Parameters()
+        if not 'A_1' in initial_parameters:
+            initial_parameters['A_1'] = (ydata[1] - ydata[-1]) / 2
+        if not 'A_2' in initial_parameters:
+            initial_parameters['A_2'] = (ydata[1] - ydata[-1]) / 2
+
+        if not 'offset' in initial_parameters:
+            initial_parameters['offset'] = ydata[-1]
+
+        if not 'tau_1' in initial_parameters:
+            exponent_val = (initial_parameters['offset']
+                            + initial_parameters['A_1'] / np.exp(1)
+                            + initial_parameters['A_2'] / np.exp(1))
+            nearest_idx = np.abs(ydata - exponent_val).argmin()
+            initial_parameters['tau_1'] = -(xvals[1] - xvals[nearest_idx])
+
+        if not 'tau_2' in initial_parameters:
+            initial_parameters['tau_2'] = initial_parameters['tau_1']
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        parameters['tau_1'].min = 0
+        parameters['tau_2'].min = 0
+
+        parameters['A_1'].min = 0
+        parameters['A_2'].min = 0
 
         return parameters
 
