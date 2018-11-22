@@ -5,7 +5,7 @@ from scipy import signal
 from scipy.signal import convolve2d
 from math import pi
 from matplotlib import pyplot as plt
-from qcodes import load_data, MatPlot
+from qcodes import load_data, MatPlot, DataArray
 
 """
 TODO plan:
@@ -282,9 +282,9 @@ def plot_transition_gradient(transition_gradient: np.ndarray, theta_deviation: n
     plt.show()
 
 
-def find_transitions(Z: np.ndarray,
-                     x: np.ndarray,
-                     y: np.ndarray,
+def find_transitions(z: np.ndarray,
+                     x: np.ndarray = None,
+                     y: np.ndarray = None,
                      #Serwan, i removed min_gradient because it is not really a minimum gradient and i have updated conditions.
                      #Perhaps this could be changed later but for now i think it should be kept set.
                      true_units: bool = False,
@@ -293,7 +293,7 @@ def find_transitions(Z: np.ndarray,
     """Locate transitions within a 2-dimensional charge stability diagram
 
     Args:
-        Z: 2-dimensional charge stability diagram matrix.
+        z: 2-dimensional charge stability diagram matrix.
         x: 1-dimensional voltage vector for the x-axis of Z
         y: 1-dimensional voltage vector for the y-axis of Z
         min_gradient: Minimum gradient to count as a transition
@@ -333,7 +333,13 @@ def find_transitions(Z: np.ndarray,
         dI_y      (array): An array of y-indices corresponding to the points in dI.
     """
 
+    if isinstance(z, DataArray):
+        x = z.set_arrays[1][0].ndarray
+        y = z.set_arrays[0].ndarray
+        z = z.ndarray
+
     _, theta = calculate_gradient(Z, filter=True)
+    
     theta_mode = find_matrix_mode(theta)
     theta_deviation = calculate_theta_deviation(theta,theta_mode)
 
@@ -393,7 +399,7 @@ def find_transitions(Z: np.ndarray,
             
             # dV = dVtop = delta_q/Ctop
             dV, dI, dI_x, dI_y = get_charge_transfer_information(
-                Z, location, gradient, theta_mode)
+                z, location, gradient, theta_mode)
 
             if true_units: # Convert indices to units
                 dV = dV * (y[1] - y[0]) # units in V
@@ -419,7 +425,7 @@ def find_transitions(Z: np.ndarray,
         if (plot == 'Complex'): plot_transition_gradient(transition_gradient,theta_deviation)
 
 
-    if (plot == 'Simple')|(plot == 'Complex'): plot_transitions(x,y,Z,transitions)
+    if (plot == 'Simple')|(plot == 'Complex'): plot_transitions(x, y, z, transitions)
 
     return transitions
 
