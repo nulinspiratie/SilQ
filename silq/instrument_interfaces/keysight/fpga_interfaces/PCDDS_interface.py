@@ -161,6 +161,7 @@ class SinePulseImplementation(PulseImplementation):
         return {'instr': 'sine',
                 'freq': self.pulse.frequency,
                 'amp': self.pulse.amplitude,
+                'offset': self.pulse.offset,
                 'phase': phase
                 }
 
@@ -174,6 +175,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         return {'instr': 'chirp',
                 'freq': self.pulse.frequency_start,
                 'amp': self.pulse.amplitude,
+                'offset': self.pulse.offset,
                 'phase': getattr(self.pulse, 'phase', 0),
                 'accum': accumulation
                 }
