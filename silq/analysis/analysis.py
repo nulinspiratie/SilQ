@@ -339,12 +339,14 @@ def count_blips(traces: np.ndarray,
     blip_events = [[] for _ in range(len(traces))]
     for k, trace in enumerate(traces):
         idx = start_idx
+        trace_above_threshold = trace > threshold_voltage
+        trace_below_threshold = ~trace_above_threshold
         while idx < len(trace):
             if trace[idx] < threshold_voltage:
-                next_idx = np.argmax(trace[idx:] > threshold_voltage)
+                next_idx = np.argmax(trace_above_threshold[idx:])
                 blip_list = low_blip_pts
             else:
-                next_idx = np.argmax(trace[idx:] < threshold_voltage)
+                next_idx = np.argmax(trace_below_threshold[idx:])
                 blip_list = high_blip_pts
 
             if next_idx == 0:  # Reached end of trace
