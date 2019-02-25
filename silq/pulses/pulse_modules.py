@@ -286,17 +286,20 @@ class PulseSequence(ParameterNode):
     @parameter
     def t_start_list_get(self, parameter):
         # Use get_latest for speedup
-        return sorted({pulse['t_start'].get_latest()
+        return sorted({pulse['t_start'].get_raw()
                        for pulse in self.enabled_pulses})
 
     @parameter
     def t_stop_list_get(self, parameter):
         # Use get_latest for speedup
-        return sorted({pulse['t_stop'].get_latest()
+        return sorted({pulse['t_stop'].get_raw()
                        for pulse in self.enabled_pulses})
 
     @parameter
     def t_list_get(self, parameter):
+        # Note: Set does not work accurately when dealing with floating point numbers to remove duplicates
+        # t_list = self.t_start_list + self.t_stop_list + [self.duration]
+        # return sorted(list(np.unique(np.round(t_list, decimals=8)))) # Accurate to 10 ns
         return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
 
     def __getitem__(self, index):
