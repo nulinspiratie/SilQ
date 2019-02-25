@@ -142,7 +142,8 @@ class Pulse(ParameterNode):
 
         ### Set attributes
         # Set attributes that can also be retrieved from pulse_config
-        self.t_start = Parameter(initial_value=t_start, unit='s', set_cmd=None, wrap_get=False)
+        self.t_start = Parameter(initial_value=t_start,
+                                 unit='s', set_cmd=None, wrap_get=False)
         self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
         self.t_stop = Parameter(unit='s', wrap_get=False)
 
@@ -474,7 +475,7 @@ class Pulse(ParameterNode):
                                      target_val=val,
                                      relation=relation):
                         return False
-                elif self.parameters[property]._latest['value'] != val:
+                elif self.parameters[property]._latest['raw_value'] != val:
                     return False
         else:
             return True
