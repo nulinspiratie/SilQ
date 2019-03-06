@@ -30,7 +30,7 @@ if errorlevel 9009 (
 if "%1" == "gh-pages" (
     echo.Updating gh-pages
     git checkout gh-pages
-    copy /Y %BUILDDIR" ./
+    copy /Y %BUILDDIR"/html ./
     git add -A
     goto end
 )
