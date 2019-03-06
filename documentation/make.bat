@@ -13,8 +13,6 @@ set SPHINXPROJ=SilQ
 
 if "%1" == "" goto help
 
-sphinx-apidoc -o _modules ../silq
-
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
 	echo.
@@ -28,7 +26,19 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
+
+if "%1" == "gh-pages" (
+    echo.Updating gh-pages
+    git checkout gh-pages
+    copy /Y %BUILDDIR" ./
+    git add -A
+    goto end
+)
+
+sphinx-apidoc -o _modules ../silq
+
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+
 goto end
 
 :help
