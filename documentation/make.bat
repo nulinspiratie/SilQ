@@ -42,9 +42,8 @@ if "%1" == "gh-pages" (
     git add -A
     git commit -m "Updating gh-pages"
     cd ../
-    git checkout maser
+    git checkout master
     cd %currentdir%
-    rem cd %currentdir%
     goto end
 )
 
