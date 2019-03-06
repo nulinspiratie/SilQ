@@ -29,20 +29,23 @@ if errorlevel 9009 (
 
 if "%1" == "gh-pages" (
     echo.Updating gh-pages
+    set currentdir=%cd%
+    echo current dir is %currentdir%
+    cd ..
     git checkout gh-pages
-    copy /Y %BUILDDIR/html ./
-    git add -A
+    rem copy /Y %BUILDDIR/html ./
+    rem git add -A
     goto end
 )
 
-sphinx-apidoc -o _modules ../silq
+rem sphinx-apidoc -o _modules ../silq
 
-%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+rem %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
 
-goto end
+rem goto end
 
-:help
-%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+rem :help
+rem %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
 
 :end
 popd
