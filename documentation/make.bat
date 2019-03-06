@@ -37,7 +37,7 @@ if "%1" == "gh-pages" (
     echo 2
     cd %currentdir%
     echo 3
-    copy /Y %BUILDDIR%/html ../
+    xcopy /ys "%BUILDDIR%/html" ../
     echo 4
     git add -A
     rem cd %currentdir%
