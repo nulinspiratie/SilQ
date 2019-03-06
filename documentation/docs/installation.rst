@@ -1,6 +1,6 @@
-############
+************
 Installation
-############
+************
 
 This page explains the steps needed to install both
 `SilQ <https://github.com/nulinspiratie/silq>`_ and
@@ -13,7 +13,7 @@ guide, the computer is assumed to have a Windows OS without Python installed.
   . Please make sure that the main QCoDeS fork is **not** installed
   (not through GitHub nor pip).
 
-==============
+
 Install Python
 ==============
 Both QCoDeS and SilQ are written in Python. To use either, Python must first be
@@ -26,7 +26,7 @@ Anaconda can be downloaded and installed as follows:
 2. Install Anaconda (make sure to tick the options add to system path and
    register as python 3.6).
 
-==============
+
 Install Github
 ==============
 GitHub is used as a source control repository for QCoDeS and SilQ. This means
@@ -53,11 +53,11 @@ basic GUI for managing GitHub repositories.
   The die-hards can also directly use `git <https://git-scm.com/>`_ from the
   command line.
 
-=======================
+
 Install QCoDeS and SilQ
 =======================
 
---------------------
+
 Download source code
 --------------------
 .. warning::
@@ -77,7 +77,7 @@ the repository SilQ_ into your hard drive (e.g. ``User/Documents/Github/SilQ``).
 
     git submodule update --init --recursive
 
---------------
+
 Install QCodes
 --------------
 After downloading the source code of both SilQ and QCoDeS, they can be installed
@@ -92,7 +92,7 @@ these steps:
    ``pip install {packages}``, where ``{packages}`` are the packages you
    want to install separated by spaces.
 
-------------
+
 Install SilQ
 ------------
 After QCoDeS is installed, similar directions should be used to install SilQ:
@@ -102,7 +102,7 @@ After QCoDeS is installed, similar directions should be used to install SilQ:
 2. Run ``python setup.py develop``.
 3. Install any packages that are missing.
 
-==========
+
 Using SilQ
 ==========
 The measurement software SilQ and QCodes can be imported as a package, just like
@@ -113,7 +113,7 @@ any other python packages. To import SilQ and QCoDeS, use the following lines::
 
 If there are no errors, both QCoDeS and SilQ should be installed correctly.
 
-----------------
+
 Jupyter Notebook
 ----------------
 There are several ways to run measurement code with SilQ and QCoDeS.
@@ -152,7 +152,6 @@ navigate to folders and create notebooks. `Getting started with Jupyter Notebook
     if __name__ == "__main__":
 
 
-=======================
 Setup a SilQ Experiment
 =======================
 .. note::
@@ -165,7 +164,7 @@ settings (e.g. resonance frequencies, pulse settings).
 It is not necessary to have an Experiment folder to use SilQ, but parts of SilQ
 do rely on the existence of a config.
 
-----------------------------------
+
 Setup experiments root folder
 ----------------------------------
 The experiments root folder is a folder on the PC that serves as the root
@@ -187,7 +186,7 @@ Do not forget the ``r`` before the apostrophe, indicating a raw string.
   This folder includes our configurations and notebooks, but not our data.
   Ask to be added to the repository.
 
----------------------------
+
 Setup an Experiment folder
 ---------------------------
 To create an Experiment, add a folder to the experiments root folder with the
@@ -209,7 +208,7 @@ It can contain ``.json`` files, and folders containing `.json` files.
 The config will be combined into a single dictionary, and all folders an files
 will be keys and their contents will be values.
 
------------------------
+
 Register the Experiment
 -----------------------
 The final step is to register the experiment.
@@ -230,7 +229,7 @@ If the file already exists, add the information above (minus the outer parenthes
 as an entry in the list.
 
 
---------------------------
+
 Initializing an Experiment
 --------------------------
 After the Experiment folder has been created and the ``init`` and ``config``
@@ -242,9 +241,9 @@ folder have been created, the Experiment can be initialized by::
 This will execute all scripts in ``init``, and the config can now be found in
 ``silq.config``
 
-------------------------
+
 Updating SilQ and QCoDeS
-------------------------
+========================
 As of the time of writing, both SilQ and QCoDeS are under active development.
 This means that there are regular features/bugfixes being added
 (and hopefully not many new ones introduced).
@@ -256,7 +255,6 @@ code. If you do and they could be useful for others, please see `Developer guide
 Next, pull the latest changes from `master`, which is the main stable branch.
 
 
-==============================
 Optional setup and information
 ==============================
 
@@ -265,8 +263,6 @@ These parts of the setup are not necessary, but can be useful.
 .. _setup-experiments-folder:
 
 
-
--------------------
 Install PyCharm IDE
 -------------------
 `PyCharm <https://www.jetbrains.com/pycharm/>`_ is a very powerful IDE and can
