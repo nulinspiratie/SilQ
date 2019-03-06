@@ -12,7 +12,7 @@ set BUILDDIR=../../SilQ-documentation
 set SPHINXPROJ=SilQ
 
 if "%1" == "" goto help
-af
+
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
 	echo.
@@ -33,9 +33,9 @@ if "%1" == "gh-pages" (
     echo current dir is %currentdir%
     cd %SOURCEDIR%/..
     git checkout gh-pages
-    copy /Y %BUILDDIR/html ./
-    rem git add -A
-    cd %currentdir%
+    copy /Y %BUILDDIR%/html ./
+    git add -A
+    rem cd %currentdir%
     goto end
 )
 
