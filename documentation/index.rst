@@ -16,6 +16,7 @@ Table of contents
 
 .. toctree::
    :maxdepth: 2
+
    docs/What is SilQ
    docs/Installation
    docs/Getting started
