@@ -32,9 +32,13 @@ if "%1" == "gh-pages" (
     set currentdir=%cd%
     echo current dir is %currentdir%
     cd ../
+    echo 1
     git checkout gh-pages
+    echo 2
     cd %currentdir%
+    echo 3
     copy /Y %BUILDDIR%/html ../
+    echo 4
     git add -A
     rem cd %currentdir%
     goto end
