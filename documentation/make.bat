@@ -31,7 +31,9 @@ if "%1" == "gh-pages" (
     echo.Updating gh-pages
     set currentdir=%cd%
     echo current dir is %currentdir%
+    cd ../
     git checkout gh-pages
+    cd %currentdir%
     copy /Y %BUILDDIR%/html ../
     git add -A
     rem cd %currentdir%
