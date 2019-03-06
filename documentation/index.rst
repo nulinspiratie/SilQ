@@ -23,6 +23,7 @@ Table of contents
    docs/Concepts in SilQ
    docs/Developer guide
    specifications/index
+   docs/FAQ
 
 
 # Setting up QCoDeS and SilQ
