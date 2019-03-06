@@ -40,6 +40,10 @@ if "%1" == "gh-pages" (
     xcopy /ys "%BUILDDIR%/html" ..
     echo 4
     git add -A
+    git commit -m "Updating gh-pages"
+    cd ../
+    git checkout maser
+    cd %currentdir%
     rem cd %currentdir%
     goto end
 )
