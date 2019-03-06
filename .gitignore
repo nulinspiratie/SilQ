@@ -11,3 +11,4 @@ experiments_folder.txt
 *.zargo~
 *NI_voltages*
 _modules
+*/make.bat
