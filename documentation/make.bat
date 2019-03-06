@@ -48,14 +48,14 @@ if "%1" == "gh-pages" (
     goto end
 )
 
-rem sphinx-apidoc -o _modules ../silq
+sphinx-apidoc -o _modules ../silq
 
-rem %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
 
-rem goto end
+goto end
 
-rem :help
-rem %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+:help
+%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
 
 :end
 popd
