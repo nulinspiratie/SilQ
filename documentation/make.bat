@@ -12,7 +12,7 @@ set BUILDDIR=../../SilQ-documentation
 set SPHINXPROJ=SilQ
 
 if "%1" == "" goto help
-
+af
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
 	echo.
