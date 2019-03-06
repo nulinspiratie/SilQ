@@ -152,8 +152,8 @@ navigate to folders and create notebooks. `Getting started with Jupyter Notebook
     if __name__ == "__main__":
 
 
-Setup a SilQ Experiment
-=======================
+Setup a SilQ Experiment folder
+==============================
 .. note::
   This section is only relevant if you are planning on using SilQ.
 
@@ -166,7 +166,7 @@ do rely on the existence of a config.
 
 
 Setup experiments root folder
-----------------------------------
+-----------------------------
 The experiments root folder is a folder on the PC that serves as the root
 for all experiments. Each experiment should have its own Experiment folder within
 the experiments root folder.
@@ -188,7 +188,7 @@ Do not forget the ``r`` before the apostrophe, indicating a raw string.
 
 
 Setup an Experiment folder
----------------------------
+--------------------------
 To create an Experiment, add a folder to the experiments root folder with the
 name of your experiment.
 The Experiment folder should contain at least the following two folders

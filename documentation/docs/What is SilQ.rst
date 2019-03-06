@@ -72,6 +72,9 @@ such as trigger pulses.
 The instruments and their connectivity are stored in SilQ, so SilQ can figure out
 how to convert this pulse sequence to the appropriate instrument instructions,
 such that the instruments will indeed output the correct pulse sequence.
+Because the pulse sequence is agnostic to the experimental setup, the same
+pulse sequence can be used for completely different setups. Exchanging an
+instrument for another brand no longer needs a rewrite of the measurement code.
 
 SilQ is based on QCoDeS, and so the full array of features from QCoDeS can be
 used here. This includes creating measurement loops with pulse sequences,
