@@ -41,6 +41,7 @@ if "%1" == "gh-pages" (
     echo 4
     git add -A
     git commit -m "Updating gh-pages"
+    git push
     cd ../
     git checkout master
     cd %currentdir%
