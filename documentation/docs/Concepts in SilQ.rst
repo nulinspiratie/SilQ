@@ -2,19 +2,25 @@
 Concepts in SilQ
 ****************
 This page describes the main concept in SilQ.
-The first section describes the `Main classes` that build up the layers of
+The first section describes the `Main classes <main-classes>` that build up the
+layers of
 abstraction.
 The second section describes how all these classes interact with one another
-when `Targeting a pulse sequence` to a specific experimental setup.
+when `Targeting a pulse sequence <targeting-pulsesequence>` to a specific
+experimental setup.
 The final section describes the `AcquisitionParameter`, which is the final layer
 of abstraction, and whose description
 
+.. _main-classes:
 Main classes
 ============
 The classes described here are ordered by how they control one another.
 In general, classes later on control the classes described earlier.
 Every class described here is a QCoDeS `ParameterNode`, and their properties
-are `Parameters <Parameter>`.
+are `Parameters <Parameter>`, and so they benefit from all the features
+provided by these.
+See `Parameter guide <in-depth guides/Parameter guide>` and `ParameterNode
+guide <in-depth guides/ParameterNode guide>` for more information.
 
 InstrumentInterface
 ---------------------
@@ -120,7 +126,8 @@ config.
 This way, any time a new `Pulse` with that name is created, it will use those
 properties by default.
 
-For more information on the `Pulse`, see `Pulses and PulseSequences`.
+For more information on the `Pulse`, see `Pulses and PulseSequences
+<in-depth guides/Pulses and PulseSequences>`.
 
 PulseSequence
 -------------
@@ -148,14 +155,98 @@ For more information on the `PulseSequence`, see `Pulses and PulseSequences
     Incorporating feedback routines into the pulse sequence is one of the
     future goals.
 
-Targeting a pulse sequence
-=============================
 
-The diag
+.. _targeting-pulsesequence:
+
+Targeting a pulse sequence
+==========================
+There are several steps happening when a `PulseSequence` is targeted by the
+`Layout` to a specific experimental setup.
+To understand the processes that happen behind the scenes, the most important
+piece of information is knowing which classes interact with each other, and
+if it's a one-way interaction or two-way interaction.
+Below is a figure containing a very simple experimental setup (top), and the
+corresponding representation in SilQ.
 
 .. image:: images/Pulse\ sequence\ targeting.jpg
   :alt: Alternative text
 
+The experiment shown above is a simplified version of a typical
+experimental setup.
+It only contains three instruments, and for simplicity we ignore any sample
+being experimented on.
+A trigger instrument (left) handles the timing of the system by sending
+periodic triggers to the other instruments to indicate an event.
+The waveform generator (middle) can output waveforms (pulses).
+It receives triggers from the trigger instrument to indicate that it should
+output the next pulse.
+Alternatively, a trigger can indicate that it should output the entire pulse
+sequence and wait for the next trigger (this is usually the case for
+experiments requiring nanoscale precision).
+The waveform generator emits the pulses to the acquisition card, which
+is programmed to record a fixed-duration digitized signal when it receives a
+trigger from the trigger instrument.
+By programming the instruments correctly, the acquisition card can be
+setup to record specific pulses from the waveform generator.
+
+Even such a simple measurement as the one described above requires many
+commands to be sent to the different instruments.
+In SilQ, this is handled by the `Layout` targeting a `PulseSequence` to the
+particular experimental setup.
+The bottom of the figure shows how the different SilQ objects interact with
+one another when targeting a `PulseSequence`.
+The arrows indicate the direction of communication, a round dot indicates
+being a property of the class the line originates from.
+The dotted line indicates there is a `Connection` between the
+`InstrumentInterfaces <InstrumentInterface>` (there is also a connection between
+the left-most and right-most interface).
+
+Targeting a `PulseSequence` is actually a two-step process.
+However, step zero is having preprogrammed all the `Instruments
+<Instrument>`, `InstrumentInterfaces <InstrumentInterface>`, and `Layout`.
+This does not mean manually sending all the commands to output the pulse
+sequence, but specifying the parameters that are freely configurable,
+such as the``sample rate``.
+
+The first step is invoked by setting the `Layout` `PulseSequence`:
+
+>>> layout.pulse_sequence = pulse_sequence
+
+In the first step, no instruments are actually configured, but instead the
+`Layout` passes the `Pulses <Pulse>` around to the different
+`InstrumentInterfaces <InstrumentInterface>`.
+These then verify that they can program their instrument to output the pulse,
+and optionally request ancillary pulses from the `Layout` (such as trigger
+pulses).
+If any `InstrumentInterface` is not able to program its instrument to output
+all the required pulses, an error is raised.
+
+If the first does not raise any errors, then each of the `InstrumentInterfaces
+<InstrumentInterface>` will have its ``InstrumentInterface.pulse_sequence``
+filled with the pulses it should output.
+Additionally, ``InstrumentInterface.input_pulse_sequence`` contains a list of
+pulses that it receives.
+This is a good moment to see if the `InstrumentInterfaces
+<InstrumentInterface>` have pulse sequences that actually make sense.
+
+The second step consists of programming the `Instruments <Instrument>`.
+This is invoked by calling
+
+>>> layout.setup()
+
+At this point the `Layout` signals all the `InstrumentInterfaces
+<InstrumentInterface>` to program their `Instruments <Instrument>`.
+Each `InstrumentInterface` will convert its `PulseSequence` into `Instrument`
+commands, and execute them.
+At this stage, errors may also be raised.
+This is often the case when an instrument command cannot be executed by the
+instrument.
+
+TODO:
+
+>>> layout.acquire()
+>>> layout.start()
+>>> layout.stop()
 
 
 AcquisitionParameter

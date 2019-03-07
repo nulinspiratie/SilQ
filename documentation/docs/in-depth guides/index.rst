@@ -7,12 +7,12 @@ In-depth guides
 
    Parameter guide
    ParameterNode guide
-   Comprehensive data plotting guide
+   Data plotting guide
    Pulses and PulseSequences
-   Guidelines for the InstrumentInterface
-   Creating IPython Widgets
    Experiment folder guide
+   InstrumentInterface guidelines
    Analysis notebook guidelines
+   Creating IPython Widgets
    code snippets/index
 
 Future guides
