@@ -27,7 +27,7 @@ Congratulations, you have just become a developer!
 
 
 =================================================
-Where do I find information about ``this thing``?
+Where do I find information about <insert thing here>?
 =================================================
 Direct information on any object/function can be found using its docstring (the
 piece of text describing it).
@@ -73,4 +73,5 @@ as requiring complex feedback algorithms, are not supported at the moment
 (although this is one of the future goals of SilQ).
 For systems using different instruments than the ones supported by SilQ, the
 trickiest part is likely the development of Instrument interfaces. For more
-information, see `Guidelines for the InstrumentInterface`.
+information, see `InstrumentInterface guidelines <in-depth
+guides/InstrumentInterface guidelines>`.

@@ -14,11 +14,12 @@ Main classes
 The classes described here are ordered by how they control one another.
 In general, classes later on control the classes described earlier.
 Every class described here is a QCoDeS `ParameterNode`, and their properties
-are `Parameter`\s.
+are `Parameters <Parameter>`.
 
 InstrumentInterface
 ---------------------
-Each instrument has a corresponding QCoDeS `Instrument` driver that facilitates
+Each instrument has a corresponding QCoDeS :class:`Instrument` driver that
+facilitates
 communication with the user via Python. These drivers usually directly copy the
 commands described in the instrument manual, and occasionally add some features.
 As a result, each Instrument is controlled slightly differently.
@@ -111,26 +112,46 @@ A `Pulse` also has ancillary properties, such as ``acquire``, which signals the
 `Layout` that the signal during this pulse should be acquired by the data
 acquisition instrument.
 
-Often, properties of a `Pulse` are
+Often, pulses with a specific name are reused, either in a `PulseSequence`, or
+in different `PulseSequences <PulseSequence>`.
+Instead of having to specify all the `Pulse` properties every time,
+properties belonging to a `Pulse` with a specific name can be stored in the
+config.
+This way, any time a new `Pulse` with that name is created, it will use those
+properties by default.
+
+For more information on the `Pulse`, see `Pulses and PulseSequences`.
 
 PulseSequence
 -------------
 An experiment usually consists of a sequence of pulses being output by different
 instruments at precise timings.
-In SilQ, this is represented by the `PulseSequence`, which contains `Pulse`\s that
-have specific start times, durations, and `Connection`\s.
+In SilQ, this is represented by the `PulseSequence`, which contains
+`Pulses <Pulse>` that
+have specific start times, durations, and `Connections <Connection>`.
 A `PulseSequence` can be passed onto the `Layout`, which then targets the
-`PulseSequence` to the particular experimental setup by passing its `Pulse`\s
-along to the `InstrumentInterface`\s, which then set up their instruments.
+`PulseSequence` to the particular experimental setup by passing its `Pulses
+<Pulse>`
+along to the `InstrumentInterfaces <InstrumentInterface>`, which then set up
+their instruments.
 
-If the properties of the `InstrumentInterface`\s and `Layout` have been
+If the properties of the `InstrumentInterfaces <InstrumentInterface>` and
+`Layout` have been
 configured, passing a `PulseSequence` to the `Layout` is sufficient to execute
 the pulse sequence, and obtain the resulting traces from the data acquisition
 interface.
 
+For more information on the `PulseSequence`, see `Pulses and PulseSequences
+<in-depth guides/Pulses and PulseSequences>`.
+
+.. note::
+    Incorporating feedback routines into the pulse sequence is one of the
+    future goals.
 
 Targeting a pulse sequence
 =============================
+
+The diag
 
 .. image:: images/Pulse\ sequence\ targeting.jpg
   :alt: Alternative text
