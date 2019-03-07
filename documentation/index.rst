@@ -26,8 +26,8 @@ Table of contents
    specifications/index
    docs/FAQ
 
-.. TODO
-.. Guide to QCoDeS
+Remaining
+-  Brief guide to QCoDeS
 
 
 Most important classes and functions

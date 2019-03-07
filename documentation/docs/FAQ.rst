@@ -25,10 +25,15 @@ and a way to fix it, you can submit a pull request so that others may benefit
 from your bugfix (see `Developer guide`).
 Congratulations, you have just become a developer!
 
+===================================================================
+I think my pulse sequence isn't programmed correctly, what do I do?
+===================================================================
+TODO
 
-=================================================
-Where do I find information about <insert thing here>?
-=================================================
+
+======================================================
+Where do I find information about *insert thing here*?
+======================================================
 Direct information on any object/function can be found using its docstring (the
 piece of text describing it).
 This can be quickly accessed by placing a question mark before the object name::
@@ -51,9 +56,12 @@ If a docstring cannot be found, it may be possible that there is a guide in the
 documentation that describes how to use it. Searching in the documentation
 website may lead to information.
 
-Finally, if no information can be found from docstrings/guides, the remaining
-options are to either ask the developers directly, or to look through the source
-code.
+Further, the existing measurement notebooks and initialization scripts of other
+experiments can provide information on how to use a certain feature.
+
+Finally, if no information can be found from docstrings/guides/experiments, the
+remaining options are to either ask the developers directly, or to look
+through the source code.
 
 
 =====================================
@@ -75,3 +83,19 @@ For systems using different instruments than the ones supported by SilQ, the
 trickiest part is likely the development of Instrument interfaces. For more
 information, see `InstrumentInterface guidelines <in-depth
 guides/InstrumentInterface guidelines>`.
+
+==================================================================
+Why has the QCoDeS used in SilQ diverged from the original QCoDeS?
+==================================================================
+The main reason is that QCoDeS released a major update (V0.1.10) in April 2018.
+In this release, the original `DataSet` and `Loop` were replaced by a
+SQLite-based database.
+Although this added many new features and possibilities, it would require
+significant modifications to the SilQ code.
+Further, the new database format has never been properly tested by our group
+to see if it can accomodate all the measurements used in our group.
+Finally, the data archival method currently used is incompatible with the new
+database, although there could well be workarounds.
+We may update QCoDeS to the latest version in the future, but this would
+require dedicated effort and is at the time of writing not one of our
+priorities.
