@@ -21,47 +21,18 @@ Table of contents
    docs/Installation
    docs/Getting started
    docs/Concepts in SilQ
-   docs/Developer guide
+   docs/For developers
    docs/in-depth guides/index
    specifications/index
    docs/FAQ
 
-
-# Setting up QCoDeS and SilQ
-
-# Getting started with QCoDeS
-  # ``Parameter``
-  # ``Instrument``
-  # Measurements: ``Loop`` and ``Measure``
-  # ``DataSet``
-  # Plotting
-  # More documentation/examples
+.. TODO
+.. Guide to QCoDeS
 
 
-
-# Unsorted
-
-  # Guidelines for an `InstrumentInterface`.
-  # SIM GUI
-  # Notebook widgets
-  # MeasurementParameter
-  # General parameters
-
-    # CombinedParameter
-    # AttributeParameter
-
-  # SilQ magics
-
-    # Loading data
-
-  # SilQ config
-  # PulseSequenceGenerator
-  # Interactive plots
-
-
-
-Autosummary
-------------
+Most important classes and functions
+------------------------------------
+.. TODO
 .. currentmodule:: silq
 
 .. autosummary::
