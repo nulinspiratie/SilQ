@@ -1,3 +1,7 @@
+**************************************
+Guidelines for the InstrumentInterface
+**************************************
+
 
 =====================
 Adding new interfaces
