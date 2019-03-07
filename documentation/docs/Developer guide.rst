@@ -3,6 +3,26 @@ Developer guide
 ===============
 
 
+Adding a new feature/fixing a bug
+---------------------------------
+SilQ is meant to be a collaborative software, and so users are encouraged to
+contribute any features and fixes for encountered bugs.
+To submit any new features/bugfixes, a `Pull Request <https://help.github
+.com/en/articles/creating-a-pull-request>` should be created.
+This creates a proposed enhancement that can be `pulled` into the master branch.
+The general procedure is as follows:
+
+1. Start from the ``master`` branch without any modifications
+2. Create a new branch, called ``feature/{branch_name}``, or
+   ``fix/{branch_name}``, where ``{branch_name}`` should be a short clear name.
+3. Implement the changes.
+4. Push the changes to GitHub.
+5. Create a Pull Request from your branch to the ``master`` branch.
+   This can be done on the GitHub website.
+   Be sure to give a clear description of the contents of the Pull Request
+
+Once your pull request is submitted, other developers can review the proposed
+changes, and accept/reject/ask for modifications.
 
 
 Updating the GitHub documentation website
