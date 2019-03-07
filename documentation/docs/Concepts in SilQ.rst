@@ -2,18 +2,21 @@
 Concepts in SilQ
 ****************
 This page describes the main concept in SilQ.
-The first section describes the :ref:`Main classes` that build up the layers of
+The first section describes the `Main classes` that build up the layers of
 abstraction.
 The second section describes how all these classes interact with one another
-when :ref:`Targeting a pulse sequence` to a specific experimental setup.
-
+when `Targeting a pulse sequence` to a specific experimental setup.
+The final section describes the `AcquisitionParameter`, which is the final layer
+of abstraction, and whose description
 
 Main classes
 ============
 The classes described here are ordered by how they control one another.
 In general, classes later on control the classes described earlier.
+Every class described here is a QCoDeS `ParameterNode`, and their properties
+are `Parameter`\s.
 
-`InstrumentInterface`
+InstrumentInterface
 ---------------------
 Each instrument has a corresponding QCoDeS `Instrument` driver that facilitates
 communication with the user via Python. These drivers usually directly copy the
@@ -33,6 +36,9 @@ This will usually be a subset of the whole pulse sequence, plus potentially
 ancillary pulses.
 The `InstrumentInterface` then converts these pulses into specific instrument
 instructions and sets up the instrument.
+An `InstrumentInterface` has a list of pulses that it can program, defined
+in its attribute ``pulse_implementations``, and if it receives any pulse that
+is not defined here, it will raise an error.
 
 Furthermore, the `InstrumentInterface` may request additional pulses, such
 as triggering pulses or modulation pulses.
@@ -48,7 +54,7 @@ those to the appropriate `InstrumentInterface`.
     set by the user, and will influence how it programs the `Instrument`.
 
 
-`Connection`
+Connection
 ------------
 In an experimental setup, instruments are physically connected to one another
 by cables.
@@ -56,7 +62,7 @@ This physical connection is represented by the `Connection`, which has an input
 and output instrument and channel.
 It can additionally have flags, such as being a trigger connection, or having
 a scale (attenuation).
-Connections can also be combined into a `MultiConnection`, which can be useful
+Connections can also be combined into a `CombinedConnection`, which can be useful
 when you want a single pulse to be sent to multiple connections.
 
 It is convenient to identify a connection by a label.
@@ -68,7 +74,7 @@ completely different connections in different setups, as the `Connection` having
 label ``output`` can differ.
 
 
-`Layout`
+Layout
 --------
 The `Layout` is at the heart of the experimental setup.
 Its basis is being a layout of all the instruments and the connectivity between
@@ -87,13 +93,49 @@ interface) to perform data acquisition.
     via the corresponding `InstrumentInterface`.
 
 
-`PulseSequence` and `Pulse`
----------------------------
+Pulse
+-----
+A `Pulse` is a representation of a physical pulse sent in an experiment.
+There are many different `Pulse` subclasses, common ones are `DCPulse`,
+`SinePulse`, `TriggerPulse`.
+These pulses usually have several attributes, such as a ``name``, ``amplitude``,
+``duration``, and ``frequency``.
+In an experiment, a pulse is always attached to a particular connection
+(e.g. an AWG outputting a pulse from one of its channels to the input of a gate
+on your device sample).
+This is reflected in the `Pulse`, which is linked to a specific `Connection`.
+This means that when the pulse is targeted by the `Layout`, the `Connection`'s
+output `InstrumentInterface` will be instructed to program the `Pulse` to that
+particular connection.
+A `Pulse` also has ancillary properties, such as ``acquire``, which signals the
+`Layout` that the signal during this pulse should be acquired by the data
+acquisition instrument.
 
-`AcquisitionParameter`
-----------------------
+Often, properties of a `Pulse` are
 
+PulseSequence
+-------------
+An experiment usually consists of a sequence of pulses being output by different
+instruments at precise timings.
+In SilQ, this is represented by the `PulseSequence`, which contains `Pulse`\s that
+have specific start times, durations, and `Connection`\s.
+A `PulseSequence` can be passed onto the `Layout`, which then targets the
+`PulseSequence` to the particular experimental setup by passing its `Pulse`\s
+along to the `InstrumentInterface`\s, which then set up their instruments.
+
+If the properties of the `InstrumentInterface`\s and `Layout` have been
+configured, passing a `PulseSequence` to the `Layout` is sufficient to execute
+the pulse sequence, and obtain the resulting traces from the data acquisition
+interface.
 
 
 Targeting a pulse sequence
 =============================
+
+.. image:: images/Pulse\ sequence\ targeting.jpg
+  :alt: Alternative text
+
+
+
+AcquisitionParameter
+----------------------
