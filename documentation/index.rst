@@ -22,6 +22,7 @@ Table of contents
    docs/Getting started
    docs/Concepts in SilQ
    docs/Developer guide
+   docs/in-depth guides/index
    specifications/index
    docs/FAQ
 
