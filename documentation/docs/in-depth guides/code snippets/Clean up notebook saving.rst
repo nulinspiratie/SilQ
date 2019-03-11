@@ -11,9 +11,10 @@ function in a cell returns the figure object).
 
 Place the following snippet in the jupyter notebook config file (~/
 .jupyter/jupyter_notebook_config.py). The best to place it is as a
-replacement of the pre-existing line `c.ContentsManager.pre_save_hook`
+replacement of the pre-existing line ``c.ContentsManager.pre_save_hook``
 
-.. code-block::
+.. code-block:: python
+
     def scrub_output_pre_save(model, **kwargs):
         """scrub output before saving notebooks"""
         # only run on notebooks
