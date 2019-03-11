@@ -3,15 +3,17 @@ Concepts in SilQ
 ****************
 This page describes the main concept in SilQ.
 The first section describes the `Main classes <main-classes>` that build up the
-layers of
-abstraction.
+layers of abstraction.
 The second section describes how all these classes interact with one another
 when `Targeting a pulse sequence <targeting-pulsesequence>` to a specific
 experimental setup.
-The final section describes the `AcquisitionParameter`, which is the final layer
-of abstraction, and whose description
+The final section describes the `AcquisitionParameter <acquisition-parameter>`,
+which is another main class, and the final layer of abstraction, and whose
+description requires knowledge of how pulse sequence targeting works.
+
 
 .. _main-classes:
+
 Main classes
 ============
 The classes described here are ordered by how they control one another.
@@ -24,7 +26,7 @@ guide <in-depth guides/ParameterNode guide>` for more information.
 
 InstrumentInterface
 ---------------------
-Each instrument has a corresponding QCoDeS :class:`Instrument` driver that
+Each instrument has a corresponding QCoDeS `Instrument` driver that
 facilitates
 communication with the user via Python. These drivers usually directly copy the
 commands described in the instrument manual, and occasionally add some features.
@@ -201,14 +203,16 @@ The dotted line indicates there is a `Connection` between the
 `InstrumentInterfaces <InstrumentInterface>` (there is also a connection between
 the left-most and right-most interface).
 
-Targeting a `PulseSequence` is actually a two-step process.
-However, step zero is having preprogrammed all the `Instruments
+Targeting a `PulseSequence` is actually a two-stage process.
+However, stage zero is having preprogrammed all the `Instruments
 <Instrument>`, `InstrumentInterfaces <InstrumentInterface>`, and `Layout`.
 This does not mean manually sending all the commands to output the pulse
 sequence, but specifying the parameters that are freely configurable,
 such as the``sample rate``.
 
-The first step is invoked by setting the `Layout` `PulseSequence`:
+Stage 1 - Pulse distribution
+----------------------------
+The first stage is invoked by setting the `Layout` `PulseSequence`:
 
 >>> layout.pulse_sequence = pulse_sequence
 
@@ -226,10 +230,23 @@ If the first does not raise any errors, then each of the `InstrumentInterfaces
 filled with the pulses it should output.
 Additionally, ``InstrumentInterface.input_pulse_sequence`` contains a list of
 pulses that it receives.
+All `Pulses <Pulse>` in the `PulseSequence` that have ``Pulse.acquire = True``
+are passed onto the acquisition ``InstrumentInterface.input_pulse_sequence``.
 This is a good moment to see if the `InstrumentInterfaces
 <InstrumentInterface>` have pulse sequences that actually make sense.
 
-The second step consists of programming the `Instruments <Instrument>`.
+.. note::
+  When `Layout.pulse_sequence` is set to a new `PulseSequence`, a copy of the
+  `PulseSequence` can be stored on the computer as a python ``pickle`` with a
+  timestamp.
+  This can be useful as a logging feature, as the timestamp allows you to see
+  what `PulseSequence` was targeted at a given time.
+  See `in-depth guides/Storing PulseSequences` for more information.
+
+
+Stage 2 - Instrument setup
+--------------------------
+The second stage consists of programming the `Instruments <Instrument>`.
 This is invoked by calling
 
 >>> layout.setup()
@@ -242,12 +259,142 @@ At this stage, errors may also be raised.
 This is often the case when an instrument command cannot be executed by the
 instrument.
 
-TODO:
+Running a pulse sequence
+------------------------
+Once the `Layout` has successfully targeted a `PulseSequence`, the pulse
+sequence can be executed on the experimental setup.
+This generally happens in three steps.
 
->>> layout.acquire()
+Step 1 - Starting instruments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The first step consists of starting the instruments, and is called by
+
 >>> layout.start()
+
+The order of starting `Instruments <Instrument>` is based on their hierarchy:
+instruments that need to be triggered are started
+before the instrument that performs the triggering.
+At the top of the chain is the ``primary_instrument`` (in this case the
+triggering instrument), which is started last.
+This ensures that all other instruments are awaiting a trigger and thus are
+synchronized.
+When the ``primary_instrument`` is started, the pulse sequence is being output
+by the instruments.
+
+.. note::
+   If the `PulseSequence` of any `InstrumentInterface` is empty, i.e. it does
+   not need to output pulses, it won't be started.
+
+Step 2 - Acquiring data
+^^^^^^^^^^^^^^^^^^^^^^^
+Once the pulse sequence is running, the acquisition instrument, specified by
+``layout.acquisition_interface``, can be used to acquire a signal.
+Data acquisition can be performed by calling
+
+>>> layout.acquisition()
+
+At this point the acquisition instrument will acquire traces and pass them
+onto its `InstrumentInterface`.
+The `InstrumentInterface` will then segment the traces for each of the pulses.
+This way, each pulse in its ``input_pulse_sequence`` (which all have
+``Pulse.acquire = True``) has its corresponding measured traces.
+At this point, optional averaging of the traces, specified by `Pulse.average`,
+is also performed.
+
+When traces are acquired, more than one channel can be measured.
+These channels are specified in `Layout.acquisition_channels`, and each channel
+is given a label.
+This allows the different acquisition channels to have meaningful labels (e.g.
+``chip output``) instead of channel indices (e.g. ``channel_A``).
+The `Layout` attaches these labels once it receives the processed traces from
+the acquisition `InstrumentInterface`.
+
+.. note::
+   - The number of traces is specified by `Layout.samples`.
+   - `Layout.start()` is called if the instruments have not yet been started.
+
+
+Step 3 - Stopping instruments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The final step is to stop the instruments after the acquisition is
+finished, and can be called by
+
 >>> layout.stop()
 
+This will stop the instruments according to the same hierarchy used when
+starting the instruments.
+This step actually happens by default at the end of an acquisition (step 2).
+However, since there is overhead involved in stopping/starting instruments, it
+can be ignored by calling ``layout.acquisition(stop=False)``.
+
+.. note::
+   ``layout.stop()`` is a useful command if you want to be absolutely sure
+   that all instruments are not outputting anything.
+   It will stop all instruments, even those that aren't involved in the
+   `PulseSequence`, and does not raise an error if instruments are already
+   stopped.
+
+Summary
+-------
+Although there are many steps involved in setting up and running a
+`PulseSequence`, most of this happens under the hood.
+If the `InstrumentInterfaces <InstrumentInterface>` and `Layout` have been
+set up correctly, this whole process can be executed with just three commands:
+
+>>> layout.pulse_sequence = pulse_sequence
+>>> layout.setup()
+>>> traces = layout.acquisition()
+
+
+.. _acquisition-parameter:
 
 AcquisitionParameter
-----------------------
+====================
+Performing a pulse sequence and acquiring its traces is usually only half the
+story; the traces often need to be analysed afterwards.
+While the complicated analysis should be done at a later point (potentially
+in an `analysis notebook <in-depth guides/Analysis notebook guidelines>`,
+initial postprocessing can usually be done straight away.
+Examples are measuring if a trace has a spike (blip) in current, or
+performing IQ demodulation of the output signal.
+This postprocessing is usually dependent on the type of measurement
+performed, and is therefore inherently linked to the pulse sequence.
+
+The goal of the `AcquisitionParameter` is to combine the `PulseSequence` with
+the corresponding postprocessing analysis, such that the user performs a
+measurement, and gets the processed data straight away.
+Each `AcquisitionParameter` has a specific `PulseSequence`
+(`AcquisitionParameter.pulse_sequence`)and analysis
+(`AcquisitionParameter.analysis() <AcquisitionParameter.analysis>`) attached
+to it.
+This does not mean that the `PulseSequence` is fixed; its properties can
+still be modified.
+However, the analysis usually analyses traces of specific `Pulses <Pulse>` in
+the `PulseSequence`, and so these pulses need to be present.
+
+As its name suggests, an `AcquisitionParameter` is a `Parameter` and not a
+`ParameterNode`.
+The main reason is that you can use an `AcquisitionParameter` in a
+measurement `Loop` as you would any other `Parameter`.
+The `AcquisitionParameter` contains the attribute ``names``, which is a list of
+things that the analysis returns.
+Each of these is saved in the `DataSet` during a `Loop`.
+
+By default, calling `AcquisitionParameter.get() <AcquisitionParameter.get>`
+performs the following tasks:
+
+1. Target its pulse sequence
+2. Setup instruments
+3. Start instruments
+4. Perform acquisition
+5. Stop instruments
+6. Perform its analysis and return results.
+
+The AcquisitionParameter has a rich set of options/features, for more
+information see `in-depth guides/AcquisitionParameter guide`.
+
+.. TODO add link to list of AcquisitionParameters
+
+.. note::
+   The raw traces can also be saved during a measurement `Loop`, see
+   `in-depth guides/Saving traces`.

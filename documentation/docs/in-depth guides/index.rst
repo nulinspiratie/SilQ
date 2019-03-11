@@ -11,6 +11,8 @@ In-depth guides
    Pulses and PulseSequences
    Experiment folder guide
    InstrumentInterface guidelines
+   Saving traces
+   Storing PulseSequences
    Analysis notebook guidelines
    Creating IPython Widgets
    code snippets/index
@@ -30,3 +32,5 @@ Future guides
 - Notebook widgets
 - Measurement parameters
 - General parameters
+- single_settings / temporary_settings
+- AcquisitionParameter guide
