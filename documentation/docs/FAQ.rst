@@ -22,7 +22,7 @@ an issue in GitHub <https://github.com/nulinspiratie/SilQ/issues>`_.
 Finally, if you want to get your hands dirty, you can browse the source code and
 see if you can figure out what the cause is for the issue. If you find the cause
 and a way to fix it, you can submit a pull request so that others may benefit
-from your bugfix (see `Developer guide`).
+from your bugfix (see `For developers`).
 Congratulations, you have just become a developer!
 
 ===================================================================
@@ -38,7 +38,7 @@ Direct information on any object/function can be found using its docstring (the
 piece of text describing it).
 This can be quickly accessed by placing a question mark before the object name::
 
-    ?thing
+>>> ?thing
 
 In Jupyter notebook, you can additionally press ``shift+tab`` to open a docstring
 popup. Pressing it multiple times creates larger and larger popups.
@@ -50,7 +50,7 @@ In the case of objects, it could be that the parent class does have a proper
 docstring.
 So for example, if you have a `DCParameter` object, and it's missing a docstring
 for its ``.acquire()`` method, its parent class (`AcquisitionParameter`)
-does have a docstring (`AcquisionParameter.acquire`).
+does have a docstring (`AcquisitionParameter.acquire`).
 
 If a docstring cannot be found, it may be possible that there is a guide in the
 documentation that describes how to use it. Searching in the documentation
@@ -64,10 +64,11 @@ remaining options are to either ask the developers directly, or to look
 through the source code.
 
 
+.. _can-silq-be-used-for-our-experiments:
+
 =====================================
 Can SilQ be used for our experiments?
 =====================================
-.. _can-silq-be-used-for-our-experiments:
 SilQ has been developed with the goal of being generic enough to be usable by
 systems other than donor qubits in silicon.
 The degree to which this is possible will depend on how similar the system is.
