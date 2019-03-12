@@ -1,20 +1,16 @@
+from qcodes.instrument.visa import VisaInstrument
+
+
 
 class MockVisaHandle:
     '''
     mock the API needed for a visa handle that throws lots of errors:
-
-    - any write command sets a single "state" variable to a float
-      after the last : in the command
-    - a negative number results in an error raised here
-    - 0 results in a return code for visa timeout
-    - any ask command returns the state
-    - a state > 10 throws an error
     '''
     def __init__(self):
-        self.state = 0
+        self.states = {}
 
     def clear(self):
-        self.state = 0
+        self.states = {}
 
     def close(self):
         # make it an error to ask or write after close
@@ -22,20 +18,28 @@ class MockVisaHandle:
         self.ask = None
 
     def write(self, cmd):
-        num = float(cmd.split(':')[-1])
-        self.state = num
+        prefix, num = cmd.split(' ')
+        num = float(num)
+        self.states[prefix] = num
 
-        if num < 0:
-            raise ValueError('be more positive!')
-
-        if num == 0:
-            ret_code = visa.constants.VI_ERROR_TMO
-        else:
-            ret_code = 0
-
+        ret_code = 0
         return len(cmd), ret_code
 
     def ask(self, cmd):
-        if self.state > 10:
-            raise ValueError("I'm out of fingers")
-        return self.state
+        prefix = cmd[:-1]
+        if prefix not in self.states:
+            # print(f'{prefix} not found in {self.states.keys()}')
+            num = 0
+        else:
+            num = self.states[prefix]
+        return num
+
+
+
+def set_address_mock(self, address):
+    self._address = address
+    self.visa_handle = MockVisaHandle()
+
+
+
+VisaInstrument.set_address = set_address_mock
