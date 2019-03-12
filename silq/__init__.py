@@ -19,6 +19,8 @@ import qcodes as qc
 # environment config listeners (see `DictConfig`)
 environment = None
 
+# Initially set the experiments_folder to None.
+experiments_folder = None
 
 logger = logging.getLogger(__name__)
 
@@ -88,22 +90,31 @@ def get_experiments_folder():
     Raises:
         FileNotFoundError: No experiments_folder configured.
     """
-    experiments_folder = os.getenv(silq_env_var, None)
-    if experiments_folder is not None:
-        return experiments_folder
+    try:
+        import silq
+        experiments_folder = silq.experiments_folder
+    except:
+        experiments_folder = None
+
+    if silq.experiments_folder is not None:
+        return silq.experiments_folder
     else:
-        logger.debug("Could not find experiments folder in system "
-                     "environment variable 'SILQ_EXP_FOLDER'.")
-        experiment_filepath = os.path.join(get_SilQ_folder(),
-                                           'experiments_folder.txt')
-        if os.path.exists(experiment_filepath):
-            with open(experiment_filepath, 'r')as f:
-                experiments_folder = f.readline()
+        experiments_folder = os.getenv(silq_env_var, None)
+        if experiments_folder is not None:
             return experiments_folder
         else:
-            raise FileNotFoundError('No file "Silq/experiments_folder.txt" '
-                                    'exists. Can be set via '
-                                    'silq.set_experiments_folder()')
+            logger.debug("Could not find experiments folder in system "
+                         "environment variable 'SILQ_EXP_FOLDER'.")
+            experiment_filepath = os.path.join(get_SilQ_folder(),
+                                               'experiments_folder.txt')
+            if os.path.exists(experiment_filepath):
+                with open(experiment_filepath, 'r')as f:
+                    experiments_folder = f.readline()
+                return experiments_folder
+            else:
+                raise FileNotFoundError('No file "Silq/experiments_folder.txt" '
+                                        'exists. Can be set via '
+                                        'silq.set_experiments_folder()')
 
 
 def get_configurations() -> dict:
