@@ -6,6 +6,7 @@ import logging
 import json
 import h5py
 import pickle
+from pathlib import Path
 from datetime import timedelta
 from datetime import datetime
 
@@ -117,37 +118,73 @@ def get_experiments_folder():
                                         'silq.set_experiments_folder()')
 
 
-def get_configurations() -> dict:
-    """Retrieves configurations folder from experiments folder.
-
+def get_experiment_configuration(name: str, experiments_folder: Path = None) -> (Path, dict):
+    """Retrieves experiment folder and configuration from experiments folder.
     This contains all configurations that can be used by `silq.initialize`.
-    Filepath should be {experiments_folder/configurations.json}
+
+    Args:
+        name: Case-insensitive experiment name. Can be either a relative
+              folder path, or defined in configurations.json
+        experiments_folder: Optional path for experiments_folder
+
+    Returns: experiment folder and configuration if found.
+             If not found, returns (False, {})
+
+    Configuration file `configurations.json` can be either in experiment_folder
+    or global experiments_folder/configurations.json
 
     Returns:
         dict of configurations
     """
-    experiments_folder = get_experiments_folder()
-    configurations_filepath = os.path.join(experiments_folder,
-                                           'configurations.json')
-    with open(configurations_filepath, 'r') as file:
-        return json.load(file)
+    if experiments_folder is None:
+        # Determine base folder by looking at the silq package
+        experiments_folder = get_experiments_folder()
+    if isinstance(experiments_folder, str):  # Convert to Path
+        experiments_folder = Path(experiments_folder)
+
+    experiment_folder = (experiments_folder / name).resolve()
+    if experiment_folder.exists():
+        # Check if there is a configuration file
+        configuration_filepath = experiment_folder / 'configurations.json'
+        if configuration_filepath.exists():
+            configuration = json.load(configuration_filepath.open('r'))
+        else:
+            configuration = {}
+
+    if not experiment_folder.exists() or not configuration:
+        # Check if the configuration is specified in global configurations.json
+        configurations_filepath = experiments_folder / 'configurations.json'
+        try:
+            configurations = json.load(configurations_filepath.open('r'))
+            configuration = next(val for key, val in configurations.items()
+                                 if key.lower() == name.lower())
+            experiment_folder = experiments_folder / configuration['folder']
+        except StopIteration:
+            configuration = {}
+
+    if not experiment_folder.exists():
+        experiment_folder = False
+
+    return experiment_folder, configuration
 
 
-def execute_file(filepath, globals=None, locals=None):
+def execute_file(filepath: (str, Path), globals=None, locals=None):
     if globals is None and locals is None:
         # Register globals and locals of the above frame (for code execution)
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    assert filepath.endswith('.py')
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
 
-    with open(filepath, "r") as fh:
-        exec_line = fh.read()
-        try:
-            exec(exec_line + "\n", globals, locals)
-        except:
-            raise RuntimeError(
-                f'SilQ initialization error in {filepath} line {exec_line}')
+    assert filepath.suffix == '.py'
+
+    execution_code = filepath.read_text() + "\n"
+    try:
+        exec(execution_code, globals, locals)
+    except:
+        raise RuntimeError(f'SilQ initialization error in {filepath} with code \n'
+                           f'{execution_code}')
 
 
 def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None):
@@ -156,56 +193,45 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    experiments_folder = get_experiments_folder()
+    experiment_folder, _ = get_experiment_configuration(name)
 
-    try:
-        configuration = next(val for key, val in get_configurations().items()
-                             if key.lower() == name.lower())
-    except StopIteration:
-        raise NameError(f'Configuration {name} not found. Allowed '
-                        f'configurations are {get_configurations().keys()}')
-    experiment_folder = os.path.join(experiments_folder, configuration['folder'])
-
-    script_folders = [os.path.join(experiment_folder, 'scripts')]
+    script_folders = [experiment_folder / 'scripts']
 
     # Add script folders in current directory and parent directories thereof
     for k in range(4):
-        relative_directory = '.' if not k else '../' * k
-        if os.path.samefile(relative_directory, experiment_folder):  # Reached experiment folder
+        relative_directory = Path('../' * k + '.')
+        if relative_directory.absolute() == experiment_folder.absolute():
+            # Reached experiment folder
             break
 
-        script_folder_path = os.path.join(relative_directory, 'scripts')
-        if os.path.isdir(script_folder_path):
-            script_folders.append(script_folder_path)
+        script_folder = relative_directory / 'scripts'
+        if script_folder.is_dir():
+            script_folders.append(script_folder)
 
-        relative_directory = os.path.split(relative_directory)[0]
-        print(f'relative_directory: {relative_directory}')
-    print(script_folders)
+        # relative_directory = os.path.split(relative_directory)[0]
+        # print(f'relative_directory: {relative_directory}')
+    # print(script_folders)
 
     for script_folder in script_folders:
-        assert os.path.exists(script_folder), f"No scripts folder found at {script_folder}"
-        for script_file in os.listdir(script_folder):
-            script_filepath = os.path.join(script_folder, script_file)
+        if not script_folder.exists():
+            continue
+
+        for script_folder_element in script_folder.iterdir():
             # Only execute scripts in subfolders if folder name matches mode
-            if os.path.isdir(script_filepath):
-                if script_file != mode:
+            if script_folder_element.is_dir():
+                if script_folder_element.stem != mode:
                     continue
 
                 # Run each file in the subfolder
-                for subscript_file in os.listdir(script_filepath):
-                    subscript_filepath = os.path.join(script_filepath, subscript_file)
-
+                for script_folder_subelement in script_folder_element.iterdir():
                     if not silent:
-                        subscript_file_no_ext = os.path.splitext(subscript_file)[0]
-                        print(f'Running script {script_file}/{subscript_file_no_ext}')
-                    execute_file(subscript_filepath, globals=globals, locals=locals)
+                        print(f'Running script {script_folder_element.stem}/{script_folder_subelement.stem}')
+                    execute_file(script_folder_subelement, globals=globals, locals=locals)
             else:  # Execute file
                 if not silent:
-                    script_file_no_ext = os.path.splitext(script_file)[0]
-                    print(f'Running script {script_file_no_ext}')
+                    print(f'Running script {script_folder_element.stem}')
 
-                print(script_filepath)
-                execute_file(script_filepath, globals=globals, locals=locals)
+                execute_file(script_folder_element, globals=globals, locals=locals)
 
 
 def initialize(name: str,
@@ -223,8 +249,7 @@ def initialize(name: str,
 
     Args:
         name: name of the configuration, used to find the folder
-            from which to execute all init files. If not given, the MAC address
-            will be used to find the default configuration_name.
+            from which to execute all init files.
         mode: mode that determines which subset of files should
             be executed. Possible modes can be specified in _configurations.
         select: Files to select, all others will be ignored.
@@ -237,35 +262,26 @@ def initialize(name: str,
     globals = sys._getframe(1).f_globals
     locals = sys._getframe(1).f_locals
 
-    # Determine base folder by looking at the silq package
-    experiments_folder = get_experiments_folder()
-    configurations = get_configurations()
-
-    try:
-        configuration = next(val for key, val in get_configurations().items()
-                             if key.lower() == name.lower())
-    except StopIteration:
-        raise NameError(f'Configuration {name} not found. Allowed '
-                        f'configurations are {get_configurations().keys()}')
+    experiment_folder, configuration = get_experiment_configuration(name)
+    assert experiment_folder, f"Could not find experiment '{name}', make sure " \
+                              f"its a folder in the experiments_folder"
 
     if mode is not None:
         select += configuration['modes'][mode].get('select', [])
         ignore += configuration['modes'][mode].get('ignore', [])
 
-    folder = os.path.join(experiments_folder, configuration['folder'])
-    config.__dict__['folder'] = os.path.join(experiments_folder, folder)
-    if os.path.exists(os.path.join(folder, 'config')):
+    # TODO check if original config['folder'] had any weird double experiments_folder
+    config.__dict__['folder'] = experiment_folder.absolute()
+    if (experiment_folder / 'config').is_dir():
         config.load()
 
     # Run initialization files in ./init
-    init_folder = os.path.join(folder, 'init')
-    init_filenames = os.listdir(init_folder)
+    init_folder = experiment_folder / 'init'
+    init_files = [f for f in init_folder.iterdir() if f.is_file()]
 
-    for filename in init_filenames:
+    for init_file in init_files:
         # Remove prefix
-        filename_no_prefix = filename.split('_', 1)[1]
-        # Remove .py extension
-        filename_no_prefix = os.path.splitext(filename_no_prefix)[0]
+        filename_no_prefix = init_file.stem.split('_', 1)[1]
         if select and filename_no_prefix not in select:
             continue
         elif ignore and filename_no_prefix in ignore:
@@ -273,27 +289,22 @@ def initialize(name: str,
         else:
             if not silent:
                 print(f'Initializing {filename_no_prefix}')
-            filepath = os.path.join(init_folder, filename)
-            execute_file(filepath, globals=globals, locals=locals)
+            execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
 
-    if not silent:
-        print("Initialization complete")
-
     if 'data_folder' in config.properties:
-        logger.debug(f'using config data folder: '
-                     f'{config.properties.data_folder}')
-        qc.data.data_set.DataSet.default_io.base_location = \
-            config.properties.data_folder
+        qc.set_data_root_folder(config.properties.data_folder)
 
         location_provider = qc.data.data_set.DataSet.location_provider
         if os.path.split(config.properties.data_folder)[-1] == 'data' and \
-                (location_provider.fmt ==
-                     'data/{date}/#{counter}_{name}_{time}'):
+                (location_provider.fmt == 'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
             location_provider.fmt = '{date}/#{counter}_{name}_{time}'
+
+    if not silent:
+        print("Initialization complete")
 
 
 ### Override QCoDeS functions
