@@ -34,3 +34,4 @@ Future guides
 - General parameters
 - single_settings / temporary_settings
 - AcquisitionParameter guide
+- threaded loop

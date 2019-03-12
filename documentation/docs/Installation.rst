@@ -44,7 +44,7 @@ basic GUI for managing GitHub repositories.
 .. note::
   Any modifications of the SilQ/QCoDeS source code should be uploaded using
   `Pull Requests <https://help.github.com/articles/about-pull-requests/>`_ in
-  GitHub. See `Developer guide` for more information.
+  GitHub. See `For developers` for more information.
 
 .. note::
   A good alternative to GitHub Desktop is
