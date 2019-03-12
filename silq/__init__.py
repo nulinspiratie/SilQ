@@ -208,7 +208,7 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
                 execute_file(script_filepath, globals=globals, locals=locals)
 
 
-def initialize(name: str = None,
+def initialize(name: str,
                mode: str = None,
                select: List[str] = [],
                ignore: List[str] = [],
@@ -240,15 +240,6 @@ def initialize(name: str = None,
     # Determine base folder by looking at the silq package
     experiments_folder = get_experiments_folder()
     configurations = get_configurations()
-
-    if name is None:
-        # Find init_name from mac address
-        from uuid import getnode as get_mac
-        mac = get_mac()
-        for name, properties in configurations.items():
-            if mac in properties.get('macs', []):
-                name = name
-                break
 
     try:
         configuration = next(val for key, val in get_configurations().items()
