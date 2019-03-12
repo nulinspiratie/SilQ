@@ -199,7 +199,7 @@ The bottom of the figure shows how the different SilQ objects interact with
 one another when targeting a `PulseSequence`.
 The arrows indicate the direction of communication, a round dot indicates
 being a property of the class the line originates from.
-The dotted line indicates there is a `Connection` between the
+Blue lines indicate a `Connection` between the
 `InstrumentInterfaces <InstrumentInterface>` (there is also a connection between
 the left-most and right-most interface).
 
