@@ -271,7 +271,7 @@ def initialize(name: str,
         ignore += configuration['modes'][mode].get('ignore', [])
 
     # TODO check if original config['folder'] had any weird double experiments_folder
-    config.__dict__['folder'] = experiment_folder.absolute()
+    config.__dict__['folder'] = str(experiment_folder.absolute())
     if (experiment_folder / 'config').is_dir():
         config.load()
 
