@@ -159,7 +159,7 @@ def get_experiment_configuration(name: str, experiments_folder: Path = None) -> 
             configuration = next(val for key, val in configurations.items()
                                  if key.lower() == name.lower())
             experiment_folder = experiments_folder / configuration['folder']
-        except StopIteration:
+        except (FileNotFoundError, StopIteration):
             configuration = {}
 
     if not experiment_folder.exists():
@@ -277,19 +277,20 @@ def initialize(name: str,
 
     # Run initialization files in ./init
     init_folder = experiment_folder / 'init'
-    init_files = [f for f in init_folder.iterdir() if f.is_file()]
+    if init_folder.exists():
+        init_files = [f for f in init_folder.iterdir() if f.is_file()]
 
-    for init_file in init_files:
-        # Remove prefix
-        filename_no_prefix = init_file.stem.split('_', 1)[1]
-        if select and filename_no_prefix not in select:
-            continue
-        elif ignore and filename_no_prefix in ignore:
-            continue
-        else:
-            if not silent:
-                print(f'Initializing {filename_no_prefix}')
-            execute_file(init_file, globals=globals, locals=locals)
+        for init_file in init_files:
+            # Remove prefix
+            filename_no_prefix = init_file.stem.split('_', 1)[1]
+            if select and filename_no_prefix not in select:
+                continue
+            elif ignore and filename_no_prefix in ignore:
+                continue
+            else:
+                if not silent:
+                    print(f'Initializing {filename_no_prefix}')
+                execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
