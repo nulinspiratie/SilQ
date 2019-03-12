@@ -100,3 +100,17 @@ database, although there could well be workarounds.
 We may update QCoDeS to the latest version in the future, but this would
 require dedicated effort and is at the time of writing not one of our
 priorities.
+
+
+======================================
+How do I repeatedly measure something?
+======================================
+The easiest way is to create a parameter that counts the measurement repetition:
+
+>>> repetition_parameter = qc.Parameter('repetition', set_cmd=None)
+
+arbitrary measurement code can then be measured repeatedly by:
+
+>>> %%measurement repeated_measurement
+>>> for repetition_parameter[0:N:1]:
+>>>     {Measurement code here}
