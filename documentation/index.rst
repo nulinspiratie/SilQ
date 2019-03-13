@@ -20,31 +20,16 @@ Table of contents
    docs/What is SilQ
    docs/Installation
    docs/Getting started
+   docs/Brief QCoDeS guide
    docs/Concepts in SilQ
    docs/For developers
    docs/in-depth guides/index
    specifications/index
    docs/FAQ
-
-Remaining
-
--  Brief guide to QCoDeS
-
-
-Most important classes and functions
-------------------------------------
-.. TODO
-.. currentmodule:: silq
-
-.. autosummary::
-
-   parameters.acquisition_parameters.AcquisitionParameter
-   parameters.acquisition_parameters.DCParameter
-   parameters.acquisition_parameters.DCSweepParameter
+   docs/Classes and functions index
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
