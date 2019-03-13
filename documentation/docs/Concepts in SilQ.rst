@@ -18,16 +18,16 @@ Main classes
 ============
 The classes described here are ordered by how they control one another.
 In general, classes later on control the classes described earlier.
-Every class described here is a QCoDeS `ParameterNode`, and their properties
-are `Parameters <Parameter>`, and so they benefit from all the features
+Every class described here is a QCoDeS ParameterNode, and their properties
+are Parameters, and so they benefit from all the features
 provided by these.
 See `Parameter guide <in-depth guides/Parameter guide>` and `ParameterNode
 guide <in-depth guides/ParameterNode guide>` for more information.
 
 InstrumentInterface
 ---------------------
-Each instrument has a corresponding QCoDeS `Instrument` driver that
-facilitates
+Each instrument has a corresponding QCoDeS
+:class:`~qcodes.instrument.base.Instrument` driver that facilitates
 communication with the user via Python. These drivers usually directly copy the
 commands described in the instrument manual, and occasionally add some features.
 As a result, each Instrument is controlled slightly differently.
@@ -56,11 +56,11 @@ those to the appropriate `InstrumentInterface`.
 
 .. note::
     While an `InstrumentInterface` is supposed to set all the parameters of the
-    `Instrument` relevant to outputting a pulse, often there are simply too many
-    parameters, and some are not included.
+    :class:`~qcodes.instrument.base.Instrument` relevant to outputting a pulse,
+    often there are simply too many parameters, and some are not included.
     However, these are usually parameters that are rarely modified.
     Additionally, the `InstrumentInterface` itself has parameters that can be
-    set by the user, and will influence how it programs the `Instrument`.
+    set by the user, and will influence how it programs the :class:`~qcodes.instrument.base.Instrument`.
 
 
 Connection
@@ -98,7 +98,7 @@ The `Layout` also communicates with the data acquisition instrument (via its
 interface) to perform data acquisition.
 
 .. note::
-    The `Layout` never directly communicates with an `Instrument`, but always
+    The `Layout` never directly communicates with an :class:`~qcodes.instrument.base.Instrument`, but always
     via the corresponding `InstrumentInterface`.
 
 
@@ -204,8 +204,8 @@ Blue lines indicate a `Connection` between the
 the left-most and right-most interface).
 
 Targeting a `PulseSequence` is actually a two-stage process.
-However, stage zero is having preprogrammed all the `Instruments
-<Instrument>`, `InstrumentInterfaces <InstrumentInterface>`, and `Layout`.
+However, stage zero is having preprogrammed all the Instruments,
+`InstrumentInterfaces <InstrumentInterface>`, and `Layout`.
 This does not mean manually sending all the commands to output the pulse
 sequence, but specifying the parameters that are freely configurable,
 such as the``sample rate``.
@@ -246,15 +246,15 @@ This is a good moment to see if the `InstrumentInterfaces
 
 Stage 2 - Instrument setup
 --------------------------
-The second stage consists of programming the `Instruments <Instrument>`.
+The second stage consists of programming the Instruments.
 This is invoked by calling
 
 >>> layout.setup()
 
 At this point the `Layout` signals all the `InstrumentInterfaces
-<InstrumentInterface>` to program their `Instruments <Instrument>`.
-Each `InstrumentInterface` will convert its `PulseSequence` into `Instrument`
-commands, and execute them.
+<InstrumentInterface>` to program their Instruments.
+Each `InstrumentInterface` will convert its `PulseSequence` into
+:class:`~qcodes.instrument.base.Instrument` commands, and execute them.
 At this stage, errors may also be raised.
 This is often the case when an instrument command cannot be executed by the
 instrument.
@@ -271,7 +271,7 @@ The first step consists of starting the instruments, and is called by
 
 >>> layout.start()
 
-The order of starting `Instruments <Instrument>` is based on their hierarchy:
+The order of starting Instruments is based on their hierarchy:
 instruments that need to be triggered are started
 before the instrument that performs the triggering.
 At the top of the chain is the ``primary_instrument`` (in this case the
@@ -298,11 +298,11 @@ onto its `InstrumentInterface`.
 The `InstrumentInterface` will then segment the traces for each of the pulses.
 This way, each pulse in its ``input_pulse_sequence`` (which all have
 ``Pulse.acquire = True``) has its corresponding measured traces.
-At this point, optional averaging of the traces, specified by `Pulse.average`,
+At this point, optional averaging of the traces, specified by ``Pulse.average``,
 is also performed.
 
 When traces are acquired, more than one channel can be measured.
-These channels are specified in `Layout.acquisition_channels`, and each channel
+These channels are specified in ``Layout.acquisition_channels``, and each channel
 is given a label.
 This allows the different acquisition channels to have meaningful labels (e.g.
 ``chip output``) instead of channel indices (e.g. ``channel_A``).
@@ -310,7 +310,7 @@ The `Layout` attaches these labels once it receives the processed traces from
 the acquisition `InstrumentInterface`.
 
 .. note::
-   - The number of traces is specified by `Layout.samples`.
+   - The number of traces is specified by ``Layout.samples``.
    - `Layout.start()` is called if the instruments have not yet been started.
 
 
@@ -364,23 +364,25 @@ The goal of the `AcquisitionParameter` is to combine the `PulseSequence` with
 the corresponding postprocessing analysis, such that the user performs a
 measurement, and gets the processed data straight away.
 Each `AcquisitionParameter` has a specific `PulseSequence`
-(`AcquisitionParameter.pulse_sequence`)and analysis
-(`AcquisitionParameter.analysis() <AcquisitionParameter.analysis>`) attached
+(``AcquisitionParameter.pulse_sequence``)and analysis
+(``AcquisitionParameter.analysis()``) attached
 to it.
 This does not mean that the `PulseSequence` is fixed; its properties can
 still be modified.
 However, the analysis usually analyses traces of specific `Pulses <Pulse>` in
 the `PulseSequence`, and so these pulses need to be present.
 
-As its name suggests, an `AcquisitionParameter` is a `Parameter` and not a
-`ParameterNode`.
+As its name suggests, an `AcquisitionParameter` is a
+:class:`~qcodes.instrument.parameter.Parameter` and not a ``ParameterNode``.
 The main reason is that you can use an `AcquisitionParameter` in a
-measurement `Loop` as you would any other `Parameter`.
+measurement :class:`~qcodes.loops.Loop` as you would any other
+:class:`~qcodes.instrument.parameter.Parameter`.
 The `AcquisitionParameter` contains the attribute ``names``, which is a list of
 things that the analysis returns.
-Each of these is saved in the `DataSet` during a `Loop`.
+Each of these is saved in the :class:`~qcodes.data.data_set.DataSet` during a
+:class:`~qcodes.loops.Loop`.
 
-By default, calling `AcquisitionParameter.get() <AcquisitionParameter.get>`
+By default, calling ``AcquisitionParameter.get()``
 performs the following tasks:
 
 1. Target its pulse sequence
@@ -396,5 +398,5 @@ information see `in-depth guides/AcquisitionParameter guide`.
 .. TODO add link to list of AcquisitionParameters
 
 .. note::
-   The raw traces can also be saved during a measurement `Loop`, see
-   `in-depth guides/Saving traces`.
+   The raw traces can also be saved during a measurement
+   :class:`~qcodes.loops.Loop`, see `in-depth guides/Saving traces`.

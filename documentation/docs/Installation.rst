@@ -201,10 +201,10 @@ notebooks, images, etc.
 
 The ``init`` folder contains all initializations python scripts.
 They will be executed by alphanumeric order, so start the first script with
-`0_`, and increase the index for subsequent files to fix the execution order.
+``0_``, and increase the index for subsequent files to fix the execution order.
 
 The ``config`` folder contains all information on the experiment.
-It can contain ``.json`` files, and folders containing `.json` files.
+It can contain ``.json`` files, and folders containing ``.json`` files.
 The config will be combined into a single dictionary, and all folders an files
 will be keys and their contents will be values.
 
@@ -212,7 +212,7 @@ will be keys and their contents will be values.
 Register the Experiment
 -----------------------
 The final step is to register the experiment.
-Create/open the file `configurations.json` in the experiments root
+Create/open the file ``configurations.json`` in the experiments root
 folder.
 If the file does not yet exist, fill it with the following information::
 
@@ -251,8 +251,8 @@ It is therefore recommended to regularly update your SilQ and QCoDeS to the
 latest version.
 For this, a Git client such as GitHub Desktop can be used.
 To update either, first ensure that you don't have any new changes to the source
-code. If you do and they could be useful for others, please see `Developer guide`.
-Next, pull the latest changes from `master`, which is the main stable branch.
+code. If you do and they could be useful for others, please see `For developers`.
+Next, pull the latest changes from ``master``, which is the main stable branch.
 
 
 Optional setup and information
