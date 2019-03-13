@@ -1,5 +1,6 @@
-Specifications
-==============
+***********
+Future work
+***********
 
 This page contains target specifications for various object/routines.
 Not all of the things specified here are actually implemented; a large part
