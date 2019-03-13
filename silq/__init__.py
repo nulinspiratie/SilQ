@@ -41,6 +41,9 @@ if 'ipykernel' in sys.modules:
                              magic_commands=register_magic)
 
 
+from .instrument_interfaces import get_instrument_interface
+
+
 def get_silq_folder() -> str:
     """Get root folder of silq source code."""
     return os.path.split(__file__)[0]
