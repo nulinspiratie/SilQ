@@ -487,7 +487,7 @@ class Pulse(ParameterNode):
             AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
-        raise NotImplementedError('This method should be implemented in a subclass')
+        raise NotImplementedError('Pulse.get_voltage should be implemented in a subclass')
 
 
 class SteeredInitialization(Pulse):
