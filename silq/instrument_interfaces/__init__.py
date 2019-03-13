@@ -31,6 +31,9 @@ def get_instrument_interface(instrument):
                              'class': 'AWG520Interface'},
         'TriggerFPGAController': {'module': '.keysight.fpga_interfaces.trigger_FPGA_interface',
                                   'class': 'TriggerFPGAInterface'},
+        'Bayesian_Update_FPGA': {
+            'module': '.keysight.fpga_interfaces.Bayesian_update_interface',
+            'class': 'Bayesian_Update_Interface'},
         'PCDDS': {'module': '.keysight.fpga_interfaces.PCDDS_interface',
                   'class': 'PCDDSInterface'}
     }
