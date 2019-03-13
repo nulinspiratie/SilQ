@@ -139,28 +139,39 @@ def execute_file(filepath, globals=None, locals=None):
                 f'SilQ initialization error in {filepath} line {exec_line}')
 
 
-def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None):
+def run_scripts(name: str = None,
+                mode: str = None,
+                silent: bool = False,
+                max_relative_parents: int = 4,
+                globals: dict = None,
+                locals: dict = None):
     if globals is None and locals is None:
         # Register globals and locals of the above frame (for code execution)
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    experiments_folder = get_experiments_folder()
+    script_folders = []
 
-    try:
-        configuration = next(val for key, val in get_configurations().items()
-                             if key.lower() == name.lower())
-    except StopIteration:
-        raise NameError(f'Configuration {name} not found. Allowed '
-                        f'configurations are {get_configurations().keys()}')
-    experiment_folder = os.path.join(experiments_folder, configuration['folder'])
+    if name is not None:
+        experiments_folder = get_experiments_folder()
 
-    script_folders = [os.path.join(experiment_folder, 'scripts')]
+        try:
+            configuration = next(val for key, val in get_configurations().items()
+                                 if key.lower() == name.lower())
+        except StopIteration:
+            raise NameError(f'Configuration {name} not found. Allowed '
+                            f'configurations are {get_configurations().keys()}')
+        experiment_folder = os.path.join(experiments_folder, configuration['folder'])
+
+        script_folders = [os.path.join(experiment_folder, 'scripts')]
+    else:
+        experiment_folder = '../' * (max_relative_parents + 1)
 
     # Add script folders in current directory and parent directories thereof
-    for k in range(4):
+    for k in range(max_relative_parents):
         relative_directory = '.' if not k else '../' * k
         if os.path.samefile(relative_directory, experiment_folder):  # Reached experiment folder
+            print('Reached experiment folder')
             break
 
         script_folder_path = os.path.join(relative_directory, 'scripts')
@@ -169,7 +180,8 @@ def run_scripts(name, mode: str = None, silent=False, globals=None, locals=None)
 
         relative_directory = os.path.split(relative_directory)[0]
         print(f'relative_directory: {relative_directory}')
-    print(script_folders)
+
+    print(f'Script folders: {script_folders}')
 
     for script_folder in script_folders:
         assert os.path.exists(script_folder), f"No scripts folder found at {script_folder}"
@@ -280,14 +292,13 @@ def initialize(name: str = None,
     if not silent:
         print("Initialization complete")
 
-    if 'data_folder' in config.properties:
-        logger.debug(f'using config data folder: '
-                     f'{config.properties.data_folder}')
-        qc.data.data_set.DataSet.default_io.base_location = \
-            config.properties.data_folder
+    if 'data_folder' in config["environment:properties"]:
+        data_folder = config["environment:properties.data_folder"]
+        logger.debug(f'using config data folder: {data_folder}')
+        qc.data.data_set.DataSet.default_io.base_location = data_folder
 
         location_provider = qc.data.data_set.DataSet.location_provider
-        if os.path.split(config.properties.data_folder)[-1] == 'data' and \
+        if os.path.split(data_folder)[-1] == 'data' and \
                 (location_provider.fmt ==
                      'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
@@ -324,6 +335,9 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     data_path = self.io.to_path(self.location)
     trace_path = os.path.join(data_path, 'traces')
     trace_filenames = os.listdir(trace_path)
+    trace_filenames = [filename for filename in trace_filenames if
+                       filename.endswith('.hdf5')]
+
     assert trace_filenames, f"No trace files found in {traces_path}"
 
     if name is None and len(trace_filenames) == 1:
@@ -344,7 +358,7 @@ qc.DataSet.load_traces = _load_traces
 
 
 
-def _get_pulse_sequence(self, idx=0, pulse_name=None):
+def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
     """Load pulse sequence after measurement started
 
     Args:
@@ -397,7 +411,8 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None):
     except StopIteration:
         raise StopIteration('No pulse sequences found')
 
-    print(f'Pulse sequence file: {pulse_sequence_filename}')
+    if not silent:
+        print(f'Pulse sequence file: {pulse_sequence_filename}')
     return pulse_sequence
 
 qc.DataSet.get_pulse_sequence = _get_pulse_sequence
