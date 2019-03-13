@@ -6,63 +6,34 @@
 Welcome to SilQ's documentation!
 ================================
 
-SilQ is a measurement software designed to control spin-based systems. It utilizes the QCoDeS data acquisition framework.
+SilQ is a measurement software designed to control spin-based systems.
+It utilizes the QCoDeS data acquisition framework.
 
 
-
-
-Documentation
--------------
+Table of contents
+-----------------
 
 
 .. toctree::
    :maxdepth: 2
 
-   docs/setup
+   docs/What is SilQ
+   docs/Installation
+   docs/Getting started
+   docs/Concepts in SilQ
+   docs/For developers
+   docs/in-depth guides/index
    specifications/index
+   docs/FAQ
+
+Remaining
+
+-  Brief guide to QCoDeS
 
 
-# Setting up QCoDeS and SilQ
-
-# Getting started with QCoDeS
-  # ``Parameter``
-  # ``Instrument``
-  # Measurements: ``Loop`` and ``Measure``
-  # ``DataSet``
-  # Plotting
-  # More documentation/examples
-
-# Getting started with SilQ
-  # `PulseSequence` and `Pulse`
-  # `Layout`
-  # `InstrumentInterface`
-  # `Connection`
-  # `AcquisitionParameter`
-
-
-# Unsorted
-
-  # Guidelines for an `InstrumentInterface`.
-  # SIM GUI
-  # Notebook widgets
-  # MeasurementParameter
-  # General parameters
-
-    # CombinedParameter
-    # AttributeParameter
-
-  # SilQ magics
-
-    # Loading data
-
-  # SilQ config
-  # PulseSequenceGenerator
-  # Interactive plots
-
-
-
-Autosummary
-------------
+Most important classes and functions
+------------------------------------
+.. TODO
 .. currentmodule:: silq
 
 .. autosummary::

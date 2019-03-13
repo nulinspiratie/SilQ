@@ -38,6 +38,9 @@ def get_instrument_interface(instrument):
                   'class': 'PCDDSInterface'}
     }
 
+
+def get_instrument_interface(instrument):
+    from . import instrument_interfaces
     instrument_class = instrument.__class__.__name__
     import_dict = instrument_interfaces[instrument_class]
     exec(f'from {import_dict["module"]} import {import_dict["class"]}')

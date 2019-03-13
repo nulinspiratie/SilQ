@@ -1,3 +1,7 @@
+******************************
+InstrumentInterface guidelines
+******************************
+
 
 =====================
 Adding new interfaces

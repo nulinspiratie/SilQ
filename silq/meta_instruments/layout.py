@@ -193,10 +193,10 @@ class SingleConnection(Connection):
         self.software = software
 
     def __repr__(self):
-        output_str = "Connection{{"
+        output_str = "Connection("
         if self.label:
             output_str += f'{self.label}: '
-        output_str += f"{self.output['str']}->{self.input['str']}}}("
+        output_str += f"{{{self.output['str']}->{self.input['str']}}}"
         if self.trigger:
             output_str += ', trigger'
             if self.trigger_start:
@@ -351,7 +351,7 @@ class CombinedConnection(Connection):
     def __repr__(self):
         output = 'CombinedConnection'
         if self.label:
-            output += f' {self.label}'
+            output += f' {self.label}: '
         for connection in self.connections:
             output += '\n\t' + repr(connection)
         return output
@@ -511,34 +511,50 @@ class Layout(Instrument):
         self.connections = []
 
         self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()))
+                           get_cmd=lambda: list(self._interfaces.keys()),
+                           docstring='List of instrument names. Can only be '
+                                     'retrieved. To set, update layout._interfaces')
         self.add_parameter('primary_instrument',
                            get_cmd=None,
                            set_cmd=self._set_primary_instrument,
-                           vals=vals.Enum(*self._interfaces.keys()))
+                           vals=vals.Enum(*self._interfaces.keys()),
+                           docstring='Name of primary instrument, usually the '
+                                     'instrument that performs triggering')
 
         self.add_parameter('acquisition_instrument',
                            set_cmd=None,
                            initial_value=None,
-                           vals=vals.Enum(*self._interfaces.keys()))
+                           vals=vals.Enum(*self._interfaces.keys()),
+                           docstring='Name of instrument that acquires data')
         self.add_parameter('acquisition_channels',
                            set_cmd=None,
-                           vals=vals.Lists())
+                           vals=vals.Lists(),
+                           docstring='List of acquisition channels to acquire. '
+                                     'Each element in the list should be a '
+                                     'tuple (ch_name, ch_label), where ch_name '
+                                     'is a channel of the acquisition interface, '
+                                     'and ch_label is a given label for that '
+                                     'channel (e.g. "output").')
 
         self.add_parameter(name='samples',
                            set_cmd=None,
-                           initial_value=1)
+                           initial_value=1,
+                           docstring='Number of times to acquire the pulse sequence')
 
         self.add_parameter(name='active',
                            set_cmd=None,
                            initial_value=False,
-                           vals=vals.Bool())
+                           vals=vals.Bool(),
+                           docstring='Whether the pulse sequence is being executed. '
+                                     'Can be started/stopped via layout.start/layout.stop')
 
         self.add_parameter('save_trace_channels',
                            set_cmd=None,
                            initial_value=['output'],
-                           vals=vals.Lists(vals.Strings())
-                           )
+                           vals=vals.Lists(vals.Strings()),
+                           docstring='List of channel labels to acquire. '
+                                     'Channel labels are defined in '
+                                     'layout.acquisition_channels')
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -557,8 +573,10 @@ class Layout(Instrument):
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
 
+        # Shapes of pulse traces, dict of form {pulse_name: {ch_label: shape}}
         self.acquisition_shapes = {}
 
+        # HDF5 files for saving of traces in a loop. One per AcquisitionParameter
         self.trace_files = {}
 
     @property

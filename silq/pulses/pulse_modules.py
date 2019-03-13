@@ -1114,4 +1114,5 @@ class PulseImplementation:
         See Also:
             Other interface source codes may serve as a guide for this method.
         """
-        raise NotImplementedError('This method should be implemented in a subclass')
+        raise NotImplementedError('PulseImplementation.implement should be '
+                                  'implemented in a subclass')
