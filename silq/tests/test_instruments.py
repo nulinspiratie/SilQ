@@ -8,8 +8,10 @@ from silq.pulses import PulseSequence, DCPulse, SinePulse, MeasurementPulse
 from silq.instrument_interfaces import get_instrument_interface
 from silq.meta_instruments.chip import Chip
 from silq.meta_instruments.layout import Layout
-from silq.meta_instruments.mock_instruments import MockArbStudio, \
-    MockPulseBlaster, MockATS, MockAcquisitionController
+from silq.tests.mocks.mock_instruments.mock_arbstudio import MockArbStudio
+from silq.tests.mocks.mock_instruments.mock_pulseblaster import MockPulseBlaster
+from silq.tests.mocks.mock_instruments.mock_ATS import MockATS
+from silq.tests.mocks.mock_instruments.mock_acquisition_controller import MockAcquisitionController
 
 
 class TestInnerInstrument(Instrument):

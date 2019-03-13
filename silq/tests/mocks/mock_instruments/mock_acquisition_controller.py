@@ -1,7 +1,7 @@
 import numpy as np
 from functools import partial
 
-from . import MockInstrument
+from .mock_instrument import MockInstrument
 
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
