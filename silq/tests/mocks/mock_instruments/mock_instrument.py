@@ -3,7 +3,6 @@ from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators as vals
 
 class MockInstrument(Instrument):
-
     def __init__(self, name, silent=False, **kwargs):
         super().__init__(name, **kwargs)
         self._silent = False
