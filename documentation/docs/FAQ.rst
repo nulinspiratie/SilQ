@@ -89,7 +89,8 @@ guides/InstrumentInterface guidelines>`.
 Why has the QCoDeS used in SilQ diverged from the original QCoDeS?
 ==================================================================
 The main reason is that QCoDeS released a major update (V0.1.10) in April 2018.
-In this release, the original `DataSet` and `Loop` were replaced by a
+In this release, the original :class:`~qcodes.data.data_set.DataSet` and
+:class:`~qcodes.loops.Loop` were replaced by a
 SQLite-based database.
 Although this added many new features and possibilities, it would require
 significant modifications to the SilQ code.
