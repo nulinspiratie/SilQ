@@ -115,8 +115,12 @@ class Fit():
         """
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
+        elif not isinstance(xvals, np.ndarray):
+            xvals = np.array(xvals)
         if isinstance(ydata, DataArray):
             ydata = ydata.ndarray
+        elif not isinstance(ydata, np.ndarray):
+            ydata = np.array(ydata)
         # Filter out all NaNs
         non_nan_indices = ~(np.isnan(xvals) | np.isnan(ydata))
         xvals = xvals[non_nan_indices]
@@ -137,17 +141,16 @@ class Fit():
             self.parameters[key].vary = False
         return self.parameters
 
-    def perform_fit(self, parameters=None, print=False, plot=None, **kwargs):
-        def perform_fit(self,
-                        parameters=None,
-                        print=False,
-                        plot=None,
-                        **kwargs) -> ModelResult:
-            """Perform fitting routine
+    def perform_fit(self,
+                    parameters=None,
+                    print=False,
+                    plot=None,
+                    **kwargs) -> ModelResult:
+        """Perform fitting routine
 
-            Returns:
-                ModelResult object containing fitting results
-            """
+        Returns:
+            ModelResult object containing fitting results
+        """
 
         if parameters is None:
             if kwargs:
