@@ -218,7 +218,7 @@ class InstrumentInterface(Instrument):
 
         """
         raise NotImplementedError(
-            'This method should be implemented in a subclass')
+            'InstrumentInterface.setup should be implemented in a subclass')
 
     def start(self):
         """Start instrument
@@ -227,9 +227,9 @@ class InstrumentInterface(Instrument):
             Acquisition instruments usually don't need to be started
         """
         raise NotImplementedError(
-            'This method should be implemented in a subclass')
+            'InstrumentInterface.start should be implemented in a subclass')
 
     def stop(self):
         """Stop instrument"""
         raise NotImplementedError(
-            'This method should be implemented in a subclass')
+            'InstrumentInterface.stop should be implemented in a subclass')
