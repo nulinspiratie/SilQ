@@ -11,6 +11,7 @@ from silq.meta_instruments.layout import Layout
 from silq.meta_instruments.mock_instruments import MockArbStudio, \
     MockPulseBlaster, MockATS, MockAcquisitionController
 
+
 class TestInnerInstrument(Instrument):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
@@ -46,6 +47,8 @@ class TestInstrument(Instrument):
 
     def print(self):
         print('printing from test instrument')
+
+
 
 
 class TestArbStudio(unittest.TestCase):
