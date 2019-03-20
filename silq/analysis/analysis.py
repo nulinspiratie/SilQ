@@ -607,6 +607,7 @@ def analyse_EPR(empty_traces: np.ndarray,
                 t_skip: float,
                 t_read: float,
                 min_filter_proportion: float = 0.5,
+                threshold_voltage: Union[float, None] = None,
                 filter_traces=True,
                 plot: bool = False):
     """ Analyse an empty-plunge-read sequence
@@ -622,6 +623,8 @@ def analyse_EPR(empty_traces: np.ndarray,
             and end segments.
         min_filter_proportion: minimum proportion of traces that satisfy filter.
             If below this value, up_proportion etc. are not calculated.
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold.
 
     Returns:
         Dict[str, float]:
@@ -659,6 +662,7 @@ def analyse_EPR(empty_traces: np.ndarray,
                                    sample_rate=sample_rate,
                                    filter='low' if filter_traces else None,
                                    min_filter_proportion=min_filter_proportion,
+                                   threshold_voltage=threshold_voltage,
                                    t_skip=t_skip,
                                    plot=plot[0])
 
@@ -667,6 +671,7 @@ def analyse_EPR(empty_traces: np.ndarray,
                                   sample_rate=sample_rate,
                                   filter='high' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
+                                  threshold_voltage=threshold_voltage,
                                   t_skip=t_skip,
                                   plot=plot[1])
 
@@ -675,11 +680,13 @@ def analyse_EPR(empty_traces: np.ndarray,
                                   sample_rate=sample_rate,
                                   filter='low' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
+                                  threshold_voltage=threshold_voltage,
                                   t_skip=t_skip)
     results_read_begin = analyse_traces(traces=read_traces,
                                         sample_rate=sample_rate,
                                         filter='low' if filter_traces else None,
                                         min_filter_proportion=min_filter_proportion,
+                                        threshold_voltage=threshold_voltage,
                                         t_read=t_read,
                                         segment='begin',
                                         t_skip=t_skip,
@@ -687,6 +694,7 @@ def analyse_EPR(empty_traces: np.ndarray,
     results_read_end = analyse_traces(traces=read_traces,
                                       sample_rate=sample_rate,
                                       t_read=t_read,
+                                      threshold_voltage=threshold_voltage,
                                       segment='end',
                                       t_skip=t_skip,
                                       plot=plot[2])
