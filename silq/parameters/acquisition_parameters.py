@@ -1224,6 +1224,8 @@ class EPRParameter(AcquisitionParameter):
         if traces is None:
             traces = self.traces
 
+        threshold_voltage = getattr(self, 'threshold_voltage', None)
+
         return analysis.analyse_EPR(
             empty_traces=traces['empty']['output'],
             plunge_traces=traces['plunge']['output'],
@@ -1232,6 +1234,7 @@ class EPRParameter(AcquisitionParameter):
             t_skip=self.t_skip,
             t_read=self.t_read,
             min_filter_proportion=self.min_filter_proportion,
+            threshold_voltage=threshold_voltage,
             filter_traces=self.filter_traces,
             plot=plot)
 
@@ -1415,6 +1418,8 @@ class ESRParameter(AcquisitionParameter):
         if traces is None:
             traces = self.traces
 
+        threshold_voltage = getattr(self, 'threshold_voltage', None)
+
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
@@ -1423,6 +1428,7 @@ class ESRParameter(AcquisitionParameter):
                 read_traces=traces[self.pulse_sequence._EPR_pulses[2].full_name]['output'],
                 sample_rate=self.sample_rate,
                 min_filter_proportion=self.min_filter_proportion,
+                threshold_voltage=threshold_voltage,
                 filter_traces=self.filter_traces,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
                 t_read=self.t_read)
@@ -1433,6 +1439,7 @@ class ESRParameter(AcquisitionParameter):
         ESR_pulse_names = [pulse.name for pulse in ESR_pulses]
         read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
         results['ESR_results'] = []
+
         for read_pulse, ESR_pulse in zip(read_pulses, ESR_pulses):
             read_traces = traces[read_pulse.full_name]['output']
             ESR_results = analysis.analyse_traces(
@@ -1440,6 +1447,7 @@ class ESRParameter(AcquisitionParameter):
                 sample_rate=self.sample_rate,
                 filter='low' if self.filter_traces else None,
                 min_filter_proportion=self.min_filter_proportion,
+                threshold_voltage=threshold_voltage,
                 t_skip=self.t_skip,
                 t_read=self.t_read,
                 plot=plot)
@@ -1581,6 +1589,8 @@ class T2ElectronParameter(AcquisitionParameter):
         if traces is None:
             traces = self.traces
 
+        threshold_voltage = getattr(self, 'threshold_voltage', None)
+
         if self.EPR['enabled']:
             # Analyse EPR sequence, which also gets the dark counts
             results = analysis.analyse_EPR(
@@ -1589,6 +1599,7 @@ class T2ElectronParameter(AcquisitionParameter):
                 read_traces=traces['read_long']['output'],
                 sample_rate=self.sample_rate,
                 min_filter_proportion=self.min_filter_proportion,
+                threshold_voltage=threshold_voltage,
                 t_skip=self.t_skip, # Use t_skip to keep length consistent
                 t_read=self.t_read)
         else:
@@ -1600,6 +1611,7 @@ class T2ElectronParameter(AcquisitionParameter):
             traces=read_traces,
             sample_rate=self.sample_rate,
             filter='low',
+            threshold_voltage=threshold_voltage,
             t_skip=self.t_skip,
             t_read=self.t_read)
 
@@ -1831,10 +1843,13 @@ class NMRParameter(AcquisitionParameter):
 
         results = {'results_read': []}
 
-        # Calculate threshold voltages from combined read traces
-        high_low = analysis.find_high_low(
-            np.ravel([trace['output'] for trace in traces.values()]))
-        threshold_voltage = high_low['threshold_voltage']
+        if hasattr(self, 'threshold_voltage'):
+            threshold_voltage = getattr(self, 'threshold_voltage')
+        else:
+            # Calculate threshold voltages from combined read traces
+            high_low = analysis.find_high_low(
+                np.ravel([trace['output'] for trace in traces.values()]))
+            threshold_voltage = high_low['threshold_voltage']
 
         # Extract points per shot from a single read trace
         single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
