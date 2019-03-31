@@ -274,6 +274,8 @@ class ATSInterface(InstrumentInterface):
                     'output_arg': 'ATS.software_trig_out'})
 
             return [acquisition_pulse, trigger_wait_pulse]
+        else:
+            raise Exception("No controller found")
 
     def initialize(self):
         """Initializes ATS interface by setting acquisition controller.
@@ -544,7 +546,7 @@ class ATSInterface(InstrumentInterface):
         """
         pulse_traces = {}
 
-        if self.capture_full_traces():
+        if self.capture_full_trace():
             t_start_initial = 0
         else:
             t_start_initial = min(p.t_start for p in
