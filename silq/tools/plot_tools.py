@@ -671,6 +671,7 @@ class DCSweepPlot(ScanningPlot):
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
     """
     gate_mapping = {}
+    point_color = 'r'
     # DCSweepParameter type
     def __init__(self,
                  parameter: _BaseParameter,
@@ -728,7 +729,7 @@ class DCSweepPlot(ScanningPlot):
 
                         self.point = self[k].plot(self.x_gate.get_latest(),
                                                   self.y_gate.get_latest(),
-                                                  'ob', ms=5)[0]
+                                                  'o'+self.point_color, ms=5)[0]
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
