@@ -711,6 +711,7 @@ def analyse_EPR(empty_traces: np.ndarray,
             'dark_counts': results_read_end['up_proportion'],
 
             'voltage_difference_read': results_read['voltage_difference'],
+            'voltage_average_read': results_read['average_voltage'],
             'num_traces': results_read['num_traces'],
             'filtered_traces_idx': results_read['filtered_traces_idx'],
             'blips': results_read['blips'],
