@@ -1794,21 +1794,62 @@ class NMRParameter(AcquisitionParameter):
         For each ESR frequency, ``NMRParameter.ESR['shots_per_read']`` reads
         are performed.
         """
-        return [pulse.frequency if isinstance(pulse, Pulse)
-                else self.ESR[pulse].frequency
-                for pulse in self.ESR['ESR_pulses']]
+        ESR_frequencies = []
+        for pulse in self.ESR['ESR_pulses']:
+            if isinstance(pulse, Pulse):
+                ESR_frequencies.append(pulse.frequency)
+            elif isinstance(pulse, str):
+                ESR_frequencies.append(self.ESR[pulse].frequency)
+            elif isinstance(pulse, Iterable):
+                ESR_subfrequencies = []
+                for subpulse in pulse:
+                    if isinstance(subpulse, Pulse):
+                        ESR_subfrequencies.append(subpulse.frequency)
+                    elif isinstance(subpulse, str):
+                        ESR_subfrequencies.append(self.ESR[subpulse].frequency)
+                    else:
+                        raise SyntaxError(f'Subpulse type not allowed: {subpulse}')
+                ESR_frequencies.append(ESR_subfrequencies)
+            else:
+                raise SyntaxError(f'pulse type not allowed: {pulse}')
+        return ESR_frequencies
 
     @ESR_frequencies.setter
-    def ESR_frequencies(self, ESR_frequencies):
-        if len(ESR_frequencies) != len(self.ESR['ESR_pulses']):
-            logger.warning('Different number of frequencies. '
-                           'Reprogramming ESR pulses to default ESR_pulse')
-            self.ESR['ESR_pulses']= [copy(self.ESR['ESR_pulse'])
-                                 for _ in range(len(ESR_frequencies))]
-        self.ESR['ESR_pulses'] = [copy(self.ESR[p]) if isinstance(p, str) else p
-                              for p in self.ESR['ESR_pulses']]
-        for pulse, ESR_frequency in zip(self.ESR['ESR_pulses'], ESR_frequencies):
-            pulse.frequency = ESR_frequency
+    def ESR_frequencies(self, ESR_frequencies: List):
+        assert len(ESR_frequencies) == len(self.ESR['ESR_pulses']), \
+        'Different number of frequencies to ESR pulses.'
+
+        updated_ESR_pulses = []
+        for ESR_subpulses, ESR_subfrequencies in zip(self.ESR['ESR_pulses'], ESR_frequencies):
+            if isinstance(ESR_subpulses, str):
+                ESR_subpulses = copy(self.ESR[ESR_subpulses])
+            elif isinstance(ESR_subpulses, Iterable):
+                ESR_subpulses = [
+                    copy(self.ESR[p]) if isinstance(p, str) else p
+                    for p in ESR_subpulses]
+
+            # Either both the subpulses and subfrequencies must be iterable, or neither are (XNOR)
+            assert \
+                (
+                    isinstance(ESR_subpulses, Iterable) and
+                    isinstance(ESR_subfrequencies, Iterable)
+                ) or (
+                    not (isinstance(ESR_subpulses, Iterable) or isinstance(
+                        ESR_subfrequencies, Iterable))
+                ), \
+            'Data structures for frequencies and pulses do not have the same shape.'
+
+            if not isinstance(ESR_subpulses, Iterable):
+                ESR_subpulses = [ESR_subpulses]
+            if not isinstance(ESR_subfrequencies, Iterable):
+                ESR_subfrequencies = [ESR_subfrequencies]
+
+            for pulse, frequency in zip(ESR_subpulses,
+                                        ESR_subfrequencies):
+                    pulse.frequency = frequency
+
+            updated_ESR_pulses.append(ESR_subpulses)
+        self.ESR['ESR_pulses'] = updated_ESR_pulses
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
         """Analyse flipping events between nuclear states

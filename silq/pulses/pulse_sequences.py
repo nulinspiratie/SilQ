@@ -246,8 +246,10 @@ class ESRPulseSequence(PulseSequenceGenerator):
                 if not k:
                     self.primary_ESR_pulses.append(ESR_pulse)
 
-            ESR_pulse['t_stop'].connect(plunge_pulse['t_stop'],
+            if ESR_pulse is not None:
+                ESR_pulse['t_stop'].connect(plunge_pulse['t_stop'],
                                         offset=self.ESR['post_delay'])
+
             self.add(self.ESR['read_pulse'])
 
     def generate(self, ESR_frequencies=None):
@@ -540,22 +542,47 @@ class NMRPulseSequence(PulseSequenceGenerator):
         if pulse_sequence is None:
             pulse_sequence = self
 
-        NMR_stage_pulse, = pulse_sequence.add(self.NMR['stage_pulse'])
-        t_connect = partial(NMR_stage_pulse['t_start'].connect,
-                            offset=self.NMR['pre_delay'])
-
-        for pulse in self.NMR['NMR_pulses']:
+        # Convert any pulse strings to pulses if necessary
+        for k, pulse in enumerate(self.NMR['NMR_pulses']):
             if isinstance(pulse, str):
-                # Pulse is a reference to some pulse in self.NMR
-                pulse = self.NMR[pulse]
-            NMR_pulse, = pulse_sequence.add(pulse)
+                pulse_copy = deepcopy(self.NMR[pulse])
+                self.NMR['NMR_pulses'][k] = pulse_copy
+            elif isinstance(pulse, Iterable):
+                # Pulse is a list containing sub-pulses
+                # These pulses will be sequenced during a single stage pulse
+                for kk, subpulse in enumerate(pulse):
+                    if isinstance(subpulse, str):
+                        subpulse_copy = deepcopy(self.NMR[subpulse])
+                        self.NMR['NMR_pulses'][k][kk] = subpulse_copy
 
-            t_connect(NMR_pulse['t_start'])
-            t_connect = partial(NMR_pulse['t_stop'].connect,
-                                offset=self.NMR['inter_delay'])
+        self.primary_NMR_pulses = []  # Clear primary NMR pulses (first in each stage pulse)
 
-        NMR_pulse['t_stop'].connect(NMR_stage_pulse['t_stop'],
-                                    offset=self.NMR['post_delay'])
+        # Add pulses to pulse sequence
+        for single_stage_NMR_pulses in self.NMR['NMR_pulses']:
+            # Each element should be the NMR pulses to apply within a single
+            # stage, between each subsequence there will be a pre-delay and
+            # post-delay
+
+            if not isinstance(single_stage_NMR_pulses, Iterable):
+                # Single NMR pulse provided, turn into list
+                single_stage_NMR_pulses = [single_stage_NMR_pulses]
+
+            NMR_stage_pulse, = self.add(self.NMR['stage_pulse'])
+            t_connect = partial(NMR_stage_pulse['t_start'].connect,
+                                offset=self.NMR['pre_delay'])
+
+            self.primary_NMR_pulses.append(single_stage_NMR_pulses[0])
+
+            for NMR_subpulse in single_stage_NMR_pulses:
+                NMR_pulse, = self.add(NMR_subpulse)
+                t_connect(NMR_pulse['t_start'])
+                t_connect = partial(NMR_pulse['t_stop'].connect,
+                                    offset=self.NMR['inter_delay'])
+
+            if NMR_pulse is not None:
+                NMR_pulse['t_stop'].connect(NMR_stage_pulse['t_stop'],
+                                            offset=self.NMR['post_delay'])
+
         return pulse_sequence
 
     def add_ESR_pulses(self, pulse_sequence=None, previous_pulse=None):
@@ -571,7 +598,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
                     # pulses
                     ESR_pulses = [ESR_pulses]
 
-                plunge_pulse, = pulse_sequence.add(self.ESR['stage_pulse'])
+                stage_pulse, = pulse_sequence.add(self.ESR['stage_pulse'])
                 for k, ESR_pulse in enumerate(ESR_pulses):
 
                     if isinstance(ESR_pulse, str):
@@ -582,9 +609,9 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
                     # Delay also depends on any previous ESR pulses
                     delay = self.ESR['pre_delay'] + k * self.ESR['inter_delay']
-                    plunge_pulse['t_start'].connect(ESR_pulse['t_start'],
+                    stage_pulse['t_start'].connect(ESR_pulse['t_start'],
                                                     offset=delay)
-                ESR_pulse['duration'].connect(plunge_pulse['t_stop'],
+                ESR_pulse['duration'].connect(stage_pulse['t_stop'],
                                             offset=lambda p: p.parent.t_start + self.ESR['post_delay'])
                 pulse_sequence.add(self.ESR['read_pulse'])
 
