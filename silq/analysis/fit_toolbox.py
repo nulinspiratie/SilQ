@@ -100,7 +100,7 @@ class Fit():
         return array[self.find_nearest_index(array, value)]
 
     def get_parameters(self, xvals, ydata, initial_parameters={},
-                       fixed_parameters={}, weights=None):
+                       fixed_parameters={}, parameter_constraints={}, weights=None):
         """Get parameters for fitting
         Args:
             xvals: x-coordinates of data points
@@ -111,6 +111,10 @@ class Fit():
                 `Fit.find_initial_parameters`.
             fixed_parameters: {parameter: fixed_value} combination,
                 to specify parameters whose values should not be varied.
+            parameter_constraints: {parameter: {constraint : value, ...},  ...}
+                combination to further constrain existing parameters. e.g.
+                {'frequency' : {'min' : 0}} ensures only positive frequencies
+                can be fit.
             weights: Weights for data points, must have same shape as ydata
         """
         if isinstance(xvals, DataArray):
@@ -139,6 +143,12 @@ class Fit():
         # Ensure that fixed parameters do not vary
         for key, value in fixed_parameters.items():
             self.parameters[key].vary = False
+
+        # Apply all constraints to parameters
+        for key, constraints_dict in parameter_constraints.items():
+            for opt, val in constraints_dict.items():
+                setattr(self.parameters[key], opt, val)
+
         return self.parameters
 
     def perform_fit(self,
@@ -659,6 +669,7 @@ class ExponentialSineFit(Fit):
 
         parameters['tau'].min = 0
         parameters['exponent_factor'].min = 0
+        parameters['frequency'].min = 0
 
         return parameters
 
@@ -699,7 +710,7 @@ class RabiFrequencyFit(Fit):
             parameters.add(key, initial_parameters[key])
         parameters['gamma'].min = 0
 
-        parameters.add('f_Rabi', expr='gamma/2/pi')
+        parameters.add('f_Rabi', expr='gamma/pi')
         # parameters.add('amplitude', expr='gamma^2/ Omega^2')
 
         return parameters
