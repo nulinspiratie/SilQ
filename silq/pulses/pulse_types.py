@@ -654,7 +654,15 @@ class SinePulse(Pulse):
         if self.phase_reference == 'relative':
             t = t - self.t_start
 
-        waveform = self.amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        amplitude = self.amplitude
+        if amplitude is None:
+            assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
+            if self['power'].unit == 'dBm':
+                # This formula assumes the source is 50 Ohm matched and power is in dBm
+                # A factor of 2 comes from the conversion from amplitude to RMS.
+                amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
+
+        waveform = amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
         waveform += self.offset
 
         return waveform
@@ -722,9 +730,9 @@ class FrequencyRampPulse(Pulse):
                                             vals=vals.Numbers())
         self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
                                        vals=vals.Enum('IQ', 'double'))
-        self.amplitude = Parameter(initial_value=amplitude, set_cmd=None,
+        self.amplitude = Parameter(initial_value=amplitude, unit='V', set_cmd=None,
                                    vals=vals.Numbers())
-        self.power = Parameter(initial_value=power, set_cmd=None,
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
         self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
                                vals=vals.Numbers())
@@ -793,7 +801,15 @@ class FrequencyRampPulse(Pulse):
     def get_voltage(self, t):
         frequency_rate = self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
-        return np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
+        amplitude = self.amplitude
+        if amplitude is None:
+            assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
+            if self['power'].unit == 'dBm':
+                # This formula assumes the source is 50 Ohm matched and power is in dBm
+                # A factor of 2 comes from the conversion from amplitude to RMS.
+                amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
+
+        return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
