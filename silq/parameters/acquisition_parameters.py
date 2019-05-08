@@ -1210,7 +1210,7 @@ class EPRParameter(AcquisitionParameter):
                          names=['contrast', 'up_proportion',
                                 'dark_counts',
                                 'voltage_difference_read',
-                                'fidelity_empty', 'fidelity_load'],
+                                'fidelity_empty', 'fidelity_load', 'voltage_average_read'],
                          snapshot_value=False,
                          properties_attrs=['t_skip', 't_read',
                                            'min_filter_proportion',
