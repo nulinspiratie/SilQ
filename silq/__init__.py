@@ -201,7 +201,7 @@ def run_scripts(name: str = None,
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    script_folder = []
+    script_folders = []
 
     if name is not None:
         experiment_folder, _ = get_experiment_configuration(name)
@@ -211,15 +211,18 @@ def run_scripts(name: str = None,
 
 
     # Add script folders in current directory and parent directories thereof
-    for k in range(4):
-        relative_directory = Path('../' * k + '.')
-        if relative_directory.absolute() == experiment_folder.absolute():
+    relative_directory = Path('.').absolute()  # Goes iteratively to parent
+    for _ in range(4):
+        if relative_directory == experiment_folder.absolute():
             # Reached experiment folder
             break
 
         script_folder = relative_directory / 'scripts'
         if script_folder.is_dir():
             script_folders.append(script_folder)
+
+        # Iterate up one level
+        relative_directory = relative_directory.parent
 
     for script_folder in script_folders:
         if not script_folder.exists():
@@ -303,9 +306,6 @@ def initialize(name: str,
 
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
-
-    if not silent:
-        print("Initialization complete")
 
     if 'data_folder' in config["environment:properties"]:
         data_folder = config["environment:properties.data_folder"]
