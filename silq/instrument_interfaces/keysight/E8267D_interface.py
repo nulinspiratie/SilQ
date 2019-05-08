@@ -303,7 +303,7 @@ class SinePulseImplementation(PulseImplementation):
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
                           amplitude=1,
-                          phase=0,
+                          phase=self.pulse.phase,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'I'}),
@@ -311,7 +311,7 @@ class SinePulseImplementation(PulseImplementation):
                           t_start=self.pulse.t_start - interface.envelope_padding(),
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
-                          phase=-90,
+                          phase=self.pulse.phase-90,
                           amplitude=1,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
@@ -352,7 +352,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                         amplitude=interface.marker_amplitude(),
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
-                            'input_channel': 'trig_in'})]
+                            'input_channel': 'trig_in'},
+                        name=f'{self.pulse.name}_marker')]
 
         if interface.IQ_modulation() == 'off':
             frequency_IQ = None
