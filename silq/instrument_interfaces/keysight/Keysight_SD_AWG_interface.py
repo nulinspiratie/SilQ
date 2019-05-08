@@ -88,9 +88,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.pulse_implementations = [
             # TODO fix sinepulseimplementation by using pulse_to_waveform_sequence
-            # SinePulseImplementation(
-            #     pulse_requirements=[('frequency', {'min': 0, 'max': 200e6}),
-            #                         ('amplitude', {'max': 1.5})]),
+            SinePulseImplementation(
+                pulse_requirements=[('frequency', {'min': 0, 'max': 200e6}),
+                                    ('amplitude', {'max': 1.5})]),
             AWGPulseImplementation(
                 pulse_requirements=[]),
             CombinationPulseImplementation(
@@ -259,63 +259,76 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
-            sampling_rate = self.default_sampling_rates()[channel.id]
-            prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+            default_sampling_rate = self.default_sampling_rates()[channel.id]
+            prescaler = 0 if default_sampling_rate == 500e6 else int(
+                100e6 / default_sampling_rate)
 
             # Handle delays between waveforms
             t = 0
-            total_samples = 0  # At 100 MHz sampling rate
-            for pulse in self.pulse_sequence.get_pulses(output_channel=channel.name):
+            clock_rate = 100e6
+            total_samples = 0  # counted at clock rate
+            for pulse in self.pulse_sequence.get_pulses(
+                    output_channel=channel.name):
                 # TODO: pulse implementation should return single channel only
                 assert pulse.t_start >= t, \
                     f"Pulse {pulse} starts {pulse.t_start} < t={t}." \
                     f"This likely means that pulses are overlapping"
 
-                pulse_samples_start = max(int(round(pulse.t_start * sampling_rate)),
-                                          total_samples)
+                pulse_samples_start = max(
+                    int(round(pulse.t_start * clock_rate)),
+                    total_samples)
 
                 if pulse.t_start > t:  # Add waveform at 0V
-                    logger.info(f'No pulse defined between t={t} s and next '
-                                f'{pulse} (pulse.t_start={pulse.t_start} s), '
-                                f'Adding DC pulse at 0V')
+                    logger.info(
+                        f'Ch{channel.id}: No pulse defined between t={t} s and next '
+                        f'{pulse} (pulse.t_start={pulse.t_start} s), '
+                        f'Adding DC pulse at 0V')
                     # Use maximum value because potentially total samples could
                     # be higher than t (rounding errors etc.)
-                    samples_start_0V = max(int(round(t * sampling_rate)),
+                    samples_start_0V = max(int(round(t * clock_rate)),
                                            total_samples)
-                    samples_0V = pulse_samples_start - samples_start_0V
+                    samples_0V = (pulse_samples_start - samples_start_0V) * default_sampling_rate / clock_rate
                     waveform_0V = self.create_DC_waveform(voltage=0,
                                                           samples=samples_0V,
                                                           prescaler=prescaler,
                                                           t_start=t)
                     if waveform_0V is not None:
                         # Add any potential delay samples after previous pulse
-                        waveform_0V['delay'] = max(0, samples_start_0V - total_samples)
+                        waveform_0V['delay'] = max(0, (
+                                    samples_start_0V - total_samples) * default_sampling_rate / clock_rate)
                         waveform_queue[channel.name].append(waveform_0V)
 
                         # Increase total samples to include 0V pulse points
                         total_samples += waveform_0V['delay']
-                        total_samples += waveform_0V['points_100MHz'] * waveform_0V['cycles']
+                        total_samples += waveform_0V['points_100MHz'] * \
+                                         waveform_0V['cycles']
 
                 pulse_waveforms = pulse.implementation.implement(
                     interface=self,
                     instrument=self.instrument,
-                    default_sampling_rate=sampling_rate,
+                    default_sampling_rate=default_sampling_rate,
                     threshold=error_threshold)
 
                 for waveform in pulse_waveforms:
-                    start_samples = int(round(waveform['t_start'] * sampling_rate))
+                    sampling_rate = 500e6 if waveform['prescaler'] == 0 else \
+                        100e6 / waveform['prescaler']
+                    start_samples = int(round(waveform['t_start'] * clock_rate))
 
-                    waveform['delay'] = max(start_samples - total_samples, 0)
+                    waveform['delay'] = max((
+                                                        start_samples - total_samples) * sampling_rate / clock_rate,
+                                            0)
                     waveform_queue[channel.name].append(waveform)
 
                     total_samples += waveform['delay']
-                    total_samples += waveform['points'] * waveform['cycles']
+                    total_samples += waveform['points_100MHz'] * waveform[
+                        'cycles']
 
                 t = pulse.t_stop
 
             if t <= self.pulse_sequence.duration:
-                final_samples = int(round(self.pulse_sequence.duration * sampling_rate))
-                remaining_samples = final_samples - total_samples
+                final_samples = int(
+                    round(self.pulse_sequence.duration * clock_rate))
+                remaining_samples = (final_samples - total_samples) * default_sampling_rate / clock_rate
                 waveform_0V = self.create_DC_waveform(voltage=0,
                                                       samples=remaining_samples,
                                                       prescaler=prescaler,
@@ -357,9 +370,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
                 channel.queue_waveform(waveform_number=waveform['idx'],
                                        trigger_mode=trigger_mode,
-                                       start_delay=waveform['delay'],
-                                       cycles=waveform['cycles'],
-                                       prescaler=waveform['prescaler'])
+                                       start_delay=int(waveform['delay']),
+                                       cycles=int(waveform['cycles']),
+                                       prescaler=int(waveform['prescaler']))
                 trigger_mode = 0  # auto trigger for every wf that follows first
 
     def start(self):
@@ -466,7 +479,7 @@ class SinePulseImplementation(PulseImplementation):
     # TODO fix sinepulseimplementation by using pulse_to_waveform_sequence
     pulse_class = SinePulse
 
-    def implement(self, interface, instrument, default_sampling_rates, threshold):
+    def implement(self, interface, instrument, default_sampling_rate, threshold):
         """
         This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
         it to a set of pulse-independent instructions/information that can be handled by interface.setup().
@@ -512,16 +525,10 @@ class SinePulseImplementation(PulseImplementation):
         # use t_start, t_stop, sampling_rate, ... to make a waveform object that can be queued in interface.setup()
         # basically, each implement in all PulseImplementations will be a waveform factory
 
-        if isinstance(self.pulse.connection, SingleConnection):
-            channels = [self.pulse.connection.output['channel'].name]
-        else:
-            raise Exception('No implementation for connection {}'.format(
-                self.pulse.connection))
-        waveforms = {}
-
         full_name = self.pulse.full_name or 'none'
 
         # channel independent parameters
+        sampling_rate = default_sampling_rate
         duration = self.pulse.duration
         period = 1 / self.pulse.frequency
         cycles = duration // period
@@ -530,82 +537,85 @@ class SinePulseImplementation(PulseImplementation):
         waveform_minimum = 15  # the minimum size of a waveform
 
 
-        for ch_idx, ch in enumerate(channels):
+        prescaler = 0 if sampling_rate == 500e6 else \
+            int(100e6 / sampling_rate)
+        period_sample = 1 / sampling_rate
+        assert self.pulse.frequency < sampling_rate/ 2, \
+            f'Sine frequency {self.pulse.frequency} is too high for' \
+            f'the sampling frequency {sampling_rate}'
 
-            sampling_rate = default_sampling_rates[ch_idx]
-            prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
-            period_sample = 1 / sampling_rate
-            assert self.pulse.frequency < sampling_rate / 2, \
-                f'Sine frequency {self.pulse.frequency} is too high for' \
-                f'the sampling frequency {sampling_rate}'
+        # This factor determines the number of points needed in the waveform
+        # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
 
-            # This factor determines the number of points needed in the waveform
-            # as the number of waveform cycles is limited to (2 ** 16 - 1 = 65535)
-            n_min = int(np.ceil(cycles / 2**16))
+        results = pulse_to_waveform_sequence(
+            max_points=duration*sampling_rate,
+            frequency=self.pulse.frequency,
+            sampling_rate=sampling_rate,
+            frequency_threshold=threshold,
+            total_duration=duration,
+            min_points=waveform_minimum,
+            sample_points_multiple=waveform_multiple)
 
-            n, error, waveform_samples = pulse_to_waveform_sequence(duration, self.pulse.frequency,
-                                                                    sampling_rate, threshold,
-                                                           n_min=n_min, n_max=1000,
-                                                           sample_points_multiple=waveform_multiple)
+        waveform_samples = results['optimum']['points']
+        waveform_repeated_cycles = results['optimum']['repetitions']
 
-            if waveform_samples < waveform_minimum:
-                raise RuntimeError(f'Waveform too short for {full_name}: '
-                                   f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
-                                   f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
+        waveform_repeated_period = period_sample * waveform_samples
 
+        t_list_1 = np.linspace(self.pulse.t_start,
+                               self.pulse.t_start + waveform_repeated_period,
+                               waveform_samples, endpoint=False)
 
-            # the first waveform (waveform_repeated) is repeated n times
-            # the second waveform is for the final part of the total wave so the total wave looks like:
-            #   n_cycles * waveform_repeated + waveform_tail
-            # This is done to minimise the number of data points written to the AWG
-            waveform_repeated_period = period_sample * waveform_samples
-            t_list_1 = np.linspace(self.pulse.t_start,
-                                   self.pulse.t_start + waveform_repeated_period,
-                                   waveform_samples, endpoint=False)
+        waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
 
-            waveform_repeated_cycles = cycles // n
-            waveform_repeated_duration = waveform_repeated_period * waveform_repeated_cycles
+        # {'error': 0.0, 'final_delay': 0.0005000000000000004, 'periods': 1,
+        #  'repetitions': 12, 'points': 1000, 'idx': (0, 1),
+         # 'modified_frequency': 1000.0}
 
-            waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
-            waveform_tail_samples = waveform_multiple * round(
-                ((self.pulse.t_stop - waveform_tail_start) / period_sample) / waveform_multiple)
+        if waveform_samples < waveform_minimum:
+            raise RuntimeError(f'Waveform too short for {full_name}: '
+                               f'{waveform_samples/sampling_rate*1e3:.3f}ms < '
+                               f'{waveform_minimum/sampling_rate*1e3:.3f}ms')
 
-            if waveform_tail_samples < waveform_minimum:
-                # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
-                waveform_tail_samples = 0
+        waveform_tail_start = self.pulse.t_start + waveform_repeated_duration
+        waveform_tail_samples = waveform_multiple * round(
+            ((self.pulse.t_stop - waveform_tail_start) / period_sample) / waveform_multiple)
 
-            t_list_2 = np.linspace(waveform_tail_start,
-                                   self.pulse.t_stop,
-                                   waveform_tail_samples,
-                                   endpoint=True)
+        if waveform_tail_samples < waveform_minimum:
+            # logger.debug('tail is too short, removing tail (tail size was: {})'.format(waveform_tail_samples))
+            waveform_tail_samples = 0
 
-            waveform_repeated = {}
-            waveform_tail = {}
+        t_list_2 = np.linspace(waveform_tail_start,
+                               self.pulse.t_stop,
+                               waveform_tail_samples,
+                               endpoint=True)
 
-            waveform_repeated_data = self.pulse.get_voltage(t_list_1) / 1.5
+        waveform_repeated = {}
+        waveform_tail = {}
 
-            waveform_repeated['waveform'] = waveform_repeated_data
-            waveform_repeated['name'] = full_name
-            waveform_repeated['points'] = waveform_samples
-            waveform_repeated['cycles'] = waveform_repeated_cycles
-            waveform_repeated['t_start'] = self.pulse.t_start
-            waveform_repeated['t_stop'] = waveform_tail_start
-            waveform_repeated['prescaler'] = prescaler
+        waveform_repeated_data = self.pulse.get_voltage(t_list_1) / 1.5
 
-            if len(t_list_2) == 0:
-                waveforms[ch] = [waveform_repeated]
-            else:
-                waveform_tail_data = self.pulse.get_voltage(t_list_2) / 1.5
+        waveform_repeated['waveform'] = waveform_repeated_data
+        waveform_repeated['name'] = full_name
+        waveform_repeated['points'] = waveform_samples
+        waveform_repeated['cycles'] = waveform_repeated_cycles
+        waveform_repeated['t_start'] = self.pulse.t_start
+        waveform_repeated['t_stop'] = waveform_tail_start
+        waveform_repeated['prescaler'] = prescaler
 
-                waveform_tail['waveform'] = waveform_tail_data
-                waveform_tail['name'] = full_name + '_tail'
-                waveform_tail['points'] = waveform_tail_samples
-                waveform_tail['cycles'] = 1
-                waveform_tail['t_start'] = waveform_tail_start
-                waveform_tail['t_stop'] = self.pulse.t_stop
-                waveform_tail['prescaler'] = prescaler
+        if len(t_list_2) == 0:
+            waveforms = [waveform_repeated]
+        else:
+            waveform_tail_data = self.pulse.get_voltage(t_list_2) / 1.5
 
-                waveforms[ch] = [waveform_repeated, waveform_tail]
+            waveform_tail['waveform'] = waveform_tail_data
+            waveform_tail['name'] = full_name + '_tail'
+            waveform_tail['points'] = waveform_tail_samples
+            waveform_tail['cycles'] = 1
+            waveform_tail['t_start'] = waveform_tail_start
+            waveform_tail['t_stop'] = self.pulse.t_stop
+            waveform_tail['prescaler'] = prescaler
+
+            waveforms = [waveform_repeated, waveform_tail]
 
         return waveforms
 
@@ -729,8 +739,11 @@ class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
-        sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        # sampling_rate = default_sampling_rate
+        # prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        logger.info('Trigger pulse implementation overrides default sampling rates and uses 100 MSa/s.')
+        sampling_rate = 100e6
+        prescaler = 1
         samples = int(self.pulse.duration * sampling_rate)
         if samples < instrument.waveform_minimum:
             logger.warning(f'Trigger pulse {self.pulse} too short, setting to '
