@@ -1890,7 +1890,8 @@ class NMRParameter(AcquisitionParameter):
         else:
             # Calculate threshold voltages from combined read traces
             high_low = analysis.find_high_low(
-                np.ravel([trace['output'] for trace in traces.values()]))
+                np.ravel([trace['output'] for pulse_name, trace in traces.items()
+                          if pulse_name.startswith('read_initialize')]))
             threshold_voltage = high_low['threshold_voltage']
 
         # Extract points per shot from a single read trace
