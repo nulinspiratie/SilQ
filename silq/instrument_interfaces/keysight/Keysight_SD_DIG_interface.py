@@ -118,7 +118,7 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
 
         # The start of acquisition
         if self.capture_full_trace():
-            t0 = 0
+            t0 = min(pulse.t_start for pulse in self.pulse_sequence)
         else:
             t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
@@ -223,7 +223,7 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             else:
                 # Capture full trace, even if no pulses have acquire=True
                 # Mainly done so that the full trace can be stored.
-                t_start = 0
+                t_start = min(self.pulse_sequence.t_start_list)
                 t_stop = self.pulse_sequence.duration
 
             #  !!! Changed np.ceil to np.round !!!
