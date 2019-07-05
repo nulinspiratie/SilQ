@@ -185,9 +185,9 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
     execution_code = filepath.read_text() + "\n"
     try:
         exec(execution_code, globals, locals)
-    except:
-        raise RuntimeError(f'SilQ initialization error in {filepath} with code \n'
-                           f'{execution_code}')
+    except Exception as err:
+        err.args = (err.args[0] + f'\nSilQ initialization error in {filepath}', *err.args[1:])
+        raise
 
 
 def run_scripts(name: str = None,
