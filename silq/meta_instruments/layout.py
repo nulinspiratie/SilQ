@@ -3,7 +3,7 @@ import numpy as np
 from collections import OrderedDict as od, Iterable
 import logging
 from copy import copy
-import pickle
+import pickle, dill
 from time import sleep, time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
@@ -1211,7 +1211,7 @@ class Layout(Instrument):
 
                 logger.debug(f'Storing pulse sequence to {filepath}')
                 with open(filepath, 'wb') as f:
-                    pickle.dump(self._pulse_sequence, f)
+                    dill.dump(self._pulse_sequence, f)
             except:
                 logger.exception('Could not save pulse sequence')
 
