@@ -229,6 +229,8 @@ class ESRPulseSequence(PulseSequenceGenerator):
             # Each element should be the ESR pulses to apply within a single
             # plunge, between elements there is a read
 
+            ESR_pulse = None
+
             if not isinstance(single_plunge_ESR_pulses, list):
                 # Single ESR pulse provided, turn into list
                 single_plunge_ESR_pulses = [single_plunge_ESR_pulses]
@@ -503,6 +505,8 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
         pre_pulses (List[Pulse]): Pulses before main pulse sequence.
             Empty by default.
+        pre_ESR_pulses (List[Pulse]): Pulses before ESR readout pulse sequence.
+            Empty by default.
         post_pulses (List[Pulse]): Pulses after main pulse sequence.
             Empty by default.
         pulse_settings (dict): Dict containing all pulse settings.
@@ -534,6 +538,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'inter_delay': 1e-3,
             'shots_per_frequency': 25}
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
+        self.pulse_settings['pre_ESR_pulses'] = self.pre_ESR_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = []
 
         self.generate()
@@ -624,6 +629,10 @@ class NMRPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['pre_pulses'])
 
         self.add_NMR_pulses()
+
+        # Note: This was added when performing NMR on the electron-up manifold,
+        # where it is important to reload a spin-down electron for readout.
+        self.add(*self.pulse_settings['pre_ESR_pulses'])
 
         self.add_ESR_pulses()
 
