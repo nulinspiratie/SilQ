@@ -435,7 +435,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         # - At most 2**16 cycles
         # - Remaining points is 6000 (max) divided by prescaler since these
         #   are included in the next pulses start delay
-        for max_points in [1000, 2000, 10000]:
+        for max_points in [1000, 3000, 10000, 30000, 100000]:
             approximate_divisor = find_approximate_divisor(
                 N=samples, max_cycles=max_cycles,
                 points_multiple=self.instrument.waveform_multiple,
