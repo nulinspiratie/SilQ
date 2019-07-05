@@ -1739,6 +1739,7 @@ class NMRParameter(AcquisitionParameter):
         self.NMR = self.pulse_sequence.NMR
         self.ESR = self.pulse_sequence.ESR
         self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
+        self.pre_ESR_pulses = self.pulse_sequence.pulse_settings['pre_ESR_pulses']
         self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
 
         super().__init__(name=name,
