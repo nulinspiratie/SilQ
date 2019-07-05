@@ -51,6 +51,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
             'blip_threshold',
             parameter_class=ManualParameter,
             vals=vals.Numbers(-3,3),
+            unit='V',
             docstring='The blip threshold in volts.'
         )
 
@@ -58,6 +59,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
             'full_scale_range',
             parameter_class=ManualParameter,
             vals=vals.Numbers(-3,3),
+            unit='V',
             docstring='The full scale range of the trace channel in volts.'
         )
 
@@ -65,6 +67,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
             'update_time',
             parameter_class=ManualParameter,
             vals=vals.Numbers(),
+            unit='s',
             docstring='The length of time in seconds after a blip required to perform the '
                       'Bayesian update.'
         )
@@ -73,6 +76,7 @@ class Bayesian_Update_Interface(InstrumentInterface):
             'timeout',
             parameter_class=ManualParameter,
             vals=vals.Numbers(),
+            unit='s',
             docstring='The duration since the Bayesian update starts from where you cancel the '
                       'Bayesian update and continue with the experiment.'
         )
