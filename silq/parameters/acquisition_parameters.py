@@ -771,7 +771,7 @@ class DCSweepParameter(AcquisitionParameter):
         inter_delay (float): Delay after each row of DC points
         use_ramp (bool): Combine single row of DC points into a ramp pulse that
             will be segmented later. This saves number of waveforms sent,
-            reduces triggers, an creates less `Pulse` objects.
+            reduces triggers, and creates less `Pulse` objects.
         sweep_parameters (UpdateDotDict): Sweep parameters. Every time an item
             is updated, `DCSweepParameter.generate` is called.
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
