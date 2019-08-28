@@ -1,4 +1,5 @@
 from .E8267D_interface import E8267DInterface
-from .Keysight_SD_AWG_interface import Keysight_SD_AWG_Interface
-from .Keysight_SD_DIG_interface import Keysight_SD_DIG_interface
-from .Keysight_SD_FPGA_Interface import Bayesian_Update_Interface
+# from .Keysight_SD_AWG_interface import Keysight_SD_AWG_Interface
+# from .Keysight_SD_DIG_interface import Keysight_SD_DIG_interface
+# from .Keysight_SD_FPGA_Interface import Bayesian_Update_Interface
+from .Keysight_81180A_interface import Keysight81180AInterface
