@@ -14,7 +14,8 @@ __all__ = ['Fit',
            'ExponentialSineFit',
            'DoubleExponentialFit',
            'RabiFrequencyFit',
-           'AMSineFit']
+           'AMSineFit',
+           'T1fit']
 
 logger = logging.getLogger(__name__)
 
@@ -712,5 +713,78 @@ class RabiFrequencyFit(Fit):
 
         parameters.add('f_Rabi', expr='gamma/pi')
         # parameters.add('amplitude', expr='gamma^2/ Omega^2')
+
+        return parameters
+
+class T1fit(Fit):
+    """Fitting class for an 1/T1 vs Bfield function.
+
+        To fit data to a function, use the method `Fit.perform_fit`.
+        This will find its initial parameters via `Fit.find_initial_parameters`,
+        after which it will fit the data to `Fit.fit_function`.
+
+        Note:
+            The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+        """
+    sweep_parameter = 'x'
+
+    @staticmethod
+    def fit_function(x: Union[float, np.ndarray],
+                     K0: float,
+                     K1: float,
+                     K3: float,
+                     K5: float,
+                     K7: float) -> Union[float, np.ndarray]:
+        """T1 function using B-field as x-coordinate
+
+        Args:
+            x: field.
+            K0:
+            K1:
+            K5:
+
+        Returns:
+            magic
+        """
+        return K0 + K1*x +K3*x**3 + K5*x**5 + K7*x**7
+    def find_initial_parameters(self,
+                                xvals: np.ndarray,
+                                ydata: np.ndarray,
+                                initial_parameters: dict) -> Parameters:
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        if initial_parameters is None:
+            initial_parameters = {}
+
+        parameters = Parameters()
+        if not 'K0' in initial_parameters:
+            initial_parameters['K5'] = ydata[0]
+        if not 'K1' in initial_parameters:
+            initial_parameters['K1'] = ydata[-1]-ydata[0]
+        if not 'K3' in initial_parameters:
+            initial_parameters['K3'] = 0.01
+        if not 'K5' in initial_parameters:
+                initial_parameters['K5'] = 0.01
+        if not 'K7' in initial_parameters:
+            initial_parameters['K7'] = 0.01
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        parameters['K0'].min = 0
+        parameters['K1'].min = 0
+        parameters['K3'].min = 0
+        parameters['K5'].min = 0
+        parameters['K7'].min = 0
 
         return parameters
