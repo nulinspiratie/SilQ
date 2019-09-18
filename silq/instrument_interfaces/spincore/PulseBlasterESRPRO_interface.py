@@ -35,7 +35,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             # Measured output TTL is half of 3.3V
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k - 1, output_TTL=(0, 3.3 / 2))
-            for k in [1, 2, 3, 4]}
+            for k in [1, 2, 3, 4, 5]}
         self._channels = {
             **self._output_channels,
             'software_trig_in': Channel(instrument_name=self.instrument_name(),
@@ -94,7 +94,7 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
         # Determine signal to send when all channels are inactive (low).
         # This is not necessarily zero, as some channels are triggered when the
-        # channgel voltage is below a threshold (e.g. PB DDS instrument).
+        # channel voltage is below a threshold (e.g. PB DDS instrument).
         inactive_channel_mask = sum(2**connection.output['channel'].id
                                     if connection.input['channel'].invert else 0
                                     for connection in output_connections)
