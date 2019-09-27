@@ -1132,6 +1132,7 @@ class VariableReadParameter(AcquisitionParameter):
                          snapshot_value=False,
                          **kwargs)
 
+
     @property_ignore_setter
     def setpoints(self):
         duration = sum(pulse.duration for pulse in
@@ -1141,8 +1142,8 @@ class VariableReadParameter(AcquisitionParameter):
     @property_ignore_setter
     def shapes(self):
         shapes = self.layout.acquisition_shapes
-        pts = sum(shapes[pulse_name]['output'][0]
-                  for pulse_name in ['plunge', 'read', 'empty'])
+        pts = sum([shapes[pulse.full_name]['output'][0]
+                  for pulse in self.pulse_sequence.get_pulses(acquire=True)])
         return (pts,),
 
     def analyse(self, traces = None):
@@ -1150,9 +1151,8 @@ class VariableReadParameter(AcquisitionParameter):
             traces = self.traces
 
         return {'read_voltage':
-                    np.concatenate([traces['plunge']['output'],
-                                    traces['read']['output'],
-                                    traces['empty']['output']])}
+                    np.concatenate([traces[pulse.full_name]['output']
+                                    for pulse in self.pulse_sequence.get_pulses(acquire=True)])}
 
 
 class EPRParameter(AcquisitionParameter):
