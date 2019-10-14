@@ -9,19 +9,19 @@ from qcodes.utils import validators as vals
 
 class E8267DInterface(InstrumentInterface):
     """ Interface for the Keysight E8267D
-    
-    When a `PulseSequence` is targeted in the `Layout`, the 
+
+    When a `PulseSequence` is targeted in the `Layout`, the
     pulses are directed to the appropriate interface. Each interface is
-    responsible for translating all pulses directed to it into instrument 
+    responsible for translating all pulses directed to it into instrument
     commands. During the actual measurement, the instrument's operations will
     correspond to that required by the pulse sequence.
-    
+
     Args:
         instrument_name: name of instrument for which this is an interface
-        
-    Note:    
+
+    Note:
         For a given instrument, its associated interface can be found using
-            `get_instrument_interface` 
+            `get_instrument_interface`
     """
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
@@ -419,9 +419,9 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
         if frequency_offset is not None:  # Add a DC ramp pulse for FM
             amplitude_start = (self.pulse.frequency_start - frequency_offset) \
-                              / interface.frequency_deviation()
+                              / abs(interface.frequency_deviation())
             amplitude_stop = (self.pulse.frequency_stop - frequency_offset) \
-                             / interface.frequency_deviation()
+                             / abs(interface.frequency_deviation())
             additional_pulses.append(
                 DCRampPulse(t_start=self.pulse.t_start,
                             t_stop=self.pulse.t_stop,

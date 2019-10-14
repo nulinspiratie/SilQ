@@ -338,7 +338,7 @@ def find_transitions(z: np.ndarray,
         y = z.set_arrays[0].ndarray
         z = z.ndarray
 
-    _, theta = calculate_gradient(Z, filter=True)
+    _, theta = calculate_gradient(z, filter=True)
     
     theta_mode = find_matrix_mode(theta)
     theta_deviation = calculate_theta_deviation(theta,theta_mode)
