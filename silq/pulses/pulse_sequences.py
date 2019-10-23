@@ -837,6 +837,7 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
                     ESR_pulses = [ESR_pulses]
 
                 stage_pulse, = pulse_sequence.add(self.ESR['stage_pulse'])
+                delay = self.ESR['pre_delay']
                 for k, ESR_pulse in enumerate(ESR_pulses):
 
                     if isinstance(ESR_pulse, str):
@@ -846,11 +847,12 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
                     ESR_pulse, = pulse_sequence.add(ESR_pulse)
 
                     # Delay also depends on any previous ESR pulses
-                    delay = self.ESR['pre_delay'] + k * self.ESR['inter_delay']
                     stage_pulse['t_start'].connect(ESR_pulse['t_start'],
-                                                    offset=delay)
+                                                   offset=delay)
+                    delay = delay + ESR_pulse['duration'].get() + self.ESR['inter_delay']
+
                 ESR_pulse['duration'].connect(stage_pulse['t_stop'],
-                                            offset=lambda p: p.parent.t_start + self.ESR['post_delay'])
+                                              offset=lambda p: p.parent.t_start + self.ESR['post_delay'])
                 pulse_sequence.add(self.ESR['read_pulse'])
 
     def generate(self):
