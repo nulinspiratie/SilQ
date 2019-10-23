@@ -304,6 +304,7 @@ class LinearFit(Fit):
 
         return parameters
 
+
 class MultiLinearFit(Fit):
     """Fitting class for a sum of linear functions.
 
@@ -420,6 +421,7 @@ class MultiLinearFit(Fit):
 
         return parameters
 
+
 class LorentzianFit(Fit):
     """Fitting class for a Lorentzian function.
 
@@ -438,18 +440,19 @@ class LorentzianFit(Fit):
                      mean: float,
                      gamma: float,
                      offset: float) -> Union[float, np.ndarray]:
-        """Gaussian function using x as x-coordinate
+        """Lorentzian function using x as x-coordinate
 
         Args:
-            x: independent variable
+            x: x-values
             mean: mean
-            amplitude:
-            sigma: standard deviation
+            amplitude: amplitude
+            gamma: standard deviation
+            offset: offset
 
         Returns:
-            exponential data points
+            lorentzian data points
         """
-        return amplitude * (gamma**2 /((x - mean)**2 + gamma**2)) + offset
+        return amplitude * (gamma/2) / ((x - mean)**2 + (gamma/2)**2) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -489,8 +492,7 @@ class LorentzianFit(Fit):
                     initial_parameters['gamma'] = (max(xvals)-min(xvals))/20
 
         if not 'mean' in initial_parameters:
-            max_idx = np.argmax(ydata)
-            initial_parameters['mean'] = xvals[max_idx]
+            initial_parameters['mean'] = xvals[np.argmax(ydata)]
 
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = np.mean(ydata)
@@ -498,9 +500,10 @@ class LorentzianFit(Fit):
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
-#         parameters['tau'].min = 0
+        parameters['gamma'].min = 0
 
         return parameters
+
 
 class VoigtFit(Fit):
     """Fitting class for a Voigt function.
@@ -605,6 +608,7 @@ class VoigtFit(Fit):
 
         return parameters
 
+
 class GaussianFit(Fit):
     """Fitting class for a Gaussian function.
 
@@ -626,15 +630,16 @@ class GaussianFit(Fit):
         """Gaussian function using x as x-coordinate
 
         Args:
-            x: independent variable
+            x: x-values.
             mean: mean
-            amplitude:
+            amplitude: amplitude
             sigma: standard deviation
+            offset: offset
 
         Returns:
-            exponential data points
+            gaussian data points
         """
-        return amplitude * np.exp(- (x - mean)**2 / (2*sigma)**2) + offset
+        return amplitude * np.exp(- (x - mean) ** 2 / (2 * sigma ** 2)) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -657,7 +662,9 @@ class GaussianFit(Fit):
 
         parameters = Parameters()
         if not 'amplitude' in initial_parameters:
-            initial_parameters['amplitude'] = max(ydata)
+            initial_parameters['amplitude'] = np.max(ydata)
+        if not 'mean' in initial_parameters:
+            initial_parameters['mean'] = xvals[np.argmax(ydata)]
         if not 'sigma' in initial_parameters:
             # Attempt to find the FWHM of the Gaussian to lessening degrees of accuracy
             try:
@@ -672,20 +679,16 @@ class GaussianFit(Fit):
                 if not 'sigma' in initial_parameters:
                     # 5% of the x-axis
                     initial_parameters['sigma'] = (max(xvals)-min(xvals))/20
-
-        if not 'mean' in initial_parameters:
-            max_idx = np.argmax(ydata)
-            initial_parameters['mean'] = xvals[max_idx]
-
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = np.mean(ydata)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
-#         parameters['tau'].min = 0
+        parameters['sigma'].min = 0
 
         return parameters
+
 
 class SumGaussianFit(Fit):
     """Fitting class for a sum of Gaussian functions.
@@ -707,17 +710,18 @@ class SumGaussianFit(Fit):
 
     @staticmethod
     def fit_function(x: Union[float, np.ndarray],
-                     *args, **kwargs
-                     ) -> Union[float, np.ndarray]:
-        """Exponential function using time as x-coordinate
+                     *args, **kwargs) -> Union[float, np.ndarray]:
+        """Gaussian function using x as x-coordinate
 
         Args:
-            t: Time.
-            tau: Decay constant.
+            x: x-values.
+            x0: mean.
             amplitude:
+            sigma:
+            offset:
 
         Returns:
-            exponential data points
+            gaussian data points
         """
         means = [val for key, val in kwargs.items() if key.startswith('mean')]
         sigmas = [val for key, val in kwargs.items() if key.startswith('sigma')]
@@ -725,7 +729,7 @@ class SumGaussianFit(Fit):
 
         func = 0
         for mean, sigma, amplitude in zip(means, sigmas, amplitudes):
-            func += amplitude * np.exp(- (x - mean) ** 2 / (2 * sigma) ** 2)
+            func += amplitude * np.exp(- (x - mean) ** 2 / (2 * sigma ** 2))
         return func
 
     def perform_fit(self,
@@ -862,6 +866,7 @@ class SumGaussianFit(Fit):
 
         return parameters
 
+
 class ExponentialFit(Fit):
     """Fitting class for an exponential function.
 
@@ -927,6 +932,7 @@ class ExponentialFit(Fit):
             parameters.add(key, initial_parameters[key])
 
         return parameters
+
 
 class DoubleExponentialFit(Fit):
     """Fitting class for a double exponential function.
@@ -1014,6 +1020,7 @@ class DoubleExponentialFit(Fit):
         parameters['A_2'].min = 0
 
         return parameters
+
 
 class SumExponentialFit(Fit):
     """Fitting class for a sum of exponential functions.
@@ -1146,6 +1153,7 @@ class SumExponentialFit(Fit):
                 parameters[key].min = 0
 
         return parameters
+
 
 class SineFit(Fit):
     sweep_parameter = 't'
@@ -1580,6 +1588,7 @@ class DoubleFermiFit(Fit):
         parameters['T'].min = 0
         parameters['alpha'].min = 0
         parameters['offset'].min = 0
+
 
 class T1fit(Fit):
     """Fitting class for an 1/T1 vs Bfield function.
