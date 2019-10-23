@@ -525,6 +525,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
             'NMR_pulses': ['NMR_pulse'],
+            'intermediate_pulses' : [],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3}
@@ -563,7 +564,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
         self.primary_NMR_pulses = []  # Clear primary NMR pulses (first in each stage pulse)
 
         # Add pulses to pulse sequence
-        for single_stage_NMR_pulses in self.NMR['NMR_pulses']:
+        for k, single_stage_NMR_pulses in enumerate(self.NMR['NMR_pulses']):
             # Each element should be the NMR pulses to apply within a single
             # stage, between each subsequence there will be a pre-delay and
             # post-delay
@@ -587,6 +588,16 @@ class NMRPulseSequence(PulseSequenceGenerator):
             if NMR_pulse is not None:
                 NMR_pulse['t_stop'].connect(NMR_stage_pulse['t_stop'],
                                             offset=self.NMR['post_delay'])
+
+            if k < len(self.NMR['NMR_pulses'])-1:
+                # Add any intermediate pulses, except for the final NMR sequence
+                t_connect = partial(NMR_stage_pulse['t_stop'].connect, offset=0)
+                for intermediate_pulse in self.NMR['intermediate_pulses']:
+                    int_pulse, = self.add(intermediate_pulse)
+                    t_connect(int_pulse['t_start'])
+                    t_connect = partial(int_pulse['t_stop'].connect, offset=0)
+
+        return pulse_sequence
 
         return pulse_sequence
 
