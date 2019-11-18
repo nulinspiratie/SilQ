@@ -307,6 +307,12 @@ def initialize(name: str,
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
 
+    # try:
+    #     config["environment:"]
+    # except KeyError:
+    #     logger.warning("Specified environment doesn't exist, creating a new empty environment.")
+    #     config[globals['silq'].environment] = SubConfig
+
     if 'data_folder' in config["environment:properties"]:
         data_folder = config["environment:properties.data_folder"]
         logger.debug(f'using config data folder: {data_folder}')
