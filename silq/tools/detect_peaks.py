@@ -74,7 +74,6 @@ def calculate_gradient(Z: np.ndarray, filter: bool = False) -> np.ndarray:
     SY = np.array([[1], [0], [-1]])
     ySfil = np.array([[1, 2, 1]])
     SY = convolve2d(SY, ySfil)
-
     SX = np.array([[1, 0, -1]])
     xSfil = np.array([[1], [2], [1]])
     SX = convolve2d(SX, xSfil)
@@ -338,7 +337,7 @@ def find_transitions(z: np.ndarray,
         y = z.set_arrays[0].ndarray
         z = z.ndarray
 
-    _, theta = calculate_gradient(Z, filter=True)
+    _, theta = calculate_gradient(z, filter=True)
     
     theta_mode = find_matrix_mode(theta)
     theta_deviation = calculate_theta_deviation(theta,theta_mode)
