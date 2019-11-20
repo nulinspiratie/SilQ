@@ -67,9 +67,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
-            f'ch{k}': Channel(instrument_name=self.instrument_name(),
-                              name=f'ch{k}', id=k, output=True)
-            for k in range(self.instrument.n_channels)}
+            f'ch{ch}': Channel(instrument_name=self.instrument_name(),
+                              name=f'ch{ch}', id=ch, output=True)
+            for ch in self.instrument.channel_idxs}
 
         self._pxi_channels = {
             f'pxi{k}': Channel(instrument_name=self.instrument_name(),
@@ -110,7 +110,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                            get_cmd=self._get_active_channel_names)
 
         self.add_parameter('default_sampling_rates', set_cmd=None,
-                           initial_value=[500e6] * self.instrument.n_channels)
+                           initial_value=[500e6] * len(self.instrument.channel_idxs))
 
         self.add_parameter('trigger_mode',
                            set_cmd=None,
