@@ -74,7 +74,6 @@ def calculate_gradient(Z: np.ndarray, filter: bool = False) -> np.ndarray:
     SY = np.array([[1], [0], [-1]])
     ySfil = np.array([[1, 2, 1]])
     SY = convolve2d(SY, ySfil)
-
     SX = np.array([[1, 0, -1]])
     xSfil = np.array([[1], [2], [1]])
     SX = convolve2d(SX, xSfil)
