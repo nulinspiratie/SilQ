@@ -64,6 +64,7 @@ setup(name='silq',
           'h5py>=2.6',
           'pyperclip>=1.5',
           'blinker',
+          'dill',
       ],
       extras_require=extras_require,
       zip_safe=False)
