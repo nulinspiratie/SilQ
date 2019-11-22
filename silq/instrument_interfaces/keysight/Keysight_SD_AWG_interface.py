@@ -110,7 +110,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                            get_cmd=self._get_active_channel_names)
 
         self.add_parameter('default_sampling_rates', set_cmd=None,
-                           initial_value=[500e6] * len(self.instrument.channel_idxs))
+                           initial_value={ch_idx: 500e6 for ch_idx in self.instrument.channel_idxs})
 
         self.add_parameter('trigger_mode',
                            set_cmd=None,
@@ -140,7 +140,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     @property
     def active_instrument_channels(self):
-        return self.instrument.channels[self.active_channel_ids]
+        return [self.instrument.channels[ch] for ch in self.channel_selection()]
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
