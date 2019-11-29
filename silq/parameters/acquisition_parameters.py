@@ -529,12 +529,12 @@ class DCParameter(AcquisitionParameter):
                  unit: str = 'V',
                  **kwargs):
         self.pulse_sequence = PulseSequence([
-            DCPulse(name='DC', acquire=True, average='point'),
+            DCPulse(name='DC', acquire=True),
             DCPulse(name='DC_final')])
 
         super().__init__(name=name,
-                         names=['DC_voltage'],
-                         units=[unit],
+                         names=['DC_voltage', 'DC_noise'],
+                         units=[unit, unit],
                          snapshot_value=False,
                          continuous=True,
                          **kwargs)
@@ -543,7 +543,8 @@ class DCParameter(AcquisitionParameter):
     def analyse(self, traces = None):
         if traces is None:
             traces = self.traces
-        return {'DC_voltage': traces['DC']['output']}
+        return {'DC_voltage': np.mean(traces['DC']['output']),
+                'DC_noise': np.std(traces['DC']['output'])}
 
 
 class TraceParameter(AcquisitionParameter):
