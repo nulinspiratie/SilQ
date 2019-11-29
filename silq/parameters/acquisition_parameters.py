@@ -518,6 +518,10 @@ class DCParameter(AcquisitionParameter):
             the default data folder
         subfolder (str): Subfolder within the base folder to save traces.
 
+    Returns:
+        DC_voltage: Average DC voltage measured on the output channel
+        DC_noise: RMS noise measured on the output channel
+
     Notes:
         - ``DCParameter.continuous`` is True by default
 
