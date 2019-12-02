@@ -26,12 +26,12 @@ class FreqenciesGui(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowIcon(QtGui.QIcon(r''))
+        # self.setWindowIcon(QtGui.QIcon(r''))
         self.setWindowTitle("Frequencies")
-        root_dir = r'C:\Users\z5218862\Documents\GitHub\Experiments\config' # Directory for the gui data
+        root_dir = r'C:\Users\LabUser\Documents\GitHub\Experiments\Flip-flop\config' # Directory for the gui data
         os.chdir(root_dir)
         properties_file = root_dir + r'\properties.json'
-        backup_file = r'...\backup.json' # Directory for the backup data
+        backup_file = r'C:\Users\LabUser\Desktop\backup.json' # Directory for the backup data
         with open(properties_file, 'r') as f:
             self.data = json.load(f)
         with open(backup_file, 'r') as g:
