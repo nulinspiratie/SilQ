@@ -899,8 +899,12 @@ class Layout(Instrument):
                 No unique connection is found
         """
         if connection_label is not None:
-            return next(connection for connection in self.connections
-                        if connection.label == connection_label)
+            try:
+                return next(connection for connection in self.connections
+                            if connection.label == connection_label)
+            except StopIteration:
+                raise StopIteration(f'Cannot find connection with label {connection_label}. '
+                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
