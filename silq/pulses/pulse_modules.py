@@ -879,6 +879,7 @@ class PulseSequence(ParameterNode):
         return shapes
 
     def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
+             figsize=None, legend=True,
              **connection_kwargs):
         pulses = self.get_pulses(**connection_kwargs)
 
@@ -900,11 +901,12 @@ class PulseSequence(ParameterNode):
                 connection_pulse_list[connection_label].append(pulse)
 
         if subplots:
+            figsize = figsize or 10, 1.5 * len(connection_pulse_list)
             fig, axes = plt.subplots(len(connection_pulse_list), 1, sharex=True,
-                                     figsize=(
-                                     10, 1.5 * len(connection_pulse_list)))
+                                     figsize=figsize)
         else:
-            fig, ax = plt.subplots(1, figsize=(10, 4))
+            figsize = figsize or (10, 4)
+            fig, ax = plt.subplots(1, figsize=figsize)
             axes = [ax]
 
         # Generate t_list
@@ -938,7 +940,9 @@ class PulseSequence(ParameterNode):
                 ax.set_xlabel('Time (s)')
             ax.set_ylabel('Amplitude (V)')
             ax.set_xlim(0, self.duration)
-            ax.legend()
+
+            if legend:
+                ax.legend()
 
         if scale_ylim:
             min_voltage = np.nanmin(np.concatenate(tuple(voltages.values())))
