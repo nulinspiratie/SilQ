@@ -451,6 +451,12 @@ class PulseSequence(ParameterNode):
             original pulse remains unmodified.
             For an speed-optimized version, see `PulseSequence.quick_add`
         """
+        pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
+        if pulses_no_duration:
+            raise SyntaxError('Please specify pulse duration in silq.config.pulses'
+                              ' for the following pulses: ' +
+                              ', '.join(p.name for p in pulses_no_duration))
+
         added_pulses = []
 
         for pulse in pulses:
@@ -551,6 +557,12 @@ class PulseSequence(ParameterNode):
             `PulseSequence.quick_add`.
 
         """
+        pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
+        if pulses_no_duration:
+            raise SyntaxError('Please specify pulse duration in silq.config.pulses'
+                              ' for the following pulses: ' +
+                              ', '.join(p.name for p in pulses_no_duration))
+
         added_pulses = []
         for pulse in pulses:
             assert pulse.implementation is not None or self.allow_untargeted_pulses, \
