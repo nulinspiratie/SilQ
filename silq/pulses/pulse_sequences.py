@@ -991,3 +991,61 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         self.add_ESR_pulses()
 
         self.add(*self.pulse_settings['post_pulses'])
+
+class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
+    """" Created to implement a DC detuning in a Ramsey sequence during the wait time.
+    Refer to ESRPulseSequence for the ESR pulses.
+
+   DC pulses can be stored in  ['ESR']['detuning_pulses'] and will become the new 'stage_pulse' """
+
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pulse_settings['ESR']['t_start_detuning'] = 0
+        self.pulse_settings['ESR']['detuning_pulses'] = []
+
+    def add_ESR_pulses(self, ESR_frequencies=None):
+        super().add_ESR_pulses(ESR_frequencies=ESR_frequencies)
+        # At this point there is a single `stage` pulse for each group of ESR pulses.
+        # We want to inject our detuning  pulses in between this stage pulse
+
+
+        if self.pulse_settings['EPR']['enabled'] :
+            raise NotImplementedError('Currently not programmed to include EPR pulse')
+
+       # if len(self.get_pulses(name='stage')) > 1 + len(self.EPR['enabled']):    #len(self.pulse_settings['EPR']['enabled']):
+        #    raise NotImplementedError('Adding detuning pulses currently only implemented with one stage pulse')
+
+        stage_pulse = self.get_pulse(name=self.ESR['stage_pulse'].name)
+
+        assert stage_pulse is not None, "Could not find existing stage pulse in pulse sequence"
+        self.remove(stage_pulse)
+
+        if any(pulse.connection_label != stage_pulse.connection_label
+               or pulse.connection != stage_pulse.connection
+               for pulse in self.ESR['detuning_pulses']):
+            raise RuntimeError('All detuning pulses must have same connection as stage pulse')
+
+        t = stage_pulse.t_start + self.ESR['t_start_detuning']
+        # Add an initial stage pulse if t_start_detuning > 0
+        if self.pulse_settings['ESR']['t_start_detuning'] > 0:
+            pre_stage_pulse, = self.add(stage_pulse)
+            pre_stage_pulse.name = 'pre_stage'
+            pre_stage_pulse.t_stop = t
+
+        # Add all detuning pulses
+        for pulse in self.ESR['detuning_pulses']:
+            detuning_pulse, = self.add(pulse)
+            detuning_pulse.t_start = t
+            t += detuning_pulse.duration
+
+        if t > stage_pulse.t_stop:
+            raise RuntimeError('Total duration of detuning pulses exceeds total stage pulse duration')
+        elif t < stage_pulse.t_stop:
+            # Add a final stage pulse
+            post_stage_pulse, = self.add(stage_pulse)
+            post_stage_pulse.name = 'post_stage'
+            post_stage_pulse.t_start = t
+            post_stage_pulse.t_stop = stage_pulse.t_stop
+
