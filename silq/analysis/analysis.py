@@ -177,7 +177,7 @@ def find_high_low(traces: np.ndarray,
 
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
-        threshold_voltage = (high['mean'] - low['mean']) / 2
+        threshold_voltage = (high['mean'] + low['mean']) / 2
     elif 'std_low' in threshold_method:
         # Threshold_method is {factor} standard deviations above low mean
         factor = float(threshold_method.split('*')[0])
