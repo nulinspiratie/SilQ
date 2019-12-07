@@ -314,14 +314,11 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                         100e6 / waveform['prescaler']
                     start_samples = int(round(waveform['t_start'] * clock_rate))
 
-                    waveform['delay'] = max((
-                                                        start_samples - total_samples) * sampling_rate / clock_rate,
-                                            0)
+                    waveform['delay'] = max((start_samples - total_samples) * sampling_rate / clock_rate, 0)
                     waveform_queue[channel.name].append(waveform)
 
                     total_samples += waveform['delay']
-                    total_samples += waveform['points_100MHz'] * waveform[
-                        'cycles']
+                    total_samples += waveform['points_100MHz'] * waveform['cycles']
 
                 t = pulse.t_stop
 
