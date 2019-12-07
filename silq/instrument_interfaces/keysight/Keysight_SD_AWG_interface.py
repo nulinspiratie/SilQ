@@ -597,6 +597,8 @@ class SinePulseImplementation(PulseImplementation):
         waveform_repeated['waveform'] = waveform_repeated_data
         waveform_repeated['name'] = full_name
         waveform_repeated['points'] = waveform_samples
+        waveform_repeated['points_100MHz'] = (int(waveform_samples / 5) if prescaler == 0
+                                              else waveform_samples * prescaler)
         waveform_repeated['cycles'] = waveform_repeated_cycles
         waveform_repeated['t_start'] = self.pulse.t_start
         waveform_repeated['t_stop'] = waveform_tail_start
@@ -610,6 +612,8 @@ class SinePulseImplementation(PulseImplementation):
             waveform_tail['waveform'] = waveform_tail_data
             waveform_tail['name'] = full_name + '_tail'
             waveform_tail['points'] = waveform_tail_samples
+            waveform_tail['points_100MHz'] = (int(waveform_tail_samples / 5) if prescaler == 0
+                                              else waveform_tail_samples * prescaler)
             waveform_tail['cycles'] = 1
             waveform_tail['t_start'] = waveform_tail_start
             waveform_tail['t_stop'] = self.pulse.t_stop
