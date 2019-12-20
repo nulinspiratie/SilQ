@@ -240,6 +240,7 @@ class E8267DInterface(InstrumentInterface):
 
         self.instrument.pulse_modulation('on')
         self.instrument.pulse_modulation_source('ext')
+        self.instrument.frequency_modulation_source(self.modulation_channel)
         self.instrument.output_modulation('on')
 
         if self.IQ_modulation() == 'on' or self.FM_mode() == 'IQ':
