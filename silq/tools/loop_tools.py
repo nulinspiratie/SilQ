@@ -18,11 +18,11 @@ class Measurement:
 
         self.run = run
 
-        # self.loop_dimensions = None  # Total dimensionality of loop
+        self.loop_dimensions: Tuple[int] = None  # Total dimensionality of loop
 
         self.loop_indices: Tuple[int] = None  # Current loop indices
 
-        self.action_indices = None  # Index of action
+        self.action_indices: Tuple[int] = None  # Index of action
 
     def __enter__(self):
         self.dataset = new_data(name=self.name)
@@ -32,9 +32,9 @@ class Measurement:
             raise RuntimeError("Currently cannot handle multiple measurements")
         Measurement.running_measurement = self
 
-        self.loop_dimensions: List[int] = []
+        self.loop_dimensions = ()
         self.loop_indices = ()
-        self.action_indices: Tuple[int] = (0,)
+        self.action_indices = (0,)
 
         self.data_arrays = {}
         self.set_arrays = {}
@@ -57,7 +57,7 @@ class Measurement:
         # if is_setpoint:
         #     array_kwargs["shape"] = (len(result),)
         # else:
-        array_kwargs["shape"] = tuple(self.loop_dimensions)
+        array_kwargs["shape"] = self.loop_dimensions
         if is_setpoint or isinstance(result, (np.ndarray, list)):
             array_kwargs["shape"] += np.shape(result)
 
@@ -196,7 +196,7 @@ class Sweep:
             self.set_array = self.create_set_array()
 
     def __iter__(self):
-        running_measurement().loop_dimensions.append(len(self.sequence))
+        running_measurement().loop_dimensions += (len(self.sequence),)
         running_measurement().loop_indices += (0,)
         running_measurement().action_indices += (0,)
 
@@ -220,7 +220,7 @@ class Sweep:
             action_indices[-1] = 0
             running_measurement().action_indices = tuple(action_indices)
         except StopIteration:  # Reached end of iteration
-            running_measurement().loop_dimensions.pop()
+            running_measurement().loop_dimensions = running_measurement().loop_dimensions[:-1]
             running_measurement().loop_indices = running_measurement().loop_indices[:-1]
 
             # Remove last action index and increment one before that by one
