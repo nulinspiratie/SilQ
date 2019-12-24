@@ -115,14 +115,25 @@ class E8267DInterface(InstrumentInterface):
         self.add_parameter('frequency_deviation',
                            unit='Hz',
                            set_cmd=None,
-                           initial_value=None)
-        self.add_parameter('IQ_modulation',
                            initial_value=None,
-                           vals=vals.Enum('on', 'off'),
-                           docstring='Whether to use IQ modulation. This '
-                                     'cannot be directly set, but is determined '
-                                     'by FM_mode and whether pulses have '
-                                     'frequency_sideband not None')
+                           docstring='Minimum/maximum frequency deviation from '
+                                     'center frequency when using FM_mode=ramp')
+        self.add_parameter('FM_enabled',
+                           initial_value=None,
+                           vals=vals.Bool(),
+                           docstring='Indicates if frequency modulation is enabled. '
+                                     'Cannot be manually changed, but is set '
+                                     'during setup, based on the parameter '
+                                     'force_FM and if multiple frequencies are used.')
+
+        self.add_parameter('force_FM',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           docstring='Whether to always use frequency modulation, '
+                                     'even if only a single frequency is used '
+                                     'in the pulse sequence. If False, FM is '
+                                     'only used if multiple frequencies are '
+                                     'needed, or a frequency ramp is used.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
@@ -133,8 +144,30 @@ class E8267DInterface(InstrumentInterface):
                                      "amplitude from an ext port, or 'IQ', in "
                                      "which case the internal FM is turned off.")
 
-    def get_additional_pulses(self, connections) -> List[Pulse]:
+    def extract_frequency_range(self):
+        """Find minimum and maximum frequency of the pulse sequence"""
 
+        min_frequency = max_frequency = None
+        for pulse in self.pulse_sequence:
+            frequency_deviation = getattr(pulse, 'frequency_deviation', None)
+
+            pulse_min_frequency = pulse_max_frequency = pulse.frequency
+            if frequency_deviation is not None:
+                pulse_min_frequency -= pulse.frequency_deviation
+                pulse_max_frequency += pulse.frequency_deviation
+
+            if min_frequency is None or pulse_min_frequency < min_frequency:
+                min_frequency = pulse_min_frequency
+            if max_frequency is None or pulse_max_frequency > max_frequency:
+                max_frequency = pulse_max_frequency
+
+        min_frequency = int(round(min_frequency))
+        max_frequency = int(round(max_frequency))
+
+        return min_frequency, max_frequency
+
+
+    def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
 
         Args:
@@ -146,76 +179,45 @@ class E8267DInterface(InstrumentInterface):
         if not self.pulse_sequence:
             return []
 
-        frequency_sidebands = {int(round(pulse.frequency_sideband))
-                               if pulse.frequency_sideband is not None else None
-                               for pulse in self.pulse_sequence}
+        min_frequency, max_frequency = self.extract_frequency_range()
 
-        if self.FM_mode() == 'IQ':
-            assert frequency_sidebands == {None}, \
-                "pulse.frequency_sideband must be None when FM_mode is 'IQ'"
+        if (min_frequency == max_frequency
+                and not self.fix_frequency()
+                and not isinstance(self.frequency_carrier_choice(), (int, float))
+                and not self.force_FM()):
+            # No frequency modulation neeeded
+            self.force_FM._save_val(False)
+            self.frequency(min_frequency)
+            self.frequency_deviation(0)
+
+            return [pulse.implementation.get_additional_pulses(interface=self)
+                    for pulse in self.pulse_sequence]
         else:
-            assert frequency_sidebands == {None} or None not in frequency_sidebands, \
-                f'Sideband frequencies must either all be None, or all not ' \
-                f'None when FM_mode is "ramp" (0 Hz is allowed). ' \
-                f'frequency_sidebands: {frequency_sidebands}'
+            self.force_FM._save_val(True)
 
-        if None in frequency_sidebands:
-            frequency_sidebands.remove(None)
+            if not self.fix_frequency():  # Choose center frequency
+                if self.frequency_carrier_choice() == 'center':
+                    frequency_carrier = int(round((min_frequency + max_frequency) / 2))
+                elif self.frequency_carrier_choice() == 'min':
+                    frequency_carrier = min_frequency
+                elif self.frequency_carrier_choice() == 'max':
+                    frequency_carrier = max_frequency
+                else:  # value offset from center frequency
+                    frequency_carrier = int(round((min_frequency + max_frequency) / 2))
+                    frequency_carrier += self.frequency_carrier_choice()
 
-        if frequency_sidebands or self.FM_mode() == 'IQ':
-            self.IQ_modulation._save_val('on')
-        else:
-            self.IQ_modulation._save_val('off')
+                self.frequency(frequency_carrier)
 
-        # Find minimum and maximum frequency
-        min_frequency = max_frequency = None
-        for pulse in self.pulse_sequence:
-            frequency_deviation = getattr(pulse, 'frequency_deviation', None)
-            frequency_sideband = pulse.frequency_sideband
+            if not self.fix_frequency_deviation():  # Choose frequency deviation
+                self.frequency_deviation(round(max([max_frequency - self.frequency(),
+                                                    self.frequency() - min_frequency])))
 
-            pulse_min_frequency = pulse_max_frequency = pulse.frequency
-            if frequency_deviation is not None:
-                pulse_min_frequency -= pulse.frequency_deviation
-                pulse_max_frequency += pulse.frequency_deviation
-            if frequency_sideband is not None:
-                pulse_min_frequency -= pulse.frequency_sideband
-                pulse_max_frequency -= pulse.frequency_sideband
+            assert self.frequency_deviation() < 80e6 or self.FM_mode() == 'IQ', \
+                "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
+                f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
-            if min_frequency is None or pulse_min_frequency < min_frequency:
-                min_frequency = pulse_min_frequency
-            if max_frequency is None or pulse_max_frequency > max_frequency:
-                max_frequency = pulse_max_frequency
-
-        min_frequency = int(round(min_frequency))
-        max_frequency = int(round(max_frequency))
-
-        if not self.fix_frequency():
-            # Choose center frequency
-            if self.frequency_carrier_choice() == 'center':
-                frequency_carrier = int(round((min_frequency + max_frequency) / 2))
-            elif self.frequency_carrier_choice() == 'min':
-                frequency_carrier = min_frequency
-            elif self.frequency_carrier_choice() == 'max':
-                frequency_carrier = max_frequency
-            else:  # value away from center
-                frequency_carrier = int(round((min_frequency + max_frequency) / 2))
-                frequency_carrier += self.frequency_carrier_choice()
-            self.frequency(frequency_carrier)
-
-        if not self.fix_frequency_deviation():
-            self.frequency_deviation(
-                int(round(max([max_frequency - self.frequency(),
-                               self.frequency() - min_frequency]))))
-
-        assert self.frequency_deviation() < 80e6 or self.FM_mode() == 'IQ', \
-            "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
-            f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
-
-        additional_pulses = []
-        for pulse in self.pulse_sequence:
-            additional_pulses += pulse.implementation.get_additional_pulses(interface=self)
-
-        return additional_pulses
+        return [pulse.implementation.get_additional_pulses(interface=self)
+                for pulse in self.pulse_sequence]
 
     def setup(self, **kwargs):
         """Set up instrument after layout has been targeted by pulse sequence.
@@ -232,17 +234,18 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.frequency(self.frequency())
         self.instrument.power(powers[0])
 
-        if self.frequency_deviation() > 0 and self.FM_mode() == 'ramp':
+        # Set modulation on for gating of pulses
+        self.instrument.pulse_modulation('on')
+        self.instrument.pulse_modulation_source('ext')
+        self.instrument.output_modulation('on')
+
+        if self.FM_enabled() and self.FM_mode() == 'ramp':
             self.instrument.frequency_modulation('on')
             self.instrument.frequency_deviation(self.frequency_deviation())
         else:
             self.instrument.frequency_modulation('off')
 
-        self.instrument.pulse_modulation('on')
-        self.instrument.pulse_modulation_source('ext')
-        self.instrument.output_modulation('on')
-
-        if self.IQ_modulation() == 'on' or self.FM_mode() == 'IQ':
+        if self.FM_enabled() and self.FM_mode() == 'IQ':
             self.instrument.internal_IQ_modulation('on')
         else:
             self.instrument.internal_IQ_modulation('off')
@@ -273,30 +276,33 @@ class SinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        if interface.IQ_modulation() == 'off':
-            if interface.frequency_deviation() == 0:  # No IQ modulation nor FM
-                amplitude_FM = None
-                frequency_IQ = None
-                pass
-            else:  # No IQ modulation, but FM
-                frequency_difference = self.pulse.frequency - interface.frequency()
-                amplitude_FM = frequency_difference / interface.frequency_deviation()
-                frequency_IQ = None
-        else:  # interface.IQ_modulation() == 'on'
-            if interface.FM_mode() == 'ramp':
-                assert self.pulse.frequency_sideband is not None, \
-                    "Pulse.frequency_sideband must be defined when " \
-                    "FM_mode = 'ramp' and IQ_modulation = 'on'"
+        if not interface.FM_enabled():
+            return additional_pulses
 
-                frequency = self.pulse.frequency + self.pulse.frequency_sideband
-                frequency_difference = frequency - interface.frequency()
-                amplitude_FM = frequency_difference / interface.frequency_deviation()
-                frequency_IQ = self.pulse.frequency_sideband
-            else:  # interface.FM_mode() == 'IQ'
-                amplitude_FM = None
-                frequency_IQ = self.pulse.frequency - interface.frequency()
+        assert self.pulse.t_start >= interface.envelope_padding(), \
+            f"Keysight E8267D uses envelope padding " \
+            f"{interface.envelope_padding()} s before and after pulse for FM "\
+            f"and IQ modulation, so this is the minimum pulse.t_start."
 
-        if frequency_IQ is not None:
+        if interface.FM_mode() == 'ramp':
+            frequency_difference = self.pulse.frequency - interface.frequency()
+            amplitude_FM = frequency_difference / interface.frequency_deviation()
+            # frequency_IQ = None
+
+            if abs(amplitude_FM) > 1 + 1e-13:
+                raise SyntaxError(f'pulse {self.pulse} abs(amplitude) '
+                                  f'{amplitude_FM} cannot be higher than 1')
+
+            additional_pulses.append(
+                DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                        amplitude=amplitude_FM,
+                        connection_requirements={
+                            'input_instrument': interface.instrument_name(),
+                            'input_channel': interface.modulation_channel()}))
+
+        else:  # interface.FM_mode() == 'IQ
+            frequency_IQ = self.pulse.frequency - interface.frequency()
             additional_pulses.extend([
                 SinePulse(name='sideband_I',
                           t_start=self.pulse.t_start - interface.envelope_padding(),
@@ -316,18 +322,6 @@ class SinePulseImplementation(PulseImplementation):
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
-
-        if amplitude_FM is not None:
-            assert abs(amplitude_FM) <= 1 + 1e-13, \
-                f'abs(amplitude) {amplitude_FM} cannot be higher than 1'
-
-            additional_pulses.append(
-                DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                        amplitude=amplitude_FM,
-                        connection_requirements={
-                            'input_instrument': interface.instrument_name(),
-                            'input_channel': interface.modulation_channel()}))
         return additional_pulses
 
 
