@@ -715,3 +715,13 @@ def logclass(cls, methodsAsFunctions=False,
                 logmethod(value.__func__, log = log, displayName=cls.__name__)))
 
     return cls
+
+
+def slice_length(s, length):
+    if isinstance(s, slice):
+        start = s.start if s.start is not None else 0
+        stop = s.stop if s.stop is not None else length
+        step = s.step if s.step is not None else 1
+        return int((stop - start) / step)
+    else:
+        return 1
