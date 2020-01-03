@@ -115,11 +115,13 @@ class Measurement:
 
         return data_array
 
-    def add_set_arrays(self,
-                       parameter: Union[Parameter, str],
-                       result,
-                       action_indices: Tuple[int],
-                       ndim: int):
+    def add_set_arrays(
+        self,
+        parameter: Union[Parameter, str],
+        result,
+        action_indices: Tuple[int],
+        ndim: int,
+    ):
         set_arrays = []
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
@@ -156,7 +158,9 @@ class Measurement:
         # self.data_arrays[action_indices] = dict()
         pass
 
-    def process_parameter_result(self, action_indices, parameter, result, ndim=None, store: bool = True):
+    def process_parameter_result(
+        self, action_indices, parameter, result, ndim=None, store: bool = True
+    ):
         # Get parameter data array (either create new array or choose existing)
         if action_indices not in self.data_arrays:
             # Create array based on first result type and shape
@@ -183,9 +187,11 @@ class Measurement:
         if isinstance(result, np.ndarray):
             ndim = len(self.loop_indices)
             if len(data_array.set_arrays) != ndim + result.ndim:
-                raise RuntimeError(f'Wrong number of set arrays for {data_array.name}. '
-                                   f'Expected {ndim + result.ndim} instead of '
-                                   f'{len(data_array.set_arrays)}.')
+                raise RuntimeError(
+                    f"Wrong number of set arrays for {data_array.name}. "
+                    f"Expected {ndim + result.ndim} instead of "
+                    f"{len(data_array.set_arrays)}."
+                )
 
             for k, set_array in enumerate(data_array.set_arrays[ndim:]):
                 # Successive set arrays must increase dimensionality by unity
@@ -227,7 +233,7 @@ class Measurement:
                     parameter=key,
                     result=result,
                     ndim=len(action_indices),
-                    store=False
+                    store=False,
                 )
             )
 
