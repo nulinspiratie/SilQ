@@ -6,8 +6,10 @@ from qcodes.data.data_array import DataArray
 from qcodes.instrument.sweep_values import SweepValues
 from qcodes import Parameter, ParameterNode
 
+
 def running_measurement():
     return Measurement.running_measurement
+
 
 class Measurement:
     # Context manager
@@ -46,7 +48,32 @@ class Measurement:
         self.dataset.finalize()
 
     # Data array functions
-    def create_data_array(self, parameter, result, action_indices, is_setpoint=False):
+
+    def create_data_array(
+        self,
+        parameter: Parameter,
+        result,
+        action_indices: Tuple[int],
+        ndim: int = None,
+        is_setpoint: bool = False,
+    ):
+        """
+
+        Args:
+            parameter: Parameter for which to create a DataArray
+            result: Result returned by the Parameter
+            action_indices: Action indices for which to store parameter
+            ndim: Number of dimensions. If not provided, will use length of
+                action_indices
+            is_setpoint: Whether the Parameter is used for sweeping or measuring
+
+        Returns:
+
+        """
+
+        if ndim is None:
+            ndim = len(action_indices)
+
         array_kwargs = {
             "is_setpoint": is_setpoint,
             "action_indices": action_indices,
@@ -57,7 +84,7 @@ class Measurement:
         # if is_setpoint:
         #     array_kwargs["shape"] = (len(result),)
         # else:
-        array_kwargs["shape"] = self.loop_dimensions or (1, )
+        array_kwargs["shape"] = self.loop_dimensions
         if is_setpoint or isinstance(result, (np.ndarray, list)):
             array_kwargs["shape"] += np.shape(result)
 
@@ -65,24 +92,29 @@ class Measurement:
             array_kwargs["parameter"] = parameter
         else:
             array_kwargs["name"] = parameter
-            array_kwargs["label"] = (
-                parameter[0].capitalize() + parameter[1:].replace("_", " "),
+            array_kwargs["label"] = parameter[0].capitalize() + parameter[1:].replace(
+                "_", " "
             )
             array_kwargs["unit"] = ""
 
-        # Add setpoints
+        # Add setpoint arrays
         if not is_setpoint:
-            array_kwargs['set_arrays'] = []
-            for k in range(1, len(action_indices)):
+            array_kwargs["set_arrays"] = []
+            for k in range(1, ndim):
                 sweep_indices = action_indices[:k]
-                array_kwargs['set_arrays'].append(self.set_arrays[sweep_indices])
-            array_kwargs['set_arrays'] = tuple(array_kwargs['set_arrays'])
+                array_kwargs["set_arrays"].append(self.set_arrays[sweep_indices])
+            array_kwargs["set_arrays"] = tuple(array_kwargs["set_arrays"])
 
-        print(array_kwargs)
+            # Create new set array if parameter result is an array or list
+            if isinstance(result, (np.ndarray, list)):
+                raise RuntimeError("No support yet for parameters returning Array")
+                # array_kwargs['set_arrays'] += self.create_array_setpoints(
+                #     parameter, result)
+
         data_array = DataArray(**array_kwargs)
 
-        data_array.array_id = data_array.full_name + "_".join(
-            str(k) for k in action_indices
+        data_array.array_id = (
+            data_array.full_name + "_" + "_".join(str(k) for k in action_indices)
         )
 
         data_array.init_data()
@@ -96,8 +128,10 @@ class Measurement:
 
         return data_array
 
-    def create_data_array_group(self, parameter_node, action_indices):
-        self.data_arrays[action_indices] = dict()
+    def create_data_array_group(self, action_indices, parameter_node):
+        # TODO: Finish this function
+        # self.data_arrays[action_indices] = dict()
+        pass
 
     def store_parameter_result(self, action_indices, parameter, result):
         # Get parameter data array (either create new array or choose existing)
@@ -108,38 +142,44 @@ class Measurement:
             # Select existing array
             data_array = self.data_arrays[action_indices]
 
-        # Add parameter result to data array
-        # data_array[self.loop_indices] = result
+        self.dataset.store(self.loop_indices, {data_array.array_id: result})
 
-        loop_indices = self.loop_indices or (0,)  # Allow for non-loop measurement
-
-        self.dataset.store(loop_indices, {data_array.array_id: result})
-
-    def store_parameter_node_results(
-        self, action_indices, parameter_node, results, create: bool = True
+    def store_dict_results(
+        self,
+            action_indices: Tuple[int],
+            group_name: str,
+            results: dict,
+            create: bool = True
     ):
         if action_indices not in self.data_arrays:
             if not create:
                 raise RuntimeError(
-                    f"Data array group for node {parameter_node} "
+                    f"Data array group {group_name} "
                     f"does not exist, but not allowed to create"
                 )
-            self.create_data_array_group(self.action_indices, parameter_node)
+            self.create_data_array_group(self.action_indices, group_name)
 
         if not isinstance(results, dict):
             raise SyntaxError(
-                f"Results from node {parameter_node} is not a dict."
+                f"Results from {group_name} is not a dict."
                 f"Results are: {results}"
             )
 
-        # Ensure there is a
         data_to_store = {}
         for k, (key, result) in enumerate(results.items()):
-            # TODO this line is not right
-            if key not in self.data_arrays:
-                data_array = self.create_data_array(key, result, action_indices + (k,))
+            if action_indices + (k,) not in self.data_arrays:
+                data_array = self.create_data_array(
+                    key, result, action_indices + (k,), ndim=len(action_indices)
+                )
             else:
                 data_array = self.data_arrays[action_indices + (k,)]
+
+            # Ensure an existing data array has the correct name
+            if not data_array.name == key:
+                raise SyntaxError(
+                    f"Existing DataArray '{data_array.name}' differs from "
+                    f"ParameterNode result key {key}"
+                )
 
             data_to_store[data_array.array_id] = result
 
@@ -156,11 +196,20 @@ class Measurement:
         return result
 
     def measure_parameter_node(self, parameter_node):
-        action_indices = self.action_indices + (parameter_node.name,)
+        action_indices = self.action_indices
 
         results = parameter_node.get()
 
-        self.store_parameter_node_results(action_indices, parameter_node, results)
+        self.store_dict_results(action_indices, parameter_node.name, results)
+
+        return results
+
+    def measure_callable(self, callable):
+        action_indices = self.action_indices
+
+        results = callable()
+
+        self.store_dict_results(action_indices, callable.__name__, results)
 
         return results
 
@@ -170,6 +219,8 @@ class Measurement:
             result = self.measure_parameter(measurable)
         elif isinstance(measurable, ParameterNode):
             result = self.measure_parameter_node(measurable)
+        elif callable(measurable):
+            result = self.measure_callable(measurable)
 
         # Increment last action index by 1
         action_indices = list(self.action_indices)
@@ -194,7 +245,9 @@ class Sweep:
         self.iterator = None
 
         if running_measurement().action_indices in running_measurement().set_arrays:
-            self.set_array = running_measurement().set_arrays[running_measurement().action_indices]
+            self.set_array = running_measurement().set_arrays[
+                running_measurement().action_indices
+            ]
         else:
             self.set_array = self.create_set_array()
 
@@ -211,31 +264,33 @@ class Sweep:
         return self
 
     def __next__(self):
+        msmt = running_measurement()
+
         # Increment loop index of current dimension
-        loop_indices = list(running_measurement().loop_indices)
+        loop_indices = list(msmt.loop_indices)
         loop_indices[self.dimension] = self.loop_index
-        running_measurement().loop_indices = tuple(loop_indices)
+        msmt.loop_indices = tuple(loop_indices)
 
         try:  # Perform loop action
             sweep_value = next(self.iterator)
             # Remove last action index and increment one before that by one
-            action_indices = list(running_measurement().action_indices)
+            action_indices = list(msmt.action_indices)
             action_indices[-1] = 0
-            running_measurement().action_indices = tuple(action_indices)
+            msmt.action_indices = tuple(action_indices)
         except StopIteration:  # Reached end of iteration
-            running_measurement().loop_dimensions = running_measurement().loop_dimensions[:-1]
-            running_measurement().loop_indices = running_measurement().loop_indices[:-1]
+            msmt.loop_dimensions = msmt.loop_dimensions[:-1]
+            msmt.loop_indices = msmt.loop_indices[:-1]
 
             # Remove last action index and increment one before that by one
-            action_indices = list(running_measurement().action_indices[:-1])
+            action_indices = list(msmt.action_indices[:-1])
             action_indices[-1] += 1
-            running_measurement().action_indices = tuple(action_indices)
+            msmt.action_indices = tuple(action_indices)
             raise StopIteration
 
         if isinstance(self.sequence, SweepValues):
             self.sequence.set(sweep_value)
 
-        self.set_array[running_measurement().loop_indices] = sweep_value
+        self.set_array[msmt.loop_indices] = sweep_value
 
         self.loop_index += 1
 
