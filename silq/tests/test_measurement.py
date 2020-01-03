@@ -215,4 +215,39 @@ class TestNewLoopArray(TestCase):
         np.testing.assert_array_almost_equal(dataset.arrays['p_measure_set1_0_0_0'],
                                              set_array)
 
-        print('done')
+    class MeasurableNode(ParameterNode):
+        def get(self):
+            return {'result0D': np.random.rand(),
+                    'result1D': np.random.rand(5),
+                    'result2D': np.random.rand(5,6)}
+
+    def test_measure_parameter_array_in_node(self):
+        arrs = {}
+
+        node = self.MeasurableNode('measurable_node')
+
+        with Measurement('new_loop_parameter_array_2D') as msmt:
+            for k, val in enumerate(Sweep(self.p_sweep.sweep(0, 1, 0.1))):
+                results = msmt.measure(node)
+
+                # Save results to verification arrays
+                for kk, result in enumerate(results.values()):
+                    shape = msmt.loop_dimensions
+                    if isinstance(result, np.ndarray):
+                        shape += result.shape
+                    arrs.setdefault((0, 0, kk), np.zeros(shape))
+                    arrs[(0, 0, kk)][k] = result
+
+        dataset = verify_msmt(msmt, arrs)
+
+        # Perform additional test on set arrays
+        set_array = np.broadcast_to(np.arange(5), (11,5))
+        np.testing.assert_array_almost_equal(dataset.arrays['result1D_set0_0_0_1'],
+                                             set_array)
+
+        set_array = np.broadcast_to(np.arange(5), (11,5))
+        np.testing.assert_array_almost_equal(dataset.arrays['result2D_set0_0_0_2'],
+                                             set_array)
+        set_array = np.broadcast_to(np.arange(6), (11,5,6))
+        np.testing.assert_array_almost_equal(dataset.arrays['result2D_set1_0_0_2_0'],
+                                             set_array)

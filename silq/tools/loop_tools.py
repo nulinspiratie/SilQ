@@ -115,7 +115,11 @@ class Measurement:
 
         return data_array
 
-    def add_set_arrays(self, parameter, result, action_indices, ndim):
+    def add_set_arrays(self,
+                       parameter: Union[Parameter, str],
+                       result,
+                       action_indices: Tuple[int],
+                       ndim: int):
         set_arrays = []
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
@@ -129,13 +133,16 @@ class Measurement:
 
             # TODO handle if the parameter contains attribute setpoints
 
+            # parameter can also be a string, in which case we don't use parameter.name
+            name = getattr(parameter, "name", parameter)
+
             for k, shape in enumerate(result.shape):
                 arr = np.arange(shape)
                 # Add singleton dimensions
                 arr = np.broadcast_to(arr, result.shape[: k + 1])
 
                 set_array = self.create_data_array(
-                    parameter=f"{parameter.name}_set{k}",
+                    parameter=f"{name}_set{k}",
                     result=arr,
                     action_indices=action_indices + (0,) * k,
                     is_setpoint=True,
