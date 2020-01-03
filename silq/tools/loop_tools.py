@@ -57,7 +57,7 @@ class Measurement:
         # if is_setpoint:
         #     array_kwargs["shape"] = (len(result),)
         # else:
-        array_kwargs["shape"] = self.loop_dimensions
+        array_kwargs["shape"] = self.loop_dimensions or (1, )
         if is_setpoint or isinstance(result, (np.ndarray, list)):
             array_kwargs["shape"] += np.shape(result)
 
@@ -110,7 +110,10 @@ class Measurement:
 
         # Add parameter result to data array
         # data_array[self.loop_indices] = result
-        self.dataset.store(self.loop_indices, {data_array.array_id: result})
+
+        loop_indices = self.loop_indices or (0,)  # Allow for non-loop measurement
+
+        self.dataset.store(loop_indices, {data_array.array_id: result})
 
     def store_parameter_node_results(
         self, action_indices, parameter_node, results, create: bool = True
