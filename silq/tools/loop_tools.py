@@ -7,10 +7,6 @@ from qcodes.instrument.sweep_values import SweepValues
 from qcodes import Parameter, ParameterNode
 
 
-def running_measurement():
-    return Measurement.running_measurement
-
-
 class Measurement:
     # Context manager
     running_measurement = None
@@ -26,17 +22,29 @@ class Measurement:
 
         self.action_indices: Tuple[int] = None  # Index of action
 
+        # contains data groups, such as ParameterNodes and nested measurements
+        self._data_groups = {}
+
         self.active: bool = False  # Only become active when used as context manager
+
+    @property
+    def data_groups(self):
+        return running_measurement()._data_groups
 
     def __enter__(self):
         self.active = True
 
-        self.dataset = new_data(name=self.name)
+        if Measurement.running_measurement is None:
+            # Register current measurement as active primary measurement
+            Measurement.running_measurement = self
 
-        # Register current measurement as active measurement
-        if Measurement.running_measurement is not None:
-            raise RuntimeError("Currently cannot handle multiple measurements")
-        Measurement.running_measurement = self
+            # Initialize dataset
+            self.dataset = new_data(name=self.name)
+        else:
+            # Primary measurement is already running. Add this measurement as
+            # a data_group of the primary measurement
+            msmt = Measurement.running_measurement
+            msmt.data_groups[msmt.action_indices] = self
 
         self.loop_dimensions = ()
         self.loop_indices = ()
@@ -48,8 +56,9 @@ class Measurement:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        Measurement.running_measurement = None
-        self.dataset.finalize()
+        if Measurement.running_measurement is self:
+            Measurement.running_measurement = None
+            self.dataset.finalize()
 
         self.active = False
 
@@ -278,6 +287,12 @@ class Measurement:
             raise RuntimeError("Must use the Measurement as a context manager, "
                                "i.e. 'with Measurement(name) as msmt:'")
 
+        if self != Measurement.running_measurement:
+            # Since this Measurement is not the running measurement, it is a
+            # DataGroup in the running measurement. Delegate measurement to the
+            # running measurement
+            return Measurement.running_measurement.measure(measurable)
+
         # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(measurable)
@@ -294,6 +309,10 @@ class Measurement:
         self.action_indices = tuple(action_indices)
 
         return result
+
+
+def running_measurement() -> Measurement:
+    return Measurement.running_measurement
 
 
 class Sweep:
