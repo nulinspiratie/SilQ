@@ -77,14 +77,9 @@ class Measurement:
         array_kwargs = {
             "is_setpoint": is_setpoint,
             "action_indices": action_indices,
+            "shape": self.loop_dimensions,
         }
 
-        # Potentially allow for 1D arrays in inner loops
-        # Determine array shape
-        # if is_setpoint:
-        #     array_kwargs["shape"] = (len(result),)
-        # else:
-        array_kwargs["shape"] = self.loop_dimensions
         if is_setpoint or isinstance(result, (np.ndarray, list)):
             array_kwargs["shape"] += np.shape(result)
 
@@ -99,34 +94,47 @@ class Measurement:
 
         # Add setpoint arrays
         if not is_setpoint:
-            array_kwargs["set_arrays"] = []
-            for k in range(1, ndim):
-                sweep_indices = action_indices[:k]
-                array_kwargs["set_arrays"].append(self.set_arrays[sweep_indices])
-            array_kwargs["set_arrays"] = tuple(array_kwargs["set_arrays"])
-
-            # Create new set array if parameter result is an array or list
-            if isinstance(result, (np.ndarray, list)):
-                raise RuntimeError("No support yet for parameters returning Array")
-                # array_kwargs['set_arrays'] += self.create_array_setpoints(
-                #     parameter, result)
+            array_kwargs["set_arrays"] = self.add_set_arrays(
+                parameter, result, action_indices, ndim
+            )
 
         data_array = DataArray(**array_kwargs)
 
-        data_array.array_id = (
-            data_array.full_name + "_" + "_".join(str(k) for k in action_indices)
-        )
+        data_array.array_id = data_array.full_name
+        data_array.array_id += "_" + "_".join(str(k) for k in action_indices)
 
         data_array.init_data()
 
         self.dataset.add_array(data_array)
 
+        # Add array to set_arrays or to data_arrays of this Measurement
         if is_setpoint:
             self.set_arrays[action_indices] = data_array
         else:
             self.data_arrays[action_indices] = data_array
 
         return data_array
+
+    def add_set_arrays(self, parameter, result, action_indices, ndim):
+        set_arrays = []
+        for k in range(1, ndim):
+            sweep_indices = action_indices[:k]
+            set_arrays.append(self.set_arrays[sweep_indices])
+
+        # Create new set array(s) if parameter result is an array or list
+        if isinstance(result, (np.ndarray, list)):
+            if isinstance(result, list):
+                result = np.ndarray(result)
+
+            set_arrays.append(self.create_data_array())
+
+
+            raise RuntimeError("No support yet for parameters returning Array")
+            # array_kwargs['set_arrays'] += self.create_array_setpoints(
+            #     parameter, result)
+
+        return tuple(set_arrays)
+
 
     def create_data_array_group(self, action_indices, parameter_node):
         # TODO: Finish this function
@@ -146,10 +154,10 @@ class Measurement:
 
     def store_dict_results(
         self,
-            action_indices: Tuple[int],
-            group_name: str,
-            results: dict,
-            create: bool = True
+        action_indices: Tuple[int],
+        group_name: str,
+        results: dict,
+        create: bool = True,
     ):
         if action_indices not in self.data_arrays:
             if not create:
@@ -161,8 +169,7 @@ class Measurement:
 
         if not isinstance(results, dict):
             raise SyntaxError(
-                f"Results from {group_name} is not a dict."
-                f"Results are: {results}"
+                f"Results from {group_name} is not a dict." f"Results are: {results}"
             )
 
         data_to_store = {}
@@ -221,6 +228,8 @@ class Measurement:
             result = self.measure_parameter_node(measurable)
         elif callable(measurable):
             result = self.measure_callable(measurable)
+        else:
+            raise RuntimeError(f"Cannot measure {measurable}, it cannot be called")
 
         # Increment last action index by 1
         action_indices = list(self.action_indices)
