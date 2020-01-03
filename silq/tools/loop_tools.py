@@ -49,7 +49,7 @@ class Measurement:
 
     # Data array functions
 
-    def create_data_array(
+    def _create_data_array(
         self,
         parameter: Union[Parameter, str],
         result,
@@ -94,7 +94,7 @@ class Measurement:
 
         # Add setpoint arrays
         if not is_setpoint:
-            array_kwargs["set_arrays"] = self.add_set_arrays(
+            array_kwargs["set_arrays"] = self._add_set_arrays(
                 parameter, result, action_indices, ndim
             )
 
@@ -115,7 +115,7 @@ class Measurement:
 
         return data_array
 
-    def add_set_arrays(
+    def _add_set_arrays(
         self,
         parameter: Union[Parameter, str],
         result,
@@ -143,7 +143,7 @@ class Measurement:
                 # Add singleton dimensions
                 arr = np.broadcast_to(arr, result.shape[: k + 1])
 
-                set_array = self.create_data_array(
+                set_array = self._create_data_array(
                     parameter=f"{name}_set{k}",
                     result=arr,
                     action_indices=action_indices + (0,) * k,
@@ -153,18 +153,18 @@ class Measurement:
 
         return tuple(set_arrays)
 
-    def create_data_array_group(self, action_indices, parameter_node):
+    def _create_data_array_group(self, action_indices, parameter_node):
         # TODO: Finish this function
         # self.data_arrays[action_indices] = dict()
         pass
 
-    def process_parameter_result(
+    def _process_parameter_result(
         self, action_indices, parameter, result, ndim=None, store: bool = True
     ):
         # Get parameter data array (either create new array or choose existing)
         if action_indices not in self.data_arrays:
             # Create array based on first result type and shape
-            data_array = self.create_data_array(
+            data_array = self._create_data_array(
                 parameter, result, action_indices, ndim=ndim
             )
         else:
@@ -205,7 +205,7 @@ class Measurement:
 
         return data_to_store
 
-    def store_dict_results(
+    def _store_dict_results(
         self,
         action_indices: Tuple[int],
         group_name: str,
@@ -218,7 +218,7 @@ class Measurement:
                     f"Data array group {group_name} "
                     f"does not exist, but not allowed to create"
                 )
-            self.create_data_array_group(self.action_indices, group_name)
+            self._create_data_array_group(self.action_indices, group_name)
 
         if not isinstance(results, dict):
             raise SyntaxError(
@@ -228,7 +228,7 @@ class Measurement:
         data_to_store = {}
         for k, (key, result) in enumerate(results.items()):
             data_to_store.update(
-                **self.process_parameter_result(
+                **self._process_parameter_result(
                     action_indices=action_indices + (k,),
                     parameter=key,
                     result=result,
@@ -241,40 +241,40 @@ class Measurement:
         self.dataset.store(self.loop_indices, data_to_store)
 
     # Measurement-related functions
-    def measure_parameter(self, parameter):
+    def _measure_parameter(self, parameter):
         # Get parameter result
         result = parameter()
 
-        self.process_parameter_result(self.action_indices, parameter, result)
+        self._process_parameter_result(self.action_indices, parameter, result)
 
         return result
 
-    def measure_parameter_node(self, parameter_node):
+    def _measure_parameter_node(self, parameter_node):
         action_indices = self.action_indices
 
         results = parameter_node.get()
 
-        self.store_dict_results(action_indices, parameter_node.name, results)
+        self._store_dict_results(action_indices, parameter_node.name, results)
 
         return results
 
-    def measure_callable(self, callable):
+    def _measure_callable(self, callable):
         action_indices = self.action_indices
 
         results = callable()
 
-        self.store_dict_results(action_indices, callable.__name__, results)
+        self._store_dict_results(action_indices, callable.__name__, results)
 
         return results
 
     def measure(self, measurable):
         # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
-            result = self.measure_parameter(measurable)
+            result = self._measure_parameter(measurable)
         elif isinstance(measurable, ParameterNode):
-            result = self.measure_parameter_node(measurable)
+            result = self._measure_parameter_node(measurable)
         elif callable(measurable):
-            result = self.measure_callable(measurable)
+            result = self._measure_callable(measurable)
         else:
             raise RuntimeError(f"Cannot measure {measurable}, it cannot be called")
 
@@ -354,14 +354,14 @@ class Sweep:
 
     def create_set_array(self):
         if isinstance(self.sequence, SweepValues):
-            return running_measurement().create_data_array(
+            return running_measurement()._create_data_array(
                 parameter=self.sequence.parameter,
                 result=self.sequence,
                 action_indices=running_measurement().action_indices,
                 is_setpoint=True,
             )
         else:
-            return running_measurement().create_data_array(
+            return running_measurement()._create_data_array(
                 name=self.name or "iterator",
                 unit=self.unit,
                 result=self.sequence,
