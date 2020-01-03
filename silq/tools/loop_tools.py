@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
@@ -51,7 +51,7 @@ class Measurement:
 
     def create_data_array(
         self,
-        parameter: Parameter,
+        parameter: Union[Parameter, str],
         result,
         action_indices: Tuple[int],
         ndim: int = None,
@@ -120,37 +120,77 @@ class Measurement:
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
             set_arrays.append(self.set_arrays[sweep_indices])
+            # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
 
         # Create new set array(s) if parameter result is an array or list
         if isinstance(result, (np.ndarray, list)):
             if isinstance(result, list):
                 result = np.ndarray(result)
 
-            set_arrays.append(self.create_data_array())
+            # TODO handle if the parameter contains attribute setpoints
 
+            for k, shape in enumerate(result.shape):
+                arr = np.arange(shape)
+                # Add singleton dimensions
+                arr = np.broadcast_to(arr, result.shape[: k + 1])
 
-            raise RuntimeError("No support yet for parameters returning Array")
-            # array_kwargs['set_arrays'] += self.create_array_setpoints(
-            #     parameter, result)
+                set_array = self.create_data_array(
+                    parameter=f"{parameter.name}_set{k}",
+                    result=arr,
+                    action_indices=action_indices + (0,) * k,
+                    is_setpoint=True,
+                )
+                set_arrays.append(set_array)
 
         return tuple(set_arrays)
-
 
     def create_data_array_group(self, action_indices, parameter_node):
         # TODO: Finish this function
         # self.data_arrays[action_indices] = dict()
         pass
 
-    def store_parameter_result(self, action_indices, parameter, result):
+    def process_parameter_result(self, action_indices, parameter, result, ndim=None, store: bool = True):
         # Get parameter data array (either create new array or choose existing)
         if action_indices not in self.data_arrays:
             # Create array based on first result type and shape
-            data_array = self.create_data_array(parameter, result, action_indices)
+            data_array = self.create_data_array(
+                parameter, result, action_indices, ndim=ndim
+            )
         else:
             # Select existing array
             data_array = self.data_arrays[action_indices]
 
-        self.dataset.store(self.loop_indices, {data_array.array_id: result})
+        # Ensure an existing data array has the correct name
+        # parameter can also be a string, in which case we don't use parameter.name
+        name = getattr(parameter, "name", parameter)
+        if not data_array.name == name:
+            raise SyntaxError(
+                f"Existing DataArray '{data_array.name}' differs from result {name}"
+            )
+
+        data_to_store = {data_array.array_id: result}
+
+        # If result is an array, update set_array elements
+        if isinstance(result, list):  # Convert result list to array
+            result = np.ndarray(result)
+        if isinstance(result, np.ndarray):
+            ndim = len(self.loop_indices)
+            if len(data_array.set_arrays) != ndim + result.ndim:
+                raise RuntimeError(f'Wrong number of set arrays for {data_array.name}. '
+                                   f'Expected {ndim + result.ndim} instead of '
+                                   f'{len(data_array.set_arrays)}.')
+
+            for k, set_array in enumerate(data_array.set_arrays[ndim:]):
+                # Successive set arrays must increase dimensionality by unity
+                arr = np.arange(result.shape[k])
+                # Add singleton dimensions
+                arr = np.broadcast_to(arr, result.shape[: k + 1])
+                data_to_store[set_array.array_id] = arr
+
+        if store:
+            self.dataset.store(self.loop_indices, data_to_store)
+
+        return data_to_store
 
     def store_dict_results(
         self,
@@ -174,21 +214,15 @@ class Measurement:
 
         data_to_store = {}
         for k, (key, result) in enumerate(results.items()):
-            if action_indices + (k,) not in self.data_arrays:
-                data_array = self.create_data_array(
-                    key, result, action_indices + (k,), ndim=len(action_indices)
+            data_to_store.update(
+                **self.process_parameter_result(
+                    action_indices=action_indices + (k,),
+                    parameter=key,
+                    result=result,
+                    ndim=len(action_indices),
+                    store=False
                 )
-            else:
-                data_array = self.data_arrays[action_indices + (k,)]
-
-            # Ensure an existing data array has the correct name
-            if not data_array.name == key:
-                raise SyntaxError(
-                    f"Existing DataArray '{data_array.name}' differs from "
-                    f"ParameterNode result key {key}"
-                )
-
-            data_to_store[data_array.array_id] = result
+            )
 
         # Add result to data array
         self.dataset.store(self.loop_indices, data_to_store)
@@ -198,7 +232,7 @@ class Measurement:
         # Get parameter result
         result = parameter()
 
-        self.store_parameter_result(self.action_indices, parameter, result)
+        self.process_parameter_result(self.action_indices, parameter, result)
 
         return result
 

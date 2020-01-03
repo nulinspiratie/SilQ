@@ -43,16 +43,34 @@ class TestOldLoop(TestCase):
         loop.run(name='old_loop_1D_2D', thread=False)
 
 
-def verify_msmt(msmt, verification_arrays=None):
+def verify_msmt(msmt, verification_arrays=None,
+                allow_nan=False):
     dataset = load_data(msmt.dataset.location)
 
     for action_indices, data_array in msmt.data_arrays.items():
+        if not allow_nan and np.any(np.isnan(data_array)):
+            raise ValueError(f'Found NaN values in data array {data_array.name}')
+
         if verification_arrays is not None:
             verification_array = verification_arrays[action_indices]
             np.testing.assert_array_almost_equal(data_array, verification_array)
 
         dataset_array = dataset.arrays[data_array.array_id]
+
         np.testing.assert_array_almost_equal(data_array, dataset_array)
+
+        # Test set arrays
+        if not len(data_array.set_arrays) == len(dataset_array.set_arrays):
+            raise RuntimeError('Unequal amount of set arrays')
+
+        for set_array, dataset_set_array in zip(data_array.set_arrays,
+                                                dataset_array.set_arrays):
+            if not allow_nan and np.any(np.isnan(set_array)):
+                raise ValueError(f'Found NaN values in set array {set_array.name}')
+
+            np.testing.assert_array_almost_equal(set_array.ndarray, dataset_set_array.ndarray)
+
+    return dataset
 
 
 class TestNewLoop(TestCase):
@@ -100,11 +118,11 @@ class TestNewLoop(TestCase):
 
         verify_msmt(msmt, arrs)
 
-    def test_new_loop_0D(self):
-        # Does not work yet
-        with Measurement('new_loop_0D') as msmt:
-            self.assertEqual(msmt.loop_dimensions, ())
-            msmt.measure(self.p_measure)
+    # def test_new_loop_0D(self):
+    #     # Does not work yet
+    #     with Measurement('new_loop_0D') as msmt:
+    #         self.assertEqual(msmt.loop_dimensions, ())
+    #         msmt.measure(self.p_measure)
 
         # self.verify_msmt(msmt, arrs)
 
@@ -154,15 +172,47 @@ class TestNewLoopDictResults(TestCase):
 class TestNewLoopArray(TestCase):
     def setUp(self) -> None:
         self.p_sweep = Parameter('p_sweep', set_cmd=None, initial_value=10)
-        self.p_measure = Parameter('p_measure', get_cmd=lambda: np.random.rand(5))
 
     def test_measure_parameter_array(self):
         arrs = {}
 
-        with Measurement('new_loop_1D_array') as msmt:
+        p_measure = Parameter('p_measure', get_cmd=lambda: np.random.rand(5))
+
+        with Measurement('new_loop_parameter_array') as msmt:
             for k, val in enumerate(Sweep(self.p_sweep.sweep(0, 1, 0.1))):
                 arr = arrs.setdefault(msmt.action_indices,
-                                      np.zeros(msmt.loop_dimensions) + (5,))
-                arr[k] = msmt.measure(self.p_measure)
+                                      np.zeros(msmt.loop_dimensions + (5,)))
+                result = msmt.measure(p_measure)
+                arr[k] = result
 
-        verify_msmt(msmt, arrs)
+        dataset = verify_msmt(msmt, arrs)
+
+        # Perform additional test on set array
+        set_array = np.broadcast_to(np.arange(5), (11,5))
+        np.testing.assert_array_almost_equal(dataset.arrays['p_measure_set0_0_0'],
+                                             set_array)
+
+    def test_measure_parameter_array_2D(self):
+        arrs = {}
+
+        p_measure = Parameter('p_measure', get_cmd=lambda: np.random.rand(5,12))
+
+        with Measurement('new_loop_parameter_array_2D') as msmt:
+            for k, val in enumerate(Sweep(self.p_sweep.sweep(0, 1, 0.1))):
+                arr = arrs.setdefault(msmt.action_indices,
+                                      np.zeros(msmt.loop_dimensions + (5,12)))
+                result = msmt.measure(p_measure)
+                arr[k] = result
+
+        dataset = verify_msmt(msmt, arrs)
+
+        # Perform additional test on set arrays
+        set_array = np.broadcast_to(np.arange(5), (11,5))
+        np.testing.assert_array_almost_equal(dataset.arrays['p_measure_set0_0_0'],
+                                             set_array)
+
+        set_array = np.broadcast_to(np.arange(12), (11,5,12))
+        np.testing.assert_array_almost_equal(dataset.arrays['p_measure_set1_0_0_0'],
+                                             set_array)
+
+        print('done')
