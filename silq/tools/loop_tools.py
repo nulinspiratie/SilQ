@@ -26,7 +26,11 @@ class Measurement:
 
         self.action_indices: Tuple[int] = None  # Index of action
 
+        self.active: bool = False  # Only become active when used as context manager
+
     def __enter__(self):
+        self.active = True
+
         self.dataset = new_data(name=self.name)
 
         # Register current measurement as active measurement
@@ -46,6 +50,8 @@ class Measurement:
     def __exit__(self, exc_type, exc_val, exc_tb):
         Measurement.running_measurement = None
         self.dataset.finalize()
+
+        self.active = False
 
     # Data array functions
 
@@ -268,6 +274,10 @@ class Measurement:
         return results
 
     def measure(self, measurable):
+        if not self.active:
+            raise RuntimeError("Must use the Measurement as a context manager, "
+                               "i.e. 'with Measurement(name) as msmt:'")
+
         # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(measurable)
@@ -276,7 +286,7 @@ class Measurement:
         elif callable(measurable):
             result = self._measure_callable(measurable)
         else:
-            raise RuntimeError(f"Cannot measure {measurable}, it cannot be called")
+            raise RuntimeError(f"Cannot measure {measurable} as it cannot be called")
 
         # Increment last action index by 1
         action_indices = list(self.action_indices)
