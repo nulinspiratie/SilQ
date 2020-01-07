@@ -58,7 +58,10 @@ class Measurement:
 
     @property
     def data_groups(self):
-        return running_measurement()._data_groups
+        if running_measurement() is not None:
+            return running_measurement()._data_groups
+        else:
+            return self._data_groups
 
     def __enter__(self):
         self.is_context_manager = True
@@ -74,6 +77,7 @@ class Measurement:
             # a data_group of the primary measurement
             msmt = Measurement.running_measurement
             msmt.data_groups[msmt.action_indices] = self
+            msmt.action_indices += (0,)
 
         self.loop_dimensions = ()
         self.loop_indices = ()
@@ -104,9 +108,12 @@ class Measurement:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if Measurement.running_measurement is self:
+        msmt = Measurement.running_measurement
+        if msmt is self:
             Measurement.running_measurement = None
             self.dataset.finalize()
+        else:
+            msmt.action_indices = msmt.action_indices[:-1]
 
         self.is_context_manager = False
 
@@ -188,8 +195,9 @@ class Measurement:
         set_arrays = []
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
-            set_arrays.append(self.set_arrays[sweep_indices])
-            # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
+            if sweep_indices not in self.data_groups:
+                set_arrays.append(self.set_arrays[sweep_indices])
+                # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
 
         # Create new set array(s) if parameter result is an array or list
         if isinstance(result, (np.ndarray, list)):
