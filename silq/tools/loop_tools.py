@@ -1,20 +1,44 @@
 import numpy as np
 from typing import List, Tuple, Union
+import threading
 
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from qcodes.instrument.sweep_values import SweepValues
 from qcodes import Parameter, ParameterNode
+from qcodes.utils.helpers import using_ipython, directly_executed_from_cell
 
 
 class Measurement:
+    """
+    Args:
+        name: Measurement name, also used as the dataset name
+        force_cell_thread: Enforce that the measurement has been started from a
+            separate thread if it has been directly executed from an IPython
+            cell/prompt. This is because a measurement is usually run from a
+            separate thread using the magic command `%%new_job`.
+            An error is raised if this has not been satisfied.
+            Note that if the measurement is started within a function, no error
+            is raised.
+
+
+    Notes:
+        When the Measurement is started in a separate thread (using %%new_job),
+        the Measurement is registered in the user namespace as 'msmt', and the
+        dataset as 'data'
+
+    """
+
     # Context manager
     running_measurement = None
 
-    def __init__(self, name: str, run: bool = True):
-        self.name = name
+    # Default names for measurement and dataset, used to set user namespace
+    # variables if measurement is executed in a separate thread.
+    _default_measurement_name = "msmt"
+    _default_dataset_name = "data"
 
-        self.run = run
+    def __init__(self, name: str, force_cell_thread: bool = True):
+        self.name = name
 
         self.loop_dimensions: Tuple[int] = None  # Total dimensionality of loop
 
@@ -26,6 +50,8 @@ class Measurement:
         self._data_groups = {}
 
         self.active: bool = False  # Only become active when used as context manager
+
+        self.force_cell_thread = force_cell_thread and using_ipython()
 
     @property
     def data_groups(self):
@@ -52,6 +78,25 @@ class Measurement:
 
         self.data_arrays = {}
         self.set_arrays = {}
+
+        # Perform measurement thread check, and set user namespace variables
+        if self.force_cell_thread and Measurement.running_measurement is self:
+            # Raise an error if force_cell_thread is True and the code is run
+            # directly from an IPython cell/prompt but not from a separate thread
+            is_main_thread = threading.current_thread() == threading.main_thread()
+            if is_main_thread and directly_executed_from_cell():
+                raise RuntimeError(
+                    "Measurement must be created in dedicated thread. "
+                    "Otherwise specify force_thread=False"
+                )
+
+            # Register the Measurement and data as variables in the user namespace
+            # Usually as variable names are 'msmt' and 'data' respectively
+            from IPython import get_ipython
+
+            shell = get_ipython()
+            shell.user_ns[self._default_measurement_name] = self
+            shell.user_ns[self._default_dataset_name] = self.dataset
 
         return self
 
@@ -284,8 +329,10 @@ class Measurement:
 
     def measure(self, measurable):
         if not self.active:
-            raise RuntimeError("Must use the Measurement as a context manager, "
-                               "i.e. 'with Measurement(name) as msmt:'")
+            raise RuntimeError(
+                "Must use the Measurement as a context manager, "
+                "i.e. 'with Measurement(name) as msmt:'"
+            )
 
         if self != Measurement.running_measurement:
             # Since this Measurement is not the running measurement, it is a
