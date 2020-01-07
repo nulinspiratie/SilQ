@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Tuple, Union
 import threading
+from time import sleep
 
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
@@ -49,7 +50,9 @@ class Measurement:
         # contains data groups, such as ParameterNodes and nested measurements
         self._data_groups = {}
 
-        self.active: bool = False  # Only become active when used as context manager
+        self.is_context_manager: bool = False  # Whether used as context manager
+        self.is_paused: bool = False  # Whether the Measurement is paused
+        self.is_stopped: bool = False   # Whether the Measurement is stopped
 
         self.force_cell_thread = force_cell_thread and using_ipython()
 
@@ -58,7 +61,7 @@ class Measurement:
         return running_measurement()._data_groups
 
     def __enter__(self):
-        self.active = True
+        self.is_context_manager = True
 
         if Measurement.running_measurement is None:
             # Register current measurement as active primary measurement
@@ -105,7 +108,7 @@ class Measurement:
             Measurement.running_measurement = None
             self.dataset.finalize()
 
-        self.active = False
+        self.is_context_manager = False
 
     # Data array functions
 
@@ -328,11 +331,17 @@ class Measurement:
         return results
 
     def measure(self, measurable):
-        if not self.active:
+        if not self.is_context_manager:
             raise RuntimeError(
                 "Must use the Measurement as a context manager, "
                 "i.e. 'with Measurement(name) as msmt:'"
             )
+        elif self.is_stopped:
+            raise SystemExit('Measurement.stop() has been called')
+
+        # Wait as long as the measurement is paused
+        while self.is_paused:
+            sleep(0.1)
 
         if self != Measurement.running_measurement:
             # Since this Measurement is not the running measurement, it is a
@@ -357,6 +366,17 @@ class Measurement:
 
         return result
 
+    # Functions relating to measurement flow
+    def pause(self):
+        """Pause measurement at start of next parameter sweep/measurement"""
+        self.is_paused = True
+
+    def resume(self):
+        """Resume measurement after being paused"""
+        self.is_paused = False
+
+    def stop(self):
+        self.is_stopped = True
 
 def running_measurement() -> Measurement:
     return Measurement.running_measurement
@@ -397,6 +417,18 @@ class Sweep:
 
     def __next__(self):
         msmt = running_measurement()
+
+        if not msmt.is_context_manager:
+            raise RuntimeError(
+                "Must use the Measurement as a context manager, "
+                "i.e. 'with Measurement(name) as msmt:'"
+            )
+        elif msmt.is_stopped:
+            raise SystemExit
+
+        # Wait as long as the measurement is paused
+        while msmt.is_paused:
+            sleep(0.1)
 
         # Increment loop index of current dimension
         loop_indices = list(msmt.loop_indices)
