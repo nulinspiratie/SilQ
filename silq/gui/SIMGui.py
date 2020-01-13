@@ -162,7 +162,7 @@ class SIM928Dialog(QFrame):
     def _val_textbox_changed(self):
         try:
             textbox_val = float(self.val_textbox.text())
-            self.modified_val = (textbox_val != self.parameter.get_latest())
+            self.modified_val = textbox_val != self.parameter.get_latest()
         except:
             self.modified_val = True
         if self.modified_val:
@@ -171,7 +171,8 @@ class SIM928Dialog(QFrame):
                 self.current_val_label.setText(
                     f'Current val: {self.parameter.get_latest()}')
         else:
-            self._reset_val_textbox()
+            pass
+            # self._reset_val_textbox()
 
     def set_voltage(self, val):
         try:
@@ -444,6 +445,8 @@ class SIMControlDialog(QDialog):
         focus_widget = QApplication.focusWidget()
         if focus_widget is not None:
             focus_widget.clearFocus()
+        for dialog in self.SIM928_dialogs.values():
+            dialog._reset_val_textbox()
 
     def ramp_voltages(self, voltage=None, parameters=None):
         if voltage is not None:

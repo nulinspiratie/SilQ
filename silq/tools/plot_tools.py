@@ -1,3 +1,4 @@
+from typing import List, Dict
 from functools import partial
 import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
@@ -6,9 +7,11 @@ import pyperclip
 from time import time
 import numpy as np
 import logging
-from winsound import Beep
 
+from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
+from qcodes.data.data_set import DataSet
+from qcodes.data.data_array import DataArray
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
            'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
@@ -18,9 +21,24 @@ logger = logging.getLogger(__name__)
 
 
 class PlotAction:
+    """Interactive key/button action for ``MatPlot``
+
+    A PlotAction can be attached to an `InteractivePlot`, adding some sort of
+    interactivity, e.g. change parameter value when pressing a key button.
+
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+    """
     enable_key = None
 
-    def __init__(self, plot, timeout=None, enable_key=None):
+    def __init__(self,
+                 plot: MatPlot,
+                 timeout: int = None,
+                 enable_key: str = None):
         self.timeout = timeout
         self.t_enable_key_pressed = None
 
@@ -44,28 +62,53 @@ class PlotAction:
             # Depends on if last enable_key press was within timeout seconds
             return time() - self.t_enable_key_pressed < self.timeout
 
-    def txt_to_clipboard(self, txt):
-        pyperclip.copy(txt)
-
     def key_press(self, event):
+        """Handle Matplotlib key press.
+
+        This enables PlotAction if key press is ``enable_key``
+        """
         if event.key == self.enable_key:
             logger.debug(f'Enabling action {self}')
             self.t_enable_key_pressed = time()
 
     def button_press(self, event):
+        """Handle Matplotlib button press action."""
         pass
 
-    def handle_code(self, code, copy=False, execute=False, new_cell=True):
+    def handle_code(self,
+                    code: str,
+                    copy: bool = False,
+                    execute: bool = False,
+                    new_cell: bool = True):
+        """Handle code, either executing it or copying it to clipbard
+
+        Args:
+            code: Python code to handle.
+            copy: Copy to clipboard.
+            execute: Execute code, only relevant if ``new_cell`` is True.
+            new_cell: Create new cell below current one and add code.
+        """
         if copy:
             logger.debug('Copying code to clipboard')
-            self.txt_to_clipboard(self.txt)
+            pyperclip.copy(code)
 
         if new_cell:
             logger.debug(f'Adding code to new cell below, execute: {execute}')
-            create_cell(self.txt, execute=execute, location='below')
+            create_cell(code, execute=execute, location='below')
 
 
 class SetGates(PlotAction):
+    """Set gates when button pressed in MatPlot, enabled with ``alt + g``.
+
+    Only works for 2D plots.
+
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+    """
     enable_key = 'alt+g'
 
     def button_press(self, event):
@@ -77,6 +120,19 @@ class SetGates(PlotAction):
 
 
 class MeasureSingle(PlotAction):
+    """Measure parameter at clicked gate vales, enabled with ``alt + s``
+
+    Upon button click, a new cell below current one is created, in which gates
+    are set to clicked values, and a qc.Measure is performed for measure_param.
+
+    Only works for 2D plots.
+
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled."""
     enable_key = 'alt+s'
 
     def button_press(self, event):
@@ -92,6 +148,20 @@ class MeasureSingle(PlotAction):
 
 
 class MoveGates(PlotAction):
+    """Increase/decrease gates when pressing alt + {arrow}, enabled with alt+m.
+
+    Alt + up/down moves the y-gate.
+    Alt + left/right moves the x-gate.
+    Alt + +/- increases/decreases step size.
+
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled.
+        delta (float): Step size.
+    """
     enable_key = 'alt+m'
     delta = 0.001 # step to move when pressing a key
 
@@ -137,7 +207,125 @@ class MoveGates(PlotAction):
             logger.info('Alt key not pressed, not moving gates')
 
 
+class TuneCompensation(PlotAction):
+    enable_key = 'alt+c'
+
+    def __init__(self, *args, **kwargs):
+        """ A tool to plot a line of compensated plunging/emptying on a DC scan.
+
+        Key commands:
+          'alt+c'            : enables this tool
+          'alt+<arrow_key>'  : move the central (read) position of your line in that respective direction
+          'alt+<+ or ->'     : increase/decrease the compensation angle with the horizontal
+          'alt+<8 or 2>'     : increase/decrease the empty depth
+          'alt+<6 or 4>'     : increase/decrease the plunge depth
+          'alt+5'            : reset all parameters to their default values
+        """
+        super().__init__(*args, **kwargs)
+        self.default_empty_depth = 10e-3
+        self.default_plunge_depth = -10e-3
+        self.default_theta = -45 # degrees
+        self.default_y_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[0])
+        self.default_x_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[1][0])
+        self.plot_feats = []
+
+        self.delta_v = 1e-3
+        self.delta_t = 1
+
+        self.initialize_parameters()
+
+    def initialize_parameters(self):
+        self.plunge_depth = self.default_plunge_depth
+        self.empty_depth = self.default_empty_depth
+        self.theta = self.default_theta
+        self.x_read = self.default_x_read
+        self.y_read = self.default_y_read
+
+    def key_press(self, event):
+        super().key_press(event)
+
+        if event.key in ['alt+up', 'alt+down', 'alt+left', 'alt+right', 'alt+8',
+                         'alt+6', 'alt+4', 'alt+2', 'alt+5', 'alt++', 'alt+-']:
+
+            # Tune compensation
+            if event.key == 'alt++':
+                self.theta += self.delta_t
+            elif event.key == 'alt+-':
+                self.theta -= self.delta_t
+
+            # Tune read position
+            elif event.key == 'alt+up':
+                self.y_read += self.delta_v
+            elif event.key == 'alt+down':
+                self.y_read -= self.delta_v
+            elif event.key == 'alt+right':
+                self.x_read += self.delta_v
+            elif event.key == 'alt+left':
+                self.x_read -= self.delta_v
+
+            # Tune empty depth
+            elif event.key == 'alt+8':
+                self.empty_depth += self.delta_v
+            elif event.key == 'alt+2':
+                self.empty_depth -= self.delta_v
+
+            # Tune plunge depth
+            elif event.key == 'alt+6':
+                self.plunge_depth += self.delta_v
+            elif event.key == 'alt+4':
+                self.plunge_depth -= self.delta_v
+
+            # Reset
+            elif event.key == 'alt+5':
+                self.initialize_parameters()
+
+        self.draw_features()
+
+    def draw_features(self):
+        # Remove old features before drawing new ones
+        for plot_feat in self.plot_feats:
+            f = plot_feat.pop(0)
+            f.remove()
+            del f
+
+        set_vals = self.plot.data_set.DC_voltage.set_arrays[1][0]
+
+        # Calculate compensation factor
+        self.compensation = np.tan(np.deg2rad(self.theta))
+
+        read_pt = self.plot[0].plot(self.x_read, self.y_read, 'ro',
+                                    markeredgewidth=2, markerfacecolor='None')
+
+        empty_pt = self.plot[0].plot(self.x_read + self.empty_depth / np.sqrt(1 + 1 / self.compensation ** 2),
+                                     self.y_read + np.sign(self.compensation) *
+                                     self.empty_depth / np.sqrt(self.compensation ** 2 + 1),
+                                     'go', markeredgewidth=2, markerfacecolor='None')
+
+        plunge_pt = self.plot[0].plot(self.x_read + self.plunge_depth / np.sqrt(1 + 1 / self.compensation ** 2),
+                                      self.y_read + np.sign(self.compensation) *
+                                      self.plunge_depth / np.sqrt(self.compensation ** 2 + 1),
+                                      'yo', markeredgewidth=2, markerfacecolor='None')
+
+        comp_line = self.plot[0].plot(set_vals,
+                                      (set_vals - self.x_read) / self.compensation + self.y_read, 'c')
+
+        self.plot_feats = [read_pt, empty_pt, plunge_pt, comp_line]
+
+        self.plot.update()
+
+
 class SwitchPlotIdx(PlotAction):
+    """Change plot index when pressing ``alt+{arrow}``, used with `SliderPlot`.
+
+    Alt + left/right changes first plot index.
+    Alt + up/down changes second plot index (if two sliders).
+
+    Parameters:
+        plot: Plot object
+        timeout: Seconds before plot action is deactivated. Only relevant if the
+            ``enable_key`` differs from the actual key/button actions.
+        enable_key: String to enable plot action.
+        enabled (bool): Plot action is enabled."""
     def key_press(self, event):
         super().key_press(event)
 
@@ -161,7 +349,23 @@ class SwitchPlotIdx(PlotAction):
 
 
 class InteractivePlot(MatPlot):
-    def __init__(self, *args, actions=(), timeout=600, **kwargs):
+    """Base class for ``MatPlot`` plots adding interactivity.
+
+    The QCoDeS ``MatPlot``, which uses ``matplotlib``, can be interactive, and
+    respond to key/button presses. This subclass of MatPlot enables such
+    interactivity by adding `PlotAction` to the plot. Each `PlotAction` can
+    respond to specific key presses or button clicks.
+
+    Parameters:
+        *args: args passed to ``MatPlot``.
+        actions: `PlotAction` list to use for plot.
+        timeout: Timeout for any action to be disabled.
+        **kwargs: kwargs passed to ``MatPlot``.
+    """
+    def __init__(self,
+                 *args,
+                 actions: List[PlotAction] = (),
+                 timeout: int = 600, **kwargs):
         super().__init__(*args, **kwargs)
         self.station = Station.default
         self.layout = getattr(self.station, 'layout', None)
@@ -189,7 +393,18 @@ class InteractivePlot(MatPlot):
         for action in self.actions:
             action.timeout = timeout
 
-    def load_data_array(self, data_array):
+    def load_data_array(self, data_array: DataArray):
+        """Retrieve properties of a ``DataArray``, such as set arrays and labels.
+
+        Args:
+            data_array: DataArray to extract
+
+        Returns:
+            Dict[str, Any]:
+            set_arrays (List[DataArray]): List of set arrays.
+            labels: Labels of set arrays
+            gates: Gates of set arrays, None if not in ``Station``.
+        """
         set_arrays = data_array.set_arrays
         labels = []
         gates = []
@@ -200,7 +415,15 @@ class InteractivePlot(MatPlot):
                 'labels': labels,
                 'gates': gates}
 
-    def connect_event(self, event, action):
+    def connect_event(self,
+                      event: str,
+                      action: PlotAction):
+        """Attach PlotAction to a specific event.
+
+        Args:
+            event: matplotlib event (e.g. key_press_event, button_press_event)
+            action: PlotAction to attach
+        """
         if event in self.cid:
             self.fig.canvas.mpl_disconnect(self.cid[event])
 
@@ -208,6 +431,11 @@ class InteractivePlot(MatPlot):
         self.cid[event] = cid
 
     def handle_key_press(self, event):
+        """Handle key press event, forwarding to relevant `PlotAction`
+
+        The relevant PlotActions are those that are either enabled, or whose
+        ``enable_key`` match the key press event.
+        """
         self._event_key = event
         logger.debug(f'Key pressed: {event.key}')
         try:
@@ -218,6 +446,10 @@ class InteractivePlot(MatPlot):
             logger.error(f'key press: {e}')
 
     def handle_button_press(self, event):
+        """Handle button press event, forwarding to relevant `PlotAction`.
+
+        The relative PlotActions are those that are already enabled.
+        """
         self._event_button = event
         logger.debug(f'Clicked (x:{event.xdata:.6}, y:{event.ydata:.6})')
         try:
@@ -229,8 +461,13 @@ class InteractivePlot(MatPlot):
 
 
 class SliderPlot(InteractivePlot):
-    """
-    Used to slide through 2D images of a 4D dataset
+    """Slide through 1D/2D images of a ``DataArray`` with more dimensions.
+
+    Parameters:
+        data_array: Multidimensional ``DataArray`` to display.
+        ndim: Plotting dimension (1 or 2)
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+
     """
     def __init__(self, data_array, ndim=2, **kwargs):
         self.ndim = ndim
@@ -313,11 +550,22 @@ class SliderPlot(InteractivePlot):
 
 
 class CalibrationPlot(InteractivePlot):
+    """Interactive plot for 2D calibrations, move gates and measure at points.
+
+    The 2D calibration scan must contain a ``Parameter`` that returns the
+    contrast. Pressing ``alt + m`` adds a dot on the colorplot, which can be
+    moved by holding ``alt`` and pressing an arrow key. the contrast can then
+    be measured at the dot by pressing ``alt + s``.
+
+    Args:
+        data_set: Calibration 2D scan data set.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+        samples_measure (int): Samples to use when measuring at a single point.
+    """
     measure_parameter = 'adiabatic_ESR'
     samples_measure = 200
-    samples_scan = 100
 
-    def __init__(self, data_set, **kwargs):
+    def __init__(self, data_set: DataSet, **kwargs):
         self.data_set = data_set
         if 'voltage_difference' in data_set.arrays:
             super().__init__(data_set.contrast, data_set.dark_counts,
@@ -334,7 +582,13 @@ class CalibrationPlot(InteractivePlot):
 
 
 class DCPlot(InteractivePlot):
-    def __init__(self, data_set,  **kwargs):
+    """Interactive plot for a 2D DC scan, For easy moving gates on 2D plot.
+
+    Args:
+        data_set: 2D DC scan ``DataSet``.
+        **kwargs: Additional kwargs for `InteractivePlot` and ``MatPlot``.
+    """
+    def __init__(self, data_set: DataSet,  **kwargs):
         self.data_set = data_set
         super().__init__(data_set.DC_voltage, **kwargs)
 
@@ -342,11 +596,25 @@ class DCPlot(InteractivePlot):
         self.y_gate, self.x_gate = results['gates']
         self.y_label, self.x_label = results['labels']
 
-        self.actions = [SetGates(self), MoveGates(self)]
+        self.actions = [SetGates(self), MoveGates(self), TuneCompensation(self)]
 
 
 class ScanningPlot(InteractivePlot):
-    def __init__(self, parameter, interval=0.01, auto_start=False, **kwargs):
+    """Base class for interactive plots to repeatedly measure and refresh plot.
+
+    Args:
+        parameter: Parameter to measure and plot.
+        interval: Measuring and updating interval.
+        auto_start: Start refreshing once initialized. If False, refreshing can
+            be started by calling `ScanningPlot.start`.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``Matplot``.
+    """
+    # AcquisitionParameter type
+    def __init__(self,
+                 parameter: _BaseParameter,
+                 interval: float = 0.01,
+                 auto_start: bool = False,
+                 **kwargs):
         super().__init__(**kwargs)
         self.update_idx = 0
         self.update_start_idx = 1
@@ -365,7 +633,7 @@ class ScanningPlot(InteractivePlot):
 
         if auto_start:
             # Already started during acquire
-            self.start(setup=False, start=False)
+            self.start(setup=False)
 
     @property
     def interval(self):
@@ -382,7 +650,15 @@ class ScanningPlot(InteractivePlot):
             return (time() - self.t_start) / (self.update_idx -
                                               self.update_start_idx)
 
-    def start(self, setup=True, start=True):
+    def start(self,
+              setup: bool = True,
+              start: bool = True):
+        """Start measuring and refreshing plot
+
+        Args:
+            setup: Setup `AcquisitionParameter`
+            start: Start instruments, only used if ``setup`` is True.
+            """
         self.parameter.continuous = True
         if setup:
             self.parameter.setup(start=start)
@@ -391,13 +667,27 @@ class ScanningPlot(InteractivePlot):
         self.update_idx = 0
 
     def stop(self, *args):
-        # *args are needed for if it is a callback
+        """Stop measuring and refreshing plot.
+
+        Timer is stopped.
+
+        Args:
+            *args: Unused args passed if method is called as a callback
+        """
         logger.debug('Stopped')
         self.timer.stop()
         self.layout.stop()
         self.parameter.continuous = False
 
     def scan(self, initialize=False, stop=False):
+        """Perform single meeasurement and update plot.
+
+        Repeatedly called by timer.
+
+        Args:
+            initialize: True if this method is called during initialization.
+            stop: Stop instruments after acquisition.
+        """
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
@@ -410,7 +700,15 @@ class ScanningPlot(InteractivePlot):
 
 
 class TracePlot(ScanningPlot):
-    def __init__(self, parameter, **kwargs):
+    """Interactive plot that repeatedly measures pulse sequence and plots trace
+
+    Args:
+        parameter: `TraceParameter` whose pulse sequence to measure.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+
+    """
+    # TraceParameter type
+    def __init__(self, parameter: _BaseParameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
         average_mode = getattr(parameter, 'average_mode', 'none')
         if parameter.samples > 1 and average_mode == 'none':
@@ -421,7 +719,12 @@ class TracePlot(ScanningPlot):
 
         # self.actions = [MoveGates(self)]
 
-    def update_plot(self, initialize=False):
+    def update_plot(self, initialize: bool = False):
+        """Update plot with new trace
+
+        Args:
+            initialize: Method called during initialization.
+        """
         for k, name in enumerate(self.parameter.names):
             result = self.parameter.results[name]
             if initialize:
@@ -467,14 +770,26 @@ class TracePlot(ScanningPlot):
 
 
 class DCSweepPlot(ScanningPlot):
+    """Refreshing 2D DC plot using `DCSweepParameter` for fast 2D DC scanning.
+
+    Args:
+        parameter: `DCSweepParameter` for fast 2D DC scanning.
+        gate_mapping: Mapping of gate names, for plot labels.
+        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
+    """
     gate_mapping = {}
-    def __init__(self, parameter, gate_mapping=None, **kwargs):
+    point_color = 'r'
+    # DCSweepParameter type
+    def __init__(self,
+                 parameter: _BaseParameter,
+                 gate_mapping: Dict[str, str] = None,
+                 **kwargs):
         if gate_mapping is not None:
             self.gate_mapping = gate_mapping
 
         if parameter.trace_pulse.enabled:
-            subplots = {'nrows': 2, 'ncols': 1,
-                        'gridspec_kw': {'height_ratios': [2,1]}}
+            subplots = (2, 1)
+            kwargs['gridspec_kw'] = {'height_ratios': [2, 1]}
             kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
@@ -488,6 +803,11 @@ class DCSweepPlot(ScanningPlot):
         self.actions = [MoveGates(self)]
 
     def update_plot(self, initialize=False):
+        """Update plot with new 2D DC scan.
+
+        Args:
+            initialize: Method called during initialization.
+        """
         for k, name in enumerate(self.parameter.names):
             result = self.parameter.results[name]
             if initialize:
@@ -516,7 +836,7 @@ class DCSweepPlot(ScanningPlot):
 
                         self.point = self[k].plot(self.x_gate.get_latest(),
                                                   self.y_gate.get_latest(),
-                                                  'ob', ms=5)[0]
+                                                  'o'+self.point_color, ms=5)[0]
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],

@@ -11,7 +11,19 @@ __all__ = ['create_cell']
 logger = logging.getLogger()
 
 
-def create_cell(text, location='below', execute=False, select=True):
+def create_cell(text: str,
+                location: str = 'below',
+                execute: bool = False,
+                select: bool = True):
+    """Create code cell in Jupyter Notebook and optionally execute.
+    
+    Args:
+        text: Python code to place in cell.
+        location: Cell location. Can be either ``below`` currently active cell, 
+            or ``bottom`` of notebook.
+        execute: Execute cell.
+        select: Make new cell active cell
+    """
     text = text.replace('\n', '\\n')
     text = text.replace("'", '"')
 
@@ -29,10 +41,10 @@ def create_cell(text, location='below', execute=False, select=True):
         var new_cell = Jupyter.notebook.insert_cell_at_bottom('code');
         """
     else:
-        raise Exception('Location {} not understood'.format(location))
+        raise Exception(f'Location {location} not understood')
 
     # Add text to cell
-    code += "new_cell.set_text('{}');".format(text);
+    code += f"new_cell.set_text('{text}');"
 
     # Select cell
     if select:
@@ -44,7 +56,7 @@ def create_cell(text, location='below', execute=False, select=True):
     if execute:
         code += "new_cell.execute();"
 
-    # Run code
+    # Run Javascript code
     display_javascript(code, raw=True)
 
 
@@ -54,7 +66,17 @@ data_handlers = {}
 
 @magics_class
 class SilQMagics(Magics):
-    """Magics related to code management (loading, saving, editing, ...)."""
+    """IPyton magics related to code management (loading, saving, editing, ...).
+    
+    IPython magics are commands that can modify the Python code before executing
+    it. Magic commands are at the start of a line/cell and have a % sign.
+    
+    Examples:
+        A new cell containing ``%data`` will run the data magic command below.
+        
+    See also:
+        http://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=magic
+    """
 
     def __init__(self, *args, **kwargs):
         self._knowntemps = set()

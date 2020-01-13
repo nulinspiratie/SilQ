@@ -1,0 +1,44 @@
+[
+    {
+        "output_arg": "triggerer.ch1",
+        "input_arg": "AWG.trig_in"
+    },
+    {
+        "output_arg": "triggerer.ch2",
+        "input_arg": "digitizer.trig_in"
+    },
+    {
+        "output_arg": "AWG.ch1",
+        "input_arg": "chip.DC_gate",
+        "label": "stage"
+    },
+    {
+        "output_arg": "AWG.ch2",
+        "input_arg": "chip.AC_gate"
+    },
+    {
+        "output_arg": "AWG.ch2",
+        "input_arg": "digitizer.ch2"
+    },
+    {
+        "combine": [
+            [
+                "AWG.ch2",
+                "chip.AC_gate"
+            ],
+            [
+                "AWG.ch2",
+                "digitizer.ch2"
+            ]
+        ],
+        "scale": [
+            1,
+            1
+        ],
+        "label": "AC"
+    },
+    {
+        "output_arg": "chip.output",
+        "input_arg": "digitizer.ch1"
+    }
+]
