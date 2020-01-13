@@ -1,39 +1,6 @@
 from .interface import InstrumentInterface, Channel
 
 
-<<<<<<< HEAD
-def get_instrument_interface(instrument):
-    instrument_interfaces = {
-        'ArbStudio1104': {'module': '.lecroy.ArbStudio1104_interface',
-                          'class': 'ArbStudio1104Interface'},
-        'MockArbStudio': {'module': '.lecroy.ArbStudio1104_interface',
-                          'class': 'ArbStudio1104Interface'},
-        'PulseBlasterDDS' : {'module' : '.spincore.PulseBlasterDDS_interface', 
-                             'class' : 'PulseBlasterDDSInterface'},
-        'PulseBlasterESRPRO': {'module': '.spincore.PulseBlasterESRPRO_interface',
-                               'class': 'PulseBlasterESRPROInterface'},
-        'MockPulseBlaster': {'module': '.spincore.PulseBlasterESRPRO_interface',
-                             'class': 'PulseBlasterESRPROInterface'},
-        'Chip': {'module': '.chip_interface',
-                 'class': 'ChipInterface'},
-        'ATS9440': {'module': '.AlazarTech.ATS_interface',
-                    'class': 'ATSInterface'},
-        'MockATS': {'module': '.AlazarTech.ATS_interface',
-                    'class': 'ATSInterface'},
-        'Keysight_E8267D': {'module': '.keysight',
-                            'class': 'E8267DInterface'},
-        'Keysight_M3201A_AWG': {'module': '.keysight',
-                            'class': 'Keysight_SD_AWG_Interface'},
-        'Keysight_M3300A_AWG': {'module': '.keysight',
-                                'class': 'Keysight_SD_AWG_Interface'},
-        'Keysight_M3300A_DIG': {'module': '.keysight',
-                       'class': 'Keysight_SD_DIG_Interface'},
-        'Keysight_M3300A_FPGA': {'module': '.keysight',
-                                 'class':'Keysight_SD_FPGA_Interface'},
-        'Keysight_81180A' : {'module': '.keysight',
-                       'class': 'Keysight81180AInterface'}
-    }
-=======
 instrument_interfaces = {
     'ArbStudio1104': {'module': '.lecroy.ArbStudio1104_interface',
                       'class': 'ArbStudio1104Interface'},
@@ -68,9 +35,10 @@ instrument_interfaces = {
         'class': 'Bayesian_Update_Interface'},
     'PCDDS': {'module': '.keysight.fpga_interfaces.PCDDS_interface',
               'class': 'PCDDSInterface'}
+    'Keysight_81180A' : {'module': '.keysight',
+                   'class': 'Keysight81180AInterface'}
 }
 
->>>>>>> origin/master
 
 def get_instrument_interface(instrument):
     from . import instrument_interfaces
