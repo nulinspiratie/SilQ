@@ -425,19 +425,12 @@ class CombinedConnection(Connection):
         Returns:
             Bool depending on if the connection satisfies conditions
         """
-
-<<<<<<< HEAD
-        # Set acquisition interface as first interface
-        if not sorted_interfaces and self.acquisition_interface is not None:
-                sorted_interfaces = [self.acquisition_interface]
-=======
         if output_arg is not None:
             if not isinstance(output_arg, list):
                 # output_arg is not a list (probably str for SingleConnection)
                 return False
             if not len(output_arg) == len(self.connections):
                 return False
->>>>>>> origin/master
 
         if input_arg is not None:
             if not isinstance(input_arg, list):
