@@ -1,8 +1,12 @@
 import numpy as np
+import matplotlib
 import peakutils
 import logging
 from typing import Union, Dict, Any, List, Sequence
 import collections
+from matplotlib import pyplot as plt
+
+from qcodes import MatPlot
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
@@ -13,8 +17,6 @@ from silq import config
 if 'analysis' not in config:
     config['analysis'] = {}
 analysis_config = config['analysis']
-
-
 
 
 def old_smooth(x: np.ndarray,
@@ -112,21 +114,21 @@ def find_high_low(traces: np.ndarray,
             * **{n}\*std_high**: n standard deviations below mean high voltage,
               where n is a float (ignore slash in raw docstring).
             * **config**: Use threshold method provided in
-              `config.analysis.threshold_method` (`mean` if not specified)
+              ``config.analysis.threshold_method`` (``mean`` if not specified)
 
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.
 
     Returns:
         Dict[str, Any]:
-        * **low** (float): Mean low voltage, `None` if two peaks cannot be
+        * **low** (float): Mean low voltage, ``None`` if two peaks cannot be
           discerned
-        * **high** (float): Mean high voltage, `None` if no two peaks cannot be
-          discerned
+        * **high** (float): Mean high voltage, ``None`` if no two peaks cannot
+          be discerned
         * **threshold_voltage** (float): Threshold voltage for a blip. If SNR is
-          below `min_SNR` or no two peaks can be discerned, returns `None`.
+          below ``min_SNR`` or no two peaks can be discerned, returns ``None``.
         * **voltage_difference** (float): Difference between low and high
-          voltage. If not two peaks can be discerned, returns `None`.
+          voltage. If not two peaks can be discerned, returns ``None``.
         * **DC_voltage** (float): Average voltage of traces.
     """
     assert attempts > 0, f'Attempts {attempts} must be at least 1'
@@ -153,12 +155,12 @@ def find_high_low(traces: np.ndarray,
             # print(f'Found {len(peaks_idx)} peaks instead of two, '
             #        'increasing threshold')
             threshold_peak *= 1.5
-        else:
-            return {'low': None,
-                    'high': None,
-                    'threshold_voltage': None,
-                    'voltage_difference': None,
-                    'DC_voltage': DC_voltage}
+    else:
+        return {'low': None,
+                'high': None,
+                'threshold_voltage': None,
+                'voltage_difference': None,
+                'DC_voltage': DC_voltage}
 
     # Find mean voltage, used to determine which points are low/high
     mean_voltage_idx = int(np.round(np.mean(peaks_idx)))
@@ -175,7 +177,7 @@ def find_high_low(traces: np.ndarray,
 
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
-        threshold_voltage = (high['mean'] - low['mean']) / 2
+        threshold_voltage = (high['mean'] + low['mean']) / 2
     elif 'std_low' in threshold_method:
         # Threshold_method is {factor} standard deviations above low mean
         factor = float(threshold_method.split('*')[0])
@@ -187,19 +189,22 @@ def find_high_low(traces: np.ndarray,
 
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
     if min_SNR is None:
-        min_SNR = analysis_config.min_SNR
-    if SNR < min_SNR:
+        min_SNR = analysis_config.get('min_SNR')
+    if min_SNR is not None and SNR < min_SNR:
         logger.info(f'Signal to noise ratio {SNR} is too low')
         threshold_voltage = None
 
     # Plotting
-    if plot:
-        from matplotlib import pyplot as plt
-        plt.figure()
+    if plot is not False:
+        if plot is True:
+            plt.figure()
+        else:
+            plt.sca(plot)
         for k, signal in enumerate([low, high]):
             sub_hist, sub_bin_edges = np.histogram(np.ravel(signal['traces']), bins=10)
             plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
-            plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
+            if k < len(peaks_idx):
+                plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
 
     return {'low': low,
             'high': high,
@@ -219,14 +224,14 @@ def edge_voltage(traces: np.ndarray,
 
     Args:
         traces: 2D array of acquisition traces
-        edge: which side of traces to test, either `begin` or `end`
-        state: voltage that the edge must have, either `low` or `high`
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold
+        edge: which side of traces to test, either ``begin`` or ``end``
+        state: voltage that the edge must have, either ``low`` or ``high``
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold
         points: Number of data points to average over to determine state
         start_idx: index of first point to use. Useful if there is some
             capacitive voltage spike occuring at the start.
-            Only used if edge is `begin`
+            Only used if edge is ``begin``.
 
     Returns:
         1D boolean array, True if the trace has the correct state at the edge
@@ -267,12 +272,12 @@ def find_up_proportion(traces: np.ndarray,
 
     Args:
         traces: 2D array of acquisition traces
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold
         return_array: whether to return the boolean array or the up proportion
         start_idx: index of first point to use. Useful if there is some
             capacitive voltage spike occuring at the start.
-            Only used if edge is `begin`
+            Only used if edge is ``begin``
         filter_window: number of points of smoothing (0 means no smoothing)
 
     Returns:
@@ -297,8 +302,8 @@ def find_up_proportion(traces: np.ndarray,
                   for trace in traces]
 
     # Filter out the traces that contain one or more peaks
-    traces_up_electron = [np.any(trace[start_idx:] > threshold_voltage)
-                          for trace in traces]
+    traces_up_electron = np.array([np.any(trace[start_idx:] > threshold_voltage)
+                                   for trace in traces])
 
     if not return_array:
         return sum(traces_up_electron) / len(traces)
@@ -309,12 +314,13 @@ def find_up_proportion(traces: np.ndarray,
 def count_blips(traces: np.ndarray,
                 threshold_voltage: float,
                 sample_rate: float,
-                t_skip: float):
+                t_skip: float,
+                ignore_final: bool = False):
     """ Count number of blips and durations in high/low state.
 
     Args:
         traces: 2D array of acquisition traces.
-        threshold_voltage: Threshold voltage for a `high` voltage (blip).
+        threshold_voltage: Threshold voltage for a ``high`` voltage (blip).
         sample_rate: Acquisition sample rate (per second).
         t_skip: Initial time to skip for each trace (ms).
 
@@ -330,20 +336,28 @@ def count_blips(traces: np.ndarray,
     low_blip_pts, high_blip_pts = [], []
     start_idx = round(t_skip * sample_rate)
 
+    blip_events = [[] for _ in range(len(traces))]
     for k, trace in enumerate(traces):
         idx = start_idx
+        trace_above_threshold = trace > threshold_voltage
+        trace_below_threshold = ~trace_above_threshold
         while idx < len(trace):
             if trace[idx] < threshold_voltage:
-                next_idx = np.argmax(trace[idx:] > threshold_voltage)
+                next_idx = np.argmax(trace_above_threshold[idx:])
                 blip_list = low_blip_pts
             else:
-                next_idx = np.argmax(trace[idx:] < threshold_voltage)
+                next_idx = np.argmax(trace_below_threshold[idx:])
                 blip_list = high_blip_pts
-            if next_idx == 0:
-                blip_list.append(len(trace) - idx)
+
+            if next_idx == 0:  # Reached end of trace
+                next_idx = len(trace) - idx
+                blip_list.append(next_idx)
+                if not ignore_final:
+                    blip_events[k].append((int(trace[idx] >= threshold_voltage), next_idx))
                 break
             else:
                 blip_list.append(next_idx)
+                blip_events[k].append((int(trace[idx] >= threshold_voltage), next_idx))
                 idx += next_idx
 
     low_blip_durations = np.array(low_blip_pts) / sample_rate
@@ -358,6 +372,7 @@ def count_blips(traces: np.ndarray,
 
     duration = len(traces[0]) / sample_rate
     return {'blips': blips,
+            'blip_events': blip_events,
             'blips_per_second': blips / duration,
             'low_blip_durations': low_blip_durations,
             'high_blip_durations': high_blip_durations,
@@ -373,24 +388,26 @@ def analyse_traces(traces: np.ndarray,
                    t_read: Union[float, None] = None,
                    segment: str = 'begin',
                    threshold_voltage: Union[float, None] = None,
-                   threshold_method: str='config'):
+                   threshold_method: str = 'config',
+                   plot: Union[bool, matplotlib.axis.Axis] = False,
+                   plot_high_low: Union[bool, matplotlib.axis.Axis] = False):
     """ Analyse voltage, up proportions, and blips of acquisition traces
 
     Args:
         traces: 2D array of acquisition traces.
         sample_rate: acquisition sample rate (per second).
         filter: only use traces that begin in low or high voltage.
-            Allowed values are `low`, `high` or `None` (do not filter).
+            Allowed values are ``low``, ``high`` or ``None`` (do not filter).
         min_filter_proportion: minimum proportion of traces that satisfy filter.
             If below this value, up_proportion etc. are not calculated.
         t_skip: initial time to skip for each trace (ms).
         t_read: duration of each trace to use for calculating up_proportion etc.
             e.g. for a long trace, you want to compare up proportion of start
             and end segments.
-        segment: Use beginning or end of trace for `t_read`.
-            Allowed values are `begin` and `end`.
-        threshold_voltage: threshold voltage for a `high` voltage (blip).
-            If not specified, `find_high_low` is used to determine threshold.
+        segment: Use beginning or end of trace for ``t_read``.
+            Allowed values are ``begin`` and ``end``.
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold.
         threshold_method: Method used to determine the threshold voltage.
             Allowed methods are:
 
@@ -400,7 +417,14 @@ def analyse_traces(traces: np.ndarray,
             * **{n}\*std_high**: n standard deviations below mean high voltage,
               where n is a float (ignore slash in raw docstring).
             * **config**: Use threshold method provided in
-              `config.analysis.threshold_method` (`mean` if not specified)
+              ``config.analysis.threshold_method`` (``mean`` if not specified)
+
+        plot: Whether to plot traces with results.
+            If True, will create a MatPlot object and add results.
+            Can also pass a MatPlot axis, in which case that will be used.
+            Each trace is preceded by a block that can be green (measured blip
+            during start), red (no blip measured), or white (trace was filtered
+            out).
 
     Returns:
         Dict[str, Any]:
@@ -424,12 +448,14 @@ def analyse_traces(traces: np.ndarray,
             all results except average_voltage are set to an initial value
             (either 0 or undefined)
         If the filtered trace proportion is less than min_filter_proportion,
-            the results `up_proportion`, `end_low`, `end_high` are set to an
+            the results ``up_proportion``, ``end_low``, ``end_high`` are set to an
             initial value
     """
-    assert filter in [None, 'low', 'high'], 'filter must be None, `low`, or `high`'
+    assert filter in [None, 'low',
+                      'high'], 'filter must be None, `low`, or `high`'
 
-    assert segment in ['begin', 'end'], 'segment must be either `begin` or `end`'
+    assert segment in ['begin',
+                       'end'], 'segment must be either `begin` or `end`'
 
     # Initialize all results to None
     results = {'up_proportion': 0,
@@ -447,41 +473,64 @@ def analyse_traces(traces: np.ndarray,
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = round(t_skip * sample_rate)
 
-    # Histogram trace voltages to find two peaks corresponding to high and low
-    high_low_results = find_high_low(traces[:,start_idx:],
-                                     threshold_method=threshold_method)
-    results['voltage_difference'] = high_low_results['voltage_difference']
-    if threshold_voltage is None:
+    if plot is not False:  # Create plot for traces
+        ax = MatPlot()[0] if plot is True else plot
+        t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0]))
+        print(ax.get_xlim())
+        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float),
+               cmap='seismic')
+        print(ax.get_xlim())
+        # Modify x-limits to add blips information
+        xlim = ax.get_xlim()
+        xpadding = 0.05 * (xlim[1] - xlim[0])
+        if segment == 'begin':
+            xpadding_range = [-xpadding + xlim[0], xlim[0]]
+            ax.set_xlim(-xpadding + xlim[0], xlim[1])
+        else:
+            xpadding_range = [xlim[1], xlim[1] + xpadding]
+            ax.set_xlim(xlim[0], xlim[1] + xpadding)
+
+    if threshold_voltage is None:  # Calculate threshold voltage if not provided
+        # Histogram trace voltages to find two peaks corresponding to high and low
+        high_low_results = find_high_low(traces[:, start_idx:],
+                                         threshold_method=threshold_method,
+                                         plot=plot_high_low)
+        results['high_low_results'] = high_low_results
+        results['voltage_difference'] = high_low_results['voltage_difference']
         # Use threshold voltage from high_low_results
         threshold_voltage = high_low_results['threshold_voltage']
 
-    results['threshold_voltage'] = threshold_voltage
+        results['threshold_voltage'] = threshold_voltage
 
-    if threshold_voltage is None:
-        logger.debug('Could not determine threshold voltage')
-        return results
+        if threshold_voltage is None:
+            logger.debug('Could not determine threshold voltage')
+            if plot is not False:
+                ax.text(np.mean(xlim), len(traces) + 0.5,
+                        'Unknown threshold voltage',
+                        horizontalalignment='center')
+            return results
+    else:
+        # We don't know voltage difference since we skip a high_low measure.
+        results['voltage_difference'] = None
 
-    # Analyse blips
-    blips_results = count_blips(traces=traces,
-                                sample_rate=sample_rate,
-                                threshold_voltage=threshold_voltage,
-                                t_skip=t_skip)
-    results['blips'] = blips_results['blips']
-    results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
-    results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
+    # Analyse blips (disabled because it's very slow)
+    # blips_results = count_blips(traces=traces,
+    #                             sample_rate=sample_rate,
+    #                             threshold_voltage=threshold_voltage,
+    #                             t_skip=t_skip)
+    # results['blips'] = blips_results['blips']
+    # results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
+    # results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
-
-    if filter == 'low':
-        # Filter all traces that do not start with low voltage
+    if filter == 'low':  # Filter all traces that do not start with low voltage
         filtered_traces_idx = edge_voltage(traces, edge='begin', state='low',
                                            start_idx=start_idx,
                                            threshold_voltage=threshold_voltage)
-    elif filter == 'high':
-        # Filter all traces that do not start with high voltage
+    elif filter == 'high':  # Filter all traces that do not start with high voltage
         filtered_traces_idx = edge_voltage(traces, edge='begin', state='high',
                                            start_idx=start_idx,
                                            threshold_voltage=threshold_voltage)
-    else:
+    else:  # Do not filter traces
         filtered_traces_idx = np.ones(len(traces), dtype=bool)
 
     results['filtered_traces_idx'] = filtered_traces_idx
@@ -490,10 +539,17 @@ def analyse_traces(traces: np.ndarray,
 
     if len(filtered_traces) / len(traces) < min_filter_proportion:
         logger.debug(f'Not enough traces start {filter}')
+
+        if plot is not False:
+            ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
+                          filtered_traces.reshape(1, -1), cmap='RdYlGn')
+            ax.text(np.mean(xlim), len(traces) + 0.5,
+                    f'filtered traces: {len(filtered_traces)} / {len(traces)} = '
+                    f'{len(filtered_traces) / len(traces):.2f} < {min_filter_proportion}',
+                    horizontalalignment='center')
         return results
 
-    if t_read is not None:
-        # Only use a time segment of each trace
+    if t_read is not None:  # Only use a time segment of each trace
         read_pts = int(round(t_read * sample_rate))
         if segment == 'begin':
             segmented_filtered_traces = filtered_traces[:, :read_pts]
@@ -503,10 +559,11 @@ def analyse_traces(traces: np.ndarray,
         segmented_filtered_traces = filtered_traces
 
     # Calculate up proportion of traces
-    up_proportion = find_up_proportion(segmented_filtered_traces,
-                                       start_idx=start_idx,
-                                       threshold_voltage=threshold_voltage)
-    results['up_proportion'] = up_proportion
+    up_proportion_idxs = find_up_proportion(segmented_filtered_traces,
+                                            start_idx=start_idx,
+                                            threshold_voltage=threshold_voltage,
+                                            return_array=True)
+    results['up_proportion'] = sum(up_proportion_idxs) / len(traces)
 
     # Calculate ratio of traces that end up with low voltage
     idx_end_low = edge_voltage(segmented_filtered_traces,
@@ -522,6 +579,24 @@ def analyse_traces(traces: np.ndarray,
                                 threshold_voltage=threshold_voltage)
     results['end_high'] = np.sum(idx_end_high) / len(segmented_filtered_traces)
 
+    if plot is not False:
+        # Plot information on up proportion
+        up_proportion_arr = 2 * up_proportion_idxs - 1
+        up_proportion_arr[~filtered_traces_idx] = 0
+        up_proportion_arr = up_proportion_arr.reshape(-1, 1)  # Make array 2D
+
+        mesh = ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
+                             up_proportion_arr, cmap='RdYlGn')
+        mesh.set_clim(-1, 1)
+
+        # Add vertical line for t_read
+        ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle='--',
+                  color='orange')
+        ax.text(t_read, len(traces) + 0.5, f't_read={t_read*1e3} ms',
+                horizontalalignment='center', verticalalignment='bottom')
+        ax.text(t_skip, len(traces) + 0.5, f't_skip={t_skip*1e3} ms',
+                horizontalalignment='center', verticalalignment='bottom')
+
     return results
 
 
@@ -532,7 +607,9 @@ def analyse_EPR(empty_traces: np.ndarray,
                 t_skip: float,
                 t_read: float,
                 min_filter_proportion: float = 0.5,
-                filter_traces=True):
+                threshold_voltage: Union[float, None] = None,
+                filter_traces=True,
+                plot: bool = False):
     """ Analyse an empty-plunge-read sequence
 
     Args:
@@ -546,6 +623,8 @@ def analyse_EPR(empty_traces: np.ndarray,
             and end segments.
         min_filter_proportion: minimum proportion of traces that satisfy filter.
             If below this value, up_proportion etc. are not calculated.
+        threshold_voltage: threshold voltage for a ``high`` voltage (blip).
+            If not specified, ``find_high_low`` is used to determine threshold.
 
     Returns:
         Dict[str, float]:
@@ -570,38 +649,55 @@ def analyse_EPR(empty_traces: np.ndarray,
         * **mean_low_blip_duration** (float): average duration in low state.
         * **mean_high_blip_duration** (float): average duration in high state.
     """
+    if plot is True:
+        plot = MatPlot(subplots=3)
+        plot[0].set_title('Empty')
+        plot[1].set_title('Plunge')
+        plot[2].set_title('Read long')
+    elif plot is False:
+        plot = [False] * 3
+
     # Analyse empty stage
     results_empty = analyse_traces(traces=empty_traces,
                                    sample_rate=sample_rate,
                                    filter='low' if filter_traces else None,
                                    min_filter_proportion=min_filter_proportion,
-                                   t_skip=t_skip)
+                                   threshold_voltage=threshold_voltage,
+                                   t_skip=t_skip,
+                                   plot=plot[0])
 
     # Analyse plunge stage
     results_load = analyse_traces(traces=plunge_traces,
                                   sample_rate=sample_rate,
                                   filter='high' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
-                                  t_skip=t_skip)
+                                  threshold_voltage=threshold_voltage,
+                                  t_skip=t_skip,
+                                  plot=plot[1])
 
     # Analyse read stage
     results_read = analyse_traces(traces=read_traces,
                                   sample_rate=sample_rate,
                                   filter='low' if filter_traces else None,
                                   min_filter_proportion=min_filter_proportion,
+                                  threshold_voltage=threshold_voltage,
                                   t_skip=t_skip)
     results_read_begin = analyse_traces(traces=read_traces,
                                         sample_rate=sample_rate,
                                         filter='low' if filter_traces else None,
                                         min_filter_proportion=min_filter_proportion,
+                                        threshold_voltage=threshold_voltage,
                                         t_read=t_read,
                                         segment='begin',
-                                        t_skip=t_skip)
+                                        t_skip=t_skip,
+                                        plot=plot[2])
     results_read_end = analyse_traces(traces=read_traces,
                                       sample_rate=sample_rate,
                                       t_read=t_read,
+                                      threshold_voltage=threshold_voltage,
                                       segment='end',
-                                      t_skip=t_skip)
+                                      t_skip=t_skip,
+                                      plot=plot[2])
 
     return {'fidelity_empty': results_empty['end_high'],
             'voltage_difference_empty': results_empty['voltage_difference'],
@@ -615,6 +711,7 @@ def analyse_EPR(empty_traces: np.ndarray,
             'dark_counts': results_read_end['up_proportion'],
 
             'voltage_difference_read': results_read['voltage_difference'],
+            'voltage_average_read': results_read['average_voltage'],
             'num_traces': results_read['num_traces'],
             'filtered_traces_idx': results_read['filtered_traces_idx'],
             'blips': results_read['blips'],
@@ -672,8 +769,8 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
           of the combined flipping events.
 
         Additionally, each of the above results will have another result with
-        the same name, but prepended with `filtered_`, and appended with
-        `_{idx1}{idx2}` if not already present. Here, all the values are
+        the same name, but prepended with ``filtered_``, and appended with
+        ``_{idx1}{idx2}`` if not already present. Here, all the values are
         filtered out where the corresponding pair of up_proportion samples do
         not have exactly one high and one low for each sample. The values that
         do not satisfy the filter are set to np.nan.

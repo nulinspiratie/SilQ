@@ -8,8 +8,11 @@ from silq.pulses import PulseSequence, DCPulse, SinePulse, MeasurementPulse
 from silq.instrument_interfaces import get_instrument_interface
 from silq.meta_instruments.chip import Chip
 from silq.meta_instruments.layout import Layout
-from silq.meta_instruments.mock_instruments import MockArbStudio, \
-    MockPulseBlaster, MockATS, MockAcquisitionController
+from silq.tests.mocks.mock_instruments.mock_arbstudio import MockArbStudio
+from silq.tests.mocks.mock_instruments.mock_pulseblaster import MockPulseBlaster
+from silq.tests.mocks.mock_instruments.mock_ATS import MockATS
+from silq.tests.mocks.mock_instruments.mock_acquisition_controller import MockAcquisitionController
+
 
 class TestInnerInstrument(Instrument):
     def __init__(self, name, **kwargs):
@@ -46,6 +49,8 @@ class TestInstrument(Instrument):
 
     def print(self):
         print('printing from test instrument')
+
+
 
 
 class TestArbStudio(unittest.TestCase):
@@ -120,7 +125,7 @@ class TestATS(unittest.TestCase):
         self.ATS_interface.add_acquisition_controller(
             'basic_acquisition_controller')
 
-        self.ATS_interface.set_configuration_settings(trigger_slope1='positive')
+        self.ATS_interface._set_configuration_settings(trigger_slope1='positive')
         self.assertEqual(self.ATS_interface.setting('trigger_slope1'),
                          'positive')
 

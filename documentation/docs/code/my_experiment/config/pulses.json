@@ -1,0 +1,17 @@
+{
+    "plunge": {
+        "duration": 0.05,
+        "amplitude": 1,
+        "connection_label": "stage"
+    },
+    "read": {
+        "duration": 0.1,
+        "amplitude": 0,
+        "connection_label": "stage"
+    },
+    "empty": {
+        "duration": 0.05,
+        "amplitude": -1,
+        "connection_label": "stage"
+    }
+}

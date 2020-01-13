@@ -4,6 +4,11 @@ from qcodes.utils.validators import Numbers, Ints, Enum, MultiType
 
 
 class Lockin(SR830.SR830):
+    """Wrapper for the SR830 Locking module.
+    
+    Note:
+        This instrument is not finished and has never been tested
+        """
     def __init__(self, name, address, **kwargs):
         super().__init__(name, address, **kwargs)
 
