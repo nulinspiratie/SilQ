@@ -12,23 +12,19 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 class Bayesian_Update_Interface(InstrumentInterface):
-    def __init__(self, instrument_name, fpga_controller_name=None, **kwargs):
+    def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_targeted_pulses = True
         self.pulse_sequence.allow_untargeted_pulses = False
         self.pulse_sequence.allow_pulse_overlap = False
+
+        self._clk_freq = int(100e6)
 
         self.pulse_implementations = [
             TriggerPulseImplementation(
                 pulse_requirements=[]
             )
         ]
-
-        if fpga_controller_name is not None:
-            self.fpga_controller = self.find_instrument(fpga_controller_name)
-        else:
-            #TODO: Should this be required?
-            pass
 
         self._data_channels = {
             f'trace_{k}':
@@ -54,29 +50,35 @@ class Bayesian_Update_Interface(InstrumentInterface):
         self.add_parameter(
             'blip_threshold',
             parameter_class=ManualParameter,
-            vals=vals.Numbers(),
+            vals=vals.Numbers(-3,3),
+            unit='V',
             docstring='The blip threshold in volts.'
         )
 
         self.add_parameter(
             'full_scale_range',
             parameter_class=ManualParameter,
-            vals=vals.Numbers(),
+            vals=vals.Numbers(-3,3),
+            unit='V',
             docstring='The full scale range of the trace channel in volts.'
         )
 
         self.add_parameter(
-            'channel_offset',
+            'update_time',
             parameter_class=ManualParameter,
             vals=vals.Numbers(),
-            docstring='The voltage offset of the trace channel.'
+            unit='s',
+            docstring='The length of time in seconds after a blip required to perform the '
+                      'Bayesian update.'
         )
 
         self.add_parameter(
-            'blip_timeout',
+            'timeout',
             parameter_class=ManualParameter,
             vals=vals.Numbers(),
-            docstring='The blip timeout in seconds.'
+            unit='s',
+            docstring='The duration since the Bayesian update starts from where you cancel the '
+                      'Bayesian update and continue with the experiment.'
         )
 
         self.add_parameter(
@@ -87,61 +89,61 @@ class Bayesian_Update_Interface(InstrumentInterface):
         )
 
         self.add_parameter(
-            'pxi_select',
+            'pxi_channel',
             parameter_class=ManualParameter,
             vals=vals.Ints(4000,4007),
             docstring='The PXI channel the trigger will be output on.'
         )
 
-        self.add_parameter(
-            'clk_freq',
-            parameter_class=ManualParameter,
-            vals=vals.Numbers(),
-            docstring='The onboard clock frequency of the digitizer module.'
-        )
-
-    #
-    #   Interface Functions
-    #
-
-    def get_additional_pulses(self, **kwargs):
-        return []
+        # self.add_parameter(
+        #     'timer_duration',
+        #     parameter_class=ManualParameter,
+        #     vals=Numbers(),
+        #     unit='s',
+        #     docstring='The duration of the post-trigger wait time before re-priming '
+        #               'the Bayesian update.'
+        # )
 
     def setup(self, **kwargs):
-        ctrl = self.fpga_controller
+        ctrl = self.instrument
         ctrl.reset()
 
         # Implement each pulse, sets the PXI trigger
         for pulse in self.pulse_sequence:
-            self.pxi_select(pulse.implementation.implement())
+            for key, value in pulse.implementation.implement().items():
+                self.parameters[key](value)
+
 
         # Set the PXI trigger, translate from pxi id to range [0,7]
-        ctrl.pxi_select(self.pxi_select() - 4000)
+        ctrl.pxi_select(self.pxi_channel() - 4000)
 
         # Set the trace_select
         ctrl.trace_select(self.trace_select())
+        # 10% overhead in resetting the pulse sequence
+        timer_duration = self.pulse_sequence.duration
+        ctrl.timer_duration(int(round(timer_duration*self._clk_freq)))
 
-        # Set the blip_threshold
-        threshold = (self.blip_threshold() - self.channel_offset())
         # Scale signal to volts
         v_min = - self.full_scale_range()
-        v_max = self.full_scale_range()
+        v_max = - v_min
         m = interp1d([v_min, v_max], [-0x8000, 0x7FFF])
 
-        ctrl.blip_threshold(np.int16(m(threshold)))
+        ctrl.blip_threshold(np.int16(m(self.blip_threshold())))
 
         # Set the blip_timeout
-        timeout = int(self.blip_timeout()*self.clk_freq())
-        ctrl.blip_timeout(timeout)
+        update_ticks = int(self.update_time()*self._clk_freq)
+        ctrl.blip_t_wait(update_ticks)
+        timeout_ticks = int(self.timeout()*self._clk_freq)
+        ctrl.blip_timeout(timeout_ticks)
 
     def start(self):
-        self.fpga_controller.start()
+        self.instrument.start()
 
     def stop(self):
-        self.fpga_controller.stop()
+        self.instrument.stop()
 
     def reset(self):
-        self.fpga_controller.reset()
+        self.instrument.reset()
 
 
 class TriggerPulseImplementation(PulseImplementation):
@@ -156,7 +158,4 @@ class TriggerPulseImplementation(PulseImplementation):
             raise Exception('No implementation for connection {}'.format(
                 self.pulse.connection))
 
-        return channel
-
-
-
+        return {"pxi_channel" : channel}

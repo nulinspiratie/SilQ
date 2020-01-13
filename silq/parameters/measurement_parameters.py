@@ -32,9 +32,48 @@ measurement_config = config.get('measurements', {})
 
 
 class MeasurementParameter(SettingsClass, MultiParameter):
+    """Base class for parameters that perform measurements.
+
+    A `MeasurementParameter` usually consists of several acquisitions,
+    which it uses for complex sequences.
+
+    A `MeasurementParameter` usually uses a ``qcodes.Loop`` or a
+    ``qcodes.Measure`` or several in succession. The results in the ``DataSet``
+    are analysed and often some post-action is performed.
+
+    Example:
+        An example of a `MeasurementParameter` is a retuning sequence, which
+        uses an `AcquisitionParameter`, and from that determines how much
+        voltages have to be modified to retune the system
+        (e.g. `RetuneBlipsParameter`).
+
+    Note:
+        The MeasurementParameter needs to be updated. It was originally created
+        to be used with the `MeasurementSequence`, but this class turned out to
+        be too rigid. Instead, measurements should be programmed by subclassing
+        the MeasurementParameter.
+
+    Args:
+        Name: Parameter name
+        acquisition_parameter: Acquisition_parameter to use. Fails in case of
+            multiple or no acquisition parameters
+        discriminant: data array in dataset to discriminate. Fails if there is
+            no single discriminant.
+
+    Parameters:
+        silent (str): Print results during .get()
+
+    Todo:
+        * Clean up MeasurementParameter, remove attributes
+          ``MeasurementParameter.discriminant`` and
+          ``MeasurementParameter.acquisition_parameter``.
+
+    """
     layout = None
 
-    def __init__(self, name, acquisition_parameter=None,
+    def __init__(self,
+                 name,
+                 acquisition_parameter=None,
                  discriminant=None, silent=True, **kwargs):
         SettingsClass.__init__(self)
         MultiParameter.__init__(self, name, snapshot_value=False, **kwargs)
@@ -54,13 +93,13 @@ class MeasurementParameter(SettingsClass, MultiParameter):
         self._meta_attrs.extend(['acquisition_parameter_name'])
 
     def __repr__(self):
-        return '{} measurement parameter'.format(self.name)
+        return f'{self.name} measurement parameter'
 
     def __getattribute__(self, item):
         try:
             return super().__getattribute__(item)
         except AttributeError:
-            return attribute_from_config(item)
+            return attribute_from_config(item, config.properties)
 
     @property
     def loc_provider(self):
@@ -78,6 +117,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
     def base_folder(self):
         """
         Obtain measurement base folder (if any).
+
         Returns:
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
@@ -120,13 +160,12 @@ class MeasurementParameter(SettingsClass, MultiParameter):
 
 
 class RetuneBlipsParameter(MeasurementParameter):
-    """
-    Parameter that retunes to a transition by analysing blips in a neural network
+    """Parameter that retunes by analysing blips using a neural network
 
     The first (optional) stage is to use a CoulombPeakParameter to find the
     center of the Coulomb peak.
 
-    Second, a sweep parameter is varied for a range of sweep values. For each 
+    Second, a sweep parameter is varied for a range of sweep values. For each
     sweep point, a trace is acquired, and its blips measured in a BlipsParameter.
     This information is then analysed by a neural network, from which the
     optimal tuning position is predicted.
@@ -135,12 +174,11 @@ class RetuneBlipsParameter(MeasurementParameter):
     More info: Experiments/personal/Serwan/Neural networks/Retune blips.ipynb
     The following Neural Network seems to produce decent results:
 
-    model = Sequential()
-    model.add(Dense(3, activation='linear', input_shape=(21,3)))
-    model.add(Flatten())
-    model.add(Dense(1, activation='linear'))
+    >>> model = Sequential()
+    >>> model.add(Dense(3, activation='linear', input_shape=(21,3)))
+    >>> model.add(Flatten())
+    >>> model.add(Dense(1, activation='linear'))
     """
-
     def __init__(self,
                  name='retune_blips',
                  coulomb_peak_parameter=None,
@@ -152,6 +190,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                  optimum_DC_offset=None,
                  model_filepath=None,
                  voltage_limit=None,
+                 optimum_method='neural_network',
                  **kwargs):
         """
         Args:
@@ -174,7 +213,7 @@ class RetuneBlipsParameter(MeasurementParameter):
                 Coulomb peak
             tune_to_optimum: Tune to optimum values predicted by neural network.
                 If True, the offsets of the sweep parameter are also zeroed.
-            optimum_DC_offset: Additional offset to optimum determined from 
+            optimum_DC_offset: Additional offset to optimum determined from
                 neural network model. Used if the model is not trained properly
                 and has a constant offset in predictions.
                 If single value, combined parameter will be offset.
@@ -190,6 +229,7 @@ class RetuneBlipsParameter(MeasurementParameter):
         """
         # Load model here because it takes quite a while to load
         from keras.models import load_model
+        import tensorflow as tf
 
         super().__init__(name=name,
                          names=['optimal_vals', 'offsets'],
@@ -208,9 +248,14 @@ class RetuneBlipsParameter(MeasurementParameter):
         self.initial_offsets = None
         self.voltage_limit = voltage_limit
 
+        assert optimum_method in ['neural_network', 'max_blips']
+        self.optimum_method = optimum_method
+
         self.model_filepath = model_filepath
         if model_filepath is not None:
             self.model = load_model(self.model_filepath)
+            self.model._make_predict_function()
+            self.graph = tf.get_default_graph()
         else:
             logger.warning(f'No neural network model loaded for {self}')
             self.model = None
@@ -239,7 +284,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
     def create_loop(self):
         """
-        Create loop that sweep sweep_parameter over sweep_vals and measures 
+        Create loop that sweep sweep_parameter over sweep_vals and measures
         blips_parameter at each sweep point.
         Returns: loop
 
@@ -253,16 +298,23 @@ class RetuneBlipsParameter(MeasurementParameter):
         Calculate optimum of dataset from neural network
         Returns: optimal voltage of combined set parameter
         """
-        if self.model is None:
-            logger.warning('No Neural network model provided. skipping retune')
-            return None
-
         blips_per_second = self.data.blips_per_second.ndarray
         blips_per_second = np.nan_to_num(blips_per_second)
         mean_low_blip_duration = self.data.mean_low_blip_duration.ndarray
         mean_low_blip_duration = np.nan_to_num(mean_low_blip_duration)
         mean_high_blip_duration = self.data.mean_high_blip_duration.ndarray
         mean_high_blip_duration = np.nan_to_num(mean_high_blip_duration)
+
+        if self.optimum_method == 'max_blips':
+            if not np.nanmax(blips_per_second):
+                return None
+            else:
+                max_idx = np.nanargmax(blips_per_second)
+                return self.sweep_vals[max_idx]
+
+        if self.model is None:
+            logger.warning('No Neural network model provided. skipping retune')
+            return None
 
         if len(blips_per_second) != 21:
             raise RuntimeError(
@@ -272,8 +324,11 @@ class RetuneBlipsParameter(MeasurementParameter):
 
         # normalize data
         # Blips per second gets a gaussian normalization
-        data[:, 0] = (blips_per_second - np.mean(blips_per_second)) / np.std(
-            blips_per_second)
+        if np.std(blips_per_second):
+            data[:, 0] = (blips_per_second - np.mean(blips_per_second)) / np.std(
+                blips_per_second)
+        else:
+            return None
 
         # blip durations get a logarithmic normalization, since the region
         # of interest has a low value
@@ -288,7 +343,13 @@ class RetuneBlipsParameter(MeasurementParameter):
         data = np.expand_dims(data, 0)
 
         # Predict optimum value
-        self.neural_network_results = self.model.predict(data)[0, 0]
+        try:
+            with self.graph.as_default():
+                self.neural_network_results = self.model.predict(data)[0, 0]
+        except Exception as e:
+            import traceback
+            logger.error(traceback.print_exc())
+            return
 
         # Scale results
         # Neural network output is between -1 (sweep_vals[0]) and +1 (sweep_vals[-1])
@@ -361,7 +422,7 @@ class RetuneBlipsParameter(MeasurementParameter):
 
             if isinstance(self.optimum_DC_offset, float):
                 self.sweep_parameter(self.optimum_DC_offset)
-            elif self.optimum_DC_offset is not None:
+            elif self.optimum_DC_offset:
                 for parameter, offset in zip(self.sweep_parameter.parameters,
                                              self.optimum_DC_offset):
                     parameter(parameter() + offset)
@@ -717,9 +778,8 @@ class MeasureNucleusParameter(MeasurementParameter):
         if self._frequency_vals is not None:
             frequency_vals = self._frequency_vals
         else:
-            environment = self.acquisition_parameter.environment
             frequency_vals = {int(key): val for key, val
-                              in config[environment].properties.ESR_vals.items()}
+                              in config[f'environment:properties.ESR_vals'].items()}
         return frequency_vals
 
     @frequency_vals.setter

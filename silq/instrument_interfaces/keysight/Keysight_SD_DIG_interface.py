@@ -1,16 +1,19 @@
+from typing import List
+import numpy as np
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.pulses.pulse_types import TriggerPulse
+from silq.pulses.pulse_types import Pulse, TriggerPulse
+
 from qcodes.utils import validators as vals
-from qcodes import ManualParameter
-from qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller import Triggered_Controller
+from qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller \
+    import Triggered_Controller
 
 import logging
 logger = logging.getLogger(__name__)
 
-import numpy as np
 
-class Keysight_SD_DIG_interface(InstrumentInterface):
-    def __init__(self, instrument_name, acquisition_controller_names=[], **kwargs):
+class Keysight_SD_DIG_Interface(InstrumentInterface):
+    def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
         self.pulse_sequence.allow_untargeted_pulses = True
         self.pulse_sequence.allow_pulse_overlap = True
@@ -34,130 +37,119 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
                                name='trig_in', input=True),
         }
 
-        # Organize acquisition controllers
-        self.acquisition_controllers = {}
-        for acquisition_controller_name in acquisition_controller_names:
-            self.add_acquisition_controller(acquisition_controller_name)
-
-        self.add_parameter(name='default_acquisition_controller',
-                           parameter_class=ManualParameter,
-                           initial_value=None,
-                           vals=vals.Enum(None, *self.acquisition_controllers.keys()))
-
         self.add_parameter(name='acquisition_controller',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition controller for acquiring '
+                                     'data with SD digitizer. '
+                                     'Must be acquisition controller object.')
 
-        # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
-                           parameter_class=ManualParameter,
                            initial_value=[],
-                           vals=vals.Anything())
+                           set_cmd=None,
+                           vals=vals.Lists(),
+                           docstring='Names of acquisition channels '
+                                     '[chA, chB, etc.]. Set by the layout')
 
-        # Add ManualParameters which will be distributed to the active acquisition
-        # controller during the setup routine
         self.add_parameter('sample_rate',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Acquisition sampling rate (Hz)')
 
         self.add_parameter('samples',
                            vals=vals.Numbers(),
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Number of times to acquire the pulse '
+                                     'sequence.')
+
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: self.acquisition_controller().samples_per_trace(),
+                           docstring='Number of points in a trace.')
 
         self.add_parameter('channel_selection',
-                           set_cmd=None)
-
-        self.add_parameter('trigger_channel',
-                           vals=vals.Enum(0, 1, 2, 3, 4, 5, 6, 7),
-                           set_cmd=None)
-
-        self.add_parameter('trigger_edge',
-                           vals=vals.Enum('rising', 'falling', 'both'),
-                           set_cmd=None)
-
-        self.add_parameter('trigger_threshold',
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Active channel indices to acquire. '
+                                     'Zero-based index (chA -> 0, etc.). '
+                                     'Set during setup and should not be set'
+                                     'manually.')
 
         self.add_parameter('minimum_timeout_interval',
                            unit='s',
                            vals=vals.Numbers(),
                            initial_value=5,
-                           set_cmd=None)
+                           set_cmd=None,
+                           docstring='Minimum value for timeout when acquiring '
+                                     'data. If 2.1 * pulse_sequence.duration '
+                                     'is lower than this value, it will be '
+                                     'used instead')
+
+        self.add_parameter('trigger_in_duration',
+                           unit='s',
+                           vals=vals.Numbers(),
+                           initial_value=15e-6,
+                           set_cmd=None,
+                           docstring="Duration for a receiving trigger signal. "
+                                     "This is passed the the interface that is "
+                                     "sending the triggers to this instrument.")
+
+        self.add_parameter('capture_full_trace',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           set_cmd=None,
+                           docstring='Capture from t=0 to end of pulse '
+                                     'sequence. False by default, in which '
+                                     'case start and stop times correspond to '
+                                     'min(t_start) and max(t_stop) of all '
+                                     'pulses with the flag acquire=True, '
+                                     'respectively.')
+        # dict of raw unsegmented traces {ch_name: ch_traces}
+        self.traces = {}
+        # Segmented traces per pulse, {pulse_name: {channel_name: {ch_pulse_traces}}
+        self.pulse_traces = {}
 
         # Set up the driver to a known default state
         self.initialize_driver()
 
     def acquisition(self):
-        """
-        Perform acquisition
-        """
-        acquisition_data = self.acquisition_controller().acquisition()
-
-        acquisition_average_mode = self.acquisition_controller().average_mode()
+        """Perform acquisition"""
+        traces = self.acquisition_controller().acquisition()
+        self.stop()
+        self.traces = {ch: ch_traces for ch, ch_traces
+                       in zip(self.acquisition_channels(), traces)}
 
         # The start of acquisition
-        t_start = min(self.pulse_sequence.t_start_list)
+        if self.capture_full_trace():
+            t0 = min(pulse.t_start for pulse in self.pulse_sequence)
+        else:
+            t0 = min(pulse.t_start for pulse in self.pulse_sequence.get_pulses(acquire=True))
 
         # Split data into pulse traces
-        data = {}
+        pulse_traces = {}
         for pulse in self.pulse_sequence.get_pulses(acquire=True):
             name = pulse.full_name
-            data[name] = {}
-            for ch_idx, ch in enumerate(self.channel_selection()):
-                ch_data = acquisition_data[ch_idx]
-                ch_name = 'ch{}'.format(ch)
-                ts = (pulse.t_start - t_start, pulse.t_stop - t_start)
-                sample_range = [int(round(t * self.sample_rate())) for t in ts]
-                pts = len(sample_range)
+            pulse_traces[name] = {}
+            for k, ch_name in enumerate(self.acquisition_channels()):
+                ch_data = self.traces[ch_name]
+                start_idx = int(round((pulse.t_start - t0) * self.sample_rate()))
+                stop_idx = start_idx + int(round(pulse.duration * self.sample_rate()))
 
                 # Extract pulse data from the channel data
-                data[name][ch_name] = ch_data[:, sample_range[0]:sample_range[1]]
+                pulse_traces[name][ch_name] = ch_data[:, start_idx:stop_idx]
                 # Further average the pulse data
                 if pulse.average == 'none':
                     pass
                 elif pulse.average == 'trace':
-                    data[name][ch_name] = np.mean(data[name][ch_name], axis=0)
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name], axis=0)
                 elif pulse.average == 'point':
-                    data[name][ch_name] = np.mean(data[name][ch_name])
+                    pulse_traces[name][ch_name] = np.mean(pulse_traces[name][ch_name])
                 elif 'point_segment' in pulse.average:
                     segments = int(pulse.average.split(':')[1])
-                    pts = data[name][ch_name].shape[1]
-
-                    segments_idx = [int(round(pts * idx / segments))
-                                    for idx in np.arange(segments + 1)]
-                    pulse_traces = np.zeros(segments)
-                    for k in range(segments):
-                        pulse_traces[k] = np.mean(data[name][ch_name][:, segments_idx[k]:segments_idx[k + 1]])
-
-                    data[name][ch_name] = pulse_traces
+                    split_arrs = np.array_split(pulse_traces[name][ch_name], segments, axis=1)
+                    pulse_traces[name][ch_name] = np.mean(split_arrs, axis=(1,2))
                 else:
                     raise SyntaxError(f'average mode {pulse.average} not configured')
 
-        return data
-
-    def add_acquisition_controller(self, acquisition_controller_name,
-                                   cls_name=None):
-        """
-        Adds an acquisition controller to the available controllers.
-        If another acquisition controller exists of the same class, it will
-        be overwritten.
-        Args:
-            acquisition_controller_name: instrument name of controller.
-                Must be on same server as interface and Keysight digitizer
-            cls_name: Optional name of class, which is used as controller key.
-                If no cls_name is provided, it is found from the instrument
-                class name
-
-        Returns:
-            None
-        """
-        acquisition_controller = self.find_instrument(acquisition_controller_name)
-        if cls_name is None:
-            cls_name = acquisition_controller.__class__.__name__
-        # Remove _Controller from cls_name
-
-        cls_name = cls_name.replace('_Controller', '')
-
-        self.acquisition_controllers[cls_name] = acquisition_controller
+        self.pulse_traces = pulse_traces
+        return pulse_traces
 
     def initialize_driver(self):
         """
@@ -165,69 +157,83 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             be done in the configure_driver and get_additional_pulses
             functions.
         """
-        for k in range(self.instrument.n_channels):
-            self.instrument.parameters[f'impedance_{k}'].set('50') # 50 Ohm impedance
-            self.instrument.parameters[f'coupling_{k}'].set('DC')  # DC Coupled
-            self.instrument.parameters[f'full_scale_{k}'].set(3.0)  # 3.0 Volts
+        self.instrument.channels.impedance('50') # 50 Ohm impedance
+        self.instrument.channels.coupling('DC')  # DC Coupled
+        self.instrument.channels.full_scale(3.0)  # 3.0 Volts
 
-    def get_additional_pulses(self, **kwargs):
-        if not self.pulse_sequence.get_pulses(acquire=True):
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List of additional pulses, empty by default.
+        """
+        if self.input_pulse_sequence.get_pulses(trigger=True):
+            logger.warning('SD digitizer has a manual trigger pulse defined.'
+                           'This should normally be done automatically instead.')
+            return []
+        elif not self.pulse_sequence.get_pulses(acquire=True):
             # No pulses need to be acquired
             return []
         else:
-            # Add a single trigger pulse when starting acquisition
-            t_start = min(pulse.t_start for pulse in
-                          self.pulse_sequence.get_pulses(acquire=True))
-            if (self.input_pulse_sequence.get_pulses(trigger=True, t_start=t_start)):
-                logger.warning('Trigger manually defined for M3300A digitizer. '
-                               'This is inadvisable as this could limit the responsiveness'
-                               ' of the machine.')
-                return []
+            # A trigger pulse is needed
+            try:
+                trigger_connection = next(connection for connection in connections
+                                          if connection.trigger or connection.trigger_start)
+            except StopIteration:
+                logger.error('Could not find trigger connection for SD digitizer')
 
-            return [TriggerPulse(t_start=t_start, duration=15e-6,
-                                 connection_requirements={
-                                     'input_instrument': self.instrument_name(),
-                                     'trigger': True
-                                 })]
+            connection_requirements = {'input_instrument': self.instrument_name()}
 
-    def setup(self, samples=1, **kwargs):
+            if trigger_connection.trigger:
+                connection_requirements['trigger'] = True
+                t_start = min(pulse.t_start for pulse in
+                              self.pulse_sequence.get_pulses(acquire=True))
+            else: # connection.trigger_start or capture full trace
+                connection_requirements['trigger_start'] = True
+                t_start = 0
+
+            if self.capture_full_trace():  # Override t_start to capture full trace
+                t_start = 0
+
+            return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
+                                 connection_requirements=connection_requirements)]
+
+    def setup(self, samples=1, input_connections=(), **kwargs):
         self.samples(samples)
 
-        # Find all unique pulse_connections to choose which channels to acquire on
+        # Select the channels to acquire
         channel_selection = [int(ch_name[-1]) for ch_name in self.acquisition_channels()]
-        self.channel_selection(sorted(channel_selection))
-        self.acquisition_controller().channel_selection(self.channel_selection())
+        self.channel_selection(channel_selection)
+        self.acquisition_controller().channel_selection(channel_selection)
 
         # Pulse averaging is done in the interface, not the controller
         self.acquisition_controller().average_mode('none')
 
         if isinstance(self.acquisition_controller(), Triggered_Controller):
-            if self.input_pulse_sequence.get_pulses(name='Bayes'):
-                bayesian_pulse = self.input_pulse_sequence.get_pulses(name='Bayes')[0]
-                for ch in range(8):
-                    self.instrument.parameters[f'DAQ_trigger_delay_{ch}'].set(int(bayesian_pulse.t_start*2*self.sample_rate()))
-            # Get trigger connection to determine how to trigger the controller
-            trigger_pulse = self.input_pulse_sequence.get_pulses(trigger=True)[0]
-            trigger_connection = trigger_pulse.connection
-            self.trigger_threshold(trigger_pulse.get_voltage(trigger_pulse.t_start) / 2)
-            self.trigger_edge('rising')
-
             self.acquisition_controller().sample_rate(self.sample_rate())
             self.acquisition_controller().traces_per_acquisition(self.samples())
 
-            self.acquisition_controller().trigger_channel(trigger_connection.input['channel'].id)
-            self.acquisition_controller().trigger_threshold(self.trigger_threshold())
-            # Map the string value of trigger edge to a device integer
-            self.acquisition_controller().trigger_edge(self.trigger_edge())
-
             # Capture maximum number of samples on all channels
-            t_start = min(self.pulse_sequence.t_start_list)
-            t_stop = max(self.pulse_sequence.t_stop_list)
-            samples_per_trace = (t_stop - t_start) * self.sample_rate()
+            if not self.capture_full_trace():
+                t_start = min(self.pulse_sequence.t_start_list)
+                t_stop = max(self.pulse_sequence.t_stop_list)
+            else:
+                # Capture full trace, even if no pulses have acquire=True
+                # Mainly done so that the full trace can be stored.
+                t_start = min(self.pulse_sequence.t_start_list)
+                t_stop = self.pulse_sequence.duration
+
+            #  !!! Changed np.ceil to np.round !!!
+            samples_per_trace = int(np.round((t_stop - t_start) * self.sample_rate()))
+            samples_per_trace += samples_per_trace % 2
             self.acquisition_controller().samples_per_trace(samples_per_trace)
 
-            # Set read timeout interval, which is the interval for requesting
-            # an acquisition. This allows us to interrupt an acquisition prematurely.
+            # Set read timeout interval
+            # This is the interval for requesting an acquisition.
+            # This allows us to interrupt an acquisition prematurely.
             timeout_interval = max(2.1 * self.pulse_sequence.duration,
                                    self.minimum_timeout_interval())
             self.acquisition_controller().timeout_interval(timeout_interval)
@@ -237,12 +243,43 @@ class Keysight_SD_DIG_interface(InstrumentInterface):
             # Traces per read should not be longer than the timeout interval
             traces_per_read = max(timeout_interval // self.pulse_sequence.duration, 1)
             self.acquisition_controller().traces_per_read(traces_per_read)
+
+            self.setup_trigger(t_start, input_connections)
         else:
             raise RuntimeError('No setup configured for acquisition controller '
                                f'{self.acquisition_controller()}')
 
+    def setup_trigger(self, t_start, input_connections):
+        # Setup triggering
+        trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
+        if trigger_pulse is None:
+            trigger_pulse = self.input_pulse_sequence.get_pulse(trigger_start=True)
+        assert trigger_pulse is not None, "No trigger pulse found for digitizer"
+        trigger_channel = trigger_pulse.connection.input['channel'].name
+        # Also sets trigger mode, etc.
+        self.acquisition_controller().trigger_channel(trigger_channel)
+        if trigger_channel.startswith('ch'):
+            self.acquisition_controller().analog_trigger_edge('rising')
+            self.acquisition_controller().analog_trigger_threshold(
+                trigger_pulse.amplitude / 2)
+
+        elif trigger_channel == 'trig_in':
+            self.acquisition_controller().digital_trigger_mode('rising')
+        else:  # PXI channel
+            self.acquisition_controller().digital_trigger_mode('rising')
+
+        if self.input_pulse_sequence.get_pulses(name='Bayes'):
+            bayesian_pulse = self.input_pulse_sequence.get_pulse(name='Bayes')
+            trigger_delay = int(bayesian_pulse.t_start * 2 * self.sample_rate())
+            trigger_delay_samples = int(round(trigger_delay * self.sample_rate()))
+        elif any(connection.trigger_start for connection in input_connections):
+            trigger_delay_samples = int(round(t_start * self.sample_rate()))
+        else:
+            trigger_delay_samples = 0
+        self.acquisition_controller().trigger_delay_samples(trigger_delay_samples)
+
     def stop(self):
         # Stop all DAQs
-        self.instrument.daq_stop_multiple((1 << 8) - 1)
+        self.instrument.stop_channels(range(8))
 
 

@@ -1,9 +1,9 @@
 import numpy as np
 import logging
+from typing import List
 
-from silq.instrument_interfaces \
-    import InstrumentInterface, Channel
-from silq.pulses import SinePulse, PulseImplementation, TriggerPulse
+from silq.instrument_interfaces import InstrumentInterface, Channel
+from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse
 
 
 logger = logging.getLogger(__name__)
@@ -16,11 +16,34 @@ RESET_PHASE = RESET_PHASE_FALSE
 DEFAULT_CH_INSTR = (0, 0, 0, 0, 0)
 DEFAULT_INSTR = DEFAULT_CH_INSTR + DEFAULT_CH_INSTR
 
+
 class PulseBlasterDDSInterface(InstrumentInterface):
+    """ Interface for the Pulseblaster DDS
+
+    When a `PulseSequence` is targeted in the `Layout`, the
+    pulses are directed to the appropriate interface. Each interface is
+    responsible for translating all pulses directed to it into instrument
+    commands. During the actual measurement, the instrument's operations will
+    correspond to that required by the pulse sequence.
+
+    One important issue with the DDS is that it requires an inverted trigger,
+    i.e. high voltage is the default, and a low voltage indicates a trigger.
+    Not every interface has been programmed to handle this (so far only the
+    PulseBlaster ESRPRO has).
+
+    The interface also contains a list of all available channels in the
+    instrument.
+
+    Args:
+        instrument_name: name of instrument for which this is an interface
+
+    Note:
+        For a given instrument, its associated interface can be found using
+            `get_instrument_interface`
+    """
 
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
-
 
         self._output_channels = {
             # Measured output ranged from -3V to 3 V @ 50 ohm Load.
@@ -45,9 +68,16 @@ class PulseBlasterDDSInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('amplitude', {'min': 0, 'max': 1/0.6})])]
 
-    def get_additional_pulses(self, **kwargs):
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List containing trigger pulse if not primary instrument
+        """
         # Request one trigger at the start if not primary
-        # TODO test if this works
         if not self.is_primary():
             return [TriggerPulse(t_start=0,
                                  connection_requirements={
@@ -56,8 +86,20 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         else:
             return []
 
-    def setup(self, final_instruction='loop', is_primary=True, repeat=True,
+    def setup(self,
+              repeat: bool = True,
               **kwargs):
+        """Set up instrument after layout has been targeted by pulse sequence.
+
+        Args:
+            repeat: Repeat the pulse sequence indefinitely. If False, calling
+                `Layout.start` will only run the pulse sequence once.
+            **kwargs: Ignored kwargs passed by layout.
+
+        Returns:
+            setup flags (see ``Layout.flags``)
+
+        """
         #Initial pulseblaster commands
         self.instrument.setup()
 
@@ -98,7 +140,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         t_stop_max = max(self.pulse_sequence.t_stop_list)
         inst_list = []
 
-        if not is_primary:
+        if not self.is_primary():
             # Wait for trigger
             inst_list.append(DEFAULT_INSTR + (0, 'wait', 0, 100))
 
@@ -143,11 +185,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
             t = t_next
 
-        if is_primary:
+        if self.is_primary():
             # Insert delay until end of pulse sequence
             # NOTE: This will disable all output channels and use default registers
-            delay_duration = max(self.pulse_sequence.duration - t, 0)
-            if delay_duration:
+            delay_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay - t
+            if delay_duration > 1e-11:
                 delay_cycles = round(delay_duration * s_to_ns)
                 if delay_cycles < 1e9:
                     inst = DEFAULT_INSTR + (0, 'continue', 0, delay_cycles)
@@ -172,7 +214,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
 
-        if not is_primary:
+        if not self.is_primary():
             # Return flag to ensure this instrument is started after its
             # triggering instrument. This is because it is triggered when its
             # trigger voltage reaches below a threshold, meaning that the triggering
@@ -181,9 +223,11 @@ class PulseBlasterDDSInterface(InstrumentInterface):
 
 
     def start(self):
+        """Start instrument"""
         self.instrument.start()
 
     def stop(self):
+        """Stop instrument"""
         self.instrument.stop()
 
 

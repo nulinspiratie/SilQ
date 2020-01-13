@@ -32,18 +32,24 @@ sys.path.insert(0, os.path.abspath('../../SilQ-documentation/source'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
+extensions = [
+    'sphinx.ext.autodoc',
+    # 'sphinx.ext.doctest',  # Test code in docstrings
+    'sphinx.ext.intersphinx',  # Reference documentation of other projects
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
+    'sphinx.ext.napoleon',  # Google-style docstrings
+    'sphinx.ext.autosummary',  # Create easy autodoc summaries
+    # 'sphinx.ext.autosectionlabel',
     'sphinx_autodoc_typehints',
+    # 'sphinx_automodapi.automodapi',  # Automatically generating module documentation
+    # 'sphinx.ext.graphviz',
     'nbsphinx']
+# autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -95,7 +101,8 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'classic'
+html_theme = "sphinx_rtd_theme"
+# html_theme = 'classic'
 # html_theme = 'julia'
 # html_theme_path = [juliadoc.get_theme_dir()]
 # html_sidebars = juliadoc.default_sidebars()
@@ -110,6 +117,9 @@ html_theme = 'classic'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_favicon = r'../other/images/silq_icon.ico'
+# html_logo = r'../other/images/silq.jpg'
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -208,4 +218,11 @@ epub_exclude_files = ['search.html']
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {'https://docs.python.org/3/': None,
+                       # 'http://qcodes.github.io/Qcodes/': None}
+                       'qcodes': ('http://qcodes.github.io/Qcodes/', None)}
+
+default_role = 'any'
+
+
+# automodapi_toctreedirnm = '../api'
