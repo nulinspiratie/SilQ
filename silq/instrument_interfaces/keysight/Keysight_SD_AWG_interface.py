@@ -7,59 +7,13 @@ import logging
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
     AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
-from silq.meta_instruments.layout import SingleConnection
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
-from silq.tools.general_tools import arreqclose_in_list
+from silq.tools.general_tools import arreqclose_in_list, find_approximate_divisor
 
 from qcodes import validators as vals
 
 
 logger = logging.getLogger(__name__)
-
-
-def first_factor_above_N(x, N, step):
-    for i in range(N, x, step):
-        if not x % i:
-            return i
-    # If no factor found, just use N
-    return N
-
-
-def find_approximate_divisor(N: int,
-                             max_cycles: int = 65535,
-                             points_multiple: int = 1,
-                             min_points: int = 15,
-                             max_points: int = 6000,
-                             max_remaining_points: int = 1000) -> Union[tuple, None]:
-    """Find an approximate divisor for a number
-
-    The divisor (points) is chosen such that points * cycles <= N, with
-    cycles as close as possible to max_cycles, with a low number of remaining
-    points
-
-    Args:
-        N: Number for which to find a divisor
-        max_cycles: Maximum number of cycles (for points * cycles)
-        points_multiple: Optional value that points must be a multiple of
-        min_points: Minimum number of waveform points.
-        max_points: Maximum number of waveform points.
-        max_remaining_points: Maximum number of remaining points.
-            Set to 0 to find an exact divisor
-
-    Returns:
-        If successful, a dict containing {'points', 'cycles', 'remaining_points'}
-        If unsuccessful, None
-    """
-    # Minimum points can't be less than N/max_cycles, and must be in multiples
-    min_points = max(int(np.ceil(N / max_cycles)), min_points)
-    min_points += (points_multiple - min_points) % points_multiple
-    for points in range(min_points, max_points, points_multiple):
-        cycles = N // points
-        remaining_points = N - points * cycles
-        if min_points <= points <= max_points and remaining_points <= max_remaining_points:
-            return int(points), int(cycles), int(remaining_points)
-    else:
-        return None
 
 
 class Keysight_SD_AWG_Interface(InstrumentInterface):
@@ -441,7 +395,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 max_remaining_points=int(6000 / (prescaler+1)))
 
             if approximate_divisor is not None:
-                points, cycles, _ = approximate_divisor
+                points = approximate_divisor['points']
+                cycles = approximate_divisor['cycles']
                 break
         else:
             logger.warning('Could not find suitable points, cycles for 0V '
