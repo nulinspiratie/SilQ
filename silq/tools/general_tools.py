@@ -1,8 +1,6 @@
-from typing import Any, List
-import sys
+from typing import Any, List, Union
 import operator
-from functools import partial, wraps
-import re
+from functools import wraps
 import numpy as np
 import logging
 import logging.handlers
@@ -715,3 +713,56 @@ def logclass(cls, methodsAsFunctions=False,
                 logmethod(value.__func__, log = log, displayName=cls.__name__)))
 
     return cls
+
+
+def find_approximate_divisor(N: int,
+                             max_cycles: int = 65535,
+                             points_multiple: int = 1,
+                             min_points: int = 15,
+                             max_points: int = 6000,
+                             max_remaining_points: int = 1000,
+                             min_remaining_points: int = 0) -> Union[dict, None]:
+    """Find an approximate divisor for a number
+
+    The divisor (points) is chosen such that points * cycles <= N, with
+    cycles as close as possible to max_cycles, with a low number of remaining
+    points
+
+    Args:
+        N: Number for which to find a divisor
+        max_cycles: Maximum number of cycles (for points * cycles)
+        points_multiple: Optional value that points must be a multiple of
+        min_points: Minimum number of waveform points.
+        max_points: Maximum number of waveform points.
+        max_remaining_points: Maximum number of remaining points.
+            Set to 0 to find an exact divisor
+        min_remaining_points: Minimum number of remaining points when not zero
+
+    Returns:
+        If successful, a dict containing {'points', 'cycles', 'remaining_points'}
+        If unsuccessful, None
+    """
+    # Minimum points can't be less than N/max_cycles
+    min_points = max(int(np.ceil(N / max_cycles)), min_points)
+    # Minimum points must be a multiple of points_multiple
+    min_points += (points_multiple - min_points) % points_multiple
+
+    for points in range(min_points, max_points, points_multiple):
+        cycles = N // points
+        remaining_points = N - points * cycles
+
+        # Increase remaining_points if there are remaining points and they
+        # are less than min_remaining_points
+        if remaining_points and remaining_points < min_remaining_points:
+            subtract_cycles = np.ceil((min_remaining_points - remaining_points) / points)
+            remaining_points += subtract_cycles * (min_remaining_points - remaining_points)
+            cycles -= subtract_cycles
+
+        if min_points <= points <= max_points and remaining_points <= max_remaining_points:
+            return {
+                'points': int(points),
+                'cycles': int(cycles),
+                'remaining_points': int(remaining_points)
+            }
+    else:
+        return None
