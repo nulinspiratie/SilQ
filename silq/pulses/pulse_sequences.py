@@ -993,11 +993,14 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['post_pulses'])
 
 class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
-    """" Created to implement a DC detuning in a Ramsey sequence during the wait time.
-    Refer to ESRPulseSequence for the ESR pulses.
+    """" Created to implement an arbitrary number of DC pulses in a Ramsey sequence during the wait time. Please Refer to ESRPulseSequence for the ESR pulses.
 
-   DC pulses can be stored in  ['ESR']['detuning_pulses'] and will become the new 'stage_pulse' """
+    Highlights:
 
+   - DC pulses can be stored in  ['ESR']['detuning_pulses'] and will become the new 'stage_pulse'
+   - t_start_detuning is the time at which the DC detuning pulses start. In the case the detuning starts right after the ESR pi/2 , then this time should
+    be equal to ['pre_delay'] +ESR['piHalf'].duration
+   - If  the time for the detuning pulses is shorter that the total stage duration, the final part of the pulse (called post_stage) will the standard stage pulse  """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1014,8 +1017,7 @@ class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
         if self.pulse_settings['EPR']['enabled'] :
             raise NotImplementedError('Currently not programmed to include EPR pulse')
 
-       # if len(self.get_pulses(name='stage')) > 1 + len(self.EPR['enabled']):    #len(self.pulse_settings['EPR']['enabled']):
-        #    raise NotImplementedError('Adding detuning pulses currently only implemented with one stage pulse')
+
 
         stage_pulse = self.get_pulse(name=self.ESR['stage_pulse'].name)
 
@@ -1027,7 +1029,7 @@ class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
                for pulse in self.ESR['detuning_pulses']):
             raise RuntimeError('All detuning pulses must have same connection as stage pulse')
 
-        t = stage_pulse.t_start + self.ESR['t_start_detuning']
+        t = stage_pulse._delay + self.ESR['t_start_detuning']
         # Add an initial stage pulse if t_start_detuning > 0
         if self.pulse_settings['ESR']['t_start_detuning'] > 0:
             pre_stage_pulse, = self.add(stage_pulse)
