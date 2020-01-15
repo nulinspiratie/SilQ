@@ -40,7 +40,7 @@ instrument_interfaces = {
 }
 
 
-def get_instrument_interface(instrument):
+def get_instrument_interface(instrument, *args, **kwargs):
     from . import instrument_interfaces
     instrument_class = instrument.__class__.__name__
     import_dict = instrument_interfaces[instrument_class]
@@ -50,5 +50,7 @@ def get_instrument_interface(instrument):
 
     instrument_interface = instrument_interface_class(
         instrument_name=instrument.name,
-        server_name=server_name)
+        server_name=server_name,
+    *args,
+    **kwargs)
     return instrument_interface
