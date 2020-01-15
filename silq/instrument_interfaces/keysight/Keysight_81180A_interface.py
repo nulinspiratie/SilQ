@@ -31,6 +31,9 @@ class Keysight81180AInterface(InstrumentInterface):
         - When the output is turned on, there is a certain ramping time of a few
           milliseconds. This negatively impacts the first repetition of a
           pulse sequence
+        - Before the first trigger, the outputs are not necessarily at 0V.
+          This can be set via ``start_at_0V` (default False). Note that setting
+          this to True also causes any final_delay to be fixed at 0V.
         - see ``interface.additional_settings`` for instrument settings that should
           be set manually
     """
