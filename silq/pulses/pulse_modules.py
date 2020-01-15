@@ -391,6 +391,10 @@ class PulseSequence(ParameterNode):
 
         # Add pulses (which will create copies)
         self_copy.pulses = self.pulses
+
+        # If duration is fixed (i.e. pulse_sequence.duration=val), ensure this
+        # is also copied
+        self_copy['duration']._duration = self['duration']._duration
         return self_copy
 
     def _ipython_key_completions_(self):
