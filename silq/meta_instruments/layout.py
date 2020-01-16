@@ -1233,14 +1233,14 @@ class Layout(Instrument):
         See Also:
             `Layout.setup` for information on allowed flags.
         """
-        if 'skip_start' in new_flags:
-            self.flags['skip_start'].add(new_flags['skip_start'])
+        if 'skip_start' in new_flags and new_flags['skip_start'] not in self.flags['skip_start']:
+            self.flags['skip_start'].append(new_flags['skip_start'])
 
         if 'post_start_actions' in new_flags:
             self.flags['post_start_actions'] += new_flags['post_start_actions']
 
-        if 'start_last' in new_flags:
-            self.flags['start_last'].add(new_flags['start_last'])
+        if 'start_last' in new_flags and new_flags['start_last'] not in self.flags['start_last']:
+            self.flags['start_last'].append(new_flags['start_last'])
 
         if 'setup' in new_flags:
             for instrument_name, new_instrument_flags in new_flags['setup'].items():
@@ -1308,9 +1308,9 @@ class Layout(Instrument):
 
         # Initialize with empty flags, used for instructions between interfaces
         self.flags = {'setup': {},
-                      'skip_start': set(),
+                      'skip_start': [],
                       'post_start_actions': [],
-                      'start_last': set(),
+                      'start_last': [],
                       'auto_stop': None}
 
         if samples is not None:
@@ -1377,12 +1377,12 @@ class Layout(Instrument):
             if interface == self.acquisition_interface:
                 continue
             elif interface.instrument_name() in self.flags['skip_start']:
-                logger.info('Skipping starting {interface.name} (flag skip_start)')
+                logger.info(f'Skipping starting {interface.name} (flag skip_start)')
                 continue
             elif interface.instrument_name() in ignore:
-                logger.info('Skipping starting {interface.name} (name in ignore list)')
+                logger.info(f'Skipping starting {interface.name} (name in ignore list)')
             elif interface.instrument_name() in self.flags['start_last']:
-                logger.info('Delaying starting {interface.name} (flag start_last)')
+                logger.info(f'Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
                 interface.start()
