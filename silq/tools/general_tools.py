@@ -574,7 +574,8 @@ def arreqclose_in_list(myarr: np.ndarray,
 
     Args:
         myarr: arr to be found in list
-        list_arrays: List of numpy arrays
+        list_arrays: List of numpy arrays.
+            Any element that is None instead of an array is skipped
         rtol: relative tolerance when comparing array elements
         atol: absolute tolerance when comparing array elements
 
@@ -582,7 +583,8 @@ def arreqclose_in_list(myarr: np.ndarray,
         idx of array in list approximately equal to myarr, None if not found.
     """
     return next((idx for idx, elem in enumerate(list_arrays)
-                 if elem.size == myarr.size
+                 if elem is not None
+                 and elem.size == myarr.size
                  and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
                 None)
 
