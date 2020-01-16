@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from typing import List
+from typing import List, Union
 from warnings import warn
 
 from silq import config
@@ -31,9 +31,9 @@ class Keysight81180AInterface(InstrumentInterface):
         - When the output is turned on, there is a certain ramping time of a few
           milliseconds. This negatively impacts the first repetition of a
           pulse sequence
-        - Before the first trigger, the outputs are not necessarily at 0V.
-          This can be set via ``start_at_0V` (default False). Note that setting
-          this to True also causes any final_delay to be fixed at 0V.
+        - To ensure voltage is fixed at final voltage of the pulse sequence
+          during any pulse_sequence.final_delay, the first point of the first
+          waveform of the sequence is set to that final voltage.
         - see ``interface.additional_settings`` for instrument settings that should
           be set manually
     """
@@ -76,7 +76,7 @@ class Keysight81180AInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[
                     ("frequency", {"min": 0, "max": 1.5e9}),
-                    ("amplitude", {"max": 0.5}),
+                    ("amplitude", {"min": 0, "max": 1}),
                     ("duration", {"min": 100e-9}),
                 ]
             ),
@@ -95,20 +95,8 @@ class Keysight81180AInterface(InstrumentInterface):
             vals=vals.Lists(vals.Strings()),
         )
 
-        self.add_parameter(
-            'start_at_0V',
-            initial_value=False,
-            set_cmd=None,
-            vals=vals.Bool(),
-            docstring='Optionally start sequence with a pulse at 0V. '
-                      'This ensures that the first shot of the pulse sequence '
-                      'starts at 0V instead of the first voltage of the first pulse. '
-                      'Note however that any pulse_sequence.final_delay is then '
-                      'also at 0V. If start_at_0V is False, final_delay is fixed '
-                      'at the final voltage of the last pulse (default)'
-        )
-
         self.waveforms = {}
+        self.waveforms_initial = {}
         self.sequences = {}
 
         # Add parameters that are not set via setup
@@ -123,16 +111,13 @@ class Keysight81180AInterface(InstrumentInterface):
     def get_additional_pulses(self, **kwargs):
         # Currently the only supported sequence_mode is `once`, i.e. one trigger
         # at the start of the pulse sequence
-        additional_pulses = []
 
-        t_start = np.min(self.pulse_sequence.t_start_list)
-
-        # Request a single trigger at the start
+        # Request a single trigger at the start of the pulse sequence
         logger.info(f"Creating trigger for Keysight 81180A: {self.name}")
         return [
             TriggerPulse(
                 name=self.name + "_trigger",
-                t_start=t_start,
+                t_start=0,
                 duration=self.trigger_in_duration(),
                 connection_requirements={
                     "input_instrument": self.instrument_name(),
@@ -162,10 +147,13 @@ class Keysight81180AInterface(InstrumentInterface):
             # TODO Are these needed? Or set via sequence?
             # instrument_channel.power(5)  # If coupling is AC
             # instrument_channel.voltage_DAC(voltage)  # If coupling is DAC (max 0.5)
-            # instrument_channel.voltage_DC(voltage)  # If coupling is DC (max 2)
+            instrument_channel.voltage_DC(2)  # If coupling is DC (max 2)
+            if not instrument_channel.output_coupling() == 'DC':
+                warn('Keysight 81180 output coupling is not DC. The waveform '
+                     'amplitudes might be off.')
 
             instrument_channel.voltage_offset(0)
-            instrument_channel.output_modulation('off')
+            instrument_channel.output_modulation("off")
 
             # Trigger settings
             instrument_channel.trigger_input("TTL")
@@ -188,8 +176,8 @@ class Keysight81180AInterface(InstrumentInterface):
             # Do not repeat sequence multiple times
             instrument_channel.sequence_once_count(1)
 
-        if self.instrument.is_idle() != '1':
-            warn('Not idle')
+        if self.instrument.is_idle() != "1":
+            warn("Not idle")
 
         self.instrument.ensure_idle = True
         self.generate_waveform_sequences()
@@ -199,13 +187,10 @@ class Keysight81180AInterface(InstrumentInterface):
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
 
-
         for ch in self.active_channels():
             instrument_channel = self.instrument.channels[ch]
-            # Set time t_pulse to start of first pulse in sequence.
-            # This will increase as we iterate over pulses, and is used to ensure
-            # that there are no gaps between pulses
-            t_pulse = min(self.pulse_sequence.t_start_list)
+            # Set start time t=0
+            t_pulse = 0
 
             # A waveform must have at least 320 points
             min_waveform_duration = 320 / instrument_channel.sample_rate()
@@ -216,16 +201,7 @@ class Keysight81180AInterface(InstrumentInterface):
 
             # Always begin by waiting for a trigger/event pulse
             # Add empty waveform (0V DC), with minimum points (320)
-            empty_idx = self.add_waveform(ch, waveform_array=np.zeros(320))
-
-            # Optionally start sequence with a pulse at 0V.
-            # This ensures that the first shot of the pulse sequence starts at 0V
-            # instead of the first voltage of the first pulse.
-            # Note however that any pulse_sequence.final_delay is then also at 0V
-            # If start_at_0V is False, final_delay is fixed at the final voltage
-            # of the last pulse
-            if self.start_at_0V():
-                self.sequences[ch].append((empty_idx, 1, 0, 'initial_pulse'))
+            empty_idx = self.add_single_waveform(ch, waveform_array=np.zeros(320))
 
             for pulse in pulse_sequence.get_pulses():
                 # Check if there is a gap between next pulse and current time t_pulse
@@ -244,13 +220,14 @@ class Keysight81180AInterface(InstrumentInterface):
                     )
                 elif pulse.t_start - t_pulse >= min_waveform_duration + 1e-11:
                     # Add 0V DC pulse to bridge the gap between pulses
-                    DC_sequence_steps = self._add_DC_waveform(
+                    self.sequences[ch] += self._add_DC_waveform(
                         channel_name=ch,
+                        t_start=t_pulse,
+                        t_stop=pulse.t_start,
                         amplitude=0,
-                        duration=pulse.t_start - t_pulse,
                         sample_rate=instrument_channel.sample_rate(),
+                        pulse_name="DC",
                     )
-                    self.sequences[ch] += DC_sequence_steps
 
                 # Get waveform of current pulse
                 waveform = pulse.implementation.implement(
@@ -258,62 +235,73 @@ class Keysight81180AInterface(InstrumentInterface):
                     trigger_duration=self.trigger_in_duration(),
                 )
 
-                waveform_idx = self.add_waveform(ch, waveform["waveform"])
-
-                # Add sequence step (waveform_idx, loops, jump_event)
-                self.sequences[ch].append((waveform_idx, waveform["loops"], 0, pulse.name))
-
-                # Also add waveform tail if needed
-                if waveform["waveform_tail"] is not None:
-                    waveform_tail_idx = self.add_waveform(ch, waveform["waveform_tail"])
-                    self.sequences[ch].append((waveform_tail_idx, 1, 0, f'{pulse.name}_tail'))
+                # Add waveform and sequence steps
+                sequence_steps = self.add_pulse_waveforms(
+                    ch, **waveform, pulse_name=pulse.name
+                )
+                self.sequences[ch] += sequence_steps
 
                 # Set current time to pulse.t_stop
                 t_pulse = pulse.t_stop
 
             # Add 0V pulse if last pulse does not stop at pulse_sequence.duration
             if self.pulse_sequence.duration - t_pulse >= min_waveform_duration + 1e-11:
-                final_DC_sequence_steps = self._add_DC_waveform(
+                self.sequences[ch] += self._add_DC_waveform(
                     channel_name=ch,
+                    t_start=t_pulse,
+                    t_stop=self.pulse_sequence.duration,
                     amplitude=0,
-                    duration=self.pulse_sequence.duration - t_pulse,
                     sample_rate=instrument_channel.sample_rate(),
+                    pulse_name="final_DC",
                 )
-                self.sequences[ch] += final_DC_sequence_steps
+
+            last_waveform_idx = self.sequences[ch][-1][0]
+            last_waveform = self.waveforms[ch][last_waveform_idx - 1]
+            last_voltage = last_waveform[-1]
+
+            if self.waveforms_initial[ch] is not None:
+                waveform_initial_idx, waveform_initial = self.waveforms_initial[ch]
+
+                print(f'Changing first point of first waveform to {last_voltage}')
+
+                waveform_initial[0] = last_voltage
+                self.waveforms[ch][waveform_initial_idx-1] = waveform_initial
 
             # Ensure there are at least three sequence instructions
             while len(self.sequences[ch]) < 3:
+                waveform_idx = self.add_single_waveform(ch, last_voltage*np.ones(320))
                 # Add extra blank segment which will automatically run to
                 # the next segment (~ 70 ns offset)
-                self.sequences[ch].append((empty_idx, 1, 0, 'final_filler_pulse'))
+                self.sequences[ch].append((waveform_idx, 1, 0, "final_filler_pulse"))
 
             # Sequence all loaded waveforms
+            instrument_channel.upload_waveforms(self.waveforms[ch])
             instrument_channel.set_sequence(self.sequences[ch])
 
     def _add_DC_waveform(
-        self, channel_name: str, amplitude: float, duration: float, sample_rate: float
+        self,
+        channel_name: str,
+        t_start: float,
+        t_stop: float,
+        amplitude: float,
+        sample_rate: float,
+        pulse_name="DC",
     ) -> List:
-        # Create waveform from DCPulseImplementation
+        DC_pulse = DCPulse(
+            pulse_name, t_start=t_start, t_stop=t_stop, amplitude=amplitude,
+        )
         waveform = DCPulseImplementation.implement(
-            self=None, sample_rate=sample_rate, amplitude=amplitude, duration=duration
+            self=None,
+            sample_rate=sample_rate,
+            pulse=DC_pulse,
         )
-        # Add waveform(s) and sequence steps
-        waveform_idx = self.add_waveform(
-            channel_name, waveform_array=waveform["waveform"]
+        sequence_steps = self.add_pulse_waveforms(
+            channel_name, **waveform, pulse_name=pulse_name
         )
-
-        sequence_steps = [(waveform_idx, waveform["loops"], 0, 'DC_pulse')]
-
-        # Add separate waveform if there are remaining points left after division
-        if waveform["waveform_tail"] is not None:
-            waveform_idx = self.add_waveform(
-                channel_name, waveform_array=waveform["waveform_tail"]
-            )
-            sequence_steps.append((waveform_idx, 1, 0, 'DC_tail'))
 
         return sequence_steps
 
-    def add_waveform(
+    def add_single_waveform(
         self, channel_name: str, waveform_array: np.ndarray, allow_existing: bool = True
     ) -> int:
         """Add waveform to instrument, uploading if necessary
@@ -356,14 +344,53 @@ class Keysight81180AInterface(InstrumentInterface):
             waveform_idx = len(self.waveforms[channel_name])
 
             # Upload waveform to instrument
-            logger.debug(
-                f"Uploading new waveform with {len(waveform_array)} points and "
-                f"index {waveform_idx}"
-            )
-            instrument_channel = self.instrument.channels[channel_name]
-            instrument_channel.add_waveform(waveform_array, waveform_idx)
+            # logger.debug(
+            #     f"Uploading new waveform with {len(waveform_array)} points and "
+            #     f"index {waveform_idx}"
+            # )
+            # instrument_channel = self.instrument.channels[channel_name]
+            # instrument_channel.upload_waveform(waveform_array, waveform_idx)
 
         return waveform_idx
+
+    def add_pulse_waveforms(
+        self,
+        channel_name: str,
+        waveform: np.ndarray,
+        loops: int,
+        waveform_initial: Union[np.ndarray, None],
+        waveform_tail: Union[np.ndarray, None],
+        pulse_name=None,
+    ):
+        sequence = []
+        if pulse_name is None:
+            pulse_name = "pulse"
+
+        if waveform_initial is not None:
+            # An initial waveform must be added. This initial waveform corresponds
+            # to the beginning of a DC waveform at the start of a pulse sequence.
+            # See interface docstring for details
+
+            # Temporarily set waveform to None, will be set later to correct waveform
+            self.waveforms[channel_name].append(None)
+            waveform_initial_idx = len(self.waveforms[channel_name])
+            # Temporarily store initial waveform in separate variable
+            self.waveforms_initial[channel_name] = (waveform_initial_idx, waveform_initial)
+            # Add sequence step (waveform_idx, loops, jump_event)
+            sequence.append((waveform_initial_idx, 1, 0, f"{pulse_name}_pre"))
+
+        # Upload main waveform
+        waveform_idx = self.add_single_waveform(channel_name, waveform)
+
+        # Add sequence step (waveform_idx, loops, jump_event, label)
+        sequence.append((waveform_idx, loops, 0, pulse_name))
+
+        # Optionally add waveform tail
+        if waveform_tail is not None:
+            waveform_tail_idx = self.add_single_waveform(channel_name, waveform_tail)
+            sequence.append((waveform_tail_idx, 1, 0, f"{pulse_name}_tail"))
+
+        return sequence
 
     def start(self):
         """Turn all active instrument channels on"""
@@ -385,16 +412,24 @@ class DCPulseImplementation(PulseImplementation):
         sample_rate: float,
         max_points: int = 6000,
         trigger_duration: float = None,
-        amplitude: float = None,
-        duration: float = None,
+        pulse=None,
     ) -> dict:
-        if amplitude is None:
-            amplitude = self.pulse.amplitude
-        if duration is None:
-            duration = self.pulse.duration
+        if pulse is None:
+            pulse = self.pulse
 
         # Number of points must be a multiple of 32
-        N = 32 * np.floor(duration * sample_rate / 32)
+        N = 32 * np.floor(pulse.duration * sample_rate / 32)
+
+        # Add a waveform_initial if this pulse is the start of the pulse_sequence
+        # and has a long enough duration. The first point of waveform_initial will
+        # later on be set to the last point of the last waveform, ensuring that
+        # any pulse_sequence.final_delay remains at the last voltage
+        if pulse.t_start == 0 and N > 640:
+            N -= 320
+            waveform_initial = pulse.amplitude * np.ones(320)
+            print("adding waveform_initial")
+        else:
+            waveform_initial = None
 
         # Find an approximate divisor of the number of points N, allowing us
         # to shrink the waveform
@@ -408,7 +443,6 @@ class DCPulseImplementation(PulseImplementation):
             min_remaining_points=320,
         )
 
-
         if approximate_divisor is None:
             raise RuntimeError(
                 f"Could not add DC waveform because no divisor "
@@ -416,17 +450,20 @@ class DCPulseImplementation(PulseImplementation):
             )
 
         # Add waveform(s) and sequence steps
-        waveform = amplitude * np.ones(approximate_divisor["points"])
+        waveform = pulse.amplitude * np.ones(approximate_divisor["points"])
 
         # Add separate waveform if there are remaining points left after division
         if approximate_divisor["remaining_points"]:
-            waveform_tail = amplitude * np.ones(approximate_divisor["remaining_points"])
+            waveform_tail = pulse.amplitude * np.ones(
+                approximate_divisor["remaining_points"]
+            )
         else:
             waveform_tail = None
 
         return {
             "waveform": waveform,
             "loops": approximate_divisor["cycles"],
+            "waveform_initial": waveform_initial,
             "waveform_tail": waveform_tail,
         }
 
@@ -448,12 +485,29 @@ class SinePulseImplementation(PulseImplementation):
             plot=plot,
             **settings,
         )
+
+        if self.results is None:
+            t_list = np.arange(self.pulse.t_start, self.pulse.t_stop, 1 / sample_rate)
+            t_list = t_list[: len(t_list) // 32 * 32]  # Ensure pulse is multiple of 32
+            if len(t_list) < 320:
+                raise RuntimeError(
+                    f"Sine waveform points {len(t_list)} is below "
+                    f"minimum of 320. Increase pulse duration or "
+                    f"sample rate. {self.pulse}"
+                )
+
+            return {
+                "waveform": self.pulse.get_voltage(t_list),
+                "loops": 1,
+                "waveform_tail": None,
+            }
+
         optimum = self.results["optimum"]
         waveform_loops = max(optimum["repetitions"], 1)
 
         # Temporarily modify pulse frequency to ensure waveforms have full period
         original_frequency = self.pulse.frequency
-        self.pulse.frequency = optimum['modified_frequency']
+        self.pulse.frequency = optimum["modified_frequency"]
 
         # Get waveform points for repeated segment
         t_list = self.pulse.t_start + np.arange(optimum["points"]) / sample_rate
@@ -467,14 +521,16 @@ class SinePulseImplementation(PulseImplementation):
             if waveform_tail_pts < 320:  # Waveform must be at least 320 points
                 # Find minimum number of loops of main waveform that are needed
                 # to increase tail to be at least 320 points long
-                subtract_loops = int(np.ceil((320 - waveform_tail_pts) / optimum["points"]))
+                subtract_loops = int(
+                    np.ceil((320 - waveform_tail_pts) / optimum["points"])
+                )
             else:
                 subtract_loops = 0
 
             if waveform_loops - subtract_loops > 0:
                 # Safe to subtract loops from the main waveform, add to this one
                 waveform_loops -= subtract_loops
-                waveform_tail_pts += subtract_loops * optimum['points']
+                waveform_tail_pts += subtract_loops * optimum["points"]
 
                 t_list_tail = np.arange(
                     self.pulse.t_start + optimum["duration"] * waveform_loops,
@@ -512,13 +568,11 @@ class SinePulseImplementation(PulseImplementation):
             # Add remaining marker values
             new_wf_idxs = np.arange(waveform_loops) * len(waveform_array)
             ax.plot(
-                wf_t_list[new_wf_idxs], wf_voltages[new_wf_idxs], "o",
-                color="C2", ms=4
+                wf_t_list[new_wf_idxs], wf_voltages[new_wf_idxs], "o", color="C2", ms=4
             )
             wf_tail_idx = len(waveform_array) * waveform_loops
             ax.plot(
-                wf_t_list[wf_tail_idx], wf_voltages[wf_tail_idx], "o",
-                color="C3", ms=4
+                wf_t_list[wf_tail_idx], wf_voltages[wf_tail_idx], "o", color="C3", ms=4
             )
             ax.set_ylabel("Amplitude (V)")
 
@@ -532,5 +586,6 @@ class SinePulseImplementation(PulseImplementation):
         return {
             "waveform": waveform_array,
             "loops": waveform_loops,
+            "waveform_initial": None,
             "waveform_tail": waveform_tail_array,
         }
