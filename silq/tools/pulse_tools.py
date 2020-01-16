@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List
+from typing import List, Union
 import logging
 from matplotlib import pyplot as plt
 
@@ -21,7 +21,7 @@ def pulse_to_waveform_sequence(
     point_offsets: List[int] = [-1, 0, 1, 2],
     filters=[],
     plot=False,
-):
+) -> Union[dict, None]:
     """
     This method can be used when generating a periodic signal with an AWG device.
     Given a frequency and duration of the desired signal, a general AWG can produce
@@ -68,10 +68,17 @@ def pulse_to_waveform_sequence(
         'final_delays': Array of final_delays for all settings
         'errors': Array of relative frequency errors for all settings
         'periods_range': Range of periods that have been considered
+
+        If the minimum number of periods (set by min_points) exceeds the maximum
+        number of periods (set by max_points), None is returned
     """
     t_period = 1 / abs(frequency)
     max_periods = int(max_points / sampling_rate / t_period)  # Bounded by max_points
     min_periods = int(np.ceil(min_points / sampling_rate / t_period))  # Bounded by min_points
+
+    if min_periods >= max_periods:
+        return None
+
     periods = np.arange(min_periods, max_periods + 1)
     t_periods = periods * t_period
     # Always consider neighbouring points as well, as they may have more favourable settings
