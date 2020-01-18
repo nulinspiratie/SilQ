@@ -333,7 +333,8 @@ class Measurement:
 
         results = parameter_node.get()
 
-        self._store_dict_results(action_indices, parameter_node.name, results)
+        if not self.get_arrays(action_indices):
+            self._store_dict_results(action_indices, parameter_node.name, results)
 
         return results
 
