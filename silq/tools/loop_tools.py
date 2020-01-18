@@ -38,6 +38,7 @@ class Measurement:
 
             # Initialize dataset
             self.dataset = new_data(name=self.name)
+            self.dataset.add_metadata({'measurement_type': 'Measurement'})
         else:
             # Primary measurement is already running. Add this measurement as
             # a data_group of the primary measurement
