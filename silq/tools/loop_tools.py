@@ -11,10 +11,8 @@ class Measurement:
     # Context manager
     running_measurement = None
 
-    def __init__(self, name: str, run: bool = True):
+    def __init__(self, name: str):
         self.name = name
-
-        self.run = run
 
         self.loop_dimensions: Tuple[int] = None  # Total dimensionality of loop
 
