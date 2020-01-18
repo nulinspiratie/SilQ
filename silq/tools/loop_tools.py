@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Sequence
 import threading
 from time import sleep
 
@@ -118,7 +118,6 @@ class Measurement:
         self.is_context_manager = False
 
     # Data array functions
-
     def _create_data_array(
         self,
         parameter: Union[Parameter, str],
@@ -228,6 +227,15 @@ class Measurement:
         # TODO: Finish this function
         # self.data_arrays[action_indices] = dict()
         pass
+
+    def get_arrays(self, parent_action_indices=None):
+        if parent_action_indices is not None:
+            if not isinstance(parent_action_indices, Sequence):
+                raise SyntaxError('parent_action_indices must be a tuple')
+
+            num_indices = len(parent_action_indices)
+            return [arr for action_indices, arr in self.data_arrays.items()
+                    if action_indices[:num_indices] == parent_action_indices]
 
     def _process_parameter_result(
         self, action_indices, parameter, result, ndim=None, store: bool = True
