@@ -1,13 +1,13 @@
 import sys
 import numpy as np
-from typing import List, Tuple, Union, Sequence, Dict, Any
+from typing import List, Tuple, Union, Sequence, Dict, Any, Callable
 import threading
 from time import sleep
 
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from qcodes.instrument.sweep_values import SweepValues
-from qcodes import Parameter, ParameterNode
+from qcodes import Parameter, ParameterNode, MultiParameter
 from qcodes.utils.helpers import using_ipython, directly_executed_from_cell
 
 
@@ -93,8 +93,8 @@ class Measurement:
             else:
                 if threading.current_thread() is not Measurement.measurement_thread:
                     raise RuntimeError(
-                        'Cannot run a measurement while another measurement '
-                        'is already running in a different thread.'
+                        "Cannot run a measurement while another measurement "
+                        "is already running in a different thread."
                     )
 
                 # Primary measurement is already running. Add this measurement as
@@ -151,11 +151,12 @@ class Measurement:
     # Data array functions
     def _create_data_array(
         self,
-        parameter: Union[Parameter, str],
-        result,
         action_indices: Tuple[int],
+        result,
+        parameter: Parameter = None,
         ndim: int = None,
         is_setpoint: bool = False,
+        name: str = None,
         label: str = None,
         unit: str = None,
     ):
@@ -183,6 +184,10 @@ class Measurement:
             Newly created data array
 
         """
+        if parameter is None and name is None:
+            raise SyntaxError(
+                "When creating a data array, must provide either a parameter or a name"
+            )
 
         if ndim is None:
             ndim = len(action_indices)
@@ -198,17 +203,20 @@ class Measurement:
 
         if isinstance(parameter, Parameter):
             array_kwargs["parameter"] = parameter
+            # Add a custom name
+            if name is not None:
+                array_kwargs["full_name"] = name
         else:
-            array_kwargs["name"] = parameter
+            array_kwargs["name"] = name
             if label is None:
-                label = parameter[0].capitalize() + parameter[1:].replace("_", " ")
+                label = name[0].capitalize() + name[1:].replace("_", " ")
             array_kwargs["label"] = label
             array_kwargs["unit"] = unit or ""
 
         # Add setpoint arrays
         if not is_setpoint:
             array_kwargs["set_arrays"] = self._add_set_arrays(
-                parameter, result, action_indices, ndim
+                action_indices, result, name=(name or parameter.name), ndim=ndim
             )
 
         data_array = DataArray(**array_kwargs)
@@ -230,9 +238,9 @@ class Measurement:
 
     def _add_set_arrays(
         self,
-        parameter: Union[Parameter, str],
-        result,
         action_indices: Tuple[int],
+        result,
+        name: str,
         ndim: int,
     ):
         set_arrays = []
@@ -249,18 +257,15 @@ class Measurement:
 
             # TODO handle if the parameter contains attribute setpoints
 
-            # parameter can also be a string, in which case we don't use parameter.name
-            name = getattr(parameter, "name", parameter)
-
             for k, shape in enumerate(result.shape):
                 arr = np.arange(shape)
                 # Add singleton dimensions
                 arr = np.broadcast_to(arr, result.shape[: k + 1])
 
                 set_array = self._create_data_array(
-                    parameter=f"{name}_set{k}",
-                    result=arr,
                     action_indices=action_indices + (0,) * k,
+                    result=arr,
+                    name=f"{name}_set{k}",
                     is_setpoint=True,
                 )
                 set_arrays.append(set_array)
@@ -295,18 +300,31 @@ class Measurement:
     def _add_measurement_result(
         self,
         action_indices,
-        parameter,
         result,
+        parameter=None,
         ndim=None,
         store: bool = True,
+        name: str = None,
         label: str = None,
         unit: str = None,
     ):
+        if parameter is None and name is None:
+            raise SyntaxError(
+                "When adding a measurement result, must provide either a "
+                "parameter or name"
+            )
+
         # Get parameter data array, creating a new one if necessary
         if action_indices not in self.data_arrays:
             # Create array based on first result type and shape
             self._create_data_array(
-                parameter, result, action_indices, ndim=ndim, label=label, unit=unit
+                action_indices,
+                result,
+                parameter=parameter,
+                ndim=ndim,
+                name=name,
+                label=label,
+                unit=unit,
             )
 
         # Select existing array
@@ -314,7 +332,10 @@ class Measurement:
 
         # Ensure an existing data array has the correct name
         # parameter can also be a string, in which case we don't use parameter.name
-        name = getattr(parameter, "name", parameter)
+        if name is None:
+            name = parameter.name
+
+        # TODO is this the right place for this check?
         if not data_array.name == name:
             raise SyntaxError(
                 f"Existing DataArray '{data_array.name}' differs from result {name}"
@@ -347,13 +368,35 @@ class Measurement:
         return data_to_store
 
     # Measurement-related functions
-    def _measure_parameter(self, parameter):
+    def _measure_parameter(self, parameter, name=None):
         # Get parameter result
         result = parameter()
 
-        self._add_measurement_result(self.action_indices, parameter, result)
+        self._add_measurement_result(
+            self.action_indices, result, parameter=parameter, name=name
+        )
 
         return result
+
+    def _measure_multi_parameter(self, multi_parameter, name=None):
+        results_list = multi_parameter()
+
+        results = {
+            name: result for name, result in zip(multi_parameter.names, results_list)
+        }
+
+        if name is None:
+            name = multi_parameter.name
+
+        # TODO also incorporate setpoints
+        with Measurement(name) as msmt:
+            for k, (key, val) in enumerate(results.items()):
+                msmt.measure(
+                    val,
+                    name=key,
+                    label=multi_parameter.labels[k],
+                    unit=multi_parameter.units[k],
+                )
 
     def _measure_callable(self, callable, name=None):
 
@@ -379,7 +422,28 @@ class Measurement:
 
         return results
 
-    def measure(self, measurable, name=None):
+    def measure(self, measurable: Union[Parameter, Callable, float, int, bool, np.ndarray], name=None, label=None, unit=None):
+        """Perform a single measurement of a Parameter, function, etc.
+
+
+        Args:
+            measurable: Item to measure. Can be one of the following:
+                Parameter
+                Callable function/method, which should either perform a nested
+                    Measurement, or return a dict.
+                    In the case of returning a dict, all the key/value pairs
+                    are grouped together.
+                float, int, bool, array
+            name: Optional name for measured element or data group.
+                If the measurable is a float, int, bool, or array, the name is
+                mandatory.
+                Otherwise, the default name is used.
+            label: Optional label, is ignored if measurable is a Parameter or callable
+            unit: Optional unit, is ignored if measurable is a Parameter or callable
+
+        Returns:
+            Return value of measurable
+        """
         # TODO add label, unit, etc. as kwargs
         if not self.is_context_manager:
             raise RuntimeError(
@@ -390,8 +454,8 @@ class Measurement:
             raise SystemExit("Measurement.stop() has been called")
         elif threading.current_thread() is not Measurement.measurement_thread:
             raise RuntimeError(
-                'Cannot measure while another measurement is already running '
-                'in a different thread.'
+                "Cannot measure while another measurement is already running "
+                "in a different thread."
             )
 
         if self != Measurement.running_measurement:
@@ -407,8 +471,11 @@ class Measurement:
         while self.is_paused:
             sleep(0.1)
 
+        # TODO Incorporate kwargs name, label, and unit, into each of these
         if isinstance(measurable, Parameter):
-            result = self._measure_parameter(measurable)
+            result = self._measure_parameter(measurable, name=name)
+        elif isinstance(measurable, MultiParameter):
+            result = self._measure_multi_parameter(measurable, name=name)
         elif callable(measurable):
             if name is None:
                 if hasattr(measurable, "__self__") and isinstance(
@@ -430,7 +497,11 @@ class Measurement:
                 )
             result = measurable
             self._add_measurement_result(
-                action_indices=self.action_indices, parameter=name, result=result
+                action_indices=self.action_indices,
+                result=result,
+                name=name,
+                label=label,
+                unit=unit,
             )
         else:
             raise RuntimeError(
@@ -486,8 +557,8 @@ class Sweep:
     def __iter__(self):
         if threading.current_thread() is not Measurement.measurement_thread:
             raise RuntimeError(
-                'Cannot create a Sweep while another measurement '
-                'is already running in a different thread.'
+                "Cannot create a Sweep while another measurement "
+                "is already running in a different thread."
             )
 
         running_measurement().loop_dimensions += (len(self.sequence),)
@@ -549,16 +620,16 @@ class Sweep:
     def create_set_array(self):
         if isinstance(self.sequence, SweepValues):
             return running_measurement()._create_data_array(
-                parameter=self.sequence.parameter,
-                result=self.sequence,
                 action_indices=running_measurement().action_indices,
+                result=self.sequence,
+                parameter=self.sequence.parameter,
                 is_setpoint=True,
             )
         else:
             return running_measurement()._create_data_array(
-                parameter=self.name or "iterator",
-                unit=self.unit,
-                result=self.sequence,
                 action_indices=running_measurement().action_indices,
+                result=self.sequence,
+                name=self.name or "iterator",
+                unit=self.unit,
                 is_setpoint=True,
             )
