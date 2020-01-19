@@ -267,11 +267,6 @@ class Measurement:
 
         return tuple(set_arrays)
 
-    def _create_data_array_group(self, action_indices, parameter_node):
-        # TODO: Finish this function
-        # self.data_arrays[action_indices] = dict()
-        pass
-
     def get_arrays(self, action_indices: Sequence[int] = None) -> List[DataArray]:
         """Get all arrays belonging to the current action indices
         If the action indices corresponds to a group of arrays (e.g. a nested
