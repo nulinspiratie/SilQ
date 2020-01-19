@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Union, Sequence
+from typing import List, Tuple, Union, Sequence, Dict, Any
 import threading
 from time import sleep
 
@@ -41,14 +41,17 @@ class Measurement:
     def __init__(self, name: str, force_cell_thread: bool = True):
         self.name = name
 
-        self.loop_dimensions: Tuple[int] = None  # Total dimensionality of loop
+        # Total dimensionality of loop
+        self.loop_dimensions: Union[Tuple[int], None] = None
 
-        self.loop_indices: Tuple[int] = None  # Current loop indices
+        # Current loop indices
+        self.loop_indices: Union[Tuple[int], None] = None
 
-        self.action_indices: Tuple[int] = None  # Index of action
+        # Index of current action
+        self.action_indices: Union[Tuple[int], None] = None
 
         # contains data groups, such as ParameterNodes and nested measurements
-        self._data_groups = {}
+        self._data_groups: Dict[Tuple[int], 'Measurement'] = {}
 
         self.is_context_manager: bool = False  # Whether used as context manager
         self.is_paused: bool = False  # Whether the Measurement is paused
@@ -57,7 +60,7 @@ class Measurement:
         self.force_cell_thread = force_cell_thread and using_ipython()
 
     @property
-    def data_groups(self):
+    def data_groups(self) -> Dict[Tuple[int], 'Measurement']:
         if running_measurement() is not None:
             return running_measurement()._data_groups
         else:
@@ -73,6 +76,13 @@ class Measurement:
             # Initialize dataset
             self.dataset = new_data(name=self.name)
             self.dataset.add_metadata({"measurement_type": "Measurement"})
+
+            # Initialize attributes
+            self.loop_dimensions = ()
+            self.loop_indices = ()
+            self.action_indices = (0,)
+            self.data_arrays = {}
+            self.set_arrays = {}
         else:
             # Primary measurement is already running. Add this measurement as
             # a data_group of the primary measurement
@@ -80,12 +90,12 @@ class Measurement:
             msmt.data_groups[msmt.action_indices] = self
             msmt.action_indices += (0,)
 
-        self.loop_dimensions = ()
-        self.loop_indices = ()
-        self.action_indices = (0,)
-
-        self.data_arrays = {}
-        self.set_arrays = {}
+            # Nested measurement attributes should mimic the primary measurement
+            self.loop_dimensions = msmt.loop_dimensions
+            self.loop_indices = msmt.loop_indices
+            self.action_indices = msmt.action_indices
+            self.data_arrays = msmt.data_arrays
+            self.set_arrays = msmt.set_arrays
 
         # Perform measurement thread check, and set user namespace variables
         if self.force_cell_thread and Measurement.running_measurement is self:
@@ -114,6 +124,8 @@ class Measurement:
             Measurement.running_measurement = None
             self.dataset.finalize()
         else:
+            # This is a nested measurement.
+            # update action_indices of primary measurements
             msmt.action_indices = msmt.action_indices[:-1]
 
         self.is_context_manager = False
@@ -208,7 +220,7 @@ class Measurement:
         set_arrays = []
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
-            if sweep_indices not in self.data_groups:
+            if sweep_indices in self.set_arrays:
                 set_arrays.append(self.set_arrays[sweep_indices])
                 # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
 
@@ -331,16 +343,20 @@ class Measurement:
         return result
 
     def _measure_callable(self, callable, name=None):
-        if name is None:
-            name = callable.__name__
-
-        action_indices = self.action_indices
 
         results = callable()
 
-        # The action indices have incremented if the function contained a
-        # nested measurement. Otherwise store the dict results
-        if self.action_indices == action_indices:
+        # Check if the callable already performed a nested measurement
+        # In this case, the nested measurement is stored as a data_group, and
+        # has loop indices corresponding to the current ones.
+        msmt = Measurement.running_measurement
+        data_group = msmt.data_groups.get(self.action_indices)
+        if getattr(data_group, 'loop_indices', None) == self.loop_indices:
+            # Measurement has already been performed by a nested measurement
+            return results
+        else:
+            # No nested measurement has been performed in the callable.
+            # Add results, which should be dict, by creating a nested measurement
             if not isinstance(results, dict):
                 raise SyntaxError(f"{name} results must be a dict, not {results}")
 
@@ -351,7 +367,7 @@ class Measurement:
         return results
 
     def measure(self, measurable, name=None):
-        # TODO add label, unit, etc.
+        # TODO add label, unit, etc. as kwargs
         if not self.is_context_manager:
             raise RuntimeError(
                 "Must use the Measurement as a context manager, "
@@ -360,30 +376,38 @@ class Measurement:
         elif self.is_stopped:
             raise SystemExit("Measurement.stop() has been called")
 
-        # Wait as long as the measurement is paused
-        while self.is_paused:
-            sleep(0.1)
-
         if self != Measurement.running_measurement:
             # Since this Measurement is not the running measurement, it is a
             # DataGroup in the running measurement. Delegate measurement to the
             # running measurement
             return Measurement.running_measurement.measure(measurable, name=name)
 
+        # Code from hereon is only reached by the primary measurement,
+        # i.e. the running_measurement
+
+        # Wait as long as the measurement is paused
+        while self.is_paused:
+            sleep(0.1)
+
         # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(measurable)
         elif callable(measurable):
             if name is None:
-                if isinstance(getattr(measurable, "__self__"), ParameterNode):
+                if hasattr(measurable, "__self__") and isinstance(
+                    measurable.__self__, ParameterNode
+                ):
                     name = measurable.__self__.name
-                else:
+                elif hasattr(measurable, "__name__"):
                     name = measurable.__name__
+                else:
+                    action_indices_str = '_'.join(str(idx) for idx in self.action_indices)
+                    name = f'data_group_{action_indices_str}'
             result = self._measure_callable(measurable, name=name)
-        elif isinstance(measurable, (float, int, np.ndarray)):
+        elif isinstance(measurable, (float, int, bool, np.ndarray)):
             if name is None:
                 raise RuntimeError(
-                    "A name must be provided when measuring an int, float, or array"
+                    "A name must be provided when measuring an int, float, bool, or array"
                 )
             result = measurable
             self._add_measurement_result(
@@ -392,7 +416,7 @@ class Measurement:
         else:
             raise RuntimeError(
                 f"Cannot measure {measurable} as it cannot be called, and it "
-                f"is not an int, float, or numpy array."
+                f"is not an int, float, bool, or numpy array."
             )
 
         # Increment last action index by 1
