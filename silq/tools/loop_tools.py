@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from typing import List, Tuple, Union, Sequence, Dict, Any
 import threading
@@ -32,6 +33,7 @@ class Measurement:
 
     # Context manager
     running_measurement = None
+    measurement_thread = None
 
     # Default names for measurement and dataset, used to set user namespace
     # variables if measurement is executed in a separate thread.
@@ -51,7 +53,7 @@ class Measurement:
         self.action_indices: Union[Tuple[int], None] = None
 
         # contains data groups, such as ParameterNodes and nested measurements
-        self._data_groups: Dict[Tuple[int], 'Measurement'] = {}
+        self._data_groups: Dict[Tuple[int], "Measurement"] = {}
 
         self.is_context_manager: bool = False  # Whether used as context manager
         self.is_paused: bool = False  # Whether the Measurement is paused
@@ -60,7 +62,7 @@ class Measurement:
         self.force_cell_thread = force_cell_thread and using_ipython()
 
     @property
-    def data_groups(self) -> Dict[Tuple[int], 'Measurement']:
+    def data_groups(self) -> Dict[Tuple[int], "Measurement"]:
         if running_measurement() is not None:
             return running_measurement()._data_groups
         else:
@@ -69,54 +71,70 @@ class Measurement:
     def __enter__(self):
         self.is_context_manager = True
 
-        if Measurement.running_measurement is None:
-            # Register current measurement as active primary measurement
-            Measurement.running_measurement = self
+        # Encapsulate everything in a try/except to ensure that the context
+        # manager is properly exited.
+        try:
+            if Measurement.running_measurement is None:
+                # Register current measurement as active primary measurement
+                Measurement.running_measurement = self
+                Measurement.measurement_thread = threading.current_thread()
 
-            # Initialize dataset
-            self.dataset = new_data(name=self.name)
-            self.dataset.add_metadata({"measurement_type": "Measurement"})
+                # Initialize dataset
+                self.dataset = new_data(name=self.name)
+                self.dataset.add_metadata({"measurement_type": "Measurement"})
 
-            # Initialize attributes
-            self.loop_dimensions = ()
-            self.loop_indices = ()
-            self.action_indices = (0,)
-            self.data_arrays = {}
-            self.set_arrays = {}
-        else:
-            # Primary measurement is already running. Add this measurement as
-            # a data_group of the primary measurement
-            msmt = Measurement.running_measurement
-            msmt.data_groups[msmt.action_indices] = self
-            msmt.action_indices += (0,)
+                # Initialize attributes
+                self.loop_dimensions = ()
+                self.loop_indices = ()
+                self.action_indices = (0,)
+                self.data_arrays = {}
+                self.set_arrays = {}
 
-            # Nested measurement attributes should mimic the primary measurement
-            self.loop_dimensions = msmt.loop_dimensions
-            self.loop_indices = msmt.loop_indices
-            self.action_indices = msmt.action_indices
-            self.data_arrays = msmt.data_arrays
-            self.set_arrays = msmt.set_arrays
+            else:
+                if threading.current_thread() is not Measurement.measurement_thread:
+                    raise RuntimeError(
+                        'Cannot run a measurement while another measurement '
+                        'is already running in a different thread.'
+                    )
 
-        # Perform measurement thread check, and set user namespace variables
-        if self.force_cell_thread and Measurement.running_measurement is self:
-            # Raise an error if force_cell_thread is True and the code is run
-            # directly from an IPython cell/prompt but not from a separate thread
-            is_main_thread = threading.current_thread() == threading.main_thread()
-            if is_main_thread and directly_executed_from_cell():
-                raise RuntimeError(
-                    "Measurement must be created in dedicated thread. "
-                    "Otherwise specify force_thread=False"
-                )
+                # Primary measurement is already running. Add this measurement as
+                # a data_group of the primary measurement
+                msmt = Measurement.running_measurement
+                msmt.data_groups[msmt.action_indices] = self
+                msmt.action_indices += (0,)
 
-            # Register the Measurement and data as variables in the user namespace
-            # Usually as variable names are 'msmt' and 'data' respectively
-            from IPython import get_ipython
+                # Nested measurement attributes should mimic the primary measurement
+                self.loop_dimensions = msmt.loop_dimensions
+                self.loop_indices = msmt.loop_indices
+                self.action_indices = msmt.action_indices
+                self.data_arrays = msmt.data_arrays
+                self.set_arrays = msmt.set_arrays
 
-            shell = get_ipython()
-            shell.user_ns[self._default_measurement_name] = self
-            shell.user_ns[self._default_dataset_name] = self.dataset
+            # Perform measurement thread check, and set user namespace variables
+            if self.force_cell_thread and Measurement.running_measurement is self:
+                # Raise an error if force_cell_thread is True and the code is run
+                # directly from an IPython cell/prompt but not from a separate thread
+                is_main_thread = threading.current_thread() == threading.main_thread()
+                if is_main_thread and directly_executed_from_cell():
+                    raise RuntimeError(
+                        "Measurement must be created in dedicated thread. "
+                        "Otherwise specify force_thread=False"
+                    )
 
-        return self
+                # Register the Measurement and data as variables in the user namespace
+                # Usually as variable names are 'msmt' and 'data' respectively
+                from IPython import get_ipython
+
+                shell = get_ipython()
+                shell.user_ns[self._default_measurement_name] = self
+                shell.user_ns[self._default_dataset_name] = self.dataset
+
+            return self
+        except:
+            # An error has occured, ensure running_measurement is cleared
+            if Measurement.running_measurement is self:
+                Measurement.running_measurement = None
+            raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         msmt = Measurement.running_measurement
@@ -351,7 +369,7 @@ class Measurement:
         # has loop indices corresponding to the current ones.
         msmt = Measurement.running_measurement
         data_group = msmt.data_groups.get(self.action_indices)
-        if getattr(data_group, 'loop_indices', None) == self.loop_indices:
+        if getattr(data_group, "loop_indices", None) == self.loop_indices:
             # Measurement has already been performed by a nested measurement
             return results
         else:
@@ -375,6 +393,11 @@ class Measurement:
             )
         elif self.is_stopped:
             raise SystemExit("Measurement.stop() has been called")
+        elif threading.current_thread() is not Measurement.measurement_thread:
+            raise RuntimeError(
+                'Cannot measure while another measurement is already running '
+                'in a different thread.'
+            )
 
         if self != Measurement.running_measurement:
             # Since this Measurement is not the running measurement, it is a
@@ -389,7 +412,6 @@ class Measurement:
         while self.is_paused:
             sleep(0.1)
 
-        # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(measurable)
         elif callable(measurable):
@@ -401,8 +423,10 @@ class Measurement:
                 elif hasattr(measurable, "__name__"):
                     name = measurable.__name__
                 else:
-                    action_indices_str = '_'.join(str(idx) for idx in self.action_indices)
-                    name = f'data_group_{action_indices_str}'
+                    action_indices_str = "_".join(
+                        str(idx) for idx in self.action_indices
+                    )
+                    name = f"data_group_{action_indices_str}"
             result = self._measure_callable(measurable, name=name)
         elif isinstance(measurable, (float, int, bool, np.ndarray)):
             if name is None:
@@ -465,6 +489,12 @@ class Sweep:
             self.set_array = self.create_set_array()
 
     def __iter__(self):
+        if threading.current_thread() is not Measurement.measurement_thread:
+            raise RuntimeError(
+                'Cannot create a Sweep while another measurement '
+                'is already running in a different thread.'
+            )
+
         running_measurement().loop_dimensions += (len(self.sequence),)
         running_measurement().loop_indices += (0,)
         running_measurement().action_indices += (0,)

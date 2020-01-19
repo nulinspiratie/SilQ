@@ -1,8 +1,12 @@
+from time import sleep
+
 import numpy as np
 from unittest import TestCase
 from functools import partial
 
-from qcodes import Loop, Parameter, load_data, ParameterNode
+import qcodes as qc
+from qcodes import Loop, Parameter, load_data, ParameterNode, new_job
+from qcodes.utils.threading import raise_exception_in_thread
 
 from silq.tools.loop_tools import Measurement, Sweep, running_measurement
 
@@ -406,3 +410,45 @@ class TestNewLoopNesting(TestCase):
         self.assertEqual(msmt.data_groups[(1, 0, 0)], inner_nested_msmt)
 
         print(msmt.dataset)
+
+
+class TestMeasurementThread(TestCase):
+    # def setUp(self) -> None:
+    #     qc.utils.threading.allow_duplicate_jobs = True
+    #
+    # def tearDown(self) -> None:
+    #     qc.utils.threading.allow_duplicate_jobs = False
+
+    def create_measurement(self):
+        with Measurement('new_measurement') as msmt:
+            msmt.pause()
+            for k in Sweep([1,2,3,4], name='sweep_vals'):
+                msmt.measure(123, 'test_val')
+
+    def test_double_thread_measurement(self):
+        job = new_job(self.create_measurement)
+        sleep(0.2)
+        with self.assertRaises(RuntimeError):
+            with Measurement('new_measurement') as msmt:
+                print('This line will never be reached')
+
+        running_measurement().resume()
+        job.join()
+
+    def test_double_thread_measure(self):
+        job = new_job(self.create_measurement)
+        sleep(0.2)
+        msmt = Measurement('new_measurement')
+        with self.assertRaises(RuntimeError):
+            msmt.measure(123, 'test_val')
+
+        running_measurement().resume()
+        job.join()
+
+    def test_double_thread_sweep(self):
+        job = new_job(self.create_measurement)
+        sleep(0.2)
+        Sweep([1,2,3], 'sweep_parameter')
+
+        running_measurement().resume()
+        job.join()
