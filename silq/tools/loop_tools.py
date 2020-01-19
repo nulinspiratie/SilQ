@@ -1,17 +1,44 @@
 import numpy as np
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Sequence
+import threading
+from time import sleep
 
 from qcodes.data.data_set import new_data
 from qcodes.data.data_array import DataArray
 from qcodes.instrument.sweep_values import SweepValues
 from qcodes import Parameter, ParameterNode
+from qcodes.utils.helpers import using_ipython, directly_executed_from_cell
 
 
 class Measurement:
+    """
+    Args:
+        name: Measurement name, also used as the dataset name
+        force_cell_thread: Enforce that the measurement has been started from a
+            separate thread if it has been directly executed from an IPython
+            cell/prompt. This is because a measurement is usually run from a
+            separate thread using the magic command `%%new_job`.
+            An error is raised if this has not been satisfied.
+            Note that if the measurement is started within a function, no error
+            is raised.
+
+
+    Notes:
+        When the Measurement is started in a separate thread (using %%new_job),
+        the Measurement is registered in the user namespace as 'msmt', and the
+        dataset as 'data'
+
+    """
+
     # Context manager
     running_measurement = None
 
-    def __init__(self, name: str):
+    # Default names for measurement and dataset, used to set user namespace
+    # variables if measurement is executed in a separate thread.
+    _default_measurement_name = "msmt"
+    _default_dataset_name = "data"
+
+    def __init__(self, name: str, force_cell_thread: bool = True):
         self.name = name
 
         self.loop_dimensions: Tuple[int] = None  # Total dimensionality of loop
@@ -23,14 +50,21 @@ class Measurement:
         # contains data groups, such as ParameterNodes and nested measurements
         self._data_groups = {}
 
-        self.active: bool = False  # Only become active when used as context manager
+        self.is_context_manager: bool = False  # Whether used as context manager
+        self.is_paused: bool = False  # Whether the Measurement is paused
+        self.is_stopped: bool = False   # Whether the Measurement is stopped
+
+        self.force_cell_thread = force_cell_thread and using_ipython()
 
     @property
     def data_groups(self):
-        return running_measurement()._data_groups
+        if running_measurement() is not None:
+            return running_measurement()._data_groups
+        else:
+            return self._data_groups
 
     def __enter__(self):
-        self.active = True
+        self.is_context_manager = True
 
         if Measurement.running_measurement is None:
             # Register current measurement as active primary measurement
@@ -44,6 +78,7 @@ class Measurement:
             # a data_group of the primary measurement
             msmt = Measurement.running_measurement
             msmt.data_groups[msmt.action_indices] = self
+            msmt.action_indices += (0,)
 
         self.loop_dimensions = ()
         self.loop_indices = ()
@@ -52,17 +87,38 @@ class Measurement:
         self.data_arrays = {}
         self.set_arrays = {}
 
+        # Perform measurement thread check, and set user namespace variables
+        if self.force_cell_thread and Measurement.running_measurement is self:
+            # Raise an error if force_cell_thread is True and the code is run
+            # directly from an IPython cell/prompt but not from a separate thread
+            is_main_thread = threading.current_thread() == threading.main_thread()
+            if is_main_thread and directly_executed_from_cell():
+                raise RuntimeError(
+                    "Measurement must be created in dedicated thread. "
+                    "Otherwise specify force_thread=False"
+                )
+
+            # Register the Measurement and data as variables in the user namespace
+            # Usually as variable names are 'msmt' and 'data' respectively
+            from IPython import get_ipython
+
+            shell = get_ipython()
+            shell.user_ns[self._default_measurement_name] = self
+            shell.user_ns[self._default_dataset_name] = self.dataset
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if Measurement.running_measurement is self:
+        msmt = Measurement.running_measurement
+        if msmt is self:
             Measurement.running_measurement = None
             self.dataset.finalize()
+        else:
+            msmt.action_indices = msmt.action_indices[:-1]
 
-        self.active = False
+        self.is_context_manager = False
 
     # Data array functions
-
     def _create_data_array(
         self,
         parameter: Union[Parameter, str],
@@ -139,8 +195,9 @@ class Measurement:
         set_arrays = []
         for k in range(1, ndim):
             sweep_indices = action_indices[:k]
-            set_arrays.append(self.set_arrays[sweep_indices])
-            # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
+            if sweep_indices not in self.data_groups:
+                set_arrays.append(self.set_arrays[sweep_indices])
+                # TODO handle grouped arrays (e.g. ParameterNode, nested Measurement)
 
         # Create new set array(s) if parameter result is an array or list
         if isinstance(result, (np.ndarray, list)):
@@ -171,6 +228,15 @@ class Measurement:
         # TODO: Finish this function
         # self.data_arrays[action_indices] = dict()
         pass
+
+    def get_arrays(self, parent_action_indices=None):
+        if parent_action_indices is not None:
+            if not isinstance(parent_action_indices, Sequence):
+                raise SyntaxError('parent_action_indices must be a tuple')
+
+            num_indices = len(parent_action_indices)
+            return [arr for action_indices, arr in self.data_arrays.items()
+                    if action_indices[:num_indices] == parent_action_indices]
 
     def _process_parameter_result(
         self, action_indices, parameter, result, ndim=None, store: bool = True
@@ -268,7 +334,8 @@ class Measurement:
 
         results = parameter_node.get()
 
-        self._store_dict_results(action_indices, parameter_node.name, results)
+        if not self.get_arrays(action_indices):
+            self._store_dict_results(action_indices, parameter_node.name, results)
 
         return results
 
@@ -282,9 +349,17 @@ class Measurement:
         return results
 
     def measure(self, measurable):
-        if not self.active:
-            raise RuntimeError("Must use the Measurement as a context manager, "
-                               "i.e. 'with Measurement(name) as msmt:'")
+        if not self.is_context_manager:
+            raise RuntimeError(
+                "Must use the Measurement as a context manager, "
+                "i.e. 'with Measurement(name) as msmt:'"
+            )
+        elif self.is_stopped:
+            raise SystemExit('Measurement.stop() has been called')
+
+        # Wait as long as the measurement is paused
+        while self.is_paused:
+            sleep(0.1)
 
         if self != Measurement.running_measurement:
             # Since this Measurement is not the running measurement, it is a
@@ -309,6 +384,17 @@ class Measurement:
 
         return result
 
+    # Functions relating to measurement flow
+    def pause(self):
+        """Pause measurement at start of next parameter sweep/measurement"""
+        self.is_paused = True
+
+    def resume(self):
+        """Resume measurement after being paused"""
+        self.is_paused = False
+
+    def stop(self):
+        self.is_stopped = True
 
 def running_measurement() -> Measurement:
     return Measurement.running_measurement
@@ -349,6 +435,18 @@ class Sweep:
 
     def __next__(self):
         msmt = running_measurement()
+
+        if not msmt.is_context_manager:
+            raise RuntimeError(
+                "Must use the Measurement as a context manager, "
+                "i.e. 'with Measurement(name) as msmt:'"
+            )
+        elif msmt.is_stopped:
+            raise SystemExit
+
+        # Wait as long as the measurement is paused
+        while msmt.is_paused:
+            sleep(0.1)
 
         # Increment loop index of current dimension
         loop_indices = list(msmt.loop_indices)

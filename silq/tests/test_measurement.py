@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from qcodes import Loop, Parameter, load_data, ParameterNode
 
-from silq.tools.loop_tools import Measurement, Sweep
+from silq.tools.loop_tools import Measurement, Sweep, running_measurement
 
 
 def verify_msmt(msmt, verification_arrays=None,
@@ -260,3 +260,59 @@ class TestNewLoopArray(TestCase):
         set_array = np.broadcast_to(np.arange(6), (11,5,6))
         np.testing.assert_array_almost_equal(dataset.arrays['result2D_set1_0_0_2_0'],
                                              set_array)
+
+
+class TestNewLoopNesting(TestCase):
+    def setUp(self) -> None:
+        self.p_sweep = Parameter('p_sweep', set_cmd=None, initial_value=10)
+        self.p_measure = Parameter('p_measure', set_cmd=None)
+        self.p_sweep.connect(self.p_measure, scale=10)
+
+    def test_nest_measurement(self):
+        def nest_measurement():
+            self.assertEqual(running_measurement().action_indices, (1,))
+            with Measurement('nested_measurement') as msmt:
+                self.assertEqual(running_measurement().action_indices, (1, 0))
+                for val in Sweep(self.p_sweep.sweep(0, 1, 0.1)):
+                    self.assertEqual(running_measurement().action_indices, (1, 0, 0))
+                    msmt.measure(self.p_measure)
+                    self.assertEqual(running_measurement().action_indices, (1, 0, 1))
+                    msmt.measure(self.p_measure)
+
+            return msmt
+
+        with Measurement('outer_measurement') as msmt:
+            for val in Sweep(self.p_sweep.sweep(0, 1, 0.1)):
+                msmt.measure(self.p_measure)
+            nested_msmt = nest_measurement()
+
+        self.assertEqual(msmt.data_groups[(1,)], nested_msmt)
+
+        print(msmt.dataset)
+
+    def test_double_nest_measurement(self):
+        def nest_measurement():
+            self.assertEqual(running_measurement().action_indices, (1,))
+            with Measurement('nested_measurement') as msmt:
+                self.assertEqual(running_measurement().action_indices, (1, 0))
+                for val in Sweep(self.p_sweep.sweep(0, 1, 0.1)):
+                    self.assertEqual(running_measurement().action_indices, (1, 0, 0))
+                    with Measurement('inner_nested_measurement') as inner_msmt:
+                        self.assertEqual(running_measurement().action_indices, (1, 0, 0, 0))
+                        for val in Sweep(self.p_sweep.sweep(0, 1, 0.1)):
+                            self.assertEqual(running_measurement().action_indices, (1, 0, 0, 0, 0))
+                            inner_msmt.measure(self.p_measure)
+                            self.assertEqual(running_measurement().action_indices, (1, 0, 0, 0, 1))
+                            inner_msmt.measure(self.p_measure)
+
+            return msmt, inner_msmt
+
+        with Measurement('outer_measurement') as msmt:
+            for val in Sweep(self.p_sweep.sweep(0, 1, 0.1)):
+                msmt.measure(self.p_measure)
+            nested_msmt, inner_nested_msmt = nest_measurement()
+
+        self.assertEqual(msmt.data_groups[(1,)], nested_msmt)
+        self.assertEqual(msmt.data_groups[(1, 0, 0)], inner_nested_msmt)
+
+        print(msmt.dataset)
