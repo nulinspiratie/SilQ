@@ -52,7 +52,7 @@ class Measurement:
 
         self.is_context_manager: bool = False  # Whether used as context manager
         self.is_paused: bool = False  # Whether the Measurement is paused
-        self.is_stopped: bool = False   # Whether the Measurement is stopped
+        self.is_stopped: bool = False  # Whether the Measurement is stopped
 
         self.force_cell_thread = force_cell_thread and using_ipython()
 
@@ -72,7 +72,7 @@ class Measurement:
 
             # Initialize dataset
             self.dataset = new_data(name=self.name)
-            self.dataset.add_metadata({'measurement_type': 'Measurement'})
+            self.dataset.add_metadata({"measurement_type": "Measurement"})
         else:
             # Primary measurement is already running. Add this measurement as
             # a data_group of the primary measurement
@@ -126,18 +126,31 @@ class Measurement:
         action_indices: Tuple[int],
         ndim: int = None,
         is_setpoint: bool = False,
+        label: str = None,
+        unit: str = None,
     ):
-        """
+        """Create a data array from a parameter and result.
+
+        The data array shape is extracted from the result shape, and the current
+        loop dimensions.
+
+        The data array is added to the current data set.
 
         Args:
-            parameter: Parameter for which to create a DataArray
+            parameter: Parameter for which to create a DataArray. Can also be a
+                string, in which case it is the data_array name
             result: Result returned by the Parameter
             action_indices: Action indices for which to store parameter
             ndim: Number of dimensions. If not provided, will use length of
                 action_indices
             is_setpoint: Whether the Parameter is used for sweeping or measuring
+            label: Data array label. If not provided, the parameter label is
+                used. If the parameter is a name string, the label is extracted
+                from the name.
+            unit: Data array unit. If not provided, the parameter unit is used.
 
         Returns:
+            Newly created data array
 
         """
 
@@ -157,10 +170,10 @@ class Measurement:
             array_kwargs["parameter"] = parameter
         else:
             array_kwargs["name"] = parameter
-            array_kwargs["label"] = parameter[0].capitalize() + parameter[1:].replace(
-                "_", " "
-            )
-            array_kwargs["unit"] = ""
+            if label is None:
+                label = parameter[0].capitalize() + parameter[1:].replace("_", " ")
+            array_kwargs["label"] = label
+            array_kwargs["unit"] = unit or ""
 
         # Add setpoint arrays
         if not is_setpoint:
@@ -229,27 +242,50 @@ class Measurement:
         # self.data_arrays[action_indices] = dict()
         pass
 
-    def get_arrays(self, parent_action_indices=None):
-        if parent_action_indices is not None:
-            if not isinstance(parent_action_indices, Sequence):
-                raise SyntaxError('parent_action_indices must be a tuple')
+    def get_arrays(self, action_indices: Sequence[int] = None) -> List[DataArray]:
+        """Get all arrays belonging to the current action indices
+        If the action indices corresponds to a group of arrays (e.g. a nested
+        measurement or ParameterNode), all the arrays in the group are returned
 
-            num_indices = len(parent_action_indices)
-            return [arr for action_indices, arr in self.data_arrays.items()
-                    if action_indices[:num_indices] == parent_action_indices]
+        Args:
+            action_indices: Action indices of arrays.
+                If not provided, the current action_indices are chosen
 
-    def _process_parameter_result(
-        self, action_indices, parameter, result, ndim=None, store: bool = True
+        Returns:
+            List of data arrays matching the action indices
+        """
+        if action_indices is None:
+            action_indices = self.action_indices
+
+        if not isinstance(action_indices, Sequence):
+            raise SyntaxError("parent_action_indices must be a tuple")
+
+        num_indices = len(action_indices)
+        return [
+            arr
+            for action_indices, arr in self.data_arrays.items()
+            if action_indices[:num_indices] == action_indices
+        ]
+
+    def _add_measurement_result(
+        self,
+        action_indices,
+        parameter,
+        result,
+        ndim=None,
+        store: bool = True,
+        label: str = None,
+        unit: str = None,
     ):
-        # Get parameter data array (either create new array or choose existing)
+        # Get parameter data array, creating a new one if necessary
         if action_indices not in self.data_arrays:
             # Create array based on first result type and shape
-            data_array = self._create_data_array(
-                parameter, result, action_indices, ndim=ndim
+            self._create_data_array(
+                parameter, result, action_indices, ndim=ndim, label=label, unit=unit
             )
-        else:
-            # Select existing array
-            data_array = self.data_arrays[action_indices]
+
+        # Select existing array
+        data_array = self.data_arrays[action_indices]
 
         # Ensure an existing data array has the correct name
         # parameter can also be a string, in which case we don't use parameter.name
@@ -285,77 +321,44 @@ class Measurement:
 
         return data_to_store
 
-    def _store_dict_results(
-        self,
-        action_indices: Tuple[int],
-        group_name: str,
-        results: dict,
-        create: bool = True,
-    ):
-        if action_indices not in self.data_arrays:
-            if not create:
-                raise RuntimeError(
-                    f"Data array group {group_name} "
-                    f"does not exist, but not allowed to create"
-                )
-            self._create_data_array_group(self.action_indices, group_name)
-
-        if not isinstance(results, dict):
-            raise SyntaxError(
-                f"Results from {group_name} is not a dict." f"Results are: {results}"
-            )
-
-        data_to_store = {}
-        for k, (key, result) in enumerate(results.items()):
-            data_to_store.update(
-                **self._process_parameter_result(
-                    action_indices=action_indices + (k,),
-                    parameter=key,
-                    result=result,
-                    ndim=len(action_indices),
-                    store=False,
-                )
-            )
-
-        # Add result to data array
-        self.dataset.store(self.loop_indices, data_to_store)
-
     # Measurement-related functions
     def _measure_parameter(self, parameter):
         # Get parameter result
         result = parameter()
 
-        self._process_parameter_result(self.action_indices, parameter, result)
+        self._add_measurement_result(self.action_indices, parameter, result)
 
         return result
 
-    def _measure_parameter_node(self, parameter_node):
-        action_indices = self.action_indices
+    def _measure_callable(self, callable, name=None):
+        if name is None:
+            name = callable.__name__
 
-        results = parameter_node.get()
-
-        if not self.get_arrays(action_indices):
-            self._store_dict_results(action_indices, parameter_node.name, results)
-
-        return results
-
-    def _measure_callable(self, callable):
         action_indices = self.action_indices
 
         results = callable()
 
-        self._store_dict_results(action_indices, callable.__name__, results)
+        # The action indices have incremented if the function contained a
+        # nested measurement. Otherwise store the dict results
+        if self.action_indices == action_indices:
+            if not isinstance(results, dict):
+                raise SyntaxError(f"{name} results must be a dict, not {results}")
+
+            with Measurement(name) as msmt:
+                for key, val in results.items():
+                    msmt.measure(val, name=key)
 
         return results
 
-    def measure(self, measurable):
+    def measure(self, measurable, name=None):
+        # TODO add label, unit, etc.
         if not self.is_context_manager:
             raise RuntimeError(
                 "Must use the Measurement as a context manager, "
                 "i.e. 'with Measurement(name) as msmt:'"
             )
         elif self.is_stopped:
-            raise SystemExit('Measurement.stop() has been called')
+            raise SystemExit("Measurement.stop() has been called")
 
         # Wait as long as the measurement is paused
         while self.is_paused:
@@ -365,17 +368,32 @@ class Measurement:
             # Since this Measurement is not the running measurement, it is a
             # DataGroup in the running measurement. Delegate measurement to the
             # running measurement
-            return Measurement.running_measurement.measure(measurable)
+            return Measurement.running_measurement.measure(measurable, name=name)
 
         # Get corresponding data array (create if necessary)
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(measurable)
-        elif isinstance(measurable, ParameterNode):
-            result = self._measure_parameter_node(measurable)
         elif callable(measurable):
-            result = self._measure_callable(measurable)
+            if name is None:
+                if isinstance(getattr(measurable, "__self__"), ParameterNode):
+                    name = measurable.__self__.name
+                else:
+                    name = measurable.__name__
+            result = self._measure_callable(measurable, name=name)
+        elif isinstance(measurable, (float, int, np.ndarray)):
+            if name is None:
+                raise RuntimeError(
+                    "A name must be provided when measuring an int, float, or array"
+                )
+            result = measurable
+            self._add_measurement_result(
+                action_indices=self.action_indices, parameter=name, result=result
+            )
         else:
-            raise RuntimeError(f"Cannot measure {measurable} as it cannot be called")
+            raise RuntimeError(
+                f"Cannot measure {measurable} as it cannot be called, and it "
+                f"is not an int, float, or numpy array."
+            )
 
         # Increment last action index by 1
         action_indices = list(self.action_indices)
@@ -395,6 +413,7 @@ class Measurement:
 
     def stop(self):
         self.is_stopped = True
+
 
 def running_measurement() -> Measurement:
     return Measurement.running_measurement
@@ -488,7 +507,7 @@ class Sweep:
             )
         else:
             return running_measurement()._create_data_array(
-                name=self.name or "iterator",
+                parameter=self.name or "iterator",
                 unit=self.unit,
                 result=self.sequence,
                 action_indices=running_measurement().action_indices,

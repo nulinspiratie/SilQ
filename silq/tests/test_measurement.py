@@ -149,7 +149,7 @@ class TestNewLoopDictResults(TestCase):
 
         with Measurement('measure_node') as msmt:
             for k, val in enumerate(Sweep(p_sweep.sweep(0, 1, 0.1))):
-                results = msmt.measure(node)
+                results = msmt.measure(node.get)
 
                 # Save results to verification arrays
                 for kk, result in enumerate(results.values()):
@@ -237,7 +237,7 @@ class TestNewLoopArray(TestCase):
 
         with Measurement('new_loop_parameter_array_2D') as msmt:
             for k, val in enumerate(Sweep(self.p_sweep.sweep(0, 1, 0.1))):
-                results = msmt.measure(node)
+                results = msmt.measure(node.get)
 
                 # Save results to verification arrays
                 for kk, result in enumerate(results.values()):
