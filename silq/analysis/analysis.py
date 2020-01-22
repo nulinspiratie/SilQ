@@ -87,6 +87,7 @@ def find_high_low(traces: np.ndarray,
                   threshold_peak: float = 0.02,
                   attempts: int = 8,
                   threshold_method: str = 'config',
+                  min_voltage_difference: float = 'config',
                   min_SNR: Union[float, None] = None):
     """ Find high and low voltages of traces using histograms
 
@@ -116,6 +117,10 @@ def find_high_low(traces: np.ndarray,
             * **config**: Use threshold method provided in
               ``config.analysis.threshold_method`` (``mean`` if not specified)
 
+        min_voltage_difference: minimum difference between high and low voltage.
+            If not satisfied, all results are None.
+            Will try to retrieve from config.analysis.min_voltage_difference,
+            else defaults to 0.3V
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage.
 
@@ -139,6 +144,8 @@ def find_high_low(traces: np.ndarray,
     # Determine threshold method
     if threshold_method == 'config':
         threshold_method = analysis_config.get('threshold_method', 'mean')
+    if min_voltage_difference == 'config':
+        min_voltage_difference = analysis_config.get('min_voltage_difference', 0.3)
 
     hist, bin_edges = np.histogram(np.ravel(traces), bins=30)
 
@@ -174,6 +181,16 @@ def find_high_low(traces: np.ndarray,
         signal['mean'] = np.mean(signal['traces'])
         signal['std'] = np.std(signal['traces'])
     voltage_difference = (high['mean'] - low['mean'])
+
+    if min_voltage_difference is not None and voltage_difference < min_voltage_difference:
+        # Difference between high and low voltage is less than threshold.
+        return {
+            'low': None,
+            'high': None,
+            'threshold_voltage': None,
+            'voltage_difference': None,
+            'DC_voltage': DC_voltage
+        }
 
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
@@ -512,7 +529,6 @@ def analyse_traces(traces: np.ndarray,
     else:
         # We don't know voltage difference since we skip a high_low measure.
         results['voltage_difference'] = None
-
     # Analyse blips (disabled because it's very slow)
     # blips_results = count_blips(traces=traces,
     #                             sample_rate=sample_rate,
