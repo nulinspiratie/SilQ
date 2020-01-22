@@ -38,7 +38,7 @@ class Keysight81180AInterface(InstrumentInterface):
           be set manually
     """
 
-    def __init__(self, instrument_name, **kwargs):
+    def __init__(self, instrument_name, max_amplitude=1.5, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
@@ -69,14 +69,14 @@ class Keysight81180AInterface(InstrumentInterface):
         self.pulse_implementations = [
             DCPulseImplementation(
                 pulse_requirements=[
-                    ("amplitude", {"max": 1.5}),
+                    ("amplitude", {"max": max_amplitude}),
                     ("duration", {"min": 100e-9}),
                 ]
             ),
             SinePulseImplementation(
                 pulse_requirements=[
-                    ("frequency", {"min": 0, "max": 1.5e9}),
-                    ("amplitude", {"min": 0, "max": 1}),
+                    ("frequency", {"min": -1.5e9, "max": 1.5e9}),
+                    ("amplitude", {"min": 0, "max": max_amplitude}),
                     ("duration", {"min": 100e-9}),
                 ]
             ),
@@ -95,9 +95,17 @@ class Keysight81180AInterface(InstrumentInterface):
             vals=vals.Lists(vals.Strings()),
         )
 
-        self.waveforms = {}
+        self.waveforms = {}  # List of waveform arrays for each channel
+        # Optional initial waveform for each channel. Used to set the first point
+        # to equal the last voltage of the final pulse (see docstring for details)
         self.waveforms_initial = {}
-        self.sequences = {}
+        self.sequences = {}  # List of sequence instructions for each channel
+        # offsets list of actual programmed sample points versus expected points
+        self.point_offsets = {}
+        self.max_point_offsets = {}  # Maximum absolute sample point offset
+        self.point = {}  # Current sample point, incremented as sequence is programmed
+        # Maximum tolerable absolute point offset before raising a warning
+        self.point_offset_limit = 100
 
         # Add parameters that are not set via setup
         self.additional_settings = ParameterNode()
@@ -148,9 +156,11 @@ class Keysight81180AInterface(InstrumentInterface):
             # instrument_channel.power(5)  # If coupling is AC
             # instrument_channel.voltage_DAC(voltage)  # If coupling is DAC (max 0.5)
             instrument_channel.voltage_DC(2)  # If coupling is DC (max 2)
-            if not instrument_channel.output_coupling() == 'DC':
-                warn('Keysight 81180 output coupling is not DC. The waveform '
-                     'amplitudes might be off.')
+            if not instrument_channel.output_coupling() == "DC":
+                warn(
+                    "Keysight 81180 output coupling is not DC. The waveform "
+                    "amplitudes might be off."
+                )
 
             instrument_channel.voltage_offset(0)
             instrument_channel.output_modulation("off")
@@ -186,11 +196,14 @@ class Keysight81180AInterface(InstrumentInterface):
     def generate_waveform_sequences(self):
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
+        self.point = {ch: 0 for ch in self.active_channels()}
+        self.point_offsets = {ch: [] for ch in self.active_channels()}
 
         for ch in self.active_channels():
             instrument_channel = self.instrument.channels[ch]
             # Set start time t=0
             t_pulse = 0
+            self.waveforms_initial[ch] = None
 
             # A waveform must have at least 320 points
             min_waveform_duration = 320 / instrument_channel.sample_rate()
@@ -201,7 +214,7 @@ class Keysight81180AInterface(InstrumentInterface):
 
             # Always begin by waiting for a trigger/event pulse
             # Add empty waveform (0V DC), with minimum points (320)
-            empty_idx = self.add_single_waveform(ch, waveform_array=np.zeros(320))
+            self.add_single_waveform(ch, waveform_array=np.zeros(320))
 
             for pulse in pulse_sequence.get_pulses():
                 # Check if there is a gap between next pulse and current time t_pulse
@@ -229,15 +242,19 @@ class Keysight81180AInterface(InstrumentInterface):
                         pulse_name="DC",
                     )
 
+
                 # Get waveform of current pulse
                 waveform = pulse.implementation.implement(
                     sample_rate=instrument_channel.sample_rate(),
-                    trigger_duration=self.trigger_in_duration(),
                 )
 
                 # Add waveform and sequence steps
                 sequence_steps = self.add_pulse_waveforms(
-                    ch, **waveform, pulse_name=pulse.name
+                    ch,
+                    **waveform,
+                    t_stop=pulse.t_stop,
+                    sample_rate=instrument_channel.sample_rate(),
+                    pulse_name=pulse.name,
                 )
                 self.sequences[ch] += sequence_steps
 
@@ -262,14 +279,16 @@ class Keysight81180AInterface(InstrumentInterface):
             if self.waveforms_initial[ch] is not None:
                 waveform_initial_idx, waveform_initial = self.waveforms_initial[ch]
 
-                print(f'Changing first point of first waveform to {last_voltage}')
+                logger.debug(
+                    f"Changing first point of first waveform to {last_voltage}"
+                )
 
                 waveform_initial[0] = last_voltage
-                self.waveforms[ch][waveform_initial_idx-1] = waveform_initial
+                self.waveforms[ch][waveform_initial_idx - 1] = waveform_initial
 
             # Ensure there are at least three sequence instructions
             while len(self.sequences[ch]) < 3:
-                waveform_idx = self.add_single_waveform(ch, last_voltage*np.ones(320))
+                waveform_idx = self.add_single_waveform(ch, last_voltage * np.ones(320))
                 # Add extra blank segment which will automatically run to
                 # the next segment (~ 70 ns offset)
                 self.sequences[ch].append((waveform_idx, 1, 0, "final_filler_pulse"))
@@ -277,6 +296,18 @@ class Keysight81180AInterface(InstrumentInterface):
             # Sequence all loaded waveforms
             instrument_channel.upload_waveforms(self.waveforms[ch])
             instrument_channel.set_sequence(self.sequences[ch])
+
+            # Check that the sample point offsets do not exceed limit
+            self.max_point_offsets[ch] = max(np.abs(self.point_offsets[ch]))
+            if self.max_point_offsets[ch] > self.point_offset_limit:
+                logger.warning(
+                    f"81180A maximum sample point offset exceeds limit {self.point_offset_limit}. "
+                    f"Current maximum: {self.max_point_offsets}"
+                )
+            else:
+                logger.debug(
+                    f"81180A sample point maximum offset: {self.max_point_offsets}"
+                )
 
     def _add_DC_waveform(
         self,
@@ -291,12 +322,14 @@ class Keysight81180AInterface(InstrumentInterface):
             pulse_name, t_start=t_start, t_stop=t_stop, amplitude=amplitude,
         )
         waveform = DCPulseImplementation.implement(
-            self=None,
-            sample_rate=sample_rate,
-            pulse=DC_pulse,
+            self=None, sample_rate=sample_rate, pulse=DC_pulse,
         )
         sequence_steps = self.add_pulse_waveforms(
-            channel_name, **waveform, pulse_name=pulse_name
+            channel_name,
+            **waveform,
+            t_stop=DC_pulse.t_stop,
+            sample_rate=sample_rate,
+            pulse_name=pulse_name,
         )
 
         return sequence_steps
@@ -360,9 +393,13 @@ class Keysight81180AInterface(InstrumentInterface):
         loops: int,
         waveform_initial: Union[np.ndarray, None],
         waveform_tail: Union[np.ndarray, None],
+        t_stop: float,
+        sample_rate: float,
         pulse_name=None,
     ):
         sequence = []
+        total_points = 0
+
         if pulse_name is None:
             pulse_name = "pulse"
 
@@ -375,12 +412,19 @@ class Keysight81180AInterface(InstrumentInterface):
             self.waveforms[channel_name].append(None)
             waveform_initial_idx = len(self.waveforms[channel_name])
             # Temporarily store initial waveform in separate variable
-            self.waveforms_initial[channel_name] = (waveform_initial_idx, waveform_initial)
+            self.waveforms_initial[channel_name] = (
+                waveform_initial_idx,
+                waveform_initial,
+            )
             # Add sequence step (waveform_idx, loops, jump_event)
             sequence.append((waveform_initial_idx, 1, 0, f"{pulse_name}_pre"))
 
+            total_points += len(waveform_initial)  # Update total waveform points
+
         # Upload main waveform
         waveform_idx = self.add_single_waveform(channel_name, waveform)
+
+        total_points += len(waveform) * loops  # Update total waveform points
 
         # Add sequence step (waveform_idx, loops, jump_event, label)
         sequence.append((waveform_idx, loops, 0, pulse_name))
@@ -389,6 +433,18 @@ class Keysight81180AInterface(InstrumentInterface):
         if waveform_tail is not None:
             waveform_tail_idx = self.add_single_waveform(channel_name, waveform_tail)
             sequence.append((waveform_tail_idx, 1, 0, f"{pulse_name}_tail"))
+
+            total_points += len(waveform_tail)  # Update total waveform points
+
+        # Update the total number of sample points after having implemented
+        # this pulse waveform.
+        self.point[channel_name] += total_points
+
+        # Compare the total number of sample points to the expected number of
+        # sample points (t_stop * sample_rate). this may differ because waveforms
+        # must have a multiple of 32 points
+        expected_stop_point = int(t_stop * sample_rate)
+        self.point_offsets[channel_name].append(self.point[channel_name] - expected_stop_point)
 
         return sequence
 
@@ -408,11 +464,7 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
     def implement(
-        self,
-        sample_rate: float,
-        max_points: int = 6000,
-        trigger_duration: float = None,
-        pulse=None,
+        self, sample_rate: float, max_points: int = 6000, pulse=None,
     ) -> dict:
         if pulse is None:
             pulse = self.pulse
@@ -427,7 +479,7 @@ class DCPulseImplementation(PulseImplementation):
         if pulse.t_start == 0 and N > 640:
             N -= 320
             waveform_initial = pulse.amplitude * np.ones(320)
-            print("adding waveform_initial")
+            logger.debug("adding waveform_initial")
         else:
             waveform_initial = None
 
@@ -471,7 +523,19 @@ class DCPulseImplementation(PulseImplementation):
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
-    def implement(self, sample_rate, trigger_duration, plot=False, **kwargs):
+    def implement(self, sample_rate, plot=False, **kwargs):
+        # If frequency is zero, use DC pulses instead
+        if self.pulse.frequency == 0:
+            DC_pulse = DCPulse(
+                "DC_sine",
+                t_start=self.pulse.t_start,
+                t_stop=self.pulse.t_stop,
+                amplitude=self.pulse.get_voltage(self.pulse.t_start),
+            )
+            return DCPulseImplementation.implement(
+                self=None, pulse=DC_pulse, sample_rate=sample_rate
+            )
+
         settings = {"max_points": 50e3, "frequency_threshold": 30}
         settings.update(**config.properties.get("sine_waveform_settings", {}))
         settings.update(**kwargs)
@@ -499,6 +563,7 @@ class SinePulseImplementation(PulseImplementation):
             return {
                 "waveform": self.pulse.get_voltage(t_list),
                 "loops": 1,
+                "waveform_initial": None,
                 "waveform_tail": None,
             }
 
