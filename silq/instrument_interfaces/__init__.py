@@ -58,8 +58,6 @@ def get_instrument_interface(instrument, *args, **kwargs):
     instrument_interface_class = eval(import_dict["class"])
 
     instrument_interface = instrument_interface_class(
-        instrument_name=instrument.name
-        *args,
-        **kwargs
+        instrument_name=instrument.name, *args, **kwargs
     )
     return instrument_interface
