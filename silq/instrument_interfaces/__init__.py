@@ -56,9 +56,10 @@ def get_instrument_interface(instrument, *args, **kwargs):
     import_dict = instrument_interfaces[instrument_class]
     exec(f'from {import_dict["module"]} import {import_dict["class"]}')
     instrument_interface_class = eval(import_dict["class"])
-    server_name = getattr(instrument, "_server_name", None)
 
     instrument_interface = instrument_interface_class(
-        instrument_name=instrument.name, server_name=server_name, *args, **kwargs
+        instrument_name=instrument.name
+        *args,
+        **kwargs
     )
     return instrument_interface
