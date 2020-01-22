@@ -579,6 +579,9 @@ class Layout(Instrument):
         # HDF5 files for saving of traces in a loop. One per AcquisitionParameter
         self.trace_files = {}
 
+        # Dictionary for storing all performance timings
+        self.timing = {}
+
     @property
     def pulse_sequence(self):
         """Target pulse sequence by distributing its pulses to interfaces.
@@ -629,6 +632,18 @@ class Layout(Instrument):
             return self.acquisition_interface.sample_rate()
         else:
             return None
+
+    @sample_rate.setter
+    def sample_rate(self, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -903,8 +918,12 @@ class Layout(Instrument):
                 return next(connection for connection in self.connections
                             if connection.label == connection_label)
             except StopIteration:
+                allowed_labels = [
+                    connection.label for connection in self.connections
+                    if connection_label is not None
+                ]
                 raise StopIteration(f'Cannot find connection with label {connection_label}. '
-                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
+                                    f'Allowed labels: {allowed_labels}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
@@ -1320,6 +1339,8 @@ class Layout(Instrument):
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
 
+        self.timing['setup'] = {}
+
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
@@ -1337,6 +1358,7 @@ class Layout(Instrument):
                                         repeat=repeat,
                                         **setup_flags, **kwargs)
                 logger.debug(f'{interface.name} setup time taken: {time() - t0:.2f}')
+                self.timing['setup'][interface.name] = time() - t0
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
@@ -1373,6 +1395,9 @@ class Layout(Instrument):
             Does not start instruments that have the flag ``skip_start``
         """
         self.active(True)
+
+        self.timing['start'] = {}
+
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
                 continue
@@ -1385,14 +1410,18 @@ class Layout(Instrument):
                 logger.info('Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
+                t0 = time()
                 interface.start()
                 logger.debug(f'{interface} started')
+                self.timing['start'][interface.name] = time() - t0
             else:
                 logger.debug(f'Skipping starting {interface} (no pulse sequence)')
 
         for interface in self.flags['start_last']:
+            t0 = time()
             interface.start()
             logger.debug(f'Started {interface} after others (flag start_last)')
+            self.timing['start'][interface.name] = time() - t0
 
         for action in self.flags['post_start_actions']:
             action()
