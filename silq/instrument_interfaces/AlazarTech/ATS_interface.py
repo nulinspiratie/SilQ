@@ -165,7 +165,7 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='sample_rate',
                            unit='samples/sec',
                            get_cmd=partial(self.setting, 'sample_rate'),
-                           set_cmd=lambda x:self.update_settings(sample_rate=x),
+                           set_cmd=lambda x:self.default_settings().update(sample_rate=x),
                            vals=vals.Numbers(),
                            docstring='Acquisition sampling rate (Hz)')
 
