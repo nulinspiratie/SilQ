@@ -74,7 +74,7 @@ class ATSInterface(InstrumentInterface):
             **self._acquisition_channels,
             **self._aux_channels,
             'trig_in':  Channel(instrument_name=self.instrument_name(),
-                                name='trig_in', input_trigger=True),
+                                name='trig_in', id='trig_in', input_trigger=True),
             'software_trig_out': Channel(instrument_name=self.instrument_name(),
                                          name='software_trig_out')}
 
@@ -366,7 +366,7 @@ class ATSInterface(InstrumentInterface):
                 # and 255 (+trigger_range)
                 trigger_level = int(128 + 127 * (self.trigger_threshold() /
                                                  trigger_range))
-                trigger_channel = self._acquisition_channels[self.trigger_channel()]
+                trigger_channel = self._channels[self.trigger_channel()]
 
                 self.update_settings(trigger_operation='J',
                                      trigger_engine1='J',
