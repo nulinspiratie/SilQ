@@ -757,7 +757,7 @@ def find_approximate_divisor(N: int,
         # are less than min_remaining_points
         if remaining_points and remaining_points < min_remaining_points:
             subtract_cycles = np.ceil((min_remaining_points - remaining_points) / points)
-            remaining_points += subtract_cycles * (min_remaining_points - remaining_points)
+            remaining_points += subtract_cycles * points
             cycles -= subtract_cycles
 
         if min_points <= points <= max_points and remaining_points <= max_remaining_points:
