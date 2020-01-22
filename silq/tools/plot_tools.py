@@ -619,6 +619,7 @@ class ScanningPlot(InteractivePlot):
         self.update_idx = 0
         self.update_start_idx = 1
         self.t_start = None
+        self.timing = {}
 
         self.timer = self.fig.canvas.new_timer(interval=interval * 1000)
         self.timer.add_callback(self.scan)
@@ -661,7 +662,9 @@ class ScanningPlot(InteractivePlot):
             """
         self.parameter.continuous = True
         if setup:
+            t0 = time()
             self.parameter.setup(start=start)
+            self.timing['setup']= time() - t0
         self.timer.start()
 
         self.update_idx = 0
@@ -691,10 +694,17 @@ class ScanningPlot(InteractivePlot):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
+        t0 = time()
         self.parameter()
+        self.timing['acquisition'] = time() - t0
         if stop:
+            t0 = time()
             self.layout.stop()
+            self.timing['stop'] = time() - t0
+
+        t0 = time()
         self.update_plot(initialize=initialize)
+        self.timing['plot'] = time() - t0
 
         self.update_idx += 1
 
