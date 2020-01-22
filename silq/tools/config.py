@@ -1,4 +1,5 @@
 from typing import Any, List, Union, Tuple
+import warnings
 import os
 import collections
 from blinker import signal, Signal
@@ -129,8 +130,12 @@ class SubConfig:
                 self.save_as_dir = False
 
             # Load config from file
-            with open(filepath, "r") as fp:
-                config = json.load(fp)
+            try:
+                with open(filepath, "r") as fp:
+                    config = json.load(fp)
+            except Exception as e:
+                e.args = (e.args[0] + f'\nError reading json file {filepath}', *e.args[1:])
+                raise e
 
         elif os.path.isdir(folderpath):
             # Config is a folder, and so each item in the folder is added to
@@ -146,7 +151,13 @@ class SubConfig:
                 if '.json' in file:
                     with open(filepath, "r") as fp:
                         # Determine type of config
-                        subconfig = json.load(fp)
+                        try:
+                            subconfig = json.load(fp)
+                        except Exception as e:
+                            e.args = (e.args[0] + f'\nError reading json file {filepath}',
+                                      *e.args[1:])
+                            raise e
+
                         if isinstance(subconfig, list):
                             config_class = ListConfig
                         elif isinstance(subconfig, dict):

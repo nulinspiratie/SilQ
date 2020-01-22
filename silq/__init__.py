@@ -15,6 +15,7 @@ from .tools.parameter_tools import SweepDependentValues
 from .tools.general_tools import SettingsClass
 
 import qcodes as qc
+from qcodes.utils.helpers import using_ipython
 
 # Initially set the environment to None. Changing this will affect all
 # environment config listeners (see `DictConfig`)
@@ -172,22 +173,27 @@ def get_experiment_configuration(name: str, experiments_folder: Path = None) -> 
 
 
 def execute_file(filepath: (str, Path), globals=None, locals=None):
-    if globals is None and locals is None:
-        # Register globals and locals of the above frame (for code execution)
-        globals = sys._getframe(1).f_globals
-        locals = sys._getframe(1).f_locals
-
     if isinstance(filepath, str):
         filepath = Path(filepath)
 
     assert filepath.suffix == '.py'
 
-    execution_code = filepath.read_text() + "\n"
     try:
-        exec(execution_code, globals, locals)
-    except Exception as err:
-        err.args = (err.args[0] + f'\nSilQ initialization error in {filepath}', *err.args[1:])
-        raise
+        if using_ipython():
+            from IPython import get_ipython
+            shell = get_ipython()
+            shell.safe_execfile(filepath, shell.user_ns, raise_exceptions=True)
+        else:
+            if globals is None and locals is None:
+                # Register globals and locals of the above frame (for code execution)
+                globals = sys._getframe(1).f_globals
+                locals = sys._getframe(1).f_locals
+
+            execution_code = filepath.read_text() + "\n"
+            exec(execution_code, globals, locals)
+    except Exception as e:
+        e.args = (e.args[0] + f'\nSilQ initialization error in {filepath}', *e.args[1:])
+        raise e
 
 
 def run_scripts(name: str = None,
