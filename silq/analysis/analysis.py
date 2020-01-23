@@ -220,16 +220,6 @@ def find_high_low(traces: np.ndarray,
         signal['std'] = np.std(signal['traces'])
     voltage_difference = (high['mean'] - low['mean'])
 
-    if min_voltage_difference is not None and voltage_difference < min_voltage_difference:
-        # Difference between high and low voltage is less than threshold.
-        return {
-            'low': None,
-            'high': None,
-            'threshold_voltage': None,
-            'voltage_difference': None,
-            'DC_voltage': DC_voltage
-        }
-
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
         threshold_voltage = (high['mean'] + low['mean']) / 2
