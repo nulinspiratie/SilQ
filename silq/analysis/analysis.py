@@ -14,18 +14,15 @@ __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
 logger = logging.getLogger(__name__)
 
 from silq import config
-if 'analysis' not in config:
-    config['analysis'] = {}
-analysis_config = config['analysis']
 
 
 def old_smooth(x: np.ndarray,
            window_len: int = 11,
            window: str = 'hanning') -> np.ndarray:
     """smooth the data using a window with requested size.
-    
+
     Note:
-        This function is superseded by the Savitsky-Golay filter `smooth` for 
+        This function is superseded by the Savitsky-Golay filter `smooth` for
         its superior performance.
 
     This method is based on the convolution of a scaled window with the signal.
@@ -88,6 +85,7 @@ def find_high_low(traces: np.ndarray,
                   attempts: int = 8,
                   threshold_method: str = 'config',
                   min_voltage_difference: float = 'config',
+                  threshold_requires_high_low: bool = 'config',
                   min_SNR: Union[float, None] = None):
     """ Find high and low voltages of traces using histograms
 
@@ -138,6 +136,8 @@ def find_high_low(traces: np.ndarray,
     """
     assert attempts > 0, f'Attempts {attempts} must be at least 1'
 
+    analysis_config = config.get('analysis', {})
+
     # Calculate DC (mean) voltage
     DC_voltage = np.mean(traces)
 
@@ -163,11 +163,35 @@ def find_high_low(traces: np.ndarray,
             #        'increasing threshold')
             threshold_peak *= 1.5
     else:
-        return {'low': None,
-                'high': None,
-                'threshold_voltage': None,
-                'voltage_difference': None,
-                'DC_voltage': DC_voltage}
+        results = {
+            'low': None,
+            'high': None,
+            'threshold_voltage': None,
+            'voltage_difference': None,
+            'DC_voltage': DC_voltage
+        }
+        if threshold_requires_high_low == 'config':
+            threshold_requires_high_low = analysis_config.get('threshold_requires_high_low', True)
+        if not threshold_requires_high_low and threshold_method != 'mean':
+            # Still return a threshold voltage even though no two peaks were
+            # observed
+            factor = float(threshold_method.split('*')[0])
+            voltages = sorted(traces.flatten())
+            if threshold_method.endswith('std_low'):
+                # Remove top 20 percent
+                low_voltages = voltages[:int(0.8 * len(voltages))]
+                voltage_mean = np.mean(low_voltages)
+                voltage_std = np.std(low_voltages)
+                threshold_voltage = voltage_mean + factor * voltage_std
+            else:
+                # Remove bottom 20 percent
+                high_voltages = voltages[int(0.2 * len(voltages)):]
+                voltage_mean = np.mean(high_voltages)
+                voltage_std = np.std(high_voltages)
+                threshold_voltage = voltage_mean - factor * voltage_std
+            results['threshold_voltage'] = threshold_voltage
+
+        return results
 
     # Find mean voltage, used to determine which points are low/high
     mean_voltage_idx = int(np.round(np.mean(peaks_idx)))
@@ -195,14 +219,16 @@ def find_high_low(traces: np.ndarray,
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
         threshold_voltage = (high['mean'] + low['mean']) / 2
-    elif 'std_low' in threshold_method:
+    elif threshold_method.endswith('std_low'):
         # Threshold_method is {factor} standard deviations above low mean
         factor = float(threshold_method.split('*')[0])
         threshold_voltage = low['mean'] + factor * low['std']
-    elif 'std_high' in threshold_method:
+    elif threshold_method.endswith('std_high'):
         # Threshold_method is {factor} standard deviations below high mean
         factor = float(threshold_method.split('*')[0])
         threshold_voltage = high['mean'] - factor * high['std']
+    else:
+        raise RuntimeError(f'Threshold method {threshold_method} not understood')
 
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
     if min_SNR is None:
@@ -529,6 +555,7 @@ def analyse_traces(traces: np.ndarray,
     else:
         # We don't know voltage difference since we skip a high_low measure.
         results['voltage_difference'] = None
+
     # Analyse blips (disabled because it's very slow)
     # blips_results = count_blips(traces=traces,
     #                             sample_rate=sample_rate,
