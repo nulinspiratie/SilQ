@@ -220,6 +220,8 @@ class SGS100AInterface(InstrumentInterface):
 
         if self.IQ_modulation():
             self.instrument.IQ_modulation('on')
+        else:
+            self.instrument.IQ_modulation('off')
 
     def start(self):
         """Turn all active instrument channels on"""
