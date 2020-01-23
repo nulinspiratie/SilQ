@@ -668,7 +668,7 @@ class SinePulse(Pulse):
         return waveform
 
 
-class FrequencyRampPulse(Pulse):
+class ChirpPulse(Pulse):
     """Linearly increasing/decreasing frequency `Pulse`.
 
     Parameters:
@@ -810,6 +810,12 @@ class FrequencyRampPulse(Pulse):
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
+
+
+class FrequencyRampPulse(ChirpPulse):
+    """Deprecated pulse, use ChirpPulse instead"""
+    pass
+
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
