@@ -5,6 +5,7 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import (
     Pulse,
     SinePulse,
+    FrequencyRampPulse,
     MarkerPulse,
     PulseImplementation,
 )
@@ -50,6 +51,14 @@ class SGS100AInterface(InstrumentInterface):
                     ("duration", {"min": 100e-9}),
                 ]
             ),
+            FrequencyRampPulseImplementation(
+                pulse_requirements=[
+                    ("frequency_start", {"min": 1e6, "max": 40e9}),
+                    ("frequency_stop", {"min": 1e6, "max": 40e9}),
+                    ("power", {"min": -120, "max": 25}),
+                    ("duration", {"min": 100e-9}),
+                ]
+            ),
         ]
 
         self.envelope_padding = Parameter(
@@ -59,9 +68,9 @@ class SGS100AInterface(InstrumentInterface):
             initial_value=0,
             vals=vals.Numbers(min_value=0, max_value=10e-3),
             docstring="Padding for any pulses that use IQ modulation. "
-                      "This is to ensure that any IQ pulses such as sine waves "
-                      "are applied a bit before the pulse starts. The marker pulse " 
-                      "used for pulse modulation does not use any envelope padding."
+            "This is to ensure that any IQ pulses such as sine waves "
+            "are applied a bit before the pulse starts. The marker pulse "
+            "used for pulse modulation does not use any envelope padding.",
         )
         self.marker_amplitude = Parameter(
             unit="V",
@@ -93,15 +102,15 @@ class SGS100AInterface(InstrumentInterface):
             initial_value=None,
             vals=vals.Bool(),
             docstring="Whether to use IQ modulation. Cannot be directly set, but "
-                      "is set internally if there are pulses with multiple "
-                      "frequencies, self.fix_frequency() is True, or "
-                      "self.force_IQ_modulation() is True."
+            "is set internally if there are pulses with multiple "
+            "frequencies, self.fix_frequency() is True, or "
+            "self.force_IQ_modulation() is True.",
         )
         self.force_IQ_modulation = Parameter(
             initial_value=False,
             vals=vals.Bool(),
             set_cmd=None,
-            docstring="Whether to force IQ modulation."
+            docstring="Whether to force IQ modulation.",
         )
 
         # Add parameters that are not set via setup
@@ -145,15 +154,15 @@ class SGS100AInterface(InstrumentInterface):
         # Check whether to use IQ modulation
         if len(frequencies) > 1 or self.fix_frequency() or self.force_IQ_modulation():
             # Set protected IQ_modulation parameter
-            self.IQ_modulation._latest['raw_value'] = True
+            self.IQ_modulation._latest["raw_value"] = True
             self.IQ_modulation.get()
 
             if not self.fix_frequency():
-                if self.frequency_carrier_choice() == 'center':
+                if self.frequency_carrier_choice() == "center":
                     self.frequency((min(frequencies) + max(frequencies)) / 2)
-                elif self.frequency_carrier_choice() == 'min':
+                elif self.frequency_carrier_choice() == "min":
                     self.frequency(min(frequencies))
-                elif self.frequency_carrier_choice() == 'max':
+                elif self.frequency_carrier_choice() == "max":
                     self.frequency(max(frequencies))
                 else:
                     frequency = (min(frequencies) + max(frequencies)) / 2
@@ -161,7 +170,7 @@ class SGS100AInterface(InstrumentInterface):
                     self.frequency(frequency)
         else:
             # Set protected IQ_modulation parameter
-            self.IQ_modulation._latest['raw_value'] = False
+            self.IQ_modulation._latest["raw_value"] = False
             self.IQ_modulation.get()
 
             self.frequency(next(iter(frequencies)))
@@ -170,12 +179,17 @@ class SGS100AInterface(InstrumentInterface):
         # the envelope padding
         if self.IQ_modulation():
             for pulse in self.pulse_sequence:
-                overlapping_pulses = [p for p in self.pulse_sequence
-                       if 2*self.envelope_padding() < p.t_stop - pulse.t_start < 0]
+                overlapping_pulses = [
+                    p
+                    for p in self.pulse_sequence
+                    if 2 * self.envelope_padding() < p.t_stop - pulse.t_start < 0
+                ]
                 if any(overlapping_pulses):
-                    raise RuntimeError(f'Pulse {pulse} start time {pulse.t_start} '
-                                       f'is less than 2*envelope_padding of '
-                                       f'previous pulse {overlapping_pulses}')
+                    raise RuntimeError(
+                        f"Pulse {pulse} start time {pulse.t_start} "
+                        f"is less than 2*envelope_padding of "
+                        f"previous pulse {overlapping_pulses}"
+                    )
 
         additional_pulses = []
         marker_pulse = None
@@ -190,9 +204,9 @@ class SGS100AInterface(InstrumentInterface):
                     t_stop=pulse.t_stop,
                     amplitude=self.marker_amplitude(),
                     connection_requirements={
-                        'input_instrument': self.instrument_name(),
-                        'input_channel': "pulse_mod"
-                    }
+                        "input_instrument": self.instrument_name(),
+                        "input_channel": "pulse_mod",
+                    },
                 )
                 additional_pulses.append(marker_pulse)
 
@@ -200,7 +214,6 @@ class SGS100AInterface(InstrumentInterface):
             additional_pulses += pulse.implementation.get_additional_pulses(self)
 
         return additional_pulses
-
 
     def setup(self, **kwargs):
         """Setup all instrument settings to output pulse sequence.
@@ -215,8 +228,8 @@ class SGS100AInterface(InstrumentInterface):
         power = next(pulse.power for pulse in self.pulse_sequence)
         self.instrument.power(power)
 
-        self.instrument.pulse_modulation_state('on')
-        self.instrument.pulse_modulation_source('external')
+        self.instrument.pulse_modulation_state("on")
+        self.instrument.pulse_modulation_source("external")
 
         if self.IQ_modulation():
             self.instrument.IQ_modulation('on')
@@ -244,23 +257,70 @@ class SinePulseImplementation(PulseImplementation):
         else:  # interface.IQ_modulation() == 'on'
             frequency_IQ = self.pulse.frequency - interface.frequency()
             additional_pulses = [
-                SinePulse(name='sideband_I',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=frequency_IQ,
-                          amplitude=1,
-                          phase=self.pulse.phase,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'I'}),
-                SinePulse(name='sideband_Q',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=frequency_IQ,
-                          phase=self.pulse.phase-90,
-                          amplitude=1,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'Q'})
+                SinePulse(
+                    name="sideband_I",
+                    t_start=self.pulse.t_start - interface.envelope_padding(),
+                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                    frequency=frequency_IQ,
+                    amplitude=1,
+                    phase=self.pulse.phase,
+                    connection_requirements={
+                        "input_instrument": interface.instrument_name(),
+                        "input_channel": "I",
+                    },
+                ),
+                SinePulse(
+                    name="sideband_Q",
+                    t_start=self.pulse.t_start - interface.envelope_padding(),
+                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                    frequency=frequency_IQ,
+                    phase=self.pulse.phase - 90,
+                    amplitude=1,
+                    connection_requirements={
+                        "input_instrument": interface.instrument_name(),
+                        "input_channel": "Q",
+                    },
+                ),
             ]
             return additional_pulses
+
+
+class FrequencyRampPulseImplementation(PulseImplementation):
+    pulse_class = FrequencyRampPulse
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        assert pulse.power is not None, "Pulse must have power defined"
+        return super().target_pulse(pulse, interface, **kwargs)
+
+    def get_additional_pulses(self, interface: InstrumentInterface):
+        assert interface.IQ_modulation()
+
+        additional_pulses = [
+            FrequencyRampPulse(
+                name="sideband_I",
+                t_start=self.pulse.t_start,
+                t_stop=self.pulse.t_stop,
+                frequency_start=self.pulse.frequency_start - interface.frequency(),
+                frequency_stop=self.pulse.frequency_stop - interface.frequency(),
+                amplitude=1,
+                phase=0,
+                connection_requirements={
+                    "input_instrument": interface.instrument_name(),
+                    "input_channel": "I",
+                },
+            ),
+            FrequencyRampPulse(
+                name="sideband_Q",
+                t_start=self.pulse.t_start,
+                t_stop=self.pulse.t_stop,
+                frequency_start=self.pulse.frequency_start - interface.frequency(),
+                frequency_stop=self.pulse.frequency_stop - interface.frequency(),
+                amplitude=1,
+                phase=-90,
+                connection_requirements={
+                    "input_instrument": interface.instrument_name(),
+                    "input_channel": "Q",
+                },
+            ),
+        ]
+        return additional_pulses
