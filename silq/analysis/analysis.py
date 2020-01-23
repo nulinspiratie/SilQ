@@ -119,6 +119,15 @@ def find_high_low(traces: np.ndarray,
             If not satisfied, all results are None.
             Will try to retrieve from config.analysis.min_voltage_difference,
             else defaults to 0.3V
+        threshold_requires_high_low: Whether or not both a high and low voltage
+            must be discerned before returning a threshold voltage.
+            If set to False and threshold_method is not ``mean``, a threshold
+            voltage is always determined. If no two peaks are observed, then
+            the bottom/top 20% of voltages are scrapped, and the rest is
+            considered to be high/low voltage, depending on threshold_method.
+            Especially useful for when current blips are to short-lived to have
+            a proper high current. Default is True.
+            Can be set by config.analysis.threshold_requires_high_low
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage (default None).
 
