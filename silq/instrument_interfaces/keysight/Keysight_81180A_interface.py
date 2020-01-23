@@ -9,7 +9,7 @@ from silq.pulses import (
     DCPulse,
     TriggerPulse,
     SinePulse,
-    MarkerPulse,
+    FrequencyRampPulse,
     PulseImplementation,
 )
 from silq.pulses import PulseSequence
@@ -87,6 +87,14 @@ class Keysight81180AInterface(InstrumentInterface):
                     ("duration", {"min": 100e-9}),
                 ]
             ),
+            FrequencyRampPulseImplementation(
+                pulse_requirements=[
+                    ("frequency_start", {"min": -1.5e9, "max": 1.5e9}),
+                    ("frequency_stop", {"min": -1.5e9, "max": 1.5e9}),
+                    ("amplitude", {"min": 0, "max": max_amplitude}),
+                    ("duration", {"min": 100e-9}),
+                ]
+            )
         ]
 
         self.add_parameter(
@@ -248,7 +256,6 @@ class Keysight81180AInterface(InstrumentInterface):
                         sample_rate=instrument_channel.sample_rate(),
                         pulse_name="DC",
                     )
-
 
                 # Get waveform of current pulse
                 waveform = pulse.implementation.implement(
@@ -451,7 +458,9 @@ class Keysight81180AInterface(InstrumentInterface):
         # sample points (t_stop * sample_rate). this may differ because waveforms
         # must have a multiple of 32 points
         expected_stop_point = int(t_stop * sample_rate)
-        self.point_offsets[channel_name].append(self.point[channel_name] - expected_stop_point)
+        self.point_offsets[channel_name].append(
+            self.point[channel_name] - expected_stop_point
+        )
 
         return sequence
 
@@ -660,4 +669,32 @@ class SinePulseImplementation(PulseImplementation):
             "loops": waveform_loops,
             "waveform_initial": None,
             "waveform_tail": waveform_tail_array,
+        }
+
+
+class FrequencyRampPulseImplementation(PulseImplementation):
+    pulse_class = SinePulse
+
+    def implement(self, sample_rate, plot=False, **kwargs):
+        if self.pulse.frequency_deviation == 0:
+            raise RuntimeError(f"{self.pulse} has no frequency_deviation")
+
+        # Convert t_start and t_stop to int to get rid of floating point errors
+        start_idx = int(round(self.pulse.t_start * sample_rate))
+        stop_idx = int(round(self.pulse.t_stop * sample_rate))
+        # Add half of 32 points to ensure good rounding during floor division
+        t_list = np.arange(start_idx, stop_idx + 16)
+        # Ensure number of points is multiple of 32
+        t_list = t_list[: t_list // 32 * 32]
+        t_list /= sample_rate
+        if len(t_list) < 320:
+            raise RuntimeError("Waveform has fewer than minimum 320 points")
+
+        waveform_array = self.pulse.get_voltage(t_list)
+
+        return {
+            "waveform": waveform_array,
+            "loops": 1,
+            "waveform_initial": None,
+            "waveform_tail": None,
         }
