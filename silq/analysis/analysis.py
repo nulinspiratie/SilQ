@@ -120,7 +120,7 @@ def find_high_low(traces: np.ndarray,
             Will try to retrieve from config.analysis.min_voltage_difference,
             else defaults to 0.3V
         min_SNR: Minimum SNR between high and low voltages required to determine
-            a threshold voltage.
+            a threshold voltage (default None).
 
     Returns:
         Dict[str, Any]:
@@ -134,25 +134,39 @@ def find_high_low(traces: np.ndarray,
           voltage. If not two peaks can be discerned, returns ``None``.
         * **DC_voltage** (float): Average voltage of traces.
     """
-    assert attempts > 0, f'Attempts {attempts} must be at least 1'
+    if attempts < 1:
+        raise SyntaxError(
+            f'Attempts {attempts} to find high and low voltage must be at least 1'
+        )
 
+    # Retrieve properties from config.analysis
     analysis_config = config.get('analysis', {})
-
-    # Calculate DC (mean) voltage
-    DC_voltage = np.mean(traces)
-
-    # Determine threshold method
     if threshold_method == 'config':
         threshold_method = analysis_config.get('threshold_method', 'mean')
     if min_voltage_difference == 'config':
         min_voltage_difference = analysis_config.get('min_voltage_difference', 0.3)
+    if threshold_requires_high_low == 'config':
+        threshold_requires_high_low = analysis_config.get('threshold_requires_high_low', True)
+    if min_SNR is None:
+        min_SNR = analysis_config.get('min_SNR', None)
 
+    # Calculate DC (mean) voltage
+    DC_voltage = np.mean(traces)
+
+    # Perform a histogram over all voltages in all traces. These bins will be
+    # used to determine two peaks, corresponding to low/high voltage
     hist, bin_edges = np.histogram(np.ravel(traces), bins=30)
 
-    # Find two peaks
+    # Determine minimum number of bins between successive histogram peaks
+    if min_voltage_difference is not None:
+        min_dist = int(np.ceil(min_voltage_difference / np.diff(bin_edges)[0]))
+    else:
+        min_dist = 5
+
+    # Find two peaks by changing the threshold dependent on the number of peaks foudn
     for k in range(attempts):
         peaks_idx = np.sort(peakutils.indexes(hist, thres=threshold_peak,
-                                              min_dist=5))
+                                              min_dist=min_dist))
         if len(peaks_idx) == 2:
             break
         elif len(peaks_idx) == 1:
@@ -162,7 +176,7 @@ def find_high_low(traces: np.ndarray,
             # print(f'Found {len(peaks_idx)} peaks instead of two, '
             #        'increasing threshold')
             threshold_peak *= 1.5
-    else:
+    else:  # Could not identify two peaks after all attempts
         results = {
             'low': None,
             'high': None,
@@ -170,30 +184,30 @@ def find_high_low(traces: np.ndarray,
             'voltage_difference': None,
             'DC_voltage': DC_voltage
         }
-        if threshold_requires_high_low == 'config':
-            threshold_requires_high_low = analysis_config.get('threshold_requires_high_low', True)
+
         if not threshold_requires_high_low and threshold_method != 'mean':
-            # Still return a threshold voltage even though no two peaks were
-            # observed
+            # Still return threshold voltage even though no two peaks were observed
+            # Use {factor}*std_low/high to determine threshold voltage
             factor = float(threshold_method.split('*')[0])
             voltages = sorted(traces.flatten())
             if threshold_method.endswith('std_low'):
-                # Remove top 20 percent
-                low_voltages = voltages[:int(0.8 * len(voltages))]
-                voltage_mean = np.mean(low_voltages)
-                voltage_std = np.std(low_voltages)
-                threshold_voltage = voltage_mean + factor * voltage_std
+                # Remove top 20 percent (high voltage)
+                cutoff_slice = slice(None, int(0.8 * len(voltages)))
             else:
-                # Remove bottom 20 percent
-                high_voltages = voltages[int(0.2 * len(voltages)):]
-                voltage_mean = np.mean(high_voltages)
-                voltage_std = np.std(high_voltages)
-                threshold_voltage = voltage_mean - factor * voltage_std
+                factor *= 1  # standard deviations should be subtracted from mean
+                # Remove bottom 20 percent of voltages (low voltage)
+                cutoff_slice = slice(int(0.8 * len(voltages)), None)
+            voltages_cutoff = voltages[cutoff_slice]
+            voltage_mean = np.mean(voltages_cutoff)
+            voltage_std = np.std(voltages_cutoff)
+            threshold_voltage = voltage_mean + factor * voltage_std
             results['threshold_voltage'] = threshold_voltage
 
         return results
 
     # Find mean voltage, used to determine which points are low/high
+    # Note that this is slightly odd, since we might use another threshold_method
+    # later on to distinguish between high and low voltage
     mean_voltage_idx = int(np.round(np.mean(peaks_idx)))
     mean_voltage = bin_edges[mean_voltage_idx]
 
@@ -231,8 +245,7 @@ def find_high_low(traces: np.ndarray,
         raise RuntimeError(f'Threshold method {threshold_method} not understood')
 
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
-    if min_SNR is None:
-        min_SNR = analysis_config.get('min_SNR')
+
     if min_SNR is not None and SNR < min_SNR:
         logger.info(f'Signal to noise ratio {SNR} is too low')
         threshold_voltage = None
