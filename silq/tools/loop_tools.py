@@ -55,6 +55,9 @@ class Measurement:
         # contains data groups, such as ParameterNodes and nested measurements
         self._data_groups: Dict[Tuple[int], "Measurement"] = {}
 
+        # Registry of actions: sweeps, measurements, and data groups
+        self.actions: Dict[Tuple[int], Any] = {}
+
         self.is_context_manager: bool = False  # Whether used as context manager
         self.is_paused: bool = False  # Whether the Measurement is paused
         self.is_stopped: bool = False  # Whether the Measurement is stopped
@@ -237,11 +240,7 @@ class Measurement:
         return data_array
 
     def _add_set_arrays(
-        self,
-        action_indices: Tuple[int],
-        result,
-        name: str,
-        ndim: int,
+        self, action_indices: Tuple[int], result, name: str, ndim: int,
     ):
         set_arrays = []
         for k in range(1, ndim):
@@ -296,6 +295,31 @@ class Measurement:
             for action_indices, arr in self.data_arrays.items()
             if action_indices[:num_indices] == action_indices
         ]
+
+    def _verify_action(self, action, name=None, add_if_new=True):
+        """Verify an action corresponds to the current action indices.
+
+        This is only relevant if an action has previously been performed at
+        these action indices
+        """
+        if self.action_indices not in self.actions and add_if_new:
+            # Add current action to action registry
+            self.actions[self.action_indices] = action
+        else:
+            existing_action = self.actions[self.action_indices]
+            if isinstance(existing_action, str):
+                # Action is a measurement of a raw value, not via a parameter.
+                name_action = existing_action
+                name = name or action
+            else:
+                name = name or action.name
+                name_action = self.actions[self.action_indices].name
+
+            if name_action != name:
+                raise RuntimeError(
+                    f'Wrong measurement at action_indices {self.action_indices}. '
+                    f'Expected: {name_action}. Received: {name}'
+                )
 
     def _add_measurement_result(
         self,
@@ -369,6 +393,9 @@ class Measurement:
 
     # Measurement-related functions
     def _measure_parameter(self, parameter, name=None):
+        # Ensure measuring parameter matches the current action_indices
+        self._verify_action(action=parameter, name=name, add_if_new=True)
+
         # Get parameter result
         result = parameter()
 
@@ -379,6 +406,9 @@ class Measurement:
         return result
 
     def _measure_multi_parameter(self, multi_parameter, name=None):
+        # Ensure measuring multi_parameter matches the current action_indices
+        self._verify_action(action=multi_parameter, name=name, add_if_new=True)
+
         results_list = multi_parameter()
 
         results = {
@@ -398,7 +428,25 @@ class Measurement:
                     unit=multi_parameter.units[k],
                 )
 
+        return results
+
     def _measure_callable(self, callable, name=None):
+        # Determine name
+        if name is None:
+            if hasattr(callable, "__self__") and isinstance(
+                callable.__self__, ParameterNode
+            ):
+                name = callable.__self__.name
+            elif hasattr(callable, "__name__"):
+                name = callable.__name__
+            else:
+                action_indices_str = "_".join(
+                    str(idx) for idx in self.action_indices
+                )
+                name = f"data_group_{action_indices_str}"
+
+        # Ensure measuring callable matches the current action_indices
+        self._verify_action(action=callable, name=name, add_if_new=True)
 
         results = callable()
 
@@ -422,7 +470,32 @@ class Measurement:
 
         return results
 
-    def measure(self, measurable: Union[Parameter, Callable, float, int, bool, np.ndarray], name=None, label=None, unit=None):
+    def _measure_value(self, value, name=None):
+        if name is None:
+            raise RuntimeError(
+                "A name must be provided when measuring an int, float, bool, or array"
+            )
+
+        # Ensure measuring callable matches the current action_indices
+        self._verify_action(action=None, name=name, add_if_new=True)
+
+        result = value
+        self._add_measurement_result(
+            action_indices=self.action_indices,
+            result=result,
+            name=name,
+            # label=label,
+            # unit=unit,
+        )
+        # TODO uncomment label, unit
+
+    def measure(
+        self,
+        measurable: Union[Parameter, Callable, float, int, bool, np.ndarray],
+        name=None,
+        label=None,
+        unit=None,
+    ):
         """Perform a single measurement of a Parameter, function, etc.
 
 
@@ -477,32 +550,9 @@ class Measurement:
         elif isinstance(measurable, MultiParameter):
             result = self._measure_multi_parameter(measurable, name=name)
         elif callable(measurable):
-            if name is None:
-                if hasattr(measurable, "__self__") and isinstance(
-                    measurable.__self__, ParameterNode
-                ):
-                    name = measurable.__self__.name
-                elif hasattr(measurable, "__name__"):
-                    name = measurable.__name__
-                else:
-                    action_indices_str = "_".join(
-                        str(idx) for idx in self.action_indices
-                    )
-                    name = f"data_group_{action_indices_str}"
             result = self._measure_callable(measurable, name=name)
         elif isinstance(measurable, (float, int, bool, np.ndarray)):
-            if name is None:
-                raise RuntimeError(
-                    "A name must be provided when measuring an int, float, bool, or array"
-                )
-            result = measurable
-            self._add_measurement_result(
-                action_indices=self.action_indices,
-                result=result,
-                name=name,
-                label=label,
-                unit=unit,
-            )
+            result = self._measure_value(measurable, name=name)
         else:
             raise RuntimeError(
                 f"Cannot measure {measurable} as it cannot be called, and it "
