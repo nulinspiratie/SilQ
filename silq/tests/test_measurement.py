@@ -5,7 +5,7 @@ from unittest import TestCase
 from functools import partial
 
 import qcodes as qc
-from qcodes import Loop, Parameter, load_data, ParameterNode, new_job
+from qcodes import Loop, Parameter, load_data, ParameterNode, new_job, MultiParameter
 from qcodes.utils.threading import raise_exception_in_thread
 
 from silq.tools.loop_tools import Measurement, Sweep, running_measurement
@@ -452,3 +452,34 @@ class TestMeasurementThread(TestCase):
 
         running_measurement().resume()
         job.join()
+
+
+class TestMultiParameter(TestCase):
+    class TestMultiParameter(MultiParameter):
+        def __init__(self, name):
+            super().__init__(
+                name=name,
+                names=('val1', 'val2', 'val3'),
+                units=('V', 'Hz', ''),
+                shapes=((),(),())
+            )
+
+        def get_raw(self):
+            return (1, 2, 3)
+
+    def test_basic_multi_parameter(self):
+        multi_parameter = self.TestMultiParameter('multi_param')
+        sweep_param = Parameter('sweep_param', set_cmd=None)
+
+        with Measurement('test_multi_parameter') as msmt:
+            for val in Sweep(sweep_param.sweep(0, 10, 1)):
+                msmt.measure(multi_parameter)
+
+        self.assertEqual(msmt.data_groups[(0,0)].name, 'multi_param')
+
+        verification_arrays = {
+            (0,0,0): [1] * 11,
+            (0,0,1): [2] * 11,
+            (0,0,2): [3] * 11
+        }
+        verify_msmt(msmt, verification_arrays=verification_arrays)
