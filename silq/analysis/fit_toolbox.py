@@ -245,7 +245,6 @@ class Fit():
                                   **plot_kwargs)
         return self.plot_handle
 
-
 class LinearFit(Fit):
     """Fitting class for a linear function.
 
@@ -305,7 +304,6 @@ class LinearFit(Fit):
 
         return parameters
 
-
 class MultiLinearFit(Fit):
     """Fitting class for a sum of linear functions.
 
@@ -323,8 +321,7 @@ class MultiLinearFit(Fit):
         super().__init__(self, **kwargs)
 
     @staticmethod
-    def fit_function(t: Union[float, np.ndarray],
-                     *args, **kwargs) -> Union[float, np.ndarray]:
+    def fit_function(t: Union[float, np.ndarray], **kwargs) -> Union[float, np.ndarray]:
         """Exponential function using time as x-coordinate
 
         Args:
@@ -422,7 +419,6 @@ class MultiLinearFit(Fit):
 
         return parameters
 
-
 class LorentzianFit(Fit):
     """Fitting class for a Lorentzian function.
 
@@ -504,7 +500,6 @@ class LorentzianFit(Fit):
         parameters['gamma'].min = 0
 
         return parameters
-
 
 class VoigtFit(Fit):
     """Fitting class for a Voigt function.
@@ -609,7 +604,6 @@ class VoigtFit(Fit):
 
         return parameters
 
-
 class GaussianFit(Fit):
     """Fitting class for a Gaussian function.
 
@@ -690,7 +684,6 @@ class GaussianFit(Fit):
 
         return parameters
 
-
 class SumGaussianFit(Fit):
     """Fitting class for a sum of Gaussian functions.
 
@@ -710,8 +703,7 @@ class SumGaussianFit(Fit):
         super().__init__(self, **kwargs)
 
     @staticmethod
-    def fit_function(x: Union[float, np.ndarray],
-                     *args, **kwargs) -> Union[float, np.ndarray]:
+    def fit_function(x: Union[float, np.ndarray], **kwargs) -> Union[float, np.ndarray]:
         """Gaussian function using x as x-coordinate
 
         Args:
@@ -867,7 +859,6 @@ class SumGaussianFit(Fit):
 
         return parameters
 
-
 class ExponentialFit(Fit):
     """Fitting class for an exponential function.
 
@@ -933,7 +924,6 @@ class ExponentialFit(Fit):
             parameters.add(key, initial_parameters[key])
 
         return parameters
-
 
 class DoubleExponentialFit(Fit):
     """Fitting class for a double exponential function.
@@ -1022,7 +1012,6 @@ class DoubleExponentialFit(Fit):
 
         return parameters
 
-
 class SumExponentialFit(Fit):
     """Fitting class for a sum of exponential functions.
 
@@ -1041,9 +1030,7 @@ class SumExponentialFit(Fit):
         super().__init__(self, **kwargs)
 
     @staticmethod
-    def fit_function(t: Union[float, np.ndarray],
-                     *args, **kwargs
-                     ) -> Union[float, np.ndarray]:
+    def fit_function(t: Union[float, np.ndarray], **kwargs) -> Union[float, np.ndarray]:
         """Exponential function using time as x-coordinate
 
         Args:
@@ -1155,7 +1142,6 @@ class SumExponentialFit(Fit):
 
         return parameters
 
-
 class SineFit(Fit):
     sweep_parameter = 't'
 
@@ -1225,7 +1211,6 @@ class SineFit(Fit):
         parameters['amplitude'].set(min=0)
 
         return parameters
-
 
 class AMSineFit(Fit):
     sweep_parameter = 't'
@@ -1328,7 +1313,6 @@ class AMSineFit(Fit):
 
         return parameters
 
-
 class ExponentialSineFit(Fit):
     sweep_parameter = 't'
 
@@ -1380,7 +1364,6 @@ class ExponentialSineFit(Fit):
 
         return parameters
 
-
 class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
 
@@ -1421,7 +1404,6 @@ class RabiFrequencyFit(Fit):
         # parameters.add('amplitude', expr='gamma^2/ Omega^2')
 
         return parameters
-
 
 class BayesianUpdateFit(Fit):
     """Fitting class for a 'Bayesian update' function.
