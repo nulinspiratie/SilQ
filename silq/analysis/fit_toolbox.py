@@ -24,6 +24,7 @@ __all__ = ['Fit',
            'RabiFrequencyFit',
            'AMSineFit',
            'BayesianUpdateFit',
+           'FermiFit',
            'DoubleFermiFit',
            'T1fit']
 
@@ -1498,6 +1499,80 @@ class BayesianUpdateFit(Fit):
         parameters['tau_2'].min = 0
         return parameters
 
+class FermiFit(Fit):
+    """Fitting class for a Fermi-Dirac distribution function.
+
+    To fit data to a function, use the method `Fit.perform_fit`.
+    This will find its initial parameters via `Fit.find_initial_parameters`,
+    after which it will fit the data to `Fit.fit_function`.
+
+    Note:
+        The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+    """
+    sweep_parameter = 'V'
+    kB = 8.61733034e-5  # Boltzmann constant in eV
+
+    @staticmethod
+    def fit_function(V: Union[float, np.ndarray],
+                     A: float,
+                     U: float,
+                     T: float,
+                     offset: float) -> Union[float, np.ndarray]:
+        """Exponential function using time as x-coordinate
+
+        Args:
+            V: electric potential being swept.
+            A: rescaling factor for function
+            U: Fermi level
+            T: System temperature (K)
+            offset:
+
+        Returns:
+            exponential data points
+        """
+
+        return A / (np.exp((V - U) / (DoubleFermiFit.kB * T)) + 1) + offset
+
+    def find_initial_parameters(self,
+                                xvals: np.ndarray,
+                                ydata: np.ndarray,
+                                initial_parameters: dict) -> Parameters:
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        if initial_parameters is None:
+            initial_parameters = {}
+
+        parameters = Parameters()
+        if not 'T' in initial_parameters:
+            initial_parameters['T'] = 100e-3
+
+        if not 'A' in initial_parameters:
+            initial_parameters['A'] = max(ydata) - min(ydata)
+
+        if not 'offset' in initial_parameters:
+            initial_parameters['offset'] = np.min(ydata)
+
+        if not 'U' in initial_parameters:
+            initial_parameters['U'] = xvals[0]
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+
+        parameters['T'].min = 0
+        parameters['offset'].min = 0
+
+        return parameters
 
 class DoubleFermiFit(Fit):
     """Fitting class for a double Fermi-Dirac distribution function.
@@ -1589,6 +1664,7 @@ class DoubleFermiFit(Fit):
         parameters['alpha'].min = 0
         parameters['offset'].min = 0
 
+        return parameters
 
 class T1fit(Fit):
     """Fitting class for an 1/T1 vs Bfield function.
