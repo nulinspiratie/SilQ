@@ -9,27 +9,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 import logging
 from qcodes.data.data_array import DataArray
 
-__all__ = ['Fit',
-           'LinearFit',
-           'MultiLinearFit',
-           'LorentzianFit',
-           'GaussianFit',
-           'SumGaussianFit',
-           'ExponentialFit',
-           'SineFit',
-           'VoigtFit',
-           'ExponentialSineFit',
-           'DoubleExponentialFit',
-           'SumExponentialFit',
-           'RabiFrequencyFit',
-           'AMSineFit',
-           'BayesianUpdateFit',
-           'FermiFit',
-           'DoubleFermiFit',
-           'T1fit']
-
 logger = logging.getLogger(__name__)
-
 
 class Fit():
     """Base fitting class.
