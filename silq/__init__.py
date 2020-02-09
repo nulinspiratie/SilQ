@@ -361,7 +361,7 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     trace_filenames = [filename for filename in trace_filenames if
                        filename.endswith('.hdf5')]
 
-    assert trace_filenames, f"No trace files found in {traces_path}"
+    assert trace_filenames, f"No trace files found in {trace_path}"
 
     if name is None and len(trace_filenames) == 1:
         trace_filename = trace_filenames[0]
