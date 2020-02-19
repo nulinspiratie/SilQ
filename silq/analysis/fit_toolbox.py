@@ -197,7 +197,6 @@ class Fit():
             ax: Axis to add plot to
             N: number of points to use as x values (to smoothe fit curve)
             xrange: Optional range for x values (min, max)
-            x_range: Same as xrange (deprecated)
             xscale: value to multiple x values by to rescale axis
             yscale: value to multiple y values by to rescale axis
             kwargs: Additional plot kwargs. By default Fit.plot_kwargs are used
@@ -205,10 +204,6 @@ class Fit():
         Returns:
             plot_handle of fit curve
         """
-        if x_range is not None:
-            DeprecationWarning('Please use xrange instead of x_range')
-            xrange = x_range
-
         if xrange is None:
             x_vals = self.xvals
             x_vals_full = np.linspace(min(x_vals), max(x_vals), N)
@@ -278,121 +273,6 @@ class LinearFit(Fit):
                                             (xvals[-1] - xvals[0])
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[0]
-
-        for key in initial_parameters:
-            parameters.add(key, initial_parameters[key])
-
-        return parameters
-
-class MultiLinearFit(Fit):
-    """Fitting class for a sum of linear functions.
-
-        To fit data to a function, use the method `Fit.perform_fit`.
-        This will find its initial parameters via `Fit.find_initial_parameters`,
-        after which it will fit the data to `Fit.fit_function`.
-
-        Note:
-            The fitting routine uses lmfit, a wrapper package around scipy.optimize.
-        """
-    sweep_parameter = 't'
-
-    def __init__(self,  max_lines=1, **kwargs):
-        self.max_lines = max_lines
-        super().__init__(self, **kwargs)
-
-    @staticmethod
-    def fit_function(t: Union[float, np.ndarray], **kwargs) -> Union[float, np.ndarray]:
-        """Exponential function using time as x-coordinate
-
-        Args:
-            t: Time.
-            gradient:
-            offset:
-
-        Returns:
-            linear data points
-        """
-
-        gradients = [val for key, val in kwargs.items() if key.startswith('gradient')]
-        offset = kwargs['offset']
-
-        func = offset
-        for gradient in gradients:
-            func += gradient * t
-        return func
-
-    def perform_fit(self,
-                    parameters=None,
-                    print=False,
-                    plot=None,
-                    **kwargs) -> ModelResult:
-        """Perform fitting routine
-
-        Returns:
-            ModelResult object containing fitting results
-        """
-
-        if parameters is None:
-            if kwargs:
-                self.get_parameters(**kwargs)
-            parameters = self.parameters
-
-        self.fit_result = self.model.fit(self.ydata, params=parameters,
-                                         weights=self.weights,
-                                         **{self.sweep_parameter: self.xvals})
-
-        max_err = 0
-        for param_name, param in self.fit_result.params.items():
-            if not np.isfinite(param.stderr):
-                max_err = param.stderr
-            elif param.value == 0:
-                continue
-            elif abs(param.stderr / param.value) > max_err:
-                max_err = abs(param.stderr / param.value)
-
-        if max_err > 2 or not np.isfinite(max_err): # 200% std.dev in parameter
-            idx = param_name[-1]
-            logger.warning(f'Parameter {param_name} has std. dev. of {max_err*100:.0f}%. '
-                           f'Removing final gradient and redoing fit.')
-            parameters.pop(f'gradient_{idx}')
-            self.perform_fit(parameters, print=False, plot=None, **kwargs)
-
-        if print:
-            self.print_results()
-
-        if plot is not None:
-            self.add_to_plot(plot)
-
-        return self.fit_result
-
-    def find_initial_parameters(self,
-                                xvals: np.ndarray,
-                                ydata: np.ndarray,
-                                initial_parameters: dict) -> Parameters:
-        """Estimate initial parameters from data.
-
-        This is needed to ensure that the fitting will converge.
-
-        Args:
-            xvals: x-coordinates of data points
-            ydata: data points
-            initial_parameters: Fixed initial parameters to be skipped.
-
-        Returns:
-            Parameters object containing initial parameters.
-        """
-        if initial_parameters is None:
-            initial_parameters = {}
-
-        parameters = Parameters()
-
-        if not 'offset' in initial_parameters:
-            initial_parameters['offset'] = ydata[0]
-
-        for k in range(self.max_lines):
-            if not f'gradient_{k}' in initial_parameters:
-                initial_parameters[f'gradient_{k}'] = (ydata[-1] - ydata[0]) / \
-                                            (xvals[-1] - xvals[0])/self.max_lines
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
@@ -667,6 +547,8 @@ class GaussianFit(Fit):
 class SumGaussianFit(Fit):
     """Fitting class for a sum of Gaussian functions.
 
+    Note: This is experimental and may not work as desired.
+
     To fit data to a function, use the method `Fit.perform_fit`.
     This will find its initial parameters via `Fit.find_initial_parameters`,
     after which it will fit the data to `Fit.fit_function`.
@@ -917,7 +799,6 @@ class DoubleExponentialFit(Fit):
     """
     sweep_parameter = 't'
     def __init__(self, *args, **kwargs):
-        logger.warning("DoubleExponentialFit is deprecated, use SumExponentialFit.")
         super().__init__(*args, **kwargs)
 
 
@@ -994,6 +875,8 @@ class DoubleExponentialFit(Fit):
 
 class SumExponentialFit(Fit):
     """Fitting class for a sum of exponential functions.
+
+    Note: This is experimental and may not work as desired.
 
     To fit data to a function, use the method `Fit.perform_fit`.
     This will find its initial parameters via `Fit.find_initial_parameters`,
@@ -1628,8 +1511,8 @@ class DoubleFermiFit(Fit):
 
         return parameters
 
-class T1fit(Fit):
-    """Fitting class for an 1/T1 vs Bfield function.
+class T1Fit(Fit):
+    """Fitting class for a 1/T1 vs magnetic field (B) function.
 
         To fit data to a function, use the method `Fit.perform_fit`.
         This will find its initial parameters via `Fit.find_initial_parameters`,
@@ -1654,6 +1537,7 @@ class T1fit(Fit):
             K0:
             K1:
             K5:
+            K7:
 
         Returns:
             magic
