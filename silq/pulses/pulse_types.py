@@ -130,15 +130,15 @@ class Pulse(ParameterNode):
                  connection_label: str = None,
                  connection_requirements: dict = {},
                  connect_to_config: bool = True,
-                 parent_name: Union[str, Parameter] = None):
+                 parent: ParameterNode = None):
         super().__init__(use_as_attributes=True,
                          log_changes=False,
+                         parent=parent,
                          simplify_snapshot=True)
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
         self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
                             set_cmd=None, wrap_get=False)
-        self.parent_name = parent_name
         self.full_name = Parameter()
         self['full_name'].get()  # Update to latest value
 
@@ -146,6 +146,7 @@ class Pulse(ParameterNode):
         # Set attributes that can also be retrieved from pulse_config
         self.t_start = Parameter(initial_value=t_start,
                                  unit='s', set_cmd=None, wrap_get=False)
+        self['t_start']._relative_value = t_start
         self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
         self.t_stop = Parameter(unit='s', wrap_get=False)
 
@@ -192,10 +193,10 @@ class Pulse(ParameterNode):
     def full_name_get(self, parameter):
         full_name = self.name
 
-        if self.parent_name:
-            full_name = f'{self.parent_name}.{full_name}'
+        if getattr(self.parent, 'name', None):
+            full_name = f'{self.parent.name}.{full_name}'
 
-        if self.id is None:
+        if self.id is not None:
             full_name = f'{full_name}[{self.id}]'
 
         return full_name
@@ -208,9 +209,27 @@ class Pulse(ParameterNode):
 
     @parameter
     def t_start_set(self, parameter, t_start):
+        if t_start is not None:
+            if self.parent is not None and t_start < self.parent.t_start:
+                raise RuntimeError('pulse.t_start cannot be less than pulse_sequence.t_start')
+
+            parameter._relative_value = round(t_start - self.parent.t_start, 11)
+
         # Emit a t_stop signal when t_start is set
-        self['t_start']._latest['raw_value'] = t_start
+        parameter._latest['raw_value'] = t_start
         self['t_stop'].set(self.t_stop, evaluate=False)
+
+    @parameter
+    def t_start_get(self, parameter):
+        t_start = parameter._relative_value
+
+        if t_start is None:
+            return t_start
+        
+        if self.parent is not None:
+            t_start += self.parent.t_start
+
+        return round(t_start, 11)
 
     @parameter
     def duration_set_parser(self, parameter, duration):

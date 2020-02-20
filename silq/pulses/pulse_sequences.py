@@ -269,7 +269,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
-class ESRPulseSequenceNew(PulseSequenceGenerator):
+class ESRPulseSequenceNew(PulseSequence):
     """`PulseSequenceGenerator` for electron spin resonance (ESR).
 
     This pulse sequence can handle many of the basic pulse sequences involving
@@ -357,17 +357,6 @@ class ESRPulseSequenceNew(PulseSequenceGenerator):
             ]
         )
         self.pulse_sequences = [self.ESR, self.EPR]
-
-    def generate(self, ESR_frequencies=None):
-        self.clear()
-
-        if self.ESR.enabled:
-            self.ESR.generate()
-            self.add_pulse_sequence(self.ESR)
-
-        if self.EPR.enabled:
-            self.EPR.generate()
-            self.add_pulse_sequence(self.EPR)
 
 
 class ESRPulseSequence(PulseSequenceGenerator):
