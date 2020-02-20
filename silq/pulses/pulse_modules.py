@@ -241,7 +241,7 @@ class PulseSequence(ParameterNode):
 
         self.t_start = Parameter(unit='s', set_cmd=None, initial_value=0)
         self.duration = Parameter(unit='s', set_cmd=None)
-        self.t_stop = Parameter(unit='s')
+        self.t_stop = Parameter(unit='s', set_cmd=None)
 
         self.final_delay = Parameter(unit='s', set_cmd=None, vals=vals.Numbers())
         if final_delay is not None:
@@ -291,6 +291,10 @@ class PulseSequence(ParameterNode):
             set_cmd=None,
             docstring="All pulses, including those from nested pulse sequences"
         )
+
+        # Remember last pulse of pulse sequence, to ensure t_stop of pulse sequence
+        # is kept up to date via signalling
+        self._last_pulse = None
 
         if pulse_sequences:
             self.pulse_sequences = pulse_sequences
@@ -640,6 +644,8 @@ class PulseSequence(ParameterNode):
         if reset_duration:  # Reset duration to t_stop of last pulse
             self.duration = None
 
+        self._update_last_pulse()
+
         return added_pulses
 
     def quick_add(self, *pulses,
@@ -767,6 +773,8 @@ class PulseSequence(ParameterNode):
                 if len(same_name_pulses) > 1:
                     for k, pulse in enumerate(same_name_pulses):
                         pulse.id = k
+
+            self._update_last_pulse()
         except AssertionError:  # Likely error is that pulses overlap
             self.clear()
             raise
@@ -1126,6 +1134,23 @@ class PulseSequence(ParameterNode):
     def _update_enabled_disabled_pulses(self, *args):
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
         self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
+
+    def _update_last_pulse(self):
+        if not self.my_pulses:
+            return
+
+        last_pulse = max(self.my_pulses, key=lambda p: p.t_stop)
+
+        if self._last_pulse == last_pulse:
+            return
+        else:
+            if self._last_pulse is not None:
+                # Remove connection from previous last pulse
+                self._last_pulse['t_stop'].disconnect(self['t_stop'])
+
+            # Update last pulse and save connect
+            self._last_pulse = last_pulse
+            self._last_pulse['t_stop'].connect(self['t_stop'])
 
 
 class PulseImplementation:

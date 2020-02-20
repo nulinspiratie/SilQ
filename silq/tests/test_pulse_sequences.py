@@ -908,6 +908,29 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse_sequence[2], pulse_sequence['ESR2.read3'])
         self.assertEqual(pulse_sequence[3], pulse_sequence['ESR2.read4'])
 
+    def test_composite_pulse_sequence_differing_duration(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(
+            pulse_sequences=[pulse_sequence1, pulse_sequence2])
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        pulse_sequence['read'].duration = 3
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 5)
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 3)
+        self.assertEqual(pulse_sequence2[0].t_start, 5)
+        self.assertEqual(pulse_sequence2[1].t_start, 6)
+
 
 if __name__ == '__main__':
     unittest.main()
