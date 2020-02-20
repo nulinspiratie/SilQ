@@ -587,6 +587,9 @@ class Layout(Instrument):
         # HDF5 files for saving of traces in a loop. One per AcquisitionParameter
         self.trace_files = {}
 
+        # Dictionary for storing all performance timings
+        self.timings = PerformanceTimer()
+
     @property
     def pulse_sequence(self):
         """Target pulse sequence by distributing its pulses to interfaces.
@@ -1328,6 +1331,7 @@ class Layout(Instrument):
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
 
+
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
@@ -1338,13 +1342,13 @@ class Layout(Instrument):
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
-                t0 = time()
-                flags = interface.setup(samples=self.samples(),
-                                        input_connections=input_connections,
-                                        output_connections=output_connections,
-                                        repeat=repeat,
-                                        **setup_flags, **kwargs)
-                logger.debug(f'{interface.name} setup time taken: {time() - t0:.2f}')
+                with self.timings.record(f'setup.{interface.name}'):
+                    flags = interface.setup(samples=self.samples(),
+                                            input_connections=input_connections,
+                                            output_connections=output_connections,
+                                            repeat=repeat,
+                                            **setup_flags, **kwargs)
+
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
@@ -1381,6 +1385,9 @@ class Layout(Instrument):
             Does not start instruments that have the flag ``skip_start``
         """
         self.active(True)
+
+        t0 = time.perf_counter()
+
         for interface in self._get_interfaces_hierarchical():
             if interface == self.acquisition_interface:
                 continue
@@ -1393,14 +1400,18 @@ class Layout(Instrument):
                 logger.info(f'Delaying starting {interface.name} (flag start_last)')
                 continue
             elif interface.pulse_sequence:
-                interface.start()
-                logger.debug(f'{interface} started')
+                with self.timings.record(f'start.{interface.name}'):
+                    interface.start()
+                    logger.debug(f'{interface} started')
             else:
                 logger.debug(f'Skipping starting {interface} (no pulse sequence)')
 
         for interface in self.flags['start_last']:
-            interface.start()
-            logger.debug(f'Started {interface} after others (flag start_last)')
+            with self.timings.record(f'start.{interface.name}'):
+                interface.start()
+                logger.debug(f'Started {interface} after others (flag start_last)')
+
+        self.timings.record('start.combined', time.perf_counter() - t0)
 
         for action in self.flags['post_start_actions']:
             action()
