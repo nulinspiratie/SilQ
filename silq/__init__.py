@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import sys
 import os
 import warnings
@@ -47,6 +47,8 @@ if 'ipykernel' in sys.modules:
 
 from .instrument_interfaces import get_instrument_interface
 
+experiment = None
+experiment_folder = None
 
 def get_silq_folder() -> str:
     """Get root folder of silq source code."""
@@ -172,7 +174,7 @@ def get_experiment_configuration(name: str, experiments_folder: Path = None) -> 
     return experiment_folder, configuration
 
 
-def execute_file(filepath: (str, Path), globals=None, locals=None):
+def execute_file(filepath: (str, Path), mode=None, globals=None, locals=None):
     if isinstance(filepath, str):
         filepath = Path(filepath)
 
@@ -189,11 +191,53 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
                 globals = sys._getframe(1).f_globals
                 locals = sys._getframe(1).f_locals
 
-            execution_code = filepath.read_text() + "\n"
             exec(execution_code, globals, locals)
     except Exception as e:
         e.args = (e.args[0] + f'\nSilQ initialization error in {filepath}', *e.args[1:])
         raise e
+
+
+def run_script(
+        script_name: str,
+        folder: Union[Path, str] = 'scripts',
+        silent: bool = False,
+        mode: str = None,
+        globals: dict = None,
+        locals: dict = None
+):
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    if isinstance(folder, str):
+        folder = Path(folder)
+
+    if not folder.is_absolute():
+        import silq
+        folder = silq.experiment_folder / folder
+
+    file = folder / script_name
+    file = file.with_suffix('.py')
+    if not file.exists():
+        raise FileNotFoundError(f'Script file {file} not found')
+
+    if mode is not None:
+        execution_code = file.read_text() + "\n"
+        for line in execution_code.split('\n'):
+            if not line.startswith('# '):
+                break
+            else:
+                line = line.lstrip('# ')
+                if line.startswith('ignore_mode: '):
+                    ignore_mode = line.split('ignore_mode: ')[1]
+                    if mode == ignore_mode:
+                        print(f'Ignoring script {file.stem}')
+                        return
+
+    if not silent:
+        print(f'Running script {file.stem}')
+    execute_file(file, globals=globals, locals=locals)
 
 
 def run_scripts(name: str = None,
@@ -242,14 +286,19 @@ def run_scripts(name: str = None,
 
                 # Run each file in the subfolder
                 for script_folder_subelement in script_folder_element.iterdir():
-                    if not silent:
-                        print(f'Running script {script_folder_element.stem}/{script_folder_subelement.stem}')
-                    execute_file(script_folder_subelement, globals=globals, locals=locals)
+                    run_script(
+                        script_name=script_folder_subelement.stem,
+                        folder=script_folder_element.stem,
+                        mode=mode,
+                        globals=globals, locals=locals
+                    )
             else:  # Execute file
-                if not silent:
-                    print(f'Running script {script_folder_element.stem}')
-
-                execute_file(script_folder_element, globals=globals, locals=locals)
+                run_script(
+                    script_name=script_folder_element.stem,
+                    folder=script_folder_element.parent,
+                    mode=mode,
+                    globals=globals, locals=locals
+                )
 
 
 def initialize(name: str,
@@ -288,6 +337,11 @@ def initialize(name: str,
         select += configuration['modes'][mode].get('select', [])
         ignore += configuration['modes'][mode].get('ignore', [])
 
+    # Update global experiment name and folder
+    import silq
+    silq.experiment = name
+    silq.experiment_folder = experiment_folder
+
     # TODO check if original config['folder'] had any weird double experiments_folder
     config.__dict__['folder'] = str(experiment_folder.absolute())
     if (experiment_folder / 'config').is_dir():
@@ -323,6 +377,7 @@ def initialize(name: str,
                 (location_provider.fmt == 'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
             location_provider.fmt = '{date}/#{counter}_{name}_{time}'
+
 
     if not silent:
         print("Initialization complete")
