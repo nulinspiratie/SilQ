@@ -1,5 +1,6 @@
 from .interface import InstrumentInterface, Channel
-
+import qcodes as qc
+station = qc.Station()
 
 instrument_interfaces = {
     'ArbStudio1104': {'module': '.lecroy.ArbStudio1104_interface',
@@ -47,8 +48,7 @@ def get_instrument_interface(instrument, *args, **kwargs):
     server_name = getattr(instrument, '_server_name', None)
 
     instrument_interface = instrument_interface_class(
-        instrument_name=instrument.name,
-        server_name=server_name,
-    *args,
-    **kwargs)
+        instrument_name=instrument.name, *args, **kwargs
+    )
+    station.add_component(instrument_interface)
     return instrument_interface
