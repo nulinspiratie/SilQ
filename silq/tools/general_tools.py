@@ -16,8 +16,7 @@ __all__ = ['execfile', 'is_between', 'get_truth', 'get_memory_usage',
            'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
-           'Singleton', 'arreq_in_list', 'arreqclose_in_list',
-           'property_ignore_setter', 'freq_to_str']
+           'Singleton', 'property_ignore_setter', 'freq_to_str']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
@@ -542,51 +541,6 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
-
-
-def arreq_in_list(myarr: np.ndarray,
-                  list_arrays: List[np.ndarray]):
-    """Get index of array in list of arrays, testing equality
-
-    Modified from https://stackoverflow.com/questions/23979146/
-    check-if-numpy-array-is-in-list-of-numpy-arrays
-
-    Args:
-        myarr: arr to be found in list
-        list_arrays: List of numpy arrays
-
-    Returns:
-        idx of array in list equal to myarr, None if not found.
-    """
-    return next((idx for idx, elem in enumerate(list_arrays)
-                 if np.array_equal(elem, myarr)),
-                None)
-
-
-def arreqclose_in_list(myarr: np.ndarray,
-                       list_arrays: List[np.ndarray],
-                       rtol: float = 1e-5,
-                       atol: float = 1e-8):
-    """Get index of array in list of arrays, testing approximate equality
-
-    Modified from https://stackoverflow.com/questions/23979146/
-                  check-if-numpy-array-is-in-list-of-numpy-arrays
-
-    Args:
-        myarr: arr to be found in list
-        list_arrays: List of numpy arrays.
-            Any element that is None instead of an array is skipped
-        rtol: relative tolerance when comparing array elements
-        atol: absolute tolerance when comparing array elements
-
-    Returns:
-        idx of array in list approximately equal to myarr, None if not found.
-    """
-    return next((idx for idx, elem in enumerate(list_arrays)
-                 if elem is not None
-                 and elem.size == myarr.size
-                 and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
-                None)
 
 
 class property_ignore_setter(object):
