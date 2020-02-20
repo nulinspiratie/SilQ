@@ -253,28 +253,50 @@ class PulseSequence(ParameterNode):
         self.t_start_list = Parameter(initial_value=[])
         self.t_stop_list = Parameter()
 
-        self.enabled_pulses = Parameter(initial_value=[], set_cmd=None,
-                                        vals=vals.Lists())
-        self.disabled_pulses = Parameter(initial_value=[], set_cmd=None,
-                                         vals=vals.Lists())
-        self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
-                                set_cmd=None)
-        self.pulse_sequences = Parameter(vals=vals.Lists(), initial_value=[])
+        self.pulse_sequences = Parameter(vals=vals.Iterables(), initial_value=())
         if pulse_sequences:
             self.pulse_sequences = pulse_sequences
 
+        self.my_enabled_pulses = Parameter(
+            initial_value=[],
+            set_cmd=None,
+            vals=vals.Iterables(),
+            docstring='Enabled pulses that are not from a nested pulse sequence'
+        )
+        self.enabled_pulses = Parameter(
+            initial_value=(),
+            set_cmd=None,
+            vals=vals.Iterables(),
+            docstring='Enabled pulses, including those from nested pulse sequences'
+        )
+        self.my_disabled_pulses = Parameter(
+            initial_value=[],
+            set_cmd=None,
+            vals=vals.Iterables(),
+            docstring='Disabled pulses that are not from a nested pulse sequence'
+        )
+        self.disabled_pulses = Parameter(
+            initial_value=(),
+            set_cmd=None,
+            vals=vals.Iterables(),
+            docstring='Disabled pulses, including those from nested pulse sequences'
+        )
+        self.my_pulses = Parameter(
+            initial_value=[],
+            vals=vals.Iterables(),
+            set_cmd=None,
+            docstring="All pulses that are not from a nested pulse sequence"
+        )
+        self.pulses = Parameter(
+            initial_value=(),
+            vals=vals.Iterables(),
+            set_cmd=None,
+            docstring="All pulses, including those from nested pulse sequences"
+        )
+
         self.duration = None  # Reset duration to t_stop of last pulse
         # Perform a separate set to ensure set method is called
-        self.pulses = pulses or []
-
-    @parameter
-    def pulses_set_parser(self, parameter, pulses):
-        # We modify the set_parser instead of set, since we don't want to set
-        # pulses to the original pulses, but to the added (copied) pulses
-        self.clear()
-        added_pulses = self.quick_add(*pulses)
-        self.finish_quick_add()
-        return added_pulses
+        self.pulses = pulses or ()
 
     @parameter
     def t_start_set_parser(self, parameter, t_start):
@@ -340,6 +362,36 @@ class PulseSequence(ParameterNode):
         # t_list = self.t_start_list + self.t_stop_list + [self.duration]
         # return sorted(list(np.unique(np.round(t_list, decimals=8)))) # Accurate to 10 ns
         return sorted(set(self.t_start_list + self.t_stop_list + [self.duration]))
+
+    @parameter
+    def pulses_set_parser(self, parameter, pulses):
+        # We modify the set_parser instead of set, since we don't want to set
+        # pulses to the original pulses, but to the added (copied) pulses
+        self.clear()
+        added_pulses = self.quick_add(*pulses)
+        self.finish_quick_add()
+        return added_pulses
+
+    @parameter
+    def pulses_get(self, parameter):
+        pulses = self.my_pulses
+        for pulse_sequence in self.pulse_sequences:
+            pulses += pulse_sequence.pulses
+        return tuple(pulses)
+
+    @parameter
+    def enabled_pulses_get(self, parameter):
+        enabled_pulses = self.my_enabled_pulses
+        for pulse_sequence in self.pulse_sequences:
+            enabled_pulses += pulse_sequence.enabled_pulses
+        return tuple(enabled_pulses)
+
+    @parameter
+    def disabled_pulses_get(self, parameter):
+        disabled_pulses = self.my_disabled_pulses
+        for pulse_sequence in self.pulse_sequences:
+            disabled_pulses += pulse_sequence.disabled_pulses
+        return tuple(disabled_pulses)
 
     @parameter
     def pulse_sequences_set(self, parameter, pulse_sequences):
@@ -419,20 +471,21 @@ class PulseSequence(ParameterNode):
 
     def __copy__(self, *args):
         # Temporarily remove pulses from parameter so they won't be deepcopied
-        pulses = self.parameters['pulses']._latest
-        enabled_pulses = self.parameters['enabled_pulses']._latest
-        disabled_pulses = self.parameters['disabled_pulses']._latest
+        backup = {
+            key: self.parameters[key]._latest for key in [
+                'pulses', 'enabled_pulses', 'disabled_pulses',
+                'my_pulses', 'my_enabled_pulses', 'my_disabled_pulses'
+            ]
+        }
         try:
-            self.parameters['pulses']._latest = {'value': [], 'raw_value': []}
-            self.parameters['enabled_pulses']._latest = {'value': [], 'raw_value': []}
-            self.parameters['disabled_pulses']._latest = {'value': [], 'raw_value': []}
+            for key in backup:
+                self.parameters[key] = {'value': [], 'raw_value': []}
 
             self_copy = super().__copy__()
         finally:
             # Restore pulses
-            self.parameters['pulses']._latest = pulses
-            self.parameters['enabled_pulses']._latest = enabled_pulses
-            self.parameters['disabled_pulses']._latest = disabled_pulses
+            for key in backup:
+                self.parameters[key] = backup[key]
 
         # Add pulses (which will create copies)
         self_copy.pulses = self.pulses
@@ -563,11 +616,11 @@ class PulseSequence(ParameterNode):
             if pulse_copy.t_start is None:  # No relevant pulses found
                 pulse_copy.t_start = self.t_start
 
-            self.pulses.append(pulse_copy)
+            self.my_pulses.append(pulse_copy)
             if pulse_copy.enabled:
-                self.enabled_pulses.append(pulse_copy)
+                self.my_enabled_pulses.append(pulse_copy)
             else:
-                self.disabled_pulses.append(pulse_copy)
+                self.my_disabled_pulses.append(pulse_copy)
             added_pulses.append(pulse_copy)
             # TODO attach pulsesequence to some of the pulse attributes
             pulse_copy['enabled'].connect(self._update_enabled_disabled_pulses,
@@ -650,12 +703,12 @@ class PulseSequence(ParameterNode):
             if pulse.t_start is None:  # No relevant pulses found
                 pulse.t_start = self.t_start
 
-            self.pulses.append(pulse)
+            self.my_pulses.append(pulse)
             added_pulses.append(pulse)
             if pulse.enabled:
-                self.enabled_pulses.append(pulse)
+                self.my_enabled_pulses.append(pulse)
             else:
-                self.disabled_pulses.append(pulse)
+                self.my_disabled_pulses.append(pulse)
 
             # TODO attach pulsesequence to some of the pulse attributes
             if connect:
@@ -729,7 +782,7 @@ class PulseSequence(ParameterNode):
             else:
                 pulse_sequence.t_start = 0
 
-            self.pulse_sequences.append(pulse_sequence)
+            self.pulse_sequences = (*self.pulse_sequences, pulse_sequence)
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
@@ -750,7 +803,7 @@ class PulseSequence(ParameterNode):
                 f'No unique pulse {pulse} found, pulses: {pulses_same_name}'
             pulse_same_name = pulses_same_name[0]
 
-            self.pulses.remove(pulse_same_name)
+            self.my_pulses.remove(pulse_same_name)
 
             # TODO disconnect all pulse attributes
             pulse_same_name['enabled'].disconnect(self._update_enabled_disabled_pulses)
@@ -761,17 +814,17 @@ class PulseSequence(ParameterNode):
 
     def sort(self):
         """Sort pulses by `Pulse`.t_start"""
-        self.pulses.sort(key=lambda p: p.t_start)
-        self.enabled_pulses.sort(key=lambda p: p.t_start)
+        self.my_pulses.sort(key=lambda p: p.t_start)
+        self.my_enabled_pulses.sort(key=lambda p: p.t_start)
 
     def clear(self):
         """Clear all pulses from pulse sequence."""
         for pulse in self.pulses:
             # TODO: remove all signal connections
             pulse['enabled'].disconnect(self._update_enabled_disabled_pulses)
-        self.pulses.clear()
-        self.enabled_pulses.clear()
-        self.disabled_pulses.clear()
+        self.my_pulses.clear()
+        self.my_enabled_pulses.clear()
+        self.my_disabled_pulses.clear()
         self.duration = None  # Reset duration to t_stop of last pulse
 
     @staticmethod
@@ -1062,8 +1115,8 @@ class PulseSequence(ParameterNode):
         return True
 
     def _update_enabled_disabled_pulses(self, *args):
-        self.enabled_pulses = [pulse for pulse in self.pulses if pulse.enabled]
-        self.disabled_pulses = [pulse for pulse in self.pulses if not pulse.enabled]
+        self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
+        self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
 
 
 class PulseImplementation:

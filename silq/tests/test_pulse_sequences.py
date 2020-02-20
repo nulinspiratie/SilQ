@@ -272,11 +272,11 @@ class TestPulseSequence(unittest.TestCase):
         for parameter_name, parameter in pulse_sequence.parameters.items():
             if parameter.unit:
                 parameter_name += f' ({parameter.unit})'
-            if parameter_name in ['enabled_pulses']:
+            if parameter_name in ['enabled_pulses', 'pulses']:
                 continue
             self.assertEqual(snapshot.pop(parameter_name), parameter(), msg=parameter_name)
 
-        self.assertEqual(len(snapshot), 1)
+        self.assertEqual(len(snapshot), 2)
 
         pulse_sequence.add(Pulse(duration=5))
 
