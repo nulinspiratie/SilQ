@@ -13,12 +13,13 @@ from silq.pulses import (
     PulseImplementation,
 )
 from silq.pulses import PulseSequence
-from silq.tools.general_tools import arreqclose_in_list, find_approximate_divisor
+from silq.tools.general_tools import find_approximate_divisor
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
 
 from qcodes import ManualParameter, ParameterNode, MatPlot
 from qcodes import validators as vals
+from qcodes.utils.helpers import arreqclose_in_list
 
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,10 @@ class Keysight81180AInterface(InstrumentInterface):
             vals=vals.Lists(vals.Strings()),
         )
 
+        self.instrument.ch1.clear_waveforms()
+        self.instrument.ch2.clear_waveforms()
+
+
         self.waveforms = {}  # List of waveform arrays for each channel
         # Optional initial waveform for each channel. Used to set the first point
         # to equal the last voltage of the final pulse (see docstring for details)
@@ -161,8 +166,6 @@ class Keysight81180AInterface(InstrumentInterface):
         for ch in self.active_channels():
             instrument_channel = getattr(self.instrument, ch)
             instrument_channel.off()
-
-            instrument_channel.clear_waveforms()
 
             instrument_channel.continuous_run_mode(False)
             instrument_channel.function_mode("sequenced")
@@ -307,8 +310,23 @@ class Keysight81180AInterface(InstrumentInterface):
                 # the next segment (~ 70 ns offset)
                 self.sequences[ch].append((waveform_idx, 1, 0, "final_filler_pulse"))
 
+            # Ensure total waveform points are less than memory limit
+            total_waveform_points = sum(len(waveform) for waveform in self.waveforms['ch1'])
+            if total_waveform_points > self.instrument.waveform_max_length:
+                raise RuntimeError(
+                    f'Total waveform points {total_waveform_points} exceeds '
+                    f'limit of 81180A ({self.instrument.waveform_max_length})'
+                )
+
             # Sequence all loaded waveforms
-            instrument_channel.upload_waveforms(self.waveforms[ch])
+            waveform_idx_mapping = instrument_channel.upload_waveforms(
+                self.waveforms[ch], allow_existing=True
+            )
+            # Update waveform indices since they may correspond to pre-existing waveforms
+            self.sequences[ch] = [
+                (waveform_idx_mapping[idx], *instructions)
+                for idx, *instructions in self.sequences[ch]
+            ]
             instrument_channel.set_sequence(self.sequences[ch])
 
             # Check that the sample point offsets do not exceed limit
@@ -375,7 +393,7 @@ class Keysight81180AInterface(InstrumentInterface):
         # Check if waveform already exists in waveform array
         if allow_existing:
             waveform_idx = arreqclose_in_list(
-                waveform_array, self.waveforms[channel_name]
+                waveform_array, self.waveforms[channel_name], atol=1e-3
             )
         else:
             waveform_idx = None
@@ -389,14 +407,6 @@ class Keysight81180AInterface(InstrumentInterface):
 
             # waveform index should be the position of added waveform (1-based)
             waveform_idx = len(self.waveforms[channel_name])
-
-            # Upload waveform to instrument
-            # logger.debug(
-            #     f"Uploading new waveform with {len(waveform_array)} points and "
-            #     f"index {waveform_idx}"
-            # )
-            # instrument_channel = self.instrument.channels[channel_name]
-            # instrument_channel.upload_waveform(waveform_array, waveform_idx)
 
         return waveform_idx
 
@@ -554,6 +564,7 @@ class SinePulseImplementation(PulseImplementation):
 
         settings = {"max_points": 50e3, "frequency_threshold": 30}
         settings.update(**config.properties.get("sine_waveform_settings", {}))
+        settings.update(**config.properties.get("keysight_81180A_sine_waveform_settings", {}))
         settings.update(**kwargs)
 
         self.results = pulse_to_waveform_sequence(
@@ -673,7 +684,7 @@ class SinePulseImplementation(PulseImplementation):
 
 
 class FrequencyRampPulseImplementation(PulseImplementation):
-    pulse_class = SinePulse
+    pulse_class = FrequencyRampPulse
 
     def implement(self, sample_rate, plot=False, **kwargs):
         if self.pulse.frequency_deviation == 0:
@@ -685,8 +696,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         # Add half of 32 points to ensure good rounding during floor division
         t_list = np.arange(start_idx, stop_idx + 16)
         # Ensure number of points is multiple of 32
-        t_list = t_list[: t_list // 32 * 32]
-        t_list /= sample_rate
+        t_list = t_list[: len(t_list) // 32 * 32]
+        t_list = t_list / sample_rate
         if len(t_list) < 320:
             raise RuntimeError("Waveform has fewer than minimum 320 points")
 
