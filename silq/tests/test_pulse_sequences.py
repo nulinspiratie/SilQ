@@ -527,20 +527,20 @@ class TestPulseSequenceEquality(unittest.TestCase):
     def test_pulse_signalling_after_copy(self):
         pulse_sequence = PulseSequence()
         pulse, = pulse_sequence.add(DCPulse('read', duration=1, amplitude=2))
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
-        self.assertEqual(pulse_sequence.disabled_pulses, [])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulse, ))
+        self.assertEqual(pulse_sequence.disabled_pulses, ())
 
         pulse.enabled = False
-        self.assertEqual(pulse_sequence.enabled_pulses, [])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.enabled_pulses, ())
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulse, ))
 
         pulse_sequence_copy = copy(pulse_sequence)
-        self.assertEqual(pulse_sequence.enabled_pulses, [])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.enabled_pulses, ())
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulse, ))
 
         pulse.enabled = True
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
-        self.assertEqual(pulse_sequence.disabled_pulses, [])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulse, ))
+        self.assertEqual(pulse_sequence.disabled_pulses, ())
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
@@ -655,9 +655,9 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
                       Pulse(name='p2', duration=1, enabled=False),
                       Pulse(name='p3', duration=1)]:
             pulses += [pulse_sequence.add(pulse)[0]]
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses,
+                         (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1], ))
 
     def test_final_delay(self):
         original_final_delay = PulseSequence.default_final_delay
@@ -784,18 +784,18 @@ class TestPulseSequenceSignalling(unittest.TestCase):
                       Pulse(name='p3', duration=1)]:
             pulses += [pulse_sequence.add(pulse)[0]]
 
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertTupleEqual(pulse_sequence.enabled_pulses,
+                              (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1],))
 
         pulses[0].enabled = False
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[0], pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulses[2], ))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[0], pulses[1]))
 
         pulses[0].enabled = True
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses,
+                         (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1],))
 
 
 class TestPulseSequencePickling(unittest.TestCase):
@@ -866,8 +866,47 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse_sequence2[0].t_start, 3)
         self.assertEqual(pulse_sequence2[1].t_start, 4)
         
-        self.assertListEqual()
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
 
+    def test_named_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='ESR1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='ESR2')
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2],
+                                       name='ESR3')
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
+
+        self.assertEqual(pulse_sequence[0].full_name, 'ESR1.read')
+        self.assertEqual(pulse_sequence[1].full_name, 'ESR1.read2')
+        self.assertEqual(pulse_sequence[2].full_name, 'ESR2.read3')
+        self.assertEqual(pulse_sequence[3].full_name, 'ESR2.read4')
+
+        self.assertEqual(pulse_sequence[0], pulse_sequence['ESR1.read'])
+        self.assertEqual(pulse_sequence[1], pulse_sequence['ESR1.read2'])
+        self.assertEqual(pulse_sequence[2], pulse_sequence['ESR2.read3'])
+        self.assertEqual(pulse_sequence[3], pulse_sequence['ESR2.read4'])
 
 
 if __name__ == '__main__':

@@ -254,8 +254,6 @@ class PulseSequence(ParameterNode):
         self.t_stop_list = Parameter()
 
         self.pulse_sequences = Parameter(vals=vals.Iterables(), initial_value=())
-        if pulse_sequences:
-            self.pulse_sequences = pulse_sequences
 
         self.my_enabled_pulses = Parameter(
             initial_value=[],
@@ -293,6 +291,9 @@ class PulseSequence(ParameterNode):
             set_cmd=None,
             docstring="All pulses, including those from nested pulse sequences"
         )
+
+        if pulse_sequences:
+            self.pulse_sequences = pulse_sequences
 
         self.duration = None  # Reset duration to t_stop of last pulse
         # Perform a separate set to ensure set method is called
@@ -374,23 +375,26 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def pulses_get(self, parameter):
-        pulses = self.my_pulses
-        for pulse_sequence in self.pulse_sequences:
-            pulses += pulse_sequence.pulses
+        pulses = self.my_pulses + [
+            p for pulse_sequence in self.pulse_sequences
+            for p in pulse_sequence.pulses
+        ]
         return tuple(pulses)
 
     @parameter
     def enabled_pulses_get(self, parameter):
-        enabled_pulses = self.my_enabled_pulses
-        for pulse_sequence in self.pulse_sequences:
-            enabled_pulses += pulse_sequence.enabled_pulses
+        enabled_pulses = self.my_enabled_pulses + [
+            p for pulse_sequence in self.pulse_sequences
+            for p in pulse_sequence.enabled_pulses
+        ]
         return tuple(enabled_pulses)
 
     @parameter
     def disabled_pulses_get(self, parameter):
-        disabled_pulses = self.my_disabled_pulses
-        for pulse_sequence in self.pulse_sequences:
-            disabled_pulses += pulse_sequence.disabled_pulses
+        disabled_pulses = self.my_disabled_pulses + [
+            p for pulse_sequence in self.pulse_sequences
+            for p in pulse_sequence.disabled_pulses
+        ]
         return tuple(disabled_pulses)
 
     @parameter
@@ -474,18 +478,23 @@ class PulseSequence(ParameterNode):
         backup = {
             key: self.parameters[key]._latest for key in [
                 'pulses', 'enabled_pulses', 'disabled_pulses',
-                'my_pulses', 'my_enabled_pulses', 'my_disabled_pulses'
+                'my_pulses', 'my_enabled_pulses', 'my_disabled_pulses',
+                'pulse_sequences'
             ]
         }
         try:
+            # Clear stored values of pulses
             for key in backup:
-                self.parameters[key] = {'value': [], 'raw_value': []}
+                if key.startswith('my_'):
+                    self.parameters[key]._latest = {'value': [], 'raw_value': []}
+                else:
+                    self.parameters[key]._latest = {'value': (), 'raw_value': ()}
 
             self_copy = super().__copy__()
         finally:
             # Restore pulses
             for key in backup:
-                self.parameters[key] = backup[key]
+                self.parameters[key]._latest = backup[key]
 
         # Add pulses (which will create copies)
         self_copy.pulses = self.pulses
@@ -782,7 +791,7 @@ class PulseSequence(ParameterNode):
             else:
                 pulse_sequence.t_start = 0
 
-            self.pulse_sequences = (*self.pulse_sequences, pulse_sequence)
+            self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, pulse_sequence)
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence

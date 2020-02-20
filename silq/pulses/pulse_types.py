@@ -394,6 +394,11 @@ class Pulse(ParameterNode):
             self_copy._connect_parameters_to_config()
         return self_copy
 
+    def __repr__(self):
+        properties_str = f't_start={self.t_start}'
+        properties_str += f', duration={self.duration}'
+        return self._get_repr(properties_str)
+
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
 
@@ -489,6 +494,10 @@ class Pulse(ParameterNode):
                 parent_name, name = name.split('.')
                 kwargs['parent_name'] = parent_name
             kwargs['name'] = name
+
+        if 'parent_name' in kwargs:
+            if getattr(self.parent, 'name', None) != kwargs.pop('parent_name'):
+                return False
 
         for property, val in kwargs.items():
             if val is None:
