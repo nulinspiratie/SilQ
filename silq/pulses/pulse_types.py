@@ -210,10 +210,13 @@ class Pulse(ParameterNode):
     @parameter
     def t_start_set(self, parameter, t_start):
         if t_start is not None:
-            if self.parent is not None and t_start < self.parent.t_start:
-                raise RuntimeError('pulse.t_start cannot be less than pulse_sequence.t_start')
+            if self.parent is not None:
+                if t_start < self.parent.t_start:
+                    raise RuntimeError('pulse.t_start cannot be less than pulse_sequence.t_start')
 
-            parameter._relative_value = round(t_start - self.parent.t_start, 11)
+                parameter._relative_value = round(t_start - self.parent.t_start, 11)
+            else:
+                parameter._relative_value = round(t_start, 11)
 
         # Emit a t_stop signal when t_start is set
         parameter._latest['raw_value'] = t_start
@@ -505,7 +508,6 @@ class Pulse(ParameterNode):
                                      relation=relation):
                         return False
                 elif self.parameters[property]._latest['raw_value'] != val:
-                    print(self.parameters[property]._latest['raw_value'],val)
                     return False
         else:
             return True

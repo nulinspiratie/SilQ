@@ -290,6 +290,10 @@ class PulseSequence(ParameterNode):
         for pulse in self.pulses:
             pulse['t_start']()
 
+        # Update t_stop
+        parameter._latest['raw_value'] = t_start
+        self['t_stop']()
+
     @parameter
     def duration_get(self, parameter):
         if parameter._duration is not None:
@@ -306,10 +310,14 @@ class PulseSequence(ParameterNode):
     def duration_set_parser(self, parameter, duration):
         if duration is None:
             parameter._duration = None
-            return max([self.t_start] + self.t_stop_list) - self.t_start
+            duration = max([self.t_start] + self.t_stop_list) - self.t_start
         else:
             parameter._duration = np.round(duration, 11)
-            return parameter._duration
+            duration =  parameter._duration
+
+        # Update t_stop
+        parameter._latest['raw_value'] = duration
+        self['t_stop']()
 
     @parameter
     def t_stop_get(self, parameter):
@@ -344,7 +352,7 @@ class PulseSequence(ParameterNode):
             return self.enabled_pulses[index]
         elif isinstance(index, str):
             pulses = [p for p in self.pulses
-                      if p.satisfies_conditions(full_name=index)]
+                      if p.satisfies_conditions(name=index)]
             if pulses:
                 if len(pulses) != 1:
                     raise KeyError(f"Could not find unique pulse with name "
