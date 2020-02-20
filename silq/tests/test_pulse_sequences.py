@@ -309,6 +309,24 @@ class TestPulseSequence(unittest.TestCase):
         pulse_sequence.add(pulse1)
         pulse_sequence.add(pulse1)
 
+    def test_pulse_sequence_times(self):
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 0)
+        self.assertEqual(pulse_sequence.t_stop, 0)
+
+        DC_pulse, = pulse_sequence.add(DCPulse('DC', duration=1))
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 1)
+        self.assertEqual(pulse_sequence.t_stop, 1)
+
+        pulse_sequence.t_start = 2
+        self.assertEqual(pulse_sequence.t_start, 2)
+        self.assertEqual(pulse_sequence.duration, 1)
+        self.assertEqual(pulse_sequence.t_stop, 3)
+        self.assertEqual(DC_pulse.t_start, 2)
+        self.assertEqual(DC_pulse.duration, 1)
+        self.assertEqual(DC_pulse.t_stop, 3)
 
 class TestPulseSequenceQuickAdd(unittest.TestCase):
     def test_quick_add_pulses(self):
@@ -430,6 +448,31 @@ class TestPulseSequenceQuickAdd(unittest.TestCase):
                 pulse_sequence.finish_quick_add()
                 pulse_sequence.remove(overlapping_pulse_copy)
                 pulse_sequence.finish_quick_add()
+
+    def test_pulse_sequence_times(self):
+        pulses = [DCPulse(t_start=0, duration=10, connection_label='con1'),
+                  DCPulse(t_start=5, duration=10, connection_label='con2')]
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 0)
+        self.assertEqual(pulse_sequence.t_stop, 0)
+
+        pulse_sequence.quick_add(*pulses)
+        pulse_sequence.finish_quick_add()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 15)
+        self.assertEqual(pulse_sequence.t_stop, 15)
+
+        pulse_sequence.t_start = 2
+        self.assertEqual(pulse_sequence.t_start, 2)
+        self.assertEqual(pulse_sequence.duration, 15)
+        self.assertEqual(pulse_sequence.t_stop, 17)
+        self.assertEqual(pulse_sequence.pulses[0].t_start, 2)
+        self.assertEqual(pulse_sequence.pulses[0].duration, 10)
+        self.assertEqual(pulse_sequence.pulses[0].t_stop, 12)
+        self.assertEqual(pulse_sequence.pulses[1].t_start, 7)
+        self.assertEqual(pulse_sequence.pulses[1].duration, 10)
+        self.assertEqual(pulse_sequence.pulses[1].t_stop, 17)
 
 
 class TestCopyPulseSequence(unittest.TestCase):
@@ -802,6 +845,28 @@ class TestPulseSequencePickling(unittest.TestCase):
 
         self.assertEqual(pickled_pulse_sequence.duration, 4)
 
+
+class TestCompositePulseSequences(unittest.TestCase):
+    def test_basic_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+        
+        self.assertListEqual()
 
 
 

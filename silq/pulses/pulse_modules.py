@@ -259,10 +259,9 @@ class PulseSequence(ParameterNode):
                                          vals=vals.Lists())
         self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
                                 set_cmd=None)
-        self.pulse_sequences = Parameter(
-            initial_value=list(pulse_sequences),
-            vals=vals.Lists(),
-        )
+        self.pulse_sequences = Parameter(vals=vals.Lists(), initial_value=[])
+        if pulse_sequences:
+            self.pulse_sequences = pulse_sequences
 
         self.duration = None  # Reset duration to t_stop of last pulse
         # Perform a separate set to ensure set method is called
