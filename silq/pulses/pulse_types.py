@@ -17,7 +17,7 @@ __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['name', 'id', 't', 't_start', 't_stop',
+pulse_conditions = ['name', 'parent_name', 'id', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average', 'pulse_class']
 
@@ -129,7 +129,8 @@ class Pulse(ParameterNode):
                  average: str = 'none',
                  connection_label: str = None,
                  connection_requirements: dict = {},
-                 connect_to_config: bool = True):
+                 connect_to_config: bool = True,
+                 parent_name: Union[str, Parameter] = None):
         super().__init__(use_as_attributes=True,
                          log_changes=False,
                          simplify_snapshot=True)
@@ -137,6 +138,7 @@ class Pulse(ParameterNode):
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
         self.id = Parameter(initial_value=id, vals=vals.Ints(allow_none=True),
                             set_cmd=None, wrap_get=False)
+        self.parent_name = parent_name
         self.full_name = Parameter()
         self['full_name'].get()  # Update to latest value
 
@@ -188,10 +190,15 @@ class Pulse(ParameterNode):
 
     @parameter
     def full_name_get(self, parameter):
+        full_name = self.name
+
+        if self.parent_name:
+            full_name = f'{self.parent_name}.{full_name}'
+
         if self.id is None:
-            return self.name
-        else:
-            return f'{self.name}[{self.id}]'
+            full_name = f'{full_name}[{self.id}]'
+
+        return full_name
 
     @parameter
     def t_start_set_parser(self, parameter, t_start):
@@ -428,7 +435,7 @@ class Pulse(ParameterNode):
 
     def satisfies_conditions(self,
                              pulse_class = None,
-                             name: str=None,
+                             full_name: str=None,
                              **kwargs) -> bool:
         """Checks if pulse satisfies certain conditions.
 
@@ -438,7 +445,7 @@ class Pulse(ParameterNode):
 
         Args:
             pulse_class: Pulse must have specific class.
-            name: Pulse must have name, which may include id.
+            full_name: Pulse must have name, which may include id.
             **kwargs: Additional pulse attributes to be satisfied.
                 Examples are ``t_start``, ``connection``, etc.
                 Time ``t`` can also be passed, in which case the condition is
@@ -451,12 +458,15 @@ class Pulse(ParameterNode):
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
 
-        if name is not None:
-            if name[-1] == ']':
+        if full_name is not None:
+            if full_name[-1] == ']':
                 # Pulse id is part of name
-                name, id = name[:-1].split('[')
+                full_name, id = full_name[:-1].split('[')
                 kwargs['id'] = int(id)
-            kwargs['name'] = name
+            if '.' in full_name:  # Pulse contains pulse sequence with name
+                parent_name, full_name = full_name.split('.')
+                kwargs['parent_name'] = parent_name
+            kwargs['name'] = full_name
 
         for property, val in kwargs.items():
             if val is None:
@@ -799,8 +809,9 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        frequency_rate = self.frequency_deviation / self.duration
+        frequency_rate = 2 * self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
+
         amplitude = self.amplitude
         if amplitude is None:
             assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
@@ -809,7 +820,10 @@ class FrequencyRampPulse(Pulse):
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
 
-        return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
+
+        return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2) + self.phase)
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.

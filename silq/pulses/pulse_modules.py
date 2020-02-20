@@ -204,6 +204,9 @@ class PulseSequence(ParameterNode):
     default_final_delay = .5e-3
     def __init__(self,
                  pulses: list = None,
+                 pulse_sequences = (),
+                 name='',
+                 enabled: bool = True,
                  allow_untargeted_pulses: bool = True,
                  allow_targeted_pulses: bool = True,
                  allow_pulse_overlap: bool = True,
@@ -211,6 +214,9 @@ class PulseSequence(ParameterNode):
         super().__init__(use_as_attributes=True,
                          log_changes=False,
                          simplify_snapshot=True)
+
+        self.name = Parameter(vals=vals.Strings(), set_cmd=None, initial_value=name)
+        self.enabled = Parameter(vals=vals.Bool(), set_cmd=None, initial_value=enabled)
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
         # into those relating to pulses and to connections. We perform an import
@@ -248,6 +254,9 @@ class PulseSequence(ParameterNode):
                                          vals=vals.Lists())
         self.pulses = Parameter(initial_value=[], vals=vals.Lists(),
                                 set_cmd=None)
+        self.pulse_sequences = Parameter(
+            initial_value=pulse_sequences, vals=vals.Lists(),set_cmd=None
+        )
 
         self.duration = None  # Reset duration to t_stop of last pulse
         # Perform a separate set to ensure set method is called
@@ -307,7 +316,7 @@ class PulseSequence(ParameterNode):
             return self.enabled_pulses[index]
         elif isinstance(index, str):
             pulses = [p for p in self.pulses
-                      if p.satisfies_conditions(name=index)]
+                      if p.satisfies_conditions(full_name=index)]
             if pulses:
                 if len(pulses) != 1:
                     raise KeyError(f"Could not find unique pulse with name "
@@ -401,6 +410,14 @@ class PulseSequence(ParameterNode):
         """Tab completion for IPython, i.e. pulse_sequence["p..."] """
         return [pulse.full_name for pulse in self.pulses]
 
+    def generate(self):
+        if self.pulse_sequences:
+            self.clear()
+            for pulse_sequence in self.pulse_sequences:
+                if pulse_sequence.enabled:
+                    pulse_sequence.generate()
+                    self.add_pulse_sequence(pulse_sequence)
+
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=[]):
         """
@@ -482,6 +499,7 @@ class PulseSequence(ParameterNode):
             # Copy pulse to ensure original pulse is unmodified
             pulse_copy = copy(pulse)
             pulse_copy.id = None  # Remove any pre-existing pulse id
+            pulse_copy.parent_name = self['name']
 
             # Check if pulse with same name exists, if so ensure unique id
             if pulse.name is not None:
@@ -578,6 +596,8 @@ class PulseSequence(ParameterNode):
             if copy:
                 pulse = copy_alias(pulse)
 
+            pulse.parent_name = self['name']
+
             # TODO set t_start if not set
             # If pulse does not have t_start defined, it will be attached to
             # the end of the last pulse on the same connection(_label)
@@ -652,6 +672,14 @@ class PulseSequence(ParameterNode):
         except AssertionError:  # Likely error is that pulses overlap
             self.clear()
             raise
+
+    def add_pulse_sequence(self, pulse_sequence):
+        if self.pulses:
+            raise RuntimeError(
+                'Cannot add nested pulse sequence when also containing pulses'
+            )
+
+        self.pulse_sequences.append(pulse_sequence)
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
