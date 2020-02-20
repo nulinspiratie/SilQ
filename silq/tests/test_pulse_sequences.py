@@ -803,5 +803,7 @@ class TestPulseSequencePickling(unittest.TestCase):
         self.assertEqual(pickled_pulse_sequence.duration, 4)
 
 
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -454,7 +454,7 @@ class Pulse(ParameterNode):
 
     def satisfies_conditions(self,
                              pulse_class = None,
-                             full_name: str=None,
+                             name: str=None,
                              **kwargs) -> bool:
         """Checks if pulse satisfies certain conditions.
 
@@ -464,7 +464,7 @@ class Pulse(ParameterNode):
 
         Args:
             pulse_class: Pulse must have specific class.
-            full_name: Pulse must have name, which may include id.
+            name: Pulse must have name, which may include id.
             **kwargs: Additional pulse attributes to be satisfied.
                 Examples are ``t_start``, ``connection``, etc.
                 Time ``t`` can also be passed, in which case the condition is
@@ -477,15 +477,15 @@ class Pulse(ParameterNode):
         if pulse_class is not None and not isinstance(self, pulse_class):
             return False
 
-        if full_name is not None:
-            if full_name[-1] == ']':
+        if name is not None:
+            if name[-1] == ']':
                 # Pulse id is part of name
-                full_name, id = full_name[:-1].split('[')
+                name, id = name[:-1].split('[')
                 kwargs['id'] = int(id)
-            if '.' in full_name:  # Pulse contains pulse sequence with name
-                parent_name, full_name = full_name.split('.')
+            if '.' in name:  # Pulse contains pulse sequence with name
+                parent_name, name = name.split('.')
                 kwargs['parent_name'] = parent_name
-            kwargs['name'] = full_name
+            kwargs['name'] = name
 
         for property, val in kwargs.items():
             if val is None:
@@ -505,6 +505,7 @@ class Pulse(ParameterNode):
                                      relation=relation):
                         return False
                 elif self.parameters[property]._latest['raw_value'] != val:
+                    print(self.parameters[property]._latest['raw_value'],val)
                     return False
         else:
             return True
