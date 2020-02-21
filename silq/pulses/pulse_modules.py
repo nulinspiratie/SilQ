@@ -534,7 +534,7 @@ class PulseSequence(ParameterNode):
 
     def generate(self):
         if self.pulse_sequences:
-            self.clear()
+            self.clear(clear_pulse_sequences=False)
             for pulse_sequence in self.pulse_sequences:
                 if pulse_sequence.enabled:
                     pulse_sequence.generate()
