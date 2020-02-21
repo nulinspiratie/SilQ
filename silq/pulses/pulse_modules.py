@@ -218,6 +218,7 @@ class PulseSequence(ParameterNode):
         )
 
         self.name = Parameter(vals=vals.Strings(), set_cmd=None, initial_value=name)
+        self.full_name = Parameter(vals=vals.Strings(), initial_value=name)
         self.enabled = Parameter(vals=vals.Bool(), set_cmd=None, initial_value=enabled)
 
         # For PulseSequence.satisfies_conditions, we need to separate conditions
@@ -372,7 +373,7 @@ class PulseSequence(ParameterNode):
     def pulses_set_parser(self, parameter, pulses):
         # We modify the set_parser instead of set, since we don't want to set
         # pulses to the original pulses, but to the added (copied) pulses
-        self.clear()
+        self.clear(clear_pulse_sequences=False)
         added_pulses = self.quick_add(*pulses)
         self.finish_quick_add()
         return added_pulses
@@ -405,6 +406,13 @@ class PulseSequence(ParameterNode):
     def pulse_sequences_set(self, parameter, pulse_sequences):
         self.clear()
         self.add_pulse_sequences(*pulse_sequences)
+
+    @parameter
+    def full_name_get(self, parameter):
+        if isinstance(self.parent, PulseSequence):
+            return f'{self.parent.full_name}.{self.name}'
+        else:
+            return self.name
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -503,11 +511,21 @@ class PulseSequence(ParameterNode):
         self_copy._last_pulse = None
 
         # Add pulses (which will create copies)
-        self_copy.pulses = self.pulses
+        self_copy.my_pulses = self.my_pulses
+
+        # Copy nested pulse sequences
+        if self.pulse_sequences:
+            pulse_sequences = [
+                copy(pulse_sequence) for pulse_sequence in self.pulse_sequences
+            ]
+            self_copy.pulse_sequences = pulse_sequences  # TODO
 
         # If duration is fixed (i.e. pulse_sequence.duration=val), ensure this
         # is also copied
         self_copy['duration']._duration = self['duration']._duration
+
+        self_copy._update_enabled_disabled_pulses()
+
         return self_copy
 
     def _ipython_key_completions_(self):
@@ -518,7 +536,6 @@ class PulseSequence(ParameterNode):
         if self.pulse_sequences:
             self.clear()
             for pulse_sequence in self.pulse_sequences:
-                print(f'adding {pulse_sequence.name}')
                 if pulse_sequence.enabled:
                     pulse_sequence.generate()
 
@@ -582,9 +599,20 @@ class PulseSequence(ParameterNode):
                               ' for the following pulses: ' +
                               ', '.join(p.name for p in pulses_no_duration))
 
+        pulse_copies = []
+        for pulse in pulses:
+            # Copy pulse to ensure original pulse is unmodified
+            # We do this before performing checks to ensure that the pulse parent
+            # is set, and consequently that the t_start incorporates any nonzero
+            # t_start of the pulse sequence
+            pulse_copy = copy(pulse)
+            pulse_copy.id = None  # Remove any pre-existing pulse id
+            pulse_copy.parent = self
+            pulse_copies.append(pulse_copy)
+
         added_pulses = []
 
-        for pulse in pulses:
+        for pulse in pulse_copies:
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
                     and pulse.t_start is not None
@@ -599,11 +627,6 @@ class PulseSequence(ParameterNode):
             assert pulse.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse}'
             assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
-
-            # Copy pulse to ensure original pulse is unmodified
-            pulse_copy = copy(pulse)
-            pulse_copy.id = None  # Remove any pre-existing pulse id
-            pulse_copy.parent = self
 
             # Check if pulse with same name exists, if so ensure unique id
             if pulse.name is not None:
@@ -653,7 +676,8 @@ class PulseSequence(ParameterNode):
     def quick_add(self, *pulses,
                   copy: bool = True,
                   connect: bool = True,
-                  reset_duration: bool = True):
+                  reset_duration: bool = True,
+                  nest=False):
         """"Quickly add pulses to a sequence skipping steps and checks.
 
         This method is used in the during the `Layout` targeting of a pulse
@@ -676,6 +700,10 @@ class PulseSequence(ParameterNode):
             copy: Whether to copy the pulse before applying operations
             reset_duration: Reset duration of pulse sequence to t_stop of final
                 pulse
+            nest: When True, if a pulse is in a nested pulse sequence, it will
+                be copied to the same nested pulse sequence.
+                This requires that this pulse sequence also contains a nested
+                pulse sequence with the same name
 
         Returns:
             Added pulses. If copy is False, the original pulses are returned.
@@ -794,7 +822,6 @@ class PulseSequence(ParameterNode):
 
             if self.pulse_sequences:
                 previous_pulse_sequence = self.pulse_sequences[-1]
-                print(f'emitting from {previous_pulse_sequence.name} to {pulse_sequence.name}')
                 previous_pulse_sequence['t_stop'].connect(
                     pulse_sequence['t_start'], update=True
                 )
@@ -802,6 +829,7 @@ class PulseSequence(ParameterNode):
                 pulse_sequence.t_start = 0
 
             self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, pulse_sequence)
+            pulse_sequence.parent = self
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
@@ -836,7 +864,7 @@ class PulseSequence(ParameterNode):
         self.my_pulses.sort(key=lambda p: p.t_start)
         self.my_enabled_pulses.sort(key=lambda p: p.t_start)
 
-    def clear(self):
+    def clear(self, clear_pulse_sequences = True):
         """Clear all pulses from pulse sequence."""
         for pulse in self.pulses:
             # TODO: remove all signal connections
@@ -844,6 +872,8 @@ class PulseSequence(ParameterNode):
         self.my_pulses.clear()
         self.my_enabled_pulses.clear()
         self.my_disabled_pulses.clear()
+        if clear_pulse_sequences:
+            self.pulse_sequences = ()
         self.duration = None  # Reset duration to t_stop of last pulse
 
     @staticmethod
@@ -1155,6 +1185,16 @@ class PulseSequence(ParameterNode):
             # will otherwise attach as a nested node
             object.__setattr__(self, '_last_pulse', last_pulse)
             self._last_pulse['t_stop'].connect(self['t_stop'])
+
+    def clone_skeleton(self, pulse_sequence):
+        self.clear()
+        for subsequence in pulse_sequence.pulse_sequences:
+            clone_subsequence = PulseSequence()
+            clone_subsequence.clone_skeleton(subsequence)
+            self.add_pulse_sequences(clone_subsequence)
+
+        self.duration = pulse_sequence.duration
+        self.final_delay = pulse_sequence.final_delay
 
 
 class PulseImplementation:

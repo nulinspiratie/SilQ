@@ -492,6 +492,16 @@ class TestCopyPulseSequence(unittest.TestCase):
         pulse_sequence.duration = 10
         self.assertNotEqual(pulse_sequence_copy.duration, 10)
 
+    def test_copy_filled_pulse_sequence(self):
+        pulse_sequence = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+
+        pulse_sequence_copy = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence_copy.duration, 3)
+
+        self.assertTupleEqual(pulse_sequence_copy.pulses, pulse_sequence_copy.enabled_pulses)
 
 class TestPulseSequenceEquality(unittest.TestCase):
     def test_empty_pulse_sequence_equality(self):
@@ -939,6 +949,72 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse_sequence1[1].t_start, 3)
         self.assertEqual(pulse_sequence2[0].t_start, 5)
         self.assertEqual(pulse_sequence2[1].t_start, 6)
+
+    def test_copy_basic_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+        pulse_sequence1, pulse_sequence2 = pulse_sequence.pulse_sequences
+
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
+
+    def test_copy_pulse_in_composite_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+
+        pulse = copy(pulse_sequence[2])
+        self.assertEqual(pulse.t_start, 3)
+
+    def test_add_copied_pulse_in_composite_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+
+        pulse = copy(pulse_sequence[2])
+        self.assertEqual(pulse.t_start, 3)
+
+        new_pulse_sequence = PulseSequence()
+
 
 
 class TestPulseSequenceGenerators(unittest.TestCase):

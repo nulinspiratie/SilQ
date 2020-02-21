@@ -228,7 +228,7 @@ class Pulse(ParameterNode):
 
         if t_start is None:
             return t_start
-        
+
         if self.parent is not None:
             t_start += self.parent.t_start
 
@@ -390,6 +390,8 @@ class Pulse(ParameterNode):
         are also connected
         """
         self_copy = super().__copy__()
+        self_copy.parent = self.parent
+
         if self._connected_to_config:
             self_copy._connect_parameters_to_config()
         return self_copy
