@@ -569,7 +569,9 @@ class PulseSequence(ParameterNode):
         return snap
 
     def add(self, *pulses,
-            reset_duration: bool = True):
+            reset_duration: bool = True,
+            copy: bool = True,
+            nest: bool = False):
         """Adds pulse(s) to the PulseSequence.
 
         Args:
@@ -599,20 +601,36 @@ class PulseSequence(ParameterNode):
                               ' for the following pulses: ' +
                               ', '.join(p.name for p in pulses_no_duration))
 
-        pulse_copies = []
-        for pulse in pulses:
-            # Copy pulse to ensure original pulse is unmodified
-            # We do this before performing checks to ensure that the pulse parent
-            # is set, and consequently that the t_start incorporates any nonzero
-            # t_start of the pulse sequence
-            pulse_copy = copy(pulse)
-            pulse_copy.id = None  # Remove any pre-existing pulse id
-            pulse_copy.parent = self
-            pulse_copies.append(pulse_copy)
+        if copy:
+            pulse_copies = []
+            for pulse in pulses:
+                # Copy pulse to ensure original pulse is unmodified
+                # We do this before performing checks to ensure that the pulse parent
+                # is set, and consequently that the t_start incorporates any nonzero
+                # t_start of the pulse sequence
+                pulse_copy = copy_alias(pulse)
+                pulse_copy.id = None  # Remove any pre-existing pulse id
+                pulse_copy.parent = self
+                pulse_copies.append(pulse_copy)
+        else:
+            pulse_copies = pulses
 
         added_pulses = []
 
         for pulse_copy in pulse_copies:
+            # Check if we need to add pulse to a nested pulse sequence
+            if nest and pulse.parent is not None and pulse.parent.full_name != self.full_name:
+                nested_sequence = self.get_pulse_sequence(pulse.parent.full_name)
+                if nested_sequence is None:
+                    raise RuntimeError(
+                        f'Could not find nested pulse sequence '
+                        f'{pulse.parent.full_name} for {pulse}'
+                    )
+                else:
+                    added_pulse, = nested_sequence.quick_add(pulse)
+                    added_pulses.append(added_pulse)
+                    continue
+
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
                     and pulse.t_start is not None
@@ -721,6 +739,19 @@ class PulseSequence(ParameterNode):
 
         added_pulses = []
         for pulse in pulses:
+            # Check if we need to add pulse to a nested pulse sequence
+            if nest and pulse.parent is not None and pulse.parent.full_name != self.full_name:
+                nested_sequence = self.get_pulse_sequence(pulse.parent.full_name)
+                if nested_sequence is None:
+                    raise RuntimeError(
+                        f'Could not find nested pulse sequence '
+                        f'{pulse.parent.full_name} for {pulse}'
+                    )
+                else:
+                    added_pulse, = nested_sequence.quick_add(pulse)
+                    added_pulses.append(added_pulse)
+                    continue
+
             assert pulse.implementation is not None or self.allow_untargeted_pulses, \
                 f'Cannot add untargeted pulse {pulse}'
             assert pulse.implementation is None or self.allow_targeted_pulses, \
@@ -805,6 +836,9 @@ class PulseSequence(ParameterNode):
                         pulse.id = k
 
             self._update_last_pulse()
+
+            for pulse_sequence in self.pulse_sequences:
+                pulse_sequence.finish_quick_add()
         except AssertionError:  # Likely error is that pulses overlap
             self.clear()
             raise
@@ -973,6 +1007,30 @@ class PulseSequence(ParameterNode):
             return pulses[0]
         else:
             raise RuntimeError(f'Found more than one pulse satisfiying {conditions}')
+
+    def get_pulse_sequence(self, name):
+        same_full_name = [
+            pulse_sequence for pulse_sequence in self.pulse_sequences
+            if pulse_sequence.full_name == name
+        ]
+
+        if len(same_full_name) > 1:
+            raise RuntimeError(f'Found multiple pulse sequences with name {name}')
+        elif len(same_full_name) == 1:
+            return same_full_name[0]
+        else:
+            same_name = [
+                pulse_sequence for pulse_sequence in self.pulse_sequences
+                if pulse_sequence.name == name
+            ]
+
+            if len(same_name) > 1:
+                raise RuntimeError(f'Found multiple pulse sequences with name {name}')
+            elif len(same_name) == 1:
+                return same_name[0]
+            else:
+                return None
+
 
     def get_connection(self, **conditions):
         """Get unique connections from any pulse satisfying conditions.
@@ -1193,6 +1251,7 @@ class PulseSequence(ParameterNode):
             clone_subsequence.clone_skeleton(subsequence)
             self.add_pulse_sequences(clone_subsequence)
 
+        self.name = pulse_sequence.name
         self.duration = pulse_sequence.duration
         self.final_delay = pulse_sequence.final_delay
 

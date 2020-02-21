@@ -1014,7 +1014,42 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse.t_start, 3)
 
         new_pulse_sequence = PulseSequence()
+        new_pulse, = new_pulse_sequence.add(pulse)
+        self.assertEqual(new_pulse.t_start, 0)
 
+    def test_add_nested_pulse_to_skeleton(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='nested1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='nested2')
+
+        pulse_sequence = PulseSequence(
+            name='main', pulse_sequences=[pulse_sequence1, pulse_sequence2]
+        )
+        pulse = pulse_sequence[2]
+
+        skeleton_pulse_sequence = PulseSequence()
+        skeleton_pulse_sequence.clone_skeleton(pulse_sequence)
+        self.assertEqual(skeleton_pulse_sequence.name, 'main')
+        skeleton_pulse_sequence.add(pulse)
+        self.assertEqual(skeleton_pulse_sequence[0].name, pulse.name)
+        skeleton_pulse_sequence.add(pulse, nest=True)
+        self.assertEqual(skeleton_pulse_sequence.pulse_sequences[1][0].name, pulse.name)
+
+        pulse_sequence = copy(pulse_sequence)
+        pulse = copy(pulse)
+
+        skeleton_pulse_sequence = PulseSequence()
+        skeleton_pulse_sequence.clone_skeleton(pulse_sequence)
+        self.assertEqual(skeleton_pulse_sequence.name, 'main')
+        skeleton_pulse_sequence.add(pulse)
+        self.assertEqual(skeleton_pulse_sequence[0].name, pulse.name)
+        skeleton_pulse_sequence.add(pulse, nest=True)
+        self.assertEqual(skeleton_pulse_sequence.pulse_sequences[1][0].name, pulse.name)
 
 
 class TestPulseSequenceGenerators(unittest.TestCase):
