@@ -612,7 +612,7 @@ class PulseSequence(ParameterNode):
 
         added_pulses = []
 
-        for pulse in pulse_copies:
+        for pulse_copy in pulse_copies:
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
                     and pulse.t_start is not None
@@ -873,7 +873,7 @@ class PulseSequence(ParameterNode):
         self.my_enabled_pulses.clear()
         self.my_disabled_pulses.clear()
         if clear_pulse_sequences:
-            self.pulse_sequences = ()
+            self['pulse_sequences']._latest = {'value': (), 'raw_value': ()}
         self.duration = None  # Reset duration to t_stop of last pulse
 
     @staticmethod
