@@ -500,6 +500,8 @@ class PulseSequence(ParameterNode):
             for key in backup:
                 self.parameters[key]._latest = backup[key]
 
+        self_copy._last_pulse = None
+
         # Add pulses (which will create copies)
         self_copy.pulses = self.pulses
 
@@ -1149,7 +1151,9 @@ class PulseSequence(ParameterNode):
                 self._last_pulse['t_stop'].disconnect(self['t_stop'])
 
             # Update last pulse and save connect
-            self._last_pulse = last_pulse
+            # Using object.__setattr__ since pulses are ParameterNodes and they
+            # will otherwise attach as a nested node
+            object.__setattr__(self, '_last_pulse', last_pulse)
             self._last_pulse['t_stop'].connect(self['t_stop'])
 
 

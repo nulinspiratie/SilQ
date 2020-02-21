@@ -328,6 +328,15 @@ class TestPulseSequence(unittest.TestCase):
         self.assertEqual(DC_pulse.duration, 1)
         self.assertEqual(DC_pulse.t_stop, 3)
 
+    def test_last_pulse(self):
+        pulse_sequence = PulseSequence()
+        read_pulse, plunge_pulse = pulse_sequence.add(
+            DCPulse('read', duration=1),
+            DCPulse('plunge', duration=1)
+        )
+        self.assertEqual(pulse_sequence._last_pulse, plunge_pulse)
+
+
 class TestPulseSequenceQuickAdd(unittest.TestCase):
     def test_quick_add_pulses(self):
         pulses = [DCPulse(duration=10),
@@ -865,7 +874,7 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse_sequence1[1].t_start, 1)
         self.assertEqual(pulse_sequence2[0].t_start, 3)
         self.assertEqual(pulse_sequence2[1].t_start, 4)
-        
+
         self.assertTupleEqual(
             pulse_sequence.pulses,
             (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
@@ -930,6 +939,24 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(pulse_sequence1[1].t_start, 3)
         self.assertEqual(pulse_sequence2[0].t_start, 5)
         self.assertEqual(pulse_sequence2[1].t_start, 6)
+
+
+class TestPulseSequenceGenerators(unittest.TestCase):
+    def test_ESR_pulse_sequence(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequence
+        from silq.pulses import SinePulse
+
+        pulse_sequence = ESRPulseSequence()
+        pulse_sequence.ESR['ESR_pulse'] = SinePulse('ESR', duration=1, frequency=38e9)
+        pulse_sequence.ESR['stage_pulse'].duration = 2
+        pulse_sequence.ESR['read_pulse'].duration = 2
+        pulse_sequence.EPR['enabled'] = False
+        pulse_sequence.post_pulses = []
+
+        pulse_sequence.generate()
+
+        # Copy the pulse sequence
+        copy(pulse_sequence)
 
 
 if __name__ == '__main__':
