@@ -1,12 +1,16 @@
 import numpy as np
+import functools
 import matplotlib
 import peakutils
 import logging
-from typing import Union, Dict, Any, List, Sequence
+from typing import Union, Dict, Any, List, Sequence, Iterable
 import collections
 from matplotlib import pyplot as plt
 
 from qcodes import MatPlot
+from qcodes.instrument.parameter_node import ParameterNode, parameter
+from qcodes.instrument.parameter import Parameter
+
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
@@ -17,6 +21,19 @@ from silq import config
 if 'analysis' not in config:
     config['analysis'] = {}
 analysis_config = config['analysis']
+
+
+class Analysis(ParameterNode):
+    def __init__(self, name):
+        super().__init__(name=name, use_as_attributes=True)
+        self.settings = ParameterNode()
+        self.results = ParameterNode()
+
+        self.names = Parameter()
+        self.units = Parameter()
+
+    def analyse(self, **kwargs):
+        raise NotImplementedError("Analysis must be implemented in a subclass")
 
 
 def old_smooth(x: np.ndarray,
@@ -717,6 +734,260 @@ def analyse_EPR(empty_traces: np.ndarray,
             'blips': results_read['blips'],
             'mean_low_blip_duration': results_read['mean_low_blip_duration'],
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}
+
+
+class AnalyseEPR(Analysis):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.settings.sample_rate = Parameter(
+            get_cmd=lambda: self.sample_rate
+        )
+        self.settings.min_filter_up_proportion = Parameter(
+            initial_value=0.5, set_cmd=None,
+            config_link='analysis.min_filter_up_proportion',
+            update_from_config=True
+        )
+        self.settings.threshold_voltage = Parameter(
+            initial_value=None, set_cmd=None,
+            config_link='analysis.threshold_voltage',
+            update_from_config=True
+        )
+        self.settings.filter_traces = Parameter(
+            initial_value=True, set_cmd=None,
+            config_link='analysis.filter_traces',
+            update_from_config=True
+        )
+        self.settings.filter_traces = Parameter(
+            initial_value=True, set_cmd=None,
+            config_link='analysis.filter_traces',
+            update_from_config=True
+        )
+        self.settings.filter_traces = Parameter(
+            initial_value=True, set_cmd=None,
+            config_link='properties.filter_traces',
+            update_from_config=True
+        )
+        self.settings.t_skip = Parameter(
+            initial_value=4e-5, set_cmd=None,
+            config_link='properties.t_skip',
+            update_from_config=True
+        )
+        self.settings.t_read = Parameter(
+            initial_value=None, set_cmd=None,
+            config_link='properties.t_read',
+            update_from_config=True
+        )
+
+        self.results.fidelity_empty = Parameter(initial_value=False)
+        self.results.voltage_difference_empty = Parameter(initial_value=False, unit='V')
+        self.results.fidelity_load = Parameter(initial_value=False)
+        self.results.voltage_difference_load = Parameter(initial_value=False, unit='V')
+        self.results.up_proportion = Parameter(initial_value=True)
+        self.results.contrast = Parameter(initial_value=True)
+        self.results.dark_counts = Parameter(initial_value=True)
+        self.results.voltage_difference_read = Parameter(initial_value=True, unit='V')
+        self.results.voltage_average_read = Parameter(initial_value=False, unit='V')
+        self.results.num_traces = Parameter(initial_value=False)
+        self.results.blips = Parameter(initial_value=False)
+        self.results.mean_low_blip_duration = Parameter(initial_value=False, unit='s')
+        self.results.mean_high_blip_duration = Parameter(initial_value=False, unit='s')
+
+
+    @parameter
+    def names_get(self, parameter):
+        names = []
+        for label, param in self.results.parameters.items():
+            if not param():
+                continue
+
+            names.append(label)
+
+        return names
+
+    @parameter
+    def units_get(self):
+        return tuple([p.unit for _, p in self.results.parameters.items()])
+
+    @functools.wraps(analyse_EPR)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+        return analyse_EPR(**settings)
+
+
+def analyse_electron_readout(
+        traces: dict,
+        sample_rate: float,
+        shots_per_frequency: int = 1,
+        labels: List[str] = None,
+        t_skip: float = 0,
+        t_read: Union[float, None] = None,
+        threshold_voltage: Union[float, None] = None,
+        threshold_method: str = 'config',
+        min_filter_proportion: float = 0.5,
+        dark_counts: float = None,
+        plot: Union[bool, matplotlib.axis.Axis] = False,
+        plot_high_low: Union[bool, matplotlib.axis.Axis] = False
+):
+    if len(traces) % shots_per_frequency:
+        raise RuntimeError(
+            'Number of electron readout traces is not a multiple of shots_per_frequency'
+        )
+    num_frequencies = int(len(traces) / shots_per_frequency)
+
+    results = {'read_results': [None] * len(traces)}
+
+    # Extract samples and points per shot
+    first_trace = next(iter(traces.values()))
+    if isinstance(first_trace, dict):
+        # All trace values are dictinoaries for each channel, select output channel
+        traces = {key: trace_arr['output'] for key, trace_arr in traces.items()}
+        first_trace = first_trace['output']
+    samples, points_per_shot = first_trace.shape
+
+    if threshold_voltage is None:
+        # Calculate threshold voltages from combined read traces
+        high_low = find_high_low(
+            np.ravel([trace['output'] for trace in traces.values()]),
+            plot=plot_high_low
+        )
+        threshold_voltage = results['threshold_voltage'] = high_low['threshold_voltage']
+
+    # Iterate through traces and extract data
+    up_proportions = np.zeros((num_frequencies, samples))
+    num_traces = np.zeros((num_frequencies, samples))
+    for k, (name, trace_arr) in enumerate(traces.items()):
+        frequency_idx = k % num_frequencies
+        sample_idx = k // num_frequencies
+
+        read_result = results['read_results'][k] = analyse_traces(
+            traces=trace_arr,
+            sample_rate=sample_rate,
+            t_read=t_read,
+            t_skip=t_skip,
+            threshold_voltage=threshold_voltage,
+            threshold_method=threshold_method,
+            min_filter_proportion=min_filter_proportion,
+            plot=plot
+        )
+
+        up_proportions[frequency_idx, sample_idx] = read_result['up_proportion']
+        num_traces[frequency_idx, sample_idx] = read_result['num_traces']
+
+    # Add all up proportions as measurement results
+    for k, up_proportion_arr in enumerate(up_proportions):
+        # Determine the right up_proportion label
+        label = 'up_proportion' if shots_per_frequency == 1 else 'up_proportions'
+        if labels is not None:
+            suffix = f'_{labels[k]}'
+        elif num_frequencies > 1:
+            suffix = str(k)  # Note that we avoid an underscore
+        else:
+            suffix = ''
+
+        if shots_per_frequency == 1:  # Remove outer dimension
+            up_proportion_arr = up_proportion_arr[0]
+
+        results[label + suffix] = up_proportion_arr
+
+        if dark_counts is not None:
+            results['contrast' + suffix] = up_proportion_arr - dark_counts
+
+        results['num_traces' + suffix] = sum(num_traces[k])
+
+        # Determine voltage difference
+        voltage_differences = [
+            ESR_result['voltage_difference'] for ESR_result in results['ESR_results']
+            if ESR_result['voltage_difference'] is not None
+        ]
+        if voltage_differences:
+            results['voltage_difference'] = np.mean(voltage_differences)
+        else:
+            results['voltage_difference'] = np.nan
+    return results
+
+
+class AnalyseElectronReadout(Analysis):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.settings.sample_rate = Parameter(
+            get_cmd=lambda: self.sample_rate
+        )
+        self.settings.num_frequencies = Parameter(
+            initial_value=1, set_cmd=None,
+        )
+        self.settings.shots_per_frequency = Parameter(
+            initial_value=1, set_cmd=None,
+        )
+        self.settings.labels = Parameter(
+            initial_value=None, set_cmd=None,
+        )
+        self.settings.t_skip = Parameter(
+            initial_value=4e-5, set_cmd=None,
+            config_link='properties.t_skip',
+            update_from_config=True
+        )
+        self.settings.t_read = Parameter(
+            initial_value=None, set_cmd=None,
+            config_link='properties.t_read',
+            update_from_config=True
+        )
+        self.settings.threshold_voltage = Parameter(
+            initial_value=None, set_cmd=None,
+            config_link='analysis.threshold_voltage',
+            update_from_config=True
+        )
+        self.settings.threshold_method = Parameter(
+            initial_value='mean', set_cmd=None,
+            config_link='analysis.threshold_method',
+            update_from_config=True
+        )
+        self.settings.min_filter_up_proportion = Parameter(
+            initial_value=0.5, set_cmd=None,
+            config_link='analysis.min_filter_up_proportion',
+            update_from_config=True
+        )
+
+        self.results.read_results = Parameter(initial_value=False)
+        self.results.threshold_voltage = Parameter(initial_value=True, unit='V')
+        self.results.up_proportion = Parameter(initial_value=True)
+        self.results.contrast = Parameter(initial_value=True)
+        self.results.num_traces = Parameter(initial_value=True)
+        self.results.voltage_difference = Parameter(initial_value=True)
+
+        self.names = Parameter()
+        self.units = Parameter()
+
+    @parameter
+    def names_get(self, parameter):
+        names = []
+        for label, param in self.results.parameters.items():
+            if not param():
+                continue
+
+            if label in ['up_proportion', 'contrast', 'num_traces']:
+                # Add a label for each frequency
+                for k in range(self.settings.num_frequencies):
+                    if self.settings.labels is not None:
+                        suffix = f'_{self.settings.labels[k]}'
+                    elif self.settings.num_frequencies > 1:
+                        suffix = str(k)  # Note that we avoid an underscore
+                    else:
+                        suffix = ''
+                    names.append(label + suffix)
+            else:
+                names.append(label)
+
+    @parameter
+    def units_get(self):
+        return tuple(['V' if 'voltage' in name else '' for name in self.names])
+
+    @functools.wraps(analyse_electron_readout)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+        return analyse_electron_readout(**settings)
+
 
 
 def analyse_flips(up_proportions_arrs: List[np.ndarray],
