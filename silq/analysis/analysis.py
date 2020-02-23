@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from qcodes import MatPlot
 from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
-
+from qcodes.utils import validators as vals
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
@@ -31,6 +31,7 @@ class Analysis(ParameterNode):
 
         self.names = Parameter()
         self.units = Parameter()
+        self.shapes = Parameter()
         self.enabled = Parameter(set_cmd=None, initial_value=True)
 
     def analyse(self, **kwargs):
@@ -743,6 +744,16 @@ class AnalyseEPR(Analysis):
         self.settings.sample_rate = Parameter(
             get_cmd=lambda: self.sample_rate
         )
+        self.settings.t_skip = Parameter(
+            initial_value=4e-5, set_cmd=None,
+            config_link='properties.t_skip',
+            update_from_config=True
+        )
+        self.settings.t_read = Parameter(
+            initial_value=None, set_cmd=None,
+            config_link='properties.t_read',
+            update_from_config=True
+        )
         self.settings.min_filter_up_proportion = Parameter(
             initial_value=0.5, set_cmd=None,
             config_link='analysis.min_filter_up_proportion',
@@ -756,26 +767,6 @@ class AnalyseEPR(Analysis):
         self.settings.filter_traces = Parameter(
             initial_value=True, set_cmd=None,
             config_link='analysis.filter_traces',
-            update_from_config=True
-        )
-        self.settings.filter_traces = Parameter(
-            initial_value=True, set_cmd=None,
-            config_link='analysis.filter_traces',
-            update_from_config=True
-        )
-        self.settings.filter_traces = Parameter(
-            initial_value=True, set_cmd=None,
-            config_link='properties.filter_traces',
-            update_from_config=True
-        )
-        self.settings.t_skip = Parameter(
-            initial_value=4e-5, set_cmd=None,
-            config_link='properties.t_skip',
-            update_from_config=True
-        )
-        self.settings.t_read = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='properties.t_read',
             update_from_config=True
         )
 
@@ -793,7 +784,6 @@ class AnalyseEPR(Analysis):
         self.results.mean_low_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
         self.results.mean_high_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
 
-
     @parameter
     def names_get(self, parameter):
         names = []
@@ -806,6 +796,10 @@ class AnalyseEPR(Analysis):
     @parameter
     def units_get(self, parameter):
         return tuple([p.unit for _, p in self.results.parameters.items()])
+
+    @parameter
+    def shapes_get(self, parameter):
+        return ((),) * len(self.names)
 
     @functools.wraps(analyse_EPR)
     def analyse(self, **kwargs):
@@ -947,15 +941,12 @@ class AnalyseElectronReadout(Analysis):
             update_from_config=True
         )
 
-        self.results.read_results = Parameter(initial_value=False, set_cmd=None)
+        self.results.read_results = Parameter(initial_value=False, set_cmd=False)
         self.results.up_proportion = Parameter(initial_value=True, set_cmd=None)
         self.results.contrast = Parameter(initial_value=False, set_cmd=None)
         self.results.num_traces = Parameter(initial_value=True, set_cmd=None)
         self.results.voltage_difference = Parameter(initial_value=True, set_cmd=None)
         self.results.threshold_voltage = Parameter(initial_value=True, unit='V', set_cmd=None)
-
-        self.names = Parameter()
-        self.units = Parameter()
 
     @parameter
     def names_get(self, parameter):
@@ -982,12 +973,16 @@ class AnalyseElectronReadout(Analysis):
     def units_get(self, parameter):
         return tuple(['V' if 'voltage' in name else '' for name in self.names])
 
+    @parameter
+    def shapes_get(self, parameter):
+        return tuple((),) * len(self.names)
+
     @functools.wraps(analyse_electron_readout)
     def analyse(self, **kwargs):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
+        settings.pop('num_frequencies', None)  # Not needed
         return analyse_electron_readout(**settings)
-
 
 
 def analyse_flips(up_proportions_arrs: List[np.ndarray],
@@ -1141,3 +1136,96 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
                 results[f'filtered_{arr_name}' + suffix] = filtered_arr
 
     return results
+
+
+class AnalyseFlips(Analysis):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.settings.threshold_up_proportion = Parameter(
+            initial_value=1, set_cmd=None,
+            config_link='analysis.threshold_up_proportion',
+            update_from_config=True
+        ),
+        self.settings.num_frequencies = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Ints()
+        ),
+        self.settings.labels = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Lists()
+        ),
+        self.settings.combined_flips_pairs = Parameter(
+            initial_value='neighbouring',
+            vals=vals.MultiType(vals.Enum('neighbouring', 'full'), vals.Lists())
+        )
+
+        self.results.flips = Parameter(initial_value=False, set_cmd=None)
+        self.results.flip_probability = Parameter(initial_value=False, set_cmd=None)
+        self.results.combined_flips = Parameter(initial_value=False, set_cmd=None)
+        self.results.combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
+        self.results.filtered_combined_flips = Parameter(initial_value=False, set_cmd=None)
+        self.results.filtered_combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
+
+    @property
+    def labels(self):
+        if self.settings.labels is not None:
+            return self.settings.labels
+        else:
+            return [str(k) for k in range(self.settings.num_frequencies)]
+
+    @property
+    def label_pairs(self):
+        # Only use _ between labels when labels are provided
+        separator = '' if self.settings.labels is None else '_'
+
+        if self.settings.combined_flips_pairs == 'neighbouring':
+            label_pairs = list(zip(self.labels[:-1], self.labels[1:]))
+        elif self.settings.combined_flips_pairs == 'full':
+            label_pairs = []
+            for k, label1 in enumerate(self.labels):
+                for label2 in self.labels[k+1:]:
+                    label_pairs.append((label1, label2))
+        else:
+            label_pairs = self.settings.combined_flips_pairs
+
+        return label_pairs
+
+    @property
+    def label_pairs_str(self):
+        # Only use _ between labels when labels are provided
+        separator = '' if self.settings.labels is None else '_'
+        return [f'{label1}{separator}{label2}' for (label1, label2) in self.label_pairs]
+
+    @parameter
+    def names_get(self, parameter):
+        names = []
+        for label in self.labels:
+            for key in ['flips', 'flip_probability']:
+                if self.results[key]():
+                    names.append(f'{key}_{label}')
+
+        for label_pair_str in self.label_pairs_str:
+            array_names = [
+                'combined_flips',
+                'combined_flip_probability',
+                'filtered_combined_flips',
+                'filtered_combined_flip_probability'
+            ]
+            for key in array_names:
+                if self.results[key]():
+                    names.append(f'{key}_{label_pair_str}')
+
+        return names
+
+    @parameter
+    def shapes_get(self, parameter):
+        return ((), ) * len(self.names)
+
+    @parameter
+    def units_get(self, parameter):
+        return ('', ) * len(self.names)
+
+    @functools.wraps(analyse_flips)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+        settings.pop('num_frequencies', None)  # Not needed
+        return analyse_flips(**settings)
