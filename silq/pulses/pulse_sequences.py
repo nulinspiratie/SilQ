@@ -132,8 +132,10 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         # Used for assigning names during analysis
         self.primary_RF_pulses = []
 
-    @property
-    def frequencies(self):
+        self.frequencies = Parameter()
+
+    @parameter
+    def frequencies_get(self, parameter):
         frequencies = []
         for pulse in self.pulse_settings['RF_pulses']:
             if isinstance(pulse, Pulse):
@@ -160,8 +162,8 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                 )
         return frequencies
 
-    @frequencies.setter
-    def frequencies(self, frequencies):
+    @parameter
+    def frequencies_set(self, parameter, frequencies):
         logger.warning("Resetting all RF pulses to default 'RF_pulse'")
         self.pulse_settings['RF_pulses'] = []
         for frequency in frequencies:
@@ -181,6 +183,8 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                     f'Each RF frequency must be a number or a list of numbers. {frequencies}'
                 )
             self.pulse_settings['RF_pulses'].append(RF_pulses)
+
+        self.generate()
 
     def convert_RF_pulse_labels_to_pulses(self, RF_pulses=None):
         """Convert any RF pulse strings to the corresponding pulse

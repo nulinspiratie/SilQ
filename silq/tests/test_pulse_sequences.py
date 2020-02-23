@@ -1069,6 +1069,16 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         # Copy the pulse sequence
         copy(pulse_sequence)
 
+    def test_ESR_pulse_sequence_composite(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceNew
+        pulse_sequence = ESRPulseSequenceNew()
+        pulse_sequence.EPR[0].duration = 1
+        pulse_sequence.EPR[1].duration = 2
+        pulse_sequence.EPR[2].duration = 3
+
+        pulse_sequence.generate()
+
+
 
 if __name__ == '__main__':
     unittest.main()

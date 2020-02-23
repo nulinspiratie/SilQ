@@ -447,11 +447,10 @@ class Pulse(ParameterNode):
 
         for parameter_name, parameter in parameters.items():
             config_link = f'{self.config_link}.{self.name}.{parameter_name}'
-            config_value = parameter.set_config_link(config_link=config_link)
-
-            # Update parameter value if not yet set, and set in config
-            if parameter.raw_value is None and config_value is not None:
-                parameter(config_value)
+            # Attach to config, and only update if not explicit value set
+            parameter.set_config_link(
+                config_link=config_link, update=(parameter.raw_value is None)
+            )
 
         self._connected_to_config = True
 
