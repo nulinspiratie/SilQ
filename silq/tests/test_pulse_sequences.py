@@ -3,13 +3,10 @@ from copy import copy, deepcopy
 import pickle
 import numpy as np
 import random
-
-import silq
-from silq import DictConfig
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
-import qcodes as qc
+
 
 class Registrar:
     def __init__(self):
@@ -1056,27 +1053,6 @@ class TestCompositePulseSequences(unittest.TestCase):
 
 
 class TestPulseSequenceGenerators(unittest.TestCase):
-    def setUp(self):
-        self.silq_environment = silq.environment
-        self.silq_config = silq.config
-
-        self.d = {
-            'pulses': {
-                'empty': {'duration': 1, 'amplitude': -1},
-                'plunge': {'duration': 0.5, 'amplitude': 1},
-                'read_long': {'duration': 5, 'amplitude': 0},
-                'read_initialize': {'duration': 3, 'amplitude': 0},
-                'ESR': {'duration': 0.1, 'power': 0},
-            },
-            'properties': {},
-        }
-        self.config = DictConfig('cfg', config=self.d)
-        qc.config.user.silq_config = silq.config = self.config
-
-    def tearDown(self):
-        silq.environment = self.silq_environment
-        qc.config.user.silq_config = silq.config = self.silq_config
-
     def test_ESR_pulse_sequence(self):
         from silq.pulses.pulse_sequences import ESRPulseSequence
         from silq.pulses import SinePulse
@@ -1094,131 +1070,14 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         copy(pulse_sequence)
 
     def test_ESR_pulse_sequence_composite(self):
-        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
-        pulse_sequence = ESRPulseSequenceComposite()
-
-        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
-        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
-
-        pulse_sequence.generate()
-
-        self.assertEqual(pulse_sequence.ESR.t_start, 0)
-        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
-        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
-        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
-        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
-        self.assertEqual(pulse_sequence.EPR.t_start, 3.4)
-        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
-        self.assertEqual(pulse_sequence.EPR.t_stop, 9.9)
-        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 3.4)
-        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
-        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 4.4)
-        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
-        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 4.9)
-        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
-        self.assertEqual(pulse_sequence.t_start, 0)
-        self.assertEqual(pulse_sequence.duration, 9.9)
-        self.assertEqual(pulse_sequence.t_stop, 9.9)
-
-    def test_ESR_pulse_sequence_composite_modified(self):
-        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
-        pulse_sequence = ESRPulseSequenceComposite()
-
-        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
-        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+        from silq.pulses.pulse_sequences import ESRPulseSequenceNew
+        pulse_sequence = ESRPulseSequenceNew()
+        pulse_sequence.EPR[0].duration = 1
+        pulse_sequence.EPR[1].duration = 2
+        pulse_sequence.EPR[2].duration = 3
 
         pulse_sequence.generate()
 
-        pulse_sequence['ESR.plunge'].duration = 1.4
-
-        self.assertEqual(pulse_sequence.ESR.t_start, 0)
-        self.assertEqual(pulse_sequence.ESR.duration, 4.4)
-        self.assertEqual(pulse_sequence.ESR.t_stop, 4.4)
-        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
-        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 1.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 1.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
-        self.assertEqual(pulse_sequence.EPR.t_start, 4.4)
-        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
-        self.assertEqual(pulse_sequence.EPR.t_stop, 10.9)
-        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 4.4)
-        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
-        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 5.4)
-        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
-        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 5.9)
-        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
-        self.assertEqual(pulse_sequence.t_start, 0)
-        self.assertEqual(pulse_sequence.duration, 10.9)
-        self.assertEqual(pulse_sequence.t_stop, 10.9)
-
-    def test_ESR_pulse_sequence_composite_copied(self):
-        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
-        pulse_sequence = ESRPulseSequenceComposite()
-
-        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
-        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
-
-        pulse_sequence.generate()
-
-        pulse_sequence = copy(pulse_sequence)
-
-        self.assertTrue(hasattr(pulse_sequence, 'EPR'))
-        self.assertTrue(hasattr(pulse_sequence, 'ESR'))
-
-        self.assertEqual(pulse_sequence.ESR.t_start, 0)
-        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
-        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
-        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
-        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
-        self.assertEqual(pulse_sequence.EPR.t_start, 3.4)
-        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
-        self.assertEqual(pulse_sequence.EPR.t_stop, 9.9)
-        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 3.4)
-        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
-        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 4.4)
-        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
-        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 4.9)
-        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
-        self.assertEqual(pulse_sequence.t_start, 0)
-        self.assertEqual(pulse_sequence.duration, 9.9)
-        self.assertEqual(pulse_sequence.t_stop, 9.9)
-
-    def test_ESR_pulse_sequence_composite_modified_copied(self):
-        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
-        pulse_sequence = ESRPulseSequenceComposite()
-
-        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
-        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
-
-        pulse_sequence.generate()
-
-        pulse_sequence['ESR.plunge'].duration = 1.4
-
-        pulse_sequence = copy(pulse_sequence)
-
-        self.assertEqual(pulse_sequence.ESR.t_start, 0)
-        self.assertEqual(pulse_sequence.ESR.duration, 4.4)
-        self.assertEqual(pulse_sequence.ESR.t_stop, 4.4)
-        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
-        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 1.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 1.4)
-        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
-        self.assertEqual(pulse_sequence.EPR.t_start, 4.4)
-        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
-        self.assertEqual(pulse_sequence.EPR.t_stop, 10.9)
-        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 4.4)
-        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
-        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 5.4)
-        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
-        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 5.9)
-        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
-        self.assertEqual(pulse_sequence.t_start, 0)
-        self.assertEqual(pulse_sequence.duration, 10.9)
-        self.assertEqual(pulse_sequence.t_stop, 10.9)
 
 
 if __name__ == '__main__':

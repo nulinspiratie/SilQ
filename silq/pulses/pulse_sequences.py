@@ -273,7 +273,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
-class ESRPulseSequenceComposite(PulseSequence):
+class ESRPulseSequenceNew(PulseSequence):
     """`PulseSequenceGenerator` for electron spin resonance (ESR).
 
     This pulse sequence can handle many of the basic pulse sequences involving
@@ -351,25 +351,16 @@ class ESRPulseSequenceComposite(PulseSequence):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_sequences = [
-            ElectronReadoutPulseSequence(name='ESR'),
-            PulseSequence(
-                name='EPR',
-                pulses=[
-                    DCPulse('empty', acquire=True),
-                    DCPulse('plunge', acquire=True),
-                    DCPulse('read_long', acquire=True)
-                ]
-            )
-        ]
-
-    @property
-    def ESR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
-
-    @property
-    def EPR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'EPR')
+        self.ESR = ElectronReadoutPulseSequence(name='ESR')
+        self.EPR = PulseSequence(
+            name='EPR',
+            pulses=[
+                DCPulse('empty', acquire=True),
+                DCPulse('plunge', acquire=True),
+                DCPulse('read_long', acquire=True)
+            ]
+        )
+        self.pulse_sequences = [self.ESR, self.EPR]
 
 
 class ESRPulseSequence(PulseSequenceGenerator):
