@@ -1220,6 +1220,33 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         self.assertEqual(pulse_sequence.duration, 10.9)
         self.assertEqual(pulse_sequence.t_stop, 10.9)
 
+    def test_ESR_pulse_sequence_composite_disable_EPR(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.EPR.enabled = False
+
+        pulse_sequence.generate()
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
+
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+
+        self.assertEqual(pulse_sequence.EPR.enabled, False)
+
+        self.assertListEqual([p for p in pulse_sequence],
+                             [p for p in pulse_sequence.ESR])
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 3.4)
+        self.assertEqual(pulse_sequence.t_stop, 3.4)
 
 if __name__ == '__main__':
     unittest.main()
