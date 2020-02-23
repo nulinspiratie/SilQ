@@ -26,11 +26,12 @@ analysis_config = config['analysis']
 class Analysis(ParameterNode):
     def __init__(self, name):
         super().__init__(name=name, use_as_attributes=True)
-        self.settings = ParameterNode()
-        self.results = ParameterNode()
+        self.settings = ParameterNode(use_as_attributes=True)
+        self.results = ParameterNode(use_as_attributes=True)
 
         self.names = Parameter()
         self.units = Parameter()
+        self.enabled = Parameter(set_cmd=None, initial_value=True)
 
     def analyse(self, **kwargs):
         raise NotImplementedError("Analysis must be implemented in a subclass")
@@ -778,19 +779,19 @@ class AnalyseEPR(Analysis):
             update_from_config=True
         )
 
-        self.results.fidelity_empty = Parameter(initial_value=False)
-        self.results.voltage_difference_empty = Parameter(initial_value=False, unit='V')
-        self.results.fidelity_load = Parameter(initial_value=False)
-        self.results.voltage_difference_load = Parameter(initial_value=False, unit='V')
-        self.results.up_proportion = Parameter(initial_value=True)
-        self.results.contrast = Parameter(initial_value=True)
-        self.results.dark_counts = Parameter(initial_value=True)
-        self.results.voltage_difference_read = Parameter(initial_value=True, unit='V')
-        self.results.voltage_average_read = Parameter(initial_value=False, unit='V')
-        self.results.num_traces = Parameter(initial_value=False)
-        self.results.blips = Parameter(initial_value=False)
-        self.results.mean_low_blip_duration = Parameter(initial_value=False, unit='s')
-        self.results.mean_high_blip_duration = Parameter(initial_value=False, unit='s')
+        self.results.fidelity_empty = Parameter(initial_value=False, set_cmd=None)
+        self.results.voltage_difference_empty = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.results.fidelity_load = Parameter(initial_value=False, set_cmd=None)
+        self.results.voltage_difference_load = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.results.up_proportion = Parameter(initial_value=True, set_cmd=None)
+        self.results.contrast = Parameter(initial_value=True, set_cmd=None)
+        self.results.dark_counts = Parameter(initial_value=True, set_cmd=None)
+        self.results.voltage_difference_read = Parameter(initial_value=True, unit='V', set_cmd=None)
+        self.results.voltage_average_read = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.results.num_traces = Parameter(initial_value=False, set_cmd=None)
+        self.results.blips = Parameter(initial_value=False, set_cmd=None)
+        self.results.mean_low_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
+        self.results.mean_high_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
 
 
     @parameter
@@ -799,13 +800,11 @@ class AnalyseEPR(Analysis):
         for label, param in self.results.parameters.items():
             if not param():
                 continue
-
             names.append(label)
-
         return names
 
     @parameter
-    def units_get(self):
+    def units_get(self, parameter):
         return tuple([p.unit for _, p in self.results.parameters.items()])
 
     @functools.wraps(analyse_EPR)
@@ -948,12 +947,12 @@ class AnalyseElectronReadout(Analysis):
             update_from_config=True
         )
 
-        self.results.read_results = Parameter(initial_value=False)
-        self.results.threshold_voltage = Parameter(initial_value=True, unit='V')
-        self.results.up_proportion = Parameter(initial_value=True)
-        self.results.contrast = Parameter(initial_value=True)
-        self.results.num_traces = Parameter(initial_value=True)
-        self.results.voltage_difference = Parameter(initial_value=True)
+        self.results.read_results = Parameter(initial_value=False, set_cmd=None)
+        self.results.up_proportion = Parameter(initial_value=True, set_cmd=None)
+        self.results.contrast = Parameter(initial_value=False, set_cmd=None)
+        self.results.num_traces = Parameter(initial_value=True, set_cmd=None)
+        self.results.voltage_difference = Parameter(initial_value=True, set_cmd=None)
+        self.results.threshold_voltage = Parameter(initial_value=True, unit='V', set_cmd=None)
 
         self.names = Parameter()
         self.units = Parameter()
@@ -977,9 +976,10 @@ class AnalyseElectronReadout(Analysis):
                     names.append(label + suffix)
             else:
                 names.append(label)
+        return names
 
     @parameter
-    def units_get(self):
+    def units_get(self, parameter):
         return tuple(['V' if 'voltage' in name else '' for name in self.names])
 
     @functools.wraps(analyse_electron_readout)

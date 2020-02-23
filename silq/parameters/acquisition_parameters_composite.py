@@ -3,15 +3,15 @@ import numpy as np
 from copy import copy
 
 from silq.parameters.acquisition_parameters import AcquisitionParameter
-from silq.pulses.pulse_sequences import ESRPulseSequenceNew
+from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
 from silq.tools import property_ignore_setter
-from silq import analysis
+from silq.analysis import analysis
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
 
 
-class ESRParameterNew(AcquisitionParameter):
+class ESRParameterComposite(AcquisitionParameter):
     """Parameter for most pulse sequences involving electron spin resonance.
 
     This parameter can handle many of the simple pulse sequences involving ESR.
@@ -111,25 +111,36 @@ class ESRParameterNew(AcquisitionParameter):
     def __init__(self, name='ESR', **kwargs):
         self._names = []
 
-        self.pulse_sequence = ESRPulseSequenceNew()
+        self.pulse_sequence = ESRPulseSequenceComposite()
         self.ESR = self.pulse_sequence.ESR
         self.EPR = self.pulse_sequence.EPR
         self.frequencies = self.ESR.frequencies
 
-        super().__init__(name=name,
-                         names=['contrast', 'dark_counts',
-                                'voltage_difference_read'],
-                         snapshot_value=False,
-                         properties_attrs=['analyses'],
-                         **kwargs)
         self.analyses = ParameterNode()
         self.analyses.EPR = analysis.AnalyseEPR('EPR')
         self.analyses.ESR = analysis.AnalyseElectronReadout('ESR')
 
-    @property
+        self.EPR['enabled'].connect(self.analyses.ESR.results['contrast'])
+        self.EPR['enabled'].connect(self.analyses.EPR['enabled'])
+        self.ESR['enabled'].connect(self.analyses.ESR['enabled'])
+
+        num_frequencies = self.analyses.ESR.settings['num_frequencies']
+        num_frequencies.get_raw = lambda: len(self.frequencies)
+        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
+
+        super().__init__(name=name,
+                         names=(),
+                         snapshot_value=False,
+                         properties_attrs=['analyses'],
+                         **kwargs)
+
+    @property_ignore_setter
     def names(self):
         names = []
         for analysis_name, analysis in self.analyses.parameter_nodes.items():
+            if not analysis.enabled:
+                continue
+
             for name in analysis.names:
                 names.append(f'{analysis_name}.{name}')
         return names
@@ -142,6 +153,9 @@ class ESRParameterNew(AcquisitionParameter):
     def units(self):
         units = []
         for analysis_name, analysis in self.analyses.parameter_nodes.items():
+            if not analysis.enabled:
+                continue
+
             units += analysis.units
         return tuple(units)
 
