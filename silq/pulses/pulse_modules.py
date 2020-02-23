@@ -383,6 +383,7 @@ class PulseSequence(ParameterNode):
         pulses = self.my_pulses + [
             p for pulse_sequence in self.pulse_sequences
             for p in pulse_sequence.pulses
+            if pulse_sequence.enabled
         ]
         return tuple(pulses)
 
@@ -391,6 +392,7 @@ class PulseSequence(ParameterNode):
         enabled_pulses = self.my_enabled_pulses + [
             p for pulse_sequence in self.pulse_sequences
             for p in pulse_sequence.enabled_pulses
+            if pulse_sequence.enabled
         ]
         return tuple(enabled_pulses)
 
@@ -399,6 +401,7 @@ class PulseSequence(ParameterNode):
         disabled_pulses = self.my_disabled_pulses + [
             p for pulse_sequence in self.pulse_sequences
             for p in pulse_sequence.disabled_pulses
+            if pulse_sequence.enabled
         ]
         return tuple(disabled_pulses)
 
