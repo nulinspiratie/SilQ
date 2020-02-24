@@ -4,7 +4,10 @@ from copy import copy
 from typing import Dict, Iterable
 
 from silq.parameters.acquisition_parameters import AcquisitionParameter
-from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+from silq.pulses.pulse_sequences import (
+    ESRPulseSequenceComposite,
+    NMRPulseSequenceComposite,
+)
 from silq.pulses.pulse_types import Pulse
 from silq.tools import property_ignore_setter
 from silq.analysis import analysis
@@ -13,7 +16,49 @@ from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
 
 
-class ESRParameterComposite(AcquisitionParameter):
+class AcquisitionParameterComposite(AcquisitionParameter):
+    def __init__(self, name, **kwargs):
+        super().__init__(
+            name=name,
+            names=(),
+            snapshot_value=False,
+            properties_attrs=["analyses"],
+            **kwargs,
+        )
+        self.results = DotDict()
+
+    @property_ignore_setter
+    def names(self):
+        names = []
+        for analysis_name, analysis in self.analyses.parameter_nodes.items():
+            if not analysis.enabled:
+                continue
+
+            names += analysis.names
+        return names
+
+    @property_ignore_setter
+    def shapes(self):
+        shapes = []
+        for analysis_name, analysis in self.analyses.parameter_nodes.items():
+            if not analysis.enabled:
+                continue
+
+            shapes += analysis.shapes
+        return shapes
+
+    @property_ignore_setter
+    def units(self):
+        units = []
+        for analysis_name, analysis in self.analyses.parameter_nodes.items():
+            if not analysis.enabled:
+                continue
+
+            units += analysis.units
+        return units
+
+
+class ESRParameterComposite(AcquisitionParameterComposite):
     """Parameter for most pulse sequences involving electron spin resonance.
 
     This parameter can handle many of the simple pulse sequences involving ESR.
@@ -110,58 +155,29 @@ class ESRParameterComposite(AcquisitionParameter):
         - For given pulse settings, ``ESRParameter.pulse_sequence.generate``
           will recreate the pulse sequence from settings.
     """
-    def __init__(self, name='ESR', **kwargs):
+
+    def __init__(self, name="ESR", **kwargs):
         self.pulse_sequence = ESRPulseSequenceComposite()
         self.ESR = self.pulse_sequence.ESR
         self.EPR = self.pulse_sequence.EPR
-        self.frequencies = self.ESR.frequencies
 
         self.analyses = ParameterNode()
-        self.analyses.EPR = analysis.AnalyseEPR('EPR')
-        self.analyses.ESR = analysis.AnalyseElectronReadout('ESR')
+        self.analyses.EPR = analysis.AnalyseEPR("EPR")
+        self.analyses.ESR = analysis.AnalyseElectronReadout("ESR")
 
-        self.layout.sample_rate.connect(self.analyses.EPR.settings['sample_rate'])
-        self.layout.sample_rate.connect(self.analyses.ESR.settings['sample_rate'])
-        self.EPR['enabled'].connect(self.analyses.ESR.results['contrast'])
-        self.EPR['enabled'].connect(self.analyses.EPR['enabled'])
-        self.ESR['enabled'].connect(self.analyses.ESR['enabled'])
+        self.layout.sample_rate.connect(self.analyses.EPR.settings["sample_rate"])
+        self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
+        self.EPR["enabled"].connect(self.analyses.ESR.results["contrast"])
+        self.EPR["enabled"].connect(self.analyses.EPR["enabled"])
+        self.ESR["enabled"].connect(self.analyses.ESR["enabled"])
 
-        num_frequencies = self.analyses.ESR.settings['num_frequencies']
-        num_frequencies.get_raw = lambda: len(self.frequencies)
+        num_frequencies = self.analyses.ESR.settings["num_frequencies"]
+        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
         num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
 
-        super().__init__(name=name,
-                         names=(),
-                         snapshot_value=False,
-                         properties_attrs=['analyses'],
-                         **kwargs)
+        super().__init__(name=name, **kwargs)
 
-    @property_ignore_setter
-    def names(self):
-        names = []
-        for analysis_name, analysis in self.analyses.parameter_nodes.items():
-            if not analysis.enabled:
-                continue
-
-            for name in analysis.names:
-                names.append(f'{analysis_name}.{name}')
-        return names
-
-    @property_ignore_setter
-    def shapes(self):
-        return ((), ) * len(self.names)
-
-    @property_ignore_setter
-    def units(self):
-        units = []
-        for analysis_name, analysis in self.analyses.parameter_nodes.items():
-            if not analysis.enabled:
-                continue
-
-            units += analysis.units
-        return tuple(units)
-
-    def analyse(self, traces = None, plot=False):
+    def analyse(self, traces=None, plot=False):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -176,29 +192,27 @@ class ESRParameterComposite(AcquisitionParameter):
         traces = DotDict(traces)
 
         results = DotDict()
-        if 'EPR' in traces:
-            results['EPR'] = self.analyses.EPR.analyse(
-                empty_traces=traces[self.EPR[0].full_name]['output'],
-                plunge_traces=traces[self.EPR[1].full_name]['output'],
-                read_traces=traces[self.EPR[2].full_name]['output'],
-                plot=plot
+        if "EPR" in traces:
+            results["EPR"] = self.analyses.EPR.analyse(
+                empty_traces=traces[self.EPR[0].full_name]["output"],
+                plunge_traces=traces[self.EPR[1].full_name]["output"],
+                read_traces=traces[self.EPR[2].full_name]["output"],
+                plot=plot,
             )
-            dark_counts = results['EPR']['dark_counts']
+            dark_counts = results["EPR"]["dark_counts"]
         else:
             dark_counts = None
 
-        if 'ESR' in traces:
-            results['ESR'] = self.analyses.ESR.analyse(
-                traces=traces.ESR,
-                dark_counts=dark_counts,
-                plot=plot
+        if "ESR" in traces:
+            results["ESR"] = self.analyses.ESR.analyse(
+                traces=traces.ESR, dark_counts=dark_counts, plot=plot
             )
 
         self.results = results
         return results
 
 
-class NMRParameterComposite(AcquisitionParameter):
+class NMRParameterComposite(AcquisitionParameterComposite):
     """ Parameter for most measurements involving an NMR pulse.
 
     This parameter can apply several NMR pulses, and also measure several ESR
@@ -302,133 +316,21 @@ class NMRParameterComposite(AcquisitionParameter):
           Verifying that the system is in tune is therefore a little bit tricky.
 
     """
-    def __init__(self, name: str = 'NMR', **kwargs):
-        # self.pulse_sequence = NMRPulseSequence()
+
+    def __init__(self, name: str = "NMR", **kwargs):
+        self.pulse_sequence = NMRPulseSequenceComposite()
         self.NMR = self.pulse_sequence.NMR
         self.ESR = self.pulse_sequence.ESR
-        self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
-        self.pre_ESR_pulses = self.pulse_sequence.pulse_settings['pre_ESR_pulses']
-        self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
 
-        self.combined_flips_mode = combined_flips_mode
+        self.analyses = ParameterNode()
+        self.analyses.ESR = analysis.AnalyseElectronReadout('ESR')
+        self.analyses.flips = analysis.AnalyseFlips('flips')
 
-        super().__init__(name=name,
-                         names=(),
-                         snapshot_value=False,
-                         properties_attrs=['analyses'],
-                         **kwargs)
+        self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
 
-    @property
-    def names(self):
-        names = []
+        super().__init__(name=name, **kwargs)
 
-        for name in self._names:
-            if name in ['flips', 'flip_probability', 'up_proportions']:
-                if len(self.ESR_frequencies) == 1:
-                    names.append(name)
-                else:
-                    names += [f'{name}_{k}'
-                              for k in range(len(self.ESR_frequencies))]
-            elif name in ['combined_flips', 'combined_flip_probability',
-                          'filtered_combined_flips',
-                          'filtered_combined_flip_probability'] and \
-                            len(self.ESR_frequencies) > 1:
-                if self.combined_flips_mode == 'neighbouring':
-                    names += [f'{name}_{k}{k+1}'
-                              for k in range(len(self.ESR_frequencies) - 1)]
-                elif self.combined_flips_mode == 'all':
-                    for k in range(len(self.ESR_frequencies) - 1):
-                        for kk in range(k+1, len(self.ESR_frequencies)):
-                            names.append(f'{name}_{k}{k+1}')
-                else:
-                    raise SyntaxError(f'Unknown combined_flips_mode: {self.combined_flips_mode}')
-            elif name in ['filtered_flips', 'filtered_flip_probability'] and \
-                            len(self.ESR_frequencies) > 1:
-                for k in range(0, len(self.ESR_frequencies)):
-                    if k > 0:
-                        names.append(f'{name}_{k}_{k-1}{k}')
-                    if k < len(self.ESR_frequencies) - 1:
-                        names.append(f'{name}_{k}_{k}{k+1}')
-        return names
-
-    @names.setter
-    def names(self, names):
-        self._names = names
-
-    @property_ignore_setter
-    def shapes(self):
-        return tuple((self.samples,) if 'up_proportions' in name else ()
-                     for name in self.names)
-
-    @property_ignore_setter
-    def units(self):
-        return ('', ) * len(self.names)
-
-    @property
-    def ESR_frequencies(self):
-        """ESR frequencies to measure.
-
-        For each ESR frequency, ``NMRParameter.ESR['shots_per_read']`` reads
-        are performed.
-        """
-        ESR_frequencies = []
-        for pulse in self.ESR['ESR_pulses']:
-            if isinstance(pulse, Pulse):
-                ESR_frequencies.append(pulse.frequency)
-            elif isinstance(pulse, str):
-                ESR_frequencies.append(self.ESR[pulse].frequency)
-            elif isinstance(pulse, Iterable):
-                ESR_subfrequencies = []
-                for subpulse in pulse:
-                    if isinstance(subpulse, Pulse):
-                        ESR_subfrequencies.append(subpulse.frequency)
-                    elif isinstance(subpulse, str):
-                        ESR_subfrequencies.append(self.ESR[subpulse].frequency)
-                    else:
-                        raise SyntaxError(f'Subpulse type not allowed: {subpulse}')
-                ESR_frequencies.append(ESR_subfrequencies)
-            else:
-                raise SyntaxError(f'pulse type not allowed: {pulse}')
-        return ESR_frequencies
-
-    @ESR_frequencies.setter
-    def ESR_frequencies(self, ESR_frequencies: List):
-        assert len(ESR_frequencies) == len(self.ESR['ESR_pulses']), \
-        'Different number of frequencies to ESR pulses.'
-
-        updated_ESR_pulses = []
-        for ESR_subpulses, ESR_subfrequencies in zip(self.ESR['ESR_pulses'], ESR_frequencies):
-            if isinstance(ESR_subpulses, str):
-                ESR_subpulses = copy(self.ESR[ESR_subpulses])
-            elif isinstance(ESR_subpulses, Iterable):
-                ESR_subpulses = [
-                    copy(self.ESR[p]) if isinstance(p, str) else p
-                    for p in ESR_subpulses]
-
-            # Either both the subpulses and subfrequencies must be iterable, or neither are (XNOR)
-            assert \
-                (
-                    isinstance(ESR_subpulses, Iterable) and
-                    isinstance(ESR_subfrequencies, Iterable)
-                ) or (
-                    not (isinstance(ESR_subpulses, Iterable) or isinstance(
-                        ESR_subfrequencies, Iterable))
-                ), \
-            'Data structures for frequencies and pulses do not have the same shape.'
-
-            if not isinstance(ESR_subpulses, Iterable):
-                ESR_subpulses = [ESR_subpulses]
-            if not isinstance(ESR_subfrequencies, Iterable):
-                ESR_subfrequencies = [ESR_subfrequencies]
-
-            for pulse, frequency in zip(ESR_subpulses,
-                                        ESR_subfrequencies):
-                    pulse.frequency = frequency
-
-            updated_ESR_pulses.append(ESR_subpulses)
-        self.ESR['ESR_pulses'] = updated_ESR_pulses
-
-    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
+    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None, plot: bool = False):
         """Analyse flipping events between nuclear states
 
         Returns:
@@ -458,57 +360,21 @@ class NMRParameterComposite(AcquisitionParameter):
         """
         if traces is None:
             traces = self.traces
+        # Convert to DotDict so we can access nested pulse sequences
+        traces = DotDict(traces)
 
-        results = {'results_read': []}
+        self.results = DotDict()
+        self.results["ESR"] = self.analyses.ESR.analyse(
+            traces=traces.ESR, plot=plot
+        )
 
-        if hasattr(self, 'threshold_voltage'):
-            threshold_voltage = getattr(self, 'threshold_voltage')
-        else:
-            # Calculate threshold voltages from combined read traces
-            high_low = analysis.find_high_low(
-                np.ravel([trace['output'] for pulse_name, trace in traces.items()
-                          if pulse_name.startswith('read_initialize')]))
-            threshold_voltage = high_low['threshold_voltage']
+        up_proportion_arrs = [
+            val for key, val in self.results['ESR'].items()
+            if key.startswith('up_proportion')
+        ]
 
-        # Extract points per shot from a single read trace
-        single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
-        single_read_traces = traces[single_read_traces_name]['output']
-        points_per_shot = single_read_traces.shape[1]
+        self.results["NMR"] = self.analyses.NMR.analyse(
+            up_proportion_arrs=up_proportion_arrs, plot=plot
+        )
 
-        self.read_traces = np.zeros((len(self.ESR_frequencies), self.samples,
-                                     self.ESR['shots_per_frequency'],
-                                     points_per_shot))
-        up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
-        for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
-            for sample in range(self.samples):
-                # Create array containing all read traces
-                read_traces = np.zeros(
-                    (self.ESR['shots_per_frequency'], points_per_shot))
-                for shot_idx in range(self.ESR['shots_per_frequency']):
-                    # Read traces of different frequencies are interleaved
-                    traces_idx = f_idx + shot_idx * len(self.ESR_frequencies)
-                    traces_name = f"{self.ESR['read_pulse'].name}[{traces_idx}]"
-                    read_traces[shot_idx] = traces[traces_name]['output'][sample]
-                self.read_traces[f_idx, sample] = read_traces
-                read_result = analysis.analyse_traces(
-                    traces=read_traces,
-                    sample_rate=self.sample_rate,
-                    t_read=self.t_read,
-                    t_skip=self.t_skip,
-                    threshold_voltage=threshold_voltage)
-                up_proportions[f_idx, sample] = read_result['up_proportion']
-                results['results_read'].append(read_result)
-
-            if len(self.ESR_frequencies) > 1:
-                results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
-            else:
-                results['up_proportions'] = up_proportions[f_idx]
-
-        # Add singleton dimension because analyse_flips handles 3D up_proportions
-        up_proportions = np.expand_dims(up_proportions, 1)
-        results_flips = analysis.analyse_flips(
-            up_proportions_arrs=up_proportions,
-            threshold_up_proportion=self.threshold_up_proportion)
-        # Add results, only choosing first element so its no longer an array
-        results.update({k: v[0] for k, v in results_flips.items()})
-        return results
+        return self.results

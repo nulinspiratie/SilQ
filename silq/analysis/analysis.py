@@ -4,6 +4,7 @@ import matplotlib
 import peakutils
 import logging
 from typing import Union, Dict, Any, List, Sequence, Iterable
+from copy import copy
 import collections
 from matplotlib import pyplot as plt
 
@@ -27,12 +28,36 @@ class Analysis(ParameterNode):
     def __init__(self, name):
         super().__init__(name=name, use_as_attributes=True)
         self.settings = ParameterNode(use_as_attributes=True)
-        self.results = ParameterNode(use_as_attributes=True)
+        self.outputs = ParameterNode(use_as_attributes=True)
+        self.results = {}
 
         self.names = Parameter()
         self.units = Parameter()
         self.shapes = Parameter()
         self.enabled = Parameter(set_cmd=None, initial_value=True)
+
+    @property
+    def result_parameters(self):
+        parameters = []
+        for name, output in self.outputs:
+            if not output():
+                continue
+
+            output_copy = copy(output)
+            parameters.append(output_copy)
+        return parameters
+
+    @parameter
+    def names_get(self, parameter):
+        return tuple([parameter.name for parameter in self.result_parameters])
+
+    @parameter
+    def units_get(self, parameter):
+        return tuple([parameter.units for parameter in self.result_parameters])
+
+    @parameter
+    def shapes_get(self, parameter):
+        return tuple([getattr(parameter, 'shape', ()) for parameter in self.result_parameters])
 
     def analyse(self, **kwargs):
         raise NotImplementedError("Analysis must be implemented in a subclass")
@@ -770,42 +795,26 @@ class AnalyseEPR(Analysis):
             update_from_config=True
         )
 
-        self.results.fidelity_empty = Parameter(initial_value=False, set_cmd=None)
-        self.results.voltage_difference_empty = Parameter(initial_value=False, unit='V', set_cmd=None)
-        self.results.fidelity_load = Parameter(initial_value=False, set_cmd=None)
-        self.results.voltage_difference_load = Parameter(initial_value=False, unit='V', set_cmd=None)
-        self.results.up_proportion = Parameter(initial_value=True, set_cmd=None)
-        self.results.contrast = Parameter(initial_value=True, set_cmd=None)
-        self.results.dark_counts = Parameter(initial_value=True, set_cmd=None)
-        self.results.voltage_difference_read = Parameter(initial_value=True, unit='V', set_cmd=None)
-        self.results.voltage_average_read = Parameter(initial_value=False, unit='V', set_cmd=None)
-        self.results.num_traces = Parameter(initial_value=False, set_cmd=None)
-        self.results.blips = Parameter(initial_value=False, set_cmd=None)
-        self.results.mean_low_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
-        self.results.mean_high_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
-
-    @parameter
-    def names_get(self, parameter):
-        names = []
-        for label, param in self.results.parameters.items():
-            if not param():
-                continue
-            names.append(label)
-        return names
-
-    @parameter
-    def units_get(self, parameter):
-        return tuple([p.unit for _, p in self.results.parameters.items()])
-
-    @parameter
-    def shapes_get(self, parameter):
-        return ((),) * len(self.names)
+        self.outputs.fidelity_empty = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.voltage_difference_empty = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.fidelity_load = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.voltage_difference_load = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.up_proportion = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.contrast = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.dark_counts = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.voltage_difference_read = Parameter(initial_value=True, unit='V', set_cmd=None)
+        self.outputs.voltage_average_read = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.num_traces = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.blips = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.mean_low_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
+        self.outputs.mean_high_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
 
     @functools.wraps(analyse_EPR)
     def analyse(self, **kwargs):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
-        return analyse_EPR(**settings)
+        self.results = analyse_EPR(**settings)
+        return self.results
 
 
 def analyse_electron_readout(
@@ -941,21 +950,21 @@ class AnalyseElectronReadout(Analysis):
             update_from_config=True
         )
 
-        self.results.read_results = Parameter(initial_value=False, set_cmd=False)
-        self.results.up_proportion = Parameter(initial_value=True, set_cmd=None)
-        self.results.contrast = Parameter(initial_value=False, set_cmd=None)
-        self.results.num_traces = Parameter(initial_value=True, set_cmd=None)
-        self.results.voltage_difference = Parameter(initial_value=True, set_cmd=None)
-        self.results.threshold_voltage = Parameter(initial_value=True, unit='V', set_cmd=None)
+        self.outputs.read_results = Parameter(initial_value=False, set_cmd=False)
+        self.outputs.up_proportion = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.contrast = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.num_traces = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.voltage_difference = Parameter(initial_value=True, unit='V', set_cmd=None)
+        self.outputs.threshold_voltage = Parameter(initial_value=True, unit='V', set_cmd=None)
 
-    @parameter
-    def names_get(self, parameter):
-        names = []
-        for label, param in self.results.parameters.items():
-            if not param():
+    @property
+    def result_parameters(self):
+        parameters = []
+        for name, output in self.outputs:
+            if not output():
                 continue
 
-            if label in ['up_proportion', 'contrast', 'num_traces']:
+            if name in ['up_proportion', 'contrast', 'num_traces']:
                 # Add a label for each frequency
                 for k in range(self.settings.num_frequencies):
                     if self.settings.labels is not None:
@@ -964,25 +973,23 @@ class AnalyseElectronReadout(Analysis):
                         suffix = str(k)  # Note that we avoid an underscore
                     else:
                         suffix = ''
-                    names.append(label + suffix)
+
+                    output_copy = copy(output)
+                    output_copy.name = name + suffix
+                    parameters.append(output_copy)
+                    # TODO Add up_proportion shape
             else:
-                names.append(label)
-        return names
-
-    @parameter
-    def units_get(self, parameter):
-        return tuple(['V' if 'voltage' in name else '' for name in self.names])
-
-    @parameter
-    def shapes_get(self, parameter):
-        return tuple((),) * len(self.names)
+                output_copy = copy(output)
+                parameters.append(output_copy)
+        return parameters
 
     @functools.wraps(analyse_electron_readout)
     def analyse(self, **kwargs):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
         settings.pop('num_frequencies', None)  # Not needed
-        return analyse_electron_readout(**settings)
+        self.results = analyse_electron_readout(**settings)
+        return self.results
 
 
 def analyse_flips(
@@ -1209,12 +1216,12 @@ class AnalyseFlips(Analysis):
             vals=vals.MultiType(vals.Enum('neighbouring', 'full'), vals.Lists())
         )
 
-        self.results.flips = Parameter(initial_value=False, set_cmd=None)
-        self.results.flip_probability = Parameter(initial_value=False, set_cmd=None)
-        self.results.combined_flips = Parameter(initial_value=False, set_cmd=None)
-        self.results.combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
-        self.results.filtered_combined_flips = Parameter(initial_value=False, set_cmd=None)
-        self.results.filtered_combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.flips = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.flip_probability = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.combined_flips = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.filtered_combined_flips = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.filtered_combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
 
     @property
     def labels(self):
@@ -1246,14 +1253,17 @@ class AnalyseFlips(Analysis):
         separator = '' if self.settings.labels is None else '_'
         return [f'{label1}{separator}{label2}' for (label1, label2) in self.label_pairs]
 
-    @parameter
-    def names_get(self, parameter):
-        names = []
+    @property
+    def result_parameters(self):
+        parameters = []
         if self.settings.threshold_up_proportion is not None:
             for label in self.labels:
-                for key in ['flips', 'flip_probability']:
-                    if self.results[key]():
-                        names.append(f'{key}_{label}')
+                for name in ['flips', 'flip_probability']:
+                    output = self.outputs[name]
+                    if output():
+                        output_copy = copy(output)
+                        output_copy.name = f'{name}_{label}'
+                        parameters.append(output_copy)
 
         for label_pair_str in self.label_pairs_str:
             array_names = [
@@ -1262,23 +1272,17 @@ class AnalyseFlips(Analysis):
                 'filtered_combined_flips',
                 'filtered_combined_flip_probability'
             ]
-            for key in array_names:
-                if self.results[key]():
-                    names.append(f'{key}_{label_pair_str}')
-
-        return names
-
-    @parameter
-    def shapes_get(self, parameter):
-        return ((), ) * len(self.names)
-
-    @parameter
-    def units_get(self, parameter):
-        return ('', ) * len(self.names)
+            for name in array_names:
+                output = self.outputs[name]
+                if output:
+                    output_copy = copy(output)
+                    output_copy.name = f'{name}_{label_pair_str}'
+                    parameters.append(output_copy)
 
     @functools.wraps(analyse_flips)
     def analyse(self, **kwargs):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
         settings.pop('num_frequencies', None)  # Not needed
-        return analyse_flips(**settings)
+        self.results = analyse_flips(**settings)
+        return self.results
