@@ -742,7 +742,7 @@ class AnalyseEPR(Analysis):
     def __init__(self, name):
         super().__init__(name=name)
         self.settings.sample_rate = Parameter(
-            get_cmd=lambda: self.sample_rate
+            set_cmd=None
         )
         self.settings.t_skip = Parameter(
             initial_value=4e-5, set_cmd=None,
@@ -754,9 +754,9 @@ class AnalyseEPR(Analysis):
             config_link='properties.t_read',
             update_from_config=True
         )
-        self.settings.min_filter_up_proportion = Parameter(
+        self.settings.min_filter_proportion = Parameter(
             initial_value=0.5, set_cmd=None,
-            config_link='analysis.min_filter_up_proportion',
+            config_link='analysis.min_filter_proportion',
             update_from_config=True
         )
         self.settings.threshold_voltage = Parameter(
@@ -841,7 +841,7 @@ def analyse_electron_readout(
     if threshold_voltage is None:
         # Calculate threshold voltages from combined read traces
         high_low = find_high_low(
-            np.ravel([trace['output'] for trace in traces.values()]),
+            np.ravel([trace for trace in traces.values()]),
             plot=plot_high_low
         )
         threshold_voltage = results['threshold_voltage'] = high_low['threshold_voltage']
@@ -890,8 +890,8 @@ def analyse_electron_readout(
 
         # Determine voltage difference
         voltage_differences = [
-            ESR_result['voltage_difference'] for ESR_result in results['ESR_results']
-            if ESR_result['voltage_difference'] is not None
+            result['voltage_difference'] for result in results['read_results']
+            if result['voltage_difference'] is not None
         ]
         if voltage_differences:
             results['voltage_difference'] = np.mean(voltage_differences)
@@ -904,7 +904,7 @@ class AnalyseElectronReadout(Analysis):
     def __init__(self, name):
         super().__init__(name=name)
         self.settings.sample_rate = Parameter(
-            get_cmd=lambda: self.sample_rate
+            set_cmd=None
         )
         self.settings.num_frequencies = Parameter(
             initial_value=1, set_cmd=None,
@@ -935,9 +935,9 @@ class AnalyseElectronReadout(Analysis):
             config_link='analysis.threshold_method',
             update_from_config=True
         )
-        self.settings.min_filter_up_proportion = Parameter(
+        self.settings.min_filter_proportion = Parameter(
             initial_value=0.5, set_cmd=None,
-            config_link='analysis.min_filter_up_proportion',
+            config_link='analysis.min_filter_proportion',
             update_from_config=True
         )
 
