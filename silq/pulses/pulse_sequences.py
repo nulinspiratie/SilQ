@@ -273,6 +273,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
+
 class ESRPulseSequenceComposite(PulseSequence):
     """`PulseSequenceGenerator` for electron spin resonance (ESR).
 
@@ -757,6 +758,119 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
         # Create copy of current pulse settings for comparison later
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
+
+class NMRPulseSequenceComposite(PulseSequenceGenerator):
+    """`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).
+
+    This pulse sequence can handle many of the basic pulse sequences involving
+    NMR. The pulse sequence is generated from its pulse settings attributes.
+
+    In general, the pulse sequence is as follows:
+
+    1. Perform any pre_pulses defined in ``NMRPulseSequence.pre_pulses``.
+    2. Perform NMR sequence
+
+       1. Perform stage pulse ``NMRPulseSequence.NMR['stage_pulse']``.
+          Default is 'empty' `DCPulse`.
+       2. Perform NMR pulses within the stage pulse. The NMR pulses defined
+          in ``NMRPulseSequence.NMR['NMR_pulses']`` are applied successively.
+          The delay after start of the stage pulse is
+          ``NMRPulseSequence.NMR['pre_delay']``, delays between NMR pulses is
+          ``NMRPulseSequence.NMR['inter_delay']``, and the delay after the final
+          NMR pulse is ``NMRPulseSequence.NMR['post_delay']``.
+
+    3. Perform ESR sequence
+
+       1. Perform stage pulse ``NMRPulseSequence.ESR['stage_pulse']``.
+          Default is 'plunge' `DCPulse`.
+       2. Perform ESR pulse within stage pulse for first pulse in
+          ``NMRPulseSequence.ESR['ESR_pulses']``.
+       3. Perform ``NMRPulseSequence.ESR['read_pulse']``, and acquire trace.
+       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
+          usually correspond to different ESR frequencies (see
+          `NMRPulseSequence`.ESR_frequencies).
+       5. Repeat steps 1 - 4 for ``NMRPulseSequence.ESR['shots_per_frequency']``
+          This effectively interleaves the ESR pulses, which counters effects of
+          the nucleus flipping within an acquisition.
+
+    By measuring the average up proportion for each ESR frequency, a switching
+    between high and low up proportion indicates a flipping of the nucleus
+
+    Parameters:
+        NMR (dict): Pulse settings for the NMR part of the pulse sequence.
+            Contains the following items:
+
+            * ``stage_pulse`` (Pulse): Stage pulse in which to perform NMR
+              (e.g. plunge). Default is 'empty' `DCPulse`. Duration of stage
+              pulse is adapted to NMR pulses and delays.
+            * ``NMR_pulse`` (Pulse): Default NMR pulse to use.
+              By default 'NMR' `SinePulse`.
+            * ``NMR_pulses`` (List[Union[str, Pulse]]): List of NMR pulses to
+              successively apply. Can be strings, in which case the string
+              should be an item in ``NMR`` whose value is a `Pulse`. Default is
+              single element ``NMRPulseSequence.NMR['NMR_pulse']``.
+            * ``pre_delay`` (float): Delay after start of ``stage`` pulse,
+              until first NMR pulse.
+            * ``inter_delay`` (float): Delay between successive NMR pulses.
+            * ``post_delay`` (float): Delay after final NMR pulse until stage
+              pulse end.
+
+        ESR (dict): Pulse settings for the ESR part of the pulse sequence.
+            Contains the following items:
+
+            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR
+              (e.g. plunge). Default is 'plunge `DCPulse`.
+            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.
+              Default is 'ESR' ``SinePulse``.
+            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to
+              use. Can be strings, in which case the string should be an item in
+              ``ESR`` whose value is a `Pulse`.
+            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage
+              pulse. Default is 5 ms.
+            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and
+              initialization of electron. Default is 'read_initialize`
+              `DCPulse`.
+
+        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
+            pulse sequence. This part is optional, and is used for non-ESR
+            contast, and to measure dark counts and hence ESR contrast.
+            Contains the following items:
+
+            * ``enabled`` (bool): Enable EPR sequence.
+            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.
+              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.
+
+        pre_pulses (List[Pulse]): Pulses before main pulse sequence.
+            Empty by default.
+        pre_ESR_pulses (List[Pulse]): Pulses before ESR readout pulse sequence.
+            Empty by default.
+        post_pulses (List[Pulse]): Pulses after main pulse sequence.
+            Empty by default.
+        pulse_settings (dict): Dict containing all pulse settings.
+        **kwargs: Additional kwargs to `PulseSequence`.
+
+    See Also:
+        NMRParameter
+
+    Notes:
+        For given pulse settings, `NMRPulseSequence.generate` will recreate the
+        pulse sequence from settings.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pulse_sequences = [
+            ElectronReadoutPulseSequence(name='NMR'),
+            ElectronReadoutPulseSequence(name='ESR'),
+        ]
+
+    @property
+    def NMR(self):
+        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'NMR')
+
+    @property
+    def ESR(self):
+        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
 
 
 class NMRPulseSequence(PulseSequenceGenerator):
