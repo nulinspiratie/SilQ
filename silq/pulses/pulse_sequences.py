@@ -134,6 +134,10 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         self.frequencies = Parameter()
 
+    @property
+    def settings(self):
+        return self.pulse_settings
+
     @parameter
     def frequencies_get(self, parameter):
         frequencies = []
@@ -759,7 +763,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
 
-class NMRPulseSequenceComposite(PulseSequenceGenerator):
+class NMRPulseSequenceComposite(PulseSequence):
     """`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).
 
     This pulse sequence can handle many of the basic pulse sequences involving

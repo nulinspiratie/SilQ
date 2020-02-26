@@ -199,6 +199,13 @@ class PulseSequence(ParameterNode):
           which can then be interpreted by the pulse sequence.
     """
 
+    _deepcopy_skip_parameters = [
+        'my_enabled_pulses',
+        'enabled_pulses',
+        'my_disabled_pulses',
+        'disabled_pulses',
+        'pulses',
+    ]
     connection_conditions = None
     pulse_conditions = None
     default_final_delay = .5e-3
@@ -514,7 +521,7 @@ class PulseSequence(ParameterNode):
         self_copy._last_pulse = None
 
         # Add pulses (which will create copies)
-        self_copy.my_pulses = self.my_pulses
+        self_copy.my_pulses = [copy(pulse) for pulse in self.my_pulses]
 
         # Copy nested pulse sequences
         if self.pulse_sequences:
@@ -622,36 +629,37 @@ class PulseSequence(ParameterNode):
 
         for pulse_copy in pulse_copies:
             # Check if we need to add pulse to a nested pulse sequence
-            if nest and pulse.parent is not None and pulse.parent.full_name != self.full_name:
-                nested_sequence = self.get_pulse_sequence(pulse.parent.full_name)
+            if nest and pulse_copy.parent is not None and pulse_copy.parent.full_name != self.full_name:
+                nested_sequence = self.get_pulse_sequence(pulse_copy.parent.full_name)
                 if nested_sequence is None:
                     raise RuntimeError(
                         f'Could not find nested pulse sequence '
-                        f'{pulse.parent.full_name} for {pulse}'
+                        f'{pulse_copy.parent.full_name} for {pulse_copy}'
                     )
                 else:
-                    added_pulse, = nested_sequence.quick_add(pulse)
+                    # Add to nested pulse sequence. Note that we already copied pulse
+                    added_pulse, = nested_sequence.quick_add(pulse_copy, copy=False)
                     added_pulses.append(added_pulse)
                     continue
 
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
-                    and pulse.t_start is not None
+                    and pulse_copy.t_start is not None
                     and any(p for p in self.enabled_pulses
-                            if self.pulses_overlap(pulse, p))):
+                            if self.pulses_overlap(pulse_copy, p))):
                 overlapping_pulses = [p for p in self.enabled_pulses
-                                      if self.pulses_overlap(pulse, p)]
-                raise AssertionError(f'Cannot add pulse {pulse} because it '
+                                      if self.pulses_overlap(pulse_copy, p)]
+                raise AssertionError(f'Cannot add pulse {pulse_copy} because it '
                                      f'overlaps with {overlapping_pulses}')
-            assert pulse.implementation is not None or self.allow_untargeted_pulses, \
-                f'Cannot add untargeted pulse {pulse}'
-            assert pulse.implementation is None or self.allow_targeted_pulses, \
-                f'Not allowed to add targeted pulse {pulse}'
-            assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
+            assert pulse_copy.implementation is not None or self.allow_untargeted_pulses, \
+                f'Cannot add untargeted pulse {pulse_copy}'
+            assert pulse_copy.implementation is None or self.allow_targeted_pulses, \
+                f'Not allowed to add targeted pulse {pulse_copy}'
+            assert pulse_copy.duration is not None, f'Pulse {pulse_copy} duration must be specified'
 
             # Check if pulse with same name exists, if so ensure unique id
-            if pulse.name is not None:
-                pulses_same_name = self.get_pulses(name=pulse.name)
+            if pulse_copy.name is not None:
+                pulses_same_name = self.get_pulses(name=pulse_copy.name)
 
                 if pulses_same_name:
                     if pulses_same_name[0].id is None:
@@ -665,8 +673,8 @@ class PulseSequence(ParameterNode):
             # the end of the last pulse on the same connection(_label)
             if pulse_copy.t_start is None and self.pulses:
                 # Find relevant pulses that share same connection(_label)
-                relevant_pulses = self.get_pulses(connection=pulse.connection,
-                                                  connection_label=pulse.connection_label)
+                relevant_pulses = self.get_pulses(connection=pulse_copy.connection,
+                                                  connection_label=pulse_copy.connection_label)
                 if relevant_pulses:
                     last_pulse = max(relevant_pulses,
                                      key=lambda pulse: pulse.parameters['t_stop'].raw_value)
@@ -751,7 +759,7 @@ class PulseSequence(ParameterNode):
                         f'{pulse.parent.full_name} for {pulse}'
                     )
                 else:
-                    added_pulse, = nested_sequence.quick_add(pulse)
+                    added_pulse, = nested_sequence.quick_add(pulse, copy=copy)
                     added_pulses.append(added_pulse)
                     continue
 
@@ -1222,7 +1230,7 @@ class PulseSequence(ParameterNode):
         Returns:
             True by default, can be overridden in subclass.
         """
-        return True
+        return all(pulse_sequence.up_to_date for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
@@ -1337,6 +1345,7 @@ class PulseImplementation:
                      pulse,
                      interface,
                      connections: list,
+                     copy=False,
                      **kwargs):
         """Tailors a PulseImplementation to a specific pulse.
 
@@ -1363,7 +1372,10 @@ class PulseImplementation:
         if not isinstance(pulse, self.pulse_class):
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
-        targeted_pulse = copy(pulse)
+        if copy:
+            targeted_pulse = copy_alias(pulse)
+        else:
+            targeted_pulse = pulse
         pulse_implementation = deepcopy(self)
         targeted_pulse.implementation = pulse_implementation
         pulse_implementation.pulse = targeted_pulse
