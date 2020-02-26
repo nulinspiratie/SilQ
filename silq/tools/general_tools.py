@@ -239,7 +239,7 @@ def attribute_from_config(item: str, config: dict):
         # Check if item is in properties config
         value = config[item]
     else:
-        raise AttributeError
+        raise AttributeError(f'Item {item} not found in config')
 
     if type(value) is DotDict:
         value = dict(value)

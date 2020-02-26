@@ -8,6 +8,8 @@ from copy import copy
 import collections
 from matplotlib import pyplot as plt
 
+from silq.tools.general_tools import property_ignore_setter
+
 from qcodes import MatPlot
 from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
@@ -31,32 +33,34 @@ class Analysis(ParameterNode):
         self.outputs = ParameterNode(use_as_attributes=True)
         self.results = {}
 
-        self.names = Parameter()
-        self.units = Parameter()
-        self.shapes = Parameter()
         self.enabled = Parameter(set_cmd=None, initial_value=True)
 
-    @property
+    @property_ignore_setter
     def result_parameters(self):
-        parameters = []
-        for name, output in self.outputs:
-            if not output():
-                continue
+        try:
+            parameters = []
+            for name, output in self.outputs.parameters.items():
+                if not output():
+                    continue
 
-            output_copy = copy(output)
-            parameters.append(output_copy)
+                output_copy = copy(output)
+                parameters.append(output_copy)
+        except Exception as e:
+            breakpoint()
+            print(e)
+            raise RuntimeError
         return parameters
 
-    @parameter
-    def names_get(self, parameter):
+    @property_ignore_setter
+    def names(self):
         return tuple([parameter.name for parameter in self.result_parameters])
 
-    @parameter
-    def units_get(self, parameter):
-        return tuple([parameter.units for parameter in self.result_parameters])
+    @property_ignore_setter
+    def units(self):
+        return tuple([parameter.unit for parameter in self.result_parameters])
 
-    @parameter
-    def shapes_get(self, parameter):
+    @property_ignore_setter
+    def shapes(self):
         return tuple([getattr(parameter, 'shape', ()) for parameter in self.result_parameters])
 
     def analyse(self, **kwargs):
@@ -67,9 +71,9 @@ def old_smooth(x: np.ndarray,
            window_len: int = 11,
            window: str = 'hanning') -> np.ndarray:
     """smooth the data using a window with requested size.
-    
+
     Note:
-        This function is superseded by the Savitsky-Golay filter `smooth` for 
+        This function is superseded by the Savitsky-Golay filter `smooth` for
         its superior performance.
 
     This method is based on the convolution of a scaled window with the signal.
@@ -918,6 +922,14 @@ class AnalyseElectronReadout(Analysis):
         self.settings.num_frequencies = Parameter(
             initial_value=1, set_cmd=None,
         )
+        self.settings.samples = Parameter(
+            initial_value=1, set_cmd=None,
+            docstring=(
+                "Number of samples (pulse sequence repetitions). Only relevant "
+                "when shots_per_frequency > 1, in which case the shape of each "
+                "up_proportions is equal to the number of samples"
+            )  # TODO get rid of this parameter once the new Measurement is used
+        )
         self.settings.shots_per_frequency = Parameter(
             initial_value=1, set_cmd=None,
         )
@@ -960,7 +972,7 @@ class AnalyseElectronReadout(Analysis):
     @property
     def result_parameters(self):
         parameters = []
-        for name, output in self.outputs:
+        for name, output in self.outputs.parameters.items():
             if not output():
                 continue
 
@@ -976,8 +988,12 @@ class AnalyseElectronReadout(Analysis):
 
                     output_copy = copy(output)
                     output_copy.name = name + suffix
+
+                    if name == 'up_proportion' and self.settings.shots_per_frequency > 1:
+                        output_copy.name = 'up_proportions' + suffix
+                        output_copy.shape = (self.settings.samples, )
+
                     parameters.append(output_copy)
-                    # TODO Add up_proportion shape
             else:
                 output_copy = copy(output)
                 parameters.append(output_copy)
@@ -988,6 +1004,7 @@ class AnalyseElectronReadout(Analysis):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
         settings.pop('num_frequencies', None)  # Not needed
+        settings.pop('samples', None)  # Not needed
         self.results = analyse_electron_readout(**settings)
         return self.results
 
@@ -1156,14 +1173,16 @@ def analyse_flips(
                     state_arr = np.zeros(up_proportions.shape)
                     state_arr[up_proportions > threshold_high] = 1
                     state_arr[up_proportions < threshold_low] = -1
-                    state_arr[threshold_low <= up_proportions <= threshold_high] = np.nan
+                    above_low = threshold_low <= up_proportions
+                    below_high = up_proportions <= threshold_high
+                    state_arr[above_low & below_high] = np.nan
                     state_arrs.append(state_arr)
 
             # Calculate relative states, with possible values:
             # -2: state1 high,       state2 low
             # 2:  state1 low,        state2 high
             # NaN: at least one of the two states is undefined (between thresholds)
-            relative_state_arr = state_arr[1] - state_arr[0]
+            relative_state_arr = state_arrs[1] - state_arrs[0]
 
             # Combined flips, happens if relative_state_arr changes by 4
             # (high, low) -> (low, high) and (low, high) -> (high, low)
@@ -1204,16 +1223,16 @@ class AnalyseFlips(Analysis):
             initial_value=None, set_cmd=None,
             config_link='analysis.threshold_up_proportion',
             update_from_config=True
-        ),
+        )
         self.settings.num_frequencies = Parameter(
             initial_value=None, set_cmd=None, vals=vals.Ints()
-        ),
+        )
         self.settings.labels = Parameter(
             initial_value=None, set_cmd=None, vals=vals.Lists()
-        ),
-        self.settings.combined_flips_pairs = Parameter(
-            initial_value='neighbouring',
-            vals=vals.MultiType(vals.Enum('neighbouring', 'full'), vals.Lists())
+        )
+        self.settings.label_pairs = Parameter(
+            initial_value='neighbouring', set_cmd=None,
+            vals=vals.MultiType(vals.Enum('neighbouring', 'all'), vals.Lists())
         )
 
         self.outputs.flips = Parameter(initial_value=False, set_cmd=None)
@@ -1227,23 +1246,25 @@ class AnalyseFlips(Analysis):
     def labels(self):
         if self.settings.labels is not None:
             return self.settings.labels
-        else:
+        elif self.settings.num_frequencies is not None:
             return [str(k) for k in range(self.settings.num_frequencies)]
+        else:
+            return []
 
     @property
     def label_pairs(self):
         # Only use _ between labels when labels are provided
         separator = '' if self.settings.labels is None else '_'
 
-        if self.settings.combined_flips_pairs == 'neighbouring':
+        if self.settings.label_pairs == 'neighbouring':
             label_pairs = list(zip(self.labels[:-1], self.labels[1:]))
-        elif self.settings.combined_flips_pairs == 'full':
+        elif self.settings.label_pairs == 'all':
             label_pairs = []
             for k, label1 in enumerate(self.labels):
                 for label2 in self.labels[k+1:]:
                     label_pairs.append((label1, label2))
         else:
-            label_pairs = self.settings.combined_flips_pairs
+            label_pairs = self.settings.label_pairs
 
         return label_pairs
 
@@ -1278,6 +1299,7 @@ class AnalyseFlips(Analysis):
                     output_copy = copy(output)
                     output_copy.name = f'{name}_{label_pair_str}'
                     parameters.append(output_copy)
+        return parameters
 
     @functools.wraps(analyse_flips)
     def analyse(self, **kwargs):
