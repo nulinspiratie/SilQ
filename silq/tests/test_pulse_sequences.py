@@ -506,6 +506,122 @@ class TestCopyPulseSequence(unittest.TestCase):
 
         self.assertTupleEqual(pulse_sequence_copy.pulses, pulse_sequence_copy.enabled_pulses)
 
+
+class TestCopyCountPulseSequence(unittest.TestCase):
+    def reset_executions(self):
+        self.executions = {
+            'Pulse': {'__copy__': 0, '__deepcopy__': 0},
+            'PulseSequence': {'__copy__': 0, '__deepcopy__': 0}
+        }
+
+    def setUp(self) -> None:
+        self.reset_executions()
+        # wrap pulse.copy
+        self.pulse_copy = Pulse.__copy__
+        def copy_fun_wrapped(*args, **kwargs):
+            self.executions[Pulse.__name__]['__copy__'] += 1
+            return self.pulse_copy(*args, **kwargs)
+        Pulse.__copy__ = copy_fun_wrapped
+
+        # wrap pulse.copy
+        self.pulse_sequence_copy = PulseSequence.__copy__
+        def copy_fun_wrapped(*args, **kwargs):
+            self.executions[PulseSequence.__name__]['__copy__'] += 1
+            return self.pulse_sequence_copy(*args, **kwargs)
+        PulseSequence.__copy__ = copy_fun_wrapped
+
+        # wrap __deepcopy
+        from qcodes.instrument import parameter_node
+        self.deepcopy = __deepcopy__ = parameter_node.__deepcopy__
+
+        def __deepcopy_wrapped(other_self, *args, **kwargs):
+            if isinstance(other_self, (Pulse, PulseSequence)):
+                class_name = 'Pulse' if isinstance(other_self, Pulse) else 'PulseSequence'
+                self.executions[class_name]['__deepcopy__'] += 1
+            return __deepcopy__(other_self, *args, **kwargs)
+        parameter_node.__deepcopy__ = __deepcopy_wrapped
+
+    def tearDown(self):
+        Pulse.__copy__ = self.pulse_copy
+        PulseSequence.__copy__ = self.pulse_sequence_copy
+
+        from qcodes.instrument import parameter_node
+        parameter_node.__deepcopy__ = self.deepcopy
+
+
+    def test_copy_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_pulse_sequence_one_pulse(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 1)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_pulse_sequence_one_pulse(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        # One extra for _last_pulse. This really shouldn't happen though, but no big deal
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 2)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_pulse_sequence_two_pulses(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 2)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_pulse_sequence_two_pulses(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        # One extra for _last_pulse. This really shouldn't happen though, but no big deal
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 3)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_nested_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        nested_pulse_sequence = PulseSequence()
+        nested_pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add_pulse_sequences(nested_pulse_sequence)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 1)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 2)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+
 class TestPulseSequenceEquality(unittest.TestCase):
     def test_empty_pulse_sequence_equality(self):
         pulse_sequence = PulseSequence()
