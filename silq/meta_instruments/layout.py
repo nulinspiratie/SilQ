@@ -1505,11 +1505,11 @@ class Layout(Instrument):
         if channels is None:
             channels = self.save_trace_channels()
 
-        active_loop = qc.active_loop()
-        assert active_loop is not None, "No active loop found for saving traces"
+        active_measurement = qc.active_measurement()
+        assert active_measurement is not None, "No active loop found for saving traces"
 
         if folder is None:
-            dataset = qc.active_data_set()
+            dataset = qc.active_dataset()
             assert dataset is not None, "No dataset found to save traces to. " \
                                         "Set add_to_dataset=False to save to " \
                                         "separate folder."
@@ -1534,7 +1534,7 @@ class Layout(Instrument):
 
         # Create traces group and initialize arrays
         file.create_group('traces')
-        data_shape = active_loop.loop_shape[active_loop.action_indices]
+        data_shape = active_measurement.loop_shape[active_measurement.action_indices]
         # Data is saved in chunks, which is one acquisition
         data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
         for channel in channels:
@@ -1569,13 +1569,13 @@ class Layout(Instrument):
         if channels is None:
             channels = self.save_trace_channels()
 
-        active_loop = qc.active_loop()
-        assert active_loop is not None, "No active loop found for saving traces"
+        active_measurement = qc.active_measurement()
+        assert active_measurement is not None, "No active loop found for saving traces"
 
         # Create unique action traces name
         if name is None:  # Set name to current loop action
-            active_action = active_loop.active_action
-            action_indices = active_loop.action_indices
+            active_action = active_measurement.active_action
+            action_indices = active_measurement.action_indices
             action_indices_str = '_'.join(map(str, action_indices))
             name = f"{active_action.name}_{action_indices_str}"
 
@@ -1590,8 +1590,8 @@ class Layout(Instrument):
             # Get corresponding acquisition output channel name (chA etc.)
             ch = next(ch_pair[0] for ch_pair in self.acquisition_channels()
                       if ch_pair[1] == channel)
-            trace_file['traces'][channel][active_loop.loop_indices] = traces[ch]
-        trace_file.attrs['final_loop_indices'] = active_loop.loop_indices
+            trace_file['traces'][channel][active_measurement.loop_indices] = traces[ch]
+        trace_file.attrs['final_loop_indices'] = active_measurement.loop_indices
 
         return trace_file
 
