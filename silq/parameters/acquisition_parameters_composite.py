@@ -330,8 +330,11 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
     """
 
-    def __init__(self, name: str = "NMR", **kwargs):
-        self.pulse_sequence = NMRPulseSequenceComposite()
+    def __init__(self, name: str = "NMR", pulse_sequence=None, **kwargs):
+        if pulse_sequence is None:
+            pulse_sequence = NMRPulseSequenceComposite()
+
+        self.pulse_sequence = pulse_sequence
         self.NMR = self.pulse_sequence.NMR
         self.ESR = self.pulse_sequence.ESR
 
