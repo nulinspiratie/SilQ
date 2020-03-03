@@ -37,18 +37,13 @@ class Analysis(ParameterNode):
 
     @property_ignore_setter
     def result_parameters(self):
-        try:
-            parameters = []
-            for name, output in self.outputs.parameters.items():
-                if not output():
-                    continue
+        parameters = []
+        for name, output in self.outputs.parameters.items():
+            if not output():
+                continue
 
-                output_copy = copy(output)
-                parameters.append(output_copy)
-        except Exception as e:
-            breakpoint()
-            print(e)
-            raise RuntimeError
+            output_copy = copy(output)
+            parameters.append(output_copy)
         return parameters
 
     @property_ignore_setter
@@ -841,7 +836,7 @@ def analyse_electron_readout(
         )
     num_frequencies = int(len(traces) / shots_per_frequency)
 
-    results = {'read_results': [None] * len(traces)}
+    results = {'read_results': [[] for _ in range(num_frequencies)]}
 
     # Extract samples and points per shot
     first_trace = next(iter(traces.values()))
@@ -859,26 +854,40 @@ def analyse_electron_readout(
         )
         threshold_voltage = results['threshold_voltage'] = high_low['threshold_voltage']
 
+    if shots_per_frequency  == 1:
+        read_traces = [[traces_arr] for traces_arr in traces.values()]
+    else:
+        # Shuffle traces if shots_per_frequency > 1
+        read_traces = [
+            [np.zeros((shots_per_frequency, points_per_shot)) for _ in range(samples)]
+            for _ in range(num_frequencies)
+        ]
+        for k, read_traces_arr in enumerate(traces.values()):
+            for sample_idx, read_trace in enumerate(read_traces_arr):
+                f_idx = k % num_frequencies
+                shot_idx = k // num_frequencies
+
+                read_traces[f_idx][sample_idx][shot_idx] = read_trace
+
     # Iterate through traces and extract data
     up_proportions = np.zeros((num_frequencies, samples))
     num_traces = np.zeros((num_frequencies, samples))
-    for k, (name, trace_arr) in enumerate(traces.items()):
-        frequency_idx = k % num_frequencies
-        sample_idx = k // num_frequencies
+    for f_idx, read_traces_single_frequency in enumerate(read_traces):
+        for sample_idx, read_traces_arr in enumerate(read_traces_single_frequency):
+            read_result = analyse_traces(
+                traces=read_traces_arr,
+                sample_rate=sample_rate,
+                t_read=t_read,
+                t_skip=t_skip,
+                threshold_voltage=threshold_voltage,
+                threshold_method=threshold_method,
+                min_filter_proportion=min_filter_proportion,
+                plot=plot
+            )
+            results['read_results'][f_idx].append(read_result)
 
-        read_result = results['read_results'][k] = analyse_traces(
-            traces=trace_arr,
-            sample_rate=sample_rate,
-            t_read=t_read,
-            t_skip=t_skip,
-            threshold_voltage=threshold_voltage,
-            threshold_method=threshold_method,
-            min_filter_proportion=min_filter_proportion,
-            plot=plot
-        )
-
-        up_proportions[frequency_idx, sample_idx] = read_result['up_proportion']
-        num_traces[frequency_idx, sample_idx] = read_result['num_traces']
+            up_proportions[f_idx, sample_idx] = read_result['up_proportion']
+            num_traces[f_idx, sample_idx] = read_result['num_traces']
 
     # Add all up proportions as measurement results
     for k, up_proportion_arr in enumerate(up_proportions):
@@ -903,7 +912,8 @@ def analyse_electron_readout(
 
         # Determine voltage difference
         voltage_differences = [
-            result['voltage_difference'] for result in results['read_results']
+            result['voltage_difference'] for results_list in results['read_results']
+            for result in results_list
             if result['voltage_difference'] is not None
         ]
         if voltage_differences:
@@ -1152,8 +1162,8 @@ def analyse_flips(
             # results are NaN
             if threshold_up_proportion is None:
                 up_max = np.max([up_proportions_1, up_proportions_2], axis=0)
-                up_min = np.max([up_proportions_1, up_proportions_2], axis=0)
-                if min(up_max) <= max(up_min):
+                up_min = np.min([up_proportions_1, up_proportions_2], axis=0)
+                if max(up_min) < min(up_max):
                     threshold_up_proportion = np.mean([min(up_max), max(up_min)])
                     threshold_high = threshold_up_proportion
                     threshold_low = threshold_up_proportion
@@ -1163,6 +1173,7 @@ def analyse_flips(
                     results['combined_flip_probability' + suffix] = np.nan
                     results['filtered_combined_flips' + suffix] = np.nan
                     results['filtered_combined_flip_probability' + suffix] = np.nan
+                    results['possible_flips' + suffix] = np.nan
                     continue
 
             # Determine state that are above/below threshold.
@@ -1213,6 +1224,8 @@ def analyse_flips(
                 results['filtered_combined_flips' + suffix] = np.nan
                 results['filtered_combined_flip_probability' + suffix] = np.nan
 
+            results['threshold_up_proportion'] = (threshold_low, threshold_high)
+
     return results
 
 
@@ -1237,6 +1250,7 @@ class AnalyseFlips(Analysis):
 
         self.outputs.flips = Parameter(initial_value=False, set_cmd=None)
         self.outputs.flip_probability = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.possible_flips = Parameter(initial_value=True, set_cmd=None)
         self.outputs.combined_flips = Parameter(initial_value=False, set_cmd=None)
         self.outputs.combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
         self.outputs.filtered_combined_flips = Parameter(initial_value=False, set_cmd=None)
@@ -1288,6 +1302,7 @@ class AnalyseFlips(Analysis):
 
         for label_pair_str in self.label_pairs_str:
             array_names = [
+                'possible_flips',
                 'combined_flips',
                 'combined_flip_probability',
                 'filtered_combined_flips',
