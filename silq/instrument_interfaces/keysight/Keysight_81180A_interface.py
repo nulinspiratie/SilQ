@@ -20,6 +20,7 @@ from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from qcodes import ManualParameter, ParameterNode, MatPlot
 from qcodes import validators as vals
 from qcodes.utils.helpers import arreqclose_in_list
+from qcodes.config.config import DotDict
 
 
 logger = logging.getLogger(__name__)
@@ -219,22 +220,21 @@ class Keysight81180AInterface(InstrumentInterface):
 
         for ch in self.active_channels():
             instrument_channel = self.instrument.channels[ch]
+            sample_rate = instrument_channel.sample_rate()
             # Set start time t=0
             t_pulse = 0
             self.waveforms_initial[ch] = None
 
             # A waveform must have at least 320 points
-            min_waveform_duration = 320 / instrument_channel.sample_rate()
-
-            pulse_sequence = PulseSequence(
-                self.pulse_sequence.get_pulses(output_channel=ch)
-            )
+            min_waveform_duration = 320 / sample_rate
 
             # Always begin by waiting for a trigger/event pulse
             # Add empty waveform (0V DC), with minimum points (320)
             self.add_single_waveform(ch, waveform_array=np.zeros(320))
 
-            for pulse in pulse_sequence.get_pulses():
+            pulses = self.pulse_sequence.get_pulses(output_channel=ch)
+
+            for pulse in pulses:
                 # Check if there is a gap between next pulse and current time t_pulse
                 if pulse.t_start + 1e-11 < t_pulse:
                     raise SyntaxError(
@@ -256,13 +256,13 @@ class Keysight81180AInterface(InstrumentInterface):
                         t_start=t_pulse,
                         t_stop=pulse.t_start,
                         amplitude=0,
-                        sample_rate=instrument_channel.sample_rate(),
+                        sample_rate=sample_rate,
                         pulse_name="DC",
                     )
 
                 # Get waveform of current pulse
                 waveform = pulse.implementation.implement(
-                    sample_rate=instrument_channel.sample_rate(),
+                    sample_rate=sample_rate,
                 )
 
                 # Add waveform and sequence steps
@@ -270,7 +270,7 @@ class Keysight81180AInterface(InstrumentInterface):
                     ch,
                     **waveform,
                     t_stop=pulse.t_stop,
-                    sample_rate=instrument_channel.sample_rate(),
+                    sample_rate=sample_rate,
                     pulse_name=pulse.name,
                 )
                 self.sequences[ch] += sequence_steps
@@ -285,7 +285,7 @@ class Keysight81180AInterface(InstrumentInterface):
                     t_start=t_pulse,
                     t_stop=self.pulse_sequence.duration,
                     amplitude=0,
-                    sample_rate=instrument_channel.sample_rate(),
+                    sample_rate=sample_rate,
                     pulse_name="final_DC",
                 )
 
@@ -350,11 +350,15 @@ class Keysight81180AInterface(InstrumentInterface):
         sample_rate: float,
         pulse_name="DC",
     ) -> List:
-        DC_pulse = DCPulse(
-            pulse_name, t_start=t_start, t_stop=t_stop, amplitude=amplitude,
-        )
+        # We fake a DC pulse for improved performance
+        DC_pulse = DotDict(dict(
+            t_start=t_start,
+            t_stop=t_stop,
+            duration=round(t_stop-t_start, 11),
+            amplitude=amplitude
+        ))
         waveform = DCPulseImplementation.implement(
-            self=None, sample_rate=sample_rate, pulse=DC_pulse,
+            self=DC_pulse, sample_rate=sample_rate
         )
         sequence_steps = self.add_pulse_waveforms(
             channel_name,
@@ -490,21 +494,20 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
     def implement(
-        self, sample_rate: float, max_points: int = 6000, pulse=None,
+        self, sample_rate: float, max_points: int = 6000
     ) -> dict:
-        if pulse is None:
-            pulse = self.pulse
+        # TODO shouldn't the properties of self be from self.pulse instead?
 
         # Number of points must be a multiple of 32
-        N = 32 * np.floor(pulse.duration * sample_rate / 32)
+        N = 32 * np.floor(self.duration * sample_rate / 32)
 
         # Add a waveform_initial if this pulse is the start of the pulse_sequence
         # and has a long enough duration. The first point of waveform_initial will
         # later on be set to the last point of the last waveform, ensuring that
         # any pulse_sequence.final_delay remains at the last voltage
-        if pulse.t_start == 0 and N > 640:
+        if self.t_start == 0 and N > 640:
             N -= 320
-            waveform_initial = pulse.amplitude * np.ones(320)
+            waveform_initial = self.amplitude * np.ones(320)
             logger.debug("adding waveform_initial")
         else:
             waveform_initial = None
@@ -528,11 +531,11 @@ class DCPulseImplementation(PulseImplementation):
             )
 
         # Add waveform(s) and sequence steps
-        waveform = pulse.amplitude * np.ones(approximate_divisor["points"])
+        waveform = self.amplitude * np.ones(approximate_divisor["points"])
 
         # Add separate waveform if there are remaining points left after division
         if approximate_divisor["remaining_points"]:
-            waveform_tail = pulse.amplitude * np.ones(
+            waveform_tail = self.amplitude * np.ones(
                 approximate_divisor["remaining_points"]
             )
         else:
