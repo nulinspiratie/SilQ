@@ -19,7 +19,7 @@ class PulseSequenceGenerator(PulseSequence):
         self.pulse_settings = {}
         self._latest_pulse_settings = None
 
-        self.meta_attrs.append('pulse_settings')
+        self._meta_attrs.append('pulse_settings')
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
