@@ -457,34 +457,52 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
 qc.Parameter.sweep = _sweep
 
 
+def _stop_layout(close_trace_file=True):
+    try:
+        layout = qc.Instrument.find_instrument('layout')
+        layout.stop()
+        logger.info('End-of-measurement: stopped layout')
+        if close_trace_file:
+            layout.close_trace_files()
+    except (KeyError, TypeError):
+        logger.warning(f'No layout found to stop')
+
+
+def _clear_all_acquisition_parameter_settings(measurement=None):
+    if measurement is None:
+        measurement = qc.active_measurement()
+
+    if isinstance(measurement, qc.loops.ActiveLoop):
+        for action in measurement:
+            if isinstance(action, qc.loops.ActiveLoop):
+                _clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+    else:
+        for action_indices, action in measurement.actions.items():
+            if isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+
+qc.Measurement.final_actions = [
+    _stop_layout,
+    _clear_all_acquisition_parameter_settings
+]
+
+
 # Override ActiveLoop._run_wrapper to stop the layout and clear settings of
 # any accquisition parameters in the loop after the loop has completed.
 _qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
 def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
-
-    def clear_all_acquisition_parameter_settings(loop):
-        from silq.parameters import AcquisitionParameter
-
-        for action in loop:
-            if isinstance(action, qc.loops.ActiveLoop):
-                clear_all_acquisition_parameter_settings(action)
-            elif isinstance(action, SettingsClass):
-                logger.info(f'End-of-loop: clearing settings for {action}')
-                action.clear_settings()
-
     try:
         _qc_run_wrapper(self, set_active=set_active, *args, **kwargs)
     finally:
-        try:
-            layout = qc.Instrument.find_instrument('layout')
-            if stop:
-                layout.stop()
-                logger.info('Stopped layout at end of loop')
-                if set_active:
-                    layout.close_trace_files()
-        except KeyError:
-            logger.warning(f'No layout found to stop')
+        if stop:
+            _stop_layout(close_trace_file=set_active)
 
         # Clear all settings for any acquisition parameters in the loop
-        clear_all_acquisition_parameter_settings(self)
+        _clear_all_acquisition_parameter_settings(self)
 qc.loops.ActiveLoop._run_wrapper = _run_wrapper
+
+

@@ -7,6 +7,7 @@ import pickle, dill
 from time import sleep, time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
+from pathlib import Path
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
@@ -1513,10 +1514,9 @@ class Layout(Instrument):
             assert dataset is not None, "No dataset found to save traces to. " \
                                         "Set add_to_dataset=False to save to " \
                                         "separate folder."
-            dataset_path = dataset.io.to_path(dataset.location)
-            folder = os.path.join(dataset_path, 'traces')
-            if not os.path.isdir(folder):  # Create traces subfolder if necessary
-                os.mkdir(folder)
+            dataset_path = Path(dataset.io.to_path(dataset.location))
+            folder = dataset_path / 'traces'
+            folder.mkdir(parents=True, exist_ok=True)
         # Create new hdf5 file
         filepath = os.path.join(folder, f'{name}.hdf5')
         assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
@@ -1534,7 +1534,11 @@ class Layout(Instrument):
 
         # Create traces group and initialize arrays
         file.create_group('traces')
-        data_shape = active_measurement.loop_shape[active_measurement.action_indices]
+        data_shape = active_measurement.loop_shape
+        if isinstance(data_shape, dict):
+            # Measurement is a loop consisting whose loop_shape is a dict.
+            # Extract shape using actions indices
+            data_shape = data_shape[active_measurement.action_indices]
         # Data is saved in chunks, which is one acquisition
         data_shape += (self.samples(), self.acquisition_interface.points_per_trace())
         for channel in channels:
