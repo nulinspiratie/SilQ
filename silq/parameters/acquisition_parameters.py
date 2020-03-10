@@ -520,7 +520,7 @@ class DCParameter(AcquisitionParameter):
 
     Returns:
         DC_voltage: Average DC voltage measured on the output channel
-        DC_noise: RMS noise measured on the output channel
+        DC_noise: noise standard deviation measured on the output channel
 
     Notes:
         - ``DCParameter.continuous`` is True by default
