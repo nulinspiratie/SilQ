@@ -296,7 +296,7 @@ def initialize(name: str,
     # Run initialization files in ./init
     init_folder = experiment_folder / 'init'
     if init_folder.exists():
-        init_files = [f for f in init_folder.iterdir() if f.is_file()]
+        init_files = sorted([f for f in init_folder.iterdir() if f.is_file()])
 
         for init_file in init_files:
             # Remove prefix
