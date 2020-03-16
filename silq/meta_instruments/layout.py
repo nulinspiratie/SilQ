@@ -1646,7 +1646,7 @@ class Layout(Instrument):
             traces = {key: val for key, val in traces.items()
                      if any(name in key for name in channel_filter)}
 
-        t_list = np.arange(trace_shape[1]) / self.sample_rate
+        t_list = np.arange(trace_shape[1]) / self.sample_rate()
         if not self.acquisition_interface.capture_full_trace():
             t_list += min(self.acquisition_interface.pulse_sequence.t_start_list)
         t_list *= 1e3  # Convert to ms
