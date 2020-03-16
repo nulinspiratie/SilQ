@@ -101,7 +101,8 @@ class SubConfig:
         The folder must either contain a {self.name}.json file,
         or alternatively a folder containing config files/folders.
         In the latter case, a dict is created, and all the files/folders in
-        the folder will be elements of the dict.
+        the folder will be elements of the dict. All '.ipynb_checkpoints'
+        folders will be ignored.
 
         If ``save_as_dir`` attribute is None, it will be updated to either True
         or False depending if there is a subfolder or file to load from the
@@ -148,7 +149,7 @@ class SubConfig:
 
             for file in os.listdir(folderpath):
                 filepath = os.path.join(folderpath, file)
-                if '.json' in file:
+                if file.endswith(".json"):
                     with open(filepath, "r") as fp:
                         # Determine type of config
                         try:
@@ -172,13 +173,15 @@ class SubConfig:
                                                  save_as_dir=False,
                                                  parent=self)
                 elif os.path.isdir(filepath):
+                    if ".ipynb_checkpoints" in filepath:
+                        continue
                     subconfig_name = file
                     subconfig = DictConfig(name=file,
                                            folder=folderpath,
                                            save_as_dir=True,
                                            parent=self)
                 else:
-                    raise RuntimeError(f'Could not load {filepath} to config')
+                    logger.warning(f"Could not load {filepath} to config")
                 config[subconfig_name] = subconfig
 
         else:
