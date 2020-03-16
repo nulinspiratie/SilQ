@@ -14,7 +14,9 @@ from silq.pulses.pulse_modules import PulseSequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 import qcodes as qc
-from qcodes import Instrument, FormatLocation
+from qcodes.instrument.parameter_node import parameter
+from qcodes.instrument.parameter import Parameter
+from qcodes import Instrument, FormatLocation, MatPlot
 from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
 from qcodes.data.io import DiskIO
@@ -555,6 +557,14 @@ class Layout(Instrument):
                            docstring='List of channel labels to acquire. '
                                      'Channel labels are defined in '
                                      'layout.acquisition_channels')
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
+        self.is_acquiring = Parameter(
+            set_cmd=None,
+            initial_value=False,
+            docstring="Whether or not the Layout is performing an acquisition. "
+                      "Ensures no two acquisitions are run simultaneously.")
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -618,17 +628,29 @@ class Layout(Instrument):
         else:
             return None
 
-    @property
-    def sample_rate(self):
+    @parameter
+    def sample_rate_get(self, parameter):
         """Union[float, None]: Acquisition sample rate
 
         If `Layout.acquisition_interface` is not setup, return None
 
         """
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.sample_rate()
+            return self.acquisition_interface.sample_rate.get_latest()
         else:
             return None
+
+    @parameter
+    def sample_rate_set(self, parameter, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -1043,8 +1065,11 @@ class Layout(Instrument):
                                              **kwargs)
         return connection
 
-    def _target_pulse(self,
-                      pulse: Pulse):
+    def _target_pulse(
+            self,
+            pulse: Pulse,
+            copy_pulse: bool = True
+    ):
         """Target pulse to corresponding connection and instrument interface.
 
         The connection is determined from either `Pulse.connection_label`,
@@ -1057,6 +1082,10 @@ class Layout(Instrument):
 
         Args:
             pulse: pulse to be targeted
+            copy_pulse: whether to copy the pulse when targeting via the connection.
+                the main pulses should have this set to True, whereas additional
+                pulses should have this set to False.
+                Note that a MultiConnection will have this set to True regardless
 
         Notes:
             * At each targeting stage, the pulse is copied such that any
@@ -1073,8 +1102,9 @@ class Layout(Instrument):
         """
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.quick_add(pulse, connect=False,
-                                                                reset_duration=False)
+            self.acquisition_interface.pulse_sequence.quick_add(
+                pulse, connect=False, reset_duration=False, nest=True
+            )
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1087,10 +1117,13 @@ class Layout(Instrument):
         # single pulse is that targeting by a CombinedConnection will target the
         # pulse to each of its connections it's composed of.
         # Copies pulse (multiple times if type is CombinedConnection)
-        pulses = connection.target_pulse(pulse)
-        if not isinstance(pulses, list):
-            # Convert to list
-            pulses = [pulses]
+        if isinstance(connection, CombinedConnection):
+            # A CombinedConnection targets the pulse to each of its connections
+            # that it's composed of. Will create a copy for each connection
+            pulses = connection.target_pulse(pulse)
+        else:
+            pulse = connection.target_pulse(pulse, copy_pulse=copy_pulse)
+            pulses = [pulse]
 
         for pulse in pulses:
             instrument = pulse.connection.output['instrument']
@@ -1104,23 +1137,27 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            # Copies pulse
-            self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                   reset_duration=False)
+            # Do not copy pulse
+            self.targeted_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+            )
 
-            # Copies pulse
-            interface.pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                               reset_duration=False)
+            # Do not copy pulse
+            interface.pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+            )
 
             # Also add pulse to input interface pulse sequence
-            input_interface = self._interfaces[
-                pulse.connection.input['instrument']]
-            # Copies pulse
-            input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                           reset_duration=False)
+            input_interface = self._interfaces[pulse.connection.input['instrument']]
+            # Do not copy pulse
+            input_interface.input_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+            )
 
-    def _target_pulse_sequence(self,
-                               pulse_sequence: PulseSequence):
+    def _target_pulse_sequence(
+            self,
+            pulse_sequence: PulseSequence
+    ):
         """Targets a pulse sequence.
 
         For each of the pulses, it finds the instrument that can output it,
@@ -1162,19 +1199,19 @@ class Layout(Instrument):
 
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
-        self.targeted_pulse_sequence.duration = pulse_sequence.duration
-        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
+        # Adopt the same structure as the target pulse sequence, including any
+        # nested pulse sequences
+        self.targeted_pulse_sequence.clone_skeleton(pulse_sequence)
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
 
-            # Fix duration of pulse sequence and input pulse sequence
-            interface.pulse_sequence.duration = pulse_sequence.duration
-            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
-            interface.input_pulse_sequence.duration = pulse_sequence.duration
-            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
+            # Clone the structure of the target pulse sequence. This includes
+            # fixing the duration of pulse sequence and any nested pulse sequences
+            interface.pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.input_pulse_sequence.clone_skeleton(pulse_sequence)
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in self.pulse_sequence:
@@ -1189,7 +1226,9 @@ class Layout(Instrument):
                 additional_pulses = interface.get_additional_pulses(
                     connections=self.connections)
                 for pulse in additional_pulses:
-                    self._target_pulse(pulse)
+                    # These pulses do not need to be copied since they were
+                    # generated during targeting
+                    self._target_pulse(pulse, copy_pulse=False)
 
 
         # Finish setting up the pulse sequences
@@ -1348,7 +1387,7 @@ class Layout(Instrument):
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+            sample_rate=self.sample_rate(), samples=self.samples())
         self.acquisition_shapes = {}
         output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
@@ -1523,14 +1562,14 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['sample_rate'] = self.sample_rate()
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())}, file)
+                sample_rate=self.sample_rate(), samples=self.samples())}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
@@ -1594,6 +1633,7 @@ class Layout(Instrument):
         trace_file.attrs['final_loop_indices'] = active_loop.loop_indices
 
         return trace_file
+
 
     def close_trace_files(self) -> None:
         """Close all opened HDF5 trace files.
