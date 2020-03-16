@@ -242,14 +242,27 @@ def run_scripts(name: str = None,
 
                 # Run each file in the subfolder
                 for script_folder_subelement in script_folder_element.iterdir():
+                    if not script_folder_subelement.suffix == ".py":
+                        logger.warning(f"Skipping non-python script: "
+                                       f"{script_folder_subelement.parent.stem}"
+                                       f"/{script_folder_subelement.name}")
+                        continue
                     if not silent:
-                        print(f'Running script {script_folder_element.stem}/{script_folder_subelement.stem}')
-                    execute_file(script_folder_subelement, globals=globals, locals=locals)
+                        print(
+                            f"Running script {script_folder_element.stem}/"
+                            f"{script_folder_subelement.stem}")
+                    execute_file(script_folder_subelement, globals=globals,
+                                 locals=locals)
             else:  # Execute file
+                if not script_folder_element.suffix == ".py":
+                    logger.warning(f"Skipping non-python script:"
+                                   f" {script_folder_element.name}")
+                    continue
                 if not silent:
-                    print(f'Running script {script_folder_element.stem}')
+                    print(f"Running script {script_folder_element.stem}")
 
-                execute_file(script_folder_element, globals=globals, locals=locals)
+                execute_file(script_folder_element, globals=globals,
+                             locals=locals)
 
 
 def initialize(name: str,
@@ -306,9 +319,15 @@ def initialize(name: str,
             elif ignore and filename_no_prefix in ignore:
                 continue
             else:
-                if not silent:
-                    print(f'Initializing {filename_no_prefix}')
-                execute_file(init_file, globals=globals, locals=locals)
+                if not init_file.suffix == ".py":
+                    if not silent:
+                        logger.warning(
+                            f"Skipping ./{experiment_folder.parts[-1]}/init/"
+                            f"{init_file.parts[-1]}")
+                else:
+                    if not silent:
+                        print(f"Initializing {filename_no_prefix}")
+                    execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
