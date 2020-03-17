@@ -435,7 +435,7 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
             for k, pulse_sequence_file in enumerate(pulse_sequence_files):
                 pulse_sequence_date_time = datetime.strptime(
                     f'{date_str}:{pulse_sequence_file[-15:-7]}',
-                    ''%Y-%m-%d:%H-%M-%S')
+                    '%Y-%m-%d:%H-%M-%S')
                 if pulse_sequence_date_time > current_date:
                     pulse_sequence_filepath = os.path.join(pulse_sequence_path,
                                                            pulse_sequence_file)
