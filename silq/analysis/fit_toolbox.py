@@ -11,6 +11,7 @@ from qcodes.data.data_array import DataArray
 
 logger = logging.getLogger(__name__)
 
+
 class Fit():
     """Base fitting class.
 
@@ -92,7 +93,8 @@ class Fit():
         return array[self.find_nearest_index(array, value)]
 
     def get_parameters(self, xvals, ydata, initial_parameters={},
-                       fixed_parameters={}, parameter_constraints={}, weights=None, **kwargs):
+                       fixed_parameters={}, parameter_constraints={},
+                       weights=None, **kwargs):
         """Get parameters for fitting
         Args:
             xvals: x-coordinates of data points
@@ -216,9 +218,10 @@ class Fit():
         y_vals_full *= yscale
         plot_kwargs = {**self.plot_kwargs, **kwargs}
         self.plot_handle, = ax.plot(x_vals_full,
-                                   y_vals_full,
-                                  **plot_kwargs)
+                                    y_vals_full,
+                                    **plot_kwargs)
         return self.plot_handle
+
 
 class LinearFit(Fit):
     """Fitting class for a linear function.
@@ -228,7 +231,8 @@ class LinearFit(Fit):
         after which it will fit the data to `Fit.fit_function`.
 
         Note:
-            The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+            The fitting routine uses lmfit, a wrapper package around
+            scipy.optimize.
         """
     sweep_parameter = 't'
 
@@ -270,7 +274,7 @@ class LinearFit(Fit):
         parameters = Parameters()
         if not 'gradient' in initial_parameters:
             initial_parameters['gradient'] = (ydata[-1] - ydata[0]) / \
-                                            (xvals[-1] - xvals[0])
+                                             (xvals[-1] - xvals[0])
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[0]
 
@@ -278,6 +282,7 @@ class LinearFit(Fit):
             parameters.add(key, initial_parameters[key])
 
         return parameters
+
 
 class LorentzianFit(Fit):
     """Fitting class for a Lorentzian function.
@@ -309,7 +314,8 @@ class LorentzianFit(Fit):
         Returns:
             lorentzian data points
         """
-        return amplitude * (gamma/2) / ((x - mean)**2 + (gamma/2)**2) + offset
+        return amplitude * (gamma / 2) / (
+                (x - mean) ** 2 + (gamma / 2) ** 2) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -334,19 +340,21 @@ class LorentzianFit(Fit):
         if not 'amplitude' in initial_parameters:
             initial_parameters['amplitude'] = max(ydata)
         if not 'gamma' in initial_parameters:
-            # Attempt to find the FWHM of the Gaussian to lessening degrees of accuracy
+            # Attempt to find the FWHM of the Gaussian to lessening degrees
+            # of accuracy
             try:
                 A = initial_parameters['amplitude']
-                for ratio in [1/100, 1/33, 1/10, 1/3]:
-                    idxs, = np.where(abs(ydata - A/2) <= A*ratio)
+                for ratio in [1 / 100, 1 / 33, 1 / 10, 1 / 3]:
+                    idxs, = np.where(abs(ydata - A / 2) <= A * ratio)
                     if len(idxs) >= 2:
                         initial_parameters['gamma'] = \
-                            1 / (2 * np.sqrt(2 * np.log(2))) * (xvals[idxs[-1]] - xvals[idxs[0]])
+                            1 / (2 * np.sqrt(2 * np.log(2))) * (
+                                    xvals[idxs[-1]] - xvals[idxs[0]])
                         break
             finally:
                 if not 'gamma' in initial_parameters:
                     # 5% of the x-axis
-                    initial_parameters['gamma'] = (max(xvals)-min(xvals))/20
+                    initial_parameters['gamma'] = (max(xvals) - min(xvals)) / 20
 
         if not 'mean' in initial_parameters:
             initial_parameters['mean'] = xvals[np.argmax(ydata)]
@@ -360,6 +368,7 @@ class LorentzianFit(Fit):
         parameters['gamma'].min = 0
 
         return parameters
+
 
 class VoigtFit(Fit):
     """Fitting class for a Voigt function.
@@ -378,7 +387,7 @@ class VoigtFit(Fit):
                      amplitude: float,
                      mean: float,
                      gamma: float,
-                     sigma : float,
+                     sigma: float,
                      offset: float) -> Union[float, np.ndarray]:
         """Gaussian function using x as x-coordinate
 
@@ -392,7 +401,7 @@ class VoigtFit(Fit):
             exponential data points
         """
         return amplitude * (
-                    gamma ** 2 / ((x - mean) ** 2 + gamma ** 2)) * \
+                gamma ** 2 / ((x - mean) ** 2 + gamma ** 2)) * \
                np.exp(- (x - mean) ** 2 / (2 * sigma) ** 2) + offset
 
     def find_initial_parameters(self,
@@ -418,7 +427,8 @@ class VoigtFit(Fit):
         if not 'amplitude' in initial_parameters:
             initial_parameters['amplitude'] = max(ydata)
         if not 'gamma' in initial_parameters:
-            # Attempt to find the FWHM of the Gaussian to lessening degrees of accuracy
+            # Attempt to find the FWHM of the Gaussian to lessening degrees
+            # of accuracy
             try:
                 A = initial_parameters['amplitude']
                 for ratio in [1 / 100, 1 / 33, 1 / 10, 1 / 3]:
@@ -426,7 +436,7 @@ class VoigtFit(Fit):
                     if len(idxs) >= 2:
                         initial_parameters['gamma'] = \
                             1 / (2 * np.sqrt(2 * np.log(2))) * (
-                                        xvals[idxs[-1]] - xvals[idxs[0]])
+                                    xvals[idxs[-1]] - xvals[idxs[0]])
                         break
             finally:
                 if not 'gamma' in initial_parameters:
@@ -434,7 +444,8 @@ class VoigtFit(Fit):
                     initial_parameters['gamma'] = (max(xvals) - min(
                         xvals)) / 20
         if not 'sigma' in initial_parameters:
-            # Attempt to find the FWHM of the Gaussian to lessening degrees of accuracy
+            # Attempt to find the FWHM of the Gaussian to lessening degrees
+            # of accuracy
             try:
                 A = initial_parameters['amplitude']
                 for ratio in [1 / 100, 1 / 33, 1 / 10, 1 / 3]:
@@ -442,7 +453,7 @@ class VoigtFit(Fit):
                     if len(idxs) >= 2:
                         initial_parameters['sigma'] = \
                             1 / (2 * np.sqrt(2 * np.log(2))) * (
-                                        xvals[idxs[-1]] - xvals[idxs[0]])
+                                    xvals[idxs[-1]] - xvals[idxs[0]])
                         break
             finally:
                 if not 'sigma' in initial_parameters:
@@ -463,6 +474,7 @@ class VoigtFit(Fit):
         #         parameters['tau'].min = 0
 
         return parameters
+
 
 class GaussianFit(Fit):
     """Fitting class for a Gaussian function.
@@ -521,19 +533,21 @@ class GaussianFit(Fit):
         if not 'mean' in initial_parameters:
             initial_parameters['mean'] = xvals[np.argmax(ydata)]
         if not 'sigma' in initial_parameters:
-            # Attempt to find the FWHM of the Gaussian to lessening degrees of accuracy
+            # Attempt to find the FWHM of the Gaussian to lessening degrees
+            # of accuracy
             try:
                 A = initial_parameters['amplitude']
-                for ratio in [1/100, 1/33, 1/10, 1/3]:
-                    idxs, = np.where(abs(ydata - A/2) <= A*ratio)
+                for ratio in [1 / 100, 1 / 33, 1 / 10, 1 / 3]:
+                    idxs, = np.where(abs(ydata - A / 2) <= A * ratio)
                     if len(idxs) >= 2:
                         initial_parameters['sigma'] = \
-                            1 / (2 * np.sqrt(2 * np.log(2))) * (xvals[idxs[-1]] - xvals[idxs[0]])
+                            1 / (2 * np.sqrt(2 * np.log(2))) * (
+                                    xvals[idxs[-1]] - xvals[idxs[0]])
                         break
             finally:
                 if not 'sigma' in initial_parameters:
                     # 5% of the x-axis
-                    initial_parameters['sigma'] = (max(xvals)-min(xvals))/20
+                    initial_parameters['sigma'] = (max(xvals) - min(xvals)) / 20
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = np.mean(ydata)
 
@@ -787,6 +801,7 @@ class ExponentialFit(Fit):
 
         return parameters
 
+
 class DoubleExponentialFit(Fit):
     """Fitting class for a double exponential function.
 
@@ -798,9 +813,9 @@ class DoubleExponentialFit(Fit):
         The fitting routine uses lmfit, a wrapper package around scipy.optimize.
     """
     sweep_parameter = 't'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
 
     @staticmethod
     def fit_function(t: Union[float, np.ndarray],
@@ -1075,6 +1090,7 @@ class SineFit(Fit):
 
         return parameters
 
+
 class AMSineFit(Fit):
     sweep_parameter = 't'
 
@@ -1176,6 +1192,7 @@ class AMSineFit(Fit):
 
         return parameters
 
+
 class ExponentialSineFit(Fit):
     sweep_parameter = 't'
 
@@ -1227,6 +1244,7 @@ class ExponentialSineFit(Fit):
 
         return parameters
 
+
 class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
 
@@ -1254,7 +1272,7 @@ class RabiFrequencyFit(Fit):
                 FWHM_max_idx = len(xvals) - np.argmax(
                     (xvals > max_frequency / 2)[::-1]) - 1
                 initial_parameters['gamma'] = 2 * np.pi * (
-                xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
+                        xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
         if 't' not in initial_parameters:
             initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
@@ -1267,6 +1285,7 @@ class RabiFrequencyFit(Fit):
         # parameters.add('amplitude', expr='gamma^2/ Omega^2')
 
         return parameters
+
 
 class BayesianUpdateFit(Fit):
     """Fitting class for a 'Bayesian update' function.
@@ -1301,7 +1320,7 @@ class BayesianUpdateFit(Fit):
         """
         return prior * np.exp(-t / tau_1) / (
                 np.exp(-t / tau_1) * prior + np.exp(-t / tau_2) * (
-                        1 - prior)) + offset
+                1 - prior)) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -1343,6 +1362,7 @@ class BayesianUpdateFit(Fit):
         parameters['tau_1'].min = 0
         parameters['tau_2'].min = 0
         return parameters
+
 
 class FermiFit(Fit):
     """Fitting class for a Fermi-Dirac distribution function.
@@ -1413,11 +1433,11 @@ class FermiFit(Fit):
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
 
-
         parameters['T'].min = 0
         parameters['offset'].min = 0
 
         return parameters
+
 
 class DoubleFermiFit(Fit):
     """Fitting class for a double Fermi-Dirac distribution function.
@@ -1449,7 +1469,8 @@ class DoubleFermiFit(Fit):
             lower: lower Fermi level (for T=0)
             upper: upper Fermi level (for T=0)
             T: System temperature (K)
-            alpha : electrochemical potential lever arm from applied gate potential
+            alpha : electrochemical potential lever arm from applied gate
+            potential
             offset:
 
         Returns:
@@ -1511,6 +1532,7 @@ class DoubleFermiFit(Fit):
 
         return parameters
 
+
 class T1Fit(Fit):
     """Fitting class for a 1/T1 vs magnetic field (B) function.
 
@@ -1519,7 +1541,8 @@ class T1Fit(Fit):
         after which it will fit the data to `Fit.fit_function`.
 
         Note:
-            The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+            The fitting routine uses lmfit, a wrapper package around
+            scipy.optimize.
         """
     sweep_parameter = 'x'
 
@@ -1542,7 +1565,7 @@ class T1Fit(Fit):
         Returns:
             magic
         """
-        return K0 + K1*x +K3*x**3 + K5*x**5 + K7*x**7
+        return K0 + K1 * x + K3 * x ** 3 + K5 * x ** 5 + K7 * x ** 7
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -1567,11 +1590,11 @@ class T1Fit(Fit):
         if not 'K0' in initial_parameters:
             initial_parameters['K5'] = ydata[0]
         if not 'K1' in initial_parameters:
-            initial_parameters['K1'] = ydata[-1]-ydata[0]
+            initial_parameters['K1'] = ydata[-1] - ydata[0]
         if not 'K3' in initial_parameters:
             initial_parameters['K3'] = 0.01
         if not 'K5' in initial_parameters:
-                initial_parameters['K5'] = 0.01
+            initial_parameters['K5'] = 0.01
         if not 'K7' in initial_parameters:
             initial_parameters['K7'] = 0.01
 
