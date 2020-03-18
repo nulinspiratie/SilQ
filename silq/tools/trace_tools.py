@@ -61,7 +61,10 @@ def extract_pulse_slices_from_trace_file(traces_file: h5py.File,
                                          sample_rate=None):
     """Extract the slices in trace arrays for each pulse.
 
-    Newer trace files contain the key ``pulse_slices``, which is then returned.
+    Newer trace files (March 2020 onwards) contain the key ``pulse_slices``,
+    which is then returned.
+
+
     Older trace files do not have this key, and so the start and stop idx is
     retrieved from the ``pulse_sequence``, which is stored as a key.
 
@@ -162,6 +165,8 @@ def load_pulse_traces(dataset: qc.DataSet = None,
         OverflowError: If the size of the trace arrays exceed maximum_array_size.
         RuntimeError: If the pulse slices could not be extracted from the file.
     """
+    assert dataset is not None or traces_file is not None
+
     if traces_file is None:
         traces_file = load_traces(dataset, name=name)
 

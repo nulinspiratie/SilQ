@@ -1531,6 +1531,19 @@ class Layout(Instrument):
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
                 sample_rate=self.sample_rate, samples=self.samples())}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate,
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                return_slice=False
+            )}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate,
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                filter_acquire=False,
+                return_slice=False
+            )}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
