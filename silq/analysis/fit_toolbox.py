@@ -189,7 +189,6 @@ class Fit():
                     ax: Axis,
                     N: int = 201,
                     xrange: Tuple[float] = None,
-                    x_range: Tuple[float] = None,
                     xscale: float = 1,
                     yscale: float = 1,
                     **kwargs):
