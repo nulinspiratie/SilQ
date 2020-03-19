@@ -121,9 +121,10 @@ def get_experiments_folder():
                                         'silq.set_experiments_folder()')
 
 
-def get_experiment_configuration(name: str,
-                                 experiments_folder: Path = None) -> (
-Path, dict):
+def get_experiment_configuration(
+        name: str,
+        experiments_folder: Path = None
+) -> (Path, dict):
     """Retrieves experiment folder and configuration from experiments folder.
     This contains all configurations that can be used by `silq.initialize`.
 
@@ -186,8 +187,7 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
             shell.safe_execfile(filepath, shell.user_ns, raise_exceptions=True)
         else:
             if globals is None and locals is None:
-                # Register globals and locals of the above frame (for code
-                # execution)
+                # Register globals and locals of the above frame for code execution
                 globals = sys._getframe(1).f_globals
                 locals = sys._getframe(1).f_locals
 
@@ -195,7 +195,8 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
             exec(execution_code, globals, locals)
     except Exception as e:
         e.args = (
-        e.args[0] + f"\nSilQ initialization error in {filepath}", *e.args[1:])
+            e.args[0] + f"\nSilQ initialization error in {filepath}", *e.args[1:]
+        )
         raise e
 
 
@@ -257,8 +258,9 @@ def run_scripts(name: str = None,
                                  locals=locals)
             else:  # Execute file
                 if not script_folder_element.suffix == ".py":
-                    logger.warning(f"Skipping non-python script:"
-                                   f" {script_folder_element.name}")
+                    logger.warning(
+                        f"Skipping non-python script: {script_folder_element.name}"
+                    )
                     continue
                 if not silent:
                     print(f"Running script {script_folder_element.stem}")
@@ -342,9 +344,7 @@ def initialize(name: str,
 
         location_provider = qc.data.data_set.DataSet.location_provider
         if os.path.split(data_folder)[-1] == 'data' and \
-                (
-                        location_provider.fmt == 'data/{date}/#{counter}_{'
-                                                 'name}_{time}'):
+                (location_provider.fmt == 'data/{date}/#{counter}_{name}_{time}'):
             logger.debug('Removing duplicate "data" from location provider')
             location_provider.fmt = '{date}/#{counter}_{name}_{time}'
 
@@ -364,12 +364,12 @@ def _save_config(self, location=None):
             return
 
         if not os.path.isabs(location):
-            location = os.path.join(qc.DataSet.default_io.base_location,
-                                    location)
+            location = os.path.join(
+                qc.DataSet.default_io.base_location, location
+            )
         config.save(location)
     except Exception as e:
         logger.error(f'Datasaving error: {e.args}')
-
 
 qc.DataSet.save_config = _save_config
 
@@ -393,9 +393,10 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     if name is None and len(trace_filenames) == 1:
         trace_filename = trace_filenames[0]
     else:
-        assert name is not None, f"No unique trace file found:" \
-                                 f" {trace_filenames}. " \
-                                 "Trace filename must be provided"
+        assert name is not None, (
+            f"No unique trace file found: {trace_filenames}. "
+            f"Trace filename must be provided"
+        )
         filtered_trace_filenames = [filename for filename in trace_filenames
                                     if name in filename]
         assert len(filtered_trace_filenames) == 1, \
@@ -405,7 +406,6 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     trace_filepath = os.path.join(trace_path, trace_filename)
     trace_file = h5py.File(trace_filepath, mode)
     return trace_file
-
 
 qc.DataSet.load_traces = _load_traces
 
@@ -424,18 +424,19 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
         current_date = date_time
         while current_date <= date_time + timedelta(days=max_date_delta):
             date_str = date_time.strftime("%Y-%m-%d")
-            pulse_sequence_path = os.path.join(self.default_io.base_location,
-                                               r'pulse_sequences\data',
-                                               date_str)
+            pulse_sequence_path = os.path.join(
+                self.default_io.base_location, r'pulse_sequences\data', date_str
+            )
             pulse_sequence_files = os.listdir(pulse_sequence_path)
             # Sort by their idx (i.e. #095 at start of filename)
-            pulse_sequence_files = sorted(pulse_sequence_files,
-                                          key=lambda file: int(
-                                              file.split('_')[0][1:]))
+            pulse_sequence_files = sorted(
+                pulse_sequence_files, key=lambda file: int(file.split('_')[0][1:])
+            )
             for k, pulse_sequence_file in enumerate(pulse_sequence_files):
                 pulse_sequence_date_time = datetime.strptime(
                     f'{date_str}:{pulse_sequence_file[-15:-7]}',
-                    '%Y-%m-%d:%H-%M-%S')
+                    '%Y-%m-%d:%H-%M-%S'
+                )
                 if pulse_sequence_date_time > current_date:
                     pulse_sequence_filepath = os.path.join(pulse_sequence_path,
                                                            pulse_sequence_file)
@@ -444,8 +445,7 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
 
                     # Pulse sequence duration needs to be reset
                     try:
-                        duration = pulse_sequence['duration']._latest[
-                            'raw_value']
+                        duration = pulse_sequence['duration']._latest['raw_value']
                         pulse_sequence['duration']._latest['value'] = duration
                     except:
                         pass
@@ -456,28 +456,28 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
                 # Goto next date
                 current_date = datetime.combine(
                     current_date.date() + timedelta(days=1),
-                    datetime.min.time())
+                    datetime.min.time()
+                )
 
     date, measurement_name = self.location.split('\\')
-    measurement_date_time = datetime.strptime(f'{date}:{measurement_name[-8:]}',
-                                              '%Y-%m-%d:%H-%M-%S')
+    measurement_date_time = datetime.strptime(
+        f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S'
+    )
 
     try:
-        pulse_sequence_iterator = (pulse_sequence for pulse_sequence in
-                                   get_next_pulse_sequence(
-                                       measurement_date_time)
-                                   if (not pulse_name or pulse_name in
-                                       pulse_sequence[0]))
+        next_pulse_sequence = get_next_pulse_sequence(measurement_date_time)
+        pulse_sequence_iterator = (
+            pulse_sequence for pulse_sequence in next_pulse_sequence
+            if (not pulse_name or pulse_name in pulse_sequence[0])
+        )
         for k in range(idx + 1):
-            pulse_sequence, pulse_sequence_filename = next(
-                pulse_sequence_iterator)
+            pulse_sequence, pulse_sequence_filename = next(pulse_sequence_iterator)
     except StopIteration:
         raise StopIteration('No pulse sequences found')
 
     if not silent:
         print(f'Pulse sequence file: {pulse_sequence_filename}')
     return pulse_sequence
-
 
 qc.DataSet.get_pulse_sequence = _get_pulse_sequence
 
@@ -495,41 +495,53 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
         return SweepDependentValues(parameter=self, step=step,
                                     step_percentage=step_percentage, num=num,
                                     window=window, fix=fix)
-
-
 qc.Parameter.sweep = _sweep
+
+
+def _stop_layout(close_trace_file=True):
+    try:
+        layout = qc.Instrument.find_instrument('layout')
+        layout.stop()
+        logger.info('End-of-measurement: stopped layout')
+        if close_trace_file:
+            layout.close_trace_files()
+    except (KeyError, TypeError):
+        logger.warning(f'No layout found to stop')
+
+
+def _clear_all_acquisition_parameter_settings(measurement=None):
+    if measurement is None:
+        measurement = qc.active_measurement()
+
+    if isinstance(measurement, qc.loops.ActiveLoop):
+        for action in measurement:
+            if isinstance(action, qc.loops.ActiveLoop):
+                _clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+    else:
+        for action_indices, action in measurement.actions.items():
+            if isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+
+qc.Measurement.final_actions = [
+    _stop_layout,
+    _clear_all_acquisition_parameter_settings
+]
+
 
 # Override ActiveLoop._run_wrapper to stop the layout and clear settings of
 # any accquisition parameters in the loop after the loop has completed.
 _qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
-
-
 def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
-    def clear_all_acquisition_parameter_settings(loop):
-        from silq.parameters import AcquisitionParameter
-
-        for action in loop:
-            if isinstance(action, qc.loops.ActiveLoop):
-                clear_all_acquisition_parameter_settings(action)
-            elif isinstance(action, SettingsClass):
-                logger.info(f'End-of-loop: clearing settings for {action}')
-                action.clear_settings()
-
     try:
         _qc_run_wrapper(self, set_active=set_active, *args, **kwargs)
     finally:
-        try:
-            layout = qc.Instrument.find_instrument('layout')
-            if stop:
-                layout.stop()
-                logger.info('Stopped layout at end of loop')
-                if set_active:
-                    layout.close_trace_files()
-        except KeyError:
-            logger.warning(f'No layout found to stop')
+        if stop:
+            _stop_layout(close_trace_file=set_active)
 
         # Clear all settings for any acquisition parameters in the loop
-        clear_all_acquisition_parameter_settings(self)
-
-
+        _clear_all_acquisition_parameter_settings(self)
 qc.loops.ActiveLoop._run_wrapper = _run_wrapper
