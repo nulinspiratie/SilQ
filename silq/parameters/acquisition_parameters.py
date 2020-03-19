@@ -7,7 +7,7 @@ from functools import partial
 import logging
 import re
 
-from qcodes import DataSet, MultiParameter, active_data_set, active_loop, \
+from qcodes import DataSet, MultiParameter, active_dataset, active_measurement, \
     Parameter
 from qcodes.data import hdf5_format
 from qcodes import Instrument, MatPlot
@@ -313,7 +313,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         if save_traces is None:
             save_traces = self.save_traces
-        if save_traces and active_loop() is None:
+        if save_traces and active_measurement() is None:
             logger.warning('Cannot save traces since there is no active loop')
             save_traces = False
 
