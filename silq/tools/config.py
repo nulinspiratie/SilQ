@@ -65,7 +65,6 @@ class SubConfig:
             in it are saved as a JSON file. If True, SubConfig is saved as a
             folder, each dict key being a separate JSON file.
     """
-
     def __init__(self,
                  name: str,
                  folder: str = None,
@@ -157,8 +156,9 @@ class SubConfig:
                             subconfig = json.load(fp)
                         except Exception as e:
                             e.args = (
-                            e.args[0] + f'\nError reading json file {filepath}',
-                            *e.args[1:])
+                                e.args[0] + f'\nError reading json file {filepath}',
+                                *e.args[1:]
+                            )
                             raise e
 
                         if isinstance(subconfig, list):
@@ -170,10 +170,12 @@ class SubConfig:
                                                f'{filepath}')
 
                         subconfig_name = file.split('.')[0]
-                        subconfig = config_class(name=subconfig_name,
-                                                 folder=folderpath,
-                                                 save_as_dir=False,
-                                                 parent=self)
+                        subconfig = config_class(
+                            name=subconfig_name,
+                            folder=folderpath,
+                            save_as_dir=False,
+                            parent=self
+                        )
                 elif os.path.isdir(filepath):
                     if ".ipynb_checkpoints" in filepath:
                         continue
@@ -233,7 +235,8 @@ class SubConfig:
         else:
             raise TypeError(
                 f'{self.config_path} has different type as refreshed '
-                f'config {config}')
+                f'config {config}'
+            )
 
     def save(self,
              folder: str = None,
@@ -330,8 +333,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             return True
         elif DotDict.__contains__(self, 'inherit'):
             try:
-                if self['inherit'].startswith('config:') or self[
-                    'inherit'].startswith('environment:'):
+                if self['inherit'].startswith('config:') or \
+                        self['inherit'].startswith('environment:'):
                     return key in self[self['inherit']]
                 else:
                     return key in self.parent[self['inherit']]
@@ -351,8 +354,11 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 return self[key.replace('config:', '')]
         elif key.startswith('environment:'):
             if self.parent is None:
-                environment_config = self if silq.environment is None else self[
-                    silq.environment]
+                if silq.environment is None:
+                    environment_config = self
+                else:
+                    environment_config = self[silq.environment]
+
                 if key == 'environment:':
                     return environment_config
                 else:
@@ -364,18 +370,17 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             val = DotDict.__getitem__(self, key)
             if key == 'inherit':
                 return val
-            elif isinstance(val, str) and (val.startswith('config:')
-                                           or val.startswith('environment:')):
+            elif isinstance(val, str) and \
+                    (val.startswith('config:') or val.startswith('environment:')):
                 try:
                     return self[val]
                 except KeyError:
-                    raise KeyError(
-                        f"Couldn't retrieve mirrored key {key} -> {val}")
+                    raise KeyError(f"Couldn't retrieve mirrored key {key} -> {val}")
             else:
                 return val
         elif 'inherit' in self:
-            if self['inherit'].startswith('config:') or self[
-                'inherit'].startswith('environment:'):
+            if self['inherit'].startswith('config:') or \
+                    self['inherit'].startswith('environment:'):
                 return self[self['inherit']][key]
             else:
                 return self.parent[self['inherit']][key]
@@ -384,8 +389,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
 
     def __setitem__(self, key, val):
         if not isinstance(key, str):
-            raise TypeError(
-                f'Config key {key} must have type str, not {type(key)}')
+            raise TypeError(f'Config key {key} must have type str, not {type(key)}')
 
         # Update item in dict (modified version of DotDict)
         if '.' in key:
@@ -420,17 +424,14 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                     return
 
                 if key == 'inherit':
-                    if (val.startswith('config:') or val.startswith(
-                            'environment:')):
+                    if (val.startswith('config:') or val.startswith('environment:')):
                         config_path = val
                     else:
                         # inherit a neighbouring dict element
-                        config_path = join_config_path(self.parent.config_path,
-                                                       val)
+                        config_path = join_config_path(self.parent.config_path, val)
 
                     # Register inheritance for signal sending
-                    self[config_path]._inherited_configs.append(
-                        self.config_path)
+                    self[config_path]._inherited_configs.append(self.config_path)
 
         if isinstance(val, str) and (val.startswith('config:')
                                      or val.startswith('environment:')):
@@ -445,7 +446,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 target_config._mirrored_config_attrs[target_attr] = []
 
             target_config._mirrored_config_attrs[target_attr].append(
-                (self.config_path, key))
+                (self.config_path, key)
+            )
 
         # Retrieve value from self, which also handles mirroring/inheriting
         value = self[key]
@@ -502,19 +504,16 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 inheritance = dict.get(target_config, 'inherit', None)
                 if inheritance == self.config_path \
                         or dict.get(target_config, target_attr) == attr_path \
-                        or (
-                        inheritance == self.name and target_config.parent ==
-                        self.parent):
-                    target_attr_path = join_config_path(target_path,
-                                                        target_attr)
+                        or (inheritance == self.name and
+                            target_config.parent ==self.parent):
+                    target_attr_path = join_config_path(target_path, target_attr)
 
                     self.signal.send(target_attr_path, value=value)
 
                     if silq.environment is None:
                         target_attr_environment_path = target_attr_path.replace(
                             'config:', 'environment:')
-                        self.signal.send(target_attr_environment_path,
-                                         value=value)
+                        self.signal.send(target_attr_environment_path, value=value)
 
                     updated_target_paths.append(target_full_path)
             except KeyError:
@@ -547,8 +546,7 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
         if dependent_value:
             return {key: self[key] for key in self.keys()}.items()
         else:
-            return {key: dict.__getitem__(self, key) for key in
-                    self.keys()}.items()
+            return {key: dict.__getitem__(self, key) for key in self.keys()}.items()
 
     def get(self, key: str,
             default: Any = None):
