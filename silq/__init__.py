@@ -209,6 +209,22 @@ def run_script(
         globals: dict = None,
         locals: dict = None
 ):
+    """Run a single script, by default from the experiment scripts folder
+
+    Args:
+        script_name: Name of script. Can contain slashes (/) for a script in a folder
+        folder: Script folder. Can be either absolute or relative path.
+            If relative, the folder is w.r.t. the experiment folder.
+        silent: Whether to print the execution of the script
+        mode: Whether a specific initialize mode is used.
+            script files can start with '#ignore_mode: {mode}'.
+            If 'ignore_mode' matches the specified mode, the script is not executed.
+        globals: Optional global variables
+        locals: Optional local variables
+
+    Returns:
+        None
+    """
     if globals is None and locals is None:
         # Register globals and locals of the above frame (for code execution)
         globals = sys._getframe(1).f_globals
