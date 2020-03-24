@@ -16,7 +16,6 @@ import silq
 
 __all__ = ['SubConfig', 'DictConfig', 'ListConfig', 'update_dict']
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +100,8 @@ class SubConfig:
         The folder must either contain a {self.name}.json file,
         or alternatively a folder containing config files/folders.
         In the latter case, a dict is created, and all the files/folders in
-        the folder will be elements of the dict.
+        the folder will be elements of the dict. All '.ipynb_checkpoints'
+        folders will be ignored.
 
         If ``save_as_dir`` attribute is None, it will be updated to either True
         or False depending if there is a subfolder or file to load from the
@@ -134,7 +134,8 @@ class SubConfig:
                 with open(filepath, "r") as fp:
                     config = json.load(fp)
             except Exception as e:
-                e.args = (e.args[0] + f'\nError reading json file {filepath}', *e.args[1:])
+                e.args = (e.args[0] + f'\nError reading json file {filepath}',
+                          *e.args[1:])
                 raise e
 
         elif os.path.isdir(folderpath):
@@ -148,14 +149,16 @@ class SubConfig:
 
             for file in os.listdir(folderpath):
                 filepath = os.path.join(folderpath, file)
-                if '.json' in file:
+                if file.endswith(".json"):
                     with open(filepath, "r") as fp:
                         # Determine type of config
                         try:
                             subconfig = json.load(fp)
                         except Exception as e:
-                            e.args = (e.args[0] + f'\nError reading json file {filepath}',
-                                      *e.args[1:])
+                            e.args = (
+                                e.args[0] + f'\nError reading json file {filepath}',
+                                *e.args[1:]
+                            )
                             raise e
 
                         if isinstance(subconfig, list):
@@ -167,18 +170,22 @@ class SubConfig:
                                                f'{filepath}')
 
                         subconfig_name = file.split('.')[0]
-                        subconfig = config_class(name=subconfig_name,
-                                                 folder=folderpath,
-                                                 save_as_dir=False,
-                                                 parent=self)
+                        subconfig = config_class(
+                            name=subconfig_name,
+                            folder=folderpath,
+                            save_as_dir=False,
+                            parent=self
+                        )
                 elif os.path.isdir(filepath):
+                    if ".ipynb_checkpoints" in filepath:
+                        continue
                     subconfig_name = file
                     subconfig = DictConfig(name=file,
                                            folder=folderpath,
                                            save_as_dir=True,
                                            parent=self)
                 else:
-                    raise RuntimeError(f'Could not load {filepath} to config')
+                    logger.warning(f"Could not load {filepath} to config")
                 config[subconfig_name] = subconfig
 
         else:
@@ -226,8 +233,10 @@ class SubConfig:
                 self.clear()
                 self += config
         else:
-            raise TypeError(f'{self.config_path} has different type as refreshed '
-                            f'config {config}')
+            raise TypeError(
+                f'{self.config_path} has different type as refreshed '
+                f'config {config}'
+            )
 
     def save(self,
              folder: str = None,
@@ -324,7 +333,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             return True
         elif DotDict.__contains__(self, 'inherit'):
             try:
-                if self['inherit'].startswith('config:') or self['inherit'].startswith('environment:'):
+                if self['inherit'].startswith('config:') or \
+                        self['inherit'].startswith('environment:'):
                     return key in self[self['inherit']]
                 else:
                     return key in self.parent[self['inherit']]
@@ -344,7 +354,11 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 return self[key.replace('config:', '')]
         elif key.startswith('environment:'):
             if self.parent is None:
-                environment_config = self if silq.environment is None else self[silq.environment]
+                if silq.environment is None:
+                    environment_config = self
+                else:
+                    environment_config = self[silq.environment]
+
                 if key == 'environment:':
                     return environment_config
                 else:
@@ -356,8 +370,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             val = DotDict.__getitem__(self, key)
             if key == 'inherit':
                 return val
-            elif isinstance(val, str) and (val.startswith('config:')
-                                         or val.startswith('environment:')):
+            elif isinstance(val, str) and \
+                    (val.startswith('config:') or val.startswith('environment:')):
                 try:
                     return self[val]
                 except KeyError:
@@ -365,7 +379,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             else:
                 return val
         elif 'inherit' in self:
-            if self['inherit'].startswith('config:') or self['inherit'].startswith('environment:'):
+            if self['inherit'].startswith('config:') or \
+                    self['inherit'].startswith('environment:'):
                 return self[self['inherit']][key]
             else:
                 return self.parent[self['inherit']][key]
@@ -430,7 +445,9 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
             if target_attr not in target_config._mirrored_config_attrs:
                 target_config._mirrored_config_attrs[target_attr] = []
 
-            target_config._mirrored_config_attrs[target_attr].append((self.config_path, key))
+            target_config._mirrored_config_attrs[target_attr].append(
+                (self.config_path, key)
+            )
 
         # Retrieve value from self, which also handles mirroring/inheriting
         value = self[key]
@@ -472,9 +489,9 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
         updated_target_paths = []
         for target_full_path in target_paths:
             try:
-                if attr is None: # Attr is the second argument of the full path
+                if attr is None:  # Attr is the second argument of the full path
                     target_path, target_attr = target_full_path
-                else: # Use default attr
+                else:  # Use default attr
                     target_path, target_attr = target_full_path, attr
 
                 # Check if mirrored attr value still referencing current
@@ -487,7 +504,8 @@ class DictConfig(SubConfig, DotDict, SignalEmitter):
                 inheritance = dict.get(target_config, 'inherit', None)
                 if inheritance == self.config_path \
                         or dict.get(target_config, target_attr) == attr_path \
-                        or (inheritance == self.name and target_config.parent == self.parent):
+                        or (inheritance == self.name and
+                            target_config.parent ==self.parent):
                     target_attr_path = join_config_path(target_path, target_attr)
 
                     self.signal.send(target_attr_path, value=value)
@@ -637,6 +655,7 @@ class ListConfig(SubConfig, list):
     def __deepcopy__(self, memo):
         return copy.deepcopy(self.to_list())
 
+
 def update_dict(d, u):
     """ Update dictionary recursively.
 
@@ -669,6 +688,7 @@ def split_config_path(config_path):
         parent_config_path, config_attr = config_path.split(':')
         parent_config_path += ':'
         return parent_config_path, config_attr
+
 
 def join_config_path(config_path, config_attr):
     delimiter = '' if config_path.endswith(':') else '.'
