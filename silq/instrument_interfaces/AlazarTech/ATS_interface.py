@@ -414,7 +414,7 @@ class ATSInterface(InstrumentInterface):
                          self.pulse_sequence.get_pulses(acquire=True))
         else:  # Capture from t = 0 to end of pulse sequence.
             t_start = 0
-            t_start = self.pulse_sequence.duration
+            t_stop = self.pulse_sequence.duration
 
         acquisition_duration = t_stop - t_start
 
