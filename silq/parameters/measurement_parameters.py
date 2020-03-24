@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 
 import qcodes as qc
 from qcodes import Instrument
-from qcodes.loops import active_data_set, Loop, BreakIf
+from qcodes.loops import active_dataset, Loop, BreakIf
 from qcodes.data import hdf5_format
 from qcodes.instrument.parameter import MultiParameter
 
@@ -122,7 +122,7 @@ class MeasurementParameter(SettingsClass, MultiParameter):
             If in a measurement, the base folder is the relative path of the
             data folder. Otherwise None
         """
-        active_dataset = active_data_set()
+        active_dataset = active_dataset()
         if active_dataset is None:
             return None
         elif getattr(active_dataset, 'location', None):
