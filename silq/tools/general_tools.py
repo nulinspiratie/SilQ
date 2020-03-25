@@ -671,14 +671,15 @@ def logclass(cls, methodsAsFunctions=False,
 
     return cls
 
-
-def find_approximate_divisor(N: int,
-                             max_cycles: int = 65535,
-                             points_multiple: int = 1,
-                             min_points: int = 15,
-                             max_points: int = 6000,
-                             max_remaining_points: int = 1000,
-                             min_remaining_points: int = 0) -> Union[dict, None]:
+def find_approximate_divisor(
+    N: int,
+    max_cycles: int = 65535,
+    points_multiple: int = 1,
+    min_points: int = 15,
+    max_points: int = 6000,
+    max_remaining_points: int = 1000,
+    min_remaining_points: int = 0,
+) -> Union[dict, None]:
     """Find an approximate divisor for a number
 
     The divisor (points) is chosen such that points * cycles <= N, with
@@ -711,15 +712,20 @@ def find_approximate_divisor(N: int,
         # Increase remaining_points if there are remaining points and they
         # are less than min_remaining_points
         if remaining_points and remaining_points < min_remaining_points:
-            subtract_cycles = np.ceil((min_remaining_points - remaining_points) / points)
+            subtract_cycles = np.ceil(
+                (min_remaining_points - remaining_points) / points
+            )
             remaining_points += subtract_cycles * points
             cycles -= subtract_cycles
 
-        if min_points <= points <= max_points and remaining_points <= max_remaining_points:
+        if (
+            min_points <= points <= max_points
+            and remaining_points <= max_remaining_points
+        ):
             return {
-                'points': int(points),
-                'cycles': int(cycles),
-                'remaining_points': int(remaining_points)
+                "points": int(points),
+                "cycles": int(cycles),
+                "remaining_points": int(remaining_points),
             }
     else:
         return None
