@@ -160,23 +160,12 @@ def linear_regression(coordinates: Sequence[Tuple[float, float]]) -> dict:
     return result
 
 
-# def extract_transitions_from_peak_lines(peak_lines: List[dict],
-#                                         x_vals: Sequence[float],
-#                                         y_vals: Sequence[float],
-#                                         x_shift: Tuple[float, float] = 0, ):
-#     for peak_line in peak_lines:
-#         for second_peak_line in peak_lines:
-#             if peak_line is second_peak_line:
-#                 continue
-#
-
-
 def find_nearest_line(
     coords: Tuple[float, float],
     lines: List[dict],
     slope_range: Tuple[float, float] = None,
     y_max_start=None,
-    x_distance_range=None
+    x_distance_range=None,
 ) -> Union[dict, None]:
     """
 
@@ -223,8 +212,10 @@ def find_nearest_line(
         x_distances.append(x_distance)
         line["x_distance"] = x_distance
 
-    if (x_distance_range is None or
-            x_distance_range[0] <= np.min(np.abs(x_distances)) <= x_distance_range[1]):
+    if (
+        x_distance_range is None
+        or x_distance_range[0] <= np.min(np.abs(x_distances)) <= x_distance_range[1]
+    ):
         nearest_line_index = int(np.argmin(np.abs(x_distances)))
         nearest_line = lines[nearest_line_index]
 
@@ -328,153 +319,3 @@ def analyze_2D_DC_scan(
         ax.plot(*coords, "*w")
 
     return results
-
-
-# class DCScanTransitionParameter(MultiParameter):
-#     def __init__(self, name, DC_sweep_parameter=None, tune_to_optimum=True, **kwargs):
-#         self.DC_sweep_parameter = DC_sweep_parameter
-#         self.tune_to_optimum = tune_to_optimum
-#
-#         super().__init__(
-#             name, names=self.names, units=("V", "V", ""), shapes=((), (), ()), **kwargs
-#         )
-#
-#         self.settings = {
-#             "get_peaks": {"thres": 0.5, "min_dist": 10},
-#             "group_peaks": {
-#                 "slope_estimate": -2.5,
-#                 "max_distance": (3, 2),
-#                 "min_points": 8,
-#             },
-#             "get_optimal_coulomb_line": {
-#                 "slope_range": [-4, -1],
-#                 "max_line_start_index": 10,
-#                 "min_tuning_edge_distance": 4,
-#             },
-#         }
-#
-#     @property_ignore_setter
-#     def names(self):
-#         return (
-#             f"{self.x_gate.name}_optimum",
-#             f"{self.y_gate.name}_optimum",
-#             "coulomb_peak_slope",
-#         )
-#
-#     @property
-#     def x_gate(self):
-#         return list(self.DC_sweep_parameter.sweep_parameters.values())[0][
-#             "offset_parameter"
-#         ]
-#
-#     @property
-#     def y_gate(self):
-#         return list(self.DC_sweep_parameter.sweep_parameters.values())[1][
-#             "offset_parameter"
-#         ]
-#
-#     def get_raw(self, update_data=True):
-#         if update_data:
-#             self.DC_scan = self.DC_sweep_parameter.results["DC_voltage"]
-#             self.x_vals = self.DC_sweep_parameter.setpoints[0][1][0]
-#             self.y_vals = self.DC_sweep_parameter.setpoints[0][0]
-#
-#         self.peaks_list = get_peaks(self.DC_scan, **self.settings["get_peaks"])
-#         self.peak_groups = group_peaks(self.peaks_list, **self.settings["group_peaks"])
-#         self.lines = convert_peak_groups_to_lines(self.peak_groups)
-#         self.optimal_line = get_optimal_coulomb_line(
-#             self.lines,
-#             **self.settings["get_optimal_coulomb_line"],
-#             window=self.DC_scan.shape,
-#         )
-#         if self.optimal_line is not None:
-#             self.tuning_indices = self.optimal_line["stop_coords"]
-#         else:
-#             self.tuning_indices = None
-#         self.scale_coords()
-#
-#         slope = self.optimal_line["slope"] if self.optimal_line is not None else None
-#
-#         if self.tuning_coords is not None:
-#             if self.tune_to_optimum:
-#                 self.x_gate(self.tuning_coords[0])
-#                 self.y_gate(self.tuning_coords[1])
-#             return tuple([*self.tuning_coords, slope])
-#         else:
-#             return (None, None, None)
-#
-#     def set_raw(self, DC_scan, x_vals=None, y_vals=None, plot=False):
-#         if x_vals is None:
-#             x_vals = np.arange(DC_scan.shape[0])
-#         if y_vals is None:
-#             y_vals = np.arange(DC_scan.shape[1])
-#         self.x_vals = x_vals
-#         self.y_vals = y_vals
-#         self.DC_scan = DC_scan
-#         return_value = self.get_raw(update_data=False)
-#         if plot:
-#             self.plot()
-#         return return_value
-#
-#     def scale_coords(self):
-#         #         self.tuning_coords = self.tuning_indices
-#         #         pass
-#         self.peaks_list = [
-#             self._index_to_coord_axis(peaks, axis="x") for peaks in self.peaks_list
-#         ]
-#         self.peak_groups = [
-#             np.array(self._indices_to_coord(peak_group))
-#             for peak_group in self.peak_groups
-#         ]
-#         self.lines = [self._scale_line(line) for line in self.lines]
-#         if self.optimal_line is not None:
-#             self.optimal_line = self._scale_line(self.optimal_line)
-#         if self.tuning_indices is not None:
-#             self.tuning_coords = self._indices_to_coord(self.tuning_indices)
-#         else:
-#             self.tuning_coords = None
-#
-#     def _scale_line(self, line):
-#         return {
-#             "start_coords": self._indices_to_coord(line["start_coords"]),
-#             "stop_coords": self._indices_to_coord(line["stop_coords"]),
-#             "slope": line["slope"]
-#             * (self.y_vals[1] - self.y_vals[0])
-#             / (self.x_vals[1] - self.x_vals[0]),
-#             "intercept": self._index_to_coord_axis(line["intercept"], axis="x"),
-#         }
-#
-#     def _indices_to_coord(self, indices):
-#         return (
-#             self._index_to_coord_axis(indices[0], axis="x"),
-#             self._index_to_coord_axis(indices[1], axis="y"),
-#         )
-#
-#     def _index_to_coord_axis(self, index, axis):
-#         scaled_vals = self.x_vals if axis == "x" else self.y_vals
-#         return scaled_vals[0] + index * (scaled_vals[1] - scaled_vals[0])
-#
-#     def plot(self, ax=None):
-#         if ax is None:
-#             plot = MatPlot(figsize=(8, 6))
-#             ax = plot[0]
-#         ax.add(self.DC_scan, x=self.x_vals, y=self.y_vals)
-#
-#         for k, peaks in enumerate(self.peaks_list):
-#             ax.plot(peaks, [self.y_vals[k]] * len(peaks), "om", ms=5)
-#
-#         for peak_group in self.peak_groups:
-#             ax.plot(*peak_group, "-r", lw=2.5)
-#
-#         for line in self.lines:
-#             ax.plot(*zip(line["start_coords"], line["stop_coords"]), "b", lw=3)
-#
-#         if self.optimal_line is not None:
-#             ax.plot(
-#                 *zip(
-#                     self.optimal_line["start_coords"], self.optimal_line["stop_coords"]
-#                 ),
-#                 color="cyan",
-#                 lw=5,
-#             )
-#             ax.plot(*self.tuning_coords, "*", color="yellow", ms=15)
