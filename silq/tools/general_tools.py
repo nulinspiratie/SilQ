@@ -157,14 +157,15 @@ class SettingsClass:
             else:
                 raise ValueError('Setting {} not found'.format(item))
 
-    def temporary_settings(self, **kwargs):
+    def temporary_settings(self, append=True, **kwargs):
         """
         Sets up the meta properties of a measurement parameter
         """
         if not kwargs:
             return self._temporary_settings
 
-        self._temporary_settings.clear()
+        if not append:
+            self._temporary_settings.clear()
         for item, value in kwargs.items():
             if hasattr(self, item):
                 self._temporary_settings[item] = value
