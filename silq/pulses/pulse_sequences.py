@@ -493,6 +493,9 @@ class NMRPulseSequenceComposite(PulseSequence):
             ]
         super().__init__(pulse_sequences=pulse_sequences, **kwargs)
 
+        # Disable read pulse acquire by default
+        self.NMR.settings['read_pulse'].acquire = False
+
     @property
     def NMR(self):
         return next(pseq for pseq in self.pulse_sequences if pseq.name == 'NMR')
