@@ -291,7 +291,7 @@ def run_scripts(path: Union[str, Path] = None,
                 globals=globals,
                 locals=locals
             )
-        elif elem.suffic != '.py':
+        elif elem.suffix != '.py':
             logger.warning(f"Skipping non-python script: {elem.stem}")
         else:
             run_script(
