@@ -74,7 +74,9 @@ def pulse_to_waveform_sequence(
     """
     t_period = 1 / abs(frequency)
     max_periods = int(max_points / sampling_rate / t_period)  # Bounded by max_points
-    min_periods = int(np.ceil(min_points / sampling_rate / t_period))  # Bounded by min_points
+    min_periods = int(
+        np.ceil(min_points / sampling_rate / t_period)
+    )  # Bounded by min_points
 
     if min_periods >= max_periods:
         return None
@@ -85,10 +87,14 @@ def pulse_to_waveform_sequence(
     point_offsets_multiple = np.array(point_offsets, dtype=int) * sample_points_multiple
 
     # Calculate frequency errors
-    points_periods = t_periods * sampling_rate  # Unrounded points for each periods value (1D)
+    points_periods = (
+        t_periods * sampling_rate
+    )  # Unrounded points for each periods value (1D)
     points_cutoff = (
         sample_points_multiple * (points_periods // sample_points_multiple)
-    ).astype(int)  # Rounded (floor) points for each periods value (1D)
+    ).astype(
+        int
+    )  # Rounded (floor) points for each periods value (1D)
     # Rounded (floor) points for each periods value with offsets (2D)
     points_cutoff_multiple = points_cutoff[:, np.newaxis] + point_offsets_multiple
     # Durations of rounded (floor) points for each periods value with offsets (2D)
@@ -98,14 +104,14 @@ def pulse_to_waveform_sequence(
 
     # Calculate final delays
     final_delays = total_duration * np.ones(points_cutoff_multiple.shape)
-    repetitions_multiple = ((total_duration+1e-13) // t_cutoff_multiple).astype(int)
+    repetitions_multiple = ((total_duration + 1e-13) // t_cutoff_multiple).astype(int)
     t_periods_cutoff_multiple = t_cutoff_multiple * repetitions_multiple
     final_delays -= t_periods_cutoff_multiple
 
     # Filter results
     filtered_results = np.ones(errors.shape, dtype=bool)
     # Ensure that all results have at least one repetition
-    filtered_results[repetitions_multiple<1] = False
+    filtered_results[repetitions_multiple < 1] = False
     filter_arrs = {
         "frequency": errors,
         "final_delay": final_delays,
@@ -162,7 +168,7 @@ def pulse_to_waveform_sequence(
         "final_delay": final_delays[min_idx],
         "periods": min_periods + min_idx[0],
         "repetitions": repetitions_multiple[min_idx],
-        'duration': points_cutoff_multiple[min_idx] / sampling_rate,
+        "duration": points_cutoff_multiple[min_idx] / sampling_rate,
         "points": points_cutoff_multiple[min_idx],
         "idx": min_idx,
         "modified_frequency": modified_frequency,
