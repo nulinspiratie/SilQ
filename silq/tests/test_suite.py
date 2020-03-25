@@ -8,7 +8,9 @@ from qcodes.tests.test_parameter import (TestCopyParameter,
                                          TestParameterSignal,
                                          TestParameterLogging,
                                          TestParameterSnapshotting,
-                                         TestParameterPickling)
+                                         TestParameterPickling,
+                                         TestCopyParameterCount)
+from qcodes.tests.test_measurement import *
 
 if __name__ == '__main__':
     unittest.main()

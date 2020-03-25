@@ -177,7 +177,7 @@ def find_high_low(traces: np.ndarray,
 
     if threshold_method == 'mean':
         # Threshold_method is midway between low and high mean
-        threshold_voltage = (high['mean'] - low['mean']) / 2
+        threshold_voltage = (high['mean'] + low['mean']) / 2
     elif 'std_low' in threshold_method:
         # Threshold_method is {factor} standard deviations above low mean
         factor = float(threshold_method.split('*')[0])
@@ -189,7 +189,7 @@ def find_high_low(traces: np.ndarray,
 
     SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
     if min_SNR is None:
-        min_SNR = analysis_config.min_SNR
+        min_SNR = analysis_config.get('min_SNR')
     if min_SNR is not None and SNR < min_SNR:
         logger.info(f'Signal to noise ratio {SNR} is too low')
         threshold_voltage = None
