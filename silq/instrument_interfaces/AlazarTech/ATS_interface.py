@@ -351,33 +351,35 @@ class ATSInterface(InstrumentInterface):
 
             trigger_pulses = self.input_pulse_sequence.get_pulses(
                 input_channel=self.trigger_channel())
-            if trigger_pulses:
-                trigger_pulse = min(trigger_pulses, key=lambda p: p.t_start)
-                pre_voltage, post_voltage = \
-                    self.input_pulse_sequence.get_transition_voltages(
-                        pulse=trigger_pulse)
-                assert post_voltage != pre_voltage, \
-                    'Could not determine trigger voltage transition'
+            if not trigger_pulses:
+                raise RuntimeError(
+                    'Cannot setup ATS trigger because there are no pulses on '
+                    f'self.trigger_channel {self.trigger_channel()}'
+                )
 
-                self.trigger_slope('positive' if post_voltage > pre_voltage
-                                   else 'negative')
-                self.trigger_threshold((pre_voltage + post_voltage) / 2)
-                # Trigger level is between 0 (-trigger_range)
-                # and 255 (+trigger_range)
-                trigger_level = int(128 + 127 * (self.trigger_threshold() /
-                                                 trigger_range))
-                trigger_channel = self._channels[self.trigger_channel()]
+            trigger_pulse = min(trigger_pulses, key=lambda p: p.t_start)
+            pre_voltage, post_voltage = \
+                self.input_pulse_sequence.get_transition_voltages(
+                    pulse=trigger_pulse)
+            assert post_voltage != pre_voltage, \
+                'Could not determine trigger voltage transition'
 
-                self.update_settings(trigger_operation='J',
-                                     trigger_engine1='J',
-                                     trigger_source1=trigger_channel.id,
-                                     trigger_slope1=self.trigger_slope(),
-                                     trigger_level1=trigger_level,
-                                     external_trigger_coupling='DC',
-                                     trigger_delay=0)
-            else:
-                print('Cannot setup ATS trigger because there are no acquisition '
-                      f'pulses on self.trigger_channel {self.trigger_channel()}')
+            self.trigger_slope('positive' if post_voltage > pre_voltage
+                               else 'negative')
+            self.trigger_threshold((pre_voltage + post_voltage) / 2)
+            # Trigger level is between 0 (-trigger_range)
+            # and 255 (+trigger_range)
+            trigger_level = int(128 + 127 * (self.trigger_threshold() /
+                                             trigger_range))
+            trigger_channel = self._channels[self.trigger_channel()]
+
+            self.update_settings(trigger_operation='J',
+                                 trigger_engine1='J',
+                                 trigger_source1=trigger_channel.id,
+                                 trigger_slope1=self.trigger_slope(),
+                                 trigger_level1=trigger_level,
+                                 external_trigger_coupling='DC',
+                                 trigger_delay=0)
         else:
             pass
 
