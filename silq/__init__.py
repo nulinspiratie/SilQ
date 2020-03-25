@@ -260,7 +260,7 @@ def run_script(
     execute_file(file, globals=globals, locals=locals)
 
 
-def run_scripts(name: str = None,
+def run_scripts(path: Union[str, Path] = None,
                 mode: str = None,
                 silent: bool = False,
                 max_relative_parents: int = 4,
@@ -271,69 +271,37 @@ def run_scripts(name: str = None,
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    script_folders = []
+    if path is None:
+        path = Path('../' * max_relative_parents)
+    elif isinstance(path, str):
+        experiment_folder, _ = get_experiment_configuration(path)
+        path = experiment_folder / 'scripts'
+    elif isinstance(path, Path):
+        assert path.exists(), f'Script path does not exist: {path}'
+        assert path.is_dir(), f'Script path is not a folder: {path}'
+        path = path.absolute()
 
-    if name is not None:
-        experiment_folder, _ = get_experiment_configuration(name)
-        script_folders = [experiment_folder / 'scripts']
-    else:
-        experiment_folder = Path('../' * max_relative_parents)
-
-    # Add script folders in current directory and parent directories thereof
-    relative_directory = Path('.').absolute()  # Goes iteratively to parent
-    for _ in range(4):
-        if relative_directory == experiment_folder.absolute():
-            # Reached experiment folder
-            break
-
-        script_folder = relative_directory / 'scripts'
-        if script_folder.is_dir():
-            script_folders.append(script_folder)
-
-        # Iterate up one level
-        relative_directory = relative_directory.parent
-
-    for script_folder in script_folders:
-        if not script_folder.exists():
-            continue
-
-        for script_folder_element in script_folder.iterdir():
-            # Only execute scripts in subfolders if folder name matches mode
-            if script_folder_element.is_dir():
-                if script_folder_element.stem != mode:
-                    continue
-
-                # Run each file in the subfolder
-                for script_folder_subelement in script_folder_element.iterdir():
-                    if not script_folder_subelement.suffix == ".py":
-                        logger.warning(f"Skipping non-python script: "
-                                       f"{script_folder_subelement.parent.stem}"
-                                       f"/{script_folder_subelement.name}")
-                        continue
-                    if not silent:
-                        print(
-                            f"Running script {script_folder_element.stem}/"
-                            f"{script_folder_subelement.stem}")
-                    run_script(
-                        script_name=script_folder_subelement.stem,
-                        folder=script_folder_element.stem,
-                        mode=mode,
-                        globals=globals, locals=locals
-                    )
-            else:  # Execute file
-                if not script_folder_element.suffix == ".py":
-                    logger.warning(
-                        f"Skipping non-python script: {script_folder_element.name}"
-                    )
-                    continue
-                if not silent:
-                    print(f"Running script {script_folder_element.stem}")
-                run_script(
-                    script_name=script_folder_element.stem,
-                    folder=script_folder_element.parent,
-                    mode=mode,
-                    globals=globals, locals=locals
-                )
+    for elem in path.iterdir():
+        if elem.is_dir():
+            run_scripts(
+                path=elem,
+                mode=mode,
+                silent=silent,
+                max_relative_parents=max_relative_parents,
+                globals=globals,
+                locals=locals
+            )
+        elif elem.suffic != '.py':
+            logger.warning(f"Skipping non-python script: {elem.stem}")
+        else:
+            run_script(
+                script_name=elem.stem,
+                folder=path,
+                mode=mode,
+                globals=globals,
+                locals=locals,
+                silent=silent
+            )
 
 
 def initialize(name: str,
@@ -407,7 +375,7 @@ def initialize(name: str,
                     execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
-        run_scripts(name=name, mode=mode, globals=globals, locals=locals)
+        run_scripts(name, mode=mode, globals=globals, locals=locals)
 
     if 'data_folder' in config["environment:properties"]:
         data_folder = config["environment:properties.data_folder"]
