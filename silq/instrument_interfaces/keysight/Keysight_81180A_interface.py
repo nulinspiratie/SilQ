@@ -96,7 +96,7 @@ class Keysight81180AInterface(InstrumentInterface):
                     ("amplitude", {"min": 0, "max": max_amplitude}),
                     ("duration", {"min": 100e-9}),
                 ]
-            )
+            ),
         ]
 
         self.add_parameter(
@@ -114,7 +114,6 @@ class Keysight81180AInterface(InstrumentInterface):
 
         self.instrument.ch1.clear_waveforms()
         self.instrument.ch2.clear_waveforms()
-
 
         self.waveforms = {}  # List of waveform arrays for each channel
         # Optional initial waveform for each channel. Used to set the first point
@@ -261,9 +260,7 @@ class Keysight81180AInterface(InstrumentInterface):
                     )
 
                 # Get waveform of current pulse
-                waveform = pulse.implementation.implement(
-                    sample_rate=sample_rate,
-                )
+                waveform = pulse.implementation.implement(sample_rate=sample_rate,)
 
                 # Add waveform and sequence steps
                 sequence_steps = self.add_pulse_waveforms(
@@ -311,11 +308,13 @@ class Keysight81180AInterface(InstrumentInterface):
                 self.sequences[ch].append((waveform_idx, 1, 0, "final_filler_pulse"))
 
             # Ensure total waveform points are less than memory limit
-            total_waveform_points = sum(len(waveform) for waveform in self.waveforms['ch1'])
+            total_waveform_points = sum(
+                len(waveform) for waveform in self.waveforms["ch1"]
+            )
             if total_waveform_points > self.instrument.waveform_max_length:
                 raise RuntimeError(
-                    f'Total waveform points {total_waveform_points} exceeds '
-                    f'limit of 81180A ({self.instrument.waveform_max_length})'
+                    f"Total waveform points {total_waveform_points} exceeds "
+                    f"limit of 81180A ({self.instrument.waveform_max_length})"
                 )
 
             # Sequence all loaded waveforms
@@ -351,12 +350,14 @@ class Keysight81180AInterface(InstrumentInterface):
         pulse_name="DC",
     ) -> List:
         # We fake a DC pulse for improved performance
-        DC_pulse = DotDict(dict(
-            t_start=t_start,
-            t_stop=t_stop,
-            duration=round(t_stop-t_start, 11),
-            amplitude=amplitude
-        ))
+        DC_pulse = DotDict(
+            dict(
+                t_start=t_start,
+                t_stop=t_stop,
+                duration=round(t_stop - t_start, 11),
+                amplitude=amplitude,
+            )
+        )
         waveform = DCPulseImplementation.implement(
             self=DC_pulse, sample_rate=sample_rate
         )
@@ -493,9 +494,7 @@ class Keysight81180AInterface(InstrumentInterface):
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
-    def implement(
-        self, sample_rate: float, max_points: int = 6000
-    ) -> dict:
+    def implement(self, sample_rate: float, max_points: int = 6000) -> dict:
         # TODO shouldn't the properties of self be from self.pulse instead?
 
         # Number of points must be a multiple of 32
@@ -567,7 +566,9 @@ class SinePulseImplementation(PulseImplementation):
 
         settings = {"max_points": 50e3, "frequency_threshold": 30}
         settings.update(**config.properties.get("sine_waveform_settings", {}))
-        settings.update(**config.properties.get("keysight_81180A_sine_waveform_settings", {}))
+        settings.update(
+            **config.properties.get("keysight_81180A_sine_waveform_settings", {})
+        )
         settings.update(**kwargs)
 
         self.results = pulse_to_waveform_sequence(
