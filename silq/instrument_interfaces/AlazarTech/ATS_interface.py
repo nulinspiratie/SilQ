@@ -340,14 +340,14 @@ class ATSInterface(InstrumentInterface):
             if self.trigger_channel() == 'trig_in':
                 self.update_settings(external_trigger_range=5)
                 trigger_range = 5
-            else:
+            else:  # Acquisition channel is used for triggering
                 trigger_range = self.setting('channel_range')
                 if isinstance(trigger_range, list):
                     # Different channel ranges, choose one corresponding to
                     # trigger channel
                     trigger_channel = self._acquisition_channels[self.trigger_channel()]
-                    trigger_idx = 'ABCD'.index(trigger_channel.id)
-                    trigger_range = trigger_range[trigger_idx]
+                    trigger_channel_letter = 'ABCD'.index(trigger_channel.id)
+                    trigger_range = trigger_range[trigger_channel_letter]
 
             trigger_pulses = self.input_pulse_sequence.get_pulses(
                 input_channel=self.trigger_channel())
