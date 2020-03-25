@@ -257,9 +257,9 @@ class PulseSequence(ParameterNode):
         else:
             self.final_delay = self.default_final_delay
 
-        self.t_list = Parameter(initial_value=[0])
-        self.t_start_list = Parameter(initial_value=[])
-        self.t_stop_list = Parameter()
+        self.t_list = Parameter(initial_value=[0], snapshot_value=False)
+        self.t_start_list = Parameter(initial_value=[], snapshot_value=False)
+        self.t_stop_list = Parameter(snapshot_value=False)
 
         self.pulse_sequences = Parameter(vals=vals.Iterables(), initial_value=())
 
@@ -267,30 +267,35 @@ class PulseSequence(ParameterNode):
             initial_value=[],
             set_cmd=None,
             vals=vals.Iterables(),
+            snapshot_value=False,
             docstring='Enabled pulses that are not from a nested pulse sequence'
         )
         self.enabled_pulses = Parameter(
             initial_value=(),
             set_cmd=None,
             vals=vals.Iterables(),
+            snapshot_value=False,
             docstring='Enabled pulses, including those from nested pulse sequences'
         )
         self.my_disabled_pulses = Parameter(
             initial_value=[],
             set_cmd=None,
             vals=vals.Iterables(),
+            snapshot_value=False,
             docstring='Disabled pulses that are not from a nested pulse sequence'
         )
         self.disabled_pulses = Parameter(
             initial_value=(),
             set_cmd=None,
             vals=vals.Iterables(),
+            snapshot_value=False,
             docstring='Disabled pulses, including those from nested pulse sequences'
         )
         self.my_pulses = Parameter(
             initial_value=[],
             vals=vals.Iterables(),
             set_cmd=None,
+            snapshot_value=False,
             docstring="All pulses that are not from a nested pulse sequence"
         )
         self.pulses = Parameter(
@@ -572,10 +577,19 @@ class PulseSequence(ParameterNode):
         snap = super().snapshot_base(update=update,
                                      params_to_skip_update=params_to_skip_update)
         snap.pop('enabled_pulses', None)
+        snap.pop('my_enabled_pulses', None)
+        snap.pop('my_pulses', None)
 
         snap['pulses'] = [pulse.snapshot(update=update,
                                          params_to_skip_update=params_to_skip_update)
                           for pulse in self.pulses]
+
+        snap['pulse_sequences'] = [
+            pulse_sequence.snapshot(
+                update=update, params_to_skip_update=params_to_skip_update
+            )
+            for pulse_sequence in self.pulse_sequences
+        ]
         return snap
 
     def add(self, *pulses,
@@ -759,7 +773,12 @@ class PulseSequence(ParameterNode):
                         f'{pulse.parent.full_name} for {pulse}'
                     )
                 else:
-                    added_pulse, = nested_sequence.quick_add(pulse, copy=copy)
+                    added_pulse, = nested_sequence.quick_add(
+                        pulse,
+                        copy=copy,
+                        connect=connect,
+                        reset_duration=reset_duration
+                    )
                     added_pulses.append(added_pulse)
                     continue
 
@@ -1282,7 +1301,7 @@ class PulseSequence(ParameterNode):
         Returns:
             True by default, can be overridden in subclass.
         """
-        return all(pulse_sequence.up_to_date for pulse_sequence in self.pulse_sequences)
+        return all(pulse_sequence.up_to_date() for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
