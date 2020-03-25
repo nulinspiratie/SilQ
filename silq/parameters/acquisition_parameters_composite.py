@@ -166,8 +166,13 @@ class ESRParameterComposite(AcquisitionParameterComposite):
           will recreate the pulse sequence from settings.
     """
 
-    def __init__(self, name="ESR", **kwargs):
-        self.pulse_sequence = ESRPulseSequenceComposite()
+    def __init__(
+            self,
+            name="ESR",
+            pulse_sequences=None,
+            **kwargs
+    ):
+        self.pulse_sequence = ESRPulseSequenceComposite(pulse_sequences=pulse_sequences)
         self.ESR = self.pulse_sequence.ESR
         self.EPR = self.pulse_sequence.EPR
 

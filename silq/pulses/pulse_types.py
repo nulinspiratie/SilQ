@@ -751,6 +751,7 @@ class FrequencyRampPulse(Pulse):
                  phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
+                 phase_reference: str = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -780,11 +781,13 @@ class FrequencyRampPulse(Pulse):
                                vals=vals.Numbers())
         self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
                                 vals=vals.Numbers())
-
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
         self._connect_parameters_to_config(
             ['frequency', 'frequency_deviation', 'frequency_start',
              'frequency_stop', 'frequency_sideband', 'sideband_mode',
-             'amplitude', 'power', 'phase', 'offset'])
+             'amplitude', 'power', 'phase', 'offset', 'phase_reference'])
 
         # Set default value for sideband_mode after connecting parameters,
         # because its value may have been retrieved from config
@@ -794,6 +797,8 @@ class FrequencyRampPulse(Pulse):
             self.phase = 0
         if self.offset is None:
             self.offset = 0
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
 
     @parameter
     def frequency_start_get(self, parameter):

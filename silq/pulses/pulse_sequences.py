@@ -369,20 +369,23 @@ class ESRPulseSequenceComposite(PulseSequence):
         For given pulse settings, `ESRPulseSequence.generate` will recreate the
         pulse sequence from settings.
 """
-    def __init__(self, **kwargs):
+    def __init__(self, pulse_sequences=None, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_sequences = [
-            ElectronReadoutPulseSequence(name='ESR'),
-            PulseSequence(
-                name='EPR',
-                pulses=[
-                    DCPulse('empty', acquire=True),
-                    DCPulse('plunge', acquire=True),
-                    DCPulse('read_long', acquire=True)
+        if pulse_sequences is None:
+            pulse_sequences = [
+                ElectronReadoutPulseSequence(name='ESR'),
+                PulseSequence(
+                    name='EPR',
+                    pulses=[
+                        DCPulse('empty', acquire=True),
+                        DCPulse('plunge', acquire=True),
+                        DCPulse('read_long', acquire=True)
+                    ]
+                )
                 ]
-            )
-        ]
+
+        self.pulse_sequences = pulse_sequences
 
     @property
     def ESR(self):
@@ -497,6 +500,9 @@ class NMRPulseSequenceComposite(PulseSequence):
                 ElectronReadoutPulseSequence(name='ESR'),
             ]
         super().__init__(pulse_sequences=pulse_sequences, **kwargs)
+
+        # Disable read pulse acquire by default
+        self.NMR.settings['read_pulse'].acquire = False
 
     @property
     def NMR(self):
