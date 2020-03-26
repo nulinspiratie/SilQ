@@ -499,6 +499,10 @@ class Layout(Instrument):
             pickles, and can be used to trace back measurement parameters.
         **kwargs: Additional kwargs passed to Instrument
     """
+
+    # Targeted pulse sequence whose duration exceeds this will raise an error
+    maximum_pulse_sequence_duration = 25
+
     def __init__(self, name: str = 'layout',
                  instrument_interfaces: List[InstrumentInterface] = [],
                  store_pulse_sequences_folder: Union[bool, None] = None,
@@ -1139,6 +1143,12 @@ class Layout(Instrument):
             * The original pulse sequence and pulses remain unmodified
         """
         logger.info(f'Targeting pulse sequence {pulse_sequence}')
+
+        if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
+            raise RuntimeError(
+                f'Pulse sequence duration {pulse_sequence.duration} exceeds '
+                f'maximum duration {self.maximum_pulse_sequence_duration}'
+            )
 
         if self.active():
             self.stop()
