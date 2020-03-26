@@ -35,9 +35,8 @@ class Connection:
     """Connection base class for connections between interfaces (instruments).
 
     Args:
-        scale: Whether there is a scaling factor between output and input.
-            Scale 1/x means the signal at the input is x times lower than
-            emitted from the output
+        scale: Whether there is a multiplicative scaling factor between output
+        and input.
     """
     def __init__(self, scale: float = None, label: str = None):
 
@@ -216,13 +215,12 @@ class SingleConnection(Connection):
         """Targets a pulse to this connection.
 
         During connection targeting, the pulse is copied and its properties
-        modified for a specific connection. This includes applying a any scale
-        to the pulse amplitude, and adding the connection to
-        ``Pulse.connection``.
+        modified for a specific connection. This includes scaling the pulse
+        amplitude, and adding the connection to ``Pulse.connection``.
 
         Args:
             pulse: Pulse to be targeted
-            apply_scale: Divide ``Pulse.amplitude`` by connection scale.
+            apply_scale: Multiply ``Pulse.amplitude`` by connection scale.
             copy_pulse: Copy pulse before targeting
                 If set to True, a new object is created, and all properties
                 are fixed (not dependent on other pulses).
@@ -243,7 +241,7 @@ class SingleConnection(Connection):
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
-                    setattr(targeted_pulse, attr, val / self.scale)
+                    setattr(targeted_pulse, attr, val * self.scale)
         return targeted_pulse
 
     def satisfies_conditions(self,
