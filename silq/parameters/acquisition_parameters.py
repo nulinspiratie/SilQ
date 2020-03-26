@@ -7,7 +7,7 @@ from functools import partial
 import logging
 import re
 
-from qcodes import DataSet, MultiParameter, active_data_set, active_loop, \
+from qcodes import DataSet, MultiParameter, active_dataset, active_measurement, \
     Parameter
 from qcodes.data import hdf5_format
 from qcodes import Instrument, MatPlot
@@ -15,7 +15,7 @@ from qcodes import Instrument, MatPlot
 from silq import config
 from silq.pulses import *
 from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
-    T2ElectronPulseSequence, FlipFlopPulseSequence
+    T2ElectronPulseSequence, FlipFlopPulseSequence, ESRRamseyDetuningPulseSequence
 from silq.analysis import analysis
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
@@ -25,7 +25,7 @@ __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
            'NMRParameter', 'VariableReadParameter',
            'BlipsParameter', 'FlipNucleusParameter', 'FlipFlopParameter',
-           'NeuralNetworkParameter', 'NeuralRetuneParameter']
+           'NeuralNetworkParameter', 'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
 logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
@@ -313,7 +313,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
         if save_traces is None:
             save_traces = self.save_traces
-        if save_traces and active_loop() is None:
+        if save_traces and active_measurement() is None:
             logger.warning('Cannot save traces since there is no active loop')
             save_traces = False
 
@@ -2305,4 +2305,248 @@ class NeuralRetuneParameter(NeuralNetworkParameter):
         elif isinstance(self.include_target_output, Iterable):
             for name in self.include_target_output:
                 results[name] = self.target_parameter.results[name]
+        return results
+
+
+class ESRRamseyDetuningParameter(AcquisitionParameter):
+    """Parameter for most pulse sequences involving electron spin resonance.
+
+        This parameter can handle many of the simple pulse sequences involving ESR.
+        It uses the `ESRPulseSequence`, which will generate a pulse sequence from
+        settings (see parameters below).
+
+        In general the pulse sequence is as follows:
+
+        1. Perform any pre_pulses defined in ``ESRParameter.pre_pulses``.
+        2. Perform stage pulse ``ESRParameter.ESR['stage_pulse']``.
+           By default, this is the ``plunge`` pulse.
+        3. Perform ESR pulse within plunge pulse, the delay from start of plunge
+           pulse is defined in ``ESRParameter.ESR['pulse_delay']``.
+        4. Perform read pulse ``ESRParameter.ESR['read_pulse']``.
+        5. Repeat steps 2 and 3 for each ESR pulse in
+           ``ESRParameter.ESR['ESR_pulses']``, which by default contains single
+           pulse ``ESRParameter.ESR['ESR_pulse']``.
+        6. Perform empty-plunge-read sequence (EPR), but only if
+           ``ESRParameter.EPR['enabled']`` is True.
+           EPR pulses are defined in ``ESRParameter.EPR['pulses']``.
+        7. Perform any post_pulses defined in ``ESRParameter.post_pulses``.
+
+        A shorthand for using the default ESR pulse for multiple frequencies is by
+        setting `ESRParameter.ESR_frequencies`. Settings this will create a copy
+        of ESRParameter.ESR['ESR_pulse'] with the respective frequency.
+
+        Examples:
+            The following code measures two ESR frequencies and performs an EPR
+            from which the contrast can be determined for each ESR frequency:
+
+            >>> ESR_parameter = ESRParameter()
+            >>> ESR_parameter.ESR['pulse_delay'] = 5e-3
+            >>> ESR_parameter.ESR['stage_pulse'] = DCPulse['plunge']
+            >>> ESR_parameter.ESR['ESR_pulse'] = FrequencyRampPulse('ESR_adiabatic')
+            >>> ESR_parameter.ESR_frequencies = [39e9, 39.1e9]
+            >>> ESR_parameter.EPR['enabled'] = True
+            >>> ESR_parameter.pulse_sequence.generate()
+
+            The total pulse sequence is plunge-read-plunge-read-empty-plunge-read
+            with an ESR pulse in the first two plunge pulses, 5 ms after the start
+            of the plunge pulse. The ESR pulses have different frequencies.
+
+        Args:
+            name: Name of acquisition parameter
+            **kwargs: Additional kwargs passed to `AcquisitionParameter`.
+
+        Parameters:
+            ESR (dict): `ESRPulseSequence` generator settings for ESR. Settings are:
+                ``stage_pulse``, ``ESR_pulse``, ``ESR_pulses``, ``pulse_delay``,
+                ``read_pulse``.
+            EPR (dict): `ESRPulseSequence` generator settings for EPR.
+                This is optional and can be toggled in ``EPR['enabled']``.
+                If disabled, contrast is not calculated.
+                Settings are: ``enabled``, ``pulses``.
+            pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
+            post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+            pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+            samples (int): Number of acquisition samples
+            results (dict): Results obtained after analysis of traces.
+            t_skip (float): initial part of read trace to ignore for measuring
+                blips. Useful if there is a voltage spike at the start, which could
+                otherwise be measured as a ``blip``. Retrieved from
+                ``silq.config.properties.t_skip``.
+            t_read (float): duration of read trace to include for measuring blips.
+                Useful if latter half of read pulse is used for initialization.
+                Retrieved from ``silq.config.properties.t_read``.
+            min_filter_proportion (float): Minimum number of read traces needed in
+                which the voltage starts low (loaded donor). Otherwise, most results
+                are set to zero. Retrieved from
+                ``silq.config.properties.min_filter_proportion``.
+            traces (dict): Acquisition traces segmented by pulse and acquisition
+                label
+            silent (bool): Print results after acquisition
+            continuous (bool): If True, instruments keep running after acquisition.
+                Useful if stopping/starting instruments takes a considerable amount
+                of time.
+            properties_attrs (List[str]): Attributes to match with
+                ``silq.config.properties``.
+                See notes below for more info.
+            save_traces (bool): Save acquired traces to disk.
+                If the acquisition has been part of a measurement, the traces are
+                stored in a subfolder of the corresponding data set.
+                Otherwise, a new dataset is created.
+            dataset (DataSet): Traces DataSet
+            base_folder (str): Base folder in which to save traces. If not specified,
+                and acquisition is part of a measurement, the base folder is the
+                folder of the measurement data set. Otherwise, the base folder is
+                the default data folder
+            subfolder (str): Subfolder within the base folder to save traces.
+
+        Notes:
+            - All pulse settings are copies of
+              ``ESRParameter.pulse_sequence.pulse_settings``.
+            - For given pulse settings, ``ESRParameter.pulse_sequence.generate``
+              will recreate the pulse sequence from settings.
+        """
+
+    def __init__(self, name='ESRRamsey', **kwargs):
+        self._names = []
+
+        self.pulse_sequence = ESRRamseyDetuningPulseSequence()
+        self.ESR = self.pulse_sequence.ESR
+        self.EPR = self.pulse_sequence.EPR
+        self.pre_pulses = self.pulse_sequence.pre_pulses
+        self.post_pulses = self.pulse_sequence.post_pulses
+
+        super().__init__(name=name,
+                         names=['contrast', 'dark_counts',
+                                'voltage_difference_read'],
+                         snapshot_value=False,
+                         properties_attrs=['t_skip', 't_read',
+                                           'min_filter_proportion',
+                                           'filter_traces'],
+                         **kwargs)
+
+    @property
+    def names(self):
+        if self.EPR['enabled']:
+            names = copy(self._names)
+        else:
+            # Ignore all names, only add the ESR up proportions
+            names = []
+            if 'voltage_difference' in self._names:
+                names.append('voltage_difference')
+
+        ESR_pulse_names = [pulse.name for pulse in self.pulse_sequence.primary_ESR_pulses]
+
+        for pulse in self.pulse_sequence.primary_ESR_pulses:
+            pulse_name = pulse if isinstance(pulse, str) else pulse.name
+
+            if ESR_pulse_names.count(pulse_name) == 1:
+                # Ignore suffix
+                name = pulse_name
+            else:
+                suffix = len([name for name in names
+                              if f'up_proportion_{pulse_name}' in name])
+                name = f'{pulse_name}_{suffix}'
+            names.append(f'up_proportion_{name}')
+            if self.EPR['enabled']:
+                names.append(f'contrast_{name}')
+            names.append(f'num_traces_{name}')
+        return names
+
+    @names.setter
+    def names(self, names):
+        """Set all the names to return upon .get() for the EPR sequence"""
+        self._names = [name for name in names
+                       if not 'contrast_' in name
+                       and not 'up_proportion_' in name]
+
+    @property_ignore_setter
+    def shapes(self):
+        return ((),) * len(self.names)
+
+    @property_ignore_setter
+    def units(self):
+        return ('',) * len(self.names)
+
+    @property
+    def ESR_frequencies(self):
+        """Apply default ESR pulse for each ESR frequency given."""
+        return self.pulse_sequence.ESR_frequencies
+
+    @ESR_frequencies.setter
+    def ESR_frequencies(self, ESR_frequencies: List[float]):
+        self.pulse_sequence.generate(ESR_frequencies=ESR_frequencies)
+
+    def analyse(self, traces=None, plot=False):
+        """Analyse ESR traces.
+
+        If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
+        If there are several ESR pulses, adds a zero-based suffix at the end for
+        each ESR pulse. If ``ESRParameter.EPR['enabled'] == True``, the results
+        from `analyse_EPR` are also added, as well as ``contrast_{pulse.name}``
+        (plus a suffix if there are several ESR pulses).
+        """
+        if traces is None:
+            traces = self.traces
+
+        threshold_voltage = getattr(self, 'threshold_voltage', None)
+
+        if self.EPR['enabled']:
+            # Analyse EPR sequence, which also gets the dark counts
+            results = analysis.analyse_EPR(
+                empty_traces=traces[self.pulse_sequence._EPR_pulses[0].full_name]['output'],
+                plunge_traces=traces[self.pulse_sequence._EPR_pulses[1].full_name]['output'],
+                read_traces=traces[self.pulse_sequence._EPR_pulses[2].full_name]['output'],
+                sample_rate=self.sample_rate,
+                min_filter_proportion=self.min_filter_proportion,
+                threshold_voltage=threshold_voltage,
+                filter_traces=self.filter_traces,
+                t_skip=self.t_skip,  # Use t_skip to keep length consistent
+                t_read=self.t_read)
+        else:
+            results = {}
+
+        ESR_pulses = self.pulse_sequence.primary_ESR_pulses
+        ESR_pulse_names = [pulse.name for pulse in ESR_pulses]
+        read_pulses = self.pulse_sequence.get_pulses(name=self.ESR["read_pulse"].name)
+        results['ESR_results'] = []
+
+        for read_pulse, ESR_pulse in zip(read_pulses, ESR_pulses):
+            read_traces = traces[read_pulse.full_name]['output']
+            ESR_results = analysis.analyse_traces(
+                traces=read_traces,
+                sample_rate=self.sample_rate,
+                filter='low' if self.filter_traces else None,
+                min_filter_proportion=self.min_filter_proportion,
+                threshold_voltage=threshold_voltage,
+                t_skip=self.t_skip,
+                t_read=self.t_read,
+                plot=plot)
+            results['ESR_results'].append(ESR_results)
+
+            # Extract ESR pulse labels
+            if ESR_pulse_names.count(ESR_pulse.name) == 1:
+                # Ignore suffix
+                pulse_label = ESR_pulse.name
+            else:
+                suffix = len([name for name in results
+                              if f'up_proportion_{ESR_pulse.name}' in name])
+                pulse_label = f'{ESR_pulse.name}_{suffix}'
+
+            # Add up proportion and dark counts
+            results[f'up_proportion_{pulse_label}'] = ESR_results['up_proportion']
+            if self.EPR['enabled']:
+                # Add contrast obtained by subtracting EPR dark counts
+                contrast = ESR_results['up_proportion'] - results['dark_counts']
+                results[f'contrast_{pulse_label}'] = contrast
+            results[f'num_traces_{pulse_label}'] = ESR_results['num_traces']
+
+        voltage_differences = [ESR_result['voltage_difference']
+                               for ESR_result in results['ESR_results']
+                               if ESR_result['voltage_difference'] is not None]
+        if voltage_differences:
+            results['voltage_difference'] = np.mean(voltage_differences)
+        else:
+            results['voltage_difference'] = np.nan
+
+        self.results = results
         return results
