@@ -318,15 +318,21 @@ class CombinedConnection(Connection):
         connections: `SingleConnection` list to combine
         scale: List specifying the value by which the amplitude of a pulse
             should be scaled for each connection (by default no scaling).
+        normalize: Boolean determining if scale is to be normalized when
+            connection is targeted, e.g. convert [3, -4] to [0.6, -0.8] (only
+            works if scale is also set)
         **kwargs: Additional Connection keyword arguments.
     """
     def __init__(self,
                  connections: List[SingleConnection],
                  label: str = None,
                  scale: List[float] = None,
-                 **kwargs):
+                 normalize: bool = False,
+                 ):
         super().__init__(scale=scale, label=label)
         self.connections = connections
+
+        self.normalize = normalize
 
         self.output['str'] = [connection.output['str']
                               for connection in connections]
@@ -372,6 +378,15 @@ class CombinedConnection(Connection):
             pulses: List of pulses for each of the connections
         """
         pulses = []
+
+        # Set local scale value (normalized or denormalized)
+        if self.scale is not None and self.normalize:
+            scale = self.scale / np.linalg.norm(self.scale)
+        elif self.scale is not None:
+            scale = self.scale
+        else:
+            scale = None
+
         for k, connection in enumerate(self.connections):
             targeted_pulse = copy(pulse)
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
@@ -382,8 +397,8 @@ class CombinedConnection(Connection):
                             setattr(targeted_pulse, attr, val[k])
                         else:
                             setattr(targeted_pulse, attr, val[0])
-                    elif self.scale is not None:
-                        setattr(targeted_pulse, attr, val * self.scale[k])
+                    elif scale is not None:
+                        setattr(targeted_pulse, attr, val * scale[k])
             targeted_pulse = connection.target_pulse(targeted_pulse,
                                                      copy_pulse=False)
             pulses.append(targeted_pulse)
