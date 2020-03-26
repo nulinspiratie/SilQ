@@ -69,6 +69,11 @@ class TestPulseSequence(unittest.TestCase):
         self.assertNotEqual(p3_read, p1_read)
         self.assertNotEqual(p3_read, p2_read)
 
+    def test_pulse_no_duration_error(self):
+        p = Pulse()
+        with self.assertRaises(SyntaxError):
+            PulseSequence([p])
+
     def test_get_pulses(self):
         pulse_sequence = PulseSequence()
         self.assertListEqual(pulse_sequence.get_pulses(), [])
