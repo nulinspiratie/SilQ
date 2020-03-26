@@ -1147,7 +1147,8 @@ class Layout(Instrument):
         if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
             raise RuntimeError(
                 f'Pulse sequence duration {pulse_sequence.duration} exceeds '
-                f'maximum duration {self.maximum_pulse_sequence_duration}'
+                f'maximum duration {self.maximum_pulse_sequence_duration}. '
+                f'Please change layout.maximum_pulse_sequence_duration'
             )
 
         if self.active():
