@@ -1,3 +1,0 @@
-[submodule "Qcodes"]
-	path = Qcodes
-	url = https://github.com/nulinspiratie/Qcodes.git
