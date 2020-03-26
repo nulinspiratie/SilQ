@@ -477,7 +477,8 @@ class PulseSequence(ParameterNode):
                 f'Cannot add untargeted pulse {pulse}'
             assert pulse.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse}'
-            assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
+            if pulse.duration is not None:
+                raise SyntaxError(f'Pulse {pulse} duration must be specified')
 
             # Copy pulse to ensure original pulse is unmodified
             pulse_copy = copy(pulse)
@@ -565,7 +566,7 @@ class PulseSequence(ParameterNode):
         if pulses_no_duration:
             raise SyntaxError('Please specify pulse duration in silq.config.pulses'
                               ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+                              ', '.join(str(p.name) for p in pulses_no_duration))
 
         added_pulses = []
         for pulse in pulses:
