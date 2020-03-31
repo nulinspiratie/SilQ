@@ -497,7 +497,7 @@ class PulseSequence(ParameterNode):
                 for pseq1, pseq2 in zip(parameter(), other.pulse_sequences):
                     if pseq1 != pseq2:
                         return False
-            if not parameter_name in other.parameters:
+            elif not parameter_name in other.parameters:
                 return False
             elif parameter() != getattr(other, parameter_name):
                 return False
