@@ -1,13 +1,17 @@
 from typing import List, Dict
 from functools import partial
+import warnings
 import matplotlib as mpl
 from qcodes.plots.qcmatplotlib import MatPlot
+from matplotlib import pyplot as plt
 from silq.tools.notebook_tools import *
 import pyperclip
 from time import time
 import numpy as np
 import logging
 
+
+import qcodes as qc
 from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
 from qcodes.data.data_set import DataSet
@@ -15,7 +19,7 @@ from qcodes.data.data_array import DataArray
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
            'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
-           'DCPlot', 'ScanningPlot', 'TracePlot', 'DCSweepPlot']
+           'DCPlot', 'ScanningPlot', 'TracePlot', 'DCSweepPlot', 'plot_nuclear_up_proportions']
 
 logger = logging.getLogger(__name__)
 
@@ -857,3 +861,78 @@ class DCSweepPlot(ScanningPlot):
                     result_config['y'] = result
 
         super().update_plot()
+
+
+def plot_nuclear_up_proportions(
+    data=None,
+    up_proportions=None,
+    threshold_up_proportion=None,
+    shots_per_frequency=None,
+):
+    if up_proportions is None:
+        if data is None:
+            data = qc.active_dataset()
+        up_proportions = [
+            arr
+            for name, arr in data.arrays.items()
+            if "ESR.up_proportions" in name and not arr.is_setpoint
+        ]
+    if not up_proportions:
+        raise RuntimeError(f'Could not find any up_proportions in dataset {data}')
+
+    if threshold_up_proportion is None:
+        logger.warning("No threshold_up_proportion provided. Using 0.5")
+        threshold_up_proportion = 0.5
+
+    if shots_per_frequency is None:
+        # Extract shots_per_frequency by looking at the minimum difference between successive up proportion values
+        unique_up_proportions = {
+            elem
+            for arr in up_proportions
+            for elem in arr.ravel()
+            if not np.isnan(elem)
+        }
+        if len(unique_up_proportions) < 2:
+            logger.warning('Could not determine threshold_up_proportion: no differing up_proportions')
+            shots_per_frequency = None
+        else:
+            min_up_proportions_diff = np.min(np.diff(sorted(unique_up_proportions)))
+            shots_per_frequency = int(round(1 / min_up_proportions_diff))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        if threshold_up_proportion is not None:
+            for k, up_proportion in enumerate(up_proportions):
+                up_proportion_mean = up_proportion.mean(min_filter=threshold_up_proportion)
+                dark_counts = up_proportion.mean(max_filter=threshold_up_proportion)
+                contrast = up_proportion_mean - dark_counts
+                print(
+                    f"Contrast {up_proportion.name}: {up_proportion_mean:.3f} - {dark_counts:.3f} = {contrast:.3f}"
+                )
+
+        fig, axes = plt.subplots(
+            len(up_proportions) + 1, figsize=(8, 2 + len(up_proportions))
+        )
+        for k, up_proportion in enumerate(up_proportions):
+            axes[0].plot(
+                np.ravel(up_proportion),
+                marker="o",
+                linestyle="",
+                ms=2.5,
+                label=f"Nuclear State {k}",
+                alpha=0.5,
+            )
+            axes[k + 1].hist(
+                np.ravel(up_proportion),
+                range=[-0.1, 1.1],
+                bins=(shots_per_frequency + 1 if shots_per_frequency is not None else 11),
+                color=f"C{k}",
+                label=f"Nuclear State {k}",
+            )
+            axes[k + 1].legend()
+
+        axes[0].set_ylim(-0.1, 1.1)
+
+        if threshold_up_proportion is not None:
+            axes[0].hlines(threshold_up_proportion, *axes[0].get_xlim(), linestyle="--")
