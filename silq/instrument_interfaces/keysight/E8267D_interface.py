@@ -235,6 +235,7 @@ class E8267DInterface(InstrumentInterface):
         if self.frequency_deviation() > 0 and self.FM_mode() == 'ramp':
             self.instrument.frequency_modulation('on')
             self.instrument.frequency_deviation(self.frequency_deviation())
+            self.instrument.frequency_modulation_source(self.modulation_channel())
         else:
             self.instrument.frequency_modulation('off')
 
