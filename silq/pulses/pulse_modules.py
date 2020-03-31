@@ -873,6 +873,20 @@ class PulseSequence(ParameterNode):
             self.clear()
             raise
 
+    def insert_pulse_sequence(self, index, pulse_sequence):
+        if self.pulses:
+            raise RuntimeError(
+               'Cannot add nested pulse sequence when also containing pulses'
+            )
+
+        pulse_sequence.parent = self
+
+        pulse_sequences = list(self.pulse_sequences)
+        pulse_sequences.insert(index, pulse_sequence)
+        self['pulse_sequences']._latest['raw_value'] = tuple(pulse_sequences)
+
+        self._link_pulse_sequences()
+
     def add_pulse_sequences(self, *pulse_sequences):
         if self.pulses:
             raise RuntimeError(
