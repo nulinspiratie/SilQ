@@ -443,12 +443,13 @@ class PulseSequence(ParameterNode):
             List[Pulse]: Added pulses, which are copies of the original pulses.
 
         Raises:
-            SyntaxError: The added pulse overlaps with another pulses and
+            AssertionError: The added pulse overlaps with another pulses and
                 `PulseSequence`.allow_pulses_overlap is False
-            SyntaxError: The added pulse is untargeted and
+            AssertionError: The added pulse is untargeted and
                 `PulseSequence`.allow_untargeted_pulses is False
-            SyntaxError: The added pulse is targeted and
+            AssertionError: The added pulse is targeted and
                 `PulseSequence`.allow_targeted_pulses is False
+            ValueError: If a pulse has no duration
 
         Note:
             When a pulse is added, it is first copied, to ensure that the
@@ -457,9 +458,10 @@ class PulseSequence(ParameterNode):
         """
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
-            raise SyntaxError('Please specify pulse duration in silq.config.pulses'
-                              ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+            raise ValueError(
+                'Please specify pulse duration in silq.config.pulses for the '
+                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+            )
 
         added_pulses = []
 
