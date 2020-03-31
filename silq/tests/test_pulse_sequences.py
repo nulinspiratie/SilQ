@@ -1174,17 +1174,19 @@ class TestCompositePulseSequences(unittest.TestCase):
         pulse_sequence1 = PulseSequence([
             DCPulse('read', duration=1),
             DCPulse('read2', duration=2)
-        ])
+        ], name='pulse_sequence1')
         pulse_sequence2 = PulseSequence([
             DCPulse('read3', duration=1),
             DCPulse('read4', duration=2)
-        ])
+        ], name='pulse_sequence2')
 
         pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
 
-        # self.assertEqual(pulse_sequence2.t_start, 3)
-        #
-        # pulse_sequence1.enabled = False
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        pulse_sequence1.enabled = False
+
+        self.assertEqual(pulse_sequence2.t_start, 0)
 
 
 class TestPulseSequenceGenerators(unittest.TestCase):

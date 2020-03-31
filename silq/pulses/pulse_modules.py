@@ -880,20 +880,43 @@ class PulseSequence(ParameterNode):
             )
 
         for pulse_sequence in pulse_sequences:
-            # Make sure t_stop is not connected to some other pulse sequence
+            pulse_sequence.parent = self
+
+        self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, *pulse_sequences)
+
+        self._link_pulse_sequences()
+
+    def _link_pulse_sequences(self, *args):
+        """
+
+        Args:
+            *args: Optional args that are ignored. Added because it allows
+                signals to be connected to this function
+
+        Returns:
+
+        """
+        # First remove all pre-existing signal receivers
+        for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
+                pulse_sequence['enabled'].signal.receivers.clear()
 
-            if self.pulse_sequences:
-                previous_pulse_sequence = self.pulse_sequences[-1]
+        # Add new signal receivers
+        enabled_pulse_sequences = [pseq for pseq in self.pulse_sequences if pseq.enabled]
+        for k, pulse_sequence in enumerate(enabled_pulse_sequences):
+            if k == 0:  # First pulse sequence
+                pulse_sequence.t_start = 0
+            else:
+                previous_pulse_sequence = enabled_pulse_sequences[k-1]
                 previous_pulse_sequence['t_stop'].connect(
                     pulse_sequence['t_start'], update=True
                 )
-            else:
-                pulse_sequence.t_start = 0
 
-            self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, pulse_sequence)
-            pulse_sequence.parent = self
+            pulse_sequence['enabled'].connect(
+                self._link_pulse_sequences, update=False
+            )
+            print(pulse_sequence['enabled'].signal.receivers)
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
