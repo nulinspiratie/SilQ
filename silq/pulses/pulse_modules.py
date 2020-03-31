@@ -490,6 +490,13 @@ class PulseSequence(ParameterNode):
             return False
 
         for parameter_name, parameter in self.parameters.items():
+            if parameter_name == 'pulse_sequences':
+                if len(parameter()) != len(other.pulse_sequences):
+                    return False
+
+                for pseq1, pseq2 in zip(parameter(), other.pulse_sequences):
+                    if pseq1 != pseq2:
+                        return False
             if not parameter_name in other.parameters:
                 return False
             elif parameter() != getattr(other, parameter_name):
