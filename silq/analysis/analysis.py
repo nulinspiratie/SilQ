@@ -85,7 +85,7 @@ def find_high_low(traces: np.ndarray,
         * **DC_voltage** (float): Average voltage of traces.
     """
     if attempts < 1:
-        raise SyntaxError(
+        raise ValueError(
             f'Attempts {attempts} to find high and low voltage must be at least 1'
         )
 
