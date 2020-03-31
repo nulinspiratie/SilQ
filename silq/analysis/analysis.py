@@ -125,7 +125,7 @@ def find_high_low(traces: np.ndarray,
             voltage is always determined. If no two peaks are observed, then
             the bottom/top 20% of voltages are scrapped, and the rest is
             considered to be high/low voltage, depending on threshold_method.
-            Especially useful for when current blips are to short-lived to have
+            Especially useful for when current blips are too short-lived to have
             a proper high current. Default is True.
             Can be set by config.analysis.threshold_requires_high_low
         min_SNR: Minimum SNR between high and low voltages required to determine
