@@ -916,7 +916,6 @@ class PulseSequence(ParameterNode):
             pulse_sequence['enabled'].connect(
                 self._link_pulse_sequences, update=False
             )
-            print(pulse_sequence['enabled'].signal.receivers)
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
