@@ -874,7 +874,7 @@ class PulseSequence(ParameterNode):
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
-        if self.pulses:
+        if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
             )
@@ -887,7 +887,7 @@ class PulseSequence(ParameterNode):
         self._link_pulse_sequences()
 
     def insert_pulse_sequence(self, index, pulse_sequence):
-        if self.pulses:
+        if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
             )
