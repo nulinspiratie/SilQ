@@ -2,9 +2,11 @@ import numpy as np
 import matplotlib
 import peakutils
 import logging
-from typing import Union, Dict, Any, List, Sequence
+from typing import Union, Dict, List, Sequence, Union
 import collections
 from matplotlib import pyplot as plt
+
+from silq import config
 
 from qcodes import MatPlot
 
@@ -13,79 +15,14 @@ __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
 
 logger = logging.getLogger(__name__)
 
-from silq import config
-
-
-def old_smooth(x: np.ndarray,
-           window_len: int = 11,
-           window: str = 'hanning') -> np.ndarray:
-    """smooth the data using a window with requested size.
-
-    Note:
-        This function is superseded by the Savitsky-Golay filter `smooth` for
-        its superior performance.
-
-    This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal
-    (with the window size) in both ends so that transient parts are minimized
-    in the begining and end part of the output signal.
-
-    Args:
-        x: the input signal
-        window_len: the dimension of the smoothing window; should be an odd integer
-        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett',
-            'blackman' flat window will produce a moving average smoothing.
-
-    Returns:
-        the smoothed signal
-
-    Example:
-        t=linspace(-2,2,0.1)
-        x=sin(t)+randn(len(t))*0.1
-        y=smooth(x)
-
-    See Also:
-        numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman,
-        numpy.convolve, scipy.signal.lfilter
-
-    TODO:
-        the window parameter could be the window itself if an array instead of a string
-    NOTE:
-        length(output) != length(input), to correct this:
-        return y[(window_len/2-1):-(window_len/2)] instead of just y.
-    """
-    # TODO: Somehow it shifts the center.
-    if x.ndim != 1:
-        raise ValueError("smooth only accepts 1 dimension arrays.")
-
-    if x.size < window_len:
-        raise ValueError("Input vector needs to be bigger than window size.")
-
-    if window_len < 3:
-        return x
-
-    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-        raise ValueError("Window is on of 'flat', 'hanning', 'hamming', "
-                         "'bartlett', 'blackman'")
-
-    s = np.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
-    # print(len(s))
-    if window == 'flat':  # moving average
-        w = np.ones(window_len, 'd')
-    else:
-        w = eval('np.' + window + '(window_len)')
-
-    y = np.convolve(w / w.sum(), s, mode='valid')
-    return y[int(window_len/2-1):-int(window_len/2)]
-
 
 def find_high_low(traces: np.ndarray,
                   plot: bool = False,
                   threshold_peak: float = 0.02,
                   attempts: int = 8,
                   threshold_method: str = 'config',
-                  min_voltage_difference: float = 'config',
-                  threshold_requires_high_low: bool = 'config',
+                  min_voltage_difference: Union[float, str] = 'config',
+                  threshold_requires_high_low: Union[bool, str] = 'config',
                   min_SNR: Union[float, None] = None):
     """ Find high and low voltages of traces using histograms
 
@@ -122,11 +59,15 @@ def find_high_low(traces: np.ndarray,
         threshold_requires_high_low: Whether or not both a high and low voltage
             must be discerned before returning a threshold voltage.
             If set to False and threshold_method is not ``mean``, a threshold
-            voltage is always determined. If no two peaks are observed, then
-            the bottom/top 20% of voltages are scrapped, and the rest is
-            considered to be high/low voltage, depending on threshold_method.
-            Especially useful for when current blips are to short-lived to have
-            a proper high current. Default is True.
+            voltage is always determined, even if no two voltage peaks can be
+            discerned. In this situation, there usually aren't any blips, or the
+            blips are too short-lived to have a proper high current.
+            When the threshold_method is ``std_low`` (``std_high``), the top
+            (bottom) 20% of voltages are scrapped to ensure any short-lived blips
+            with a high (low) current aren't included.
+            The average is then taken over the remaining 80% of voltages, which
+            is then the average low (high) voltage.
+            Default is True.
             Can be set by config.analysis.threshold_requires_high_low
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage (default None).
@@ -203,7 +144,7 @@ def find_high_low(traces: np.ndarray,
                 # Remove top 20 percent (high voltage)
                 cutoff_slice = slice(None, int(0.8 * len(voltages)))
             else:
-                factor *= 1  # standard deviations should be subtracted from mean
+                factor *= -1  # standard deviations should be subtracted from mean
                 # Remove bottom 20 percent of voltages (low voltage)
                 cutoff_slice = slice(int(0.8 * len(voltages)), None)
             voltages_cutoff = voltages[cutoff_slice]
