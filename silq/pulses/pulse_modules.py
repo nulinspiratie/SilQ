@@ -873,6 +873,19 @@ class PulseSequence(ParameterNode):
             self.clear()
             raise
 
+    def add_pulse_sequences(self, *pulse_sequences):
+        if self.pulses:
+            raise RuntimeError(
+               'Cannot add nested pulse sequence when also containing pulses'
+            )
+
+        for pulse_sequence in pulse_sequences:
+            pulse_sequence.parent = self
+
+        self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, *pulse_sequences)
+
+        self._link_pulse_sequences()
+
     def insert_pulse_sequence(self, index, pulse_sequence):
         if self.pulses:
             raise RuntimeError(
@@ -887,16 +900,26 @@ class PulseSequence(ParameterNode):
 
         self._link_pulse_sequences()
 
-    def add_pulse_sequences(self, *pulse_sequences):
-        if self.pulses:
-            raise RuntimeError(
-               'Cannot add nested pulse sequence when also containing pulses'
+    def remove_pulse_sequence(self, pulse_sequence: Union["PulseSequence", int, str]):
+        """Remove pulse sequence
+
+        Args:
+            pulse_sequence: Pulse sequence to remove. Can be one of the following:
+                int: Index of pulse sequence to remove
+                str: Name of pulse sequence to remove
+                PulseSequence: pulse sequence object to remove
+        """
+        pulse_sequences = list(self.pulse_sequences)
+        
+        if isinstance(pulse_sequence, int):
+            pulse_sequence = pulse_sequences[pulse_sequence]
+        elif isinstance(pulse_sequence, str):
+            pulse_sequence = next(
+                pseq for pseq in pulse_sequences if pseq.name == pulse_sequence
             )
 
-        for pulse_sequence in pulse_sequences:
-            pulse_sequence.parent = self
-
-        self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, *pulse_sequences)
+        pulse_sequences.remove(pulse_sequence)
+        self['pulse_sequences']._latest['raw_value'] = tuple(pulse_sequences)
 
         self._link_pulse_sequences()
 
@@ -916,6 +939,10 @@ class PulseSequence(ParameterNode):
                 pulse_sequence['t_stop'].signal.receivers.clear()
                 pulse_sequence['enabled'].signal.receivers.clear()
 
+            pulse_sequence['enabled'].connect(
+                self._link_pulse_sequences, update=False
+            )
+
         # Add new signal receivers
         enabled_pulse_sequences = [pseq for pseq in self.pulse_sequences if pseq.enabled]
         for k, pulse_sequence in enumerate(enabled_pulse_sequences):
@@ -926,10 +953,6 @@ class PulseSequence(ParameterNode):
                 previous_pulse_sequence['t_stop'].connect(
                     pulse_sequence['t_start'], update=True
                 )
-
-            pulse_sequence['enabled'].connect(
-                self._link_pulse_sequences, update=False
-            )
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence
