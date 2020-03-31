@@ -1,5 +1,6 @@
 from .interface import InstrumentInterface, Channel
-
+import qcodes as qc
+station = qc.Station()
 
 instrument_interfaces = {
     "ArbStudio1104": {
@@ -60,4 +61,5 @@ def get_instrument_interface(instrument, *args, **kwargs):
     instrument_interface = instrument_interface_class(
         instrument_name=instrument.name, *args, **kwargs
     )
+    station.add_component(instrument_interface)
     return instrument_interface
