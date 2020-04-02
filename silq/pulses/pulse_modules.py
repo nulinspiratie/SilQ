@@ -574,7 +574,6 @@ class PulseSequence(ParameterNode):
                 f'Cannot add untargeted pulse {pulse}'
             assert pulse.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse}'
-            assert pulse.duration is not None, f'Pulse {pulse} duration must be specified'
 
             if copy:
                 pulse = copy_alias(pulse)
