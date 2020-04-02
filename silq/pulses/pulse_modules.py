@@ -678,7 +678,6 @@ class PulseSequence(ParameterNode):
                 f'Cannot add untargeted pulse {pulse_copy}'
             assert pulse_copy.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse_copy}'
-            assert pulse_copy.duration is not None, f'Pulse {pulse_copy} duration must be specified'
 
             # Copy pulse to ensure original pulse is unmodified
             pulse_copy = copy(pulse)
