@@ -490,7 +490,14 @@ class PulseSequence(ParameterNode):
             return False
 
         for parameter_name, parameter in self.parameters.items():
-            if not parameter_name in other.parameters:
+            if parameter_name == 'pulse_sequences':
+                if len(parameter()) != len(other.pulse_sequences):
+                    return False
+
+                for pseq1, pseq2 in zip(parameter(), other.pulse_sequences):
+                    if pseq1 != pseq2:
+                        return False
+            elif not parameter_name in other.parameters:
                 return False
             elif parameter() != getattr(other, parameter_name):
                 return False
@@ -607,12 +614,13 @@ class PulseSequence(ParameterNode):
             List[Pulse]: Added pulses, which are copies of the original pulses.
 
         Raises:
-            SyntaxError: The added pulse overlaps with another pulses and
+            AssertionError: The added pulse overlaps with another pulses and
                 `PulseSequence`.allow_pulses_overlap is False
-            SyntaxError: The added pulse is untargeted and
+            AssertionError: The added pulse is untargeted and
                 `PulseSequence`.allow_untargeted_pulses is False
-            SyntaxError: The added pulse is targeted and
+            AssertionError: The added pulse is targeted and
                 `PulseSequence`.allow_targeted_pulses is False
+            ValueError: If a pulse has no duration
 
         Note:
             When a pulse is added, it is first copied, to ensure that the
@@ -621,9 +629,10 @@ class PulseSequence(ParameterNode):
         """
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
-            raise SyntaxError('Please specify pulse duration in silq.config.pulses'
-                              ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+            raise ValueError(
+                'Please specify pulse duration in silq.config.pulses for the '
+                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+            )
 
         if copy:
             pulse_copies = []
@@ -670,6 +679,12 @@ class PulseSequence(ParameterNode):
             assert pulse_copy.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse_copy}'
             assert pulse_copy.duration is not None, f'Pulse {pulse_copy} duration must be specified'
+            if pulse.duration is not None:
+                raise SyntaxError(f'Pulse {pulse} duration must be specified')
+
+            # Copy pulse to ensure original pulse is unmodified
+            pulse_copy = copy(pulse)
+            pulse_copy.id = None  # Remove any pre-existing pulse id
 
             # Check if pulse with same name exists, if so ensure unique id
             if pulse_copy.name is not None:
@@ -760,7 +775,7 @@ class PulseSequence(ParameterNode):
         if pulses_no_duration:
             raise SyntaxError('Please specify pulse duration in silq.config.pulses'
                               ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+                              ', '.join(str(p.name) for p in pulses_no_duration))
 
         added_pulses = []
         for pulse in pulses:
@@ -874,26 +889,85 @@ class PulseSequence(ParameterNode):
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
-        if self.pulses:
+        if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
             )
 
         for pulse_sequence in pulse_sequences:
-            # Make sure t_stop is not connected to some other pulse sequence
+            pulse_sequence.parent = self
+
+        self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, *pulse_sequences)
+
+        self._link_pulse_sequences()
+
+    def insert_pulse_sequence(self, index, pulse_sequence):
+        if self.my_pulses:
+            raise RuntimeError(
+               'Cannot add nested pulse sequence when also containing pulses'
+            )
+
+        pulse_sequence.parent = self
+
+        pulse_sequences = list(self.pulse_sequences)
+        pulse_sequences.insert(index, pulse_sequence)
+        self['pulse_sequences']._latest['raw_value'] = tuple(pulse_sequences)
+
+        self._link_pulse_sequences()
+
+    def remove_pulse_sequence(self, pulse_sequence: Union["PulseSequence", int, str]):
+        """Remove pulse sequence
+
+        Args:
+            pulse_sequence: Pulse sequence to remove. Can be one of the following:
+                int: Index of pulse sequence to remove
+                str: Name of pulse sequence to remove
+                PulseSequence: pulse sequence object to remove
+        """
+        pulse_sequences = list(self.pulse_sequences)
+
+        if isinstance(pulse_sequence, int):
+            pulse_sequence = pulse_sequences[pulse_sequence]
+        elif isinstance(pulse_sequence, str):
+            pulse_sequence = next(
+                pseq for pseq in pulse_sequences if pseq.name == pulse_sequence
+            )
+
+        pulse_sequences.remove(pulse_sequence)
+        self['pulse_sequences']._latest['raw_value'] = tuple(pulse_sequences)
+
+        self._link_pulse_sequences()
+
+    def _link_pulse_sequences(self, *args):
+        """
+
+        Args:
+            *args: Optional args that are ignored. Added because it allows
+                signals to be connected to this function
+
+        Returns:
+
+        """
+        # First remove all pre-existing signal receivers
+        for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
+                pulse_sequence['enabled'].signal.receivers.clear()
 
-            if self.pulse_sequences:
-                previous_pulse_sequence = self.pulse_sequences[-1]
+            pulse_sequence['enabled'].connect(
+                self._link_pulse_sequences, update=False
+            )
+
+        # Add new signal receivers
+        enabled_pulse_sequences = [pseq for pseq in self.pulse_sequences if pseq.enabled]
+        for k, pulse_sequence in enumerate(enabled_pulse_sequences):
+            if k == 0:  # First pulse sequence
+                pulse_sequence.t_start = 0
+            else:
+                previous_pulse_sequence = enabled_pulse_sequences[k-1]
                 previous_pulse_sequence['t_stop'].connect(
                     pulse_sequence['t_start'], update=True
                 )
-            else:
-                pulse_sequence.t_start = 0
-
-            self['pulse_sequences']._latest['raw_value'] = (*self.pulse_sequences, pulse_sequence)
-            pulse_sequence.parent = self
 
     def remove(self, *pulses):
         """Removes `Pulse` or pulses from pulse sequence

@@ -74,7 +74,7 @@ class TestPulseSequence(unittest.TestCase):
 
     def test_pulse_no_duration_error(self):
         p = Pulse()
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(SyntaxError):
             PulseSequence([p])
 
     def test_get_pulses(self):
@@ -1169,6 +1169,24 @@ class TestCompositePulseSequences(unittest.TestCase):
         self.assertEqual(skeleton_pulse_sequence[0].name, pulse.name)
         skeleton_pulse_sequence.add(pulse, nest=True)
         self.assertEqual(skeleton_pulse_sequence.pulse_sequences[1][0].name, pulse.name)
+
+    def test_disabling_first_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='pulse_sequence1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='pulse_sequence2')
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        pulse_sequence1.enabled = False
+
+        self.assertEqual(pulse_sequence2.t_start, 0)
 
 
 class TestPulseSequenceGenerators(unittest.TestCase):
