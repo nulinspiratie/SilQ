@@ -397,6 +397,7 @@ class PulseSequence(ParameterNode):
             for p in pulse_sequence.pulses
             if pulse_sequence.enabled
         ]
+        pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
         return tuple(pulses)
 
     @parameter
@@ -406,6 +407,7 @@ class PulseSequence(ParameterNode):
             for p in pulse_sequence.enabled_pulses
             if pulse_sequence.enabled
         ]
+        enabled_pulses = sorted(enabled_pulses, key=lambda pulse: pulse.t_start)
         return tuple(enabled_pulses)
 
     @parameter
@@ -557,9 +559,13 @@ class PulseSequence(ParameterNode):
     def generate(self):
         if self.pulse_sequences:
             self.clear(clear_pulse_sequences=False)
+
             for pulse_sequence in self.pulse_sequences:
                 if pulse_sequence.enabled:
                     pulse_sequence.generate()
+
+            # Ensure all stop times match
+            self._link_pulse_sequences()
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=[]):
@@ -1078,6 +1084,7 @@ class PulseSequence(ParameterNode):
                       pulse.connection is not None and
                       pulse.connection.satisfies_conditions(**connection_conditions)]
 
+        pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
         return pulses
 
     def get_pulse(self, **conditions):
