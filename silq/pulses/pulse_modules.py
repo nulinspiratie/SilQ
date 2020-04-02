@@ -679,10 +679,6 @@ class PulseSequence(ParameterNode):
             assert pulse_copy.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse_copy}'
 
-            # Copy pulse to ensure original pulse is unmodified
-            pulse_copy = copy(pulse)
-            pulse_copy.id = None  # Remove any pre-existing pulse id
-
             # Check if pulse with same name exists, if so ensure unique id
             if pulse_copy.name is not None:
                 pulses_same_name = self.get_pulses(name=pulse_copy.name)
