@@ -609,7 +609,7 @@ class SinePulse(Pulse):
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
-            self.phase_reference = 'relative'
+            self.phase_reference = 'absolute'
         if self.phase is None:
             self.phase = 0
         if self.offset is None:
