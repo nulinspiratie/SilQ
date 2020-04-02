@@ -561,7 +561,7 @@ class SinePulseImplementation(PulseImplementation):
                 amplitude=self.pulse.get_voltage(self.pulse.t_start),
             )
             return DCPulseImplementation.implement(
-                self=None, pulse=DC_pulse, sample_rate=sample_rate
+                self=DC_pulse, sample_rate=sample_rate
             )
 
         settings = {"max_points": 50e3, "frequency_threshold": 30}
