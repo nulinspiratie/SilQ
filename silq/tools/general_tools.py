@@ -716,6 +716,10 @@ def find_approximate_divisor(
                 (min_remaining_points - remaining_points) / points
             )
             remaining_points += subtract_cycles * points
+            if cycles - subtract_cycles < 1:
+                # Remaining points cannot be incorporated
+                continue
+
             cycles -= subtract_cycles
 
         if (

@@ -112,6 +112,11 @@ def pulse_to_waveform_sequence(
     filtered_results = np.ones(errors.shape, dtype=bool)
     # Ensure that all results have at least one repetition
     filtered_results[repetitions_multiple < 1] = False
+
+    if np.all(~filtered_results):
+        # TODO Don't raise an error, but return the original frequency
+        raise RuntimeError('Pulse cannot be approximated because it is too short')
+
     filter_arrs = {
         "frequency": errors,
         "final_delay": final_delays,
