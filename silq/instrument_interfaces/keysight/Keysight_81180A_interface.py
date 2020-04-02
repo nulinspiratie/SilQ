@@ -359,7 +359,7 @@ class Keysight81180AInterface(InstrumentInterface):
             )
         )
         waveform = DCPulseImplementation.implement(
-            self=DC_pulse, sample_rate=sample_rate
+            pulse=DC_pulse, sample_rate=sample_rate
         )
         sequence_steps = self.add_pulse_waveforms(
             channel_name,
@@ -494,22 +494,29 @@ class Keysight81180AInterface(InstrumentInterface):
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
-    def implement(self, sample_rate: float, max_points: int = 6000) -> dict:
+    @staticmethod
+    def implement(pulse: DCPulse, sample_rate: float, max_points: int = 6000) -> dict:
         # TODO shouldn't the properties of self be from self.pulse instead?
 
         # Number of points must be a multiple of 32
-        N = 32 * np.floor(self.duration * sample_rate / 32)
+        N = 32 * np.floor(pulse.duration * sample_rate / 32)
 
         # Add a waveform_initial if this pulse is the start of the pulse_sequence
         # and has a long enough duration. The first point of waveform_initial will
         # later on be set to the last point of the last waveform, ensuring that
         # any pulse_sequence.final_delay remains at the last voltage
-        if self.t_start == 0 and N > 640:
+        if pulse.t_start == 0 and N > 640:
             N -= 320
-            waveform_initial = self.amplitude * np.ones(320)
+            waveform_initial = pulse.amplitude * np.ones(320)
             logger.debug("adding waveform_initial")
         else:
             waveform_initial = None
+
+        if N < 320:
+            raise RuntimeError(
+                f'Cannot add pulse because the number of waveform points {N} '
+                f'is less than the minimum 320. {pulse}'
+            )
 
         # Find an approximate divisor of the number of points N, allowing us
         # to shrink the waveform
@@ -530,11 +537,11 @@ class DCPulseImplementation(PulseImplementation):
             )
 
         # Add waveform(s) and sequence steps
-        waveform = self.amplitude * np.ones(approximate_divisor["points"])
+        waveform = pulse.amplitude * np.ones(approximate_divisor["points"])
 
         # Add separate waveform if there are remaining points left after division
         if approximate_divisor["remaining_points"]:
-            waveform_tail = self.amplitude * np.ones(
+            waveform_tail = pulse.amplitude * np.ones(
                 approximate_divisor["remaining_points"]
             )
         else:
@@ -561,25 +568,34 @@ class SinePulseImplementation(PulseImplementation):
                 amplitude=self.pulse.get_voltage(self.pulse.t_start),
             )
             return DCPulseImplementation.implement(
-                self=DC_pulse, sample_rate=sample_rate
+                pulse=DC_pulse, sample_rate=sample_rate
             )
 
-        settings = {"max_points": 50e3, "frequency_threshold": 30}
+        settings = {
+            "max_points": 50e3,
+            "frequency_threshold": 30,
+        }
         settings.update(**config.properties.get("sine_waveform_settings", {}))
         settings.update(
             **config.properties.get("keysight_81180A_sine_waveform_settings", {})
         )
         settings.update(**kwargs)
 
-        self.results = pulse_to_waveform_sequence(
-            frequency=self.pulse.frequency,
-            sampling_rate=sample_rate,
-            total_duration=self.pulse.duration,
-            min_points=320,
-            sample_points_multiple=32,
-            plot=plot,
-            **settings,
-        )
+        # Do not approximate frequency if the pulse is sufficiently short
+        max_points_exact = settings.pop('max_points_exact', 4000)
+        points = int(self.pulse.duration * sample_rate)
+        if points > max_points_exact:
+            self.results = pulse_to_waveform_sequence(
+                frequency=self.pulse.frequency,
+                sampling_rate=sample_rate,
+                total_duration=self.pulse.duration,
+                min_points=320,
+                sample_points_multiple=32,
+                plot=plot,
+                **settings,
+            )
+        else:
+            self.results = None
 
         if self.results is None:
             t_list = np.arange(self.pulse.t_start, self.pulse.t_stop, 1 / sample_rate)
