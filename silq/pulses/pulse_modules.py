@@ -614,12 +614,13 @@ class PulseSequence(ParameterNode):
             List[Pulse]: Added pulses, which are copies of the original pulses.
 
         Raises:
-            SyntaxError: The added pulse overlaps with another pulses and
+            AssertionError: The added pulse overlaps with another pulses and
                 `PulseSequence`.allow_pulses_overlap is False
-            SyntaxError: The added pulse is untargeted and
+            AssertionError: The added pulse is untargeted and
                 `PulseSequence`.allow_untargeted_pulses is False
-            SyntaxError: The added pulse is targeted and
+            AssertionError: The added pulse is targeted and
                 `PulseSequence`.allow_targeted_pulses is False
+            ValueError: If a pulse has no duration
 
         Note:
             When a pulse is added, it is first copied, to ensure that the
@@ -628,9 +629,10 @@ class PulseSequence(ParameterNode):
         """
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
-            raise SyntaxError('Please specify pulse duration in silq.config.pulses'
-                              ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+            raise ValueError(
+                'Please specify pulse duration in silq.config.pulses for the '
+                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+            )
 
         if copy:
             pulse_copies = []
@@ -677,6 +679,12 @@ class PulseSequence(ParameterNode):
             assert pulse_copy.implementation is None or self.allow_targeted_pulses, \
                 f'Not allowed to add targeted pulse {pulse_copy}'
             assert pulse_copy.duration is not None, f'Pulse {pulse_copy} duration must be specified'
+            if pulse.duration is not None:
+                raise SyntaxError(f'Pulse {pulse} duration must be specified')
+
+            # Copy pulse to ensure original pulse is unmodified
+            pulse_copy = copy(pulse)
+            pulse_copy.id = None  # Remove any pre-existing pulse id
 
             # Check if pulse with same name exists, if so ensure unique id
             if pulse_copy.name is not None:
@@ -767,7 +775,7 @@ class PulseSequence(ParameterNode):
         if pulses_no_duration:
             raise SyntaxError('Please specify pulse duration in silq.config.pulses'
                               ' for the following pulses: ' +
-                              ', '.join(p.name for p in pulses_no_duration))
+                              ', '.join(str(p.name) for p in pulses_no_duration))
 
         added_pulses = []
         for pulse in pulses:
@@ -917,7 +925,7 @@ class PulseSequence(ParameterNode):
                 PulseSequence: pulse sequence object to remove
         """
         pulse_sequences = list(self.pulse_sequences)
-        
+
         if isinstance(pulse_sequence, int):
             pulse_sequence = pulse_sequences[pulse_sequence]
         elif isinstance(pulse_sequence, str):

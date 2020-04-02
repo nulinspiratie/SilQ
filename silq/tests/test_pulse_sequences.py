@@ -74,7 +74,7 @@ class TestPulseSequence(unittest.TestCase):
 
     def test_pulse_no_duration_error(self):
         p = Pulse()
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(SyntaxError):
             PulseSequence([p])
 
     def test_get_pulses(self):
