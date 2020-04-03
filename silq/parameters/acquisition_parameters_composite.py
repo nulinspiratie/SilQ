@@ -11,7 +11,7 @@ from silq.pulses.pulse_sequences import (
 )
 from silq.pulses.pulse_types import Pulse
 from silq.tools import property_ignore_setter
-from silq.analysis import analysis
+from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseFlips
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
@@ -176,8 +176,8 @@ class ESRParameterComposite(AcquisitionParameterComposite):
         self.EPR = self.pulse_sequence.EPR
 
         self.analyses = ParameterNode()
-        self.analyses.EPR = analysis.AnalyseEPR("EPR")
-        self.analyses.ESR = analysis.AnalyseElectronReadout("ESR")
+        self.analyses.EPR = AnalyseEPR("EPR")
+        self.analyses.ESR = AnalyseElectronReadout("ESR")
 
         self.layout.sample_rate.connect(self.analyses.EPR.settings["sample_rate"])
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
@@ -210,6 +210,8 @@ class ESRParameterComposite(AcquisitionParameterComposite):
         traces = DotDict(traces)
 
         results = DotDict()
+
+        # First analyse EPR because we want to use dark_counts
         if "EPR" in traces:
             results["EPR"] = self.analyses.EPR.analyse(
                 empty_traces=traces[self.EPR[0].full_name]["output"],
@@ -221,10 +223,15 @@ class ESRParameterComposite(AcquisitionParameterComposite):
         else:
             dark_counts = None
 
-        if "ESR" in traces:
-            results["ESR"] = self.analyses.ESR.analyse(
-                traces=traces.ESR, dark_counts=dark_counts, plot=plot
-            )
+        for name, analysis in self.analyses.parameter_nodes.items():
+            if name == 'EPR':
+                continue
+            if isinstance(analysis, AnalyseElectronReadout):
+                results[name] = analysis.analyse(
+                    traces=traces[name], dark_counts=dark_counts, plot=plot
+                )
+            else:
+                raise SyntaxError(f'Cannot process analysis {name} {type(analysis)}')
 
         self.results = results
         return results
@@ -344,8 +351,8 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         self.ESR = self.pulse_sequence.ESR
 
         self.analyses = ParameterNode()
-        self.analyses.ESR = analysis.AnalyseElectronReadout('ESR')
-        self.analyses.NMR = analysis.AnalyseFlips('NMR')
+        self.analyses.ESR = AnalyseElectronReadout('ESR')
+        self.analyses.NMR = AnalyseFlips('NMR')
 
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
 
