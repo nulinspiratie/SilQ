@@ -669,9 +669,6 @@ class DoubleExponentialFit(Fit):
     """
     sweep_parameter = 't'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @staticmethod
     def fit_function(t: Union[float, np.ndarray],
                      tau_1: float,
