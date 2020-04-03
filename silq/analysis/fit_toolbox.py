@@ -859,8 +859,7 @@ class AMSineFit(Fit):
             Parameters object containing initial parameters.
         """
         parameters = Parameters()
-        if 'amplitude' not in initial_parameters:
-            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+        initial_parameters.setdefault('amplitude', (max(ydata) - min(ydata)) / 2)
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
@@ -970,9 +969,9 @@ class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
 
     @staticmethod
-    def fit_function(f, f0, gamma, t, offset):
+    def fit_function(f, f0, gamma, t, offset, amplitude):
         Omega = np.sqrt(gamma ** 2 + (2 * np.pi * (f - f0)) ** 2 / 4)
-        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2 + offset
+        return amplitude * gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2 + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
