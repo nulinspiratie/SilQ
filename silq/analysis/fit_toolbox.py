@@ -27,7 +27,7 @@ class Fit():
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
 
-    def __init__(self, fit=True, print=False, plot=None, **kwargs):
+    def __init__(self, ydata=None, fit=True, print=False, plot=None, **kwargs):
         self.model = Model(self.fit_function, **kwargs)
         self.fit_result = None
 
@@ -38,10 +38,14 @@ class Fit():
         self.weights = None
         self.parameters = None
 
-        if kwargs:
-            self.get_parameters(**kwargs)
+        if ydata is not None:
+            if 'xvals' not in kwargs:
+                assert isinstance(ydata, DataArray), 'Please provide xvals'
+                kwargs['xvals'] = ydata.set_arrays[0]
+
+            self.get_parameters(ydata=ydata, **kwargs)
             if fit:
-                self.perform_fit(print=print, plot=plot, **kwargs)
+                self.perform_fit(print=print, plot=plot, ydata=ydata, **kwargs)
 
     def fit_function(self, *args, **kwargs):
         raise NotImplementedError('This should be implemented in a subclass')
