@@ -21,13 +21,31 @@ class Fit():
     This will find its initial parameters via `Fit.find_initial_parameters`,
     after which it will fit the data to `Fit.fit_function`.
 
+    If either xvals and ydata are passed, or only ydata is passed but is is a
+    Qcodes DataArray, the fit is automatically performed.
+    Otherwise Fit.perform_fit must be called.
+
+    Args:
+        ydata: Data values to be fitted
+        xvals: Sweep values
+        fit: Automatically perform a fit if ydata is passed
+        print: Print results
+        plot: Plot data and fit
+        initial_parameters: Dict of initial guesses for fit parameters
+        fixed_parameters: Dict of fixed values for fit parameters
+        parameter_constraints: Parameter constraints
+            e.g. {'frequency' : {'min' : 0}}
+        **kwargs: Any other kwargs passed to Fit.perform_fit
+
     Note:
         The fitting routine uses lmfit, a wrapper package around scipy.optimize.
     """
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
 
-    def __init__(self, ydata=None, fit=True, print=False, plot=None, **kwargs):
+    def __init__(self, ydata=None, *, xvals=None, fit=True, print=False, plot=None,
+                 initial_parameters=None, fixed_parameters=None, parameter_constraints=None,
+                 **kwargs):
         self.model = Model(self.fit_function, **kwargs)
         self.fit_result = None
 
@@ -39,13 +57,19 @@ class Fit():
         self.parameters = None
 
         if ydata is not None:
-            if 'xvals' not in kwargs:
+            if xvals is None:
                 assert isinstance(ydata, DataArray), 'Please provide xvals'
-                kwargs['xvals'] = ydata.set_arrays[0]
+                xvals = ydata.set_arrays[0]
 
-            self.get_parameters(ydata=ydata, **kwargs)
+            self.get_parameters(
+                xvals=xvals,
+                ydata=ydata,
+                initial_parameters=initial_parameters,
+                fixed_parameters=fixed_parameters,
+                parameter_constraints=parameter_constraints
+            )
             if fit:
-                self.perform_fit(print=print, plot=plot, ydata=ydata, **kwargs)
+                self.perform_fit(print=print, plot=plot, xvals=xvals, ydata=ydata, **kwargs)
 
     def fit_function(self, *args, **kwargs):
         raise NotImplementedError('This should be implemented in a subclass')
@@ -96,8 +120,8 @@ class Fit():
         """
         return array[self.find_nearest_index(array, value)]
 
-    def get_parameters(self, xvals, ydata, initial_parameters={},
-                       fixed_parameters={}, parameter_constraints={},
+    def get_parameters(self, xvals, ydata, initial_parameters=None,
+                       fixed_parameters=None, parameter_constraints=None,
                        weights=None, **kwargs):
         """Get parameters for fitting
         Args:
@@ -115,6 +139,10 @@ class Fit():
                 can be fit.
             weights: Weights for data points, must have same shape as ydata
         """
+        initial_parameters = initial_parameters or {}
+        fixed_parameters = fixed_parameters or {}
+        parameter_constraints = parameter_constraints or {}
+
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
         elif not isinstance(xvals, np.ndarray):
@@ -945,9 +973,9 @@ class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
 
     @staticmethod
-    def fit_function(f, f0, gamma, t):
+    def fit_function(f, f0, gamma, t, offset):
         Omega = np.sqrt(gamma ** 2 + (2 * np.pi * (f - f0)) ** 2 / 4)
-        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2
+        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2 + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
@@ -972,6 +1000,9 @@ class RabiFrequencyFit(Fit):
 
         if 't' not in initial_parameters:
             initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
+
+        if 'offset' not in initial_parameters:
+            initial_parameters['offset'] = np.min(ydata)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
