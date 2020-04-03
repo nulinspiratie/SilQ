@@ -779,8 +779,7 @@ class SineFit(Fit):
             Parameters object containing initial parameters.
         """
         parameters = Parameters()
-        if 'amplitude' not in initial_parameters:
-            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+        initial_parameters.setdefault('amplitude', (max(ydata) - min(ydata)) / 2)
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
@@ -789,19 +788,15 @@ class SineFit(Fit):
             fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
-        if 'frequency' not in initial_parameters:
-            frequency = fft_freqs[frequency_idx]
-            initial_parameters['frequency'] = frequency
+        initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
 
-            if plot:
-                plt.figure()
-                plt.plot(fft_freqs, fft_flips_abs, 'o')
-                plt.plot(frequency, fft_flips_abs[frequency_idx], 'o', ms=8)
-        if 'phase' not in initial_parameters:
-            phase = np.pi / 2 + np.angle(fft_flips[frequency_idx])
-            initial_parameters['phase'] = phase
-        if 'offset' not in initial_parameters:
-            initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+        if plot:
+            plt.figure()
+            plt.plot(fft_freqs, fft_flips_abs, 'o')
+            plt.plot(initial_parameters['frequency'], fft_flips_abs[frequency_idx], 'o', ms=8)
+
+        initial_parameters.setdefault('phase', np.pi / 2 + np.angle(fft_flips[frequency_idx]))
+        initial_parameters.setdefault('offset', (max(ydata) + min(ydata)) / 2)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
@@ -980,13 +975,11 @@ class RabiFrequencyFit(Fit):
         max_idx = np.argmax(ydata)
         max_frequency = xvals[max_idx]
 
-        if 'f0' not in initial_parameters:
-            initial_parameters['f0'] = max_frequency
+        initial_parameters.setdefault('f0', max_frequency)
 
         if 'gamma' not in initial_parameters:
             if 't' in initial_parameters:
-                initial_parameters['gamma'] = np.pi / initial_parameters[
-                    't'] / 2
+                initial_parameters['gamma'] = np.pi / initial_parameters['t'] / 2
             else:
                 FWHM_min_idx = np.argmax(xvals > max_frequency / 2)
                 FWHM_max_idx = len(xvals) - np.argmax(
@@ -994,11 +987,9 @@ class RabiFrequencyFit(Fit):
                 initial_parameters['gamma'] = 2 * np.pi * (
                         xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
-        if 't' not in initial_parameters:
-            initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
-
-        if 'offset' not in initial_parameters:
-            initial_parameters['offset'] = np.min(ydata)
+        initial_parameters.setdefault('t', np.pi / initial_parameters['gamma'] / 2)
+        initial_parameters.setdefault('offset',  np.min(ydata))
+        initial_parameters.setdefault('amplitude', 1 - initial_parameters['offset'])
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
