@@ -375,7 +375,7 @@ def initialize(name: str,
                     execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
-        run_scripts(name, mode=mode, globals=globals, locals=locals)
+        run_scripts(name, mode=mode, globals=globals, locals=locals, silent=silent)
 
     if 'data_folder' in config["environment:properties"]:
         data_folder = config["environment:properties.data_folder"]
