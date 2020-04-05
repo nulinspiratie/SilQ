@@ -392,22 +392,28 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def pulses_get(self, parameter):
-        pulses = self.my_pulses + [
+        my_pulses = self.my_pulses
+        nested_pulses = [
             p for pulse_sequence in self.pulse_sequences
             for p in pulse_sequence.pulses
             if pulse_sequence.enabled
         ]
-        pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
+        pulses = (*my_pulses, *nested_pulses)
+        if my_pulses and nested_pulses:
+            pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
         return tuple(pulses)
 
     @parameter
     def enabled_pulses_get(self, parameter):
-        enabled_pulses = self.my_enabled_pulses + [
+        my_enabled_pulses = self.my_enabled_pulses
+        nested_enabled_pulses = [
             p for pulse_sequence in self.pulse_sequences
             for p in pulse_sequence.enabled_pulses
             if pulse_sequence.enabled
         ]
-        enabled_pulses = sorted(enabled_pulses, key=lambda pulse: pulse.t_start)
+        enabled_pulses = (*my_enabled_pulses, *nested_enabled_pulses)
+        if my_enabled_pulses and nested_enabled_pulses:
+            enabled_pulses = sorted(enabled_pulses, key=lambda pulse: pulse.t_start)
         return tuple(enabled_pulses)
 
     @parameter
