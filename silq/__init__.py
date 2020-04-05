@@ -252,7 +252,8 @@ def run_script(
                 if line.startswith('ignore_mode: '):
                     ignore_mode = line.split('ignore_mode: ')[1]
                     if mode == ignore_mode:
-                        print(f'Ignoring script {file.stem}')
+                        if not silent:
+                            print(f'Ignoring script {file.stem}')
                         return
 
     if not silent:
