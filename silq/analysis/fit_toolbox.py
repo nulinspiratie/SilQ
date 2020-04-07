@@ -69,7 +69,7 @@ class Fit():
                 parameter_constraints=parameter_constraints
             )
             if fit:
-                self.perform_fit(print=print, plot=plot, xvals=xvals, ydata=ydata, **kwargs)
+                self.perform_fit(print=print, plot=plot, **kwargs)
 
     def fit_function(self, *args, **kwargs):
         raise NotImplementedError('This should be implemented in a subclass')
