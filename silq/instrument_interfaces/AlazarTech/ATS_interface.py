@@ -416,7 +416,10 @@ class ATSInterface(InstrumentInterface):
             t_start = 0
             t_stop = self.pulse_sequence.duration
 
-        acquisition_duration = t_stop - t_start
+        # Subtracting 1e-12 due to machine precision rounding
+        # Always subtract, since we later round samples_per_record upwards to
+        # the nearest multiple of 16
+        acquisition_duration = t_stop - t_start - 1e-12
 
         samples_per_trace = self.sample_rate() * acquisition_duration
         if self.acquisition_controller() == 'Triggered':
