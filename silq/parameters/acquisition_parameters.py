@@ -1736,8 +1736,7 @@ class NMRParameter(AcquisitionParameter):
     """
     def __init__(self, name: str = 'NMR',
                  names: List[str] = ['flips', 'flip_probability', 'up_proportions',
-                                     'EDSR_up_proportion', 'state_probability_0',
-                                     'state_probability_1'],
+                                     'state_probability_0', 'state_probability_1'],
                  **kwargs):
         """
         Parameter used to determine the Rabi frequency
@@ -1781,8 +1780,6 @@ class NMRParameter(AcquisitionParameter):
                         names.append(f'{name}_{k}_{k-1}{k}')
                     if k < len(self.ESR_frequencies) - 1:
                         names.append(f'{name}_{k}_{k}{k+1}')
-            elif name in ['EDSR_up_proportion']:
-                names.append(name)
         return names
 
     @names.setter
@@ -1863,21 +1860,19 @@ class NMRParameter(AcquisitionParameter):
         self.ESR['ESR_pulses'] = updated_ESR_pulses
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
-        """Analyse flipping events between nuclear states and more
+        """Analyse flipping events between nuclear states and determine nuclear state
 
         Returns:
             (Dict[str, Any]): Dict containing:
 
-            :results_read (dict): `analyse_traces` results for each read
+            * **results_read** (dict): `analyse_traces` results for each read
               trace
-            :up_proportions_{idx} (np.ndarray): Up proportions, the
+            * **up_proportions_{idx}** (np.ndarray): Up proportions, the
               dimensionality being equal to ``NMRParameter.samples``.
               ``{idx}`` is replaced with the zero-based ESR frequency index.
-            :state_probability_0_{idx}, state_probability_1_{idx}:
-              respectively up, down nuclear spin state proportions.
-            :EDSR_up_proportion:
-              electron spin-up proportion right after NMR(EDSR) pulse.
-            :Results from `analyse_flips`. These are:
+            * **state_probability_0_{idx}**, **state_probability_1_{idx}** (np.ndarray):
+              respectively up, down nuclear spin state proportions when reading-out ESR1 transition
+            * Results from `analyse_flips`. These are:
 
               - flips_{idx},
               - flip_probability_{idx}
@@ -1892,7 +1887,7 @@ class NMRParameter(AcquisitionParameter):
               each sample. The values that do not satisfy the filter are set to
               ``np.nan``.
 
-              :filtered_scans_{idx1}{idx2}:
+              * **filtered_scans_{idx1}{idx2}**:
         """
         if traces is None:
             traces = self.traces
@@ -1952,22 +1947,6 @@ class NMRParameter(AcquisitionParameter):
                 results['up_proportions'] = up_proportions[f_idx]
                 results['state_probability_0'] = state_probability_0[f_idx]
                 results['state_probability_1'] = state_probability_1[f_idx]
-
-        # Extract points for read DC pulse after NMR(EDSR) pulse
-        EDSR_read_traces_name = f"{self.NMR['post_pulse'].name}"
-        EDSR_read_traces = traces[EDSR_read_traces_name]['output']
-        EDSR_trace_points = EDSR_read_traces.shape[1]
-
-        self.EDSR_traces = np.zeros((self.samples, EDSR_trace_points))
-        self.EDSR_traces = EDSR_read_traces
-        EDSR_read_result = analysis.analyse_traces(
-            traces=EDSR_read_traces,
-            sample_rate=self.sample_rate,
-            t_read=self.t_read,
-            t_skip=self.t_skip,
-            threshold_voltage=threshold_voltage)
-        EDSR_up_proportion = EDSR_read_result['up_proportion']
-        results['EDSR_up_proportion'] = EDSR_up_proportion
 
         # Add singleton dimension because analyse_flips handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
