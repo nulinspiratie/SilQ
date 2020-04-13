@@ -7,7 +7,7 @@ import silq
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation
-from silq.tools.general_tools import arreqclose_in_list
+from qcodes.utils.helpers import arreqclose_in_list
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from qcodes.utils.validators import Lists, Enum, Numbers
 
@@ -406,7 +406,7 @@ class DCPulseImplementation(PulseImplementation):
             final_delay: Final part of waveform to skip. If this does not exist,
                 the waveform may not have finished when next trigger arrives,
                 in which case the trigger is ignored.
-                
+
         Returns:
             waveform
         """
