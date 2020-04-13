@@ -223,6 +223,14 @@ class InstrumentInterface(Instrument):
         raise NotImplementedError(
             'InstrumentInterface.setup should be implemented in a subclass')
 
+    def requires_setup(self):
+        if self.pulse_sequence != self.targeted_pulse_sequence:
+            return True
+        elif self.input_pulse_sequence != self.targeted_input_pulse_sequence:
+            return True
+        else:
+            return False
+
     def start(self):
         """Start instrument
 
