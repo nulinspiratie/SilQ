@@ -610,7 +610,7 @@ class Layout(Instrument):
 
         # HDF5 files for saving of traces in a loop. One per AcquisitionParameter
         self.trace_files = {}
-        
+
     @property
     def pulse_sequence(self):
         """Target pulse sequence by distributing its pulses to interfaces.
@@ -1177,9 +1177,6 @@ class Layout(Instrument):
                 f'maximum duration {self.maximum_pulse_sequence_duration}. '
                 f'Please change layout.maximum_pulse_sequence_duration'
             )
-
-        if self.active():
-            self.stop()
 
         # Create a copy of the pulse sequence
         try:
