@@ -20,6 +20,10 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
 
     Args:
         instrument_name: name of instrument for which this is an interface
+        channels: List of channel indices. Default is (1, 2, 3, 4) corresponding
+            to the BNC output connections. Additional channels are available on
+            the board, requiring external connectors.
+
 
     Note:
         For a given instrument, its associated interface can be found using
@@ -28,14 +32,16 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
     Todo:
         Check if interface works if it is not the primary instrument.
     """
-    def __init__(self, instrument_name, **kwargs):
+    def __init__(self, instrument_name,
+                 channels=(1, 2, 3, 4),
+                 **kwargs):
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
             # Measured output TTL is half of 3.3V
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k - 1, output_TTL=(0, 3.3 / 2))
-            for k in [1, 2, 3, 4, 5]}
+            for k in channels}
         self._channels = {
             **self._output_channels,
             'software_trig_in': Channel(instrument_name=self.instrument_name(),

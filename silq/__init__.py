@@ -44,7 +44,6 @@ if 'ipykernel' in sys.modules:
         register_magic_class(cls=SilQMagics,
                              magic_commands=register_magic)
 
-
 from .instrument_interfaces import get_instrument_interface
 
 
@@ -122,7 +121,10 @@ def get_experiments_folder():
                                         'silq.set_experiments_folder()')
 
 
-def get_experiment_configuration(name: str, experiments_folder: Path = None) -> (Path, dict):
+def get_experiment_configuration(
+        name: str,
+        experiments_folder: Path = None
+) -> (Path, dict):
     """Retrieves experiment folder and configuration from experiments folder.
     This contains all configurations that can be used by `silq.initialize`.
 
@@ -185,14 +187,16 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
             shell.safe_execfile(filepath, shell.user_ns, raise_exceptions=True)
         else:
             if globals is None and locals is None:
-                # Register globals and locals of the above frame (for code execution)
+                # Register globals and locals of the above frame for code execution
                 globals = sys._getframe(1).f_globals
                 locals = sys._getframe(1).f_locals
 
             execution_code = filepath.read_text() + "\n"
             exec(execution_code, globals, locals)
     except Exception as e:
-        e.args = (e.args[0] + f'\nSilQ initialization error in {filepath}', *e.args[1:])
+        e.args = (
+            e.args[0] + f"\nSilQ initialization error in {filepath}", *e.args[1:]
+        )
         raise e
 
 
@@ -214,7 +218,6 @@ def run_scripts(name: str = None,
         script_folders = [experiment_folder / 'scripts']
     else:
         experiment_folder = Path('../' * max_relative_parents)
-
 
     # Add script folders in current directory and parent directories thereof
     relative_directory = Path('.').absolute()  # Goes iteratively to parent
@@ -242,14 +245,28 @@ def run_scripts(name: str = None,
 
                 # Run each file in the subfolder
                 for script_folder_subelement in script_folder_element.iterdir():
+                    if not script_folder_subelement.suffix == ".py":
+                        logger.warning(f"Skipping non-python script: "
+                                       f"{script_folder_subelement.parent.stem}"
+                                       f"/{script_folder_subelement.name}")
+                        continue
                     if not silent:
-                        print(f'Running script {script_folder_element.stem}/{script_folder_subelement.stem}')
-                    execute_file(script_folder_subelement, globals=globals, locals=locals)
+                        print(
+                            f"Running script {script_folder_element.stem}/"
+                            f"{script_folder_subelement.stem}")
+                    execute_file(script_folder_subelement, globals=globals,
+                                 locals=locals)
             else:  # Execute file
+                if not script_folder_element.suffix == ".py":
+                    logger.warning(
+                        f"Skipping non-python script: {script_folder_element.name}"
+                    )
+                    continue
                 if not silent:
-                    print(f'Running script {script_folder_element.stem}')
+                    print(f"Running script {script_folder_element.stem}")
 
-                execute_file(script_folder_element, globals=globals, locals=locals)
+                execute_file(script_folder_element, globals=globals,
+                             locals=locals)
 
 
 def initialize(name: str,
@@ -285,10 +302,11 @@ def initialize(name: str,
                               f"its a folder in the experiments_folder"
 
     if mode is not None:
-        select += configuration['modes'][mode].get('select', [])
-        ignore += configuration['modes'][mode].get('ignore', [])
+        select += configuration["modes"][mode].get("select", [])
+        ignore += configuration["modes"][mode].get("ignore", [])
 
-    # TODO check if original config['folder'] had any weird double experiments_folder
+    # TODO check if original config['folder'] had any weird double
+    #  experiments_folder
     config.__dict__['folder'] = str(experiment_folder.absolute())
     if (experiment_folder / 'config').is_dir():
         config.load()
@@ -296,7 +314,7 @@ def initialize(name: str,
     # Run initialization files in ./init
     init_folder = experiment_folder / 'init'
     if init_folder.exists():
-        init_files = [f for f in init_folder.iterdir() if f.is_file()]
+        init_files = sorted([f for f in init_folder.iterdir() if f.is_file()])
 
         for init_file in init_files:
             # Remove prefix
@@ -306,9 +324,15 @@ def initialize(name: str,
             elif ignore and filename_no_prefix in ignore:
                 continue
             else:
-                if not silent:
-                    print(f'Initializing {filename_no_prefix}')
-                execute_file(init_file, globals=globals, locals=locals)
+                if not init_file.suffix == ".py":
+                    if not silent:
+                        logger.warning(
+                            f"Skipping ./{experiment_folder.parts[-1]}/init/"
+                            f"{init_file.parts[-1]}")
+                else:
+                    if not silent:
+                        print(f"Initializing {filename_no_prefix}")
+                    execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
         run_scripts(name=name, mode=mode, globals=globals, locals=locals)
@@ -340,10 +364,13 @@ def _save_config(self, location=None):
             return
 
         if not os.path.isabs(location):
-            location = os.path.join(qc.DataSet.default_io.base_location, location)
+            location = os.path.join(
+                qc.DataSet.default_io.base_location, location
+            )
         config.save(location)
     except Exception as e:
         logger.error(f'Datasaving error: {e.args}')
+
 qc.DataSet.save_config = _save_config
 
 
@@ -361,13 +388,15 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     trace_filenames = [filename for filename in trace_filenames if
                        filename.endswith('.hdf5')]
 
-    assert trace_filenames, f"No trace files found in {traces_path}"
+    assert trace_filenames, f"No trace files found in {trace_path}"
 
     if name is None and len(trace_filenames) == 1:
         trace_filename = trace_filenames[0]
     else:
-        assert name is not None, f"No unique trace file found: {trace_filenames}. " \
-                                 "Trace filename must be provided"
+        assert name is not None, (
+            f"No unique trace file found: {trace_filenames}. "
+            f"Trace filename must be provided"
+        )
         filtered_trace_filenames = [filename for filename in trace_filenames
                                     if name in filename]
         assert len(filtered_trace_filenames) == 1, \
@@ -377,8 +406,8 @@ def _load_traces(self, name: str = None, mode: str = 'r'):
     trace_filepath = os.path.join(trace_path, trace_filename)
     trace_file = h5py.File(trace_filepath, mode)
     return trace_file
-qc.DataSet.load_traces = _load_traces
 
+qc.DataSet.load_traces = _load_traces
 
 
 def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
@@ -395,13 +424,19 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
         current_date = date_time
         while current_date <= date_time + timedelta(days=max_date_delta):
             date_str = date_time.strftime("%Y-%m-%d")
-            pulse_sequence_path = os.path.join(self.default_io.base_location,
-                                               r'pulse_sequences\data', date_str)
+            pulse_sequence_path = os.path.join(
+                self.default_io.base_location, r'pulse_sequences\data', date_str
+            )
             pulse_sequence_files = os.listdir(pulse_sequence_path)
             # Sort by their idx (i.e. #095 at start of filename)
-            pulse_sequence_files = sorted(pulse_sequence_files, key=lambda file: int(file.split('_')[0][1:]))
+            pulse_sequence_files = sorted(
+                pulse_sequence_files, key=lambda file: int(file.split('_')[0][1:])
+            )
             for k, pulse_sequence_file in enumerate(pulse_sequence_files):
-                pulse_sequence_date_time = datetime.strptime(f'{date_str}:{pulse_sequence_file[-15:-7]}', '%Y-%m-%d:%H-%M-%S')
+                pulse_sequence_date_time = datetime.strptime(
+                    f'{date_str}:{pulse_sequence_file[-15:-7]}',
+                    '%Y-%m-%d:%H-%M-%S'
+                )
                 if pulse_sequence_date_time > current_date:
                     pulse_sequence_filepath = os.path.join(pulse_sequence_path,
                                                            pulse_sequence_file)
@@ -419,17 +454,23 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
                     yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
             else:
                 # Goto next date
-                current_date = datetime.combine(current_date.date() + timedelta(days=1),
-                                                datetime.min.time())
+                current_date = datetime.combine(
+                    current_date.date() + timedelta(days=1),
+                    datetime.min.time()
+                )
 
     date, measurement_name = self.location.split('\\')
-    measurement_date_time = datetime.strptime(f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S')
+    measurement_date_time = datetime.strptime(
+        f'{date}:{measurement_name[-8:]}', '%Y-%m-%d:%H-%M-%S'
+    )
 
     try:
-        pulse_sequence_iterator = (pulse_sequence for pulse_sequence in
-                                   get_next_pulse_sequence(measurement_date_time)
-                                   if (not pulse_name or pulse_name in pulse_sequence[0]))
-        for k in range(idx+1):
+        next_pulse_sequence = get_next_pulse_sequence(measurement_date_time)
+        pulse_sequence_iterator = (
+            pulse_sequence for pulse_sequence in next_pulse_sequence
+            if (not pulse_name or pulse_name in pulse_sequence[0])
+        )
+        for k in range(idx + 1):
             pulse_sequence, pulse_sequence_filename = next(pulse_sequence_iterator)
     except StopIteration:
         raise StopIteration('No pulse sequences found')
@@ -443,7 +484,7 @@ qc.DataSet.get_pulse_sequence = _get_pulse_sequence
 
 # parameter.sweep
 def _sweep(self, start=None, stop=None, step=None, num=None,
-          step_percentage=None, window=None, fix=True):
+           step_percentage=None, window=None, fix=True):
     if step_percentage is None and window is None:
         if start is None or stop is None:
             raise RuntimeError('Must provide start and stop')
@@ -457,34 +498,50 @@ def _sweep(self, start=None, stop=None, step=None, num=None,
 qc.Parameter.sweep = _sweep
 
 
+def _stop_layout(close_trace_file=True):
+    try:
+        layout = qc.Instrument.find_instrument('layout')
+        layout.stop()
+        logger.info('End-of-measurement: stopped layout')
+        if close_trace_file:
+            layout.close_trace_files()
+    except (KeyError, TypeError):
+        logger.warning(f'No layout found to stop')
+
+
+def _clear_all_acquisition_parameter_settings(measurement=None):
+    if measurement is None:
+        measurement = qc.active_measurement()
+
+    if isinstance(measurement, qc.loops.ActiveLoop):
+        for action in measurement:
+            if isinstance(action, qc.loops.ActiveLoop):
+                _clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+    else:
+        for action_indices, action in measurement.actions.items():
+            if isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+
+qc.Measurement.final_actions = [
+    _stop_layout,
+    _clear_all_acquisition_parameter_settings
+]
+
+
 # Override ActiveLoop._run_wrapper to stop the layout and clear settings of
 # any accquisition parameters in the loop after the loop has completed.
 _qc_run_wrapper = qc.loops.ActiveLoop._run_wrapper
 def _run_wrapper(self, set_active=True, stop=True, *args, **kwargs):
-
-    def clear_all_acquisition_parameter_settings(loop):
-        from silq.parameters import AcquisitionParameter
-
-        for action in loop:
-            if isinstance(action, qc.loops.ActiveLoop):
-                clear_all_acquisition_parameter_settings(action)
-            elif isinstance(action, SettingsClass):
-                logger.info(f'End-of-loop: clearing settings for {action}')
-                action.clear_settings()
-
     try:
         _qc_run_wrapper(self, set_active=set_active, *args, **kwargs)
     finally:
-        try:
-            layout = qc.Instrument.find_instrument('layout')
-            if stop:
-                layout.stop()
-                logger.info('Stopped layout at end of loop')
-                if set_active:
-                    layout.close_trace_files()
-        except KeyError:
-            logger.warning(f'No layout found to stop')
+        if stop:
+            _stop_layout(close_trace_file=set_active)
 
         # Clear all settings for any acquisition parameters in the loop
-        clear_all_acquisition_parameter_settings(self)
+        _clear_all_acquisition_parameter_settings(self)
 qc.loops.ActiveLoop._run_wrapper = _run_wrapper

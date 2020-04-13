@@ -16,8 +16,7 @@ __all__ = ['execfile', 'is_between', 'get_truth', 'get_memory_usage',
            'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
-           'Singleton', 'arreq_in_list', 'arreqclose_in_list',
-           'property_ignore_setter', 'freq_to_str']
+           'Singleton', 'property_ignore_setter', 'freq_to_str']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
@@ -158,14 +157,15 @@ class SettingsClass:
             else:
                 raise ValueError('Setting {} not found'.format(item))
 
-    def temporary_settings(self, **kwargs):
+    def temporary_settings(self, append=True, **kwargs):
         """
         Sets up the meta properties of a measurement parameter
         """
         if not kwargs:
             return self._temporary_settings
 
-        self._temporary_settings.clear()
+        if not append:
+            self._temporary_settings.clear()
         for item, value in kwargs.items():
             if hasattr(self, item):
                 self._temporary_settings[item] = value
@@ -544,51 +544,6 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-def arreq_in_list(myarr: np.ndarray,
-                  list_arrays: List[np.ndarray]):
-    """Get index of array in list of arrays, testing equality
-
-    Modified from https://stackoverflow.com/questions/23979146/
-    check-if-numpy-array-is-in-list-of-numpy-arrays
-
-    Args:
-        myarr: arr to be found in list
-        list_arrays: List of numpy arrays
-
-    Returns:
-        idx of array in list equal to myarr, None if not found.
-    """
-    return next((idx for idx, elem in enumerate(list_arrays)
-                 if np.array_equal(elem, myarr)),
-                None)
-
-
-def arreqclose_in_list(myarr: np.ndarray,
-                       list_arrays: List[np.ndarray],
-                       rtol: float = 1e-5,
-                       atol: float = 1e-8):
-    """Get index of array in list of arrays, testing approximate equality
-
-    Modified from https://stackoverflow.com/questions/23979146/
-                  check-if-numpy-array-is-in-list-of-numpy-arrays
-
-    Args:
-        myarr: arr to be found in list
-        list_arrays: List of numpy arrays.
-            Any element that is None instead of an array is skipped
-        rtol: relative tolerance when comparing array elements
-        atol: absolute tolerance when comparing array elements
-
-    Returns:
-        idx of array in list approximately equal to myarr, None if not found.
-    """
-    return next((idx for idx, elem in enumerate(list_arrays)
-                 if elem is not None
-                 and elem.size == myarr.size
-                 and np.allclose(elem, myarr, rtol=rtol, atol=atol)),
-                None)
-
-
 class property_ignore_setter(object):
     """Decorator similar to @property that ignores setter
 
@@ -716,14 +671,15 @@ def logclass(cls, methodsAsFunctions=False,
 
     return cls
 
-
-def find_approximate_divisor(N: int,
-                             max_cycles: int = 65535,
-                             points_multiple: int = 1,
-                             min_points: int = 15,
-                             max_points: int = 6000,
-                             max_remaining_points: int = 1000,
-                             min_remaining_points: int = 0) -> Union[dict, None]:
+def find_approximate_divisor(
+    N: int,
+    max_cycles: int = 65535,
+    points_multiple: int = 1,
+    min_points: int = 15,
+    max_points: int = 6000,
+    max_remaining_points: int = 1000,
+    min_remaining_points: int = 0,
+) -> Union[dict, None]:
     """Find an approximate divisor for a number
 
     The divisor (points) is chosen such that points * cycles <= N, with
@@ -756,15 +712,24 @@ def find_approximate_divisor(N: int,
         # Increase remaining_points if there are remaining points and they
         # are less than min_remaining_points
         if remaining_points and remaining_points < min_remaining_points:
-            subtract_cycles = np.ceil((min_remaining_points - remaining_points) / points)
+            subtract_cycles = np.ceil(
+                (min_remaining_points - remaining_points) / points
+            )
             remaining_points += subtract_cycles * points
+            if cycles - subtract_cycles < 1:
+                # Remaining points cannot be incorporated
+                continue
+
             cycles -= subtract_cycles
 
-        if min_points <= points <= max_points and remaining_points <= max_remaining_points:
+        if (
+            min_points <= points <= max_points
+            and remaining_points <= max_remaining_points
+        ):
             return {
-                'points': int(points),
-                'cycles': int(cycles),
-                'remaining_points': int(remaining_points)
+                "points": int(points),
+                "cycles": int(cycles),
+                "remaining_points": int(remaining_points),
             }
     else:
         return None

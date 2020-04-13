@@ -8,7 +8,8 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
     AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
-from silq.tools.general_tools import arreqclose_in_list, find_approximate_divisor
+from silq.tools.general_tools import find_approximate_divisor
+from qcodes.utils.helpers import arreqclose_in_list
 
 from qcodes import validators as vals
 

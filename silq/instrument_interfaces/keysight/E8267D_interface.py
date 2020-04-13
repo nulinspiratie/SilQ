@@ -66,6 +66,7 @@ class E8267DInterface(InstrumentInterface):
                            unit='s',
                            set_cmd=None,
                            initial_value=0,
+                           vals=vals.Numbers(min_value=0, max_value=10e-3),
                            docstring="Padding for any pulses that use either "
                                      "IQ and/or FM modulation. This is to "
                                      "ensure that any such pulses start before "
@@ -134,7 +135,6 @@ class E8267DInterface(InstrumentInterface):
                                      "which case the internal FM is turned off.")
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
-
         """Additional pulses needed by instrument after targeting of main pulses
 
         Args:
@@ -235,6 +235,7 @@ class E8267DInterface(InstrumentInterface):
         if self.frequency_deviation() > 0 and self.FM_mode() == 'ramp':
             self.instrument.frequency_modulation('on')
             self.instrument.frequency_deviation(self.frequency_deviation())
+            self.instrument.frequency_modulation_source(self.modulation_channel())
         else:
             self.instrument.frequency_modulation('off')
 
