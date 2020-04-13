@@ -503,71 +503,89 @@ class Layout(Instrument):
     # Targeted pulse sequence whose duration exceeds this will raise an error
     maximum_pulse_sequence_duration = 25
 
-    def __init__(self, name: str = 'layout',
-                 instrument_interfaces: List[InstrumentInterface] = [],
-                 store_pulse_sequences_folder: Union[bool, None] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str = "layout",
+        instrument_interfaces: List[InstrumentInterface] = [],
+        store_pulse_sequences_folder: Union[bool, None] = None,
+        **kwargs
+    ):
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
-        self._interfaces = {interface.instrument_name(): interface
-                            for interface in instrument_interfaces}
+        self._interfaces = {
+            interface.instrument_name(): interface
+            for interface in instrument_interfaces
+        }
 
         self.connections = []
 
-        self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()),
-                           docstring='List of instrument names. Can only be '
-                                     'retrieved. To set, update layout._interfaces')
-        self.add_parameter('primary_instrument',
-                           get_cmd=None,
-                           set_cmd=self._set_primary_instrument,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of primary instrument, usually the '
-                                     'instrument that performs triggering')
+        self.add_parameter(
+            "instruments",
+            get_cmd=lambda: list(self._interfaces.keys()),
+            docstring="List of instrument names. Can only be retrieved. "
+            "To set, update layout._interfaces",
+        )
+        self.add_parameter(
+            "primary_instrument",
+            get_cmd=None,
+            set_cmd=self._set_primary_instrument,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of primary instrument, usually the instrument that "
+            "performs triggering",
+        )
 
-        self.add_parameter('acquisition_instrument',
-                           set_cmd=None,
-                           initial_value=None,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of instrument that acquires data')
-        self.add_parameter('acquisition_channels',
-                           set_cmd=None,
-                           vals=vals.Lists(),
-                           docstring='List of acquisition channels to acquire. '
-                                     'Each element in the list should be a '
-                                     'tuple (ch_name, ch_label), where ch_name '
-                                     'is a channel of the acquisition interface, '
-                                     'and ch_label is a given label for that '
-                                     'channel (e.g. "output").')
+        self.add_parameter(
+            "acquisition_instrument",
+            set_cmd=None,
+            initial_value=None,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of instrument that acquires data",
+        )
+        self.add_parameter(
+            "acquisition_channels",
+            set_cmd=None,
+            vals=vals.Lists(),
+            docstring="List of acquisition channels to acquire. "
+            "Each element in the list should be a tuple (ch_name, ch_label), "
+            "where ch_name is a channel of the acquisition interface, "
+            "and ch_label is a given label for that channel (e.g. 'output')."
+        )
 
-        self.add_parameter(name='samples',
-                           set_cmd=None,
-                           initial_value=1,
-                           docstring='Number of times to acquire the pulse sequence')
+        self.add_parameter(
+            name="samples",
+            set_cmd=None,
+            initial_value=1,
+            docstring="Number of times to acquire the pulse sequence",
+        )
 
-        self.add_parameter(name='active',
-                           set_cmd=None,
-                           initial_value=False,
-                           vals=vals.Bool(),
-                           docstring='Whether the pulse sequence is being executed. '
-                                     'Can be started/stopped via layout.start/layout.stop')
+        self.add_parameter(
+            name="active",
+            set_cmd=None,
+            initial_value=False,
+            vals=vals.Bool(),
+            docstring="Whether the pulse sequence is being executed. "
+            "Can be started/stopped via layout.start/layout.stop",
+        )
 
-        self.add_parameter(name='force_setup',
-                           set_cmd=None,
-                           initial_value=True,
-                           vals=vals.Bool(),
-                           docstring="Setup all instruments if the pulse sequence has changed. "
-                                     "If False, only the instruments are setup if their "
-                                     "respective pulses have changed")
+        self.add_parameter(
+            name="force_setup",
+            set_cmd=None,
+            initial_value=True,
+            vals=vals.Bool(),
+            docstring="Setup all instruments if the pulse sequence has changed. "
+            "If False, only the instruments are setup if their "
+            "respective pulses have changed",
+        )
 
-        self.add_parameter('save_trace_channels',
-                           set_cmd=None,
-                           initial_value=['output'],
-                           vals=vals.Lists(vals.Strings()),
-                           docstring='List of channel labels to acquire. '
-                                     'Channel labels are defined in '
-                                     'layout.acquisition_channels')
+        self.add_parameter(
+            "save_trace_channels",
+            set_cmd=None,
+            initial_value=["output"],
+            vals=vals.Lists(vals.Strings()),
+            docstring="List of channel labels to acquire. "
+            "Channel labels are defined in layout.acquisition_channels",
+        )
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -579,9 +597,10 @@ class Layout(Instrument):
         # Handle saving of pulse sequence
         if store_pulse_sequences_folder is not None:
             self.store_pulse_sequences_folder = store_pulse_sequences_folder
-        elif silq.config.properties.get('store_pulse_sequences_folder') is not None:
-            self.store_pulse_sequences_folder = \
+        elif silq.config.properties.get("store_pulse_sequences_folder") is not None:
+            self.store_pulse_sequences_folder = (
                 silq.config.properties.store_pulse_sequences_folder
+            )
         else:
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
@@ -591,7 +610,7 @@ class Layout(Instrument):
 
         # HDF5 files for saving of traces in a loop. One per AcquisitionParameter
         self.trace_files = {}
-
+        
     @property
     def pulse_sequence(self):
         """Target pulse sequence by distributing its pulses to interfaces.
