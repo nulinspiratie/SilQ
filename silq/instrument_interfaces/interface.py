@@ -192,8 +192,8 @@ class InstrumentInterface(Instrument):
         Returns:
             None
         """
-        self.pulse_sequence.clear()
-        self.input_pulse_sequence.clear()
+        self.pulse_sequence = PulseSequence()
+        self.input_pulse_sequence = PulseSequence()
 
     def setup(self,
               samples: Union[int, None] = None,
