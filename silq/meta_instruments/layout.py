@@ -553,6 +553,14 @@ class Layout(Instrument):
                            docstring='Whether the pulse sequence is being executed. '
                                      'Can be started/stopped via layout.start/layout.stop')
 
+        self.add_parameter(name='force_setup',
+                           set_cmd=None,
+                           initial_value=True,
+                           vals=vals.Bool(),
+                           docstring="Setup all instruments if the pulse sequence has changed. "
+                                     "If False, only the instruments are setup if their "
+                                     "respective pulses have changed")
+
         self.add_parameter('save_trace_channels',
                            set_cmd=None,
                            initial_value=['output'],
