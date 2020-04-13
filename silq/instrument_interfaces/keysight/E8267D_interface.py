@@ -248,6 +248,10 @@ class E8267DInterface(InstrumentInterface):
         else:
             self.instrument.internal_IQ_modulation('off')
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Start instrument"""
         self.instrument.RF_output('on')

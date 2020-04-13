@@ -113,6 +113,9 @@ class InstrumentInterface(Instrument):
                                             allow_pulse_overlap=False)
         self.input_pulse_sequence = PulseSequence(
             allow_untargeted_pulses=False, allow_pulse_overlap=False)
+        self.targeted_pulse_sequence = None
+        self.targeted_input_pulse_sequence = None
+
         self.add_parameter('instrument_name',
                            set_cmd=None,
                            initial_value=instrument_name,

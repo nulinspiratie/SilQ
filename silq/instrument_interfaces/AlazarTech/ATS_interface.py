@@ -322,6 +322,10 @@ class ATSInterface(InstrumentInterface):
             target_instrument = self._acquisition_controller.target_instrument()
             return {'skip_start': target_instrument}
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def setup_trigger(self):
         """Configure settings related to triggering of the ATS
 

@@ -249,6 +249,10 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             raise RuntimeError('No setup configured for acquisition controller '
                                f'{self.acquisition_controller()}')
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def setup_trigger(self, t_start, input_connections):
         # Setup triggering
         trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
