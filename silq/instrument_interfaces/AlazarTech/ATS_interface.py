@@ -283,6 +283,8 @@ class ATSInterface(InstrumentInterface):
         Called at the start of targeting a pulse sequence.
         """
         super().initialize()
+        # TODO once new acquisition controllers are regularly used, the line
+        # below should be moved elsewhere or removed entirely.
         self.acquisition_controller(self.default_acquisition_controller())
 
     def setup(self,
