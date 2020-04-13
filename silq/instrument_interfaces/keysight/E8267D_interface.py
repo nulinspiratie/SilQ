@@ -134,7 +134,7 @@ class E8267DInterface(InstrumentInterface):
                                      "amplitude from an ext port, or 'IQ', in "
                                      "which case the internal FM is turned off.")
 
-    def determine_frequency_settings(self, update: bool = False) -> dict:
+    def determine_instrument_settings(self, update: bool = False) -> dict:
         """Determine the frequency settings from parameters and  pulse sequence
 
         Used to determine additional pulses and during setup
@@ -218,7 +218,8 @@ class E8267DInterface(InstrumentInterface):
         if update:
             self.frequency(settings['frequency'])
             self.frequency_deviation(settings['frequency_deviation'])
-            self.IQ_modulation(settings['IQ_modulation'])
+            self.IQ_modulation._latest["raw_value"] = settings["IQ_modulation"]
+            self.IQ_modulation.get()
 
         return settings
 
@@ -237,7 +238,7 @@ class E8267DInterface(InstrumentInterface):
         powers = list({pulse.power for pulse in self.pulse_sequence})
         assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
-        frequency_settings = self.determine_frequency_settings()
+        frequency_settings = self.determine_instrument_settings()
 
         additional_pulses = []
         for pulse in self.pulse_sequence:
@@ -260,7 +261,7 @@ class E8267DInterface(InstrumentInterface):
         assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
         # Determine frequency, frequency_deviation, and IQ_modulation
-        self.determine_frequency_settings(update=True)
+        self.determine_instrument_settings(update=True)
 
         self.instrument.frequency(self.frequency())
         self.instrument.power(powers[0])
