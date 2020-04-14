@@ -528,8 +528,8 @@ class DCPulseImplementation(PulseImplementation):
         approximate_divisor = find_approximate_divisor(
             N=N,
             max_cycles=1000000,
-            points_multiple=32,
-            min_points=320,
+            points_multiple=32,  # waveforms must be multiple of 32
+            min_points=320,  # waveform must have at least 320 points
             max_points=max_points,
             max_remaining_points=1000,
             min_remaining_points=320,
