@@ -7,6 +7,7 @@ from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
 from copy import deepcopy
 from qcodes import Parameter
 from qcodes.instrument.parameter_node import parameter
+from qcodes.config.config import DotDict
 
 logger = logging.getLogger(__name__)
 
@@ -117,18 +118,19 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_settings = {
+        self.pulse_settings = DotDict({
             'RF_pulse': SinePulse('ESR'),
             'stage_pulse': DCPulse('plunge'),
             'read_pulse': DCPulse('read_initialize', acquire=True),
             'pre_delay': 5e-3,
             'inter_delay': 5e-3,
             'post_delay': 5e-3,
+            'min_duration': None,
             'RF_pulses': ['RF_pulse'],
             'pre_pulses': (),
             'post_pulses': (),
             'shots_per_frequency': 1
-        }
+        })
 
         # Primary ESR pulses, the first ESR pulse in each plunge.
         # Used for assigning names during analysis
@@ -259,9 +261,22 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                     self.primary_RF_pulses.append(RF_pulse)
 
             if RF_pulse is not None:
-                RF_pulse['t_stop'].connect(
-                    stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
-                )
+                # Either connect stage_pulse.t_stop to the last RF_pulse, or
+                # not if the RF_pulse starts too soon (depending on min_duration)
+                t_stop = RF_pulse.t_stop + self.pulse_settings['post_delay']
+                duration = t_stop - stage_pulse.t_start
+                min_duration = self.pulse_settings['min_duration']
+                if min_duration is not None and duration < min_duration:
+                    # Do not connect t_stop to last RF pulse since the post_delay
+                    # is too little
+                    # TODO There should ideally still be a connection such that
+                    # if the RF_pulse t_stop becomes larger, stage_pulse will
+                    # still extend
+                    stage_pulse.t_stop = t_stop
+                else:
+                    RF_pulse['t_stop'].connect(
+                        stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
+                    )
             else:
                 stage_pulse.t_stop = (
                     self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
