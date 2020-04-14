@@ -185,7 +185,9 @@ class SettingsClass:
 
         self._single_settings.clear()
         for item, value in kwargs.items():
-            if hasattr(self, item):
+            if value is None:
+                continue
+            elif hasattr(self, item):
                 self._single_settings[item] = value
             else:
                 raise ValueError('Setting {} not found'.format(item))
