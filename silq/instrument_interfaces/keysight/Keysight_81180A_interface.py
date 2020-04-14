@@ -40,7 +40,7 @@ class Keysight81180AInterface(InstrumentInterface):
           be set manually
         - When the last waveform of the sequence is finished, the time until the
           next trigger is spent at the voltages of the first point of the first
-          waveform in the sequence. This applies to any PulseSequence.final_delay.
+          waveform in the sequence. This includes any PulseSequence.final_delay.
           However, the behaviour should be that during this final_delay, the
           voltage is kept at the last point of the last waveform. To ensure this,
           the first point of the first waveform is modified to that of the last
