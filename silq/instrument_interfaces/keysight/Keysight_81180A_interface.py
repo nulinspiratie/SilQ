@@ -48,6 +48,8 @@ class Keysight81180AInterface(InstrumentInterface):
     """
 
     def __init__(self, instrument_name, max_amplitude=1.5, **kwargs):
+        assert max_amplitude <= 1.5
+        
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
