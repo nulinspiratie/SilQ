@@ -104,6 +104,8 @@ def pulse_to_waveform_sequence(
 
     # Calculate final delays
     final_delays = total_duration * np.ones(points_cutoff_multiple.shape)
+    # We add a small value to avoid machine precision errors.
+    # Note that we add instead of round since we do floor division
     repetitions_multiple = ((total_duration + 1e-13) // t_cutoff_multiple).astype(int)
     t_periods_cutoff_multiple = t_cutoff_multiple * repetitions_multiple
     final_delays -= t_periods_cutoff_multiple
