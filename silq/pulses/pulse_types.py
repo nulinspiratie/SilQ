@@ -609,7 +609,7 @@ class SinePulse(Pulse):
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
-            self.phase_reference = 'relative'
+            self.phase_reference = 'absolute'
         if self.phase is None:
             self.phase = 0
         if self.offset is None:
@@ -709,6 +709,7 @@ class FrequencyRampPulse(Pulse):
                  phase: float = None,
                  frequency_sideband: float = None,
                  sideband_mode=None,
+                 phase_reference: str = None,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -738,11 +739,13 @@ class FrequencyRampPulse(Pulse):
                                vals=vals.Numbers())
         self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
                                 vals=vals.Numbers())
-
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
         self._connect_parameters_to_config(
             ['frequency', 'frequency_deviation', 'frequency_start',
              'frequency_stop', 'frequency_sideband', 'sideband_mode',
-             'amplitude', 'power', 'phase', 'offset'])
+             'amplitude', 'power', 'phase', 'offset', 'phase_reference'])
 
         # Set default value for sideband_mode after connecting parameters,
         # because its value may have been retrieved from config
@@ -752,6 +755,8 @@ class FrequencyRampPulse(Pulse):
             self.phase = 0
         if self.offset is None:
             self.offset = 0
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
 
     @parameter
     def frequency_start_get(self, parameter):
@@ -808,6 +813,9 @@ class FrequencyRampPulse(Pulse):
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
+
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
 
