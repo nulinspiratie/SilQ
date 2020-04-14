@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 from typing import List, Union
-from warnings import warn
+from copy import copy
 
 from silq import config
 from silq.instrument_interfaces import InstrumentInterface, Channel
@@ -12,7 +12,6 @@ from silq.pulses import (
     FrequencyRampPulse,
     PulseImplementation,
 )
-from silq.pulses import PulseSequence
 from silq.tools.general_tools import find_approximate_divisor
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
@@ -45,11 +44,15 @@ class Keysight81180AInterface(InstrumentInterface):
           voltage is kept at the last point of the last waveform. To ensure this,
           the first point of the first waveform is modified to that of the last
           point of the last waveform.
+        - Creation of a sine waveform needs certain settings.
+          Defaults are given in the SinePulseImplementation, but they can be
+          overridden by setting the corresponding property in
+          ``silq.config.properties.sine_waveform_settings``
     """
 
     def __init__(self, instrument_name, max_amplitude=1.5, **kwargs):
         assert max_amplitude <= 1.5
-        
+
         super().__init__(instrument_name, **kwargs)
 
         self._output_channels = {
@@ -177,7 +180,7 @@ class Keysight81180AInterface(InstrumentInterface):
             # instrument_channel.voltage_DAC(voltage)  # If coupling is DAC (max 0.5)
             instrument_channel.voltage_DC(2)  # If coupling is DC (max 2)
             if not instrument_channel.output_coupling() == "DC":
-                warn(
+                logger.warning(
                     "Keysight 81180 output coupling is not DC. The waveform "
                     "amplitudes might be off."
                 )
@@ -207,7 +210,7 @@ class Keysight81180AInterface(InstrumentInterface):
             instrument_channel.sequence_once_count(1)
 
         if self.instrument.is_idle() != "1":
-            warn("Not idle")
+            logger.warning("Not idle")
 
         self.instrument.ensure_idle = True
         self.generate_waveform_sequences()
@@ -560,6 +563,11 @@ class DCPulseImplementation(PulseImplementation):
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
+    settings = {
+        "max_points": 50e3,
+        "frequency_threshold": 30,
+    }
+
     def implement(self, sample_rate, plot=False, **kwargs):
         # If frequency is zero, use DC pulses instead
         if self.pulse.frequency == 0:
@@ -572,11 +580,7 @@ class SinePulseImplementation(PulseImplementation):
             return DCPulseImplementation.implement(
                 pulse=DC_pulse, sample_rate=sample_rate
             )
-
-        settings = {
-            "max_points": 50e3,
-            "frequency_threshold": 30,
-        }
+        settings = copy(self.settings)
         settings.update(**config.properties.get("sine_waveform_settings", {}))
         settings.update(
             **config.properties.get("keysight_81180A_sine_waveform_settings", {})
