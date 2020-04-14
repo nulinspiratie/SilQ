@@ -965,7 +965,8 @@ class Layout(Instrument):
             interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(
-            self, sorted_interfaces: List[InstrumentInterface] = []):
+            self, sorted_interfaces: List[InstrumentInterface] = []
+    ) -> List[InstrumentInterface]:
         """Sort interfaces by triggering order, from bottom to top.
 
         This sorting ensures that earlier instruments never trigger later ones.
@@ -1357,6 +1358,10 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
+                if not self.force_setup() and not interface.requires_setup():
+                    logger.debug(f'Skipping {interface.name} no setup necessary')
+                    continue
+
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
