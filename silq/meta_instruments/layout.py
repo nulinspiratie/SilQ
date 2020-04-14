@@ -1358,9 +1358,6 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
-                if not self.force_setup() and not interface.requires_setup():
-                    logger.debug(f'Skipping {interface.name} no setup necessary')
-                    continue
 
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
@@ -1369,6 +1366,17 @@ class Layout(Instrument):
 
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
+
+                if not self.force_setup() and not interface.requires_setup(
+                    samples=self.samples(),
+                    input_connections=input_connections,
+                    output_connections=output_connections,
+                    repeat=repeat,
+                    **setup_flags,
+                    **kwargs
+                ):
+                    logger.debug(f'Skipping {interface.name} no setup necessary')
+                    continue
 
                 t0 = time()
                 flags = interface.setup(samples=self.samples(),

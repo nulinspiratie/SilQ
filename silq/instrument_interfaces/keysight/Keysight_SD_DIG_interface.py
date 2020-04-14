@@ -201,6 +201,12 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
                                  connection_requirements=connection_requirements)]
 
+    def requires_setup(self, **kwargs) -> bool:
+        requires_setup = super().requires_setup(**kwargs)
+        if kwargs['samples'] != self.samples():
+            requires_setup = True
+        return requires_setup
+
     def setup(self, samples=1, input_connections=(), **kwargs):
         self.samples(samples)
 

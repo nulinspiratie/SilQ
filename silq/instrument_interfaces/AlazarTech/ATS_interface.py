@@ -287,6 +287,12 @@ class ATSInterface(InstrumentInterface):
         # below should be moved elsewhere or removed entirely.
         self.acquisition_controller(self.default_acquisition_controller())
 
+    def requires_setup(self, **kwargs) -> bool:
+        requires_setup = super().requires_setup(**kwargs)
+        if kwargs['samples'] != self.samples():
+            requires_setup = True
+        return requires_setup
+
     def setup(self,
               samples: Union[int, None] = None,
               connections: list = None,

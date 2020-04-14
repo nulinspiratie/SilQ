@@ -71,6 +71,9 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 inactive state. This signifies that the pulse blaster should be
                 started last, which ensures that other instrument have the right
                 voltage.
+
+        TODO
+            - ``require_setup`` should return True if repeat is changed
         """
         if not self.pulse_sequence:
             return
