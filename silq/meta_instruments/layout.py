@@ -1142,7 +1142,7 @@ class Layout(Instrument):
             * If a measurement is running, all instruments are stopped
             * The original pulse sequence and pulses remain unmodified
         """
-        logger.info(f'Targeting pulse sequence {pulse_sequence}')
+        logger.info(f'Targeting {pulse_sequence}')
 
         if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
             raise RuntimeError(
@@ -1310,7 +1310,8 @@ class Layout(Instrument):
             **kwargs: additional kwargs sent to all interfaces being setup.
         """
 
-        logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+        logger.info(f'Layout setup with {samples} samples '
+                    f'{f"and kwargs: {kwargs}" if kwargs else ""}')
 
         if not self.pulse_sequence:
             raise RuntimeError("Cannot setup with an empty PulseSequence.")
@@ -1459,7 +1460,7 @@ class Layout(Instrument):
             `Layout.save_traces`
         """
         try:
-            logger.info(f'Performing acquisition, stop when finished: {stop}')
+            logger.info(f'Performing acquisition, {"stop" if stop else "continue"]} when finished')
             if not self.active():
                 self.start()
 
