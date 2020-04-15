@@ -272,7 +272,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                     # TODO There should ideally still be a connection such that
                     # if the RF_pulse t_stop becomes larger, stage_pulse will
                     # still extend
-                    stage_pulse.t_stop = t_stop
+                    stage_pulse.t_stop = stage_pulse.t_start + min_duration
                 else:
                     RF_pulse['t_stop'].connect(
                         stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
