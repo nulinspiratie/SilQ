@@ -495,19 +495,24 @@ class PulseSequence(ParameterNode):
         use a separate comparison when either is a Pulse implementation
         """
         if not isinstance(other, PulseSequence):
+            # print('Other pulse sequence is not actually a pulse sequence')
             return False
 
         for parameter_name, parameter in self.parameters.items():
             if parameter_name == 'pulse_sequences':
                 if len(parameter()) != len(other.pulse_sequences):
+                    # print("Other pulse sequence contains differing number of "
+                    #       "nested pulse sequences")
                     return False
 
                 for pseq1, pseq2 in zip(parameter(), other.pulse_sequences):
                     if pseq1 != pseq2:
                         return False
             elif not parameter_name in other.parameters:
+                # print(f"Pulse sequence parameter doesn't exist: {parameter_name}")
                 return False
             elif parameter() != getattr(other, parameter_name):
+                # print(f"Pulse sequence parameter doesn't match: {parameter_name}")
                 return False
         # All parameters match
         return True
