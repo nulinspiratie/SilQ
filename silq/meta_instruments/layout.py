@@ -426,7 +426,6 @@ class CombinedConnection(Connection):
         Returns:
             Bool depending on if the connection satisfies conditions
         """
-
         if output_arg is not None:
             if not isinstance(output_arg, list):
                 # output_arg is not a list (probably str for SingleConnection)
