@@ -1378,10 +1378,11 @@ class Layout(Instrument):
                     **setup_flags,
                     **kwargs
                 ):
-                    logger.debug(f'Skipping {interface.name} no setup necessary')
+                    logger.debug(f'Skipping setup interface {interface.name}')
                     continue
 
                 with self.timings.record(f'setup.{interface.name}'):
+                    logger.debug(f'Setup interface {interface.name}')
                     flags = interface.setup(samples=self.samples(),
                                             input_connections=input_connections,
                                             output_connections=output_connections,

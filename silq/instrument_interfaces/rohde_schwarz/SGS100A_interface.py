@@ -191,6 +191,8 @@ class SGS100AInterface(InstrumentInterface):
                 else:
                     settings["frequency"] = (min_frequency + max_frequency) / 2
                     settings["frequency"] += self.frequency_carrier_choice()
+            else:
+                settings["frequency"] = self.frequency()
         else:
             # Set protected IQ_modulation parameter
             settings["IQ_modulation"] = False
@@ -294,6 +296,10 @@ class SGS100AInterface(InstrumentInterface):
             self.instrument.IQ_modulation("on")
         else:
             self.instrument.IQ_modulation("off")
+
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
     def start(self):
         """Turn all active instrument channels on"""
