@@ -21,13 +21,31 @@ class Fit():
     This will find its initial parameters via `Fit.find_initial_parameters`,
     after which it will fit the data to `Fit.fit_function`.
 
+    If either xvals and ydata are passed, or only ydata is passed but is is a
+    Qcodes DataArray, the fit is automatically performed.
+    Otherwise Fit.perform_fit must be called.
+
+    Args:
+        ydata: Data values to be fitted
+        xvals: Sweep values
+        fit: Automatically perform a fit if ydata is passed
+        print: Print results
+        plot: Plot data and fit
+        initial_parameters: Dict of initial guesses for fit parameters
+        fixed_parameters: Dict of fixed values for fit parameters
+        parameter_constraints: Parameter constraints
+            e.g. {'frequency' : {'min' : 0}}
+        **kwargs: Any other kwargs passed to Fit.perform_fit
+
     Note:
         The fitting routine uses lmfit, a wrapper package around scipy.optimize.
     """
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
 
-    def __init__(self, fit=True, print=False, plot=None, **kwargs):
+    def __init__(self, ydata=None, *, xvals=None, fit=True, print=False, plot=None,
+                 initial_parameters=None, fixed_parameters=None, parameter_constraints=None,
+                 **kwargs):
         self.model = Model(self.fit_function, **kwargs)
         self.fit_result = None
 
@@ -38,8 +56,18 @@ class Fit():
         self.weights = None
         self.parameters = None
 
-        if kwargs:
-            self.get_parameters(**kwargs)
+        if ydata is not None:
+            if xvals is None:
+                assert isinstance(ydata, DataArray), 'Please provide xvals'
+                xvals = ydata.set_arrays[0]
+
+            self.get_parameters(
+                xvals=xvals,
+                ydata=ydata,
+                initial_parameters=initial_parameters,
+                fixed_parameters=fixed_parameters,
+                parameter_constraints=parameter_constraints
+            )
             if fit:
                 self.perform_fit(print=print, plot=plot, **kwargs)
 
@@ -92,8 +120,8 @@ class Fit():
         """
         return array[self.find_nearest_index(array, value)]
 
-    def get_parameters(self, xvals, ydata, initial_parameters={},
-                       fixed_parameters={}, parameter_constraints={},
+    def get_parameters(self, xvals, ydata, initial_parameters=None,
+                       fixed_parameters=None, parameter_constraints=None,
                        weights=None, **kwargs):
         """Get parameters for fitting
         Args:
@@ -111,6 +139,10 @@ class Fit():
                 can be fit.
             weights: Weights for data points, must have same shape as ydata
         """
+        initial_parameters = initial_parameters or {}
+        fixed_parameters = fixed_parameters or {}
+        parameter_constraints = parameter_constraints or {}
+
         if isinstance(xvals, DataArray):
             xvals = xvals.ndarray
         elif not isinstance(xvals, np.ndarray):
@@ -637,9 +669,6 @@ class DoubleExponentialFit(Fit):
     """
     sweep_parameter = 't'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @staticmethod
     def fit_function(t: Union[float, np.ndarray],
                      tau_1: float,
@@ -750,8 +779,7 @@ class SineFit(Fit):
             Parameters object containing initial parameters.
         """
         parameters = Parameters()
-        if 'amplitude' not in initial_parameters:
-            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+        initial_parameters.setdefault('amplitude', (max(ydata) - min(ydata)) / 2)
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
@@ -760,19 +788,15 @@ class SineFit(Fit):
             fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
-        if 'frequency' not in initial_parameters:
-            frequency = fft_freqs[frequency_idx]
-            initial_parameters['frequency'] = frequency
+        initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
 
-            if plot:
-                plt.figure()
-                plt.plot(fft_freqs, fft_flips_abs, 'o')
-                plt.plot(frequency, fft_flips_abs[frequency_idx], 'o', ms=8)
-        if 'phase' not in initial_parameters:
-            phase = np.pi / 2 + np.angle(fft_flips[frequency_idx])
-            initial_parameters['phase'] = phase
-        if 'offset' not in initial_parameters:
-            initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+        if plot:
+            plt.figure()
+            plt.plot(fft_freqs, fft_flips_abs, 'o')
+            plt.plot(initial_parameters['frequency'], fft_flips_abs[frequency_idx], 'o', ms=8)
+
+        initial_parameters.setdefault('phase', np.pi / 2 + np.angle(fft_flips[frequency_idx]))
+        initial_parameters.setdefault('offset', (max(ydata) + min(ydata)) / 2)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
@@ -830,8 +854,7 @@ class AMSineFit(Fit):
             Parameters object containing initial parameters.
         """
         parameters = Parameters()
-        if 'amplitude' not in initial_parameters:
-            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+        initial_parameters.setdefault('amplitude', (max(ydata) - min(ydata)) / 2)
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
@@ -941,9 +964,9 @@ class RabiFrequencyFit(Fit):
     sweep_parameter = 'f'
 
     @staticmethod
-    def fit_function(f, f0, gamma, t):
+    def fit_function(f, f0, gamma, t, offset, amplitude):
         Omega = np.sqrt(gamma ** 2 + (2 * np.pi * (f - f0)) ** 2 / 4)
-        return gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2
+        return amplitude * gamma ** 2 / Omega ** 2 * np.sin(Omega * t) ** 2 + offset
 
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
@@ -952,13 +975,11 @@ class RabiFrequencyFit(Fit):
         max_idx = np.argmax(ydata)
         max_frequency = xvals[max_idx]
 
-        if 'f0' not in initial_parameters:
-            initial_parameters['f0'] = max_frequency
+        initial_parameters.setdefault('f0', max_frequency)
 
         if 'gamma' not in initial_parameters:
             if 't' in initial_parameters:
-                initial_parameters['gamma'] = np.pi / initial_parameters[
-                    't'] / 2
+                initial_parameters['gamma'] = np.pi / initial_parameters['t'] / 2
             else:
                 FWHM_min_idx = np.argmax(xvals > max_frequency / 2)
                 FWHM_max_idx = len(xvals) - np.argmax(
@@ -966,8 +987,9 @@ class RabiFrequencyFit(Fit):
                 initial_parameters['gamma'] = 2 * np.pi * (
                         xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
-        if 't' not in initial_parameters:
-            initial_parameters['t'] = np.pi / initial_parameters['gamma'] / 2
+        initial_parameters.setdefault('t', np.pi / initial_parameters['gamma'] / 2)
+        initial_parameters.setdefault('offset',  np.min(ydata))
+        initial_parameters.setdefault('amplitude', 1 - initial_parameters['offset'])
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
