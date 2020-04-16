@@ -58,6 +58,10 @@ class TriggerFPGAInterface(InstrumentInterface):
         self.instrument.trigger_interval(trigger_interval)
         self.instrument.trigger_duration(self.trigger_duration())
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         self.instrument.start()
         if not self.repeat:

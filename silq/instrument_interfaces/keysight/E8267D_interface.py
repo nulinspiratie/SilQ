@@ -134,17 +134,21 @@ class E8267DInterface(InstrumentInterface):
                                      "amplitude from an ext port, or 'IQ', in "
                                      "which case the internal FM is turned off.")
 
-    def get_additional_pulses(self, connections) -> List[Pulse]:
-        """Additional pulses needed by instrument after targeting of main pulses
+    def determine_instrument_settings(self, update: bool = False) -> dict:
+        """Determine the frequency settings from parameters and  pulse sequence
+
+        Used to determine additional pulses and during setup
 
         Args:
-            connections: List of all connections in the layout
+            update: Update the interface parameters
 
         Returns:
-            List of additional pulses, such as IQ modulation pulses
+            Dictionary with three items:
+            - ``IQ_modulation``: Use IQ modulation
+            - ``frequency``: carrier frequency
+            - ``frequency_deviation``: frequency deviation
         """
-        if not self.pulse_sequence:
-            return []
+        settings = {}
 
         frequency_sidebands = {int(round(pulse.frequency_sideband))
                                if pulse.frequency_sideband is not None else None
@@ -163,9 +167,9 @@ class E8267DInterface(InstrumentInterface):
             frequency_sidebands.remove(None)
 
         if frequency_sidebands or self.FM_mode() == 'IQ':
-            self.IQ_modulation._save_val('on')
+            settings['IQ_modulation'] = 'on'
         else:
-            self.IQ_modulation._save_val('off')
+            settings['IQ_modulation'] = 'off'
 
         # Find minimum and maximum frequency
         min_frequency = max_frequency = None
@@ -200,10 +204,10 @@ class E8267DInterface(InstrumentInterface):
             else:  # value away from center
                 frequency_carrier = int(round((min_frequency + max_frequency) / 2))
                 frequency_carrier += self.frequency_carrier_choice()
-            self.frequency(frequency_carrier)
+            settings['frequency'] = frequency_carrier
 
         if not self.fix_frequency_deviation():
-            self.frequency_deviation(
+            settings['frequency_deviation'] = (
                 int(round(max([max_frequency - self.frequency(),
                                self.frequency() - min_frequency]))))
 
@@ -211,9 +215,36 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
+        if update:
+            self.frequency(settings['frequency'])
+            self.frequency_deviation(settings['frequency_deviation'])
+            self.IQ_modulation._latest["raw_value"] = settings["IQ_modulation"]
+            self.IQ_modulation.get()
+
+        return settings
+
+    def get_additional_pulses(self, connections) -> List[Pulse]:
+        """Additional pulses needed by instrument after targeting of main pulses
+
+        Args:
+            connections: List of all connections in the layout
+
+        Returns:
+            List of additional pulses, such as IQ modulation pulses
+        """
+        if not self.pulse_sequence:
+            return []
+
+        powers = list({pulse.power for pulse in self.pulse_sequence})
+        assert len(powers) == 1, "Cannot handle multiple pulse powers"
+
+        frequency_settings = self.determine_instrument_settings()
+
         additional_pulses = []
         for pulse in self.pulse_sequence:
-            additional_pulses += pulse.implementation.get_additional_pulses(interface=self)
+            additional_pulses += pulse.implementation.get_additional_pulses(
+                interface=self, **frequency_settings
+            )
 
         return additional_pulses
 
@@ -228,6 +259,9 @@ class E8267DInterface(InstrumentInterface):
 
         powers = list({pulse.power for pulse in self.pulse_sequence})
         assert len(powers) == 1, "Cannot handle multiple pulse powers"
+
+        # Determine frequency, frequency_deviation, and IQ_modulation
+        self.determine_instrument_settings(update=True)
 
         self.instrument.frequency(self.frequency())
         self.instrument.power(powers[0])
@@ -248,6 +282,10 @@ class E8267DInterface(InstrumentInterface):
         else:
             self.instrument.internal_IQ_modulation('off')
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Start instrument"""
         self.instrument.RF_output('on')
@@ -265,7 +303,14 @@ class SinePulseImplementation(PulseImplementation):
         assert pulse.power is not None, "Pulse must have power defined"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface: InstrumentInterface):
+    def get_additional_pulses(
+            self,
+            interface: InstrumentInterface,
+            IQ_modulation,
+            frequency,
+            frequency_deviation,
+            **kwargs
+    ):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
@@ -274,28 +319,28 @@ class SinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        if interface.IQ_modulation() == 'off':
-            if interface.frequency_deviation() == 0:  # No IQ modulation nor FM
+        if IQ_modulation == 'off':
+            if frequency_deviation == 0:  # No IQ modulation nor FM
                 amplitude_FM = None
                 frequency_IQ = None
                 pass
             else:  # No IQ modulation, but FM
-                frequency_difference = self.pulse.frequency - interface.frequency()
-                amplitude_FM = frequency_difference / interface.frequency_deviation()
+                frequency_difference = self.pulse.frequency - frequency
+                amplitude_FM = frequency_difference / frequency_deviation
                 frequency_IQ = None
-        else:  # interface.IQ_modulation() == 'on'
+        else:  # IQ_modulation == 'on'
             if interface.FM_mode() == 'ramp':
                 assert self.pulse.frequency_sideband is not None, \
                     "Pulse.frequency_sideband must be defined when " \
                     "FM_mode = 'ramp' and IQ_modulation = 'on'"
 
                 frequency = self.pulse.frequency + self.pulse.frequency_sideband
-                frequency_difference = frequency - interface.frequency()
-                amplitude_FM = frequency_difference / interface.frequency_deviation()
+                frequency_difference = frequency - frequency
+                amplitude_FM = frequency_difference / frequency_deviation
                 frequency_IQ = self.pulse.frequency_sideband
             else:  # interface.FM_mode() == 'IQ'
                 amplitude_FM = None
-                frequency_IQ = self.pulse.frequency - interface.frequency()
+                frequency_IQ = self.pulse.frequency - frequency
 
         if frequency_IQ is not None:
             additional_pulses.extend([
@@ -341,7 +386,14 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             f"Pulse frequency_start must differ from frequency_stop {pulse}"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface: InstrumentInterface):
+    def get_additional_pulses(
+            self,
+            interface: InstrumentInterface,
+            IQ_modulation,
+            frequency,
+            frequency_deviation,
+            **kwargs
+    ):
         assert self.pulse.t_start >= interface.envelope_padding(), \
             f"Keysight E8267D uses envelope padding " \
             f"{interface.envelope_padding()} s before and after pulse for FM "\
@@ -356,11 +408,11 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                             'input_channel': 'trig_in'},
                         name=f'{self.pulse.name}_marker')]
 
-        if interface.IQ_modulation() == 'off':
+        if IQ_modulation == 'off':
             frequency_IQ = None
             frequency_IQ_start = None
             frequency_IQ_stop = None
-            frequency_offset = interface.frequency()
+            frequency_offset = frequency
         elif interface.FM_mode() == 'ramp':  # interface.IQ_modulation() == 'on'
             assert self.pulse.frequency_sideband is not None, \
                 "Pulse.frequency_sideband must be defined when " \
@@ -371,8 +423,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             frequency_offset = self.pulse.frequency + self.pulse.frequency_sideband
         else:  # interface.FM_mode() == 'IQ'
             frequency_IQ = None
-            frequency_IQ_start = self.pulse.frequency_start - interface.frequency()
-            frequency_IQ_stop = self.pulse.frequency_stop - interface.frequency()
+            frequency_IQ_start = self.pulse.frequency_start - frequency
+            frequency_IQ_stop = self.pulse.frequency_stop - frequency
             frequency_offset = None
 
         if frequency_IQ is not None:
@@ -420,9 +472,9 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
         if frequency_offset is not None:  # Add a DC ramp pulse for FM
             amplitude_start = (self.pulse.frequency_start - frequency_offset) \
-                              / abs(interface.frequency_deviation())
+                              / abs(frequency_deviation)
             amplitude_stop = (self.pulse.frequency_stop - frequency_offset) \
-                             / abs(interface.frequency_deviation())
+                             / abs(frequency_deviation)
             additional_pulses.append(
                 DCRampPulse(t_start=self.pulse.t_start,
                             t_stop=self.pulse.t_stop,

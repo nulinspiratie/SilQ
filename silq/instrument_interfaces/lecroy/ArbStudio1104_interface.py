@@ -212,6 +212,10 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.load_waveforms(channels=active_channels_id)
         self.instrument.load_sequence(channels=active_channels_id)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Start instrument"""
         self.instrument.run(channels=[self._channels[channel].id for channel in

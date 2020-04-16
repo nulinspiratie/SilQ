@@ -201,6 +201,12 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
                                  connection_requirements=connection_requirements)]
 
+    def requires_setup(self, **kwargs) -> bool:
+        requires_setup = super().requires_setup(**kwargs)
+        if kwargs['samples'] != self.samples():
+            requires_setup = True
+        return requires_setup
+
     def setup(self, samples=1, input_connections=(), **kwargs):
         self.samples(samples)
 
@@ -248,6 +254,10 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
         else:
             raise RuntimeError('No setup configured for acquisition controller '
                                f'{self.acquisition_controller()}')
+
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
     def setup_trigger(self, t_start, input_connections):
         # Setup triggering

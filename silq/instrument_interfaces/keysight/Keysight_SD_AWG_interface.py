@@ -165,6 +165,10 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.load_waveform_queue(self.waveform_queue)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def setup_trigger(self):
         """Sets up triggering of the AWG.
 
