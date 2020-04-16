@@ -113,10 +113,13 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
             instructions.append((inactive_channel_mask, 'wait', 0, 100))
 
         # Iteratively increase time
-        t = 0
-        t_stop_max = max(self.pulse_sequence.t_stop_list)
+        t_list = self.pulse_sequence.t_list
+        # Situations can in fact occur where the pulseblaster does not contain
+        # a pulse at t=0 (e.g. when acquisition_interface.capture_full_traces = False
+        # and other instruments don't need an initial trigger pulse (e.g. arbstudio)
+        # assert 0 in t_list, "Pulse sequence does not contain pulse starting at t=0"
 
-        while t < t_stop_max:
+        for k, t in enumerate(t_list):
             channel_mask = sum(pulse.implementation.implement(t=t)
                                for pulse in self.pulse_sequence)
 
@@ -128,24 +131,22 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
                 instructions.append((inactive_channel_mask, 'wait', 0, 50))
 
             # find time of next event
-            t_next = min(t_val for t_val in self.pulse_sequence.t_list
-                         if t_val > t)
+            if k < len(t_list) - 1:
+                t_next = t_list[k+1]
 
-            # Send wait instruction until next event
-            wait_duration = t_next - t
-            wait_cycles = round(wait_duration * sample_rate)
-            # Either send continue command or long_delay command if the
-            # wait duration is too long
-            if wait_cycles < 1e9:
-                instructions.append((channel_mask, 'continue', 0, wait_cycles))
-            else:
-                instructions.append((channel_mask, 'continue', 0, 100))
-                duration = round(wait_cycles - 100)
-                divisor = int(np.ceil(duration / 1e9))
-                delay = int(duration / divisor)
-                instructions.append((channel_mask, 'long_delay', divisor, delay))
-
-            t = t_next
+                # Send wait instruction until next event
+                wait_duration = t_next - t
+                wait_cycles = round(wait_duration * sample_rate)
+                # Either send continue command or long_delay command if the
+                # wait duration is too long
+                if wait_cycles < 1e9:
+                    instructions.append((channel_mask, 'continue', 0, wait_cycles))
+                else:
+                    instructions.append((channel_mask, 'continue', 0, 100))
+                    duration = round(wait_cycles - 100)
+                    divisor = int(np.ceil(duration / 1e9))
+                    delay = int(duration / divisor)
+                    instructions.append((channel_mask, 'long_delay', divisor, delay))
 
         # Add final instructions
         # Wait until end of pulse sequence
@@ -190,41 +191,38 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         self.instrument.stop()
 
 
-class TriggerPulseImplementation(PulseImplementation):
-    pulse_class = TriggerPulse
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
-        amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
-        targeted_pulse.amplitude = amplitude
-        return targeted_pulse
-
-    def implement(self, t):
-        output_channel = self.pulse.connection.output['channel']
-        input_channel = self.pulse.connection.input['channel']
-        channel_value = 2 ** output_channel.id
-
-        if self.pulse.t_start <= t < self.pulse.t_stop:
-            return 0 if input_channel.invert else channel_value
-        else:
-            return channel_value if input_channel.invert else 0
-
-
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
+    channel_value = None
+    active_state = None
+    inactive_state = None
+    t_start = None
+    t_stop = None
 
     def target_pulse(self, pulse, interface, **kwargs):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+        implementation = targeted_pulse.implementation
         amplitude = targeted_pulse.connection.output['channel'].output_TTL[1]
         targeted_pulse.amplitude = amplitude
+
+        output_channel = targeted_pulse.connection.output['channel']
+        implementation.channel_value = 2 ** output_channel.id
+
+        input_channel = targeted_pulse.connection.input['channel']
+        implementation.active_state = 0 if input_channel.invert else implementation.channel_value
+        implementation.inactive_state = implementation.channel_value if input_channel.invert else 0
+
+        # Add these properties to optimize the implement section
+        implementation.t_start = targeted_pulse.t_start
+        implementation.t_stop = targeted_pulse.t_stop
+
         return targeted_pulse
 
     def implement(self, t):
-        output_channel = self.pulse.connection.output['channel']
-        input_channel = self.pulse.connection.input['channel']
-        channel_value = 2 ** output_channel.id
+        within_pulse = self.t_start <= t < self.t_stop
+        return [self.inactive_state, self.active_state][int(within_pulse)]
 
-        if self.pulse.t_start <= t < self.pulse.t_stop:
-            return 0 if input_channel.invert else channel_value
-        else:
-            return channel_value if input_channel.invert else 0
+
+
+class TriggerPulseImplementation(MarkerPulseImplementation):
+    pulse_class = TriggerPulse
