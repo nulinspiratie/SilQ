@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import sys
 import os
 import warnings
@@ -46,6 +46,8 @@ if 'ipykernel' in sys.modules:
 
 from .instrument_interfaces import get_instrument_interface
 
+experiment = None
+experiment_folder = None
 
 def get_silq_folder() -> str:
     """Get root folder of silq source code."""
@@ -174,7 +176,7 @@ def get_experiment_configuration(
     return experiment_folder, configuration
 
 
-def execute_file(filepath: (str, Path), globals=None, locals=None):
+def execute_file(filepath: (str, Path), mode=None, globals=None, locals=None):
     if isinstance(filepath, str):
         filepath = Path(filepath)
 
@@ -191,7 +193,6 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
                 globals = sys._getframe(1).f_globals
                 locals = sys._getframe(1).f_locals
 
-            execution_code = filepath.read_text() + "\n"
             exec(execution_code, globals, locals)
     except Exception as e:
         e.args = (
@@ -200,7 +201,67 @@ def execute_file(filepath: (str, Path), globals=None, locals=None):
         raise e
 
 
-def run_scripts(name: str = None,
+def run_script(
+        script_name: str,
+        folder: Union[Path, str] = 'scripts',
+        silent: bool = False,
+        mode: str = None,
+        globals: dict = None,
+        locals: dict = None
+):
+    """Run a single script, by default from the experiment scripts folder
+
+    Args:
+        script_name: Name of script. Can contain slashes (/) for a script in a folder
+        folder: Script folder. Can be either absolute or relative path.
+            If relative, the folder is w.r.t. the experiment folder.
+        silent: Whether to print the execution of the script
+        mode: Whether a specific initialize mode is used.
+            script files can start with '#ignore_mode: {mode}'.
+            If 'ignore_mode' matches the specified mode, the script is not executed.
+        globals: Optional global variables
+        locals: Optional local variables
+
+    Returns:
+        None
+    """
+    if globals is None and locals is None:
+        # Register globals and locals of the above frame (for code execution)
+        globals = sys._getframe(1).f_globals
+        locals = sys._getframe(1).f_locals
+
+    if isinstance(folder, str):
+        folder = Path(folder)
+
+    if not folder.is_absolute():
+        import silq
+        folder = silq.experiment_folder / folder
+
+    file = folder / script_name
+    file = file.with_suffix('.py')
+    if not file.exists():
+        raise FileNotFoundError(f'Script file {file} not found')
+
+    if mode is not None:
+        execution_code = file.read_text() + "\n"
+        for line in execution_code.split('\n'):
+            if not line.startswith('# '):
+                break
+            else:
+                line = line.lstrip('# ')
+                if line.startswith('ignore_mode: '):
+                    ignore_mode = line.split('ignore_mode: ')[1]
+                    if mode == ignore_mode:
+                        if not silent:
+                            print(f'Ignoring script {file.stem}')
+                        return
+
+    if not silent:
+        print(f'Running script {file.stem}')
+    execute_file(file, globals=globals, locals=locals)
+
+
+def run_scripts(path: Union[str, Path] = None,
                 mode: str = None,
                 silent: bool = False,
                 max_relative_parents: int = 4,
@@ -211,62 +272,37 @@ def run_scripts(name: str = None,
         globals = sys._getframe(1).f_globals
         locals = sys._getframe(1).f_locals
 
-    script_folders = []
+    if path is None:
+        path = Path('../' * max_relative_parents)
+    elif isinstance(path, str):
+        experiment_folder, _ = get_experiment_configuration(path)
+        path = experiment_folder / 'scripts'
+    elif isinstance(path, Path):
+        assert path.exists(), f'Script path does not exist: {path}'
+        assert path.is_dir(), f'Script path is not a folder: {path}'
+        path = path.absolute()
 
-    if name is not None:
-        experiment_folder, _ = get_experiment_configuration(name)
-        script_folders = [experiment_folder / 'scripts']
-    else:
-        experiment_folder = Path('../' * max_relative_parents)
-
-    # Add script folders in current directory and parent directories thereof
-    relative_directory = Path('.').absolute()  # Goes iteratively to parent
-    for _ in range(4):
-        if relative_directory == experiment_folder.absolute():
-            # Reached experiment folder
-            break
-
-        script_folder = relative_directory / 'scripts'
-        if script_folder.is_dir():
-            script_folders.append(script_folder)
-
-        # Iterate up one level
-        relative_directory = relative_directory.parent
-
-    for script_folder in script_folders:
-        if not script_folder.exists():
-            continue
-
-        for script_folder_element in script_folder.iterdir():
-            # Only execute scripts in subfolders if folder name matches mode
-            if script_folder_element.is_dir():
-                if script_folder_element.stem != mode:
-                    continue
-
-                # Run each file in the subfolder
-                for script_folder_subelement in script_folder_element.iterdir():
-                    if not script_folder_subelement.suffix == ".py":
-                        logger.warning(f"Skipping non-python script: "
-                                       f"{script_folder_subelement.parent.stem}"
-                                       f"/{script_folder_subelement.name}")
-                        continue
-                    if not silent:
-                        print(
-                            f"Running script {script_folder_element.stem}/"
-                            f"{script_folder_subelement.stem}")
-                    execute_file(script_folder_subelement, globals=globals,
-                                 locals=locals)
-            else:  # Execute file
-                if not script_folder_element.suffix == ".py":
-                    logger.warning(
-                        f"Skipping non-python script: {script_folder_element.name}"
-                    )
-                    continue
-                if not silent:
-                    print(f"Running script {script_folder_element.stem}")
-
-                execute_file(script_folder_element, globals=globals,
-                             locals=locals)
+    for elem in path.iterdir():
+        if elem.is_dir():
+            run_scripts(
+                path=elem,
+                mode=mode,
+                silent=silent,
+                max_relative_parents=max_relative_parents,
+                globals=globals,
+                locals=locals
+            )
+        elif elem.suffix != '.py':
+            logger.warning(f"Skipping non-python script: {elem.stem}")
+        else:
+            run_script(
+                script_name=elem.stem,
+                folder=path,
+                mode=mode,
+                globals=globals,
+                locals=locals,
+                silent=silent
+            )
 
 
 def initialize(name: str,
@@ -305,8 +341,13 @@ def initialize(name: str,
         select += configuration["modes"][mode].get("select", [])
         ignore += configuration["modes"][mode].get("ignore", [])
 
+    # Update global experiment name and folder
+    import silq
+    silq.experiment = name
+    silq.experiment_folder = experiment_folder
+
     # TODO check if original config['folder'] had any weird double
-    #  experiments_folder
+    # experiments_folder
     config.__dict__['folder'] = str(experiment_folder.absolute())
     if (experiment_folder / 'config').is_dir():
         config.load()
@@ -335,7 +376,7 @@ def initialize(name: str,
                     execute_file(init_file, globals=globals, locals=locals)
 
     if scripts:
-        run_scripts(name=name, mode=mode, globals=globals, locals=locals)
+        run_scripts(name, mode=mode, globals=globals, locals=locals, silent=silent)
 
     if 'data_folder' in config["environment:properties"]:
         data_folder = config["environment:properties.data_folder"]
