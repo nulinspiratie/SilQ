@@ -183,7 +183,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
-        return self.layout.sample_rate
+        return self.layout.sample_rate()
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=None,
@@ -645,7 +645,7 @@ class TraceParameter(AcquisitionParameter):
     def shapes(self):
         if self.trace_pulse in self.pulse_sequence:
             trace_shapes = self.pulse_sequence.get_trace_shapes(
-                self.layout.sample_rate, self.samples)
+                self.layout.sample_rate(), self.samples)
             trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
             if self.samples > 1 and self.average_mode == 'none':
                 return ((trace_pulse_shape,),) * len(self.layout.acquisition_channels())
