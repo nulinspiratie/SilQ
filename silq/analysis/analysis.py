@@ -311,6 +311,7 @@ def count_blips(traces: np.ndarray,
                 threshold_voltage: float,
                 sample_rate: float,
                 t_skip: float,
+                t_read: float = None,
                 ignore_final: bool = False):
     """ Count number of blips and durations in high/low state.
 
@@ -319,6 +320,9 @@ def count_blips(traces: np.ndarray,
         threshold_voltage: Threshold voltage for a ``high`` voltage (blip).
         sample_rate: Acquisition sample rate (per second).
         t_skip: Initial time to skip for each trace (ms).
+        t_read: Optional read time. If passed, dark count will be determined by
+            segmenting the trace into chunks of t_read and checking how many
+            of the segments have a blip.
 
     Returns:
         Dict[str, Any]:
@@ -328,6 +332,9 @@ def count_blips(traces: np.ndarray,
         * **high_blip_duration** (np.ndarray): Durations in high-voltage state.
         * **mean_low_blip_duration** (float): Average duration in low state.
         * **mean_high_blip_duration** (float): Average duration in high state.
+        ***dark_counts** (float): Portion of trace segments that have blips,
+            after segmenting the traces into chunks of t_read.
+            None is returned if t_read is passed.
     """
     low_blip_pts, high_blip_pts = [], []
     start_idx = round(t_skip * sample_rate)
@@ -367,6 +374,10 @@ def count_blips(traces: np.ndarray,
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
+
+    if t_read is not None:
+        read_points = int(t_read * sample_rate)
+
     return {'blips': blips,
             'blip_events': blip_events,
             'blips_per_second': blips / duration,

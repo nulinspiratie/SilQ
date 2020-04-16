@@ -2128,6 +2128,7 @@ class BlipsParameter(AcquisitionParameter):
                  name: str = 'count_blips',
                  duration: float = None,
                  pulse_name: str = 'DC_trace',
+                 t_read: float = None,
                  **kwargs):
         self.pulse_name = pulse_name
 
@@ -2147,6 +2148,7 @@ class BlipsParameter(AcquisitionParameter):
         self.samples = 1
         self.duration = duration
         self.threshold_voltage = 0.3
+        self.t_read = t_read
 
     @property
     def duration(self):
