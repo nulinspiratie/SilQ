@@ -297,6 +297,10 @@ class SGS100AInterface(InstrumentInterface):
         else:
             self.instrument.IQ_modulation("off")
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Turn all active instrument channels on"""
         self.instrument.on()
