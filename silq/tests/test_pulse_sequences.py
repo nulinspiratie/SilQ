@@ -3,10 +3,13 @@ from copy import copy, deepcopy
 import pickle
 import numpy as np
 import random
+
+import silq
+from silq import DictConfig
 from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
-
+import qcodes as qc
 
 class Registrar:
     def __init__(self):
@@ -272,11 +275,11 @@ class TestPulseSequence(unittest.TestCase):
         for parameter_name, parameter in pulse_sequence.parameters.items():
             if parameter.unit:
                 parameter_name += f' ({parameter.unit})'
-            if parameter_name in ['enabled_pulses']:
+            if parameter_name in ['enabled_pulses', 'pulses']:
                 continue
             self.assertEqual(snapshot.pop(parameter_name), parameter(), msg=parameter_name)
 
-        self.assertEqual(len(snapshot), 1)
+        self.assertEqual(len(snapshot), 2)
 
         pulse_sequence.add(Pulse(duration=5))
 
@@ -308,6 +311,33 @@ class TestPulseSequence(unittest.TestCase):
         pulse1 = DCPulse(duration=10e-3)
         pulse_sequence.add(pulse1)
         pulse_sequence.add(pulse1)
+
+    def test_pulse_sequence_times(self):
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 0)
+        self.assertEqual(pulse_sequence.t_stop, 0)
+
+        DC_pulse, = pulse_sequence.add(DCPulse('DC', duration=1))
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 1)
+        self.assertEqual(pulse_sequence.t_stop, 1)
+
+        pulse_sequence.t_start = 2
+        self.assertEqual(pulse_sequence.t_start, 2)
+        self.assertEqual(pulse_sequence.duration, 1)
+        self.assertEqual(pulse_sequence.t_stop, 3)
+        self.assertEqual(DC_pulse.t_start, 2)
+        self.assertEqual(DC_pulse.duration, 1)
+        self.assertEqual(DC_pulse.t_stop, 3)
+
+    def test_last_pulse(self):
+        pulse_sequence = PulseSequence()
+        read_pulse, plunge_pulse = pulse_sequence.add(
+            DCPulse('read', duration=1),
+            DCPulse('plunge', duration=1)
+        )
+        self.assertEqual(pulse_sequence._last_pulse, plunge_pulse)
 
 
 class TestPulseSequenceQuickAdd(unittest.TestCase):
@@ -431,6 +461,31 @@ class TestPulseSequenceQuickAdd(unittest.TestCase):
                 pulse_sequence.remove(overlapping_pulse_copy)
                 pulse_sequence.finish_quick_add()
 
+    def test_pulse_sequence_times(self):
+        pulses = [DCPulse(t_start=0, duration=10, connection_label='con1'),
+                  DCPulse(t_start=5, duration=10, connection_label='con2')]
+        pulse_sequence = PulseSequence()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 0)
+        self.assertEqual(pulse_sequence.t_stop, 0)
+
+        pulse_sequence.quick_add(*pulses)
+        pulse_sequence.finish_quick_add()
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 15)
+        self.assertEqual(pulse_sequence.t_stop, 15)
+
+        pulse_sequence.t_start = 2
+        self.assertEqual(pulse_sequence.t_start, 2)
+        self.assertEqual(pulse_sequence.duration, 15)
+        self.assertEqual(pulse_sequence.t_stop, 17)
+        self.assertEqual(pulse_sequence.pulses[0].t_start, 2)
+        self.assertEqual(pulse_sequence.pulses[0].duration, 10)
+        self.assertEqual(pulse_sequence.pulses[0].t_stop, 12)
+        self.assertEqual(pulse_sequence.pulses[1].t_start, 7)
+        self.assertEqual(pulse_sequence.pulses[1].duration, 10)
+        self.assertEqual(pulse_sequence.pulses[1].t_stop, 17)
+
 
 class TestCopyPulseSequence(unittest.TestCase):
     def test_copy_empty_pulse_sequence(self):
@@ -439,6 +494,132 @@ class TestCopyPulseSequence(unittest.TestCase):
 
         pulse_sequence.duration = 10
         self.assertNotEqual(pulse_sequence_copy.duration, 10)
+
+    def test_copy_filled_pulse_sequence(self):
+        pulse_sequence = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+
+        pulse_sequence_copy = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence_copy.duration, 3)
+
+        self.assertTupleEqual(pulse_sequence_copy.pulses, pulse_sequence_copy.enabled_pulses)
+
+
+class TestCopyCountPulseSequence(unittest.TestCase):
+    def reset_executions(self):
+        self.executions = {
+            'Pulse': {'__copy__': 0, '__deepcopy__': 0},
+            'PulseSequence': {'__copy__': 0, '__deepcopy__': 0}
+        }
+
+    def setUp(self) -> None:
+        self.reset_executions()
+        # wrap pulse.copy
+        self.pulse_copy = Pulse.__copy__
+        def copy_fun_wrapped(*args, **kwargs):
+            self.executions[Pulse.__name__]['__copy__'] += 1
+            return self.pulse_copy(*args, **kwargs)
+        Pulse.__copy__ = copy_fun_wrapped
+
+        # wrap pulse.copy
+        self.pulse_sequence_copy = PulseSequence.__copy__
+        def copy_fun_wrapped(*args, **kwargs):
+            self.executions[PulseSequence.__name__]['__copy__'] += 1
+            return self.pulse_sequence_copy(*args, **kwargs)
+        PulseSequence.__copy__ = copy_fun_wrapped
+
+        # wrap __deepcopy
+        from qcodes.instrument import parameter_node
+        self.deepcopy = __deepcopy__ = parameter_node.__deepcopy__
+
+        def __deepcopy_wrapped(other_self, *args, **kwargs):
+            if isinstance(other_self, (Pulse, PulseSequence)):
+                class_name = 'Pulse' if isinstance(other_self, Pulse) else 'PulseSequence'
+                self.executions[class_name]['__deepcopy__'] += 1
+            return __deepcopy__(other_self, *args, **kwargs)
+        parameter_node.__deepcopy__ = __deepcopy_wrapped
+
+    def tearDown(self):
+        Pulse.__copy__ = self.pulse_copy
+        PulseSequence.__copy__ = self.pulse_sequence_copy
+
+        from qcodes.instrument import parameter_node
+        parameter_node.__deepcopy__ = self.deepcopy
+
+
+    def test_copy_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_empty_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_pulse_sequence_one_pulse(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 1)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_pulse_sequence_one_pulse(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        # One extra for _last_pulse. This really shouldn't happen though, but no big deal
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 2)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_pulse_sequence_two_pulses(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 2)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 1)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
+
+    def test_deepcopy_pulse_sequence_two_pulses(self):
+        pulse_sequence = PulseSequence()
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+
+        deepcopy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 0)
+        # One extra for _last_pulse. This really shouldn't happen though, but no big deal
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 3)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 1)
+
+    def test_copy_nested_pulse_sequence(self):
+        pulse_sequence = PulseSequence()
+        nested_pulse_sequence = PulseSequence()
+        nested_pulse_sequence.add(DCPulse(duration=2, amplitude=1), copy=False)
+        pulse_sequence.add_pulse_sequences(nested_pulse_sequence)
+
+        copy(pulse_sequence)
+        self.assertEqual(self.executions['Pulse']['__copy__'], 1)
+        self.assertEqual(self.executions['Pulse']['__deepcopy__'], 0)
+        self.assertEqual(self.executions['PulseSequence']['__copy__'], 2)
+        self.assertEqual(self.executions['PulseSequence']['__deepcopy__'], 0)
 
 
 class TestPulseSequenceEquality(unittest.TestCase):
@@ -484,20 +665,20 @@ class TestPulseSequenceEquality(unittest.TestCase):
     def test_pulse_signalling_after_copy(self):
         pulse_sequence = PulseSequence()
         pulse, = pulse_sequence.add(DCPulse('read', duration=1, amplitude=2))
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
-        self.assertEqual(pulse_sequence.disabled_pulses, [])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulse, ))
+        self.assertEqual(pulse_sequence.disabled_pulses, ())
 
         pulse.enabled = False
-        self.assertEqual(pulse_sequence.enabled_pulses, [])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.enabled_pulses, ())
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulse, ))
 
         pulse_sequence_copy = copy(pulse_sequence)
-        self.assertEqual(pulse_sequence.enabled_pulses, [])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulse])
+        self.assertEqual(pulse_sequence.enabled_pulses, ())
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulse, ))
 
         pulse.enabled = True
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulse])
-        self.assertEqual(pulse_sequence.disabled_pulses, [])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulse, ))
+        self.assertEqual(pulse_sequence.disabled_pulses, ())
 
 
 class TestPulseSequenceAddRemove(unittest.TestCase):
@@ -612,9 +793,9 @@ class TestPulseSequenceAddRemove(unittest.TestCase):
                       Pulse(name='p2', duration=1, enabled=False),
                       Pulse(name='p3', duration=1)]:
             pulses += [pulse_sequence.add(pulse)[0]]
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses,
+                         (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1], ))
 
     def test_final_delay(self):
         original_final_delay = PulseSequence.default_final_delay
@@ -741,18 +922,18 @@ class TestPulseSequenceSignalling(unittest.TestCase):
                       Pulse(name='p3', duration=1)]:
             pulses += [pulse_sequence.add(pulse)[0]]
 
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertTupleEqual(pulse_sequence.enabled_pulses,
+                              (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1],))
 
         pulses[0].enabled = False
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[0], pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses, (pulses[2], ))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[0], pulses[1]))
 
         pulses[0].enabled = True
-        self.assertEqual(pulse_sequence.enabled_pulses, [pulses[0],
-                                                         pulses[2]])
-        self.assertEqual(pulse_sequence.disabled_pulses, [pulses[1]])
+        self.assertEqual(pulse_sequence.enabled_pulses,
+                         (pulses[0], pulses[2]))
+        self.assertEqual(pulse_sequence.disabled_pulses, (pulses[1],))
 
 
 class TestPulseSequencePickling(unittest.TestCase):
@@ -802,6 +983,404 @@ class TestPulseSequencePickling(unittest.TestCase):
 
         self.assertEqual(pickled_pulse_sequence.duration, 4)
 
+
+class TestCompositePulseSequences(unittest.TestCase):
+    def test_basic_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
+
+    def test_named_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='ESR1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='ESR2')
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2],
+                                       name='ESR3')
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
+
+        self.assertEqual(pulse_sequence[0].full_name, 'ESR1.read')
+        self.assertEqual(pulse_sequence[1].full_name, 'ESR1.read2')
+        self.assertEqual(pulse_sequence[2].full_name, 'ESR2.read3')
+        self.assertEqual(pulse_sequence[3].full_name, 'ESR2.read4')
+
+        self.assertEqual(pulse_sequence[0], pulse_sequence['ESR1.read'])
+        self.assertEqual(pulse_sequence[1], pulse_sequence['ESR1.read2'])
+        self.assertEqual(pulse_sequence[2], pulse_sequence['ESR2.read3'])
+        self.assertEqual(pulse_sequence[3], pulse_sequence['ESR2.read4'])
+
+    def test_composite_pulse_sequence_differing_duration(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(
+            pulse_sequences=[pulse_sequence1, pulse_sequence2])
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        pulse_sequence['read'].duration = 3
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 5)
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 3)
+        self.assertEqual(pulse_sequence2[0].t_start, 5)
+        self.assertEqual(pulse_sequence2[1].t_start, 6)
+
+    def test_copy_basic_composite_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+        pulse_sequence1, pulse_sequence2 = pulse_sequence.pulse_sequences
+
+        self.assertEqual(pulse_sequence1.t_start, 0)
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        self.assertEqual(pulse_sequence1[0].t_start, 0)
+        self.assertEqual(pulse_sequence1[1].t_start, 1)
+        self.assertEqual(pulse_sequence2[0].t_start, 3)
+        self.assertEqual(pulse_sequence2[1].t_start, 4)
+
+        self.assertTupleEqual(
+            pulse_sequence.pulses,
+            (*pulse_sequence1.pulses, *pulse_sequence2.pulses)
+        )
+        self.assertListEqual(list(pulse_sequence), [*pulse_sequence1, *pulse_sequence2])
+
+    def test_copy_pulse_in_composite_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+
+        pulse = copy(pulse_sequence[2])
+        self.assertEqual(pulse.t_start, 3)
+
+    def test_add_copied_pulse_in_composite_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ])
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ])
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        pulse_sequence = copy(pulse_sequence)
+
+        pulse = copy(pulse_sequence[2])
+        self.assertEqual(pulse.t_start, 3)
+
+        new_pulse_sequence = PulseSequence()
+        new_pulse, = new_pulse_sequence.add(pulse)
+        self.assertEqual(new_pulse.t_start, 0)
+
+    def test_add_nested_pulse_to_skeleton(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='nested1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='nested2')
+
+        pulse_sequence = PulseSequence(
+            name='main', pulse_sequences=[pulse_sequence1, pulse_sequence2]
+        )
+        pulse = pulse_sequence[2]
+
+        skeleton_pulse_sequence = PulseSequence()
+        skeleton_pulse_sequence.clone_skeleton(pulse_sequence)
+        self.assertEqual(skeleton_pulse_sequence.name, 'main')
+        skeleton_pulse_sequence.add(pulse)
+        self.assertEqual(skeleton_pulse_sequence[0].name, pulse.name)
+        skeleton_pulse_sequence.add(pulse, nest=True)
+        self.assertEqual(skeleton_pulse_sequence.pulse_sequences[1][0].name, pulse.name)
+
+        pulse_sequence = copy(pulse_sequence)
+        pulse = copy(pulse)
+
+        skeleton_pulse_sequence = PulseSequence()
+        skeleton_pulse_sequence.clone_skeleton(pulse_sequence)
+        self.assertEqual(skeleton_pulse_sequence.name, 'main')
+        skeleton_pulse_sequence.add(pulse)
+        self.assertEqual(skeleton_pulse_sequence[0].name, pulse.name)
+        skeleton_pulse_sequence.add(pulse, nest=True)
+        self.assertEqual(skeleton_pulse_sequence.pulse_sequences[1][0].name, pulse.name)
+
+    def test_disabling_first_pulse_sequence(self):
+        pulse_sequence1 = PulseSequence([
+            DCPulse('read', duration=1),
+            DCPulse('read2', duration=2)
+        ], name='pulse_sequence1')
+        pulse_sequence2 = PulseSequence([
+            DCPulse('read3', duration=1),
+            DCPulse('read4', duration=2)
+        ], name='pulse_sequence2')
+
+        pulse_sequence = PulseSequence(pulse_sequences=[pulse_sequence1, pulse_sequence2])
+
+        self.assertEqual(pulse_sequence2.t_start, 3)
+
+        pulse_sequence1.enabled = False
+
+        self.assertEqual(pulse_sequence2.t_start, 0)
+
+
+class TestPulseSequenceGenerators(unittest.TestCase):
+    def setUp(self):
+        self.silq_environment = silq.environment
+        self.silq_config = silq.config
+
+        self.d = {
+            'pulses': {
+                'empty': {'duration': 1, 'amplitude': -1},
+                'plunge': {'duration': 0.5, 'amplitude': 1},
+                'read_long': {'duration': 5, 'amplitude': 0},
+                'read_initialize': {'duration': 3, 'amplitude': 0},
+                'ESR': {'duration': 0.1, 'power': 0},
+            },
+            'properties': {},
+        }
+        self.config = DictConfig('cfg', config=self.d)
+        qc.config.user.silq_config = silq.config = self.config
+
+    def tearDown(self):
+        silq.environment = self.silq_environment
+        qc.config.user.silq_config = silq.config = self.silq_config
+
+    def test_ESR_pulse_sequence(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequence
+        from silq.pulses import SinePulse
+
+        pulse_sequence = ESRPulseSequence()
+        pulse_sequence.ESR['ESR_pulse'] = SinePulse('ESR', duration=1, frequency=38e9)
+        pulse_sequence.ESR['stage_pulse'].duration = 2
+        pulse_sequence.ESR['read_pulse'].duration = 2
+        pulse_sequence.EPR['enabled'] = False
+        pulse_sequence.post_pulses = []
+
+        pulse_sequence.generate()
+
+        # Copy the pulse sequence
+        copy(pulse_sequence)
+
+    def test_ESR_pulse_sequence_composite(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.generate()
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+        self.assertEqual(pulse_sequence.EPR.t_start, 3.4)
+        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
+        self.assertEqual(pulse_sequence.EPR.t_stop, 9.9)
+        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 3.4)
+        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
+        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 4.4)
+        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
+        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 4.9)
+        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 9.9)
+        self.assertEqual(pulse_sequence.t_stop, 9.9)
+
+    def test_ESR_pulse_sequence_composite_modified(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.generate()
+
+        pulse_sequence['ESR.plunge'].duration = 1.4
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 4.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 4.4)
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 1.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 1.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+        self.assertEqual(pulse_sequence.EPR.t_start, 4.4)
+        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
+        self.assertEqual(pulse_sequence.EPR.t_stop, 10.9)
+        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 4.4)
+        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
+        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 5.4)
+        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
+        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 5.9)
+        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 10.9)
+        self.assertEqual(pulse_sequence.t_stop, 10.9)
+
+    def test_ESR_pulse_sequence_composite_copied(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.generate()
+
+        pulse_sequence = copy(pulse_sequence)
+
+        self.assertTrue(hasattr(pulse_sequence, 'EPR'))
+        self.assertTrue(hasattr(pulse_sequence, 'ESR'))
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+        self.assertEqual(pulse_sequence.EPR.t_start, 3.4)
+        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
+        self.assertEqual(pulse_sequence.EPR.t_stop, 9.9)
+        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 3.4)
+        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
+        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 4.4)
+        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
+        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 4.9)
+        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 9.9)
+        self.assertEqual(pulse_sequence.t_stop, 9.9)
+
+    def test_ESR_pulse_sequence_composite_modified_copied(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.generate()
+
+        pulse_sequence['ESR.plunge'].duration = 1.4
+
+        pulse_sequence = copy(pulse_sequence)
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 4.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 4.4)
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 1.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 1.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+        self.assertEqual(pulse_sequence.EPR.t_start, 4.4)
+        self.assertEqual(pulse_sequence.EPR.duration, 6.5)
+        self.assertEqual(pulse_sequence.EPR.t_stop, 10.9)
+        self.assertEqual(pulse_sequence['EPR.empty'].t_start, 4.4)
+        self.assertEqual(pulse_sequence['EPR.empty'].duration, 1)
+        self.assertEqual(pulse_sequence['EPR.plunge'].t_start, 5.4)
+        self.assertEqual(pulse_sequence['EPR.plunge'].duration, 0.5)
+        self.assertEqual(pulse_sequence['EPR.read_long'].t_start, 5.9)
+        self.assertEqual(pulse_sequence['EPR.read_long'].duration, 5)
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 10.9)
+        self.assertEqual(pulse_sequence.t_stop, 10.9)
+
+    def test_ESR_pulse_sequence_composite_disable_EPR(self):
+        from silq.pulses.pulse_sequences import ESRPulseSequenceComposite
+        pulse_sequence = ESRPulseSequenceComposite()
+
+        pulse_sequence.ESR.pulse_settings['pre_delay'] = 0.2
+        pulse_sequence.ESR.pulse_settings['post_delay'] = 0.1
+
+        pulse_sequence.EPR.enabled = False
+
+        pulse_sequence.generate()
+
+        self.assertEqual(pulse_sequence.ESR.t_start, 0)
+        self.assertEqual(pulse_sequence.ESR.duration, 3.4)
+        self.assertEqual(pulse_sequence.ESR.t_stop, 3.4)
+
+        self.assertEqual(pulse_sequence['ESR.plunge'].t_start, 0)
+        self.assertEqual(pulse_sequence['ESR.plunge'].duration, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].t_start, 0.4)
+        self.assertEqual(pulse_sequence['ESR.read_initialize'].duration, 3)
+
+        self.assertEqual(pulse_sequence.EPR.enabled, False)
+
+        self.assertListEqual([p for p in pulse_sequence],
+                             [p for p in pulse_sequence.ESR])
+        self.assertEqual(pulse_sequence.t_start, 0)
+        self.assertEqual(pulse_sequence.duration, 3.4)
+        self.assertEqual(pulse_sequence.t_stop, 3.4)
 
 if __name__ == '__main__':
     unittest.main()

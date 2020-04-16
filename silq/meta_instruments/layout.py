@@ -426,6 +426,7 @@ class CombinedConnection(Connection):
         Returns:
             Bool depending on if the connection satisfies conditions
         """
+
         if output_arg is not None:
             if not isinstance(output_arg, list):
                 # output_arg is not a list (probably str for SingleConnection)
@@ -1077,8 +1078,9 @@ class Layout(Instrument):
         """
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.quick_add(pulse, connect=False,
-                                                                reset_duration=False)
+            self.acquisition_interface.pulse_sequence.quick_add(
+                pulse, connect=False, reset_duration=False, nest=True
+            )
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1109,19 +1111,21 @@ class Layout(Instrument):
                 f"connection {connection}."
 
             # Copies pulse
-            self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                   reset_duration=False)
+            self.targeted_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, nest=True
+            )
 
-            # Copies pulse
-            interface.pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                               reset_duration=False)
+            # Do not copy pulse
+            interface.pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True)
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[
                 pulse.connection.input['instrument']]
-            # Copies pulse
-            input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                           reset_duration=False)
+            # Do not copy pulse
+            input_interface.input_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+            )
 
     def _target_pulse_sequence(self,
                                pulse_sequence: PulseSequence):
@@ -1173,19 +1177,19 @@ class Layout(Instrument):
 
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
-        self.targeted_pulse_sequence.duration = pulse_sequence.duration
-        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
+        # Adopt the same structure as the target pulse sequence, including any
+        # nested pulse sequences
+        self.targeted_pulse_sequence.clone_skeleton(pulse_sequence)
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
 
-            # Fix duration of pulse sequence and input pulse sequence
-            interface.pulse_sequence.duration = pulse_sequence.duration
-            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
-            interface.input_pulse_sequence.duration = pulse_sequence.duration
-            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
+            # Clone the structure of the target pulse sequence. This includes
+            # fixing the duration of pulse sequence and any nested pulse sequences
+            interface.pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.input_pulse_sequence.clone_skeleton(pulse_sequence)
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in self.pulse_sequence:
