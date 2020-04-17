@@ -1735,7 +1735,8 @@ class NMRParameter(AcquisitionParameter):
 
     """
     def __init__(self, name: str = 'NMR',
-                 names: List[str] = ['flips', 'flip_probability', 'up_proportions'],
+                 names: List[str] = ['flips', 'flip_probability', 'up_proportions',
+                                     'state_probability_0', 'state_probability_1'],
                  **kwargs):
         """
         Parameter used to determine the Rabi frequency
@@ -1759,7 +1760,8 @@ class NMRParameter(AcquisitionParameter):
         names = []
 
         for name in self._names:
-            if name in ['flips', 'flip_probability', 'up_proportions']:
+            if name in ['flips', 'flip_probability', 'up_proportions',
+                        'state_probability_0', 'state_probability_1']:
                 if len(self.ESR_frequencies) == 1:
                     names.append(name)
                 else:
@@ -1858,17 +1860,19 @@ class NMRParameter(AcquisitionParameter):
         self.ESR['ESR_pulses'] = updated_ESR_pulses
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
-        """Analyse flipping events between nuclear states
+        """Analyse flipping events between nuclear states and determine nuclear state
 
         Returns:
             (Dict[str, Any]): Dict containing:
 
-            :results_read (dict): `analyse_traces` results for each read
+            * **results_read** (dict): `analyse_traces` results for each read
               trace
-            :up_proportions_{idx} (np.ndarray): Up proportions, the
+            * **up_proportions_{idx}** (np.ndarray): Up proportions, the
               dimensionality being equal to ``NMRParameter.samples``.
               ``{idx}`` is replaced with the zero-based ESR frequency index.
-            :Results from `analyse_flips`. These are:
+            * **state_probability_0_{idx}**, **state_probability_1_{idx}** (np.ndarray):
+              respectively up, down nuclear spin state proportions when reading-out ESR1 transition
+            * Results from `analyse_flips`. These are:
 
               - flips_{idx},
               - flip_probability_{idx}
@@ -1883,7 +1887,7 @@ class NMRParameter(AcquisitionParameter):
               each sample. The values that do not satisfy the filter are set to
               ``np.nan``.
 
-              :filtered_scans_{idx1}{idx2}:
+              * **filtered_scans_{idx1}{idx2}**:
         """
         if traces is None:
             traces = self.traces
@@ -1908,6 +1912,8 @@ class NMRParameter(AcquisitionParameter):
                                      self.ESR['shots_per_frequency'],
                                      points_per_shot))
         up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
+        state_probability_0 = np.zeros(len(self.ESR_frequencies))
+        state_probability_1 = np.zeros(len(self.ESR_frequencies))
         for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
             for sample in range(self.samples):
                 # Create array containing all read traces
@@ -1928,10 +1934,19 @@ class NMRParameter(AcquisitionParameter):
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
 
+            state_probability_0[f_idx] = np.sum(up_proportions[f_idx] <
+                                                self.threshold_up_proportion)/self.samples
+            state_probability_1[f_idx] = np.sum(up_proportions[f_idx] >
+                                                self.threshold_up_proportion)/self.samples
+
             if len(self.ESR_frequencies) > 1:
                 results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
+                results[f'state_probability_0_{f_idx}'] = state_probability_0[f_idx]
+                results[f'state_probability_1_{f_idx}'] = state_probability_1[f_idx]
             else:
                 results['up_proportions'] = up_proportions[f_idx]
+                results['state_probability_0'] = state_probability_0[f_idx]
+                results['state_probability_1'] = state_probability_1[f_idx]
 
         # Add singleton dimension because analyse_flips handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
