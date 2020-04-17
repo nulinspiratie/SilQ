@@ -1246,6 +1246,58 @@ class PulseSequence(ParameterNode):
 
         return shapes
 
+    def get_trace_slices(
+            self,
+            sample_rate: Union[int, float],
+            capture_full_traces: bool,
+            filter_acquire: bool = True,
+            return_slice: bool = True) -> Dict[str, Union[slice, tuple]]:
+        """Get the trace slices for each pulse that should be acquired
+
+        This method is used primarily for storing metadata when saving traces.
+
+        Args:
+            sample_rate: Acquisition sample rate
+            capture_full_traces: Whether the digitizer acquires traces from the
+                start of the pulse_sequence (t=0) or from the first pulse with
+                acquire=True.
+            filter_acquire: Whether to only return the slices of pulses with
+                acquire=True
+            return_slice: Whether to return slice objects,
+                or a tuple with (start_idx, stop_idx)
+
+        Returns:
+            A dict whose keys are pulse full names.
+            Values are either a slice or tuple corresponding to
+            the pulse start and stop index in an digitized trace.
+        """
+        pulse_slices = {}
+        for k, pulse in enumerate(self.pulses):
+            if not pulse.acquire and filter_acquire:  # Pulse was not acquired
+                continue
+
+            start_idx = int(pulse.t_start * sample_rate)
+            stop_idx = int(pulse.t_stop * sample_rate)
+
+            pulse_slices[pulse.full_name] = slice(start_idx, stop_idx)
+
+        # If capture_full_traces == False, acquisition was started from first
+        # pulse with acquire == True onwards.
+        if not capture_full_traces:
+            # Find  start time of measurement
+            min_pts = min(pulse_slice.start for pulse_slice in pulse_slices.values())
+
+            # Subtract start of acquisition from each slice
+            for pulse, pulse_slice in pulse_slices.items():
+                pulse_slices[pulse] = slice(
+                    pulse_slice.start - min_pts, pulse_slice.stop - min_pts
+                )
+
+        if not return_slice:
+            pulse_slices = {k: (v.start, v.stop) for k, v in pulse_slices.items()}
+
+        return pulse_slices
+
     def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
              figsize=None, legend=True,
              **connection_kwargs):
