@@ -1272,7 +1272,7 @@ class Layout(Instrument):
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
             except:
-                logger.exception(f'Could not save pulse sequence.')
+                logger.exception(f'Could not save pulse sequence.\n {traceback.format_exc}')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1353,7 +1353,8 @@ class Layout(Instrument):
             **kwargs: additional kwargs sent to all interfaces being setup.
         """
 
-        logger.info(f'Layout setup with {samples} samples and kwargs: {kwargs}')
+        logger.info(f'Layout setup with {samples} samples '
+                    f'{f"and kwargs: {kwargs}" if kwargs else ""}')
 
         if not self.pulse_sequence:
             raise RuntimeError("Cannot setup with an empty PulseSequence.")
@@ -1405,7 +1406,6 @@ class Layout(Instrument):
                                             output_connections=output_connections,
                                             repeat=repeat,
                                             **setup_flags, **kwargs)
-
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
