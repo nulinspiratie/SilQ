@@ -440,18 +440,23 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
                 if pulse_sequence_date_time > current_date:
                     pulse_sequence_filepath = os.path.join(pulse_sequence_path,
                                                            pulse_sequence_file)
-                    with open(pulse_sequence_filepath, 'rb') as f:
-                        pulse_sequence = pickle.load(f)
 
-                    # Pulse sequence duration needs to be reset
                     try:
-                        duration = pulse_sequence['duration']._latest['raw_value']
-                        pulse_sequence['duration']._latest['value'] = duration
-                    except:
-                        pass
+                        with open(pulse_sequence_filepath, 'rb') as f:
+                            pulse_sequence = pickle.load(f)
 
-                    current_date = pulse_sequence_date_time
-                    yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+                        # Pulse sequence duration needs to be reset
+                        try:
+                            duration = pulse_sequence['duration']._latest['raw_value']
+                            pulse_sequence['duration']._latest['value'] = duration
+                        except:
+                            pass
+
+                        current_date = pulse_sequence_date_time
+                        yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+
+                    except EOFError:
+                        logger.warning(f'Could not load pulse sequence {f}')
             else:
                 # Goto next date
                 current_date = datetime.combine(
