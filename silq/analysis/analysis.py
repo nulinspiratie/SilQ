@@ -5,13 +5,15 @@ import logging
 from typing import Union, Dict, List, Sequence, Union
 import collections
 from matplotlib import pyplot as plt
+from scipy.stats import gaussian_kde
 
 from silq import config
 
 from qcodes import MatPlot
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
-           'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips']
+           'count_blips', 'analyse_traces', 'analyse_EPR',
+           'analyse_threshold_up_proportion', 'analyse_flips']
 
 logger = logging.getLogger(__name__)
 
@@ -713,6 +715,38 @@ def analyse_EPR(empty_traces: np.ndarray,
             'blips': results_read['blips'],
             'mean_low_blip_duration': results_read['mean_low_blip_duration'],
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}
+
+
+def analyse_threshold_up_proportion(up_proportions_arrs: np.ndarray,
+                                    shots_per_frequency: int):
+    proportion_space = np.linspace(0, 1, num=shots_per_frequency + 1,
+                                   endpoint=True)
+    up_proportions_arrs = up_proportions_arrs.reshape(1, -1)
+    kernel = gaussian_kde(up_proportions_arrs)
+    gaussian_up_proportions = kernel(proportion_space)
+    peak_idxs = peakutils.peak.indexes(gaussian_up_proportions,
+                                       thres=0.5/up_proportions_arrs.shape[-1],
+                                       min_dist=shots_per_frequency/5)
+    if len(peak_idxs) == 0:
+        logger.debug(f'Adaptive thresholding routine: 0 peaks were '
+                     f'found, using threshold 0.5')
+        true_idx = round((len(proportion_space) - 1) / 2)
+    elif len(peak_idxs) == 1:
+        if (len(proportion_space) - peak_idxs[0]) / len(proportion_space) > 0.5:
+            true_slice = slice(*[peak_idxs[0], len(proportion_space)])
+            true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4)) + \
+                       peak_idxs[0]
+        else:
+            true_slice = slice(*[0, peak_idxs[0]])
+            true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4))
+    else:
+        true_slice = slice(*[min(peak_idxs), max(peak_idxs)])
+        true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4)) + \
+                   peak_idxs[0]
+
+    threshold_up_proportion = proportion_space[true_idx]
+
+    return threshold_up_proportion
 
 
 def analyse_flips(up_proportions_arrs: List[np.ndarray],
