@@ -16,6 +16,7 @@ from silq.pulses.pulse_modules import PulseSequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 import qcodes as qc
+from qcodes.instrument.parameter_node import parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes import Instrument, FormatLocation, MatPlot
 from qcodes.loops import ActiveLoop
@@ -563,6 +564,9 @@ class Layout(Instrument):
                            docstring='List of channel labels to acquire. '
                                      'Channel labels are defined in '
                                      'layout.acquisition_channels')
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
         self.is_acquiring = Parameter(
             set_cmd=None,
             initial_value=False,
@@ -634,17 +638,29 @@ class Layout(Instrument):
         else:
             return None
 
-    @property
-    def sample_rate(self):
+    @parameter
+    def sample_rate_get(self, parameter):
         """Union[float, None]: Acquisition sample rate
 
         If `Layout.acquisition_interface` is not setup, return None
 
         """
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.sample_rate()
+            return self.acquisition_interface.sample_rate.get_latest()
         else:
             return None
+
+    @parameter
+    def sample_rate_set(self, parameter, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -1059,8 +1075,11 @@ class Layout(Instrument):
                                              **kwargs)
         return connection
 
-    def _target_pulse(self,
-                      pulse: Pulse):
+    def _target_pulse(
+            self,
+            pulse: Pulse,
+            copy_pulse: bool = True
+    ):
         """Target pulse to corresponding connection and instrument interface.
 
         The connection is determined from either `Pulse.connection_label`,
@@ -1073,6 +1092,10 @@ class Layout(Instrument):
 
         Args:
             pulse: pulse to be targeted
+            copy_pulse: whether to copy the pulse when targeting via the connection.
+                the main pulses should have this set to True, whereas additional
+                pulses should have this set to False.
+                Note that a MultiConnection will have this set to True regardless
 
         Notes:
             * At each targeting stage, the pulse is copied such that any
@@ -1104,10 +1127,13 @@ class Layout(Instrument):
         # single pulse is that targeting by a CombinedConnection will target the
         # pulse to each of its connections it's composed of.
         # Copies pulse (multiple times if type is CombinedConnection)
-        pulses = connection.target_pulse(pulse)
-        if not isinstance(pulses, list):
-            # Convert to list
-            pulses = [pulses]
+        if isinstance(connection, CombinedConnection):
+            # A CombinedConnection targets the pulse to each of its connections
+            # that it's composed of. Will create a copy for each connection
+            pulses = connection.target_pulse(pulse)
+        else:
+            pulse = connection.target_pulse(pulse, copy_pulse=copy_pulse)
+            pulses = [pulse]
 
         for pulse in pulses:
             instrument = pulse.connection.output['instrument']
@@ -1121,9 +1147,9 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            # Copies pulse
+            # Do not copy pulse
             self.targeted_pulse_sequence.quick_add(
-                targeted_pulse, connect=False, reset_duration=False, nest=True
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
             )
 
             # Do not copy pulse
@@ -1132,15 +1158,16 @@ class Layout(Instrument):
             )
 
             # Also add pulse to input interface pulse sequence
-            input_interface = self._interfaces[
-                pulse.connection.input['instrument']]
+            input_interface = self._interfaces[pulse.connection.input['instrument']]
             # Do not copy pulse
             input_interface.input_pulse_sequence.quick_add(
                 targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
             )
 
-    def _target_pulse_sequence(self,
-                               pulse_sequence: PulseSequence):
+    def _target_pulse_sequence(
+            self,
+            pulse_sequence: PulseSequence
+    ):
         """Targets a pulse sequence.
 
         For each of the pulses, it finds the instrument that can output it,
@@ -1216,7 +1243,9 @@ class Layout(Instrument):
                 additional_pulses = interface.get_additional_pulses(
                     connections=self.connections)
                 for pulse in additional_pulses:
-                    self._target_pulse(pulse)
+                    # These pulses do not need to be copied since they were
+                    # generated during targeting
+                    self._target_pulse(pulse, copy_pulse=False)
 
 
         # Finish setting up the pulse sequences
@@ -1377,7 +1406,7 @@ class Layout(Instrument):
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+            sample_rate=self.sample_rate(), samples=self.samples())
         self.acquisition_shapes = {}
         output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
@@ -1572,14 +1601,27 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['sample_rate'] = self.sample_rate()
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())}, file)
+                sample_rate=self.sample_rate(), samples=self.samples())}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                return_slice=False
+            )}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                filter_acquire=False,
+                return_slice=False
+            )}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
