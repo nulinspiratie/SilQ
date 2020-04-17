@@ -92,8 +92,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = [pulse.connection.output['channel'].name for pulse in
                            self.pulse_sequence]
         # Transform into set to ensure that elements are unique
-        active_channels = list(set(active_channels))
-        return active_channels
+        return list({pulse.connection.output['channel'].name
+                     for pulse in self.pulse_sequence})
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
