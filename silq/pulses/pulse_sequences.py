@@ -2,11 +2,16 @@ from functools import partial
 import numpy as np
 import logging
 from collections import Iterable
+from pathlib import Path
+from copy import deepcopy
+
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
-from copy import deepcopy
-from qcodes import Parameter
+from silq.tools.circuit_tools import convert_circuit, load_circuits
+from qcodes import Parameter, Measurement, DataSet
 from qcodes.instrument.parameter_node import parameter
+from qcodes.utils import validators as vals
+
 from qcodes.config.config import DotDict
 
 logger = logging.getLogger(__name__)
@@ -1256,10 +1261,6 @@ class T2NuclearPulseSequence(NMRPulseSequence):
         self.generate()
 
 
-
-
-
-
 class NMRCPMGPulseSequence(NMRPulseSequence):
     """`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).
 
@@ -1607,6 +1608,85 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         self.add_ESR_pulses()
 
         self.add(*self.pulse_settings['post_pulses'])
+
+
+class NMRCircuitPulseSequence(NMRPulseSequenceComposite):
+    def __init__(self, name='NMR_circuit', circuits_file=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+        # self.pulse_settings["initialization"] = {"enabled": False}
+
+        self.NMR.settings["pulses"] = {}
+
+        self.circuit_index = Parameter(vals=vals.Ints(), parent=False)
+        self.circuit = Parameter(vals=vals.Strings())
+        self.circuits = Parameter(
+            vals=vals.Lists(vals.Strings()), set_cmd=None, initial_value=[]
+        )
+
+        self.circuits_file = Parameter(initial_value=circuits_file, set_cmd=None)
+        self.circuits_folder = Parameter(config_link='properties.circuits_folder', set_cmd=None)
+
+    @parameter
+    def circuit_index_set(self, parameter, idx):
+        self.circuit = self.circuits[idx]
+
+    @parameter
+    def circuit_set(self, parameter, circuit):
+        # Update current value of circuit
+        parameter._latest["raw_value"] = parameter._latest["value"] = circuit
+
+        gates = convert_circuit(circuit, target_type=list)
+
+        unknown_gates = [gate for gate in gates if gate not in self.NMR.settings['pulses']]
+        if unknown_gates:
+            raise RuntimeError(
+                f'The following pulses are not registered in '
+                f'NMRCircuitPulseSequence.NMR.settings["pulses"]: {unknown_gates}'
+            )
+
+        self.NMR.pulse_settings["RF_pulses"] = [[
+            self.NMR.settings['pulses'][gate] for gate in gates
+        ]]
+
+        self.generate()
+
+    def load_circuits(self, filepath):
+
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
+
+        if not filepath.exists():
+            if self.circuits_folder is None:
+                raise RuntimeError(f'Could not find filepath at {filepath}')
+
+            filepath = Path(self.circuits_folder) / filepath
+
+        if not filepath.exists():
+            raise RuntimeError(f'Could not find filepath at {filepath}')
+
+        self.circuits = load_circuits(filepath, target_type=str)
+
+        return self.circuits
+
+    def save_circuits(self, filepath, name='circuits.txt'):
+
+        if isinstance(filepath, Measurement):
+            filepath = filepath.dataset.filepath
+        elif isinstance(filepath, DataSet):
+            filepath = filepath.filepath
+
+        filepath = Path(filepath)
+
+        if filepath.is_dir():
+            filepath = filepath / name
+
+        with filepath.open('w') as f:
+            f.write('\n'.join(self.circuits))
+
+        return filepath
+
+    def save(self, filepath):
+        return self.save_circuits(filepath)
 
 
 class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
