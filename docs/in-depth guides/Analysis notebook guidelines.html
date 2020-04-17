@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Analysis notebook guidelines &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Creating IPython Widgets (IPywidgets)" href="Creating IPython Widgets.html" />
+    <link rel="prev" title="Storing PulseSequences" href="Storing PulseSequences.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Parameter guide.html">Parameter guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulses and PulseSequences.html">Pulses and PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Experiment folder guide.html">Experiment folder guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InstrumentInterface guidelines.html">InstrumentInterface guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Analysis notebook guidelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Structure-of-an-analysis-notebook">Structure of an analysis notebook</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Part-0.-Initialization-cell">Part 0. Initialization cell</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Part-1.-Summary">Part 1. Summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Hierarchical-structuring-of-measurements">Hierarchical structuring of measurements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Creating IPython Widgets.html">Creating IPython Widgets (IPywidgets)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>Analysis notebook guidelines</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/Analysis notebook guidelines.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Analysis-notebook-guidelines">
+<h1>Analysis notebook guidelines<a class="headerlink" href="#Analysis-notebook-guidelines" title="Permalink to this headline">¶</a></h1>
+<p>Jupyter notebooks can be a very useful tool for data analysis and measurement logging. Some of the main benefits are</p>
+<ul class="simple">
+<li><p>Direct access to data and analysis code. The analysis is therefore reproducible.</p></li>
+<li><p>Conversion of analysis notebooks into a website (ask Serwan for details).</p></li>
+<li><p>Can be combined with version control, allowing tracking of changes.</p></li>
+</ul>
+<p>For everyone using SilQ/QCoDeS, the first point is especially true. Although Jupyter Notebook has several advantages when used as an analysis/logging tool, difficulties can arise. Speaking from personal experiences, the main struggle was how to organize the Jupyter Notebooks. There is a fine balance between having too many notebooks, and having too few notebooks that explode in size. Below we describe guidelines that we have found gave us good results. An added benefit of this structure is that
+it can be straightforwardly converted to a website.</p>
+<div class="section" id="Structure-of-an-analysis-notebook">
+<h2>Structure of an analysis notebook<a class="headerlink" href="#Structure-of-an-analysis-notebook" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Part-0.-Initialization-cell">
+<h3>Part 0. Initialization cell<a class="headerlink" href="#Part-0.-Initialization-cell" title="Permalink to this headline">¶</a></h3>
+<p>Each analysis notebook typically starts with a single initialization cell containing some code that loads all of the necessary packages/scripts</p>
+</div>
+<div class="section" id="Part-1.-Summary">
+<h3>Part 1. Summary<a class="headerlink" href="#Part-1.-Summary" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">Next we have a header with caption Summary.</div>
+<div class="line">The summary should give a description of everything done in the notebook, and all the relevant findings/issues.</div>
+<div class="line">The idea is that later on, you can get a complete idea of everything measured in the notebook without having to look into the body of the notebook.</div>
+</div>
+<div class="line-block">
+<div class="line">The first cell should be a markdown cell where the first paragraph is a summary of the most important points of the notebook.</div>
+<div class="line">It is important to keep this as a single paragraph because it is extracted for the website.</div>
+<div class="line">When referring to a measurement in the summary, a hyperlink to the relevant measurement (sub)header should be used (see <a class="reference external" href="#guidelines">bottom for info on hyperlinks</a>).</div>
+</div>
+<div class="line-block">
+<div class="line">The first summary cell can also contain additional paragraphs, which should be used to expand on topics briefly described in the first paragraph, and to note other small findings not worthy of the first paragraph.</div>
+<div class="line">A good example is an issue you were facing and how you managed to solve it if at all.</div>
+<div class="line">Don’t worry about making these paragraphs lengthy.</div>
+</div>
+<div class="line-block">
+<div class="line">After the first summary cell, subheaders should be used in which the most important data of the notebook should be displayed.</div>
+<div class="line">It is okay to copy code from other parts of the notebook, just be sure that the cell in the summary runs without having to execute cells further ahead.</div>
+<div class="line">Some effort should be put into making these figures clear (and pretty), as it should immediately clarify what the findings are.</div>
+<div class="line">These subheaders are also useful for joining data from multiple headers in the body of the analysis notebook, and performing some (minor) analysis on them.</div>
+<div class="line">As a general rule, measurements referred in the first paragraph should be displayed here.</div>
+</div>
+<div class="section" id="Part-2.-Measurements">
+<h4>Part 2. Measurements<a class="headerlink" href="#Part-2.-Measurements" title="Permalink to this headline">¶</a></h4>
+<div class="line-block">
+<div class="line">After the summary, the actual measurements are collected and analysed.</div>
+<div class="line">All measurements should be loaded chronologically, and grouped in a hierarchical structure.</div>
+<div class="line">The disadvantage of a chronological order is that switching between measurements will also be reflected in the analysis notebook, which may then lack a clear storyline.</div>
+</div>
+</div>
+</div>
+<div class="section" id="Hierarchical-structuring-of-measurements">
+<h3>Hierarchical structuring of measurements<a class="headerlink" href="#Hierarchical-structuring-of-measurements" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">Measurements should be grouped together using headers, subheaders, etc.</div>
+<div class="line">It is up to the person performing the analysis to decide at what level measurements should be grouped together.</div>
+<div class="line">The header level should generally be per topic.</div>
+<div class="line">Try to aim for notebooks containing ~4-10 headers, though it may of course vary per measurement set.</div>
+<div class="line">If you notice you need more than 10 headers, it may make sense to think if you can split the notebook into multiple notebooks.</div>
+<div class="line">Each header, subheader, etc. should have a title, followed by a line briefly summarizing the result.</div>
+<div class="line">Only add the most important information, and if possible, prepend with a green success or red fail specifying if the measurement(s) was successful. The following HTML can be used in markdown cells to create a success/fail signifier. - <code class="docutils literal notranslate"><span class="pre">**&lt;span</span> <span class="pre">style=&quot;color:forestgreen&quot;&gt;Success&lt;/span&gt;**</span></code> - <code class="docutils literal notranslate"><span class="pre">**&lt;span</span> <span class="pre">style=&quot;color:red&quot;&gt;fail&lt;/span&gt;**</span></code></div>
+</div>
+<div class="line-block">
+<div class="line">Any more information should be placed in a markdown cell below the header.</div>
+<div class="line">After this, usually data is loaded and displayed, and text is added to describe the data and draw conclusions from it.</div>
+</div>
+<blockquote>
+<div><p># Guidelines for analysis notebooks</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Try to avoid multiple copies of analysis blocks, especially if it’s long. Instead, create a function and place it in a script folder.</p></li>
+<li><p>When creating a subsection, always use one level lower (i.e. not straight from header to subsubheader)</p></li>
+<li><p>For the summary, try to create a storyline. Things don’t necessarily have to be explained chronologically.</p></li>
+<li><p>When the notebook is finished, ensure that it can run from start to finish by pressing Kernel -&gt; Restart and run all</p></li>
+<li><p>Do not write code cells that only output values. For example. if you want to output a frequency from a fit, perform a <code class="docutils literal notranslate"><span class="pre">print</span></code> statement with some text explaining what is being output (and units!)</p></li>
+<li><p>To create a hyperlink, first add an HTML tag at the destination markup cell (typically a header).</p></li>
+<li><p>The HTML anchor tag must be written as: <code class="docutils literal notranslate"><span class="pre">&lt;a</span> <span class="pre">id='your_tag_here'&gt;&lt;/a&gt;</span></code></p></li>
+<li><p>To create a hyperlink in a markdown cell, simply include “<code class="docutils literal notranslate"><span class="pre">[text</span> <span class="pre">with</span> <span class="pre">hyperlink](#your_tag_here)</span></code>”, with result: <a class="reference external" href="#your_tag_here">text with hyperlink</a>.</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Creating IPython Widgets.html" class="btn btn-neutral float-right" title="Creating IPython Widgets (IPywidgets)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Storing PulseSequences.html" class="btn btn-neutral float-left" title="Storing PulseSequences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

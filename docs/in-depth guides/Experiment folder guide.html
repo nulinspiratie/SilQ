@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Experiment folder guide &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="InstrumentInterface guidelines" href="InstrumentInterface guidelines.html" />
+    <link rel="prev" title="Pulses and PulseSequences" href="Pulses and PulseSequences.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Parameter guide.html">Parameter guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulses and PulseSequences.html">Pulses and PulseSequences</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Experiment folder guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#initialization-files">Initialization files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="InstrumentInterface guidelines.html">InstrumentInterface guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Analysis notebook guidelines.html">Analysis notebook guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Creating IPython Widgets.html">Creating IPython Widgets (IPywidgets)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>Experiment folder guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/Experiment folder guide.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="experiment-folder-guide">
+<h1>Experiment folder guide<a class="headerlink" href="#experiment-folder-guide" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="initialization-files">
+<h2>Initialization files<a class="headerlink" href="#initialization-files" title="Permalink to this headline">¶</a></h2>
+<p>An experimental setup (or personal computer) often requires code that should be
+initialized at the start of your measurement session. This includes loading
+often-used packages, initializing instruments, setting up the Layout, etc.</p>
+<p>Instead of having all this code at the start of your measurement code,
+SilQ provides an alternative, namely by creating a list of initialization files
+that can be run easily. If the initialization belongs to a measurement, the
+correct folder is <code class="docutils literal notranslate"><span class="pre">experiments\{experiment_name}\init</span></code>, while for personal
+initialization code the correct folder is
+<code class="docutils literal notranslate"><span class="pre">personal\{username}\{whatever_you_prefer}</span></code>.
+It is recommended that you create separate files for distinct types of
+initialization code (e.g. package imports, instruments). The files will be run
+in alphabetical order, so it is useful to add a numerical prefix to indicate the
+loading order.</p>
+<p>Furthermore, you should add a label to <code class="docutils literal notranslate"><span class="pre">silq\configurations.py</span></code>, with
+information on the location of the initialization folder. You can also add
+additional <code class="docutils literal notranslate"><span class="pre">modes</span></code>, which can for instance ignore some of the files (useful
+when you want to operate in <code class="docutils literal notranslate"><span class="pre">analysis</span></code> mode, etc.). Once the initialization
+code has been written and a label has been assigned, you can run the
+initialization code using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">silq</span>
+<span class="n">silq</span><span class="o">.</span><span class="n">initialize</span><span class="p">({</span><span class="n">label</span><span class="p">},</span> <span class="n">mode</span><span class="o">=</span><span class="p">{</span><span class="n">mode</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>where mode is optional.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="InstrumentInterface guidelines.html" class="btn btn-neutral float-right" title="InstrumentInterface guidelines" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Pulses and PulseSequences.html" class="btn btn-neutral float-left" title="Pulses and PulseSequences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

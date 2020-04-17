@@ -1,0 +1,693 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Pulses and PulseSequences &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Experiment folder guide" href="Experiment folder guide.html" />
+    <link rel="prev" title="Data plotting guide" href="Data plotting guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Parameter guide.html">Parameter guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Pulses and PulseSequences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Pulse-attributes-from-config">Pulse attributes from config</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Future-work">Future work</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Attributes-and-methods">Attributes and methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Pulse">Pulse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PulseSequence">PulseSequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Experiment folder guide.html">Experiment folder guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InstrumentInterface guidelines.html">InstrumentInterface guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Analysis notebook guidelines.html">Analysis notebook guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Creating IPython Widgets.html">Creating IPython Widgets (IPywidgets)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>Pulses and PulseSequences</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/Pulses and PulseSequences.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    min-width: 5ex;
+    padding-top: 0.3rem;
+    padding-right: 0.3rem;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 0.3rem;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Pulses-and-PulseSequences">
+<h1>Pulses and PulseSequences<a class="headerlink" href="#Pulses-and-PulseSequences" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="c1"># Initialize the pulse config (used later)</span>
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">config</span>
+<span class="n">config</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">][</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">pulse_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">][</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span>
+
+<span class="o">%</span><span class="k">matplotlib</span> notebook
+</pre></div>
+</div>
+</div>
+<div class="section" id="Introduction">
+<h2>Introduction<a class="headerlink" href="#Introduction" title="Permalink to this headline">¶</a></h2>
+<p>There are two types of pulses: - (generic) Pulse, which are not specific to a certain Interface/instrument. Users should use these pulses to create their PulseSequence. - PulseImplementations, which are specific to an Interface. Aside from being a Pulse, a PulseImplementation also has a <code class="docutils literal notranslate"><span class="pre">PulseImplementation.implement()</span></code> function, which performs commands to implement the pulse for a specific Instrument. Each Interface has an <code class="docutils literal notranslate"><span class="pre">Interface.PulseSequence</span></code> that contains PulseImplementations.</p>
+<p>In this notebook, we will focus on (generic) pulses. In the example below, we add two pulses to create a PulseSequence: a DC pulse, and a sine pulse.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">silq.pulses.pulse_modules</span> <span class="k">import</span> <span class="n">PulseSequence</span>
+<span class="kn">from</span> <span class="nn">silq.pulses.pulse_types</span> <span class="k">import</span> <span class="n">DCPulse</span><span class="p">,</span> <span class="n">SinePulse</span>
+
+<span class="c1"># Create two pulses</span>
+<span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">DCPulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">10e-3</span><span class="p">),</span>
+          <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sine&#39;</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mf">10e-3</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">20e-3</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+<span class="c1"># Combine pulses into a PulseSequence</span>
+<span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">PulseSequence</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">)</span>
+
+<span class="c1"># Display pulse sequence</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pulse_sequence</span><span class="p">)</span>
+
+<span class="c1"># Plot pulses</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulse_sequence</span><span class="p">:</span>
+    <span class="n">t_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_list</span><span class="p">,</span> <span class="n">pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">t_list</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PulseSequence with 2 pulses, duration: 0.03
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/docs_in-depth_guides_Pulses_and_PulseSequences_3_1.png" src="../../_images/docs_in-depth_guides_Pulses_and_PulseSequences_3_1.png" />
+</div>
+</div>
+<p>It should be noted that it is usually not necessary to specify <code class="docutils literal notranslate"><span class="pre">Pulse.t_start</span></code>, but is usually inferred. If a Pulse without explicit <code class="docutils literal notranslate"><span class="pre">t_start</span></code> is added to an empty PulseSequence, <code class="docutils literal notranslate"><span class="pre">t_start=0</span></code> If a Pulse without explicit <code class="docutils literal notranslate"><span class="pre">t_start</span></code> is added to a non-empty PulseSequence, the pulse will be linked to the previous pulse in the PulseSequence (through <code class="docutils literal notranslate"><span class="pre">Pulse.previous_pulse</span></code>). In this case, <code class="docutils literal notranslate"><span class="pre">Pulse.t_start</span> <span class="pre">=</span> <span class="pre">previous_pulse.t_stop</span></code>.</p>
+<p>This is illustrated in the following example:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Create two pulses without t_start</span>
+<span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">DCPulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">10e-3</span><span class="p">),</span>
+          <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sine&#39;</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">20e-3</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+
+<span class="c1"># Combine pulses into a PulseSequence</span>
+<span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">PulseSequence</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">)</span>
+<span class="n">pulse_sequence</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PulseSequence with 2 pulses, duration: 0.03
+        DCPulse(dc, A=0, t_start=0, duration=0.01)
+        SinePulse(sine, f=100 Hz, power=1.5 dBm, t_start=0.01, duration=0.02)
+</pre></div></div>
+</div>
+<p>Even though t_start is not explicitly specified, they still have the same values as before. Furthermore, since the second pulse is linked to the first pulse, changing the duration of the first pulse automatically updates the second pulse:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pulse_sequence</span><span class="p">[</span><span class="s1">&#39;dc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="mf">20e-3</span>
+<span class="n">pulse_sequence</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PulseSequence with 2 pulses, duration: 0.04
+        DCPulse(dc, A=0, t_start=0, duration=0.02)
+        SinePulse(sine, f=100 Hz, power=1.5 dBm, t_start=0.02, duration=0.02)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Pulse-attributes-from-config">
+<h2>Pulse attributes from config<a class="headerlink" href="#Pulse-attributes-from-config" title="Permalink to this headline">¶</a></h2>
+<p>Different measurements often contain identical pulses, for instance a pi pulse, which requires a specific frequency, amplitude and duration. If these properties were hardcoded for each measurement, each time one of the properties would change, it would have to be updated in each measurement code. To solve this issue, properties of common pulses can be stored in the QCoDeS config. If a Pulse property is not explicitly defined for a pulse, it will check if it has a value in the config, and use
+that value instead.</p>
+<p>As an example, we add properties of a pulse with name <code class="docutils literal notranslate"><span class="pre">pi</span></code> to the pulse_config (defined above)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pulse_config</span><span class="p">[</span><span class="s1">&#39;pi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mf">2.5e-3</span><span class="p">,</span> <span class="s1">&#39;frequency&#39;</span><span class="p">:</span> <span class="mf">1.2e6</span><span class="p">,</span> <span class="s1">&#39;power&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>For many of the measurements (defined in <code class="docutils literal notranslate"><span class="pre">acquisition_parameters.py</span></code>), the associated PulseSequences only contain names of pulses. It is assumed that the relevant properties of those pulses are already stored in the QCoDeS config, as they are dependent on the experimental setup. It should be noted that the QcoDeS config can be stored and loaded from hard drive, and so does not need to be created each time.</p>
+<div class="section" id="Future-work">
+<h3>Future work<a class="headerlink" href="#Future-work" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Conditional operations, such as deciding what pulses to apply depending on a measurement outcome.</p></li>
+<li><p>Efficient implementation of subroutines (a PulseSequence within a PulseSequence)</p></li>
+<li><p>Easy handling of cases when pulses need to be directed to different lines (e.g. two connections both can implement sine pulses, and sinepulse1 needs to be directed to connection1, and sinepulse2 to connection2).</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="Attributes-and-methods">
+<h2>Attributes and methods<a class="headerlink" href="#Attributes-and-methods" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Pulse">
+<h3>Pulse<a class="headerlink" href="#Pulse" title="Permalink to this headline">¶</a></h3>
+<p>Every type of <code class="docutils literal notranslate"><span class="pre">Pulse</span></code> has its own class (e.g. SinePulse, TriggerPulse), and is a child of the <code class="docutils literal notranslate"><span class="pre">Pulse</span></code> class. All pulses are defined in <code class="xref any docutils literal notranslate"><span class="pre">silq:nbsphinx-math:</span></code>pulses`:nbsphinx-math:<code class="xref any docutils literal notranslate"><span class="pre">pulse</span></code>_types.py &lt;..silqpulsespulse_types.py&gt;`__.</p>
+<div class="section" id="Common-Pulse-attributes:">
+<h4>Common Pulse attributes:<a class="headerlink" href="#Common-Pulse-attributes:" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>name</strong> (str): name of pulse, can be used to extract default attribute values from config (see below)</p></li>
+<li><p><strong>t_start</strong> (float): start time of pulse (if not defined, equal to end of previous pulse when added to PulseSequence).</p></li>
+<li><p><strong>duration</strong> (float): pulse duration (if not defined, equal to t_stop - t_start).</p></li>
+<li><p><strong>t_stop</strong> (float): stop time (if not defined, equal to t_start + duration).</p></li>
+<li><p><strong>acquire</strong> (bool): acquire pulse by acquisition instrument.</p></li>
+<li><p><strong>enabled</strong> (bool): enable pulse (if not, it is not distributed by Layout).</p></li>
+<li><p><strong>initialize</strong> (bool) pulse is an initialization pulse, i.e. before the actual start of the PulseSequence (e.g. SteeredInitializationPulse)</p></li>
+<li><p><strong>connection</strong> (Connection): Connection where it belongs to after targeting (None by default)</p></li>
+<li><p><strong>connection_requirements</strong> (dict): properties a connection should satisfy (such as being triggering instrument of other instrument). This can be used to direct a pulse to a specific connection.</p></li>
+</ul>
+<p>Additionally, pulses can have additional attributes, such as <strong>frequency</strong>, depending on the pulse type</p>
+</div>
+<div class="section" id="Common-Pulse-methods:">
+<h4>Common Pulse methods:<a class="headerlink" href="#Common-Pulse-methods:" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>copy</strong>: Create a copy of the Pulse object. You can optionally fix all the variables (i.e. they do not depend on other Pulses anymore).</p></li>
+<li><p><strong>get_voltage</strong>: Get voltage of pulse at a specific time, or a list of times.</p></li>
+<li><p><strong>satisfies_conditions</strong>: Check if a pulse satisfies conditions. Used for filtering a pulse out of a PulseSequence.</p></li>
+<li><p><strong>target_pulse</strong> (only for pulseImplementation): Tailors a pulseImplementation to a specific pulse. At this stage a copy of the untargeted pulse is returned, but with an intstrument-specific implementation.</p></li>
+<li><p><strong>implement</strong> (only for PulseImplementation): Implements the pulse for a specific instrument.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="PulseSequence">
+<h3>PulseSequence<a class="headerlink" href="#PulseSequence" title="Permalink to this headline">¶</a></h3>
+<p>A PulseSequence consists of pulses and defines a measurement.</p>
+<div class="section" id="PulseSequence-attributes">
+<h4>PulseSequence attributes<a class="headerlink" href="#PulseSequence-attributes" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>pulses</strong> (Pulse list): List of pulses in the PulseSequence</p></li>
+<li><p><strong>allow_untargeted_pulses</strong> (bool): Allow untargeted (generic) pulses into the PulseSequence</p></li>
+<li><p><strong>allow_targeted_pulses</strong> (bool): Allow targeted pulses (PulseImplementations) into the PulseSequence</p></li>
+<li><p><strong>allow_pulse_overlap</strong> (bool): Allow pulses to overlap in time (if pulses are bound to connections they must also share the same connection to be overlapping)</p></li>
+<li><p><strong>duration</strong> (float): Duration of the entire PulseSequence (by default equal to <code class="docutils literal notranslate"><span class="pre">t_stop</span></code> of final pulse)</p></li>
+</ul>
+</div>
+<div class="section" id="PulseSequence-methods">
+<h4>PulseSequence methods<a class="headerlink" href="#PulseSequence-methods" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>add</strong>: Add pulse(s) to PulseSequence</p></li>
+<li><p><strong>remove</strong>: Remove pulse(s) to PulseSequence</p></li>
+<li><p><strong>sort</strong>: Internally sort the pulses by <code class="docutils literal notranslate"><span class="pre">t_start</span></code></p></li>
+<li><p><strong>clear</strong>: Clear all pulses</p></li>
+<li><p><strong>copy</strong>: Create a copy of PulseSequence (separate object)</p></li>
+<li><p><strong>pulses_overlap</strong>: Check if two pulses overlap in time (and connection if defined)</p></li>
+<li><p><strong>get_pulse(s)</strong>: Get pulse(s) matching certain conditions</p></li>
+<li><p><strong>get_connection</strong>: Get connection of pulse matching certain conditions</p></li>
+<li><p><strong>get_transition_voltages</strong>: Get transition voltage betweeen two pulses</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Experiment folder guide.html" class="btn btn-neutral float-right" title="Experiment folder guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Data plotting guide.html" class="btn btn-neutral float-left" title="Data plotting guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

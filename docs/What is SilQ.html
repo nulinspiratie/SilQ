@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>What is SilQ &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Installation" href="Installation.html" />
+    <link rel="prev" title="Welcome to SilQ’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is SilQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-qcodes">What is QCoDeS?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#well-then-what-is-silq">Well then what is SilQ?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-problem">The problem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-solution">The solution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>What is SilQ</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/docs/What is SilQ.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="what-is-silq">
+<h1>What is SilQ<a class="headerlink" href="#what-is-silq" title="Permalink to this headline">¶</a></h1>
+<p>SilQ is a measurement software developed in the group of Andrea Morello for
+experiments on donors in silicon.
+That being said, the code has been written with the goal of being generic enough
+to be used in other systems (see <a class="reference internal" href="FAQ.html#can-silq-be-used-for-our-experiments"><span class="std std-ref">Can SilQ be used for our experiments?</span></a>).
+To give a description of what SilQ is, a few words are first needed on QCoDeS,
+which is the platform on which SilQ is built.</p>
+<div class="section" id="what-is-qcodes">
+<h2>What is QCoDeS?<a class="headerlink" href="#what-is-qcodes" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://qcodes.github.io/Qcodes/">QCoDeS</a> is a Python-based data acquisition
+framework developed by the Copenhagen / Delft / Sydney / Microsoft quantum
+computing consortium.
+It provides a common base for experiments on nanoelectronics and beyond.
+Main features of the framework are</p>
+<ul class="simple">
+<li><p>Communication with a large assortment of instruments via drivers;</p></li>
+<li><p>Creating and executing measurement loops using instruments.</p></li>
+<li><p>Storage of data generated by measurements, including a snapshot of the current
+instruments</p></li>
+<li><p>Visualization of experimental data</p></li>
+</ul>
+<p>These features are general enough that they are useful for a large range of
+experiments, and they are the foundation of SilQ.
+More information can be found on the website of <a class="reference external" href="http://qcodes.github.io/Qcodes/">QCoDeS</a></p>
+</div>
+<div class="section" id="well-then-what-is-silq">
+<h2>Well then what is SilQ?<a class="headerlink" href="#well-then-what-is-silq" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-problem">
+<h3>The problem<a class="headerlink" href="#the-problem" title="Permalink to this headline">¶</a></h3>
+<p>The features provided by QCoDeS allow easy execution of fairly simple experiments,
+such as sweeping one or more voltages, and measuring a current.
+However, as experiments become more and more complicated, layers of abstraction
+are needed to manage the experimental complexity.</p>
+<p>Pulse sequences are a clear example of where this is the case.
+Programming a pulse sequence for an experiment usually requires interaction
+between several instruments: precise triggering, outputting pulses in the right
+order, with the right amplitude, frequency, and being able to measure the
+resulting signal at the right time.
+This can easily translate into over a hundred commands sent to different
+instruments.
+Without a modular programming approach, this can quickly become a mess, and
+changing a single parameter in the pulse sequence can require major
+modifications to the code.</p>
+</div>
+<div class="section" id="the-solution">
+<h3>The solution<a class="headerlink" href="#the-solution" title="Permalink to this headline">¶</a></h3>
+<p>SilQ has been developed precisely to combat the increasing complexity of
+experiments by building layers of abstraction.
+The primary focus of SilQ is on pulse sequences.
+Instead of worrying about instructions sent to instruments, the experimenter
+focuses on the properties that the pulse sequence should have, and SilQ deals
+with translating this into specific machine instructions.</p>
+<p>To give a concrete example, SilQ lets an experimenter create a pulse sequence like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PulseSequence</span> <span class="k">with</span> <span class="mi">3</span> <span class="n">pulses</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="mi">2</span>
+    <span class="n">DCPulse</span><span class="p">(</span><span class="n">DC_high</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">SinePulse</span><span class="p">(</span><span class="n">AC</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mi">10</span> <span class="n">kHz</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="mi">0</span> <span class="n">deg</span> <span class="p">(</span><span class="n">rel</span><span class="p">),</span> <span class="n">A</span><span class="o">=</span><span class="mi">1</span> <span class="n">V</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">DCPulse</span><span class="p">(</span><span class="n">DC_low</span><span class="p">,</span> <span class="n">A</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notice that this pulse sequence only contains information about the pulses, and
+not at all about the instruments in the setup, nor about any ancillary pulses,
+such as trigger pulses.
+The instruments and their connectivity are stored in SilQ, so SilQ can figure out
+how to convert this pulse sequence to the appropriate instrument instructions,
+such that the instruments will indeed output the correct pulse sequence.
+Because the pulse sequence is agnostic to the experimental setup, the same
+pulse sequence can be used for completely different setups. Exchanging an
+instrument for another brand no longer needs a rewrite of the measurement code.</p>
+<p>SilQ is based on QCoDeS, and so the full array of features from QCoDeS can be
+used here. This includes creating measurement loops with pulse sequences,
+storing the measurement data from pulse sequences.
+One could imagine sweeping the frequency of the <code class="docutils literal notranslate"><span class="pre">SinePulse</span></code> above, and
+measuring the resulting signal at the end.</p>
+<p>SilQ also contains many other features, such as data analysis, tune-up sequences,
+some of which are based on neural networks, and measurement-related Jupyter
+Notebook widgets.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to SilQ’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

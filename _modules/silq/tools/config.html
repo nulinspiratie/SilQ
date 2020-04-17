@@ -1,0 +1,900 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.config &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.config</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.config</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">blinker</span> <span class="k">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">Signal</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">from</span> <span class="nn">qcodes.config.config</span> <span class="k">import</span> <span class="n">DotDict</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils.helpers</span> <span class="k">import</span> <span class="n">SignalEmitter</span>
+
+<span class="kn">import</span> <span class="nn">silq</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SubConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;DictConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;ListConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;update_dict&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SubConfig"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.SubConfig">[docs]</a><span class="k">class</span> <span class="nc">SubConfig</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Config with added functionality, used within ``qcodes.config.user``.</span>
+
+<span class="sd">    The SubConfig is a modified version of the qcodes config, the root being</span>
+<span class="sd">    ``qcodes.config.user.silq_config``. It is used as the SilQ config</span>
+<span class="sd">    (silq.config), attached during importing silq, and initialized during</span>
+<span class="sd">    `silq.initialize` with the respective experiment config.</span>
+
+<span class="sd">    SubConfigs can be nested, and there is a SubConfig child class for subtypes</span>
+<span class="sd">    (`DictConfig` for dicts, `ListConfig` for lists). These are automatically</span>
+<span class="sd">    instantiated when adding a dict/list to a SubConfig.</span>
+
+<span class="sd">    The SubConfig contains the following main extensions over the qcodes config:</span>
+
+<span class="sd">    1. Support for saving/loading the config as a JSON folder structure</span>
+<span class="sd">       This simplifies editing part of the config in an editor.</span>
+<span class="sd">       Each subconfig can be set to either save as a folder or as a file via the</span>
+<span class="sd">       ``save_as_dir`` attribute.</span>
+<span class="sd">    3. Handling of an environment (set by silq.environment). The environment</span>
+<span class="sd">       (string) the key of a dict in silq.config (top-level). If the environment</span>
+<span class="sd">       (string) is set, any call to `environment:{path}` will access</span>
+<span class="sd">       `silq.config.{silq.environment}.{path}</span>
+<span class="sd">       This allows easy switching between config settings.</span>
+<span class="sd">    2. Emit a signal when a value changes. The signal  uses ``blinker.signal``,</span>
+<span class="sd">       the signal name being ``config:{config_path}``, where ``config_path`` is</span>
+<span class="sd">       a dot-separated path to of the config. For example, setting:</span>
+
+<span class="sd">       &gt;&gt;&gt; silq.config.properties.key1 = val</span>
+
+<span class="sd">       The path is equal to ``qcodes.config.user.silq_config.properties.key1``</span>
+<span class="sd">       and emits a signal with sender `config:properties.key1` and keyword</span>
+<span class="sd">       argument `value=val`.</span>
+<span class="sd">       This signal can then by picked up by other objects, in particular by</span>
+<span class="sd">       parameters via its initialization kwarg `config_link`. This means that</span>
+<span class="sd">       whenever that specific config value changes, the parameter is updated</span>
+<span class="sd">       accordingly.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Config name. SilQ config root is ``config``.</span>
+<span class="sd">        folder: Absolute config folder path. Automatically set for child</span>
+<span class="sd">            SubConfigs in the root SubConfig.</span>
+<span class="sd">        parent: Parent SubConfig (None for root SubConfig).</span>
+<span class="sd">        save_as_dir: Save SubConfig as dir. If False, SubConfig and all elements</span>
+<span class="sd">            in it are saved as a JSON file. If True, SubConfig is saved as a</span>
+<span class="sd">            folder, each dict key being a separate JSON file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">parent</span><span class="p">:</span> <span class="s1">&#39;SubConfig&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">save_as_dir</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Set through __dict__ since setattr may be overridden</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">folder</span>
+        <span class="c1"># TODO: modify</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span> <span class="o">=</span> <span class="n">save_as_dir</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;SubConfig path, e.g. ``config:dot.separated.path``&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;config:&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">parent_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">config_path</span>
+            <span class="k">if</span> <span class="n">parent_path</span> <span class="o">==</span> <span class="s1">&#39;config:&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">silq</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;environment:&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Ancestor of either config: or environment:</span>
+                <span class="k">if</span> <span class="n">parent_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;:&#39;</span><span class="p">:</span>
+                    <span class="c1"># Not direct ancestor</span>
+                    <span class="n">parent_path</span> <span class="o">+=</span> <span class="s1">&#39;.&#39;</span>
+                <span class="k">return</span> <span class="n">parent_path</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+<div class="viewcode-block" id="SubConfig.load"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.SubConfig.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load config from folder.</span>
+
+<span class="sd">        The folder must either contain a {self.name}.json file,</span>
+<span class="sd">        or alternatively a folder containing config files/folders.</span>
+<span class="sd">        In the latter case, a dict is created, and all the files/folders in</span>
+<span class="sd">        the folder will be elements of the dict. All &#39;.ipynb_checkpoints&#39;</span>
+<span class="sd">        folders will be ignored.</span>
+
+<span class="sd">        If ``save_as_dir`` attribute is None, it will be updated to either True</span>
+<span class="sd">        or False depending if there is a subfolder or file to load from the</span>
+<span class="sd">        folder, respectively.</span>
+
+<span class="sd">        Note that `SubConfig.load` returns a dict/list, which should then be</span>
+<span class="sd">        added to the Subconfig object depending on the subclass. This should be</span>
+<span class="sd">        implemented in the load method of subclasses.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            folder: folder to look for. If not provided, uses ``self.folder``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict/list config, to be added by the ``load`` method of the subclass</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span>
+
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">.json&#39;</span><span class="p">)</span>
+        <span class="n">folderpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+            <span class="c1"># Load config from file</span>
+            <span class="c1"># Update self.save_as_dir to False unless explicitly set to True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># Load config from file</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">e</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Error reading json file </span><span class="si">{filepath}</span><span class="s1">&#39;</span><span class="p">,</span>
+                          <span class="o">*</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">):</span>
+            <span class="c1"># Config is a folder, and so each item in the folder is added to</span>
+            <span class="c1"># a dict.</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># Update self.save_as_dir to False unless explicitly set to True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">):</span>
+                <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folderpath</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.json&quot;</span><span class="p">):</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                        <span class="c1"># Determine type of config</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">subconfig</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="n">e</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Error reading json file </span><span class="si">{filepath}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="o">*</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                            <span class="p">)</span>
+                            <span class="k">raise</span> <span class="n">e</span>
+
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subconfig</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                            <span class="n">config_class</span> <span class="o">=</span> <span class="n">ListConfig</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subconfig</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                            <span class="n">config_class</span> <span class="o">=</span> <span class="n">DictConfig</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Could not load config file &#39;</span>
+                                               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{filepath}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+                        <span class="n">subconfig_name</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">subconfig</span> <span class="o">=</span> <span class="n">config_class</span><span class="p">(</span>
+                            <span class="n">name</span><span class="o">=</span><span class="n">subconfig_name</span><span class="p">,</span>
+                            <span class="n">folder</span><span class="o">=</span><span class="n">folderpath</span><span class="p">,</span>
+                            <span class="n">save_as_dir</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">parent</span><span class="o">=</span><span class="bp">self</span>
+                        <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="s2">&quot;.ipynb_checkpoints&quot;</span> <span class="ow">in</span> <span class="n">filepath</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">subconfig_name</span> <span class="o">=</span> <span class="n">file</span>
+                    <span class="n">subconfig</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">file</span><span class="p">,</span>
+                                           <span class="n">folder</span><span class="o">=</span><span class="n">folderpath</span><span class="p">,</span>
+                                           <span class="n">save_as_dir</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                           <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Could not load </span><span class="si">{filepath}</span><span class="s2"> to config&quot;</span><span class="p">)</span>
+                <span class="n">config</span><span class="p">[</span><span class="n">subconfig_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">subconfig</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;No file nor folder found to load for </span><span class="si">{self.name}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="SubConfig.refresh"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.SubConfig.refresh">[docs]</a>    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Temporarily remove signal so it doesn&#39;t send many signals</span>
+            <span class="n">signal</span><span class="p">,</span> <span class="n">DictConfig</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="o">.</span><span class="n">signal</span><span class="p">,</span> <span class="n">Signal</span><span class="p">()</span>
+
+            <span class="n">config</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                <span class="n">folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span>
+                                <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">save_as_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span><span class="p">)</span>
+
+            <span class="c1"># Restore signal</span>
+            <span class="n">DictConfig</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">signal</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">SubConfig</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.config_path}</span><span class="s1">.</span><span class="si">{key}</span><span class="s1"> changed from &#39;</span>
+                                    <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self[key]}</span><span class="s1"> to </span><span class="si">{val}</span><span class="s1">&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;New key </span><span class="si">{self.config_path}</span><span class="s1">.</span><span class="si">{key}</span><span class="s1"> = val&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+            <span class="c1"># Also remove any keys that are not in the new config</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.config_path}</span><span class="s1">.</span><span class="si">{key}</span><span class="s1"> not in new config&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">config</span> <span class="o">!=</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.config_path}</span><span class="s1"> list differs to </span><span class="si">{config}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="bp">self</span> <span class="o">+=</span> <span class="n">config</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.config_path}</span><span class="s1"> has different type as refreshed &#39;</span>
+                <span class="n">f</span><span class="s1">&#39;config </span><span class="si">{config}</span><span class="s1">&#39;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SubConfig.save"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.SubConfig.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">save_as_dir</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">dependent_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save SubConfig as JSON files in folder structure.</span>
+
+<span class="sd">        Calling this method iteratively calls the same method on each of its</span>
+<span class="sd">        elements. The folder structure is determined by the ``save_as_dir``</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            folder: Folder in which to save SubConfig. If ``None``, uses</span>
+<span class="sd">                ``self.folder``. Automatically passed for child SubConfigs.</span>
+<span class="sd">            save_as_dir: Save SubConfig as folder, in which each element is</span>
+<span class="sd">                a key. If ``None``, uses ``self.save_as_dir``. Automatically set</span>
+<span class="sd">                to ``None`` for all child SubConfigs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span>
+        <span class="k">if</span> <span class="n">save_as_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">save_as_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_as_dir</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">save_as_dir</span><span class="p">:</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">.json&#39;</span><span class="p">)</span>
+            <span class="n">serialized_self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">serialized_self</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">folderpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">folderpath</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">((</span><span class="n">folderpath</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">subconfig</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">subconfig</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">folder</span><span class="o">=</span><span class="n">folderpath</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SubConfig.serialize"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.SubConfig.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependent_value</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Implement in subclass&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DictConfig"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig">[docs]</a><span class="k">class</span> <span class="nc">DictConfig</span><span class="p">(</span><span class="n">SubConfig</span><span class="p">,</span> <span class="n">DotDict</span><span class="p">,</span> <span class="n">SignalEmitter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`SubConfig` for dictionaries, extension of ``qcodes.config``.</span>
+
+<span class="sd">    This is a SubConfig child class for dictionaries.</span>
+
+<span class="sd">    The DictConfig is a ``DotDict``, meaning that its elements can be accessed</span>
+<span class="sd">    as attributes. For example, the following lines are identical:</span>
+
+<span class="sd">    &gt;&gt;&gt; dict_config[&#39;item1&#39;][&#39;item2&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; dict_config.item1.item2</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Config name. SilQ config root is ``config``.</span>
+<span class="sd">        folder: Absolute config folder path. Automatically set for child</span>
+<span class="sd">            SubConfigs in the root SubConfig.</span>
+<span class="sd">        parent: Parent SubConfig (None for root SubConfig).</span>
+<span class="sd">        config: Pre-existing config to load into new DictConfig.</span>
+<span class="sd">        save_as_dir: Save SubConfig as dir. If False, SubConfig and all elements</span>
+<span class="sd">            in it are saved as a JSON file. If True, SubConfig is saved as a</span>
+<span class="sd">            folder, each dict key being a separate JSON file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exclude_from_dict</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;folder&#39;</span><span class="p">,</span> <span class="s1">&#39;parent&#39;</span><span class="p">,</span> <span class="s1">&#39;initializing&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;signal&#39;</span><span class="p">,</span> <span class="s1">&#39;_signal_chain&#39;</span><span class="p">,</span> <span class="s1">&#39;_signal_modifiers&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;_mirrored_config_attrs&#39;</span><span class="p">,</span> <span class="s1">&#39;_inherited_configs&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;save_as_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;config_path&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;sender&#39;</span><span class="p">,</span> <span class="s1">&#39;multiple_senders&#39;</span><span class="p">]</span>
+
+    <span class="n">signal</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">parent</span><span class="p">:</span> <span class="n">SubConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">save_as_dir</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initializing</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inherited_configs</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">SubConfig</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+                           <span class="n">save_as_dir</span><span class="o">=</span><span class="n">save_as_dir</span><span class="p">)</span>
+        <span class="n">DotDict</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">SignalEmitter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initialize_signal</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">update_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_attach_mirrored_items</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">DotDict</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">DotDict</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;inherit&#39;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+                        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Let parent config deal with this</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;config:&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">silq</span><span class="o">.</span><span class="n">environment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">environment_config</span> <span class="o">=</span> <span class="bp">self</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">environment_config</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">silq</span><span class="o">.</span><span class="n">environment</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;environment:&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">environment_config</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">environment_config</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Pass environment:path along to parent</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">DotDict</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">DotDict</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;inherit&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">val</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> \
+                    <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">)):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">val</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Couldn&#39;t retrieve mirrored key </span><span class="si">{key}</span><span class="s2"> -&gt; </span><span class="si">{val}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">val</span>
+        <span class="k">elif</span> <span class="s1">&#39;inherit&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+                    <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]][</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;inherit&#39;</span><span class="p">]][</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Couldn&#39;t retrieve key </span><span class="si">{key}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Config key </span><span class="si">{key}</span><span class="s1"> must have type str, not {type(key)}&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Update item in dict (modified version of DotDict)</span>
+        <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+            <span class="n">myKey</span><span class="p">,</span> <span class="n">restOfKey</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">myKey</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">myKey</span><span class="p">,</span>
+                                              <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="n">restOfKey</span><span class="p">:</span> <span class="n">val</span><span class="p">},</span>
+                                              <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">SubConfig</span><span class="p">):</span>
+                <span class="n">val</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span>
+                <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="c1"># First set item, then update the dict. This avoids circular</span>
+                <span class="c1"># referencing from mirrored attributes</span>
+                <span class="n">sub_dict</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">sub_dict</span><span class="p">)</span>
+                <span class="n">update_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+                <span class="c1"># If self.initializing, sub_dict._attach_mirrored_items will be</span>
+                <span class="c1"># called at the end of initialization, otherwise call now</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializing</span><span class="p">:</span>
+                    <span class="n">sub_dict</span><span class="o">.</span><span class="n">_attach_mirrored_items</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">))</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initializing</span>
+                        <span class="ow">and</span> <span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;inherit&#39;</span>
+                             <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                                 <span class="ow">and</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span>
+                                      <span class="ow">or</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">))))):</span>
+                    <span class="k">return</span>
+
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;inherit&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">)):</span>
+                        <span class="n">config_path</span> <span class="o">=</span> <span class="n">val</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># inherit a neighbouring dict element</span>
+                        <span class="n">config_path</span> <span class="o">=</span> <span class="n">join_config_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+                    <span class="c1"># Register inheritance for signal sending</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">config_path</span><span class="p">]</span><span class="o">.</span><span class="n">_inherited_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span>
+                                     <span class="ow">or</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">)):</span>
+            <span class="c1"># item should mirror another config item.</span>
+            <span class="n">target_config_path</span><span class="p">,</span> <span class="n">target_attr</span> <span class="o">=</span> <span class="n">split_config_path</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">target_config</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">target_config_path</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">target_attr</span> <span class="ow">in</span> <span class="n">target_config</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{target_config}</span><span class="s1"> does not have </span><span class="si">{target_attr}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">target_attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_config</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="p">:</span>
+                <span class="n">target_config</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="p">[</span><span class="n">target_attr</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">target_config</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="p">[</span><span class="n">target_attr</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Retrieve value from self, which also handles mirroring/inheriting</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="c1"># Add key to config path before sending</span>
+        <span class="n">attr_config_path</span> <span class="o">=</span> <span class="n">join_config_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="c1"># We make sure to get the value, in case the original value is mirrored</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">attr_config_path</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">silq</span><span class="o">.</span><span class="n">environment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">attr_environment_config_path</span> <span class="o">=</span> <span class="n">attr_config_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                <span class="s1">&#39;config:&#39;</span><span class="p">,</span> <span class="s1">&#39;environment:&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">attr_environment_config_path</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># If any other config attributes mirror the attribute being set,</span>
+        <span class="c1"># also send signals with sender being the mirrored attributes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inherited_configs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inherited_configs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_ancillary_signals</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">target_paths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_inherited_configs</span><span class="p">,</span>
+                <span class="n">attr</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">attr_path</span><span class="o">=</span><span class="n">attr_config_path</span><span class="p">)</span>
+
+        <span class="c1"># If any other config dicts inherit from this DictConfig via &#39;inherit&#39;,</span>
+        <span class="c1"># Also emit signals with sender being the inherited dicts</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">updated_mirrored_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_ancillary_signals</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">target_paths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+                <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attr_path</span><span class="o">=</span><span class="n">attr_config_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">updated_mirrored_config</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">updated_mirrored_config</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mirrored_config_attrs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_send_ancillary_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                                <span class="n">target_paths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
+                                <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="n">attr_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># mirrored_config_attrs = self._mirrored_config_attrs.get(key, [])</span>
+        <span class="n">updated_target_paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">target_full_path</span> <span class="ow">in</span> <span class="n">target_paths</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Attr is the second argument of the full path</span>
+                    <span class="n">target_path</span><span class="p">,</span> <span class="n">target_attr</span> <span class="o">=</span> <span class="n">target_full_path</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># Use default attr</span>
+                    <span class="n">target_path</span><span class="p">,</span> <span class="n">target_attr</span> <span class="o">=</span> <span class="n">target_full_path</span><span class="p">,</span> <span class="n">attr</span>
+
+                <span class="c1"># Check if mirrored attr value still referencing current</span>
+                <span class="c1"># attr. Getting the unreferenced value is a bit cumbersome</span>
+                <span class="n">target_config</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">target_path</span><span class="p">]</span>
+
+                <span class="c1"># Target either inherits all attrs of current dict, or one of</span>
+                <span class="c1"># its attributes mirrors this attribute. Here we check if this</span>
+                <span class="c1"># hasn&#39;t changed</span>
+                <span class="n">inheritance</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_config</span><span class="p">,</span> <span class="s1">&#39;inherit&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">inheritance</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> \
+                        <span class="ow">or</span> <span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_config</span><span class="p">,</span> <span class="n">target_attr</span><span class="p">)</span> <span class="o">==</span> <span class="n">attr_path</span> \
+                        <span class="ow">or</span> <span class="p">(</span><span class="n">inheritance</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
+                            <span class="n">target_config</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">):</span>
+                    <span class="n">target_attr_path</span> <span class="o">=</span> <span class="n">join_config_path</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">target_attr</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">target_attr_path</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">silq</span><span class="o">.</span><span class="n">environment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">target_attr_environment_path</span> <span class="o">=</span> <span class="n">target_attr_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                            <span class="s1">&#39;config:&#39;</span><span class="p">,</span> <span class="s1">&#39;environment:&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">target_attr_environment_path</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+                    <span class="n">updated_target_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target_full_path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">updated_target_paths</span>
+
+    <span class="k">def</span> <span class="nf">_attach_mirrored_items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach mirrored items, to be done at the end of initialization.</span>
+
+<span class="sd">        Mirrored items are those that inherit, or whose values start with</span>
+<span class="sd">        ``config:`` or ``environment:``</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            Attribute ``initializing`` will be set to False</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initializing</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">val</span><span class="o">.</span><span class="n">_attach_mirrored_items</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;inherit&#39;</span>
+                  <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                      <span class="ow">and</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;config:&#39;</span><span class="p">)</span>
+                           <span class="ow">or</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;environment:&#39;</span><span class="p">)))):</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+<div class="viewcode-block" id="DictConfig.values"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span></div>
+
+<div class="viewcode-block" id="DictConfig.items"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependent_value</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">dependent_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span><span class="o">.</span><span class="n">items</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DictConfig.get"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override dictionary get, because it does not call __getitem__.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key: key to get</span>
+<span class="sd">            default: default value if key not found. None by default</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            value of key if in dictionary, else default value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span></div>
+
+<div class="viewcode-block" id="DictConfig.load"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">update</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load SubConfig from folder.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            folder: Folder from which to load SubConfig.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="n">update_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="DictConfig.to_dict"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.DictConfig.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependent_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert DictConfig including all its children to a dictionary.&quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">):</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">to_list</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="n">d</span></div>
+
+    <span class="n">serialize</span> <span class="o">=</span> <span class="n">to_dict</span>
+
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ListConfig"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.ListConfig">[docs]</a><span class="k">class</span> <span class="nc">ListConfig</span><span class="p">(</span><span class="n">SubConfig</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`SubConfig` for lists, extension of ``qcodes.config``.</span>
+
+<span class="sd">    This is a SubConfig child class for lists.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Config name. SilQ config root is ``config``.</span>
+<span class="sd">        folder: Absolute config folder path. Automatically set for child</span>
+<span class="sd">            SubConfigs in the root SubConfig.</span>
+<span class="sd">        parent: Parent SubConfig (None for root SubConfig).</span>
+<span class="sd">        config: Pre-existing config to load into new ListConfig.</span>
+<span class="sd">        save_as_dir: Save SubConfig as dir. If False, SubConfig and all elements</span>
+<span class="sd">            in it are saved as a JSON file. If True, SubConfig is saved as a</span>
+<span class="sd">            folder, each dict key being a separate JSON file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">list</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">SubConfig</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">+=</span> <span class="n">config</span>
+        <span class="k">elif</span> <span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ListConfig.load"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.ListConfig.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load SubConfig from folder.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            folder: Folder from which to load SubConfig.</span>
+<span class="sd">            update: update current config</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">+=</span> <span class="n">config</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="ListConfig.to_list"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.ListConfig.to_list">[docs]</a>    <span class="k">def</span> <span class="nf">to_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependent_value</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert Listconfig including all children into a list&quot;&quot;&quot;</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">):</span>
+                <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">to_list</span><span class="p">(</span><span class="n">dependent_value</span><span class="o">=</span><span class="n">dependent_value</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">l</span></div>
+
+    <span class="n">serialize</span> <span class="o">=</span> <span class="n">to_list</span>
+
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_list</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="update_dict"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.config.update_dict">[docs]</a><span class="k">def</span> <span class="nf">update_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Update dictionary recursively.</span>
+
+<span class="sd">    this ensures that subdicts are also converted</span>
+<span class="sd">    This is a modified version of the update function in qcodes config</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">u</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Mapping</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">existing_val</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="c1"># Update existing dict in d with dict v</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">update_dict</span><span class="p">(</span><span class="n">existing_val</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="k">return</span> <span class="n">d</span></div>
+
+
+<span class="k">def</span> <span class="nf">split_config_path</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Splits a config path into the parent path and attr</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config_path: Full config path</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        parent_config_path: Everything except last element</span>
+<span class="sd">        config_attr: final part of config path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">config_path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">config_path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># config path has form config:item, which should be (&#39;config:&#39;, &#39;item&#39;)</span>
+        <span class="n">parent_config_path</span><span class="p">,</span> <span class="n">config_attr</span> <span class="o">=</span> <span class="n">config_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+        <span class="n">parent_config_path</span> <span class="o">+=</span> <span class="s1">&#39;:&#39;</span>
+        <span class="k">return</span> <span class="n">parent_config_path</span><span class="p">,</span> <span class="n">config_attr</span>
+
+
+<span class="k">def</span> <span class="nf">join_config_path</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">config_attr</span><span class="p">):</span>
+    <span class="n">delimiter</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">config_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;.&#39;</span>
+    <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{config_path}{delimiter}{config_attr}</span><span class="s1">&#39;</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

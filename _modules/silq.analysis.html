@@ -1,0 +1,1630 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.analysis package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.analysis package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.analysis.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-analysis-package">
+<h1>silq.analysis package<a class="headerlink" href="#silq-analysis-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.analysis.analysis">
+<span id="silq-analysis-analysis-module"></span><h2>silq.analysis.analysis module<a class="headerlink" href="#module-silq.analysis.analysis" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.analysis.analysis.find_high_low">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">find_high_low</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">threshold_peak=0.02</em>, <em class="sig-param">attempts=8</em>, <em class="sig-param">threshold_method='config'</em>, <em class="sig-param">min_voltage_difference='config'</em>, <em class="sig-param">threshold_requires_high_low='config'</em>, <em class="sig-param">min_SNR=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#find_high_low"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.find_high_low" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find high and low voltages of traces using histograms</p>
+<p>This function determines the high and low voltages of traces by binning them
+into 30 bins, and trying to discern two peaks.
+Useful for determining the threshold value for measuring a blip.</p>
+<p>If no two peaks can be discerned after all attempts, None is returned for
+each of the returned dict keys except DC_voltage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Whether to plot the histograms</p></li>
+<li><p><strong>threshold_peak</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Threshold for discerning a peak. Will be varied if too
+many/few peaks are found</p></li>
+<li><p><strong>attempts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum number of attempts for discerning two peaks.
+Each attempt the threshold_peak is decreased/increased depending on
+if too many/few peaks were found</p></li>
+<li><p><strong>threshold_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – <p>Method used to determine the threshold voltage.
+Allowed methods are:</p>
+<ul>
+<li><p><strong>mean</strong>: average of high and low voltage.</p></li>
+<li><p><strong>{n}*std_low</strong>: n standard deviations above mean low voltage,
+where n is a float (ignore slash in raw docstring).</p></li>
+<li><p><strong>{n}*std_high</strong>: n standard deviations below mean high voltage,
+where n is a float (ignore slash in raw docstring).</p></li>
+<li><p><strong>config</strong>: Use threshold method provided in
+<code class="docutils literal notranslate"><span class="pre">config.analysis.threshold_method</span></code> (<code class="docutils literal notranslate"><span class="pre">mean</span></code> if not specified)</p></li>
+</ul>
+</p></li>
+<li><p><strong>min_voltage_difference</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – minimum difference between high and low voltage.
+If not satisfied, all results are None.
+Will try to retrieve from config.analysis.min_voltage_difference,
+else defaults to 0.3V</p></li>
+<li><p><strong>threshold_requires_high_low</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Whether or not both a high and low voltage
+must be discerned before returning a threshold voltage.
+If set to False and threshold_method is not <code class="docutils literal notranslate"><span class="pre">mean</span></code>, a threshold
+voltage is always determined, even if no two voltage peaks can be
+discerned. In this situation, there usually aren’t any blips, or the
+blips are too short-lived to have a proper high current.
+When the threshold_method is <code class="docutils literal notranslate"><span class="pre">std_low</span></code> (<code class="docutils literal notranslate"><span class="pre">std_high</span></code>), the top
+(bottom) 20% of voltages are scrapped to ensure any short-lived blips
+with a high (low) current aren’t included.
+The average is then taken over the remaining 80% of voltages, which
+is then the average low (high) voltage.
+Default is True.
+Can be set by config.analysis.threshold_requires_high_low</p></li>
+<li><p><strong>min_SNR</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Minimum SNR between high and low voltages required to determine
+a threshold voltage (default None).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>low</strong> (float): Mean low voltage, <code class="docutils literal notranslate"><span class="pre">None</span></code> if two peaks cannot be
+discerned</p></li>
+<li><p><strong>high</strong> (float): Mean high voltage, <code class="docutils literal notranslate"><span class="pre">None</span></code> if no two peaks cannot
+be discerned</p></li>
+<li><p><strong>threshold_voltage</strong> (float): Threshold voltage for a blip. If SNR is
+below <code class="docutils literal notranslate"><span class="pre">min_SNR</span></code> or no two peaks can be discerned, returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>voltage_difference</strong> (float): Difference between low and high
+voltage. If not two peaks can be discerned, returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>DC_voltage</strong> (float): Average voltage of traces.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.edge_voltage">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">edge_voltage</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">edge</em>, <em class="sig-param">state</em>, <em class="sig-param">threshold_voltage=None</em>, <em class="sig-param">points=5</em>, <em class="sig-param">start_idx=0</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#edge_voltage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.edge_voltage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test traces for having a high/low voltage at begin/end</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces</p></li>
+<li><p><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – which side of traces to test, either <code class="docutils literal notranslate"><span class="pre">begin</span></code> or <code class="docutils literal notranslate"><span class="pre">end</span></code></p></li>
+<li><p><strong>state</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – voltage that the edge must have, either <code class="docutils literal notranslate"><span class="pre">low</span></code> or <code class="docutils literal notranslate"><span class="pre">high</span></code></p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – threshold voltage for a <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage (blip).
+If not specified, <code class="docutils literal notranslate"><span class="pre">find_high_low</span></code> is used to determine threshold</p></li>
+<li><p><strong>points</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of data points to average over to determine state</p></li>
+<li><p><strong>start_idx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – index of first point to use. Useful if there is some
+capacitive voltage spike occuring at the start.
+Only used if edge is <code class="docutils literal notranslate"><span class="pre">begin</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>1D boolean array, True if the trace has the correct state at the edge</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.find_up_proportion">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">find_up_proportion</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">threshold_voltage=None</em>, <em class="sig-param">return_array=False</em>, <em class="sig-param">start_idx=0</em>, <em class="sig-param">filter_window=0</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#find_up_proportion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.find_up_proportion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the up proportion of traces (traces that have blips)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces</p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – threshold voltage for a <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage (blip).
+If not specified, <code class="docutils literal notranslate"><span class="pre">find_high_low</span></code> is used to determine threshold</p></li>
+<li><p><strong>return_array</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether to return the boolean array or the up proportion</p></li>
+<li><p><strong>start_idx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – index of first point to use. Useful if there is some
+capacitive voltage spike occuring at the start.
+Only used if edge is <code class="docutils literal notranslate"><span class="pre">begin</span></code></p></li>
+<li><p><strong>filter_window</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – number of points of smoothing (0 means no smoothing)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>if return_array is False</dt><dd><p>(float) The proportion of traces with a blip</p>
+</dd>
+<dt>else</dt><dd><p>Boolean array, True if the trace has a blip</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.count_blips">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">count_blips</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">threshold_voltage</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">t_skip</em>, <em class="sig-param">ignore_final=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#count_blips"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.count_blips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count number of blips and durations in high/low state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces.</p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Threshold voltage for a <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage (blip).</p></li>
+<li><p><strong>sample_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Acquisition sample rate (per second).</p></li>
+<li><p><strong>t_skip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Initial time to skip for each trace (ms).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>blips</strong> (float): Number of blips per trace.</p></li>
+<li><p><strong>blips_per_second</strong> (float): Number of blips per second.</p></li>
+<li><p><strong>low_blip_duration</strong> (np.ndarray): Durations in low-voltage state.</p></li>
+<li><p><strong>high_blip_duration</strong> (np.ndarray): Durations in high-voltage state.</p></li>
+<li><p><strong>mean_low_blip_duration</strong> (float): Average duration in low state.</p></li>
+<li><p><strong>mean_high_blip_duration</strong> (float): Average duration in high state.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.analyse_traces">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">analyse_traces</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">filter=None</em>, <em class="sig-param">min_filter_proportion=0.5</em>, <em class="sig-param">t_skip=0</em>, <em class="sig-param">t_read=None</em>, <em class="sig-param">segment='begin'</em>, <em class="sig-param">threshold_voltage=None</em>, <em class="sig-param">threshold_method='config'</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">plot_high_low=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#analyse_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.analyse_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyse voltage, up proportions, and blips of acquisition traces</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces.</p></li>
+<li><p><strong>sample_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – acquisition sample rate (per second).</p></li>
+<li><p><strong>filter</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – only use traces that begin in low or high voltage.
+Allowed values are <code class="docutils literal notranslate"><span class="pre">low</span></code>, <code class="docutils literal notranslate"><span class="pre">high</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (do not filter).</p></li>
+<li><p><strong>min_filter_proportion</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – minimum proportion of traces that satisfy filter.
+If below this value, up_proportion etc. are not calculated.</p></li>
+<li><p><strong>t_skip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – initial time to skip for each trace (ms).</p></li>
+<li><p><strong>t_read</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – duration of each trace to use for calculating up_proportion etc.
+e.g. for a long trace, you want to compare up proportion of start
+and end segments.</p></li>
+<li><p><strong>segment</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Use beginning or end of trace for <code class="docutils literal notranslate"><span class="pre">t_read</span></code>.
+Allowed values are <code class="docutils literal notranslate"><span class="pre">begin</span></code> and <code class="docutils literal notranslate"><span class="pre">end</span></code>.</p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – threshold voltage for a <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage (blip).
+If not specified, <code class="docutils literal notranslate"><span class="pre">find_high_low</span></code> is used to determine threshold.</p></li>
+<li><p><strong>threshold_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – <p>Method used to determine the threshold voltage.
+Allowed methods are:</p>
+<ul>
+<li><p><strong>mean</strong>: average of high and low voltage.</p></li>
+<li><p><strong>{n}*std_low</strong>: n standard deviations above mean low voltage,
+where n is a float (ignore slash in raw docstring).</p></li>
+<li><p><strong>{n}*std_high</strong>: n standard deviations below mean high voltage,
+where n is a float (ignore slash in raw docstring).</p></li>
+<li><p><strong>config</strong>: Use threshold method provided in
+<code class="docutils literal notranslate"><span class="pre">config.analysis.threshold_method</span></code> (<code class="docutils literal notranslate"><span class="pre">mean</span></code> if not specified)</p></li>
+</ul>
+</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Axis</span></code>]) – Whether to plot traces with results.
+If True, will create a MatPlot object and add results.
+Can also pass a MatPlot axis, in which case that will be used.
+Each trace is preceded by a block that can be green (measured blip
+during start), red (no blip measured), or white (trace was filtered
+out).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>up_proportion</strong> (float): proportion of traces that has a blip</p></li>
+<li><p><strong>end_high</strong> (float): proportion of traces that end with high voltage</p></li>
+<li><p><strong>end_low</strong> (float): proportion of traces that end with low voltage</p></li>
+<li><p><strong>num_traces</strong> (int): Number of traces that satisfy filter</p></li>
+<li><p><strong>filtered_traces_idx</strong> (np.ndarray): 1D bool array,
+True if that trace satisfies filter</p></li>
+<li><p><strong>voltage_difference</strong> (float): voltage difference between high and
+low voltages</p></li>
+<li><p><strong>average_voltage</strong> (float): average voltage over all traces</p></li>
+<li><p><strong>threshold_voltage</strong> (float): threshold voltage for counting a blip
+(high voltage). Is calculated if not provided as input arg.</p></li>
+<li><p><strong>blips</strong> (float): average blips per trace.</p></li>
+<li><p><strong>mean_low_blip_duration</strong> (float): average duration in low state</p></li>
+<li><p><strong>mean_high_blip_duration</strong> (float): average duration in high state</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Any]</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>If no threshold voltage is provided, and no two peaks can be discerned,</dt><dd><p>all results except average_voltage are set to an initial value
+(either 0 or undefined)</p>
+</dd>
+<dt>If the filtered trace proportion is less than min_filter_proportion,</dt><dd><p>the results <code class="docutils literal notranslate"><span class="pre">up_proportion</span></code>, <code class="docutils literal notranslate"><span class="pre">end_low</span></code>, <code class="docutils literal notranslate"><span class="pre">end_high</span></code> are set to an
+initial value</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.analyse_EPR">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">analyse_EPR</code><span class="sig-paren">(</span><em class="sig-param">empty_traces</em>, <em class="sig-param">plunge_traces</em>, <em class="sig-param">read_traces</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">t_skip</em>, <em class="sig-param">t_read</em>, <em class="sig-param">min_filter_proportion=0.5</em>, <em class="sig-param">threshold_voltage=None</em>, <em class="sig-param">filter_traces=True</em>, <em class="sig-param">plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#analyse_EPR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.analyse_EPR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyse an empty-plunge-read sequence</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>empty_traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces in empty (ionized) state</p></li>
+<li><p><strong>plunge_traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces in plunge (neutral) state</p></li>
+<li><p><strong>read_traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2D array of acquisition traces in read state</p></li>
+<li><p><strong>sample_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – acquisition sample rate (per second).</p></li>
+<li><p><strong>t_skip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – initial time to skip for each trace (ms).</p></li>
+<li><p><strong>t_read</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – duration of each trace to use for calculating up_proportion etc.
+e.g. for a long trace, you want to compare up proportion of start
+and end segments.</p></li>
+<li><p><strong>min_filter_proportion</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – minimum proportion of traces that satisfy filter.
+If below this value, up_proportion etc. are not calculated.</p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – threshold voltage for a <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage (blip).
+If not specified, <code class="docutils literal notranslate"><span class="pre">find_high_low</span></code> is used to determine threshold.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fidelity_empty</strong> (float): proportion of empty traces that end
+ionized (high voltage). Traces are filtered out that do not start
+neutral (low voltage).</p></li>
+<li><p><strong>voltage_difference_empty</strong> (float): voltage difference between high
+and low state in empty traces</p></li>
+<li><p><strong>fidelity_load</strong> (float): proportion of plunge traces that end
+neutral (low voltage). Traces are filtered out that do not start
+ionized (high voltage).</p></li>
+<li><p><strong>voltage_difference_load</strong> (float): voltage difference between high
+and low state in plunge traces</p></li>
+<li><p><strong>up_proportion</strong> (float): proportion of read traces that have blips
+For each trace, only up to t_read is considered.</p></li>
+<li><p><strong>dark_counts</strong> (float): proportion of read traces that have dark
+counts. For each trace, only the final t_read is considered.</p></li>
+<li><p><strong>contrast</strong> (float): =up_proportion - dark_counts</p></li>
+<li><p><strong>voltage_difference_read</strong> (float): voltage difference between high
+and low state in read traces</p></li>
+<li><p><strong>blips</strong> (float): average blips per trace in read traces.</p></li>
+<li><p><strong>mean_low_blip_duration</strong> (float): average duration in low state.</p></li>
+<li><p><strong>mean_high_blip_duration</strong> (float): average duration in high state.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.analysis.analyse_flips">
+<code class="sig-prename descclassname">silq.analysis.analysis.</code><code class="sig-name descname">analyse_flips</code><span class="sig-paren">(</span><em class="sig-param">up_proportions_arrs</em>, <em class="sig-param">threshold_up_proportion</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/analysis.html#analyse_flips"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.analysis.analyse_flips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyse flipping between NMR states</p>
+<p>For each up_proportion array, it will count the number of flips
+(transition between high/low up proportion) for each sample.</p>
+<p>If more than one up_proportion array is passed, combined flipping events
+between each pair of states is also considered (i.e. one goes from low to
+high up proportion, the other from high to low). Furthermore, filtering is
+also performed where flips are only counted if the nuclear state remains in
+the subspace spanned by the pair of states for all samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>up_proportions_arrs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – 3D Arrays of up proportions, calculated from
+<a class="reference internal" href="#silq.analysis.analysis.analyse_traces" title="silq.analysis.analysis.analyse_traces"><code class="xref any py py-func docutils literal notranslate"><span class="pre">analyse_traces</span></code></a>. Up proportion is the proportion of traces that
+contain blips. First and second dimensions are arbitrary (can be a
+singleton), third dimension is samples.</p></li>
+<li><p><strong>threshold_up_proportion</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Threshold for when an up_proportion is high
+enough to count the nucleus as being in that state (consistently
+able to flip the electron). Can also be a tuple with two elements,
+in which case the first is a lower threshold, below which we can
+say the nucleus is not in the state, and the second is an upper
+threshold . If any up proportion is not in that state, it is in an
+undefined state, and not counted for flipping. For any filtering
+on up_proportion pairs, the whole row is considered invalid (NaN).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>flips(_{idx})</strong> (int): Flips between high/low up_proportion.
+If more than one up_proportion_arr is provided, a zero-based index is
+added to specify the up_proportion_array. If an up_proportion is
+between the lower and upper threshold, it is not counted.</p></li>
+<li><p><strong>flip_probability(_{idx})</strong> (float): proportion of flips compared to
+maximum flips (samples - 1). If more than one up_proportion_arr is
+provided, a zero-based index is added to specify the
+up_proportion_array.</p></li>
+</ul>
+<p>The following results are between neighbouring pairs of
+up_proportion_arrs (idx1-idx2== +-1), and are only returned if more
+than one up_proportion_arr is given:</p>
+<ul class="simple">
+<li><p><strong>combined_flips_{idx1}{idx2}</strong>: combined flipping events between
+up_proportion_arrs idx1 and idx2, where one of the
+up_proportions switches from high to low, and the other from
+low to high.</p></li>
+<li><p><strong>combined_flip_probability_{idx1}{idx2}</strong>: Flipping probability
+of the combined flipping events.</p></li>
+</ul>
+<p>Additionally, each of the above results will have another result with
+the same name, but prepended with <code class="docutils literal notranslate"><span class="pre">filtered_</span></code>, and appended with
+<code class="docutils literal notranslate"><span class="pre">_{idx1}{idx2}</span></code> if not already present. Here, all the values are
+filtered out where the corresponding pair of up_proportion samples do
+not have exactly one high and one low for each sample. The values that
+do not satisfy the filter are set to np.nan.</p>
+<ul class="simple">
+<li><p><strong>filtered_scans_{idx1}{idx2}</strong>: 2D bool array, True if pair of
+up_proportion rows remain in subspace</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.analysis.fit_toolbox">
+<span id="silq-analysis-fit-toolbox-module"></span><h2>silq.analysis.fit_toolbox module<a class="headerlink" href="#module-silq.analysis.fit_toolbox" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.AMSineFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">AMSineFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#AMSineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.AMSineFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.AMSineFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#AMSineFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.AMSineFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> – data points</p></li>
+<li><p><strong>initial_parameters</strong> – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.AMSineFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">frequency</em>, <em class="sig-param">phase</em>, <em class="sig-param">offset</em>, <em class="sig-param">amplitude_AM</em>, <em class="sig-param">frequency_AM</em>, <em class="sig-param">phase_AM</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#AMSineFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.AMSineFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Amplitude-Modulated Sinusoidal fit using time as x-coordinates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>frequency</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>amplitude_AM</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>frequency_AM</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>phase_AM</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Amplitude-Modulated Sinusoidal data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.AMSineFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.AMSineFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.BayesianUpdateFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">BayesianUpdateFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#BayesianUpdateFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.BayesianUpdateFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a ‘Bayesian update’ function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.BayesianUpdateFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#BayesianUpdateFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.BayesianUpdateFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.BayesianUpdateFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">tau_1</em>, <em class="sig-param">tau_2</em>, <em class="sig-param">prior</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#BayesianUpdateFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.BayesianUpdateFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time.</p></li>
+<li><p><strong>prior</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>tau_down_out</strong> – </p></li>
+<li><p><strong>tau_up_out</strong> – </p></li>
+<li><p><strong>amplitude</strong> – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.BayesianUpdateFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.BayesianUpdateFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.DoubleExponentialFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">DoubleExponentialFit</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleExponentialFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleExponentialFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a double exponential function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.DoubleExponentialFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleExponentialFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleExponentialFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.DoubleExponentialFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">tau_1</em>, <em class="sig-param">A_1</em>, <em class="sig-param">A_2</em>, <em class="sig-param">tau_2</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleExponentialFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleExponentialFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time.</p></li>
+<li><p><strong>tau_1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – First decay constant.</p></li>
+<li><p><strong>tau_2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Second decay constant.</p></li>
+<li><p><strong>A_1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Amplitude of first decay</p></li>
+<li><p><strong>A_2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Amplitude of second decay</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Offset of double exponential (t -&gt; infinity)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.DoubleExponentialFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleExponentialFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.DoubleFermiFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">DoubleFermiFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleFermiFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleFermiFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a double Fermi-Dirac distribution function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.DoubleFermiFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleFermiFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleFermiFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.DoubleFermiFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">V</em>, <em class="sig-param">A_1</em>, <em class="sig-param">A_2</em>, <em class="sig-param">U_1</em>, <em class="sig-param">U_2</em>, <em class="sig-param">T</em>, <em class="sig-param">alpha</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#DoubleFermiFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleFermiFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – electric potential being swept.</p></li>
+<li><p><strong>A</strong> – rescaling factor for function</p></li>
+<li><p><strong>lower</strong> – lower Fermi level (for T=0)</p></li>
+<li><p><strong>upper</strong> – upper Fermi level (for T=0)</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – System temperature (K)</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – electrochemical potential lever arm from applied gate</p></li>
+<li><p><strong>potential</strong> – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.DoubleFermiFit.kB">
+<code class="sig-name descname">kB</code><em class="property"> = 8.61733034e-05</em><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleFermiFit.kB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.DoubleFermiFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'V'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.DoubleFermiFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.ExponentialFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">ExponentialFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for an exponential function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.ExponentialFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.ExponentialFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">tau</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time.</p></li>
+<li><p><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Decay constant.</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.ExponentialFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.ExponentialSineFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">ExponentialSineFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialSineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialSineFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.ExponentialSineFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialSineFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialSineFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> – data points</p></li>
+<li><p><strong>initial_parameters</strong> – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.ExponentialSineFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">tau</em>, <em class="sig-param">frequency</em>, <em class="sig-param">phase</em>, <em class="sig-param">offset</em>, <em class="sig-param">exponent_factor</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#ExponentialSineFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialSineFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.ExponentialSineFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.ExponentialSineFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.FermiFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">FermiFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#FermiFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.FermiFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a Fermi-Dirac distribution function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.FermiFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#FermiFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.FermiFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.FermiFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">V</em>, <em class="sig-param">A</em>, <em class="sig-param">U</em>, <em class="sig-param">T</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#FermiFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.FermiFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – electric potential being swept.</p></li>
+<li><p><strong>A</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – rescaling factor for function</p></li>
+<li><p><strong>U</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Fermi level</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – System temperature (K)</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.FermiFit.kB">
+<code class="sig-name descname">kB</code><em class="property"> = 8.61733034e-05</em><a class="headerlink" href="#silq.analysis.fit_toolbox.FermiFit.kB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.FermiFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'V'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.FermiFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.Fit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">Fit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base fitting class.</p>
+<p>To fit a specific function, this class should be subclassed.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.add_to_plot">
+<code class="sig-name descname">add_to_plot</code><span class="sig-paren">(</span><em class="sig-param">ax</em>, <em class="sig-param">N=201</em>, <em class="sig-param">xrange=None</em>, <em class="sig-param">xscale=1</em>, <em class="sig-param">yscale=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.add_to_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.add_to_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add fit to existing plot axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Axis</span></code>) – Axis to add plot to</p></li>
+<li><p><strong>N</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – number of points to use as x values (to smoothe fit curve)</p></li>
+<li><p><strong>xrange</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – Optional range for x values (min, max)</p></li>
+<li><p><strong>xscale</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – value to multiple x values by to rescale axis</p></li>
+<li><p><strong>yscale</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – value to multiple y values by to rescale axis</p></li>
+<li><p><strong>kwargs</strong> – Additional plot kwargs. By default Fit.plot_kwargs are used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>plot_handle of fit curve</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.find_nearest_index">
+<code class="sig-name descname">find_nearest_index</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.find_nearest_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.find_nearest_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find index in array that is closest to a value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> – array from which to find the nearest index</p></li>
+<li><p><strong>value</strong> – target value for which we want the index of the nearest
+array element</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Index of element in array that is closest to target value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.find_nearest_value">
+<code class="sig-name descname">find_nearest_value</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.find_nearest_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.find_nearest_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find value in array that is closest to target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – array from which to find the nearest value.</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – target value for which we want the nearest array element.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>element in array that is nearest to value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.fit_function">
+<code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.get_parameters">
+<code class="sig-name descname">get_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">fixed_parameters={}</em>, <em class="sig-param">parameter_constraints={}</em>, <em class="sig-param">weights=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.get_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.get_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get parameters for fitting
+:param xvals: x-coordinates of data points
+:param ydata: Data points
+:param initial_parameters: {parameter: initial_value} combination,</p>
+<blockquote>
+<div><p>to specify the initial value of certain parameters. The initial
+values of other parameters are found using
+<a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixed_parameters</strong> – {parameter: fixed_value} combination,
+to specify parameters whose values should not be varied.</p></li>
+<li><p><strong>parameter_constraints</strong> – {parameter: {constraint : value, …},  …}
+combination to further constrain existing parameters. e.g.
+{‘frequency’ : {‘min’ : 0}} ensures only positive frequencies
+can be fit.</p></li>
+<li><p><strong>weights</strong> – Weights for data points, must have same shape as ydata</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.perform_fit">
+<code class="sig-name descname">perform_fit</code><span class="sig-paren">(</span><em class="sig-param">parameters=None</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.perform_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform fitting routine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>ModelResult object containing fitting results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.Fit.plot_kwargs">
+<code class="sig-name descname">plot_kwargs</code><em class="property"> = {'color': 'cyan', 'linestyle': '--', 'lw': 3}</em><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.plot_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.Fit.print_results">
+<code class="sig-name descname">print_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#Fit.print_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.print_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.Fit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = None</em><a class="headerlink" href="#silq.analysis.fit_toolbox.Fit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.GaussianFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">GaussianFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#GaussianFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.GaussianFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a Gaussian function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.GaussianFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#GaussianFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.GaussianFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.GaussianFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">mean</em>, <em class="sig-param">sigma</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#GaussianFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.GaussianFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gaussian function using x as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – x-values.</p></li>
+<li><p><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – mean</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – amplitude</p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – standard deviation</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – offset</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>gaussian data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.GaussianFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'x'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.GaussianFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.LinearFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">LinearFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LinearFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LinearFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a linear function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around
+scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.LinearFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LinearFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LinearFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.LinearFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">gradient</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LinearFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LinearFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exponential function using time as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time.</p></li>
+<li><p><strong>gradient</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>linear data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.LinearFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.LinearFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.LorentzianFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">LorentzianFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LorentzianFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LorentzianFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a Lorentzian function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.LorentzianFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LorentzianFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LorentzianFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.LorentzianFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">mean</em>, <em class="sig-param">gamma</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#LorentzianFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.LorentzianFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lorentzian function using x as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – x-values</p></li>
+<li><p><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – mean</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – amplitude</p></li>
+<li><p><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – standard deviation</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – offset</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>lorentzian data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.LorentzianFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'x'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.LorentzianFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.RabiFrequencyFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">RabiFrequencyFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#RabiFrequencyFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.RabiFrequencyFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.RabiFrequencyFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#RabiFrequencyFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.RabiFrequencyFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> – data points</p></li>
+<li><p><strong>initial_parameters</strong> – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.RabiFrequencyFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">f</em>, <em class="sig-param">f0</em>, <em class="sig-param">gamma</em>, <em class="sig-param">t</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#RabiFrequencyFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.RabiFrequencyFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.RabiFrequencyFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'f'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.RabiFrequencyFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.SineFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">SineFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#SineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.SineFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.SineFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#SineFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.SineFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> – data points</p></li>
+<li><p><strong>initial_parameters</strong> – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.SineFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">frequency</em>, <em class="sig-param">phase</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#SineFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.SineFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sinusoidal fit using time as x-coordinates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Time</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>frequency</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Sinusoidal data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.SineFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 't'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.SineFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.T1Fit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">T1Fit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#T1Fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.T1Fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a 1/T1 vs magnetic field (B) function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around
+scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.T1Fit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#T1Fit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.T1Fit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.T1Fit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">K0</em>, <em class="sig-param">K1</em>, <em class="sig-param">K3</em>, <em class="sig-param">K5</em>, <em class="sig-param">K7</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#T1Fit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.T1Fit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>T1 function using B-field as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – field.</p></li>
+<li><p><strong>K0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>K1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>K5</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>K7</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>magic</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.T1Fit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'x'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.T1Fit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.analysis.fit_toolbox.VoigtFit">
+<em class="property">class </em><code class="sig-prename descclassname">silq.analysis.fit_toolbox.</code><code class="sig-name descname">VoigtFit</code><span class="sig-paren">(</span><em class="sig-param">fit=True</em>, <em class="sig-param">print=False</em>, <em class="sig-param">plot=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#VoigtFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.VoigtFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit" title="silq.analysis.fit_toolbox.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.analysis.fit_toolbox.Fit</span></code></a></p>
+<p>Fitting class for a Voigt function.</p>
+<p>To fit data to a function, use the method <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.perform_fit" title="silq.analysis.fit_toolbox.Fit.perform_fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.perform_fit</span></code></a>.
+This will find its initial parameters via <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.find_initial_parameters" title="silq.analysis.fit_toolbox.Fit.find_initial_parameters"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.find_initial_parameters</span></code></a>,
+after which it will fit the data to <a class="reference internal" href="#silq.analysis.fit_toolbox.Fit.fit_function" title="silq.analysis.fit_toolbox.Fit.fit_function"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Fit.fit_function</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fitting routine uses lmfit, a wrapper package around scipy.optimize.</p>
+</div>
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.VoigtFit.find_initial_parameters">
+<code class="sig-name descname">find_initial_parameters</code><span class="sig-paren">(</span><em class="sig-param">xvals</em>, <em class="sig-param">ydata</em>, <em class="sig-param">initial_parameters</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#VoigtFit.find_initial_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.VoigtFit.find_initial_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate initial parameters from data.</p>
+<p>This is needed to ensure that the fitting will converge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xvals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – x-coordinates of data points</p></li>
+<li><p><strong>ydata</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – data points</p></li>
+<li><p><strong>initial_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Fixed initial parameters to be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameters</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Parameters object containing initial parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.analysis.fit_toolbox.VoigtFit.fit_function">
+<em class="property">static </em><code class="sig-name descname">fit_function</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">amplitude</em>, <em class="sig-param">mean</em>, <em class="sig-param">gamma</em>, <em class="sig-param">sigma</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/fit_toolbox.html#VoigtFit.fit_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.fit_toolbox.VoigtFit.fit_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gaussian function using x as x-coordinate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – independent variable</p></li>
+<li><p><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – mean</p></li>
+<li><p><strong>amplitude</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>sigma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – standard deviation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>exponential data points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.analysis.fit_toolbox.VoigtFit.sweep_parameter">
+<code class="sig-name descname">sweep_parameter</code><em class="property"> = 'x'</em><a class="headerlink" href="#silq.analysis.fit_toolbox.VoigtFit.sweep_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.analysis.tunneling_times">
+<span id="silq-analysis-tunneling-times-module"></span><h2>silq.analysis.tunneling_times module<a class="headerlink" href="#module-silq.analysis.tunneling_times" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.analysis.tunneling_times.analyse_tunnel_times">
+<code class="sig-prename descclassname">silq.analysis.tunneling_times.</code><code class="sig-name descname">analyse_tunnel_times</code><span class="sig-paren">(</span><em class="sig-param">tunnel_times_arr</em>, <em class="sig-param">bins=50</em>, <em class="sig-param">range=None</em>, <em class="sig-param">silent=True</em>, <em class="sig-param">double_exponential=True</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">fixed_parameters={}</em>, <em class="sig-param">initial_parameters={}</em>, <em class="sig-param">plot_fit_kwargs={}</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/tunneling_times.html#analyse_tunnel_times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.tunneling_times.analyse_tunnel_times" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.tunneling_times.contrast_optimal">
+<code class="sig-prename descclassname">silq.analysis.tunneling_times.</code><code class="sig-name descname">contrast_optimal</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">tau_up</em>, <em class="sig-param">tau_down</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/tunneling_times.html#contrast_optimal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.tunneling_times.contrast_optimal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.tunneling_times.extract_blip_statistics">
+<code class="sig-prename descclassname">silq.analysis.tunneling_times.</code><code class="sig-name descname">extract_blip_statistics</code><span class="sig-paren">(</span><em class="sig-param">traces</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">include_first=False</em>, <em class="sig-param">existing_results=None</em>, <em class="sig-param">threshold_voltage=None</em>, <em class="sig-param">min_SNR=2.5</em>, <em class="sig-param">threshold_method='3.5*std_low'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/tunneling_times.html#extract_blip_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.tunneling_times.extract_blip_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract blip statistics from SET current traces</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – </p></li>
+<li><p><strong>sample_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>include_first</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – </p></li>
+<li><p><strong>existing_results</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]) – </p></li>
+<li><p><strong>threshold_voltage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – </p></li>
+<li><p><strong>min_SNR</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – </p></li>
+<li><p><strong>threshold_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – </p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.analysis.tunneling_times.t_read_optimal">
+<code class="sig-prename descclassname">silq.analysis.tunneling_times.</code><code class="sig-name descname">t_read_optimal</code><span class="sig-paren">(</span><em class="sig-param">tau_up</em>, <em class="sig-param">tau_down</em><span class="sig-paren">)</span><a class="reference internal" href="silq/analysis/tunneling_times.html#t_read_optimal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.analysis.tunneling_times.t_read_optimal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimal read duration</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.analysis">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.analysis" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

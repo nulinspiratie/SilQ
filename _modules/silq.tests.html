@@ -1,0 +1,663 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tests package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.tests package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.tests.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-tests-package">
+<h1>silq.tests package<a class="headerlink" href="#silq-tests-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="silq.tests.mocks.html">silq.tests.mocks package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.tests.mocks.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html">silq.tests.mocks.mock_instruments package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_ATS">silq.tests.mocks.mock_instruments.mock_ATS module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_acquisition_controller">silq.tests.mocks.mock_instruments.mock_acquisition_controller module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_arbstudio">silq.tests.mocks.mock_instruments.mock_arbstudio module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_awg_instrument">silq.tests.mocks.mock_instruments.mock_awg_instrument module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_digitizer_instrument">silq.tests.mocks.mock_instruments.mock_digitizer_instrument module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_instrument">silq.tests.mocks.mock_instruments.mock_instrument module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_pulseblaster">silq.tests.mocks.mock_instruments.mock_pulseblaster module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments.mock_trigger_instrument">silq.tests.mocks.mock_instruments.mock_trigger_instrument module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_instruments.html#module-silq.tests.mocks.mock_instruments">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html">silq.tests.mocks.mock_interfaces package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#module-silq.tests.mocks.mock_interfaces.mock_AWG_interface">silq.tests.mocks.mock_interfaces.mock_AWG_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#module-silq.tests.mocks.mock_interfaces.mock_digitizer_interface">silq.tests.mocks.mock_interfaces.mock_digitizer_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#module-silq.tests.mocks.mock_interfaces.mock_interface">silq.tests.mocks.mock_interfaces.mock_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#module-silq.tests.mocks.mock_interfaces.mock_trigger_interface">silq.tests.mocks.mock_interfaces.mock_trigger_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.mocks.mock_interfaces.html#module-silq.tests.mocks.mock_interfaces">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="silq.tests.mocks.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.tests.mocks.html#module-silq.tests.mocks.mock_parameters">silq.tests.mocks.mock_parameters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.tests.mocks.html#module-silq.tests.mocks">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="silq-tests-benchmarking-module">
+<h2>silq.tests.benchmarking module<a class="headerlink" href="#silq-tests-benchmarking-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tests.test_acquisition_parameters">
+<span id="silq-tests-test-acquisition-parameters-module"></span><h2>silq.tests.test_acquisition_parameters module<a class="headerlink" href="#module-silq.tests.test_acquisition_parameters" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_acquisition_parameters.</code><code class="sig-name descname">TestAcquisitionParameterConfig</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_no_env">
+<code class="sig-name descname">test_no_env</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig.test_no_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_no_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_parameters_config">
+<code class="sig-name descname">test_parameters_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig.test_parameters_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_parameters_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_properties_config">
+<code class="sig-name descname">test_properties_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_acquisition_parameters.html#TestAcquisitionParameterConfig.test_properties_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_acquisition_parameters.TestAcquisitionParameterConfig.test_properties_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="silq-tests-test-analysis-module">
+<h2>silq.tests.test_analysis module<a class="headerlink" href="#silq-tests-test-analysis-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tests.test_config">
+<span id="silq-tests-test-config-module"></span><h2>silq.tests.test_config module<a class="headerlink" href="#module-silq.tests.test_config" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfig">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfig</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.dicts_equal">
+<code class="sig-name descname">dicts_equal</code><span class="sig-paren">(</span><em class="sig-param">d1</em>, <em class="sig-param">d2</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.dicts_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.dicts_equal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_add_ListConfig">
+<code class="sig-name descname">test_add_ListConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_add_ListConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_add_ListConfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_add_SubConfig">
+<code class="sig-name descname">test_add_SubConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_add_SubConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_add_SubConfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_dicts_equal">
+<code class="sig-name descname">test_dicts_equal</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_dicts_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_dicts_equal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_load_dependent">
+<code class="sig-name descname">test_load_dependent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_load_dependent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_load_dependent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_load_no_update">
+<code class="sig-name descname">test_load_no_update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_load_no_update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_load_no_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_override_refresh">
+<code class="sig-name descname">test_override_refresh</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_override_refresh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_override_refresh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_override_refresh_remove_DictConfig">
+<code class="sig-name descname">test_override_refresh_remove_DictConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_override_refresh_remove_DictConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_override_refresh_remove_DictConfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_refresh_add_dict_config">
+<code class="sig-name descname">test_refresh_add_dict_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_refresh_add_dict_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_refresh_add_dict_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_refresh_add_dict_subconfig">
+<code class="sig-name descname">test_refresh_add_dict_subconfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_refresh_add_dict_subconfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_refresh_add_dict_subconfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_refresh_add_list_config">
+<code class="sig-name descname">test_refresh_add_list_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_refresh_add_list_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_refresh_add_list_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_refresh_add_list_subconfig">
+<code class="sig-name descname">test_refresh_add_list_subconfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_refresh_add_list_subconfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_refresh_add_list_subconfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_refresh_exclusive_set">
+<code class="sig-name descname">test_refresh_exclusive_set</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_refresh_exclusive_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_refresh_exclusive_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_save_load_dependent">
+<code class="sig-name descname">test_save_load_dependent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_save_load_dependent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_save_load_dependent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_save_load_dir">
+<code class="sig-name descname">test_save_load_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_save_load_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_save_load_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfig.test_save_load_file">
+<code class="sig-name descname">test_save_load_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfig.test_save_load_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfig.test_save_load_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfigEnvironment">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfigEnvironment</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.test_environment">
+<code class="sig-name descname">test_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.test_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.test_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.test_no_environment">
+<code class="sig-name descname">test_no_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.test_no_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.test_no_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.test_other_environment">
+<code class="sig-name descname">test_other_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.test_other_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.test_other_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigEnvironment.test_switch_environments">
+<code class="sig-name descname">test_switch_environments</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigEnvironment.test_switch_environments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigEnvironment.test_switch_environments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfigInheritance">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfigInheritance</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigInheritance.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigInheritance.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigInheritance.test_inherit_absolute">
+<code class="sig-name descname">test_inherit_absolute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance.test_inherit_absolute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance.test_inherit_absolute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigInheritance.test_inherit_relative">
+<code class="sig-name descname">test_inherit_relative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance.test_inherit_relative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance.test_inherit_relative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigInheritance.test_override_inherit">
+<code class="sig-name descname">test_override_inherit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigInheritance.test_override_inherit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigInheritance.test_override_inherit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfigMirroring">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfigMirroring</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigMirroring.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigMirroring.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigMirroring.test_chained_mirroring">
+<code class="sig-name descname">test_chained_mirroring</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring.test_chained_mirroring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring.test_chained_mirroring" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigMirroring.test_mirroring_change_environment">
+<code class="sig-name descname">test_mirroring_change_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring.test_mirroring_change_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring.test_mirroring_change_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigMirroring.test_simple_mirroring">
+<code class="sig-name descname">test_simple_mirroring</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigMirroring.test_simple_mirroring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigMirroring.test_simple_mirroring" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfigPath">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfigPath</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.test_basic_config_paths">
+<code class="sig-name descname">test_basic_config_paths</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.test_basic_config_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.test_basic_config_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.test_environment_config_paths">
+<code class="sig-name descname">test_environment_config_paths</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.test_environment_config_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.test_environment_config_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.test_get_config_path">
+<code class="sig-name descname">test_get_config_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.test_get_config_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.test_get_config_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigPath.test_get_environment_config_path">
+<code class="sig-name descname">test_get_environment_config_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigPath.test_get_environment_config_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigPath.test_get_environment_config_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.TestConfigSignals">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">TestConfigSignals</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.register_signal">
+<code class="sig-name descname">register_signal</code><span class="sig-paren">(</span><em class="sig-param">sender</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.register_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.register_signal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_refresh_signals">
+<code class="sig-name descname">test_refresh_signals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_refresh_signals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_refresh_signals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_signal_inheritance">
+<code class="sig-name descname">test_signal_inheritance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_signal_inheritance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_signal_inheritance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_signal_mirroring">
+<code class="sig-name descname">test_signal_mirroring</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_signal_mirroring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_signal_mirroring" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_signal_mirroring_environment">
+<code class="sig-name descname">test_signal_mirroring_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_signal_mirroring_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_signal_mirroring_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_signal_relative_inheritance">
+<code class="sig-name descname">test_signal_relative_inheritance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_signal_relative_inheritance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_signal_relative_inheritance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_simple_signal_environment">
+<code class="sig-name descname">test_simple_signal_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_simple_signal_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_simple_signal_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.TestConfigSignals.test_simple_signal_no_environment">
+<code class="sig-name descname">test_simple_signal_no_environment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#TestConfigSignals.test_simple_signal_no_environment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.TestConfigSignals.test_simple_signal_no_environment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.test_config.</code><code class="sig-name descname">test_connect_parameter_to_config</code><span class="sig-paren">(</span><em class="sig-param">methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config.register_signal">
+<code class="sig-name descname">register_signal</code><span class="sig-paren">(</span><em class="sig-param">sender</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config.register_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config.register_signal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config.setUp">
+<code class="sig-name descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config.tearDown">
+<code class="sig-name descname">tearDown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook method for deconstructing the test fixture after testing it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config.test_connect_parameter_to_environment_config">
+<code class="sig-name descname">test_connect_parameter_to_environment_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config.test_connect_parameter_to_environment_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config.test_connect_parameter_to_environment_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.test_config.test_connect_parameter_to_config.test_simple_connect_parameter">
+<code class="sig-name descname">test_simple_connect_parameter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/test_config.html#test_connect_parameter_to_config.test_simple_connect_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.test_config.test_connect_parameter_to_config.test_simple_connect_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="silq-tests-test-instruments-module">
+<h2>silq.tests.test_instruments module<a class="headerlink" href="#silq-tests-test-instruments-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="silq-tests-test-pulse-sequences-module">
+<h2>silq.tests.test_pulse_sequences module<a class="headerlink" href="#silq-tests-test-pulse-sequences-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="silq-tests-test-pulses-module">
+<h2>silq.tests.test_pulses module<a class="headerlink" href="#silq-tests-test-pulses-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="silq-tests-test-suite-module">
+<h2>silq.tests.test_suite module<a class="headerlink" href="#silq-tests-test-suite-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tests">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.tests" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

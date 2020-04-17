@@ -1,0 +1,532 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Getting started" href="Getting started.html" />
+    <link rel="prev" title="What is SilQ" href="What is SilQ.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-python">Install Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-github">Install Github</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-qcodes-and-silq">Install QCoDeS and SilQ</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#download-source-code">Download source code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-qcodes">Install QCodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-silq">Install SilQ</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#using-silq">Using SilQ</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#jupyter-notebook">Jupyter Notebook</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#setup-a-silq-experiment-folder">Setup a SilQ Experiment folder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-experiments-root-folder">Setup experiments root folder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-an-experiment-folder">Setup an Experiment folder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#register-the-experiment">Register the Experiment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initializing-an-experiment">Initializing an Experiment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#updating-silq-and-qcodes">Updating SilQ and QCoDeS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-setup-and-information">Optional setup and information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-pycharm-ide">Install PyCharm IDE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/docs/Installation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This page explains the steps needed to install both
+<a class="reference external" href="https://github.com/nulinspiratie/silq">SilQ</a> and
+<a class="reference external" href="https://github.com/QCoDeS/qcodes">QCoDeS</a>. In this
+guide, the computer is assumed to have a Windows OS without Python installed.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Our group uses a <a class="reference external" href="https://github.com/QCoDeS/qcodes">QCoDeS</a> fork, which
+is based on a previous version of QCoDeS
+. Please make sure that the main QCoDeS fork is <strong>not</strong> installed
+(not through GitHub nor pip).</p>
+</div>
+<div class="section" id="install-python">
+<h2>Install Python<a class="headerlink" href="#install-python" title="Permalink to this headline">¶</a></h2>
+<p>Both QCoDeS and SilQ are written in Python. To use either, Python must first be
+installed. We recommend using Anaconda, which is a Python installation that
+comes with many packages including Jupyter Notebook, as well as the Spyder IDE.
+Anaconda can be downloaded and installed as follows:</p>
+<ol class="arabic simple">
+<li><p>Download <a class="reference external" href="https://www.continuum.io/downloads">Anaconda 64bit python 3.6</a>
+(Newer versions are probably also fine)</p></li>
+<li><p>Install Anaconda (make sure to tick the options add to system path and
+register as python 3.6).</p></li>
+</ol>
+</div>
+<div class="section" id="install-github">
+<h2>Install Github<a class="headerlink" href="#install-github" title="Permalink to this headline">¶</a></h2>
+<p>GitHub is used as a source control repository for QCoDeS and SilQ. This means
+that the source code, as well as the latest developer versions can be downloaded
+using GitHub. The following instructions download GitHub Desktop, which is a
+basic GUI for managing GitHub repositories.</p>
+<ol class="arabic simple">
+<li><p>Download and install a Git client, such as
+<a class="reference external" href="https://desktop.github.com/">Github Desktop</a></p></li>
+<li><p>Create a <a class="reference external" href="https://github.com/">Github account</a> if you do not already have
+one.</p></li>
+<li><p>Give Serwan your account details to add you to the private git repository
+for <a class="reference external" href="https://github.com/nulinspiratie/silq">SilQ</a> (which includes our group’s fork of <a class="reference external" href="https://github.com/QCoDeS/qcodes">QCoDeS</a>).</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any modifications of the SilQ/QCoDeS source code should be uploaded using
+<a class="reference external" href="https://help.github.com/articles/about-pull-requests/">Pull Requests</a> in
+GitHub. See <a class="reference internal" href="For developers.html"><span class="doc">For developers</span></a> for more information.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A good alternative to GitHub Desktop is
+<a class="reference external" href="https://www.sourcetreeapp.com/">SourceTree</a> by Atlassian, which has more
+functionality, but is also harder to get started.
+The die-hards can also directly use <a class="reference external" href="https://git-scm.com/">git</a> from the
+command line.</p>
+</div>
+</div>
+<div class="section" id="install-qcodes-and-silq">
+<h2>Install QCoDeS and SilQ<a class="headerlink" href="#install-qcodes-and-silq" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="download-source-code">
+<h3>Download source code<a class="headerlink" href="#download-source-code" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Ensure QCoDeS is not installed on your computer and follow the instructions
+below in correct order.</p>
+</div>
+<p>QCoDeS and SilQ should be installed from the source code. Both source codes can be
+downloaded from GitHub using GitHub Desktop by <a class="reference external" href="https://help.github.com/desktop/guides/contributing-to-projects/cloning-a-repository-from-github-desktop/">cloning</a>
+the repository <a class="reference external" href="https://github.com/nulinspiratie/silq">SilQ</a> into your hard drive (e.g. <code class="docutils literal notranslate"><span class="pre">User/Documents/Github/SilQ</span></code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The QCoDeS fork our group uses is a submodule of SilQ, and should be a folder
+in the <code class="docutils literal notranslate"><span class="pre">SilQ</span></code> root folder. Please check that the folder is not empty. If it
+is empty, download the QCoDeS source code by entering the following command
+in cmd prompt while in the SilQ root folder:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">submodule</span> <span class="n">update</span> <span class="o">--</span><span class="n">init</span> <span class="o">--</span><span class="n">recursive</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="install-qcodes">
+<h3>Install QCodes<a class="headerlink" href="#install-qcodes" title="Permalink to this headline">¶</a></h3>
+<p>After downloading the source code of both SilQ and QCoDeS, they can be installed
+and registered in Python. To install the QCoDeS fork of our group, follow
+these steps:</p>
+<ol class="arabic simple">
+<li><p>Open command prompt (type cmd into start menu and right click to open as
+administrator)</p></li>
+<li><p>Navigate to the Qcodes folder on your computer (SilQ/Qcodes),</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code></p></li>
+<li><p>If a notification pops up that packages are missing, install these by running
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">{packages}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{packages}</span></code> are the packages you
+want to install separated by spaces.</p></li>
+</ol>
+</div>
+<div class="section" id="install-silq">
+<h3>Install SilQ<a class="headerlink" href="#install-silq" title="Permalink to this headline">¶</a></h3>
+<p>After QCoDeS is installed, similar directions should be used to install SilQ:</p>
+<ol class="arabic simple">
+<li><p>In command prompt, navigate to SilQ folder on your computer
+(not <code class="docutils literal notranslate"><span class="pre">SilQ/silq</span></code> but one level up).</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code>.</p></li>
+<li><p>Install any packages that are missing.</p></li>
+</ol>
+</div>
+</div>
+<div class="section" id="using-silq">
+<h2>Using SilQ<a class="headerlink" href="#using-silq" title="Permalink to this headline">¶</a></h2>
+<p>The measurement software SilQ and QCodes can be imported as a package, just like
+any other python packages. To import SilQ and QCoDeS, use the following lines:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">import</span> <span class="nn">silq</span>
+</pre></div>
+</div>
+<p>If there are no errors, both QCoDeS and SilQ should be installed correctly.</p>
+<div class="section" id="jupyter-notebook">
+<h3>Jupyter Notebook<a class="headerlink" href="#jupyter-notebook" title="Permalink to this headline">¶</a></h3>
+<p>There are several ways to run measurement code with SilQ and QCoDeS.
+One can use an iPython terminal, which is straightforward but has limited
+capabilities. An alternative is to use an IDE such as Spyder or PyCharm.
+The main advantage is that you have direct access to all the code and debugging
+facilties.</p>
+<p>This section will explain using a third method, namely <a class="reference external" href="http://jupyter.org/">Jupyter Notebook</a>. It is displayed in a web browser, and is intended to
+mimick a physical notebook. Cells are used to run chunks of code, and also to
+add text, titles, images, equations etc. One important advantage of using
+Jupyter Notebook for SilQ is that it can use iPython widgets. These are
+interactive GUI-like elements in the browser (e.g. a button that runs code when pressed).
+In SilQ, several widgets have been created for Jupyter Notebook, and more are on
+the way. These are aimed at simplifying the use of SilQ.</p>
+<p>To run Jupyter notebook, open a terminal, navigate to an appropriate root folder
+and run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jupyter</span> <span class="n">notebook</span>
+</pre></div>
+</div>
+<p>This will create a notebook server and open it in the browser. Here you can
+navigate to folders and create notebooks. <a class="reference external" href="https://medium.com/codingthesmartway-com-blog/getting-started-with-jupyter-notebook-for-python-4e7082bd5d46">Getting started with Jupyter Notebook</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using an <a class="reference internal" href="#setup-experiments-folder"><span class="std std-ref">Experiments folder</span></a>, this should be
+used as the root folder when starting Jupyter notebook.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want to use an IDE instead, and want to execute a script, write your
+commands after:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="setup-a-silq-experiment-folder">
+<h2>Setup a SilQ Experiment folder<a class="headerlink" href="#setup-a-silq-experiment-folder" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section is only relevant if you are planning on using SilQ.</p>
+</div>
+<p>SilQ uses an Experiment to group together everything related to an experiment.
+The Experiment is stored in an Experiment folder that includes initialization
+code (e.g. connecting to instruments), and a config containing information and
+settings (e.g. resonance frequencies, pulse settings).
+It is not necessary to have an Experiment folder to use SilQ, but parts of SilQ
+do rely on the existence of a config.</p>
+<div class="section" id="setup-experiments-root-folder">
+<h3>Setup experiments root folder<a class="headerlink" href="#setup-experiments-root-folder" title="Permalink to this headline">¶</a></h3>
+<p>The experiments root folder is a folder on the PC that serves as the root
+for all experiments. Each experiment should have its own Experiment folder within
+the experiments root folder.</p>
+<p>To specify the experiments root folder, run a Python session and execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">silq</span>
+<span class="n">silq</span><span class="o">.</span><span class="n">set_experiments_folder</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;</span><span class="si">{experiments_root_folder}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{experiments_root_folder}</span></code> should be the absolute path to
+your experiments root folder.
+Do not forget the <code class="docutils literal notranslate"><span class="pre">r</span></code> before the apostrophe, indicating a raw string.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the Morello group, the <a class="reference external" href="https://github.com/nulinspiratie/experiments">Experiments</a>
+GitHub repository is used as a shared experiments root folder.
+This folder includes our configurations and notebooks, but not our data.
+Ask to be added to the repository.</p>
+</div>
+</div>
+<div class="section" id="setup-an-experiment-folder">
+<h3>Setup an Experiment folder<a class="headerlink" href="#setup-an-experiment-folder" title="Permalink to this headline">¶</a></h3>
+<p>To create an Experiment, add a folder to the experiments root folder with the
+name of your experiment.
+The Experiment folder should contain at least the following two folders</p>
+<dl class="field-list simple">
+<dt class="field-odd">init</dt>
+<dd class="field-odd"><p>initialization scripts.</p>
+</dd>
+<dt class="field-even">config</dt>
+<dd class="field-even"><p>SilQ config, folder contents will be converted to a Python dict.</p>
+</dd>
+</dl>
+<p>Additional files/folders can be added to the experiment folder, such as
+notebooks, images, etc.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">init</span></code> folder contains all initializations python scripts.
+They will be executed by alphanumeric order, so start the first script with
+<code class="docutils literal notranslate"><span class="pre">0_</span></code>, and increase the index for subsequent files to fix the execution order.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">config</span></code> folder contains all information on the experiment.
+It can contain <code class="docutils literal notranslate"><span class="pre">.json</span></code> files, and folders containing <code class="docutils literal notranslate"><span class="pre">.json</span></code> files.
+The config will be combined into a single dictionary, and all folders an files
+will be keys and their contents will be values.</p>
+</div>
+<div class="section" id="register-the-experiment">
+<h3>Register the Experiment<a class="headerlink" href="#register-the-experiment" title="Permalink to this headline">¶</a></h3>
+<p>The final step is to register the experiment.
+Create/open the file <code class="docutils literal notranslate"><span class="pre">configurations.json</span></code> in the experiments root
+folder.
+If the file does not yet exist, fill it with the following information:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;</span><span class="si">{Experiment_name}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;folder&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{Experiment_folder_name}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;macs&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s2">&quot;modes&quot;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If the file already exists, add the information above (minus the outer parentheses)
+as an entry in the list.</p>
+</div>
+<div class="section" id="initializing-an-experiment">
+<h3>Initializing an Experiment<a class="headerlink" href="#initializing-an-experiment" title="Permalink to this headline">¶</a></h3>
+<p>After the Experiment folder has been created and the <code class="docutils literal notranslate"><span class="pre">init</span></code> and <code class="docutils literal notranslate"><span class="pre">config</span></code>
+folder have been created, the Experiment can be initialized by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">silq</span>
+<span class="n">silq</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{experiment_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will execute all scripts in <code class="docutils literal notranslate"><span class="pre">init</span></code>, and the config can now be found in
+<code class="docutils literal notranslate"><span class="pre">silq.config</span></code></p>
+</div>
+</div>
+<div class="section" id="updating-silq-and-qcodes">
+<h2>Updating SilQ and QCoDeS<a class="headerlink" href="#updating-silq-and-qcodes" title="Permalink to this headline">¶</a></h2>
+<p>As of the time of writing, both SilQ and QCoDeS are under active development.
+This means that there are regular features/bugfixes being added
+(and hopefully not many new ones introduced).
+It is therefore recommended to regularly update your SilQ and QCoDeS to the
+latest version.
+For this, a Git client such as GitHub Desktop can be used.
+To update either, first ensure that you don’t have any new changes to the source
+code. If you do and they could be useful for others, please see <a class="reference internal" href="For developers.html"><span class="doc">For developers</span></a>.
+Next, pull the latest changes from <code class="docutils literal notranslate"><span class="pre">master</span></code>, which is the main stable branch.</p>
+</div>
+<div class="section" id="optional-setup-and-information">
+<h2>Optional setup and information<a class="headerlink" href="#optional-setup-and-information" title="Permalink to this headline">¶</a></h2>
+<p>These parts of the setup are not necessary, but can be useful.</p>
+<div class="section" id="install-pycharm-ide">
+<span id="setup-experiments-folder"></span><h3>Install PyCharm IDE<a class="headerlink" href="#install-pycharm-ide" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="https://www.jetbrains.com/pycharm/">PyCharm</a> is a very powerful IDE and can
+simplify programming significantly.
+To install it, follow these steps:</p>
+<ol class="arabic simple">
+<li><p>Download, install, and open PyCharm Community Edition (or use the
+professional version which is free for students).</p></li>
+<li><p>Open the SilQ root folder</p></li>
+<li><p>Go to file -&gt; default settings -&gt; project interpreter</p></li>
+<li><p>Set interpreter to the newly installed Python Anaconda 3.6</p></li>
+<li><p>Restart PyCharm</p></li>
+</ol>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Getting started.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="What is SilQ.html" class="btn btn-neutral float-left" title="What is SilQ" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

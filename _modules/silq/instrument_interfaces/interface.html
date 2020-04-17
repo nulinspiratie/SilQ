@@ -1,0 +1,442 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">Instrument</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+
+<span class="kn">from</span> <span class="nn">silq.pulses.pulse_sequences</span> <span class="k">import</span> <span class="n">PulseSequence</span>
+<span class="kn">from</span> <span class="nn">silq.pulses.pulse_types</span> <span class="k">import</span> <span class="n">Pulse</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Channel"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.Channel">[docs]</a><span class="k">class</span> <span class="nc">Channel</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instrument channel, specified in :class:`InstrumentInterface`</span>
+
+<span class="sd">    A channel usually corresponds to a physical channel in the instrument,</span>
+<span class="sd">    such as an input/output channel, triggering channel, etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        instrument_name: Name of instrument.</span>
+<span class="sd">        name: Channel name, usually specified on the instrument.</span>
+<span class="sd">        id: Channel id, usually zero-based index.</span>
+<span class="sd">        input: Channel is an input channel.</span>
+<span class="sd">        output: Channel is an output channel.</span>
+<span class="sd">        input_trigger: Channel is used as instrument trigger.</span>
+<span class="sd">        input_TTL: Channel input signal must be TTL</span>
+<span class="sd">        output_TTL: Channel output signal is TTL with (low, high) voltage</span>
+<span class="sd">        invert: Channel signal is inverted: on is low signal, off is high signal</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">instrument_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="nb">input</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">input_trigger</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">input_TTL</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">output_TTL</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">invert</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span> <span class="o">=</span> <span class="n">instrument_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_trigger</span> <span class="o">=</span> <span class="n">input_trigger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_TTL</span> <span class="o">=</span> <span class="n">input_TTL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_TTL</span> <span class="o">=</span> <span class="n">output_TTL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">invert</span> <span class="o">=</span> <span class="n">invert</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">output_str</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;Channel </span><span class="si">{self.name}</span><span class="s2"> (id=</span><span class="si">{self.id}</span><span class="s2">)&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="s1">&#39;, input&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="s1">&#39;, output&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_trigger</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="s1">&#39;, input_trigger&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_TTL</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="s1">&#39;, input_TTL&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_TTL</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, output_TTL: </span><span class="si">{self.output_TTL}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">invert</span><span class="p">:</span>
+            <span class="n">output_str</span> <span class="o">+=</span> <span class="s1">&#39;, invert&#39;</span>
+        <span class="k">return</span> <span class="n">output_str</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">())))</span></div>
+
+
+<div class="viewcode-block" id="InstrumentInterface"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface">[docs]</a><span class="k">class</span> <span class="nc">InstrumentInterface</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Interface between the :class:`.Layout` and instruments</span>
+
+<span class="sd">    When a :class:`.PulseSequence` is targeted in the :class:`.Layout`, the</span>
+<span class="sd">    pulses are directed to the appropriate interface. Each interface is</span>
+<span class="sd">    responsible for translating all pulses directed to it into instrument</span>
+<span class="sd">    commands. During the actual measurement, the instrument&#39;s operations will</span>
+<span class="sd">    correspond to that required by the pulse sequence.</span>
+
+<span class="sd">    The interface also contains a list of all available channels in the</span>
+<span class="sd">    instrument.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        instrument_name: name of instrument for which this is an interface</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For a given instrument, its associated interface can be found using</span>
+<span class="sd">            :func:`get_instrument_interface`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">instrument_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># TODO: pass along actual instrument instead of name</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">instrument_name</span> <span class="o">+</span> <span class="s1">&#39;_interface&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_instrument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">instrument_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_channels</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">PulseSequence</span><span class="p">(</span><span class="n">allow_untargeted_pulses</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                            <span class="n">allow_pulse_overlap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span> <span class="o">=</span> <span class="n">PulseSequence</span><span class="p">(</span>
+            <span class="n">allow_untargeted_pulses</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_pulse_overlap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;instrument_name&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="n">instrument_name</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Anything</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;is_primary&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1"> interface&#39;</span>
+
+<div class="viewcode-block" id="InstrumentInterface.get_channel"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.get_channel">[docs]</a>    <span class="k">def</span> <span class="nf">get_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Channel</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get channel by its name.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            channel_name: name of channel</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Channel whose name corresponds to channel_name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span><span class="p">[</span><span class="n">channel_name</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.get_pulse_implementation"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.get_pulse_implementation">[docs]</a>    <span class="k">def</span> <span class="nf">get_pulse_implementation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                 <span class="n">pulse</span><span class="p">:</span> <span class="n">Pulse</span><span class="p">,</span>
+                                 <span class="n">connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Pulse</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get a target implementation of a pulse if it exists.</span>
+
+<span class="sd">        If no implementation can be found for the pulse, or if the pulse</span>
+<span class="sd">        properties are out of the implementation&#39;s bounds, None is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse: pulse to be targeted</span>
+<span class="sd">            connections: List of all connections in Layout, which might be</span>
+<span class="sd">                used by the implementation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Targeted pulse if it can be implemented. Otherwise None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pulse_implementation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pulse_implementation</span><span class="o">.</span><span class="n">satisfies_requirements</span><span class="p">(</span><span class="n">pulse</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">pulse_implementation</span><span class="o">.</span><span class="n">target_pulse</span><span class="p">(</span>
+                    <span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="o">=</span><span class="n">connections</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pulse_implementation</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                    <span class="n">pulse_implementation</span> <span class="k">for</span> <span class="n">pulse_implementation</span>
+                    <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span>
+                <span class="k">if</span> <span class="n">pulse_implementation</span><span class="o">.</span><span class="n">pulse_class</span> <span class="o">==</span> <span class="n">pulse</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Pulse requirements not satisfied.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                               <span class="n">f</span><span class="s1">&#39;Requirements: </span><span class="si">{pulse_implementation.pulse_requirements}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                               <span class="n">f</span><span class="s1">&#39;Pulse: {repr(pulse)}&#39;</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Could not target pulse {repr(pulse)}&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.get_additional_pulses"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Pulse</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Additional pulses needed by instrument after targeting of main pulses</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connections: List of all connections in the layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of additional pulses, empty by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.initialize"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called at the start of targeting a pulse sequence</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.setup"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">samples</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">input_connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
+              <span class="n">output_connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
+              <span class="n">repeat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Set up instrument after layout has been targeted by pulse sequence.</span>
+
+<span class="sd">        Needs to be implemented in subclass.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            samples: Number of acquisition samples.</span>
+<span class="sd">                If None, it will use the previously set value.</span>
+<span class="sd">            input_connections: Input :class:`.Connection` list of</span>
+<span class="sd">                instrument, needed by some interfaces to setup the instrument.</span>
+<span class="sd">            output_connections: Output :class:`.Connection` list of</span>
+<span class="sd">                instrument, needed by some interfaces to setup the instrument.</span>
+<span class="sd">            repeat: Repeat the pulse sequence indefinitely. If False, calling</span>
+<span class="sd">                :func:`Layout.start` will only run the pulse sequence once.</span>
+<span class="sd">            **kwargs: Additional interface-specific kwarg.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            setup flags (see :attr:`.Layout.flags`)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;InstrumentInterface.setup should be implemented in a subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.start"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start instrument</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            Acquisition instruments usually don&#39;t need to be started</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;InstrumentInterface.start should be implemented in a subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InstrumentInterface.stop"><a class="viewcode-back" href="../../silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop instrument&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;InstrumentInterface.stop should be implemented in a subclass&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

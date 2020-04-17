@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/modules.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq">
+<h1>silq<a class="headerlink" href="#silq" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="silq.html">silq package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="silq.analysis.html">silq.analysis package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.analysis.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.analysis.html#module-silq.analysis.analysis">silq.analysis.analysis module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.analysis.html#module-silq.analysis.fit_toolbox">silq.analysis.fit_toolbox module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.analysis.html#module-silq.analysis.tunneling_times">silq.analysis.tunneling_times module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.analysis.html#module-silq.analysis">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.gui.html">silq.gui package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.gui.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.gui.html#silq-gui-ni-pxie-4139-smu-gui-module">silq.gui.NI_PXIe_4139_SMU_gui module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.gui.html#module-silq.gui.SIMGui">silq.gui.SIMGui module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.gui.html#module-silq.gui.frequencies_gui">silq.gui.frequencies_gui module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.gui.html#module-silq.gui">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.instrument_interfaces.html">silq.instrument_interfaces package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.html#module-silq.instrument_interfaces.chip_interface">silq.instrument_interfaces.chip_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.html#module-silq.instrument_interfaces.interface">silq.instrument_interfaces.interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.html#module-silq.instrument_interfaces">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.measurements.html">silq.measurements package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.measurements.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.measurements.html#module-silq.measurements.measurement_modules">silq.measurements.measurement_modules module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.measurements.html#module-silq.measurements.measurement_types">silq.measurements.measurement_types module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.measurements.html#module-silq.measurements">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.meta_instruments.html">silq.meta_instruments package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#module-silq.meta_instruments.Lockin">silq.meta_instruments.Lockin module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#module-silq.meta_instruments.Simrack">silq.meta_instruments.Simrack module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#module-silq.meta_instruments.chip">silq.meta_instruments.chip module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#silq-meta-instruments-layout-module">silq.meta_instruments.layout module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.meta_instruments.html#module-silq.meta_instruments">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.parameters.html">silq.parameters package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#module-silq.parameters.acquisition_parameters">silq.parameters.acquisition_parameters module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#silq-parameters-acquisition-parameters-composite-module">silq.parameters.acquisition_parameters_composite module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#module-silq.parameters.general_parameters">silq.parameters.general_parameters module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#module-silq.parameters.measurement_parameters">silq.parameters.measurement_parameters module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.parameters.html#module-silq.parameters">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.pulses.html">silq.pulses package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.pulses.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.pulses.html#module-silq.pulses.pulse_modules">silq.pulses.pulse_modules module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.pulses.html#module-silq.pulses.pulse_sequences">silq.pulses.pulse_sequences module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.pulses.html#module-silq.pulses.pulse_types">silq.pulses.pulse_types module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.pulses.html#module-silq.pulses">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.tests.html">silq.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-benchmarking-module">silq.tests.benchmarking module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#module-silq.tests.test_acquisition_parameters">silq.tests.test_acquisition_parameters module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-test-analysis-module">silq.tests.test_analysis module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#module-silq.tests.test_config">silq.tests.test_config module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-test-instruments-module">silq.tests.test_instruments module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-test-pulse-sequences-module">silq.tests.test_pulse_sequences module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-test-pulses-module">silq.tests.test_pulses module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#silq-tests-test-suite-module">silq.tests.test_suite module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tests.html#module-silq.tests">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.tools.html">silq.tools package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#silq-tools-circuit-tools-module">silq.tools.circuit_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.config">silq.tools.config module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.data_tools">silq.tools.data_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.detect_peaks">silq.tools.detect_peaks module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.general_tools">silq.tools.general_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.notebook_tools">silq.tools.notebook_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.parameter_tools">silq.tools.parameter_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.plot_tools">silq.tools.plot_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools.pulse_tools">silq.tools.pulse_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#silq-tools-trace-tools-module">silq.tools.trace_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.tools.html#module-silq.tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="silq.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.html#module-silq.version">silq.version module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.html#module-silq">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

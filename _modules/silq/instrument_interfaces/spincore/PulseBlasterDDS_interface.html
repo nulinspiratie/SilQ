@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.spincore.PulseBlasterDDS_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.spincore.PulseBlasterDDS_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.spincore.PulseBlasterDDS_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">InstrumentInterface</span><span class="p">,</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">silq.pulses</span> <span class="k">import</span> <span class="n">Pulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">,</span> <span class="n">PulseImplementation</span><span class="p">,</span> <span class="n">TriggerPulse</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">RESET_PHASE_FALSE</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">RESET_PHASE_TRUE</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">RESET_PHASE</span> <span class="o">=</span> <span class="n">RESET_PHASE_FALSE</span>
+
+<span class="n">DEFAULT_CH_INSTR</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">DEFAULT_INSTR</span> <span class="o">=</span> <span class="n">DEFAULT_CH_INSTR</span> <span class="o">+</span> <span class="n">DEFAULT_CH_INSTR</span>
+
+
+<div class="viewcode-block" id="PulseBlasterDDSInterface"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface">[docs]</a><span class="k">class</span> <span class="nc">PulseBlasterDDSInterface</span><span class="p">(</span><span class="n">InstrumentInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Interface for the Pulseblaster DDS</span>
+
+<span class="sd">    When a `PulseSequence` is targeted in the `Layout`, the</span>
+<span class="sd">    pulses are directed to the appropriate interface. Each interface is</span>
+<span class="sd">    responsible for translating all pulses directed to it into instrument</span>
+<span class="sd">    commands. During the actual measurement, the instrument&#39;s operations will</span>
+<span class="sd">    correspond to that required by the pulse sequence.</span>
+
+<span class="sd">    One important issue with the DDS is that it requires an inverted trigger,</span>
+<span class="sd">    i.e. high voltage is the default, and a low voltage indicates a trigger.</span>
+<span class="sd">    Not every interface has been programmed to handle this (so far only the</span>
+<span class="sd">    PulseBlaster ESRPRO has).</span>
+
+<span class="sd">    The interface also contains a list of all available channels in the</span>
+<span class="sd">    instrument.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        instrument_name: name of instrument for which this is an interface</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For a given instrument, its associated interface can be found using</span>
+<span class="sd">            `get_instrument_interface`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="c1"># Measured output ranged from -3V to 3 V @ 50 ohm Load.</span>
+            <span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">,</span>
+                              <span class="nb">id</span><span class="o">=</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="c1"># id is 0-based due to spinapi DLL</span>
+                              <span class="c1">#output=(-3.0, 3.0)</span>
+                              <span class="n">output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span><span class="p">,</span>
+            <span class="s1">&#39;software_trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;software_trig_in&#39;</span><span class="p">,</span>
+                                        <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span>
+                               <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                               <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">)}</span> <span class="c1"># Going from high to low triggers</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">SinePulseImplementation</span><span class="p">(</span>
+                <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="o">/</span><span class="mf">0.6</span><span class="p">})])]</span>
+
+<div class="viewcode-block" id="PulseBlasterDDSInterface.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Pulse</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Additional pulses needed by instrument after targeting of main pulses</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connections: List of all connections in the layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List containing trigger pulse if not primary instrument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Request one trigger at the start if not primary</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">TriggerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                 <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                     <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                     <span class="s1">&#39;trigger&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="PulseBlasterDDSInterface.setup"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">repeat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set up instrument after layout has been targeted by pulse sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            repeat: Repeat the pulse sequence indefinitely. If False, calling</span>
+<span class="sd">                `Layout.start` will only run the pulse sequence once.</span>
+<span class="sd">            **kwargs: Ignored kwargs passed by layout.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            setup flags (see ``Layout.flags``)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#Initial pulseblaster commands</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+
+        <span class="c1"># Set channel registers for frequencies, phases, and amplitudes</span>
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">output_channels</span><span class="p">:</span>
+            <span class="n">frequencies</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">phases</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">amplitudes</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span>
+                <span class="n">output_channel</span><span class="o">=</span><span class="n">channel</span><span class="o">.</span><span class="n">short_name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">):</span>
+                    <span class="n">frequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span> <span class="c1"># in MHz</span>
+                    <span class="n">phases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+                    <span class="n">amplitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">amplitude</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{pulse}</span><span class="s1"> not implemented&#39;</span><span class="p">)</span>
+
+            <span class="n">frequencies</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">frequencies</span><span class="p">))</span>
+            <span class="n">phases</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">phases</span><span class="p">))</span>
+            <span class="n">amplitudes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">))</span>
+
+            <span class="n">channel</span><span class="o">.</span><span class="n">frequencies</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">phases</span><span class="p">(</span><span class="n">phases</span><span class="p">)</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">set_frequencies</span><span class="p">(</span><span class="n">frequencies</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
+                                            <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">set_phases</span><span class="p">(</span><span class="n">phases</span><span class="o">=</span><span class="n">phases</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">set_amplitudes</span><span class="p">(</span><span class="n">amplitudes</span><span class="o">=</span><span class="n">amplitudes</span><span class="p">,</span>
+                                           <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span>
+
+        <span class="n">s_to_ns</span> <span class="o">=</span> <span class="mf">1e9</span> <span class="c1"># instruction delays expressed in ns</span>
+
+        <span class="c1"># Iteratively increase time</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">t_stop_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_stop_list</span><span class="p">)</span>
+        <span class="n">inst_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">():</span>
+            <span class="c1"># Wait for trigger</span>
+            <span class="n">inst_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DEFAULT_INSTR</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;wait&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+
+        <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">t_stop_max</span><span class="p">:</span>
+            <span class="c1"># find time of next event</span>
+            <span class="n">t_next</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">t_val</span> <span class="k">for</span> <span class="n">t_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_list</span>
+                         <span class="k">if</span> <span class="n">t_val</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">)</span>
+
+            <span class="c1"># Send continue instruction until next event</span>
+            <span class="n">delay_duration</span> <span class="o">=</span> <span class="n">t_next</span> <span class="o">-</span> <span class="n">t</span>
+            <span class="n">delay_cycles</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">delay_duration</span> <span class="o">*</span> <span class="n">s_to_ns</span><span class="p">)</span>
+            <span class="c1"># Either send continue command or long_delay command if the</span>
+            <span class="c1"># delay duration is too long</span>
+
+            <span class="n">inst</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="c1"># for each channel, search for active pulses and implement them</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">instrument_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">output_channels</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span>
+
+                <span class="n">pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                      <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                                                      <span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">pulse_implementation</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">implement</span><span class="p">(</span>
+                        <span class="n">frequencies</span><span class="o">=</span><span class="n">instrument_channel</span><span class="o">.</span><span class="n">frequencies</span><span class="p">(),</span>
+                        <span class="n">phases</span><span class="o">=</span><span class="n">instrument_channel</span><span class="o">.</span><span class="n">phases</span><span class="p">(),</span>
+                        <span class="n">amplitudes</span><span class="o">=</span><span class="n">instrument_channel</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">())</span>
+                    <span class="n">inst</span> <span class="o">=</span> <span class="n">inst</span> <span class="o">+</span> <span class="n">pulse_implementation</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">inst</span> <span class="o">=</span> <span class="n">inst</span> <span class="o">+</span> <span class="n">DEFAULT_CH_INSTR</span>
+
+            <span class="k">if</span> <span class="n">delay_cycles</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+                <span class="n">inst</span> <span class="o">=</span> <span class="n">inst</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;continue&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delay_cycles</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># TODO: check to see if a call to long_delay sets the channel registers</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">delay_cycles</span> <span class="o">-</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="n">divisor</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">))</span>
+                <span class="n">delay</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="n">divisor</span><span class="p">)</span>
+                <span class="n">inst</span> <span class="o">=</span> <span class="n">inst</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;long_delay&#39;</span><span class="p">,</span> <span class="n">divisor</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+            <span class="n">inst_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst</span><span class="p">)</span>
+
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t_next</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">():</span>
+            <span class="c1"># Insert delay until end of pulse sequence</span>
+            <span class="c1"># NOTE: This will disable all output channels and use default registers</span>
+            <span class="n">delay_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">final_delay</span> <span class="o">-</span> <span class="n">t</span>
+            <span class="k">if</span> <span class="n">delay_duration</span> <span class="o">&gt;</span> <span class="mf">1e-11</span><span class="p">:</span>
+                <span class="n">delay_cycles</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">delay_duration</span> <span class="o">*</span> <span class="n">s_to_ns</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">delay_cycles</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+                    <span class="n">inst</span> <span class="o">=</span> <span class="n">DEFAULT_INSTR</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;continue&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delay_cycles</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># TODO: check to see if a call to long_delay sets the channel registers</span>
+                    <span class="n">duration</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">delay_cycles</span> <span class="o">-</span> <span class="mi">100</span><span class="p">)</span>
+                    <span class="n">divisor</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">))</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="n">divisor</span><span class="p">)</span>
+                    <span class="n">inst</span> <span class="o">=</span> <span class="n">DEFAULT_INSTR</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;long_delay&#39;</span><span class="p">,</span> <span class="n">divisor</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+                <span class="n">inst_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">repeat</span><span class="p">:</span>
+            <span class="c1"># Loop back to beginning (wait if not primary)</span>
+            <span class="n">inst_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DEFAULT_INSTR</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;branch&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Stop pulse sequence</span>
+            <span class="n">inst_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DEFAULT_INSTR</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;stop&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+
+
+        <span class="c1"># Note that this command does not actually send anything to the DDS,</span>
+        <span class="c1"># this is done when DDS.start is called</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">instruction_sequence</span><span class="p">(</span><span class="n">inst_list</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">():</span>
+            <span class="c1"># Return flag to ensure this instrument is started after its</span>
+            <span class="c1"># triggering instrument. This is because it is triggered when its</span>
+            <span class="c1"># trigger voltage reaches below a threshold, meaning that the triggering</span>
+            <span class="c1"># voltage must be high when this instrument is started.</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;start_last&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="PulseBlasterDDSInterface.start"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start instrument&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="PulseBlasterDDSInterface.stop"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop instrument&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="SinePulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">SinePulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">SinePulse</span>
+
+<div class="viewcode-block" id="SinePulseImplementation.implement"><a class="viewcode-back" href="../../../silq.instrument_interfaces.spincore.html#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">phases</span><span class="p">,</span> <span class="n">amplitudes</span><span class="p">):</span>
+        <span class="n">frequency_idx</span> <span class="o">=</span> <span class="n">frequencies</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span> <span class="c1"># MHz</span>
+        <span class="n">phase_idx</span> <span class="o">=</span> <span class="n">phases</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+        <span class="n">amplitude_idx</span> <span class="o">=</span> <span class="n">amplitudes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">amplitude</span><span class="p">)</span>
+
+        <span class="n">inst_slice</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">frequency_idx</span><span class="p">,</span>
+            <span class="n">phase_idx</span><span class="p">,</span>
+            <span class="n">amplitude_idx</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">,</span> <span class="c1"># Enable channel</span>
+            <span class="n">RESET_PHASE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">inst_slice</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

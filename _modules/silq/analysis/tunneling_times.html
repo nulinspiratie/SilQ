@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.analysis.tunneling_times &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.analysis.tunneling_times</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.analysis.tunneling_times</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">from</span> <span class="nn">.analysis</span> <span class="k">import</span> <span class="n">find_high_low</span><span class="p">,</span> <span class="n">count_blips</span>
+<span class="kn">from</span> <span class="nn">.fit_toolbox</span> <span class="k">import</span> <span class="n">DoubleExponentialFit</span><span class="p">,</span> <span class="n">ExponentialFit</span>
+
+
+<div class="viewcode-block" id="extract_blip_statistics"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.tunneling_times.extract_blip_statistics">[docs]</a><span class="k">def</span> <span class="nf">extract_blip_statistics</span><span class="p">(</span>
+    <span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">include_first</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">existing_results</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">threshold_voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_SNR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.5</span><span class="p">,</span>
+    <span class="n">threshold_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;3.5*std_low&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract blip statistics from SET current traces</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces:</span>
+<span class="sd">        sample_rate:</span>
+<span class="sd">        include_first:</span>
+<span class="sd">        existing_results:</span>
+<span class="sd">        threshold_voltage:</span>
+<span class="sd">        min_SNR:</span>
+<span class="sd">        threshold_method:</span>
+<span class="sd">        **kwargs:</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">first_tunnel_times</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tunnel_times</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[]]</span>
+    <span class="n">secondary_blip_traces</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Ensure traces is 2D</span>
+    <span class="k">if</span> <span class="n">traces</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Transform single trace into 2D array</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">traces</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Merge all outer dimensions</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">traces</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Determine threshold voltage</span>
+        <span class="n">high_low</span> <span class="o">=</span> <span class="n">find_high_low</span><span class="p">(</span>
+            <span class="n">traces</span><span class="p">,</span> <span class="n">min_SNR</span><span class="o">=</span><span class="n">min_SNR</span><span class="p">,</span> <span class="n">threshold_method</span><span class="o">=</span><span class="n">threshold_method</span>
+        <span class="p">)</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">high_low</span><span class="p">[</span><span class="s2">&quot;threshold_voltage&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">high_low</span><span class="p">[</span><span class="s2">&quot;DC_voltage&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span>
+
+    <span class="n">blip_data</span> <span class="o">=</span> <span class="n">count_blips</span><span class="p">(</span>
+        <span class="n">traces</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span> <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">blip_event</span> <span class="ow">in</span> <span class="n">blip_data</span><span class="p">[</span><span class="s2">&quot;blip_events&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">blip_event</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">blip_event</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Does not start at low voltage</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">has_secondary_blip</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="n">first_tunnel_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">blip_event</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">include_first</span><span class="p">:</span>
+                <span class="n">tunnel_times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">blip_event</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="n">above_threshold</span><span class="p">,</span> <span class="n">pts</span><span class="p">)</span> <span class="ow">in</span> <span class="n">blip_event</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="c1"># either add to tunnel out times (0) or tunnel in times (1)</span>
+                <span class="n">tunnel_times</span><span class="p">[</span><span class="n">above_threshold</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">above_threshold</span><span class="p">:</span>
+                    <span class="n">has_secondary_blip</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">secondary_blip_traces</span> <span class="o">+=</span> <span class="n">has_secondary_blip</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;blip_data&quot;</span><span class="p">:</span> <span class="n">blip_data</span><span class="p">,</span>
+        <span class="s2">&quot;first_tunnel_times&quot;</span><span class="p">:</span> <span class="n">first_tunnel_times</span><span class="p">,</span>
+        <span class="s2">&quot;tunnel_out_times&quot;</span><span class="p">:</span> <span class="n">tunnel_times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;tunnel_in_times&quot;</span><span class="p">:</span> <span class="n">tunnel_times</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;secondary_blip_traces&quot;</span><span class="p">:</span> <span class="n">secondary_blip_traces</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">existing_results</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">results</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">existing_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">new_result</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">existing_results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_result</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">new_result</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_result</span><span class="p">]</span>
+            <span class="n">existing_results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">new_result</span>
+        <span class="k">return</span> <span class="n">existing_results</span></div>
+
+
+<div class="viewcode-block" id="analyse_tunnel_times"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.tunneling_times.analyse_tunnel_times">[docs]</a><span class="k">def</span> <span class="nf">analyse_tunnel_times</span><span class="p">(</span>
+    <span class="n">tunnel_times_arr</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">double_exponential</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">plot_fit_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">hist</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">tunnel_times_arr</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">)</span>
+    <span class="n">bin_averages</span> <span class="o">=</span> <span class="p">(</span><span class="n">bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">bin_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">bin_averages</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">bin_averages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">double_exponential</span><span class="p">:</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">DoubleExponentialFit</span><span class="p">(</span>
+            <span class="n">xvals</span><span class="o">=</span><span class="n">bin_averages</span><span class="p">,</span>
+            <span class="n">ydata</span><span class="o">=</span><span class="n">hist</span><span class="p">,</span>
+            <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">fixed_parameters</span><span class="p">},</span>
+            <span class="n">initial_parameters</span><span class="o">=</span><span class="n">initial_parameters</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">tau_1</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;tau_1&quot;</span><span class="p">]</span>
+        <span class="n">tau_2</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;tau_2&quot;</span><span class="p">]</span>
+        <span class="n">A_1</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;A_1&quot;</span><span class="p">]</span>
+        <span class="n">A_2</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;A_2&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">tau_1</span> <span class="o">&gt;</span> <span class="n">tau_2</span><span class="p">:</span>
+            <span class="n">tau_1</span><span class="p">,</span> <span class="n">tau_2</span> <span class="o">=</span> <span class="n">tau_2</span><span class="p">,</span> <span class="n">tau_1</span>
+            <span class="n">A_1</span><span class="p">,</span> <span class="n">A_2</span> <span class="o">=</span> <span class="n">A_2</span><span class="p">,</span> <span class="n">A_1</span>
+
+        <span class="n">N_1</span> <span class="o">=</span> <span class="n">A_1</span> <span class="o">*</span> <span class="n">tau_1</span> <span class="o">/</span> <span class="n">dt</span>
+        <span class="n">N_2</span> <span class="o">=</span> <span class="n">A_2</span> <span class="o">*</span> <span class="n">tau_2</span> <span class="o">/</span> <span class="n">dt</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;tau_up ={tau_1*1e3:&gt;7.3g} ms</span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="n">f</span><span class="s2">&quot;tau_down ={tau_2*1e3:&gt;7.3g} ms</span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="n">f</span><span class="s2">&quot;tau_up/tau_down ={tau_2/tau_1:&gt;7.3g}</span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="n">f</span><span class="s2">&quot;N_up =</span><span class="si">{N_1:&gt;7.0f}</span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="n">f</span><span class="s2">&quot;N_down =</span><span class="si">{N_2:&gt;7.0f}</span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="n">f</span><span class="s2">&quot;N_down / N_up ={N_1 / N_2:.3g}&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;hist&quot;</span><span class="p">:</span> <span class="n">hist</span><span class="p">,</span>
+            <span class="s2">&quot;bin_edges&quot;</span><span class="p">:</span> <span class="n">bin_edges</span><span class="p">,</span>
+            <span class="s2">&quot;bin_averages&quot;</span><span class="p">:</span> <span class="n">bin_averages</span><span class="p">,</span>
+            <span class="s2">&quot;fit&quot;</span><span class="p">:</span> <span class="n">fit</span><span class="p">,</span>
+            <span class="s2">&quot;tau_up&quot;</span><span class="p">:</span> <span class="n">tau_1</span><span class="p">,</span>
+            <span class="s2">&quot;tau_down&quot;</span><span class="p">:</span> <span class="n">tau_2</span><span class="p">,</span>
+            <span class="s2">&quot;A_up&quot;</span><span class="p">:</span> <span class="n">A_1</span><span class="p">,</span>
+            <span class="s2">&quot;A_down&quot;</span><span class="p">:</span> <span class="n">A_2</span><span class="p">,</span>
+            <span class="s2">&quot;N_up&quot;</span><span class="p">:</span> <span class="n">N_1</span><span class="p">,</span>
+            <span class="s2">&quot;N_down&quot;</span><span class="p">:</span> <span class="n">N_2</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">ExponentialFit</span><span class="p">(</span>
+            <span class="n">xvals</span><span class="o">=</span><span class="n">bin_averages</span><span class="p">,</span>
+            <span class="n">ydata</span><span class="o">=</span><span class="n">hist</span><span class="p">,</span>
+            <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">fixed_parameters</span><span class="p">},</span>
+            <span class="n">initial_parameters</span><span class="o">=</span><span class="n">initial_parameters</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">tau</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;tau&quot;</span><span class="p">]</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">best_values</span><span class="p">[</span><span class="s2">&quot;amplitude&quot;</span><span class="p">]</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">tau</span> <span class="o">/</span> <span class="n">dt</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;tau ={tau*1e3:&gt;7.3g} ms</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="n">f</span><span class="s2">&quot;N =</span><span class="si">{N:&gt;7.0f}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;hist&quot;</span><span class="p">:</span> <span class="n">hist</span><span class="p">,</span>
+            <span class="s2">&quot;bin_edges&quot;</span><span class="p">:</span> <span class="n">bin_edges</span><span class="p">,</span>
+            <span class="s2">&quot;bin_averages&quot;</span><span class="p">:</span> <span class="n">bin_averages</span><span class="p">,</span>
+            <span class="s2">&quot;fit&quot;</span><span class="p">:</span> <span class="n">fit</span><span class="p">,</span>
+            <span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="n">tau</span><span class="p">,</span>
+            <span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="n">A</span><span class="p">,</span>
+            <span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="n">N</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="n">plot</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bin_averages</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span> <span class="n">hist</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">fit</span><span class="o">.</span><span class="n">add_to_plot</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xscale</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span> <span class="o">**</span><span class="n">plot_fit_kwargs</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Tunnel time (ms)&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="t_read_optimal"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.tunneling_times.t_read_optimal">[docs]</a><span class="k">def</span> <span class="nf">t_read_optimal</span><span class="p">(</span><span class="n">tau_up</span><span class="p">,</span> <span class="n">tau_down</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Optimal read duration&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">tau_down</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="n">tau_up</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">tau_up</span> <span class="o">/</span> <span class="n">tau_down</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="contrast_optimal"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.tunneling_times.contrast_optimal">[docs]</a><span class="k">def</span> <span class="nf">contrast_optimal</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">tau_up</span><span class="p">,</span> <span class="n">tau_down</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span><span class="o">/</span><span class="n">tau_down</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span><span class="o">/</span><span class="n">tau_up</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

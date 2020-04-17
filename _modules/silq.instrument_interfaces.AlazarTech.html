@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.AlazarTech package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.AlazarTech package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.instrument_interfaces.AlazarTech.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-instrument-interfaces-alazartech-package">
+<h1>silq.instrument_interfaces.AlazarTech package<a class="headerlink" href="#silq-instrument-interfaces-alazartech-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.instrument_interfaces.AlazarTech.ATS_interface">
+<span id="silq-instrument-interfaces-alazartech-ats-interface-module"></span><h2>silq.instrument_interfaces.AlazarTech.ATS_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.AlazarTech.ATS_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.AlazarTech.ATS_interface.</code><code class="sig-name descname">ATSInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">acquisition_controller_names=[]</em>, <em class="sig-param">default_settings={}</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p>Interface for the AlazarTech ATS.</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instrument_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of ATS instrument.</p></li>
+<li><p><strong>acquisition_controller_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Instrument names of all ATS
+acquisition controllers. Interface will find the associated
+acquisition controllers.</p></li>
+<li><p><strong>default_settings</strong> – Default settings to use for the ATS.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs passed to Instrument.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Only been tested on ATS9440, might give issues with other models,
+in particular those having 2 channels instead of 4</p></li>
+<li><p>For a given instrument, its associated interface can be found using
+<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.get_instrument_interface" title="silq.instrument_interfaces.get_instrument_interface"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_instrument_interface</span></code></a></p></li>
+</ul>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<ul class="simple">
+<li><p>Choose continuous acquisition controller if pulse sequence only
+consists of a measurement pulse, as this doesn’t require a trigger
+from another instrument</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.acquisition">
+<code class="sig-name descname">acquisition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.acquisition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.acquisition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an acquisition.</p>
+<p>Should only be called after the interface has been setup and all other
+instruments have been started (via <code class="xref any docutils literal notranslate"><span class="pre">Layout.start</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Acquisition traces that have been segmented for each pulse.
+Returned dictionary format is:
+<code class="docutils literal notranslate"><span class="pre">{pulse.full_name:</span> <span class="pre">{channel_id:</span> <span class="pre">pulse_channel_trace}}</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.add_acquisition_controller">
+<code class="sig-name descname">add_acquisition_controller</code><span class="sig-paren">(</span><em class="sig-param">acquisition_controller_name</em>, <em class="sig-param">cls_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.add_acquisition_controller"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.add_acquisition_controller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an acquisition controller to the available controllers.</p>
+<p>If another acquisition controller exists of the same class, it will
+be overwritten.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>acquisition_controller_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – instrument name of controller.
+Must be on same server as interface and ATS</p></li>
+<li><p><strong>cls_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Optional name of class, which is used as controller key.
+If no cls_name is provided, it is found from the instrument
+class name</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses required for instrument, e.g. trigger pulses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>Empty list if there are no acquisition pulses.</p></li>
+<li><p>A single trigger pulse at start of acquisition if using triggered
+acquisition controller.</p></li>
+<li><p>AcquisitionPulse and TriggerWaitPulse if using the steered
+initialization controller</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.8)"><strong>NotImplementedError</strong></a> – Using continous acquisition controller</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes ATS interface by setting acquisition controller.</p>
+<p>Called at the start of targeting a pulse sequence.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.segment_traces">
+<code class="sig-name descname">segment_traces</code><span class="sig-paren">(</span><em class="sig-param">traces</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.segment_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.segment_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Segment traces by acquisition pulses.</p>
+<p>For each pulse with <code class="docutils literal notranslate"><span class="pre">acquire</span></code> set to True (which should be all pulses
+passed along to the ATSInterface), the relevant portion of each channel
+trace is segmented and returned in a new dict</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>traces</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – <code class="docutils literal notranslate"><span class="pre">{channel_id:</span> <span class="pre">channel_traces}</span></code> dict</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dict format is
+<code class="docutils literal notranslate"><span class="pre">{pulse.full_name:</span> <span class="pre">{channel_id:</span> <span class="pre">pulse_channel_trace}}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, np.ndarray]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_acquisition_settings">
+<code class="sig-name descname">set_acquisition_settings</code><span class="sig-paren">(</span><em class="sig-param">**settings</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.set_acquisition_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_acquisition_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the acquisition settings for the ATS through its controller.</p>
+<p>All existing acquisition settings are cleared.
+The controller’s acquisition settings are not actually updated here,
+but will be done when calling <a class="reference internal" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup" title="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">ATSInterface.setup</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**settings</strong> – ATS acquisition settings to be set</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Setting is not an ATS acquisition setting</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_configuration_settings">
+<code class="sig-name descname">set_configuration_settings</code><span class="sig-paren">(</span><em class="sig-param">**settings</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.set_configuration_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_configuration_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the configuration settings for the ATS through its controller.</p>
+<p>All existing configuration settings are cleared.
+The controller’s configuration settings are not actually updated here,
+but will be done when calling <a class="reference internal" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup" title="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">ATSInterface.setup</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**settings</strong> – ATS configuration settings to be set</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Setting is not an ATS configuration setting</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setting">
+<code class="sig-name descname">setting</code><span class="sig-paren">(</span><em class="sig-param">setting</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.setting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain a setting for the ATS.</p>
+<p>It then checks if it is a configuration or acquisition setting.
+If the setting is specified in self.configuration/acquisition_setting,
+it returns that value, else it returns the value set in the ATS</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>setting</strong> – configuration or acquisition setting to look for.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Value of the setting</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Setting is not an ATS configuration or acquisition setting.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">samples=None</em>, <em class="sig-param">connections=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up ATS and its controller after targeting a pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>**kwargs</strong> – Unused setup kwargs passed from Layout</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>If using <code class="docutils literal notranslate"><span class="pre">SteeredInitialization_AcquisitionController</span></code>,
+a <code class="docutils literal notranslate"><span class="pre">skip_start</span></code> flag is passed with the target instrument, which
+signals to the layout that that instrument should not be started.
+Instead, it is triggered from the steered initialization controller.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_ATS">
+<code class="sig-name descname">setup_ATS</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.setup_ATS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_ATS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure ATS using <code class="docutils literal notranslate"><span class="pre">ATS.config</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_acquisition_controller">
+<code class="sig-name descname">setup_acquisition_controller</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.setup_acquisition_controller"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_acquisition_controller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup acquisition controller</p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Triggered_AcquisitionController</span></code>
+The following settings are fixed at the moment, but there could be
+siturations where these are not optimal, e.g. fast measurements.</p>
+<ul>
+<li><p>Allocated buffers is maximally 2.</p></li>
+<li><p>Records per buffer is fixed to 1.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Continuous_AcquisitionController</span></code>:</p>
+<ul>
+<li><p>Allocated buffers is fixed to 20</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SteeredInitialization_AcquisitionController</span></code>:</p>
+<ul>
+<li><p>Allocated buffers is fixed to 80</p></li>
+</ul>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError if acquisition controller is not</strong> – <code class="docutils literal notranslate"><span class="pre">Continuous_AcquisitionController</span></code>,
+    <code class="docutils literal notranslate"><span class="pre">SteeredInitialization_AcquisitionController</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_trigger">
+<code class="sig-name descname">setup_trigger</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.setup_trigger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure settings related to triggering of the ATS</p>
+<p>Only configures anything if TriggeredAcquisitionController is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – TriggeredAcquisitionController is used, and no voltage
+    transition can be determined.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ignored method called from <code class="xref any docutils literal notranslate"><span class="pre">Layout.start</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ignored method called from <code class="xref any docutils literal notranslate"><span class="pre">Layout.stop</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.update_settings">
+<code class="sig-name descname">update_settings</code><span class="sig-paren">(</span><em class="sig-param">**settings</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#ATSInterface.update_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.update_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update configuration and acquisition settings</p>
+<p>The acquisition controller’s settings are not actually updated here,
+this will be done when calling <a class="reference internal" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup" title="silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">ATSInterface.setup</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**settings</strong> – ATS configuration and acquisition settings to be set.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Some settings are not configuration nor acquisition settings.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.AlazarTech.ATS_interface.</code><code class="sig-name descname">SteeredInitializationImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#SteeredInitializationImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#SteeredInitializationImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements pulse</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SteeredInitialization" title="silq.pulses.pulse_types.SteeredInitialization"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SteeredInitialization</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">connections</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#SteeredInitializationImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Target steered initialization pulse to an interface.</p>
+<p>The implementation will further have a <code class="docutils literal notranslate"><span class="pre">readout_connection</span></code> and
+<code class="docutils literal notranslate"><span class="pre">trigger_connection</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>) – Steered initialization pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> – Interface to target pulse to.</p></li>
+<li><p><strong>connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – List of output connections</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>targeted pulse</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Not exactly one readout connection found</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.8)"><strong>AssertionError</strong></a> – Not exactly one trigger connection found</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.AlazarTech.ATS_interface.</code><code class="sig-name descname">TriggerWaitPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#TriggerWaitPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#TriggerWaitPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.TriggerWaitPulse" title="silq.pulses.pulse_types.TriggerWaitPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.TriggerWaitPulse</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/AlazarTech/ATS_interface.html#TriggerWaitPulseImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tailors a PulseImplementation to a specific pulse.</p>
+<p>Targeting happens in three stages:</p>
+<ol class="arabic simple">
+<li><p>Both the pulse and pulse implementation are copied.</p></li>
+<li><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a> of the copied pulse is set to the copied
+pulse implementation, and <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse is set to the
+copied pulse. This way, they can both reference each other.</p></li>
+<li><p>The targeted pulse is returned</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><em>Pulse</em></a>) – Pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – PulseImplementation belongs.</p></li>
+<li><p><strong>connections</strong> (<em>List</em><em>[</em><em>Connection</em><em>]</em>) – All connections in <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional unused kwargs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – Pulse class does not match
+    <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse_class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.AlazarTech">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.instrument_interfaces.AlazarTech" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

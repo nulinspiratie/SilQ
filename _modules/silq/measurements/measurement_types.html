@@ -1,0 +1,934 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.measurements.measurement_types &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.measurements.measurement_types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.measurements.measurement_types</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">BreakIf</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter</span> <span class="k">import</span> <span class="n">_BaseParameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.data_set</span> <span class="k">import</span> <span class="n">DataSet</span>
+
+<span class="kn">from</span> <span class="nn">silq.tools.parameter_tools</span> <span class="k">import</span> <span class="n">create_set_vals</span>
+<span class="kn">from</span> <span class="nn">silq.tools.general_tools</span> <span class="k">import</span> <span class="n">SettingsClass</span><span class="p">,</span> <span class="n">get_truth</span><span class="p">,</span> \
+    <span class="n">clear_single_settings</span><span class="p">,</span> <span class="n">JSONEncoder</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Condition&#39;</span><span class="p">,</span> <span class="s1">&#39;TruthCondition&#39;</span><span class="p">,</span> <span class="s1">&#39;ConditionSet&#39;</span><span class="p">,</span> <span class="s1">&#39;Measurement&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;Loop0DMeasurement&#39;</span><span class="p">,</span> <span class="s1">&#39;Loop1DMeasurement&#39;</span><span class="p">,</span> <span class="s1">&#39;Loop2DMeasurement&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_dummy_parameter</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;msmt_idx&#39;</span><span class="p">,</span>
+                                <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Measurement idx&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Condition"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Condition">[docs]</a><span class="k">class</span> <span class="nc">Condition</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts to JSON encoder for saving metadata</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            JSON dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Condition.load_from_dict"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Condition.load_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">load_dict</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">load_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;__class__&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span></div></div>
+
+
+<div class="viewcode-block" id="TruthCondition"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.TruthCondition">[docs]</a><span class="k">class</span> <span class="nc">TruthCondition</span><span class="p">(</span><span class="n">Condition</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">relation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_val</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">=</span> <span class="n">relation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_val</span> <span class="o">=</span> <span class="n">target_val</span>
+
+<div class="viewcode-block" id="TruthCondition.check_satisfied"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.TruthCondition.check_satisfied">[docs]</a>    <span class="k">def</span> <span class="nf">check_satisfied</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DataSet</span><span class="p">):</span>
+            <span class="n">test_arr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">)</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">test_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">]])</span>
+        <span class="c1"># Determine which elements satisfy condition</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="c1"># Suppress warnings when comparing to NaN</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">)</span>
+            <span class="n">satisfied_arr</span> <span class="o">=</span> <span class="n">get_truth</span><span class="p">(</span><span class="n">test_arr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">)</span>
+
+        <span class="n">is_satisfied</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">satisfied_arr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">is_satisfied</span><span class="p">,</span> <span class="n">satisfied_arr</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;(</span><span class="si">{self.attribute}</span><span class="s1"> </span><span class="si">{self.relation}</span><span class="s1"> </span><span class="si">{self.target_val}</span><span class="s1">)&#39;</span>
+
+
+<div class="viewcode-block" id="TruthCondition.ModCondition"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.TruthCondition.ModCondition">[docs]</a>    <span class="k">class</span> <span class="nc">ModCondition</span><span class="p">(</span><span class="n">Condition</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">num</span>
+
+            <span class="k">if</span> <span class="n">start</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="TruthCondition.ModCondition.check_satisfied"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.TruthCondition.ModCondition.check_satisfied">[docs]</a>        <span class="k">def</span> <span class="nf">check_satisfied</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">),</span></div>
+
+        <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;(idx: </span><span class="si">{self.idx}</span><span class="s1"> % </span><span class="si">{self.num}</span><span class="s1"> == 0)&#39;</span></div></div>
+
+
+<div class="viewcode-block" id="ConditionSet"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.ConditionSet">[docs]</a><span class="k">class</span> <span class="nc">ConditionSet</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A ConditionSet represents a set of conditions that a dataset can be</span>
+<span class="sd">    tested against. The ConditionSet also contains information on what action</span>
+<span class="sd">    should be performed if the dataset satisfies the conditions (success) or</span>
+<span class="sd">    does not (fail). These actions can then be performed by a</span>
+<span class="sd">    MeasurementSequence. Possible actions are:</span>
+
+<span class="sd">        :&#39;success&#39;: Finish measurement sequence successfully</span>
+<span class="sd">        :&#39;fail&#39;: Finish measurement sequence unsuccessfully</span>
+<span class="sd">        :&#39;next_{cmd}&#39;: Go to next measurement if it exists, else it is cmd,</span>
+<span class="sd">            where cmd can be either &#39;success&#39; or &#39;fail&#39;.</span>
+<span class="sd">        :None: Go to next measurement if it exists. If there is no next</span>
+<span class="sd">            measurement, the action is &#39;success&#39; if the last measurement</span>
+<span class="sd">            satisfies the condition_set, else &#39;fail&#39;. Note that this is not a</span>
+<span class="sd">            string.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        on_success (str): action to perform if some points satisfy conditions.</span>
+<span class="sd">        on_fail (str): action to perform if no points satisfy conditions.</span>
+<span class="sd">        update (bool): Values should be updated if dataset satisfies conditions.</span>
+<span class="sd">        result (dict): result after testing a dataset for conditions.</span>
+<span class="sd">            items are:</span>
+
+<span class="sd">            :is_satisfied (bool): Dataset has points that satisfy conditions</span>
+<span class="sd">            :action (str): action to perform, taken from</span>
+<span class="sd">                self.on_success if is_satisfied, else from self.on_fail.</span>
+<span class="sd">            :satisfied_arr (bool arr): array of dataset dimensions,</span>
+<span class="sd">                where each element indicates if that value satisfies</span>
+<span class="sd">                conditions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">on_success</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_fail</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_success</span> <span class="o">=</span> <span class="n">on_success</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_fail</span> <span class="o">=</span> <span class="n">on_fail</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="n">update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span><span class="nb">repr</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span> <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">conditions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">conditions_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;[{&quot;, &quot;.join(conditions)}]&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conditions_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39; </span><span class="si">{conditions[0]}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;ConditionSet</span><span class="si">{conditions_str}</span><span class="s1">, update: </span><span class="si">{self.update}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts to JSON encoder for saving metadata</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            JSON dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;loc_provider&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="ConditionSet.load_from_dict"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.ConditionSet.load_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">load_dict</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">load_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;__class__&#39;</span><span class="p">:</span>
+                <span class="c1"># Ignore attr since it is used to determine class</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;conditions&#39;</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span>
+                    <span class="c1"># Load condition class from globals</span>
+                    <span class="n">condition_cls</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">condition</span><span class="p">[</span><span class="s1">&#39;__class__&#39;</span><span class="p">]]</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">condition_cls</span><span class="o">.</span><span class="n">load_from_dict</span><span class="p">(</span><span class="n">condition</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+        <span class="n">station</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">Station</span><span class="o">.</span><span class="n">default</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">station</span><span class="p">,</span>
+                                                <span class="n">obj</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">set_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameter</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">parameter</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span>
+                              <span class="k">else</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">parameter</span><span class="p">)</span>
+                              <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+<div class="viewcode-block" id="ConditionSet.add_condition"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.ConditionSet.add_condition">[docs]</a>    <span class="k">def</span> <span class="nf">add_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">condition</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TruthCondition</span><span class="p">(</span><span class="o">*</span><span class="n">condition</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Could not decode condition </span><span class="si">{condition}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConditionSet.check_satisfied"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.ConditionSet.check_satisfied">[docs]</a>    <span class="k">def</span> <span class="nf">check_satisfied</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if a dataset satisfies a set of conditions</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset: Dataset to check against conditions</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Any]: Dictionary containing:</span>
+
+<span class="sd">            :is_satisfied (bool): If the conditions are satisfied</span>
+<span class="sd">            :action (string): Action to perform</span>
+<span class="sd">            :satisfied_arr (bool arr): array where each element corresponds to a</span>
+<span class="sd">                combination of set vals, and whose value specifies if those</span>
+<span class="sd">                set_vals satisfies conditions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine dimensionality from attribute of first condition</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">attribute</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DataSet</span><span class="p">):</span>
+            <span class="n">dims</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">ndarray</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dims</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">)</span>
+
+        <span class="c1"># Start of with all set points satisfying conditions</span>
+        <span class="n">satisfied_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditions</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">satisfied_single_arr</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">check_satisfied</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="c1"># Update satisfied elements with those satisfying current condition</span>
+            <span class="n">satisfied_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">satisfied_arr</span><span class="p">,</span>
+                                           <span class="n">satisfied_single_arr</span><span class="p">)</span>
+
+        <span class="n">is_satisfied</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">satisfied_arr</span><span class="p">)</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_success</span> <span class="k">if</span> <span class="n">is_satisfied</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_fail</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;is_satisfied&#39;</span><span class="p">:</span> <span class="n">is_satisfied</span><span class="p">,</span>
+                       <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                       <span class="s1">&#39;satisfied_arr&#39;</span><span class="p">:</span> <span class="n">satisfied_arr</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span></div></div>
+
+
+<div class="viewcode-block" id="Measurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement">[docs]</a><span class="k">class</span> <span class="nc">Measurement</span><span class="p">(</span><span class="n">SettingsClass</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">condition_sets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">set_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">step_percentage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">discriminant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">break_if</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Initialize SettingsClass, specifying that if self.condition_sets is</span>
+        <span class="c1"># not None, using single_settings or temporary_settings won&#39;t change</span>
+        <span class="c1"># its value.</span>
+        <span class="n">SettingsClass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_if_set</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;condition_sets&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="n">base_folder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">acquisition_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span> <span class="o">=</span> <span class="n">discriminant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span> <span class="o">=</span> <span class="n">step_percentage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span> <span class="o">=</span> <span class="n">set_parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span> <span class="o">=</span> <span class="n">set_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">condition_sets</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">condition_sets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">silent</span> <span class="o">=</span> <span class="n">silent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_set_vals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">break_if</span> <span class="o">=</span> <span class="n">break_if</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1"> measurement&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts to JSON encoder for saving metadata</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            JSON dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">JSONEncoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;loc_provider&#39;</span><span class="p">],</span>
+                           <span class="n">ignore_vals</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">{},</span> <span class="p">[]])</span>
+
+<div class="viewcode-block" id="Measurement.load_from_dict"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.load_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">load_dict</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">load_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;__class__&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;condition_sets&#39;</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">condition_sets</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">condition_set</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span>
+                    <span class="c1"># Load condition class from globals</span>
+                    <span class="n">condition_cls</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">condition_set</span><span class="p">[</span><span class="s1">&#39;__class__&#39;</span><span class="p">]]</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">condition_cls</span><span class="o">.</span><span class="n">load_from_dict</span><span class="p">(</span><span class="n">condition_set</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">loc_provider</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{date}</span><span class="s1">/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">+</span> <span class="s1">&#39;/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">qc</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">FormatLocation</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">set_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                                          <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="n">create_set_vals</span><span class="p">(</span>
+                <span class="n">set_parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
+                <span class="n">step_percentage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span>
+                <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@set_vals</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">set_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_vals</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="n">set_vals</span>
+        <span class="k">if</span> <span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">set_val</span><span class="o">.</span><span class="n">parameter</span> <span class="k">for</span> <span class="n">set_val</span> <span class="ow">in</span> <span class="n">set_vals</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Measurement.check_condition_sets"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.check_condition_sets">[docs]</a>    <span class="k">def</span> <span class="nf">check_condition_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">condition_sets</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Tests dataset for condition sets.</span>
+<span class="sd">        Condition sets are tested until the result of a condition set has an</span>
+<span class="sd">        &#39;action&#39; key that is not equal to None. After this, self.condition_set</span>
+<span class="sd">        is updated to this condition set. If no condition sets have an action,</span>
+<span class="sd">        self.condition_set will equal the last condition set</span>
+<span class="sd">        Args:</span>
+<span class="sd">            *condition_sets: condition sets to be tested, to be tested before</span>
+<span class="sd">            self.condition_sets</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            self.condition_set: condition set that has an &#39;action&#39;, or the</span>
+<span class="sd">            last condition set if none have an action.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">condition_sets</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;No condition sets provided&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">_BaseParameter</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">results</span>
+
+        <span class="k">for</span> <span class="n">condition_set</span> <span class="ow">in</span> <span class="n">condition_sets</span><span class="p">:</span>
+            <span class="n">condition_set</span><span class="o">.</span><span class="n">check_satisfied</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{condition_set}</span><span class="s1"> satisfied: &#39;</span>
+                             <span class="n">f</span><span class="s1">&#39;</span><span class="si">{condition_set.result[&quot;is_satisfied&quot;]}</span><span class="s1">, &#39;</span>
+                             <span class="n">f</span><span class="s1">&#39;action: </span><span class="si">{condition_set.result[&quot;action&quot;]}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Using condition set </span><span class="si">{condition_set}</span><span class="s1">, &#39;</span>
+                    <span class="n">f</span><span class="s1">&#39;is_satisfied: </span><span class="si">{condition_set.result[&quot;is_satisfied&quot;]}</span><span class="s1">, &#39;</span>
+                    <span class="n">f</span><span class="s1">&#39;action: </span><span class="si">{condition_set.result[&quot;action&quot;]}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;measurement&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="n">condition_set</span></div>
+
+<div class="viewcode-block" id="Measurement.satisfies_condition_set"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.satisfies_condition_set">[docs]</a>    <span class="k">def</span> <span class="nf">satisfies_condition_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">condition_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_condition_sets</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;is_satisfied&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">action</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">action</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Measurement.get_optimum"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.get_optimum">[docs]</a>    <span class="k">def</span> <span class="nf">get_optimum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">condition_set</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the optimal value from the possible set vals.</span>
+<span class="sd">        If satisfied_arr is not provided, it will first filter the set vals</span>
+<span class="sd">        such that only those that satisfied self.condition_sets are satisfied.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (Optional): Dataset to test. Default is self.dataset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            self.optimal_set_vals (dict): Optimal set val for each set parameter</span>
+<span class="sd">                The key is the name of the set parameter. Returns None if no</span>
+<span class="sd">                set vals satisfy condition_set.</span>
+<span class="sd">            self.optimal_val (val): Discriminant value at optimal set vals.</span>
+<span class="sd">                Returns None if no set vals satisfy condition_set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span>
+
+        <span class="n">discriminant_vals</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">)</span>
+
+        <span class="c1"># Convert arrays to 1D</span>
+        <span class="n">measurement_vals_1D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">discriminant_vals</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">condition_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;is_satisfied&#39;</span><span class="p">]:</span>
+                <span class="c1"># No values satisfy condition sets</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals_from_idx</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_set_vals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span>
+
+            <span class="c1"># Filter 1D arrays by those satisfying conditions</span>
+            <span class="n">satisfied_arr_1D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span>
+                <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;satisfied_arr&#39;</span><span class="p">])</span>
+            <span class="n">satisfied_idx</span><span class="p">,</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">satisfied_arr_1D</span><span class="p">)</span>
+
+            <span class="n">measurement_vals_1D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">measurement_vals_1D</span><span class="p">,</span> <span class="n">satisfied_idx</span><span class="p">)</span>
+            <span class="n">max_idx</span> <span class="o">=</span> <span class="n">satisfied_idx</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">measurement_vals_1D</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">measurement_vals_1D</span><span class="p">)</span>
+
+        <span class="c1"># TODO more adaptive way of choosing best value, not always max val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">measurement_vals_1D</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals_from_idx</span><span class="p">(</span><span class="n">max_idx</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Optimal value: </span><span class="si">{self.optimal_val:.5f}</span><span class="s1">, &#39;</span>
+                    <span class="n">f</span><span class="s1">&#39;set values: </span><span class="si">{self.optimal_set_vals}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_set_vals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span></div>
+
+<div class="viewcode-block" id="Measurement.update_set_parameters"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.update_set_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">update_set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">condition_set</span><span class="p">):</span>
+        <span class="c1"># Determine if values need to be updated</span>
+        <span class="k">if</span> <span class="n">condition_set</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">update</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;is_satisfied&#39;</span><span class="p">]:</span>
+            <span class="n">update</span> <span class="o">=</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">update</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">update</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Updating set parameters to optimal values: &#39;</span>
+                       <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.optimal_set_vals}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">set_parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">:</span>
+                <span class="n">set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimal_set_vals</span><span class="p">[</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Resetting set parameters to initial values: &#39;</span>
+                         <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.initial_set_vals}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">set_parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">:</span>
+                <span class="n">set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_set_vals</span><span class="p">[</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Measurement.initialize_measurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.initialize_measurement">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_measurement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Must be implemented in subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Measurement.initialize"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">condition_set</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">:</span>
+            <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="c1"># Reset set_vals if step and points is given</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_set_vals</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">p</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">}</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Initial set values: </span><span class="si">{self.initial_set_vals}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_measurement</span><span class="p">()</span>
+
+        <span class="c1"># Create dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">get_data_set</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">measurement_name</span><span class="p">,</span>
+            <span class="n">io</span><span class="o">=</span><span class="n">DataSet</span><span class="o">.</span><span class="n">default_io</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loc_provider</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">location</span></div>
+
+<div class="viewcode-block" id="Measurement.set_vals_from_idx"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Measurement.set_vals_from_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_vals_from_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Must be implemented in subclass&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Loop0DMeasurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop0DMeasurement">[docs]</a><span class="k">class</span> <span class="nc">Loop0DMeasurement</span><span class="p">(</span><span class="n">Measurement</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Loop0DMeasurement.set_vals_from_idx"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop0DMeasurement.set_vals_from_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_vals_from_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return set vals that correspond to the acquisition idx.</span>
+<span class="sd">        In this case it returns an empty dict, since there are no set parameters</span>
+<span class="sd">        Args:</span>
+<span class="sd">            idx: Acquisition idx, in this case always zero</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict of set vals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="Loop0DMeasurement.initialize_measurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop0DMeasurement.initialize_measurement">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_measurement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">measurement_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">_</span><span class="si">{self.acquisition_parameter.name}</span><span class="s1">&#39;</span>
+
+<div class="viewcode-block" id="Loop0DMeasurement.get"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop0DMeasurement.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a measurement at a single point using qc.Measure</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Performing 0D measurement </span><span class="si">{self.measurement_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="n">set_active</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+        <span class="c1"># Test condition sets until a condition_set is found that has an action</span>
+        <span class="n">condition_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_condition_sets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                                                  <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">)</span>
+
+        <span class="c1"># Find optimal values satisfying condition_sets.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_optimum</span><span class="p">(</span><span class="n">condition_set</span><span class="o">=</span><span class="n">condition_set</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span></div></div>
+
+
+<div class="viewcode-block" id="Loop1DMeasurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop1DMeasurement">[docs]</a><span class="k">class</span> <span class="nc">Loop1DMeasurement</span><span class="p">(</span><span class="n">Measurement</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">step_percentage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">set_parameters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">set_parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">set_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">set_parameter</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">set_vals</span><span class="p">]</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                         <span class="n">set_parameters</span><span class="o">=</span><span class="n">set_parameters</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="n">set_vals</span><span class="p">,</span>
+                         <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span> <span class="n">step_percentage</span><span class="o">=</span><span class="n">step_percentage</span><span class="p">,</span>
+                         <span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parameter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_dummy_parameter</span>
+
+<div class="viewcode-block" id="Loop1DMeasurement.set_vals_from_idx"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop1DMeasurement.set_vals_from_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_vals_from_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return set vals that correspond to the acquisition idx.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            idx: Acquisition idx. If equal to -1, returns nan for each element</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict of set vals (in this case contains one element)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                    <span class="k">for</span> <span class="n">set_parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">idx</span><span class="p">]}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># No set vals specified. This means that a dummy loop is</span>
+            <span class="c1"># performed, and so set vals must be extracted from dataset</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                                                <span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">)[</span><span class="n">idx</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">set_parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Loop1DMeasurement.initialize_measurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop1DMeasurement.initialize_measurement">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_measurement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Start with an empty set of actions in the loop</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">set_loop</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># No set vals specified, but points are, so create dummy parameter</span>
+            <span class="n">set_loop</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span><span class="n">_dummy_parameter</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c1"># Also measure the set_parameters, as we are going to update them</span>
+            <span class="n">actions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Either set_vals or point must be defined&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Add measurement of acquisition parameter</span>
+        <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">break_if</span><span class="p">:</span>
+            <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BreakIf</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">satisfies_condition_set</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                                           <span class="n">action</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">break_if</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">set_loop</span><span class="o">.</span><span class="n">each</span><span class="p">(</span><span class="o">*</span><span class="n">actions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">measurement_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">_</span><span class="si">{self.set_parameter.name}</span><span class="s1">_&#39;</span> \
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.acquisition_parameter.name}</span><span class="s1">&#39;</span>
+
+<div class="viewcode-block" id="Loop1DMeasurement.get"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop1DMeasurement.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a 1D measurement loop</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Performing 1D measurement </span><span class="si">{self.measurement_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="n">set_active</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Test condition sets until a condition_set is found that has an action</span>
+        <span class="n">condition_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_condition_sets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                                                  <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">)</span>
+
+        <span class="c1"># Find optimal values satisfying condition_sets.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_optimum</span><span class="p">(</span><span class="n">condition_set</span><span class="o">=</span><span class="n">condition_set</span><span class="p">)</span>
+
+        <span class="c1"># Update set parameter values, either to optimal values or to initial</span>
+        <span class="c1">#  values. This depends on condition_set.update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_set_parameters</span><span class="p">(</span><span class="n">condition_set</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span></div>
+
+<div class="viewcode-block" id="Loop1DMeasurement.set"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop1DMeasurement.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">set_vals</span><span class="p">)]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">step</span>
+            <span class="k">if</span> <span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span></div></div>
+
+
+<div class="viewcode-block" id="Loop2DMeasurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop2DMeasurement">[docs]</a><span class="k">class</span> <span class="nc">Loop2DMeasurement</span><span class="p">(</span><span class="n">Measurement</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">step_percentage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                         <span class="n">set_parameters</span><span class="o">=</span><span class="n">set_parameters</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="n">set_vals</span><span class="p">,</span>
+                         <span class="n">step_percentage</span><span class="o">=</span><span class="n">step_percentage</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                         <span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Loop2DMeasurement.set_vals_from_idx"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop2DMeasurement.set_vals_from_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_vals_from_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return set vals that correspond to the acquisition idx.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            idx: Acquisition idx</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict of set vals (in this case contains two elements)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">len_inner</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx</span> <span class="o">//</span> <span class="n">len_inner</span><span class="p">,</span> <span class="n">idx</span> <span class="o">%</span> <span class="n">len_inner</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">idxs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]}</span></div>
+
+<div class="viewcode-block" id="Loop2DMeasurement.initialize_measurement"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop2DMeasurement.initialize_measurement">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_measurement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">break_if</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">loop</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">each</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">break_action</span> <span class="o">=</span> <span class="n">BreakIf</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">satisfies_condition_set</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                                           <span class="n">action</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">break_if</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">each</span><span class="p">(</span>
+                    <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">each</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                        <span class="n">break_action</span><span class="p">),</span>
+                    <span class="n">break_action</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">measurement_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">_</span><span class="si">{self.set_parameters[0].name}</span><span class="s1">_&#39;</span> \
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.set_parameters[1].name}</span><span class="s1">_&#39;</span> \
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.acquisition_parameter.name}</span><span class="s1">&#39;</span>
+
+<div class="viewcode-block" id="Loop2DMeasurement.get"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop2DMeasurement.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a 2D measurement loop</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Performing 2D measurement </span><span class="si">{self.measurement_name}</span><span class="s1"> &#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">f</span><span class="s1">&#39;set_vals: </span><span class="si">{self.set_parameters[0].name}</span><span class="s1">[</span><span class="si">{self.set_vals[0][:]}</span><span class="s1">], &#39;</span>
+            <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.set_parameters[1].name}</span><span class="s1">[</span><span class="si">{self.set_vals[1][:]}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="n">set_active</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Test condition sets until a condition_set is found that has an action</span>
+        <span class="n">condition_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_condition_sets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                                                  <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">)</span>
+
+        <span class="c1"># Find optimal values satisfying condition_sets.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_optimum</span><span class="p">(</span><span class="n">condition_set</span><span class="o">=</span><span class="n">condition_set</span><span class="p">)</span>
+
+        <span class="c1"># Update set parameter values, either to optimal values or to initial</span>
+        <span class="c1"># values. This depends on condition_set.update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_set_parameters</span><span class="p">(</span><span class="n">condition_set</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span> <span class="n">condition_set</span><span class="o">.</span><span class="n">result</span></div>
+
+<div class="viewcode-block" id="Loop2DMeasurement.set"><a class="viewcode-back" href="../../silq.measurements.html#silq.measurements.measurement_types.Loop2DMeasurement.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">set_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">set_parameter</span><span class="p">[</span><span class="n">set_val</span><span class="p">]</span> <span class="k">for</span> <span class="n">set_parameter</span><span class="p">,</span> <span class="n">set_val</span>
+                              <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">,</span> <span class="n">set_vals</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_vals</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">step</span>
+            <span class="k">if</span> <span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

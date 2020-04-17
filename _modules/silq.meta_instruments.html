@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.meta_instruments package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.meta_instruments package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.meta_instruments.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-meta-instruments-package">
+<h1>silq.meta_instruments package<a class="headerlink" href="#silq-meta-instruments-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.meta_instruments.Lockin">
+<span id="silq-meta-instruments-lockin-module"></span><h2>silq.meta_instruments.Lockin module<a class="headerlink" href="#module-silq.meta_instruments.Lockin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.meta_instruments.Lockin.Lockin">
+<em class="property">class </em><code class="sig-prename descclassname">silq.meta_instruments.Lockin.</code><code class="sig-name descname">Lockin</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">address</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/meta_instruments/Lockin.html#Lockin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.meta_instruments.Lockin.Lockin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/generated/qcodes.instrument_drivers.stanford_research.html#qcodes.instrument_drivers.stanford_research.SR830.SR830" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument_drivers.stanford_research.SR830.SR830</span></code></a></p>
+<p>Wrapper for the SR830 Locking module.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This instrument is not finished and has never been tested</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.meta_instruments.Simrack">
+<span id="silq-meta-instruments-simrack-module"></span><h2>silq.meta_instruments.Simrack module<a class="headerlink" href="#module-silq.meta_instruments.Simrack" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.meta_instruments.Simrack.Simrack">
+<em class="property">class </em><code class="sig-prename descclassname">silq.meta_instruments.Simrack.</code><code class="sig-name descname">Simrack</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">SIMs</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/meta_instruments/Simrack.html#Simrack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.meta_instruments.Simrack.Simrack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+<p>Combiner of multiple SIM900 modules</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This module is not finished and has never been tested.</p>
+</div>
+<dl class="method">
+<dt id="silq.meta_instruments.Simrack.Simrack.do_get_voltage">
+<code class="sig-name descname">do_get_voltage</code><span class="sig-paren">(</span><em class="sig-param">SIM_letter</em>, <em class="sig-param">channel</em><span class="sig-paren">)</span><a class="reference internal" href="silq/meta_instruments/Simrack.html#Simrack.do_get_voltage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.meta_instruments.Simrack.Simrack.do_get_voltage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.meta_instruments.Simrack.Simrack.do_set_voltage">
+<code class="sig-name descname">do_set_voltage</code><span class="sig-paren">(</span><em class="sig-param">voltage</em>, <em class="sig-param">SIM_letter</em>, <em class="sig-param">channel</em><span class="sig-paren">)</span><a class="reference internal" href="silq/meta_instruments/Simrack.html#Simrack.do_set_voltage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.meta_instruments.Simrack.Simrack.do_set_voltage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.meta_instruments.chip">
+<span id="silq-meta-instruments-chip-module"></span><h2>silq.meta_instruments.chip module<a class="headerlink" href="#module-silq.meta_instruments.chip" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.meta_instruments.chip.Chip">
+<em class="property">class </em><code class="sig-prename descclassname">silq.meta_instruments.chip.</code><code class="sig-name descname">Chip</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">channels</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/meta_instruments/chip.html#Chip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.meta_instruments.chip.Chip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+<p>Meta instrument representing chip in the fridge</p>
+<p>This instrument is only used for as a`Connection` endpoint</p>
+</dd></dl>
+
+</div>
+<div class="section" id="silq-meta-instruments-layout-module">
+<h2>silq.meta_instruments.layout module<a class="headerlink" href="#silq-meta-instruments-layout-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.meta_instruments">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.meta_instruments" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,1343 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.pulses.pulse_modules &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.pulses.pulse_modules</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.pulses.pulse_modules</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span><span class="p">,</span> <span class="n">deepcopy</span>
+<span class="n">copy_alias</span> <span class="o">=</span> <span class="n">copy</span>  <span class="c1"># Alias for functions that have copy as a kwarg</span>
+<span class="kn">from</span> <span class="nn">blinker</span> <span class="k">import</span> <span class="n">Signal</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter_node</span> <span class="k">import</span> <span class="n">parameter</span>
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">ParameterNode</span><span class="p">,</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PulseRequirement&#39;</span><span class="p">,</span> <span class="s1">&#39;PulseSequence&#39;</span><span class="p">,</span> <span class="s1">&#39;PulseImplementation&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="PulseRequirement"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseRequirement">[docs]</a><span class="k">class</span> <span class="nc">PulseRequirement</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;`Pulse` attribute requirement for a `PulseImplementation`</span>
+
+<span class="sd">    This class is used in Interfaces when registering a `PulseImplementation`,</span>
+<span class="sd">    to impose additional constraints for implementing the pulse.</span>
+
+<span class="sd">    The class is never directly instantiated, but is instead created from a dict</span>
+<span class="sd">    passed to the ``pulse_requirements`` kwarg of a `PulseImplementation`.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        For an AWG can apply sine pulses, but only up to its Nyquist limit</span>
+<span class="sd">        ``max_frequency``, the following implementation is used:</span>
+
+<span class="sd">        &gt;&gt;&gt; SinePulseImplementation(</span>
+<span class="sd">                pulse_requirements=[(&#39;frequency&#39;, {&#39;max&#39;: max_frequency})])</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        property: Pulse attribute for which to place a constraint.</span>
+<span class="sd">        requirement: Requirement that a property must satisfy.</span>
+
+<span class="sd">            * If a dict, allowed keys are ``min`` and ``max``, the value being</span>
+<span class="sd">              the minimum/maximum value.</span>
+<span class="sd">            * If a list, the property must be an element in the list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="nb">property</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">requirement</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">property</span> <span class="o">=</span> <span class="nb">property</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">verify_requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span> <span class="o">=</span> <span class="n">requirement</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.property}</span><span class="s1"> - </span><span class="si">{self.requirement}</span><span class="s1">&#39;</span>
+
+<div class="viewcode-block" id="PulseRequirement.verify_requirement"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseRequirement.verify_requirement">[docs]</a>    <span class="k">def</span> <span class="nf">verify_requirement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requirement</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Verifies that the requirement is valid.</span>
+
+<span class="sd">        A valid requirement is either a list, or a dict with keys ``min`` and/or</span>
+<span class="sd">        ``max``.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: Requirement is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">requirement</span><span class="p">,</span> <span class="s2">&quot;Requirement must not be an empty list&quot;</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="p">(</span><span class="s1">&#39;min&#39;</span> <span class="ow">in</span> <span class="n">requirement</span> <span class="ow">or</span> <span class="s1">&#39;max&#39;</span> <span class="ow">in</span> <span class="n">requirement</span><span class="p">),</span> \
+                <span class="s2">&quot;Dictionary condition must have either a &#39;min&#39; or a &#39;max&#39;&quot;</span></div>
+
+<div class="viewcode-block" id="PulseRequirement.satisfies"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseRequirement.satisfies">[docs]</a>    <span class="k">def</span> <span class="nf">satisfies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if a given pulses satisfies this PulseRequirement.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse: Pulse to be verified.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if pulse satisfies PulseRequirement.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: Pulse requirement cannot be interpreted.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">property_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">property</span><span class="p">)</span>
+
+        <span class="c1"># Test for condition</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requirement</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+            <span class="c1"># requirement contains min and/or max</span>
+            <span class="k">if</span> <span class="s1">&#39;min&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span> <span class="ow">and</span> \
+                            <span class="n">property_value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span><span class="p">[</span><span class="s1">&#39;min&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="s1">&#39;max&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span> <span class="ow">and</span> \
+                            <span class="n">property_value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requirement</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">property_value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">requirement</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot interpret pulses requirement: </span><span class="si">{self.requirement}</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence">[docs]</a><span class="k">class</span> <span class="nc">PulseSequence</span><span class="p">(</span><span class="n">ParameterNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`Pulse` container that can be targeted in the `Layout`.</span>
+
+<span class="sd">    It can be used to store untargeted or targeted pulses.</span>
+
+<span class="sd">    If multiple pulses with the same name are added, `Pulse`.id is set for the</span>
+<span class="sd">    pulses sharing the same name, starting with 0 for the first pulse.</span>
+
+<span class="sd">    **Retrieving pulses**</span>
+<span class="sd">        To retrieve a pulse with name &#39;read&#39;:</span>
+
+<span class="sd">        &gt;&gt;&gt; pulse_sequence[&#39;read&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; pulse_sequence.get_pulse(name=&#39;read&#39;)</span>
+
+<span class="sd">        Both methods work, but the latter is more versatile, as it also allows</span>
+<span class="sd">        filtering of pulses by discriminants other than name.</span>
+
+<span class="sd">        If there are multiple pulses with the same name, the methods above will</span>
+<span class="sd">        raise an error because there is no unique pulse with name ``read``.</span>
+<span class="sd">        Instead, the `Pulse`.id must also be passed to discriminate the pulses:</span>
+
+<span class="sd">        &gt;&gt;&gt; pulse_sequence[&#39;read[0]&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; pulse_sequence.get_pulse(name=&#39;read&#39;, id=0)</span>
+
+<span class="sd">        Both methods return the first pulse added whose name is &#39;read&#39;.</span>
+
+<span class="sd">    **Iterating over pulses**</span>
+<span class="sd">        Pulses in a pulse sequence can be iterated over via:</span>
+
+<span class="sd">        &gt;&gt;&gt; for pulse in pulse_sequence:</span>
+<span class="sd">        &gt;&gt;&gt;     # perform actions</span>
+
+<span class="sd">        This will return the pulses sorted by `Pulse`.t_start.</span>
+<span class="sd">        Pulses for which `Pulse`.enabled is False are ignored.</span>
+
+<span class="sd">    **Checking if pulse sequence contains a pulse**</span>
+<span class="sd">        Pulse sequences can be treated similar to a list, and so checking if a</span>
+<span class="sd">        pulse exists in a list is done as such:</span>
+
+<span class="sd">        &gt;&gt;&gt; pulse in pulse_sequence</span>
+
+<span class="sd">        Note that this does not compare object equality, but only checks if all</span>
+<span class="sd">        attributes match.</span>
+
+<span class="sd">    **Checking if a pulse sequence contains pulses**</span>
+<span class="sd">        Checking if a pulse sequence contains pulses is similar to a list:</span>
+
+<span class="sd">        &gt;&gt;&gt; if pulse_sequence:</span>
+<span class="sd">        &gt;&gt;&gt;     # pulse_sequence contains pulses</span>
+
+<span class="sd">    **Targeting a pulse sequence in the `Layout`**</span>
+<span class="sd">        A pulse sequence can be targeted in the layout, which will distribute</span>
+<span class="sd">        the pulses among it&#39;s `InstrumentInterface` such that the pulse sequence</span>
+<span class="sd">        is executed. Targeting of a pulse sequence is straightforward:</span>
+
+<span class="sd">        &gt;&gt;&gt; layout.pulse_sequence = pulse_sequence</span>
+
+<span class="sd">        After this, the instruments can be configured via `Layout.setup`.</span>
+
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        pulses (List[Pulse]): `Pulse` list to place in PulseSequence.</span>
+<span class="sd">            Pulses can also be added later using `PulseSequence.add`.</span>
+<span class="sd">        allow_untargeted_pulses (bool): Allow untargeted pulses (without</span>
+<span class="sd">            corresponding `Pulse`.implementation) to be added to PulseSequence.</span>
+<span class="sd">            `InstrumentInterface`.pulse_sequence should have this unchecked.</span>
+<span class="sd">        allow_targeted_pulses (bool): Allow targeted pulses (with corresponding</span>
+<span class="sd">            `Pulse`.implementation) to be added to PulseSequence.</span>
+<span class="sd">            `InstrumentInterface`.pulse_sequence should have this checked.</span>
+<span class="sd">        allow_pulse_overlap (bool): Allow pulses to overlap in time. If False,</span>
+<span class="sd">            an error will be raised if a pulse is added that overlaps in time.</span>
+<span class="sd">            If pulse has a `Pulse`.connection, an error is only raised if</span>
+<span class="sd">            connections match as well.</span>
+<span class="sd">        duration (float): Total duration of pulse sequence. Equal to</span>
+<span class="sd">            `Pulse`.t_stop of last pulse, unless explicitly set.</span>
+<span class="sd">            Can be reset to t_stop of last pulse by setting to None, and will</span>
+<span class="sd">            automatically be reset every time a pulse is added/removed.</span>
+<span class="sd">        final_delay (Union[float, None]): Optional final delay at the end of</span>
+<span class="sd">            the pulse sequence. The interface of the primary instrument should</span>
+<span class="sd">            incorporate any final delay. The default is .5 ms</span>
+<span class="sd">        enabled_pulses (List[Pulse]): `Pulse` list with `Pulse`.enabled True.</span>
+<span class="sd">            Updated when a pulse is added or `Pulse`.enabled is changed.</span>
+<span class="sd">        disabled_pulses (List[Pulse]): Pulse list with `Pulse`.enabled False.</span>
+<span class="sd">            Updated when a pulse is added or `Pulse`.enabled is changed.</span>
+<span class="sd">        t_start_list (List[float]): `Pulse`.t_start list for all enabled pulses.</span>
+<span class="sd">            Can contain duplicates if pulses share the same `Pulse`.t_start.</span>
+<span class="sd">        t_stop_list (List[float]): `Pulse`.t_stop list for all enabled pulses.</span>
+<span class="sd">            Can contain duplicates if pulses share the same `Pulse`.t_stop.</span>
+<span class="sd">        t_list (List[float]): Combined list of `Pulse`.t_start and</span>
+<span class="sd">            `Pulse`.t_stop for all enabled pulses. Does not contain duplicates.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        * If pulses are added without `Pulse`.t_start defined, the pulse is</span>
+<span class="sd">          assumed to start after the last pulse finishes, and a connection is</span>
+<span class="sd">          made with the attribute `t_stop` of the last pulse, such that if the</span>
+<span class="sd">          last pulse t_stop changes, t_start is changed accordingly.</span>
+<span class="sd">        * All pulses in the pulse sequence are listened to via `Pulse`.signal.</span>
+<span class="sd">          Any time an attribute of a pulse changes, a signal will be emitted,</span>
+<span class="sd">          which can then be interpreted by the pulse sequence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">connection_conditions</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pulse_conditions</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">default_final_delay</span> <span class="o">=</span> <span class="o">.</span><span class="mf">5e-3</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">pulses</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">allow_untargeted_pulses</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">allow_targeted_pulses</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">allow_pulse_overlap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">final_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">use_as_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="n">log_changes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">simplify_snapshot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># For PulseSequence.satisfies_conditions, we need to separate conditions</span>
+        <span class="c1"># into those relating to pulses and to connections. We perform an import</span>
+        <span class="c1"># here because it otherwise otherwise leads to circular imports</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_conditions</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_conditions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">silq.meta_instruments.layout</span> <span class="k">import</span> <span class="n">connection_conditions</span>
+            <span class="kn">from</span> <span class="nn">silq.pulses</span> <span class="k">import</span> <span class="n">pulse_conditions</span>
+            <span class="n">PulseSequence</span><span class="o">.</span><span class="n">connection_conditions</span> <span class="o">=</span> <span class="n">connection_conditions</span>
+            <span class="n">PulseSequence</span><span class="o">.</span><span class="n">pulse_conditions</span> <span class="o">=</span> <span class="n">pulse_conditions</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">allow_untargeted_pulses</span><span class="p">,</span>
+                                                 <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                 <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_targeted_pulses</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">allow_targeted_pulses</span><span class="p">,</span>
+                                               <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                               <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_pulse_overlap</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">allow_pulse_overlap</span><span class="p">,</span>
+                                             <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                             <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_delay</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">final_delay</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">final_delay</span> <span class="o">=</span> <span class="n">final_delay</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">final_delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_final_delay</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_list</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_start_list</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_stop_list</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Lists</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                         <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Lists</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Lists</span><span class="p">(),</span>
+                                <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Reset duration to t_stop of last pulse</span>
+        <span class="c1"># Perform a separate set to ensure set method is called</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span> <span class="o">=</span> <span class="n">pulses</span> <span class="ow">or</span> <span class="p">[]</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">pulses_set_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">pulses</span><span class="p">):</span>
+        <span class="c1"># We modify the set_parser instead of set, since we don&#39;t want to set</span>
+        <span class="c1"># pulses to the original pulses, but to the added (copied) pulses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">added_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quick_add</span><span class="p">(</span><span class="o">*</span><span class="n">pulses</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish_quick_add</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">added_pulses</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">duration_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">_duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">parameter</span><span class="o">.</span><span class="n">_duration</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">:</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">duration_set_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parameter</span><span class="o">.</span><span class="n">_duration</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">parameter</span><span class="o">.</span><span class="n">_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">parameter</span><span class="o">.</span><span class="n">_duration</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_start_list_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="c1"># Use get_latest for speedup</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_raw</span><span class="p">()</span>
+                       <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">})</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_stop_list_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="c1"># Use get_latest for speedup</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_raw</span><span class="p">()</span>
+                       <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">})</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_list_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="c1"># Note: Set does not work accurately when dealing with floating point numbers to remove duplicates</span>
+        <span class="c1"># t_list = self.t_start_list + self.t_stop_list + [self.duration]</span>
+        <span class="c1"># return sorted(list(np.unique(np.round(t_list, decimals=8)))) # Accurate to 10 ns</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_start_list</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop_list</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">]))</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span>
+                      <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">satisfies_conditions</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">index</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="n">pulses</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Could not find unique pulse with name &quot;</span>
+                                   <span class="n">f</span><span class="s2">&quot;</span><span class="si">{index}</span><span class="s2">, pulses found:</span><span class="se">\n</span><span class="si">{pulses}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">pulses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span>
+                      <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">:</span>
+            <span class="n">pulse_repr</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="c1"># Add a tab to each line</span>
+            <span class="n">pulse_repr</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pulse_repr</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">pulse_repr</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\t\n\t</span><span class="s1">Disabled pulses:</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span><span class="p">:</span>
+                <span class="n">pulse_repr</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+                <span class="c1"># Add a tab to each line</span>
+                <span class="n">pulse_repr</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pulse_repr</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+                <span class="n">output</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">pulse_repr</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;PulseSequence with {len(self.pulses)} pulses, &#39;</span> \
+               <span class="n">f</span><span class="s1">&#39;duration: </span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overwrite comparison with other (self == other).</span>
+
+<span class="sd">        We want the comparison to return True if other is a pulse with the</span>
+<span class="sd">        same attributes. This can be complicated since pulses can also be</span>
+<span class="sd">        targeted, resulting in a pulse implementation. We therefore have to</span>
+<span class="sd">        use a separate comparison when either is a Pulse implementation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">PulseSequence</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">parameter_name</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="n">parameter</span><span class="p">()</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># All parameters match</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1"># Temporarily remove pulses from parameter so they won&#39;t be deepcopied</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span>
+        <span class="n">enabled_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;enabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span>
+        <span class="n">disabled_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;disabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;raw_value&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;enabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;raw_value&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;disabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;raw_value&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+
+            <span class="n">self_copy</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__copy__</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Restore pulses</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="n">pulses</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;enabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="n">enabled_pulses</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;disabled_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span> <span class="o">=</span> <span class="n">disabled_pulses</span>
+
+        <span class="c1"># Add pulses (which will create copies)</span>
+        <span class="n">self_copy</span><span class="o">.</span><span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span>
+
+        <span class="c1"># If duration is fixed (i.e. pulse_sequence.duration=val), ensure this</span>
+        <span class="c1"># is also copied</span>
+        <span class="n">self_copy</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_duration</span>
+        <span class="k">return</span> <span class="n">self_copy</span>
+
+    <span class="k">def</span> <span class="nf">_ipython_key_completions_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tab completion for IPython, i.e. pulse_sequence[&quot;p...&quot;] &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">]</span>
+
+<div class="viewcode-block" id="PulseSequence.snapshot_base"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.snapshot_base">[docs]</a>    <span class="k">def</span> <span class="nf">snapshot_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">params_to_skip_update</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        State of the pulse sequence as a JSON-compatible dict.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            update (bool): If True, update the state by querying the</span>
+<span class="sd">                instrument. If False, just use the latest values in memory.</span>
+<span class="sd">            params_to_skip_update: List of parameter names that will be skipped</span>
+<span class="sd">                in update even if update is True. This is useful if you have</span>
+<span class="sd">                parameters that are slow to update but can be updated in a</span>
+<span class="sd">                different way (as in the qdac)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: base snapshot</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Ensure the following paraeters have the latest values</span>
+        <span class="k">for</span> <span class="n">parameter_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">,</span> <span class="s1">&#39;t_list&#39;</span><span class="p">,</span> <span class="s1">&#39;t_start_list&#39;</span><span class="p">,</span> <span class="s1">&#39;t_stop_list&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter_name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="n">snap</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">snapshot_base</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span>
+                                     <span class="n">params_to_skip_update</span><span class="o">=</span><span class="n">params_to_skip_update</span><span class="p">)</span>
+        <span class="n">snap</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;enabled_pulses&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">snap</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span>
+                                         <span class="n">params_to_skip_update</span><span class="o">=</span><span class="n">params_to_skip_update</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">snap</span></div>
+
+<div class="viewcode-block" id="PulseSequence.add"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">pulses</span><span class="p">,</span>
+            <span class="n">reset_duration</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds pulse(s) to the PulseSequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *pulses (Pulse): Pulses to add</span>
+<span class="sd">            reset_duration: Reset duration of pulse sequence to t_stop of final</span>
+<span class="sd">                pulse</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Pulse]: Added pulses, which are copies of the original pulses.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: The added pulse overlaps with another pulses and</span>
+<span class="sd">                `PulseSequence`.allow_pulses_overlap is False</span>
+<span class="sd">            AssertionError: The added pulse is untargeted and</span>
+<span class="sd">                `PulseSequence`.allow_untargeted_pulses is False</span>
+<span class="sd">            AssertionError: The added pulse is targeted and</span>
+<span class="sd">                `PulseSequence`.allow_targeted_pulses is False</span>
+<span class="sd">            ValueError: If a pulse has no duration</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            When a pulse is added, it is first copied, to ensure that the</span>
+<span class="sd">            original pulse remains unmodified.</span>
+<span class="sd">            For an speed-optimized version, see `PulseSequence.quick_add`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulses_no_duration</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pulses_no_duration</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Please specify pulse duration in silq.config.pulses for the &#39;</span>
+                <span class="s1">&#39;following pulses: &#39;</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pulses_no_duration</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">added_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">:</span>
+            <span class="c1"># Perform checks to see if pulse can be added</span>
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_pulse_overlap</span>
+                    <span class="ow">and</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses_overlap</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">p</span><span class="p">))):</span>
+                <span class="n">overlapping_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span>
+                                      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses_overlap</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">p</span><span class="p">)]</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cannot add pulse </span><span class="si">{pulse}</span><span class="s1"> because it &#39;</span>
+                                     <span class="n">f</span><span class="s1">&#39;overlaps with </span><span class="si">{overlapping_pulses}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;Cannot add untargeted pulse </span><span class="si">{pulse}</span><span class="s1">&#39;</span>
+            <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_targeted_pulses</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;Not allowed to add targeted pulse </span><span class="si">{pulse}</span><span class="s1">&#39;</span>
+
+            <span class="c1"># Copy pulse to ensure original pulse is unmodified</span>
+            <span class="n">pulse_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="n">pulse_copy</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Remove any pre-existing pulse id</span>
+
+            <span class="c1"># Check if pulse with same name exists, if so ensure unique id</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pulses_same_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">pulse</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">pulses_same_name</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">pulses_same_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">pulses_same_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">pulse_copy</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">max_id</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pulses_same_name</span><span class="p">)</span>
+                        <span class="n">pulse_copy</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">max_id</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># If pulse does not have t_start defined, it will be attached to</span>
+            <span class="c1"># the end of the last pulse on the same connection(_label)</span>
+            <span class="k">if</span> <span class="n">pulse_copy</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">:</span>
+                <span class="c1"># Find relevant pulses that share same connection(_label)</span>
+                <span class="n">relevant_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">connection</span><span class="o">=</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="p">,</span>
+                                                  <span class="n">connection_label</span><span class="o">=</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">relevant_pulses</span><span class="p">:</span>
+                    <span class="n">last_pulse</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">relevant_pulses</span><span class="p">,</span>
+                                     <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pulse</span><span class="p">:</span> <span class="n">pulse</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">raw_value</span><span class="p">)</span>
+                    <span class="n">last_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">pulse_copy</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">pulse_copy</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># No relevant pulses found</span>
+                <span class="n">pulse_copy</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse_copy</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pulse_copy</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse_copy</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse_copy</span><span class="p">)</span>
+            <span class="n">added_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse_copy</span><span class="p">)</span>
+            <span class="c1"># TODO attach pulsesequence to some of the pulse attributes</span>
+            <span class="n">pulse_copy</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_enabled_disabled_pulses</span><span class="p">,</span>
+                                          <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">reset_duration</span><span class="p">:</span>  <span class="c1"># Reset duration to t_stop of last pulse</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">added_pulses</span></div>
+
+<div class="viewcode-block" id="PulseSequence.quick_add"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.quick_add">[docs]</a>    <span class="k">def</span> <span class="nf">quick_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">pulses</span><span class="p">,</span>
+                  <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                  <span class="n">connect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                  <span class="n">reset_duration</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Quickly add pulses to a sequence skipping steps and checks.</span>
+
+<span class="sd">        This method is used in the during the `Layout` targeting of a pulse</span>
+<span class="sd">        sequence, and should generally only be used if speed is a crucial factor.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            When using this method, make sure to finish adding pulses with</span>
+<span class="sd">            `PulseSequence.finish_quick_add`.</span>
+
+<span class="sd">        The following steps are skipped and are performed in</span>
+<span class="sd">        `PulseSequence.finish_quick_add`:</span>
+
+<span class="sd">        - Assigning a unique pulse id if multiple pulses share the same name</span>
+<span class="sd">        - Sorting pulses</span>
+<span class="sd">        - Ensuring no pulses overlapped</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *pulses: List of pulses to be added. Note that these won&#39;t be copied</span>
+<span class="sd">                if ``copy`` is False, and so the t_start may be set</span>
+<span class="sd">            copy: Whether to copy the pulse before applying operations</span>
+<span class="sd">            reset_duration: Reset duration of pulse sequence to t_stop of final</span>
+<span class="sd">                pulse</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Added pulses. If copy is False, the original pulses are returned.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            If copy is False, the id of original pulses may be set when calling</span>
+<span class="sd">            `PulseSequence.quick_add`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulses_no_duration</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pulses_no_duration</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="s1">&#39;Please specify pulse duration in silq.config.pulses&#39;</span>
+                              <span class="s1">&#39; for the following pulses: &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pulses_no_duration</span><span class="p">))</span>
+
+        <span class="n">added_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;Cannot add untargeted pulse </span><span class="si">{pulse}</span><span class="s1">&#39;</span>
+            <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_targeted_pulses</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;Not allowed to add targeted pulse </span><span class="si">{pulse}</span><span class="s1">&#39;</span>
+
+            <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+                <span class="n">pulse</span> <span class="o">=</span> <span class="n">copy_alias</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+
+            <span class="c1"># TODO set t_start if not set</span>
+            <span class="c1"># If pulse does not have t_start defined, it will be attached to</span>
+            <span class="c1"># the end of the last pulse on the same connection(_label)</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">:</span>
+                <span class="c1"># Find relevant pulses that share same connection(_label)</span>
+                <span class="n">relevant_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">connection</span><span class="o">=</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="p">,</span>
+                                                  <span class="n">connection_label</span><span class="o">=</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">relevant_pulses</span><span class="p">:</span>
+                    <span class="n">last_pulse</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">relevant_pulses</span><span class="p">,</span>
+                                     <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pulse</span><span class="p">:</span> <span class="n">pulse</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">raw_value</span><span class="p">)</span>
+                    <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">last_pulse</span><span class="o">.</span><span class="n">t_stop</span>
+                    <span class="k">if</span> <span class="n">connect</span><span class="p">:</span>
+                        <span class="n">last_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># No relevant pulses found</span>
+                <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="n">added_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+
+            <span class="c1"># TODO attach pulsesequence to some of the pulse attributes</span>
+            <span class="k">if</span> <span class="n">connect</span><span class="p">:</span>
+                <span class="n">pulse</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_enabled_disabled_pulses</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">reset_duration</span><span class="p">:</span>  <span class="c1"># Reset duration to t_stop of last pulse</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">added_pulses</span></div>
+
+<div class="viewcode-block" id="PulseSequence.finish_quick_add"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.finish_quick_add">[docs]</a>    <span class="k">def</span> <span class="nf">finish_quick_add</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Finish adding pulses via `PulseSequence.quick_add`</span>
+
+<span class="sd">        Steps performed:</span>
+
+<span class="sd">        - Sorting of pulses</span>
+<span class="sd">        - Checking that pulses do not overlap</span>
+<span class="sd">        - Adding unique id&#39;s to pulses in case a name is shared by pulses</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_pulse_overlap</span><span class="p">:</span>  <span class="c1"># Check pulse overlap</span>
+                <span class="n">active_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="p">:</span>
+                    <span class="n">new_active_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">active_pulse</span> <span class="ow">in</span> <span class="n">active_pulses</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">active_pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">&lt;=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">new_active_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">active_pulse</span><span class="p">)</span>
+                        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses_overlap</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">active_pulse</span><span class="p">),</span> \
+                            <span class="n">f</span><span class="s2">&quot;Pulses overlap:</span><span class="se">\n\t</span><span class="s2">{repr(pulse)}</span><span class="se">\n\t</span><span class="s2">{repr(active_pulse)}&quot;</span>
+
+                    <span class="n">new_active_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+                    <span class="n">active_pulses</span> <span class="o">=</span> <span class="n">new_active_pulses</span>
+
+            <span class="c1"># Ensure all pulses have a unique full_name. This is done by attaching</span>
+            <span class="c1"># a unique id if multiple pulses share the same name</span>
+            <span class="n">unique_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">unique_names</span><span class="p">:</span>
+                <span class="n">same_name_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="c1"># Add ``id`` if several pulses share the same name</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">same_name_pulses</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">same_name_pulses</span><span class="p">):</span>
+                        <span class="n">pulse</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>  <span class="c1"># Likely error is that pulses overlap</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="PulseSequence.remove"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">pulses</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes `Pulse` or pulses from pulse sequence</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulses: Pulse(s) to remove from PulseSequence</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: No unique pulse found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">pulses_same_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="o">==</span><span class="n">pulse</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pulses_same_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="n">pulse</span><span class="p">]</span>
+
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses_same_name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;No unique pulse </span><span class="si">{pulse}</span><span class="s1"> found, pulses: </span><span class="si">{pulses_same_name}</span><span class="s1">&#39;</span>
+            <span class="n">pulse_same_name</span> <span class="o">=</span> <span class="n">pulses_same_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pulse_same_name</span><span class="p">)</span>
+
+            <span class="c1"># TODO disconnect all pulse attributes</span>
+            <span class="n">pulse_same_name</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_enabled_disabled_pulses</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_enabled_disabled_pulses</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Reset duration to t_stop of last pulse</span></div>
+
+<div class="viewcode-block" id="PulseSequence.sort"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.sort">[docs]</a>    <span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sort pulses by `Pulse`.t_start&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PulseSequence.clear"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clear all pulses from pulse sequence.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">:</span>
+            <span class="c1"># TODO: remove all signal connections</span>
+            <span class="n">pulse</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_enabled_disabled_pulses</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Reset duration to t_stop of last pulse</span></div>
+
+<div class="viewcode-block" id="PulseSequence.pulses_overlap"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.pulses_overlap">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">pulses_overlap</span><span class="p">(</span><span class="n">pulse1</span><span class="p">,</span> <span class="n">pulse2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Tests if pulse1 and pulse2 overlap in time and connection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse1 (Pulse): First pulse</span>
+<span class="sd">            pulse2 (Pulse): Second pulse</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if pulses overlap</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            If either of the pulses does not have a connection, this is not tested.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">&lt;=</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&gt;=</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">t_stop</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">connection</span> <span class="o">==</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">connection</span>
+            <span class="k">elif</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">pulse2</span><span class="o">.</span><span class="n">connection_label</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Overlap if the pulse connection labels overlap</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse2</span><span class="o">.</span><span class="n">connection_label</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pulse2</span><span class="o">.</span><span class="n">connection</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">in</span> <span class="n">labels</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="PulseSequence.get_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.get_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">connection_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">conditions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get list of pulses in pulse sequence satisfying conditions</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            enabled: Pulse must be enabled</span>
+<span class="sd">            connection: pulse must have connection</span>
+<span class="sd">            **conditions: Additional connection and pulse conditions.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Pulse]: Pulses satisfying conditions</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span> <span class="k">if</span> <span class="n">enabled</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span>
+        <span class="c1"># Filter pulses by pulse conditions</span>
+        <span class="n">pulse_conditions</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">conditions</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_conditions</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">satisfies_conditions</span><span class="p">(</span><span class="o">**</span><span class="n">pulse_conditions</span><span class="p">)]</span>
+
+        <span class="c1"># Filter pulses by pulse connection conditions</span>
+        <span class="n">connection_conditions</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">conditions</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                 <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_conditions</span>
+                                 <span class="ow">and</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">connection</span><span class="p">:</span>
+            <span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span>
+                      <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span> <span class="o">==</span> <span class="n">connection</span> <span class="ow">or</span>
+                      <span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">==</span> <span class="n">connection</span><span class="o">.</span><span class="n">label</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">pulses</span>  <span class="c1"># No further filtering required</span>
+        <span class="k">elif</span> <span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span>
+                      <span class="nb">getattr</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="n">connection_label</span> <span class="ow">or</span>
+                      <span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">==</span> <span class="n">connection_label</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">pulses</span> <span class="c1"># No further filtering required</span>
+
+        <span class="k">if</span> <span class="n">connection_conditions</span><span class="p">:</span>
+            <span class="n">pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span> <span class="k">if</span>
+                      <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                      <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">satisfies_conditions</span><span class="p">(</span><span class="o">**</span><span class="n">connection_conditions</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">pulses</span></div>
+
+<div class="viewcode-block" id="PulseSequence.get_pulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.get_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">get_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">conditions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get unique pulse in pulse sequence satisfying conditions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **conditions: Connection and pulse conditions.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Pulse: Unique pulse satisfying conditions</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: No unique pulse satisfying conditions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="o">**</span><span class="n">conditions</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pulses</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pulses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Found more than one pulse satisfiying </span><span class="si">{conditions}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PulseSequence.get_connection"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.get_connection">[docs]</a>    <span class="k">def</span> <span class="nf">get_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">conditions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get unique connections from any pulse satisfying conditions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **conditions: Connection and pulse conditions.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Connection: Unique Connection satisfying conditions</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            `Pulse.satisfies_conditions`, `Connection.satisfies_conditions`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: No unique connection satisfying conditions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="o">**</span><span class="n">conditions</span><span class="p">)</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="nb">list</span><span class="p">({</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">})</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">connections</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;No unique connection found satisfying </span><span class="si">{conditions}</span><span class="s2">. &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;Connections: </span><span class="si">{connections}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">connections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="PulseSequence.get_transition_voltages"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.get_transition_voltages">[docs]</a>    <span class="k">def</span> <span class="nf">get_transition_voltages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">pulse</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="n">connection</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="n">t</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Finds the voltages at the transition between two pulses.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This method can potentially cause issues, and should be avoided</span>
+<span class="sd">            until it&#39;s better thought through</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse (Pulse): Pulse starting at transition voltage. If not</span>
+<span class="sd">                provided, ``connection`` and ``t`` must both be provided.</span>
+<span class="sd">            connection (Connection): connection along which the voltage</span>
+<span class="sd">                transition occurs</span>
+<span class="sd">            t (float): Time at which the voltage transition occurs.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Voltage before transition, voltage after transition)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">post_pulse</span> <span class="o">=</span> <span class="n">pulse</span>
+            <span class="n">connection</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span>
+        <span class="k">elif</span> <span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">post_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Not enough arguments provided&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Find pulses thar stop sat t. If t=0, the pulse before this</span>
+        <span class="c1">#  will be the last pulse in the sequence</span>
+        <span class="n">pre_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span>
+                                   <span class="n">t_stop</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">t</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">pre_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pre_voltage</span> <span class="o">=</span> <span class="n">pre_pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">t</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">output_TTL</span><span class="p">:</span>
+            <span class="c1"># Choose pre voltage as low from TTL</span>
+            <span class="n">pre_voltage</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">output_TTL</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Could not determine pre voltage for transition&#39;</span><span class="p">)</span>
+
+        <span class="n">post_voltage</span> <span class="o">=</span> <span class="n">post_pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pre_voltage</span><span class="p">,</span> <span class="n">post_voltage</span></div>
+
+<div class="viewcode-block" id="PulseSequence.get_trace_shapes"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.get_trace_shapes">[docs]</a>    <span class="k">def</span> <span class="nf">get_trace_shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get dictionary of trace shapes for given sample rate and samples</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sample_rate: Acquisition sample rate</span>
+<span class="sd">            samples: acquisition samples.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, tuple]:</span>
+<span class="sd">            {`Pulse`.full_name: trace_shape}</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            trace shape depends on `Pulse`.average</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">shapes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pulse</span><span class="o">.</span><span class="n">acquire</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">duration</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+            <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;trace&#39;</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">pts</span><span class="p">)</span>
+
+            <span class="n">shapes</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">shape</span>
+
+        <span class="k">return</span> <span class="n">shapes</span></div>
+
+<div class="viewcode-block" id="PulseSequence.plot"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="mi">2001</span><span class="p">,</span> <span class="n">subplots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale_ylim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+             <span class="n">figsize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">connection_kwargs</span><span class="p">):</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="o">**</span><span class="n">connection_kwargs</span><span class="p">)</span>
+
+        <span class="n">connection_pulse_list</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulses</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">connection_label</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span>
+            <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">connection_label</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">label</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">connection_label</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;str&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">connection_label</span> <span class="o">=</span> <span class="s1">&#39;Other&#39;</span>
+
+            <span class="k">if</span> <span class="n">connection_label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">connection_pulse_list</span><span class="p">:</span>
+                <span class="n">connection_pulse_list</span><span class="p">[</span><span class="n">connection_label</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">connection_pulse_list</span><span class="p">[</span><span class="n">connection_label</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">subplots</span><span class="p">:</span>
+            <span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span> <span class="ow">or</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">connection_pulse_list</span><span class="p">)</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">connection_pulse_list</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span> <span class="ow">or</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="p">]</span>
+
+        <span class="c1"># Generate t_list</span>
+        <span class="k">if</span> <span class="n">t_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t_range</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+        <span class="n">sample_rate</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">points</span>
+        <span class="n">t_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">t_range</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+
+        <span class="n">voltages</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">connection_label</span><span class="p">,</span> <span class="n">connection_pulses</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                <span class="n">connection_pulse_list</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+
+            <span class="n">connection_voltages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">connection_pulses</span><span class="p">:</span>
+                <span class="n">pulse_t_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                                         <span class="n">sample_rate</span><span class="p">)</span>
+                <span class="n">start_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">t_list</span> <span class="o">&gt;=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span>
+                <span class="c1"># Determine max_pts because sometimes there is a rounding error</span>
+                <span class="n">max_pts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">connection_voltages</span><span class="p">[</span>
+                              <span class="n">start_idx</span><span class="p">:</span><span class="n">start_idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulse_t_list</span><span class="p">)])</span>
+                <span class="n">connection_voltages</span><span class="p">[</span>
+                <span class="n">start_idx</span><span class="p">:</span><span class="n">start_idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulse_t_list</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span>
+                    <span class="n">pulse_t_list</span><span class="p">[:</span><span class="n">max_pts</span><span class="p">])</span>
+            <span class="n">voltages</span><span class="p">[</span><span class="n">connection_label</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection_voltages</span>
+
+            <span class="k">if</span> <span class="n">subplots</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_list</span><span class="p">,</span> <span class="n">connection_voltages</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">connection_label</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">subplots</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Time (s)&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Amplitude (V)&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">scale_ylim</span><span class="p">:</span>
+            <span class="n">min_voltage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">voltages</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+            <span class="n">max_voltage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">voltages</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+            <span class="n">voltage_difference</span> <span class="o">=</span> <span class="n">max_voltage</span> <span class="o">-</span> <span class="n">min_voltage</span>
+            <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">min_voltage</span> <span class="o">-</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">voltage_difference</span><span class="p">,</span>
+                            <span class="n">max_voltage</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">voltage_difference</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">subplots</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t_list</span><span class="p">,</span> <span class="n">voltages</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span></div>
+
+<div class="viewcode-block" id="PulseSequence.up_to_date"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseSequence.up_to_date">[docs]</a>    <span class="k">def</span> <span class="nf">up_to_date</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if a pulse sequence is up to date or needs to be generated.</span>
+
+<span class="sd">        Used by `PulseSequenceGenerator`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True by default, can be overridden in subclass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="k">def</span> <span class="nf">_update_enabled_disabled_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span> <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">enabled</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">pulse</span><span class="o">.</span><span class="n">enabled</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PulseImplementation"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">PulseImplementation</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;`InstrumentInterface` implementation for a `Pulse`.</span>
+
+<span class="sd">    Each `InstrumentInterface` should have corresponding pulse implementations</span>
+<span class="sd">    for the pulses it can output. These should be subclasses of the</span>
+<span class="sd">    `PulseImplementation`.</span>
+
+<span class="sd">    When a `PulseSequence` is targeted in the Layout, each `Pulse` is directed</span>
+<span class="sd">    to the relevant `InstrumentInterface`, which will call target the pulse</span>
+<span class="sd">    using the corresponding PulseImplementation. During `Pulse` targeting,</span>
+<span class="sd">    a copy of the pulse is made, and the PulseImplementation is added to</span>
+<span class="sd">    `Pulse`.implementation.</span>
+
+<span class="sd">    **Creating a PulseImplementation**</span>
+<span class="sd">        A PulseImplementation is specific for a certain `Pulse`, which should</span>
+<span class="sd">        be defined in `PulseImplementation`.pulse_class.</span>
+
+<span class="sd">        A `PulseImplementation` subclass may override the following methods:</span>
+
+<span class="sd">        * `PulseImplementation.target_pulse`</span>
+<span class="sd">        * `PulseImplementation.get_additional_pulses`</span>
+<span class="sd">        * `PulseImplementation.implement`</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pulse_requirements: Requirements that pulses must satisfy to allow</span>
+<span class="sd">            implementation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pulse_config</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected_attrs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># List of conditions that a pulse must satisfy to be targeted</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_requirements</span> <span class="o">=</span> <span class="p">[</span><span class="n">PulseRequirement</span><span class="p">(</span><span class="nb">property</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span> <span class="k">for</span>
+                                 <span class="p">(</span><span class="nb">property</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pulse_requirements</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_matches_attrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other_pulse</span><span class="p">,</span> <span class="n">exclude_attrs</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">exclude_attrs</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other_pulse</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> \
+                    <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other_pulse</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="PulseImplementation.add_pulse_requirement"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation.add_pulse_requirement">[docs]</a>    <span class="k">def</span> <span class="nf">add_pulse_requirement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="nb">property</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                              <span class="n">requirement</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+        <span class="sd">&quot;&quot;&quot;Add requirement that any pulse must satisfy to be targeted&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_requirements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">PulseRequirement</span><span class="p">(</span><span class="nb">property</span><span class="p">,</span> <span class="n">requirement</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="PulseImplementation.satisfies_requirements"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation.satisfies_requirements">[docs]</a>    <span class="k">def</span> <span class="nf">satisfies_requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                               <span class="n">pulse</span><span class="p">,</span>
+                               <span class="n">match_class</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks if a pulse satisfies pulse requirements</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse (Pulse): Pulse that is checked</span>
+<span class="sd">            match_class: Pulse class must match</span>
+<span class="sd">                `PulseImplementation`.pulse_class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">match_class</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_class</span> <span class="o">==</span> <span class="n">pulse</span><span class="o">.</span><span class="vm">__class__</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">pulse_requirements</span><span class="o">.</span><span class="n">satisfies</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+                           <span class="k">for</span> <span class="n">pulse_requirements</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_requirements</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="PulseImplementation.target_pulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation.target_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">target_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">pulse</span><span class="p">,</span>
+                     <span class="n">interface</span><span class="p">,</span>
+                     <span class="n">connections</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tailors a PulseImplementation to a specific pulse.</span>
+
+<span class="sd">        Targeting happens in three stages:</span>
+
+<span class="sd">        1. Both the pulse and pulse implementation are copied.</span>
+<span class="sd">        2. `PulseImplementation` of the copied pulse is set to the copied</span>
+<span class="sd">           pulse implementation, and `PulseImplementation`.pulse is set to the</span>
+<span class="sd">           copied pulse. This way, they can both reference each other.</span>
+<span class="sd">        3. The targeted pulse is returned</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse (Pulse): Pulse to be targeted.</span>
+<span class="sd">            interface (InstrumentInterface) interface to which this</span>
+<span class="sd">                PulseImplementation belongs.</span>
+<span class="sd">            connections (List[Connection]): All connections in `Layout`.</span>
+<span class="sd">            **kwargs: Additional unused kwargs</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Pulse class does not match</span>
+<span class="sd">                `PulseImplementation`.pulse_class</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_class</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Pulse </span><span class="si">{pulse}</span><span class="s1"> must be type </span><span class="si">{self.pulse_class}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">targeted_pulse</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+        <span class="n">pulse_implementation</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">targeted_pulse</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">pulse_implementation</span>
+        <span class="n">pulse_implementation</span><span class="o">.</span><span class="n">pulse</span> <span class="o">=</span> <span class="n">targeted_pulse</span>
+        <span class="k">return</span> <span class="n">targeted_pulse</span></div>
+
+<div class="viewcode-block" id="PulseImplementation.get_additional_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Provide any additional pulses needed such as triggering pulses</span>
+
+<span class="sd">        The additional pulses can be requested should usually have</span>
+<span class="sd">        `Pulse`.connection_conditions specified to ensure that the pulse is</span>
+<span class="sd">        sent to the right connection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            interface (InstrumentInterface): Interface to which this</span>
+<span class="sd">                PulseImplementation belongs</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Pulse]: List of additional pulses needed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="PulseImplementation.implement"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Implements a targeted pulse for an InstrumentInterface.</span>
+
+<span class="sd">        This method is called during `InstrumentInterface.setup`.</span>
+
+<span class="sd">        Implementation of a targeted pulse is very dependent on the interface.</span>
+<span class="sd">        For an AWG, this method may return a list of waveform points.</span>
+<span class="sd">        For a triggering source, this method may return the triggering time.</span>
+<span class="sd">        In very simple cases, this method may not even be necessary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Interface-specific args to use</span>
+<span class="sd">            **kwargs: Interface-specific kwargs to use</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instrument-specific return values.</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            Other interface source codes may serve as a guide for this method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;PulseImplementation.implement should be &#39;</span>
+                                  <span class="s1">&#39;implemented in a subclass&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

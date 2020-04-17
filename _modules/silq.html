@@ -1,0 +1,752 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>silq</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span> <span class="nn">.tools.config</span> <span class="k">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">ListConfig</span>
+<span class="kn">from</span> <span class="nn">.tools.parameter_tools</span> <span class="k">import</span> <span class="n">SweepDependentValues</span>
+<span class="kn">from</span> <span class="nn">.tools.general_tools</span> <span class="k">import</span> <span class="n">SettingsClass</span>
+
+<span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils.helpers</span> <span class="k">import</span> <span class="n">using_ipython</span>
+
+<span class="c1"># Initially set the environment to None. Changing this will affect all</span>
+<span class="c1"># environment config listeners (see `DictConfig`)</span>
+<span class="n">environment</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># Initially set the experiments_folder to None.</span>
+<span class="n">experiments_folder</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Dictionary of SilQ subconfigs</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="n">save_as_dir</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="p">{}})</span>
+<span class="c1"># Set qcodes.config.user.silq_config to the silq config</span>
+<span class="n">qc</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;silq_config&#39;</span><span class="p">:</span> <span class="n">config</span><span class="p">})</span>
+
+<span class="n">silq_env_var</span> <span class="o">=</span> <span class="s1">&#39;SILQ_EXP_FOLDER&#39;</span>
+
+<span class="k">if</span> <span class="s1">&#39;ipykernel&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="c1"># Load iPython magic (configured via qc.config.core.register_magic)</span>
+    <span class="kn">from</span> <span class="nn">qcodes.utils.magic</span> <span class="k">import</span> <span class="n">register_magic_class</span>
+
+    <span class="n">register_magic</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;register_magic&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">register_magic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">silq.tools.notebook_tools</span> <span class="k">import</span> <span class="n">SilQMagics</span>
+
+        <span class="n">register_magic_class</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="n">SilQMagics</span><span class="p">,</span>
+                             <span class="n">magic_commands</span><span class="o">=</span><span class="n">register_magic</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.instrument_interfaces</span> <span class="k">import</span> <span class="n">get_instrument_interface</span>
+
+
+<div class="viewcode-block" id="get_silq_folder"><a class="viewcode-back" href="#silq.get_silq_folder">[docs]</a><span class="k">def</span> <span class="nf">get_silq_folder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get root folder of silq source code.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_SilQ_folder"><a class="viewcode-back" href="#silq.get_SilQ_folder">[docs]</a><span class="k">def</span> <span class="nf">get_SilQ_folder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get root folder of SilQ (containing source code)&quot;&quot;&quot;</span>
+    <span class="n">silq_folder</span> <span class="o">=</span> <span class="n">get_silq_folder</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">silq_folder</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;../&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="set_experiments_folder"><a class="viewcode-back" href="#silq.set_experiments_folder">[docs]</a><span class="k">def</span> <span class="nf">set_experiments_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sets experiments folder, used by `silq.initialize`.</span>
+
+<span class="sd">    Setting the experiments should only be done once, as it creates the file</span>
+<span class="sd">    ``experiments_folder.txt`` in the SilQ folder, which contains the</span>
+<span class="sd">    experiments folder.</span>
+
+<span class="sd">    The Experiments folder should contain one folder for each experiment.</span>
+<span class="sd">    An Experiment folder contains startup scripts, configuration, and usually</span>
+<span class="sd">    scripts and notebooks.</span>
+<span class="sd">    An experiment folder contains the following folders:</span>
+
+<span class="sd">    * **init**: Initialization .py scripts, executed in ascending order.</span>
+<span class="sd">      Each file is should have form ``{idx}_{name}``, where ``idx`` is a</span>
+<span class="sd">      zero-based that defines execution order, and ``name`` is the filename.</span>
+<span class="sd">    * **config**: SilQ config folder, wherein each item is either a .JSON file</span>
+<span class="sd">      or a folder containing .jSON files.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        folder: Experiments folder</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">experiments_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">get_SilQ_folder</span><span class="p">(),</span>
+                                        <span class="s1">&#39;experiments_folder.txt&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">experiments_filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_experiments_folder"><a class="viewcode-back" href="#silq.get_experiments_folder">[docs]</a><span class="k">def</span> <span class="nf">get_experiments_folder</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Gets experiments folder</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        experiments folder</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileNotFoundError: No experiments_folder configured.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">silq</span>
+        <span class="n">experiments_folder</span> <span class="o">=</span> <span class="n">silq</span><span class="o">.</span><span class="n">experiments_folder</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">experiments_folder</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">silq</span><span class="o">.</span><span class="n">experiments_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">silq</span><span class="o">.</span><span class="n">experiments_folder</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">experiments_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">silq_env_var</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">experiments_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">experiments_folder</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Could not find experiments folder in system &quot;</span>
+                         <span class="s2">&quot;environment variable &#39;SILQ_EXP_FOLDER&#39;.&quot;</span><span class="p">)</span>
+            <span class="n">experiment_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">get_SilQ_folder</span><span class="p">(),</span>
+                                               <span class="s1">&#39;experiments_folder.txt&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">experiment_filepath</span><span class="p">):</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">experiment_filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">experiments_folder</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">experiments_folder</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;No file &quot;Silq/experiments_folder.txt&quot; &#39;</span>
+                                        <span class="s1">&#39;exists. Can be set via &#39;</span>
+                                        <span class="s1">&#39;silq.set_experiments_folder()&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_experiment_configuration"><a class="viewcode-back" href="#silq.get_experiment_configuration">[docs]</a><span class="k">def</span> <span class="nf">get_experiment_configuration</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiments_folder</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Retrieves experiment folder and configuration from experiments folder.</span>
+<span class="sd">    This contains all configurations that can be used by `silq.initialize`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Case-insensitive experiment name. Can be either a relative</span>
+<span class="sd">              folder path, or defined in configurations.json</span>
+<span class="sd">        experiments_folder: Optional path for experiments_folder</span>
+
+<span class="sd">    Returns: experiment folder and configuration if found.</span>
+<span class="sd">             If not found, returns (False, {})</span>
+
+<span class="sd">    Configuration file `configurations.json` can be either in experiment_folder</span>
+<span class="sd">    or global experiments_folder/configurations.json</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict of configurations</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">experiments_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Determine base folder by looking at the silq package</span>
+        <span class="n">experiments_folder</span> <span class="o">=</span> <span class="n">get_experiments_folder</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">experiments_folder</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  <span class="c1"># Convert to Path</span>
+        <span class="n">experiments_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">experiments_folder</span><span class="p">)</span>
+
+    <span class="n">experiment_folder</span> <span class="o">=</span> <span class="p">(</span><span class="n">experiments_folder</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">experiment_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="c1"># Check if there is a configuration file</span>
+        <span class="n">configuration_filepath</span> <span class="o">=</span> <span class="n">experiment_folder</span> <span class="o">/</span> <span class="s1">&#39;configurations.json&#39;</span>
+        <span class="k">if</span> <span class="n">configuration_filepath</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">configuration_filepath</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">experiment_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">configuration</span><span class="p">:</span>
+        <span class="c1"># Check if the configuration is specified in global configurations.json</span>
+        <span class="n">configurations_filepath</span> <span class="o">=</span> <span class="n">experiments_folder</span> <span class="o">/</span> <span class="s1">&#39;configurations.json&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">configurations</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">configurations_filepath</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">configurations</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                 <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="n">experiment_folder</span> <span class="o">=</span> <span class="n">experiments_folder</span> <span class="o">/</span> <span class="n">configuration</span><span class="p">[</span><span class="s1">&#39;folder&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">StopIteration</span><span class="p">):</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">experiment_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">experiment_folder</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">experiment_folder</span><span class="p">,</span> <span class="n">configuration</span></div>
+
+
+<div class="viewcode-block" id="execute_file"><a class="viewcode-back" href="#silq.execute_file">[docs]</a><span class="k">def</span> <span class="nf">execute_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">),</span> <span class="nb">globals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s1">&#39;.py&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">using_ipython</span><span class="p">():</span>
+            <span class="kn">from</span> <span class="nn">IPython</span> <span class="k">import</span> <span class="n">get_ipython</span>
+            <span class="n">shell</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span>
+            <span class="n">shell</span><span class="o">.</span><span class="n">safe_execfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">shell</span><span class="o">.</span><span class="n">user_ns</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">globals</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">locals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Register globals and locals of the above frame for code execution</span>
+                <span class="nb">globals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_globals</span>
+                <span class="nb">locals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_locals</span>
+
+            <span class="n">execution_code</span> <span class="o">=</span> <span class="n">filepath</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">exec</span><span class="p">(</span><span class="n">execution_code</span><span class="p">,</span> <span class="nb">globals</span><span class="p">,</span> <span class="nb">locals</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">e</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">SilQ initialization error in </span><span class="si">{filepath}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="run_scripts"><a class="viewcode-back" href="#silq.run_scripts">[docs]</a><span class="k">def</span> <span class="nf">run_scripts</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">silent</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">max_relative_parents</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="nb">globals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="nb">locals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">globals</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">locals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Register globals and locals of the above frame (for code execution)</span>
+        <span class="nb">globals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_globals</span>
+        <span class="nb">locals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_locals</span>
+
+    <span class="n">script_folders</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">experiment_folder</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">get_experiment_configuration</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">script_folders</span> <span class="o">=</span> <span class="p">[</span><span class="n">experiment_folder</span> <span class="o">/</span> <span class="s1">&#39;scripts&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">experiment_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;../&#39;</span> <span class="o">*</span> <span class="n">max_relative_parents</span><span class="p">)</span>
+
+    <span class="c1"># Add script folders in current directory and parent directories thereof</span>
+    <span class="n">relative_directory</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>  <span class="c1"># Goes iteratively to parent</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">relative_directory</span> <span class="o">==</span> <span class="n">experiment_folder</span><span class="o">.</span><span class="n">absolute</span><span class="p">():</span>
+            <span class="c1"># Reached experiment folder</span>
+            <span class="k">break</span>
+
+        <span class="n">script_folder</span> <span class="o">=</span> <span class="n">relative_directory</span> <span class="o">/</span> <span class="s1">&#39;scripts&#39;</span>
+        <span class="k">if</span> <span class="n">script_folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">script_folders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">script_folder</span><span class="p">)</span>
+
+        <span class="c1"># Iterate up one level</span>
+        <span class="n">relative_directory</span> <span class="o">=</span> <span class="n">relative_directory</span><span class="o">.</span><span class="n">parent</span>
+
+    <span class="k">for</span> <span class="n">script_folder</span> <span class="ow">in</span> <span class="n">script_folders</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">script_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">continue</span>
+
+        <span class="k">for</span> <span class="n">script_folder_element</span> <span class="ow">in</span> <span class="n">script_folder</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+            <span class="c1"># Only execute scripts in subfolders if folder name matches mode</span>
+            <span class="k">if</span> <span class="n">script_folder_element</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">script_folder_element</span><span class="o">.</span><span class="n">stem</span> <span class="o">!=</span> <span class="n">mode</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Run each file in the subfolder</span>
+                <span class="k">for</span> <span class="n">script_folder_subelement</span> <span class="ow">in</span> <span class="n">script_folder_element</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">script_folder_subelement</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.py&quot;</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Skipping non-python script: &quot;</span>
+                                       <span class="n">f</span><span class="s2">&quot;</span><span class="si">{script_folder_subelement.parent.stem}</span><span class="s2">&quot;</span>
+                                       <span class="n">f</span><span class="s2">&quot;/</span><span class="si">{script_folder_subelement.name}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="n">f</span><span class="s2">&quot;Running script </span><span class="si">{script_folder_element.stem}</span><span class="s2">/&quot;</span>
+                            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{script_folder_subelement.stem}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">execute_file</span><span class="p">(</span><span class="n">script_folder_subelement</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">,</span>
+                                 <span class="nb">locals</span><span class="o">=</span><span class="nb">locals</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Execute file</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">script_folder_element</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.py&quot;</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="n">f</span><span class="s2">&quot;Skipping non-python script: </span><span class="si">{script_folder_element.name}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Running script </span><span class="si">{script_folder_element.stem}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">execute_file</span><span class="p">(</span><span class="n">script_folder_element</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">,</span>
+                             <span class="nb">locals</span><span class="o">=</span><span class="nb">locals</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="initialize"><a class="viewcode-back" href="#silq.initialize">[docs]</a><span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+               <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">select</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+               <span class="n">ignore</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+               <span class="n">scripts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs experiment initialization .py scripts.</span>
+
+<span class="sd">    The initialization scripts should be in the ``init`` folder in the</span>
+<span class="sd">    experiment folder.</span>
+<span class="sd">    Possible configurations are taken from the dictionary _configurations in</span>
+<span class="sd">    the file configurations.py.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: name of the configuration, used to find the folder</span>
+<span class="sd">            from which to execute all init files.</span>
+<span class="sd">        mode: mode that determines which subset of files should</span>
+<span class="sd">            be executed. Possible modes can be specified in _configurations.</span>
+<span class="sd">        select: Files to select, all others will be ignored.</span>
+<span class="sd">        ignore: Files to ignore, all others will be selected.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        Scripts are run in the global namespace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Register globals and locals of the above frame (for code execution)</span>
+    <span class="nb">globals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_globals</span>
+    <span class="nb">locals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_locals</span>
+
+    <span class="n">experiment_folder</span><span class="p">,</span> <span class="n">configuration</span> <span class="o">=</span> <span class="n">get_experiment_configuration</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">experiment_folder</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;Could not find experiment &#39;</span><span class="si">{name}</span><span class="s2">&#39;, make sure &quot;</span> \
+                              <span class="n">f</span><span class="s2">&quot;its a folder in the experiments_folder&quot;</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">select</span> <span class="o">+=</span> <span class="n">configuration</span><span class="p">[</span><span class="s2">&quot;modes&quot;</span><span class="p">][</span><span class="n">mode</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">ignore</span> <span class="o">+=</span> <span class="n">configuration</span><span class="p">[</span><span class="s2">&quot;modes&quot;</span><span class="p">][</span><span class="n">mode</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="c1"># TODO check if original config[&#39;folder&#39;] had any weird double</span>
+    <span class="c1">#  experiments_folder</span>
+    <span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;folder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">experiment_folder</span><span class="o">.</span><span class="n">absolute</span><span class="p">())</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">experiment_folder</span> <span class="o">/</span> <span class="s1">&#39;config&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+    <span class="c1"># Run initialization files in ./init</span>
+    <span class="n">init_folder</span> <span class="o">=</span> <span class="n">experiment_folder</span> <span class="o">/</span> <span class="s1">&#39;init&#39;</span>
+    <span class="k">if</span> <span class="n">init_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">init_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">init_folder</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">()])</span>
+
+        <span class="k">for</span> <span class="n">init_file</span> <span class="ow">in</span> <span class="n">init_files</span><span class="p">:</span>
+            <span class="c1"># Remove prefix</span>
+            <span class="n">filename_no_prefix</span> <span class="o">=</span> <span class="n">init_file</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">select</span> <span class="ow">and</span> <span class="n">filename_no_prefix</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">select</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">ignore</span> <span class="ow">and</span> <span class="n">filename_no_prefix</span> <span class="ow">in</span> <span class="n">ignore</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">init_file</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.py&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="n">f</span><span class="s2">&quot;Skipping ./</span><span class="si">{experiment_folder.parts[-1]}</span><span class="s2">/init/&quot;</span>
+                            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{init_file.parts[-1]}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Initializing </span><span class="si">{filename_no_prefix}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">execute_file</span><span class="p">(</span><span class="n">init_file</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="nb">locals</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">scripts</span><span class="p">:</span>
+        <span class="n">run_scripts</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">globals</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="nb">locals</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;data_folder&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;environment:properties&quot;</span><span class="p">]:</span>
+        <span class="n">data_folder</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;environment:properties.data_folder&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;using config data folder: </span><span class="si">{data_folder}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">qc</span><span class="o">.</span><span class="n">set_data_root_folder</span><span class="p">(</span><span class="n">data_folder</span><span class="p">)</span>
+
+        <span class="n">location_provider</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">location_provider</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">data_folder</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="n">location_provider</span><span class="o">.</span><span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;data/</span><span class="si">{date}</span><span class="s1">/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Removing duplicate &quot;data&quot; from location provider&#39;</span><span class="p">)</span>
+            <span class="n">location_provider</span><span class="o">.</span><span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{date}</span><span class="s1">/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initialization complete&quot;</span><span class="p">)</span></div>
+
+
+<span class="c1">### Override QCoDeS functions</span>
+
+<span class="c1"># Add saving of config to qcodes DataSet</span>
+<span class="k">def</span> <span class="nf">_save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">location</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_location&#39;</span><span class="p">):</span>
+            <span class="c1"># Location is False, dataset created in qc.Measure, ignore</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">location</span><span class="p">):</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">qc</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">default_io</span><span class="o">.</span><span class="n">base_location</span><span class="p">,</span> <span class="n">location</span>
+            <span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Datasaving error: </span><span class="si">{e.args}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<span class="n">qc</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">save_config</span> <span class="o">=</span> <span class="n">_save_config</span>
+
+
+<span class="k">def</span> <span class="nf">_load_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load traces HDF5 file from a dataset</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Optional name to specify traces file. Should be used if more than</span>
+<span class="sd">            one parameter is used in the measurement that saves traces.</span>
+<span class="sd">        mode: Open mode (default is &#39;r&#39; for read-only)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">data_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">to_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">)</span>
+    <span class="n">trace_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="s1">&#39;traces&#39;</span><span class="p">)</span>
+    <span class="n">trace_filenames</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">trace_path</span><span class="p">)</span>
+    <span class="n">trace_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">trace_filenames</span> <span class="k">if</span>
+                       <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.hdf5&#39;</span><span class="p">)]</span>
+
+    <span class="k">assert</span> <span class="n">trace_filenames</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;No trace files found in </span><span class="si">{trace_path}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace_filenames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">trace_filename</span> <span class="o">=</span> <span class="n">trace_filenames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+            <span class="n">f</span><span class="s2">&quot;No unique trace file found: </span><span class="si">{trace_filenames}</span><span class="s2">. &quot;</span>
+            <span class="n">f</span><span class="s2">&quot;Trace filename must be provided&quot;</span>
+        <span class="p">)</span>
+        <span class="n">filtered_trace_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">trace_filenames</span>
+                                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_trace_filenames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;No unique trace file found: </span><span class="si">{trace_filenames}</span><span class="s2">.&quot;</span>
+        <span class="n">trace_filename</span> <span class="o">=</span> <span class="n">filtered_trace_filenames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">trace_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trace_path</span><span class="p">,</span> <span class="n">trace_filename</span><span class="p">)</span>
+    <span class="n">trace_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">trace_filepath</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">trace_file</span>
+
+<span class="n">qc</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">load_traces</span> <span class="o">=</span> <span class="n">_load_traces</span>
+
+
+<span class="k">def</span> <span class="nf">_get_pulse_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pulse_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load pulse sequence after measurement started</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        idx: index of pulse sequence after measurement started</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Pulse sequence</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_next_pulse_sequence</span><span class="p">(</span><span class="n">date_time</span><span class="p">,</span> <span class="n">max_date_delta</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">current_date</span> <span class="o">=</span> <span class="n">date_time</span>
+        <span class="k">while</span> <span class="n">current_date</span> <span class="o">&lt;=</span> <span class="n">date_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">max_date_delta</span><span class="p">):</span>
+            <span class="n">date_str</span> <span class="o">=</span> <span class="n">date_time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pulse_sequence_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">default_io</span><span class="o">.</span><span class="n">base_location</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;pulse_sequences\data&#39;</span><span class="p">,</span> <span class="n">date_str</span>
+            <span class="p">)</span>
+            <span class="n">pulse_sequence_files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">pulse_sequence_path</span><span class="p">)</span>
+            <span class="c1"># Sort by their idx (i.e. #095 at start of filename)</span>
+            <span class="n">pulse_sequence_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="n">pulse_sequence_files</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">file</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pulse_sequence_file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pulse_sequence_files</span><span class="p">):</span>
+                <span class="n">pulse_sequence_date_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s1">&#39;</span><span class="si">{date_str}</span><span class="s1">:</span><span class="si">{pulse_sequence_file[-15:-7]}</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">:%H-%M-%S&#39;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">pulse_sequence_date_time</span> <span class="o">&gt;</span> <span class="n">current_date</span><span class="p">:</span>
+                    <span class="n">pulse_sequence_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pulse_sequence_path</span><span class="p">,</span>
+                                                           <span class="n">pulse_sequence_file</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pulse_sequence_filepath</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+                    <span class="c1"># Pulse sequence duration needs to be reset</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">duration</span> <span class="o">=</span> <span class="n">pulse_sequence</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span><span class="p">[</span><span class="s1">&#39;raw_value&#39;</span><span class="p">]</span>
+                        <span class="n">pulse_sequence</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+                    <span class="n">current_date</span> <span class="o">=</span> <span class="n">pulse_sequence_date_time</span>
+                    <span class="k">yield</span> <span class="n">pulse_sequence</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{date_str}</span><span class="s2">/</span><span class="si">{pulse_sequence_file}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Goto next date</span>
+                <span class="n">current_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span>
+                    <span class="n">current_date</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">datetime</span><span class="o">.</span><span class="n">min</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="p">)</span>
+
+    <span class="n">date</span><span class="p">,</span> <span class="n">measurement_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">measurement_date_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+        <span class="n">f</span><span class="s1">&#39;</span><span class="si">{date}</span><span class="s1">:</span><span class="si">{measurement_name[-8:]}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">:%H-%M-%S&#39;</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">next_pulse_sequence</span> <span class="o">=</span> <span class="n">get_next_pulse_sequence</span><span class="p">(</span><span class="n">measurement_date_time</span><span class="p">)</span>
+        <span class="n">pulse_sequence_iterator</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pulse_sequence</span> <span class="k">for</span> <span class="n">pulse_sequence</span> <span class="ow">in</span> <span class="n">next_pulse_sequence</span>
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">pulse_name</span> <span class="ow">or</span> <span class="n">pulse_name</span> <span class="ow">in</span> <span class="n">pulse_sequence</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">pulse_sequence</span><span class="p">,</span> <span class="n">pulse_sequence_filename</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">pulse_sequence_iterator</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">(</span><span class="s1">&#39;No pulse sequences found&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Pulse sequence file: </span><span class="si">{pulse_sequence_filename}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pulse_sequence</span>
+
+<span class="n">qc</span><span class="o">.</span><span class="n">DataSet</span><span class="o">.</span><span class="n">get_pulse_sequence</span> <span class="o">=</span> <span class="n">_get_pulse_sequence</span>
+
+
+<span class="c1"># parameter.sweep</span>
+<span class="k">def</span> <span class="nf">_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+           <span class="n">step_percentage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fix</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">step_percentage</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Must provide start and stop&#39;</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">qcodes.instrument.sweep_values</span> <span class="k">import</span> <span class="n">SweepFixedValues</span>
+        <span class="k">return</span> <span class="n">SweepFixedValues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span>
+                                <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SweepDependentValues</span><span class="p">(</span><span class="n">parameter</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                                    <span class="n">step_percentage</span><span class="o">=</span><span class="n">step_percentage</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">,</span>
+                                    <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">fix</span><span class="o">=</span><span class="n">fix</span><span class="p">)</span>
+<span class="n">qc</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">sweep</span> <span class="o">=</span> <span class="n">_sweep</span>
+
+
+<span class="k">def</span> <span class="nf">_stop_layout</span><span class="p">(</span><span class="n">close_trace_file</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Instrument</span><span class="o">.</span><span class="n">find_instrument</span><span class="p">(</span><span class="s1">&#39;layout&#39;</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;End-of-measurement: stopped layout&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">close_trace_file</span><span class="p">:</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">close_trace_files</span><span class="p">()</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;No layout found to stop&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_clear_all_acquisition_parameter_settings</span><span class="p">(</span><span class="n">measurement</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">measurement</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">measurement</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">active_measurement</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">measurement</span><span class="p">,</span> <span class="n">qc</span><span class="o">.</span><span class="n">loops</span><span class="o">.</span><span class="n">ActiveLoop</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">measurement</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">qc</span><span class="o">.</span><span class="n">loops</span><span class="o">.</span><span class="n">ActiveLoop</span><span class="p">):</span>
+                <span class="n">_clear_all_acquisition_parameter_settings</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">SettingsClass</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;End-of-measurement: clearing settings for </span><span class="si">{action}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">action</span><span class="o">.</span><span class="n">clear_settings</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">action_indices</span><span class="p">,</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">measurement</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">SettingsClass</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;End-of-measurement: clearing settings for </span><span class="si">{action}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">action</span><span class="o">.</span><span class="n">clear_settings</span><span class="p">()</span>
+
+<span class="n">qc</span><span class="o">.</span><span class="n">Measurement</span><span class="o">.</span><span class="n">final_actions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">_stop_layout</span><span class="p">,</span>
+    <span class="n">_clear_all_acquisition_parameter_settings</span>
+<span class="p">]</span>
+
+
+<span class="c1"># Override ActiveLoop._run_wrapper to stop the layout and clear settings of</span>
+<span class="c1"># any accquisition parameters in the loop after the loop has completed.</span>
+<span class="n">_qc_run_wrapper</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">loops</span><span class="o">.</span><span class="n">ActiveLoop</span><span class="o">.</span><span class="n">_run_wrapper</span>
+<span class="k">def</span> <span class="nf">_run_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_qc_run_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="n">set_active</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">stop</span><span class="p">:</span>
+            <span class="n">_stop_layout</span><span class="p">(</span><span class="n">close_trace_file</span><span class="o">=</span><span class="n">set_active</span><span class="p">)</span>
+
+        <span class="c1"># Clear all settings for any acquisition parameters in the loop</span>
+        <span class="n">_clear_all_acquisition_parameter_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<span class="n">qc</span><span class="o">.</span><span class="n">loops</span><span class="o">.</span><span class="n">ActiveLoop</span><span class="o">.</span><span class="n">_run_wrapper</span> <span class="o">=</span> <span class="n">_run_wrapper</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

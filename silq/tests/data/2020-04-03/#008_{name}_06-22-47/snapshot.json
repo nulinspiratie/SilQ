@@ -1,0 +1,72 @@
+{
+    "measurement_type": "Loop",
+    "station": {
+        "instruments": {},
+        "parameters": {},
+        "components": {},
+        "default_measurement": []
+    },
+    "measurement": {
+        "ts_start": "2020-04-03 06:22:47",
+        "ts_end": "2020-04-03 06:22:47",
+        "use_threads": false,
+        "__class__": "qcodes.measure.Measure",
+        "actions": [
+            {
+                "value": 1,
+                "ts": "2020-04-03 06:22:47",
+                "raw_value": 1,
+                "__class__": "qcodes.instrument.parameter.Parameter",
+                "full_name": "mixed_val_mapping_param",
+                "label": "Mixed val mapping param",
+                "name": "mixed_val_mapping_param",
+                "val_mapping": {
+                    "1": 1,
+                    "2": 2
+                },
+                "vals": "<Enum: {'2', 1}>"
+            }
+        ]
+    },
+    "__class__": "qcodes.data.data_set.DataSet",
+    "location": "data/2020-04-03/#008_{name}_06-22-47",
+    "arrays": {
+        "single_set": {
+            "__class__": "qcodes.data.data_array.DataArray",
+            "raw_value": null,
+            "full_name": "single",
+            "label": "Single Measurement",
+            "name": "single",
+            "array_id": "single_set",
+            "shape": [
+                1
+            ],
+            "unit": null,
+            "action_indices": [],
+            "is_setpoint": true
+        },
+        "mixed_val_mapping_param": {
+            "__class__": "qcodes.data.data_array.DataArray",
+            "raw_value": null,
+            "full_name": "mixed_val_mapping_param",
+            "label": "Mixed val mapping param",
+            "name": "mixed_val_mapping_param",
+            "val_mapping": {
+                "1": 1,
+                "2": 2
+            },
+            "vals": "<Enum: {'2', 1}>",
+            "array_id": "mixed_val_mapping_param",
+            "shape": [
+                1
+            ],
+            "unit": "",
+            "action_indices": [
+                0
+            ],
+            "is_setpoint": false
+        }
+    },
+    "formatter": "qcodes.data.gnuplot_format.GNUPlotFormat",
+    "io": "<DiskIO, base_location='C:\\\\Users\\\\Scarlett\\\\Documents\\\\GitHub\\\\SilQ\\\\silq\\\\tests'>"
+}

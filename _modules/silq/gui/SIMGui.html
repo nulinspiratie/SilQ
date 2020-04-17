@@ -1,0 +1,677 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.gui.SIMGui &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../gui.html">silq.gui</a> &raquo;</li>
+        
+      <li>silq.gui.SIMGui</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.gui.SIMGui</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pyperclip</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">PyQt5</span> <span class="k">import</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">PyQt5.QtGui</span> <span class="k">import</span> <span class="n">QPalette</span><span class="p">,</span> <span class="n">QFont</span>
+<span class="kn">from</span> <span class="nn">PyQt5.QtWidgets</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">PyQt5.QtCore</span> <span class="k">import</span> <span class="n">Qt</span><span class="p">,</span> <span class="n">pyqtSignal</span><span class="p">,</span> <span class="n">QEvent</span>
+
+<span class="kn">from</span> <span class="nn">silq.tools.general_tools</span> <span class="k">import</span> <span class="n">get_exponent</span><span class="p">,</span> <span class="n">get_first_digit</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">start_gui</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;up_down&#39;</span><span class="p">,</span> <span class="s1">&#39;left_right&#39;</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="sim_gui"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.sim_gui">[docs]</a><span class="k">def</span> <span class="nf">sim_gui</span><span class="p">(</span><span class="n">mini</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Must set sim_gui.voltage_parameters</span>
+    <span class="n">start_gui</span><span class="p">(</span><span class="n">SIMControlDialog</span><span class="p">,</span> <span class="s1">&#39;sim_gui&#39;</span><span class="p">,</span>
+              <span class="n">parameters</span><span class="o">=</span><span class="n">sim_gui</span><span class="o">.</span><span class="n">voltage_parameters</span><span class="p">,</span>
+              <span class="n">mini</span><span class="o">=</span><span class="n">mini</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SIM928Dialog"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIM928Dialog">[docs]</a><span class="k">class</span> <span class="nc">SIM928Dialog</span><span class="p">(</span><span class="n">QFrame</span><span class="p">):</span>
+    <span class="n">state_change</span> <span class="o">=</span> <span class="n">pyqtSignal</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mini</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">=</span> <span class="n">parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mini</span> <span class="o">=</span> <span class="n">mini</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span> <span class="o">=</span> <span class="mf">0.0001</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_step</span> <span class="o">=</span> <span class="mf">0.05</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modified_val</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMaximumWidth</span><span class="p">(</span><span class="mi">170</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initUI</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="o">.</span><span class="n">mousePressEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cycle_state</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span>
+
+    <span class="nd">@state</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;up_down&#39;</span><span class="p">,</span> <span class="s1">&#39;left_right&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;State </span><span class="si">{state}</span><span class="s1"> not recognized&#39;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Create palette for name color customization</span>
+            <span class="n">name_palette</span> <span class="o">=</span> <span class="n">QPalette</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+            <span class="n">name_palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="n">QPalette</span><span class="o">.</span><span class="n">Foreground</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">black</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;up_down&#39;</span><span class="p">:</span>
+            <span class="n">name_palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="n">QPalette</span><span class="o">.</span><span class="n">Foreground</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;left_right&#39;</span><span class="p">:</span>
+            <span class="n">name_palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="n">QPalette</span><span class="o">.</span><span class="n">Foreground</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">darkGreen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">name_palette</span><span class="p">)</span>
+
+        <span class="c1"># Emit signal that state has changed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_change</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SIM928Dialog.cycle_state"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIM928Dialog.cycle_state">[docs]</a>    <span class="k">def</span> <span class="nf">cycle_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cycling gate </span><span class="si">{self.parameter.name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;up_down&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;up_down&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;left_right&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span></div>
+
+<div class="viewcode-block" id="SIM928Dialog.initUI"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIM928Dialog.initUI">[docs]</a>    <span class="k">def</span> <span class="nf">initUI</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+
+        <span class="c1"># Set parameter name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.idx}</span><span class="s1">: </span><span class="si">{self.parameter.name}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="p">)</span>
+
+        <span class="c1"># Add editable voltage</span>
+        <span class="n">val_hbox</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">val_hbox</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="n">val_descr_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;Val:&#39;</span><span class="p">)</span>
+            <span class="n">val_descr_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+            <span class="n">val_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">val_descr_label</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+            <span class="n">val_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name_label</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;{self.parameter.get_latest():.5g}&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">returnPressed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_voltage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+        <span class="n">val_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="p">)</span>
+
+        <span class="n">val_units_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;V&#39;</span><span class="p">)</span>
+        <span class="n">val_units_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+        <span class="n">val_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">val_units_label</span><span class="p">)</span>
+
+
+        <span class="c1"># Add current val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">textChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_val_textbox_changed</span><span class="p">)</span>
+
+        <span class="c1"># Add voltage buttons</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_grid</span> <span class="o">=</span> <span class="n">QGridLayout</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_grid</span><span class="o">.</span><span class="n">setHorizontalSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_grid</span><span class="o">.</span><span class="n">setVerticalSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_grid</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_buttons</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">column_idx</span><span class="p">,</span> <span class="n">scale</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+                <span class="k">for</span> <span class="n">row_idx</span><span class="p">,</span> <span class="n">sign</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">scale</span>
+                    <span class="n">button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;{[&#39;-&#39;,&#39;+&#39;][sign==1]}</span><span class="si">{scale}</span><span class="s2"> mV&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">val_grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">button</span><span class="p">,</span> <span class="n">row_idx</span><span class="p">,</span> <span class="n">column_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">width</span> <span class="o">=</span> <span class="n">button</span><span class="o">.</span><span class="n">fontMetrics</span><span class="p">()</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">(</span>
+                        <span class="n">f</span><span class="s2">&quot;+100 mV&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">+</span> <span class="mi">7</span>
+                    <span class="n">button</span><span class="o">.</span><span class="n">setMaximumWidth</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+                    <span class="n">button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                        <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">increase_voltage</span><span class="p">,</span> <span class="n">val</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">val_buttons</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">button</span>
+
+            <span class="c1"># Add scale</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Scale: </span><span class="si">{self.parameter.scale}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale_label</span><span class="p">)</span>
+
+            <span class="c1"># Add SIM voltage</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raw_val_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;SIM val: </span><span class="si">{:.3g}</span><span class="s1"> V&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">raw_value</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raw_val_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raw_val_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_val_label</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_val_textbox_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">textbox_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modified_val</span> <span class="o">=</span> <span class="n">textbox_val</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modified_val</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modified_val</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setStyleSheet</span><span class="p">(</span><span class="s2">&quot;color: rgb(255, 0, 0);&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span>
+                    <span class="n">f</span><span class="s1">&#39;Current val: {self.parameter.get_latest()}&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span>
+            <span class="c1"># self._reset_val_textbox()</span>
+
+<div class="viewcode-block" id="SIM928Dialog.set_voltage"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIM928Dialog.set_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">set_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_val_textbox</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_reset_val_textbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modified_val</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:.5g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_val_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setStyleSheet</span><span class="p">(</span><span class="s2">&quot;color: rgb(0, 0, 0);&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raw_val_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s1">&#39;SIM val: </span><span class="si">{:.3g}</span><span class="s1"> V&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">scale</span><span class="p">))</span>
+
+<div class="viewcode-block" id="SIM928Dialog.increase_voltage"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIM928Dialog.increase_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">increase_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">increment</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_voltage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()</span> <span class="o">+</span> <span class="n">increment</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SIMConfigDialog"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMConfigDialog">[docs]</a><span class="k">class</span> <span class="nc">SIMConfigDialog</span><span class="p">(</span><span class="n">QFrame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mini</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mini</span> <span class="o">=</span> <span class="n">mini</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up_down&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s1">&#39;left_right&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span> <span class="o">=</span> <span class="mf">0.0001</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_step</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initUI</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SIMConfigDialog.initUI"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMConfigDialog.initUI">[docs]</a>    <span class="k">def</span> <span class="nf">initUI</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+
+        <span class="c1"># Add up, down, left, right color indication</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="n">key_grid</span> <span class="o">=</span> <span class="n">QGridLayout</span><span class="p">()</span>
+            <span class="n">key_grid</span><span class="o">.</span><span class="n">setVerticalSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span>
+                <span class="p">(</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))]),</span>
+                <span class="p">(</span><span class="s1">&#39;darkGreen&#39;</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))])]):</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                    <span class="n">key_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="n">key_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+                    <span class="n">key_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+
+                    <span class="n">key_palette</span> <span class="o">=</span> <span class="n">QPalette</span><span class="p">()</span>
+                    <span class="n">key_palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="n">QPalette</span><span class="o">.</span><span class="n">Foreground</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Qt</span><span class="p">,</span> <span class="n">color</span><span class="p">))</span>
+                    <span class="n">key_label</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">key_palette</span><span class="p">)</span>
+
+                    <span class="n">key_grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">key_label</span><span class="p">,</span> <span class="o">*</span><span class="n">pos</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">key_grid</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addStretch</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Add step sizes</span>
+
+            <span class="n">step_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;Step:&#39;</span><span class="p">)</span>
+            <span class="n">step_label</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+            <span class="n">step_label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">step_label</span><span class="p">)</span>
+
+        <span class="n">step_hbox</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">step_hbox</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([(</span><span class="s1">&#39;up_down&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">),</span>
+                                            <span class="p">(</span><span class="s1">&#39;left_right&#39;</span><span class="p">,</span> <span class="s1">&#39;darkGreen&#39;</span><span class="p">)]):</span>
+            <span class="n">step_hbox</span><span class="o">.</span><span class="n">addStretch</span><span class="p">(</span><span class="mf">0.8</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="n">state</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">]</span><span class="o">.</span><span class="n">setMaximumWidth</span><span class="p">(</span><span class="mi">55</span><span class="p">)</span>
+            <span class="n">step_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">]</span><span class="o">.</span><span class="n">returnPressed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+            <span class="n">step_unit_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;V&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">step_unit_label</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">step_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">step_unit_label</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">widget</span> <span class="ow">in</span> <span class="p">[</span><span class="n">step_unit_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">]]:</span>
+                <span class="n">widget</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Times&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+                <span class="n">widget</span><span class="o">.</span><span class="n">setStyleSheet</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;color: </span><span class="si">{color}</span><span class="s2">;&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addStretch</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Add ramp buttons</span>
+        <span class="n">ramp_hbox</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ramp_button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Ramp&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ramp_zero_button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Ramp to zero&#39;</span><span class="p">)</span>
+        <span class="n">ramp_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramp_button</span><span class="p">)</span>
+        <span class="n">ramp_hbox</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramp_zero_button</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">ramp_hbox</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addStretch</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SIMConfigDialog.set_step"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMConfigDialog.set_step">[docs]</a>    <span class="k">def</span> <span class="nf">set_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_step</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_step</span>
+            <span class="k">elif</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_textbox</span><span class="p">[</span><span class="n">state</span><span class="p">]</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SIMConfigDialog.increase_step"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMConfigDialog.increase_step">[docs]</a>    <span class="k">def</span> <span class="nf">increase_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">current_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+        <span class="n">exponent</span> <span class="o">=</span> <span class="n">get_exponent</span><span class="p">(</span><span class="n">current_val</span><span class="p">)</span>
+        <span class="n">first_digit</span> <span class="o">=</span> <span class="n">get_first_digit</span><span class="p">(</span><span class="n">current_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">first_digit</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">exponent</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">first_digit</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">exponent</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="n">exponent</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SIMConfigDialog.decrease_step"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMConfigDialog.decrease_step">[docs]</a>    <span class="k">def</span> <span class="nf">decrease_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">current_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+        <span class="n">exponent</span> <span class="o">=</span> <span class="n">get_exponent</span><span class="p">(</span><span class="n">current_val</span><span class="p">)</span>
+        <span class="n">first_digit</span> <span class="o">=</span> <span class="n">get_first_digit</span><span class="p">(</span><span class="n">current_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">first_digit</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="n">exponent</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">first_digit</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">exponent</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">exponent</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_clear_focus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">focus_widget</span> <span class="o">=</span> <span class="n">QApplication</span><span class="o">.</span><span class="n">focusWidget</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">focus_widget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">focus_widget</span><span class="o">.</span><span class="n">clearFocus</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Separator"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.Separator">[docs]</a><span class="k">class</span> <span class="nc">Separator</span><span class="p">(</span><span class="n">QFrame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="s1">&#39;vertical&#39;</span><span class="p">:</span>
+            <span class="n">frame_shape</span> <span class="o">=</span> <span class="n">QFrame</span><span class="o">.</span><span class="n">VLine</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">frame_shape</span> <span class="o">=</span> <span class="n">QFrame</span><span class="o">.</span><span class="n">HLine</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFrameShape</span><span class="p">(</span><span class="n">frame_shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Minimum</span><span class="p">,</span> <span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLineWidth</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SIMControlDialog"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog">[docs]</a><span class="k">class</span> <span class="nc">SIMControlDialog</span><span class="p">(</span><span class="n">QDialog</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">mini</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="s1">&#39;Can use at most 10 gates&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">flags</span><span class="o">=</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowMinimizeButtonHint</span><span class="o">|</span>
+                  <span class="n">Qt</span><span class="o">.</span><span class="n">WindowCloseButtonHint</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mini</span> <span class="o">=</span> <span class="n">mini</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_keys</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">}</span>
+
+        <span class="c1"># Dict of {parameter.name: SIM928Dialog}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initUI</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="mi">1400</span><span class="p">,</span> <span class="mi">350</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SIMControlDialog.initUI"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.initUI">[docs]</a>    <span class="k">def</span> <span class="nf">initUI</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span> <span class="o">=</span> <span class="n">SIMConfigDialog</span><span class="p">(</span><span class="n">mini</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">clicked</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramp_voltages</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_zero_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">clicked</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramp_voltages</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_zero_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">copy_button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Copy from clipboard&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">copy_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_copy_from_clipboard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">copy_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">copy_button</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">Separator</span><span class="p">())</span>
+            <span class="n">SIM928_dialog</span> <span class="o">=</span> <span class="n">SIM928Dialog</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">mini</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mini</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">SIM928_dialog</span><span class="p">)</span>
+            <span class="n">Qt_index_key</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Qt</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Key_</span><span class="si">{idx}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">index_keys</span><span class="p">[</span><span class="n">Qt_index_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">SIM928_dialog</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">SIM928_dialog</span>
+
+            <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">state_change</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update_parameters</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">_reset_val_textbox</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">ramp_zero_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">_reset_val_textbox</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SIMControlDialog.keyPressEvent"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.keyPressEvent">[docs]</a>    <span class="k">def</span> <span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_keys</span><span class="p">:</span>
+                <span class="c1"># Change state of SIM928 dialog</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">index_keys</span><span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()]</span><span class="o">.</span><span class="n">cycle_state</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_Escape</span><span class="p">:</span>
+                <span class="c1"># Clear focus</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_Up</span><span class="p">:</span>
+                <span class="c1"># Increase voltage for blue (up_down) dialogs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">increase_voltages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span><span class="p">[</span><span class="s1">&#39;up_down&#39;</span><span class="p">],</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;up_down&#39;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_Down</span><span class="p">:</span>
+                <span class="c1"># Decrease voltage for blue (up_down) dialogs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">increase_voltages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span><span class="p">[</span><span class="s1">&#39;up_down&#39;</span><span class="p">],</span>
+                                       <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;up_down&#39;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_Right</span><span class="p">:</span>
+                <span class="c1"># Increase voltage for green (left_right) dialogs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">increase_voltages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span><span class="p">[</span><span class="s1">&#39;left_right&#39;</span><span class="p">],</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;left_right&#39;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_Left</span><span class="p">:</span>
+                <span class="c1"># Decrease voltage for green (left_right) dialogs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">increase_voltages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span><span class="p">[</span><span class="s1">&#39;left_right&#39;</span><span class="p">],</span>
+                                       <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;left_right&#39;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_W</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">decrease_step</span><span class="p">(</span><span class="s1">&#39;up_down&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_S</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">increase_step</span><span class="p">(</span><span class="s1">&#39;up_down&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_A</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">increase_step</span><span class="p">(</span><span class="s1">&#39;left_right&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key_D</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config_widget</span><span class="o">.</span><span class="n">decrease_step</span><span class="p">(</span><span class="s1">&#39;left_right&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SIMControlDialog.increase_voltages"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.increase_voltages">[docs]</a>    <span class="k">def</span> <span class="nf">increase_voltages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">increase_voltage</span><span class="p">(</span><span class="n">val</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SIMControlDialog.update_parameters"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.update_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;updating parameters&#39;</span><span class="p">)</span>
+        <span class="c1"># Clear parameters from self.state_parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">}</span>
+
+        <span class="c1"># Iterate through SIM928 dialogs and add them to state_parameters</span>
+        <span class="k">for</span> <span class="n">dialog</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_parameters</span><span class="p">[</span><span class="n">dialog</span><span class="o">.</span><span class="n">state</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dialog</span><span class="o">.</span><span class="n">parameter</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_copy_from_clipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">clipboard_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">pyperclip</span><span class="o">.</span><span class="n">paste</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">clipboard_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="p">[</span><span class="n">parameter_name</span><span class="p">]</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_clear_focus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;clearing focus&#39;</span><span class="p">)</span>
+        <span class="n">focus_widget</span> <span class="o">=</span> <span class="n">QApplication</span><span class="o">.</span><span class="n">focusWidget</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">focus_widget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">focus_widget</span><span class="o">.</span><span class="n">clearFocus</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dialog</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">dialog</span><span class="o">.</span><span class="n">_reset_val_textbox</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SIMControlDialog.ramp_voltages"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.ramp_voltages">[docs]</a>    <span class="k">def</span> <span class="nf">ramp_voltages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voltage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">voltage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+
+            <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+                <span class="n">parameter</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">SIM928_dialog</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">modified_val</span><span class="p">:</span>
+                    <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">set_voltage</span><span class="p">(</span><span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">val_textbox</span><span class="o">.</span><span class="n">text</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="SIMControlDialog.changeEvent"><a class="viewcode-back" href="../../silq.gui.html#silq.gui.SIMGui.SIMControlDialog.changeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">changeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="c1"># Correctly determines it is activated, but cannot clear focus</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">changeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">QEvent</span><span class="o">.</span><span class="n">ActivationChange</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">windowState</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">WindowNoState</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_clear_focus</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">SIM928_dialog</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SIM928_dialogs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="n">SIM928_dialog</span><span class="o">.</span><span class="n">_reset_val_textbox</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

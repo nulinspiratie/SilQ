@@ -1,0 +1,561 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.instrument_interfaces.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-instrument-interfaces-package">
+<h1>silq.instrument_interfaces package<a class="headerlink" href="#silq-instrument-interfaces-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.AlazarTech.html">silq.instrument_interfaces.AlazarTech package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.AlazarTech.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.AlazarTech.html#module-silq.instrument_interfaces.AlazarTech.ATS_interface">silq.instrument_interfaces.AlazarTech.ATS_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.AlazarTech.html#module-silq.instrument_interfaces.AlazarTech">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.Tektronix.html">silq.instrument_interfaces.Tektronix package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.Tektronix.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.Tektronix.html#module-silq.instrument_interfaces.Tektronix.AWG520_interface">silq.instrument_interfaces.Tektronix.AWG520_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.Tektronix.html#module-silq.instrument_interfaces.Tektronix">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.keysight.html">silq.instrument_interfaces.keysight package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html">silq.instrument_interfaces.keysight.fpga_controllers package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#silq-instrument-interfaces-keysight-fpga-controllers-bayesian-update-controller-module">silq.instrument_interfaces.keysight.fpga_controllers.Bayesian_Update_Controller module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#silq-instrument-interfaces-keysight-fpga-controllers-trigger-fpga-controller-module">silq.instrument_interfaces.keysight.fpga_controllers.trigger_FPGA_controller module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html">silq.instrument_interfaces.keysight.fpga_interfaces package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#silq-instrument-interfaces-keysight-fpga-interfaces-bayesian-update-interface-module">silq.instrument_interfaces.keysight.fpga_interfaces.Bayesian_update_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces.PCDDS_interface">silq.instrument_interfaces.keysight.fpga_interfaces.PCDDS_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces.trigger_FPGA_interface">silq.instrument_interfaces.keysight.fpga_interfaces.trigger_FPGA_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#module-silq.instrument_interfaces.keysight.E8267D_interface">silq.instrument_interfaces.keysight.E8267D_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#module-silq.instrument_interfaces.keysight.Keysight_81180A_interface">silq.instrument_interfaces.keysight.Keysight_81180A_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#module-silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#module-silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface">silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.html#module-silq.instrument_interfaces.keysight">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.lecroy.html">silq.instrument_interfaces.lecroy package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.lecroy.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.lecroy.html#silq-instrument-interfaces-lecroy-arbstudio1104-interface-module">silq.instrument_interfaces.lecroy.ArbStudio1104_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.lecroy.html#module-silq.instrument_interfaces.lecroy">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.rohde_schwarz.html">silq.instrument_interfaces.rohde_schwarz package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.rohde_schwarz.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.rohde_schwarz.html#silq-instrument-interfaces-rohde-schwarz-sgs100a-interface-module">silq.instrument_interfaces.rohde_schwarz.SGS100A_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.rohde_schwarz.html#module-silq.instrument_interfaces.rohde_schwarz">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.spincore.html">silq.instrument_interfaces.spincore package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.spincore.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.spincore.html#module-silq.instrument_interfaces.spincore.PulseBlasterDDS_interface">silq.instrument_interfaces.spincore.PulseBlasterDDS_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.spincore.html#module-silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface">silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.spincore.html#module-silq.instrument_interfaces.spincore">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.instrument_interfaces.chip_interface">
+<span id="silq-instrument-interfaces-chip-interface-module"></span><h2>silq.instrument_interfaces.chip_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.chip_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.chip_interface.ChipInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.chip_interface.</code><code class="sig-name descname">ChipInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#ChipInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.ChipInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p>Interface for the Chip meta-instrument.</p>
+<p>The Chip and its interface don’t have real functionality, but are used for
+connections that lead to/from the chip.</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<p>The interface also contains a list of all available channels in the
+instrument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>instrument_name</strong> – name of instrument for which this is an interface</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For a given instrument, its associated interface can be found using</dt><dd><p><a class="reference internal" href="#silq.instrument_interfaces.get_instrument_interface" title="silq.instrument_interfaces.get_instrument_interface"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_instrument_interface</span></code></a></p>
+</dd>
+</dl>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.chip_interface.ChipInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#ChipInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.ChipInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Does nothing in this case.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – Ignored kwargs passed by layout.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.chip_interface.ChipInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#ChipInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.ChipInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument (ignored).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.chip_interface.ChipInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#ChipInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.ChipInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument (ignored).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.chip_interface.</code><code class="sig-name descname">MeasurementPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#MeasurementPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">instrument</em>, <em class="sig-param">sampling_rates</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/chip_interface.html#MeasurementPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.chip_interface.MeasurementPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.MeasurementPulse" title="silq.pulses.pulse_types.MeasurementPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.MeasurementPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.interface">
+<span id="silq-instrument-interfaces-interface-module"></span><h2>silq.instrument_interfaces.interface module<a class="headerlink" href="#module-silq.instrument_interfaces.interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.interface.Channel">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.interface.</code><code class="sig-name descname">Channel</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">name</em>, <em class="sig-param">id=None</em>, <em class="sig-param">input=False</em>, <em class="sig-param">output=False</em>, <em class="sig-param">input_trigger=False</em>, <em class="sig-param">input_TTL=False</em>, <em class="sig-param">output_TTL=False</em>, <em class="sig-param">invert=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#Channel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.Channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Instrument channel, specified in <a class="reference internal" href="#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a></p>
+<p>A channel usually corresponds to a physical channel in the instrument,
+such as an input/output channel, triggering channel, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instrument_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of instrument.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Channel name, usually specified on the instrument.</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Channel id, usually zero-based index.</p></li>
+<li><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Channel is an input channel.</p></li>
+<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Channel is an output channel.</p></li>
+<li><p><strong>input_trigger</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Channel is used as instrument trigger.</p></li>
+<li><p><strong>input_TTL</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Channel input signal must be TTL</p></li>
+<li><p><strong>output_TTL</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Channel output signal is TTL with (low, high) voltage</p></li>
+<li><p><strong>invert</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Channel signal is inverted: on is low signal, off is high signal</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.interface.</code><code class="sig-name descname">InstrumentInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+<p>Interface between the <code class="xref py py-class docutils literal notranslate"><span class="pre">Layout</span></code> and instruments</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref py py-class docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<p>The interface also contains a list of all available channels in the
+instrument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>instrument_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – name of instrument for which this is an interface</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For a given instrument, its associated interface can be found using</dt><dd><p><code class="xref py py-func docutils literal notranslate"><span class="pre">get_instrument_interface()</span></code></p>
+</dd>
+</dl>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of additional pulses, empty by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.get_channel">
+<code class="sig-name descname">get_channel</code><span class="sig-paren">(</span><em class="sig-param">channel_name</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.get_channel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.get_channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get channel by its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>channel_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – name of channel</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#silq.instrument_interfaces.interface.Channel" title="silq.instrument_interfaces.interface.Channel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Channel whose name corresponds to channel_name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.get_pulse_implementation">
+<code class="sig-name descname">get_pulse_implementation</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">connections=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.get_pulse_implementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.get_pulse_implementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a target implementation of a pulse if it exists.</p>
+<p>If no implementation can be found for the pulse, or if the pulse
+properties are out of the implementation’s bounds, None is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>) – pulse to be targeted</p></li>
+<li><p><strong>connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>]) – List of all connections in Layout, which might be
+used by the implementation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Targeted pulse if it can be implemented. Otherwise None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called at the start of targeting a pulse sequence
+:returns: None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">samples=None</em>, <em class="sig-param">input_connections=[]</em>, <em class="sig-param">output_connections=[]</em>, <em class="sig-param">repeat=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Acquisition instruments usually don’t need to be started</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.interface.InstrumentInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/interface.html#InstrumentInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.interface.InstrumentInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.instrument_interfaces" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.instrument_interfaces.get_instrument_interface">
+<code class="sig-prename descclassname">silq.instrument_interfaces.</code><code class="sig-name descname">get_instrument_interface</code><span class="sig-paren">(</span><em class="sig-param">instrument</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces.html#get_instrument_interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.get_instrument_interface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tests.mocks.mock_interfaces.mock_digitizer_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../mocks.html">silq.tests.mocks</a> &raquo;</li>
+        
+      <li>silq.tests.mocks.mock_interfaces.mock_digitizer_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tests.mocks.mock_interfaces.mock_digitizer_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+<span class="kn">from</span> <span class="nn">.mock_interface</span> <span class="k">import</span> <span class="n">MockInterface</span>
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">Channel</span>
+
+
+<div class="viewcode-block" id="MockDigitizerInterface"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface">[docs]</a><span class="k">class</span> <span class="nc">MockDigitizerInterface</span><span class="p">(</span><span class="n">MockInterface</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Override untargeted pulse adding (measurement pulses can be added)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Define instrument channels</span>
+        <span class="c1"># - Two input channels (ch1 and ch2)</span>
+        <span class="c1"># - One input trigger channel (trig_in)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span><span class="p">,</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_channels&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Anything</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Names of acquisition channels &#39;</span>
+                                     <span class="s1">&#39;[chA, chB, etc.]. Set by the layout&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of times to acquire the pulse &#39;</span>
+                                     <span class="s1">&#39;sequence.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sample_rate&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of times to acquire the pulse &#39;</span>
+                                     <span class="s1">&#39;sequence.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Noise factor used when generating traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise_factor</span> <span class="o">=</span> <span class="mf">0.6</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">blip_probability</span> <span class="o">=</span> <span class="mf">0.45</span>  <span class="c1"># Probability for fake blips during read pulse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blip_start</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># Maximum fraction for blip to start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blip_duration</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># Maximum duration for a blip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blip_read_amplitude</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># Maximum read amplitude</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="MockDigitizerInterface.setup"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_generate_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate fake traces with noise from self.noise_factor</span>
+
+<span class="sd">        This data is usually acquired from the actual acquisition instrument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">total_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">()),</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">(),</span>
+                                <span class="n">total_points</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span>
+        <span class="n">traces</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noise_factor</span>
+
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">:</span>
+            <span class="n">idx_start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+            <span class="n">idx_stop</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+            <span class="n">traces</span><span class="p">[:,:,</span><span class="n">idx_start</span><span class="p">:</span><span class="n">idx_stop</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">pulse</span><span class="o">.</span><span class="n">amplitude</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="c1"># Add fake blips to read pulse</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">blip_probability</span><span class="p">:</span>
+                        <span class="c1"># Probabilistically skip this trace</span>
+                        <span class="k">continue</span>
+                    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">pulse</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">blip_read_amplitude</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">blip_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">idx_stop</span><span class="o">-</span><span class="n">idx_start</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">blip_start</span><span class="p">)</span>
+                    <span class="n">blip_start</span> <span class="o">+=</span> <span class="n">idx_start</span>
+                    <span class="n">blip_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">idx_stop</span><span class="o">-</span><span class="n">idx_start</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">blip_duration</span><span class="p">)</span>
+                    <span class="n">trace</span><span class="p">[</span><span class="n">blip_start</span><span class="p">:</span><span class="n">blip_start</span><span class="o">+</span><span class="n">blip_duration</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">traces</span>
+
+<div class="viewcode-block" id="MockDigitizerInterface.segment_traces"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.segment_traces">[docs]</a>    <span class="k">def</span> <span class="nf">segment_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Segment traces per pulse, and optionally perform averaging&quot;&quot;&quot;</span>
+        <span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">:</span>
+            <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">channel_traces</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">(),</span>
+                                               <span class="n">traces</span><span class="p">):</span>
+                <span class="n">idx_start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+                <span class="n">idx_stop</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+                <span class="n">pulse_trace</span> <span class="o">=</span> <span class="n">channel_traces</span><span class="p">[:,</span><span class="n">idx_start</span><span class="p">:</span><span class="n">idx_stop</span><span class="p">]</span>
+
+                <span class="c1"># Perform averaging if defined in pulse.average</span>
+                <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_trace</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_trace</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;trace&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_trace</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_trace</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+                <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">channel</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse_trace</span>
+
+        <span class="k">return</span> <span class="n">pulse_traces</span></div>
+
+
+
+<div class="viewcode-block" id="MockDigitizerInterface.acquisition"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.acquisition">[docs]</a>    <span class="k">def</span> <span class="nf">acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Generate fake traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_traces</span><span class="p">()</span>
+
+        <span class="c1"># Segment traces per pulse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment_traces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span></div>
+
+<div class="viewcode-block" id="MockDigitizerInterface.start"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="MockDigitizerInterface.stop"><a class="viewcode-back" href="../../../../silq.tests.mocks.mock_interfaces.html#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

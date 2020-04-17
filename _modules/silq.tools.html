@@ -1,0 +1,1772 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.tools package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-tools-package">
+<h1>silq.tools package<a class="headerlink" href="#silq-tools-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="silq-tools-circuit-tools-module">
+<h2>silq.tools.circuit_tools module<a class="headerlink" href="#silq-tools-circuit-tools-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tools.config">
+<span id="silq-tools-config-module"></span><h2>silq.tools.config module<a class="headerlink" href="#module-silq.tools.config" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tools.config.SubConfig">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.config.</code><code class="sig-name descname">SubConfig</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">folder=None</em>, <em class="sig-param">parent=None</em>, <em class="sig-param">save_as_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#SubConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.SubConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Config with added functionality, used within <code class="docutils literal notranslate"><span class="pre">qcodes.config.user</span></code>.</p>
+<p>The SubConfig is a modified version of the qcodes config, the root being
+<code class="docutils literal notranslate"><span class="pre">qcodes.config.user.silq_config</span></code>. It is used as the SilQ config
+(silq.config), attached during importing silq, and initialized during
+<a class="reference internal" href="silq.html#silq.initialize" title="silq.initialize"><code class="xref any py py-func docutils literal notranslate"><span class="pre">silq.initialize</span></code></a> with the respective experiment config.</p>
+<p>SubConfigs can be nested, and there is a SubConfig child class for subtypes
+(<a class="reference internal" href="#silq.tools.config.DictConfig" title="silq.tools.config.DictConfig"><code class="xref any py py-class docutils literal notranslate"><span class="pre">DictConfig</span></code></a> for dicts, <a class="reference internal" href="#silq.tools.config.ListConfig" title="silq.tools.config.ListConfig"><code class="xref any py py-class docutils literal notranslate"><span class="pre">ListConfig</span></code></a> for lists). These are automatically
+instantiated when adding a dict/list to a SubConfig.</p>
+<p>The SubConfig contains the following main extensions over the qcodes config:</p>
+<ol class="arabic simple">
+<li><p>Support for saving/loading the config as a JSON folder structure
+This simplifies editing part of the config in an editor.
+Each subconfig can be set to either save as a folder or as a file via the
+<code class="docutils literal notranslate"><span class="pre">save_as_dir</span></code> attribute.</p></li>
+</ol>
+<ol class="arabic simple" start="3">
+<li><p>Handling of an environment (set by silq.environment). The environment
+(string) the key of a dict in silq.config (top-level). If the environment
+(string) is set, any call to <code class="xref any docutils literal notranslate"><span class="pre">environment:{path}</span></code> will access
+<a href="#id1"><span class="problematic" id="id2">`</span></a>silq.config.{silq.environment}.{path}
+This allows easy switching between config settings.</p></li>
+</ol>
+<ol class="arabic" start="2">
+<li><p>Emit a signal when a value changes. The signal  uses <code class="docutils literal notranslate"><span class="pre">blinker.signal</span></code>,
+the signal name being <code class="docutils literal notranslate"><span class="pre">config:{config_path}</span></code>, where <code class="docutils literal notranslate"><span class="pre">config_path</span></code> is
+a dot-separated path to of the config. For example, setting:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">silq</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">val</span>
+</pre></div>
+</div>
+<p>The path is equal to <code class="docutils literal notranslate"><span class="pre">qcodes.config.user.silq_config.properties.key1</span></code>
+and emits a signal with sender <code class="xref any docutils literal notranslate"><span class="pre">config:properties.key1</span></code> and keyword
+argument <code class="xref any docutils literal notranslate"><span class="pre">value=val</span></code>.
+This signal can then by picked up by other objects, in particular by
+parameters via its initialization kwarg <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse.config_link" title="silq.pulses.pulse_types.Pulse.config_link"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">config_link</span></code></a>. This means that
+whenever that specific config value changes, the parameter is updated
+accordingly.</p>
+</li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Config name. SilQ config root is <code class="docutils literal notranslate"><span class="pre">config</span></code>.</p></li>
+<li><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Absolute config folder path. Automatically set for child
+SubConfigs in the root SubConfig.</p></li>
+<li><p><strong>parent</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubConfig</span></code></a>]) – Parent SubConfig (None for root SubConfig).</p></li>
+<li><p><strong>save_as_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Save SubConfig as dir. If False, SubConfig and all elements
+in it are saved as a JSON file. If True, SubConfig is saved as a
+folder, each dict key being a separate JSON file.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.config.SubConfig.config_path">
+<em class="property">property </em><code class="sig-name descname">config_path</code><a class="headerlink" href="#silq.tools.config.SubConfig.config_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>dot.separated.path``</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>SubConfig path, e.g. <a href="#id3"><span class="problematic" id="id4">``</span></a>config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.SubConfig.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#SubConfig.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.SubConfig.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load config from folder.</p>
+<p>The folder must either contain a {self.name}.json file,
+or alternatively a folder containing config files/folders.
+In the latter case, a dict is created, and all the files/folders in
+the folder will be elements of the dict. All ‘.ipynb_checkpoints’
+folders will be ignored.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">save_as_dir</span></code> attribute is None, it will be updated to either True
+or False depending if there is a subfolder or file to load from the
+folder, respectively.</p>
+<p>Note that <a class="reference internal" href="#silq.tools.config.SubConfig.load" title="silq.tools.config.SubConfig.load"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">SubConfig.load</span></code></a> returns a dict/list, which should then be
+added to the Subconfig object depending on the subclass. This should be
+implemented in the load method of subclasses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – folder to look for. If not provided, uses <code class="docutils literal notranslate"><span class="pre">self.folder</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict/list config, to be added by the <code class="docutils literal notranslate"><span class="pre">load</span></code> method of the subclass</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.SubConfig.refresh">
+<code class="sig-name descname">refresh</code><span class="sig-paren">(</span><em class="sig-param">config=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#SubConfig.refresh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.SubConfig.refresh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.SubConfig.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">folder=None</em>, <em class="sig-param">save_as_dir=None</em>, <em class="sig-param">dependent_value=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#SubConfig.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.SubConfig.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save SubConfig as JSON files in folder structure.</p>
+<p>Calling this method iteratively calls the same method on each of its
+elements. The folder structure is determined by the <code class="docutils literal notranslate"><span class="pre">save_as_dir</span></code>
+attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Folder in which to save SubConfig. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, uses
+<code class="docutils literal notranslate"><span class="pre">self.folder</span></code>. Automatically passed for child SubConfigs.</p></li>
+<li><p><strong>save_as_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Save SubConfig as folder, in which each element is
+a key. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, uses <code class="docutils literal notranslate"><span class="pre">self.save_as_dir</span></code>. Automatically set
+to <code class="docutils literal notranslate"><span class="pre">None</span></code> for all child SubConfigs.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.SubConfig.serialize">
+<code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param">dependent_value=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#SubConfig.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.SubConfig.serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.config.DictConfig">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.config.</code><code class="sig-name descname">DictConfig</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">folder=None</em>, <em class="sig-param">parent=None</em>, <em class="sig-param">config=None</em>, <em class="sig-param">save_as_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#DictConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.config.SubConfig</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.config.config.DotDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.utils.helpers.SignalEmitter</span></code></p>
+<p><a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref any py py-class docutils literal notranslate"><span class="pre">SubConfig</span></code></a> for dictionaries, extension of <code class="docutils literal notranslate"><span class="pre">qcodes.config</span></code>.</p>
+<p>This is a SubConfig child class for dictionaries.</p>
+<p>The DictConfig is a <code class="docutils literal notranslate"><span class="pre">DotDict</span></code>, meaning that its elements can be accessed
+as attributes. For example, the following lines are identical:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dict_config</span><span class="p">[</span><span class="s1">&#39;item1&#39;</span><span class="p">][</span><span class="s1">&#39;item2&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dict_config</span><span class="o">.</span><span class="n">item1</span><span class="o">.</span><span class="n">item2</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Config name. SilQ config root is <code class="docutils literal notranslate"><span class="pre">config</span></code>.</p></li>
+<li><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Absolute config folder path. Automatically set for child
+SubConfigs in the root SubConfig.</p></li>
+<li><p><strong>parent</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubConfig</span></code></a>]) – Parent SubConfig (None for root SubConfig).</p></li>
+<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]) – Pre-existing config to load into new DictConfig.</p></li>
+<li><p><strong>save_as_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Save SubConfig as dir. If False, SubConfig and all elements
+in it are saved as a JSON file. If True, SubConfig is saved as a
+folder, each dict key being a separate JSON file.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="silq.tools.config.DictConfig.exclude_from_dict">
+<code class="sig-name descname">exclude_from_dict</code><em class="property"> = ['name', 'folder', 'parent', 'initializing', 'signal', '_signal_chain', '_signal_modifiers', '_mirrored_config_attrs', '_inherited_configs', 'save_as_dir', 'config_path', 'sender', 'multiple_senders']</em><a class="headerlink" href="#silq.tools.config.DictConfig.exclude_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">key</em>, <em class="sig-param">default=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#DictConfig.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override dictionary get, because it does not call __getitem__.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – key to get</p></li>
+<li><p><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]) – default value if key not found. None by default</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>value of key if in dictionary, else default value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.items">
+<code class="sig-name descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; a set-like object providing a view on D's items<a class="reference internal" href="silq/tools/config.html#DictConfig.items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">folder=None</em>, <em class="sig-param">update=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#DictConfig.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load SubConfig from folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Folder from which to load SubConfig.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.serialize">
+<code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param">dependent_value=True</em><span class="sig-paren">)</span><a class="headerlink" href="#silq.tools.config.DictConfig.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert DictConfig including all its children to a dictionary.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.config.DictConfig.signal">
+<code class="sig-name descname">signal</code><em class="property"> = &lt;blinker.base.Signal object&gt;</em><a class="headerlink" href="#silq.tools.config.DictConfig.signal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.to_dict">
+<code class="sig-name descname">to_dict</code><span class="sig-paren">(</span><em class="sig-param">dependent_value=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#DictConfig.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert DictConfig including all its children to a dictionary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.DictConfig.values">
+<code class="sig-name descname">values</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; an object providing a view on D's values<a class="reference internal" href="silq/tools/config.html#DictConfig.values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.DictConfig.values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.config.ListConfig">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.config.</code><code class="sig-name descname">ListConfig</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">folder=None</em>, <em class="sig-param">parent=None</em>, <em class="sig-param">config=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#ListConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.ListConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.config.SubConfig</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+<p><a class="reference internal" href="#silq.tools.config.SubConfig" title="silq.tools.config.SubConfig"><code class="xref any py py-class docutils literal notranslate"><span class="pre">SubConfig</span></code></a> for lists, extension of <code class="docutils literal notranslate"><span class="pre">qcodes.config</span></code>.</p>
+<p>This is a SubConfig child class for lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Config name. SilQ config root is <code class="docutils literal notranslate"><span class="pre">config</span></code>.</p></li>
+<li><p><strong>folder</strong> – Absolute config folder path. Automatically set for child
+SubConfigs in the root SubConfig.</p></li>
+<li><p><strong>parent</strong> – Parent SubConfig (None for root SubConfig).</p></li>
+<li><p><strong>config</strong> – Pre-existing config to load into new ListConfig.</p></li>
+<li><p><strong>save_as_dir</strong> – Save SubConfig as dir. If False, SubConfig and all elements
+in it are saved as a JSON file. If True, SubConfig is saved as a
+folder, each dict key being a separate JSON file.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.config.ListConfig.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">folder=None</em>, <em class="sig-param">update=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#ListConfig.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.ListConfig.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load SubConfig from folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Folder from which to load SubConfig.</p></li>
+<li><p><strong>update</strong> – update current config</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.ListConfig.serialize">
+<code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param">dependent_value=True</em><span class="sig-paren">)</span><a class="headerlink" href="#silq.tools.config.ListConfig.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Listconfig including all children into a list</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.config.ListConfig.to_list">
+<code class="sig-name descname">to_list</code><span class="sig-paren">(</span><em class="sig-param">dependent_value=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#ListConfig.to_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.ListConfig.to_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Listconfig including all children into a list</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.config.update_dict">
+<code class="sig-prename descclassname">silq.tools.config.</code><code class="sig-name descname">update_dict</code><span class="sig-paren">(</span><em class="sig-param">d</em>, <em class="sig-param">u</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/config.html#update_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.config.update_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update dictionary recursively.</p>
+<p>this ensures that subdicts are also converted
+This is a modified version of the update function in qcodes config</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.data_tools">
+<span id="silq-tools-data-tools-module"></span><h2>silq.tools.data_tools module<a class="headerlink" href="#module-silq.tools.data_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.tools.data_tools.create_data_set">
+<code class="sig-prename descclassname">silq.tools.data_tools.</code><code class="sig-name descname">create_data_set</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">base_folder</em>, <em class="sig-param">subfolder=None</em>, <em class="sig-param">formatter=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/data_tools.html#create_data_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.data_tools.create_data_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create empty <code class="docutils literal notranslate"><span class="pre">DataSet</span></code> within main data folder.</p>
+<p>Uses <code class="docutils literal notranslate"><span class="pre">new_data</span></code>, and handles location formatting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – <code class="docutils literal notranslate"><span class="pre">DataSet</span></code> name, used as DataSet folder name.</p></li>
+<li><p><strong>base_folder</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Base folder for DataSet. Should be a pre-existing
+<code class="docutils literal notranslate"><span class="pre">DataSet</span></code> folder. If None, a new folder is created in main data
+folder.</p></li>
+<li><p><strong>subfolder</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Adds subfolder within base_folder for <code class="docutils literal notranslate"><span class="pre">DataSet</span></code>.
+Should not be used without explicitly setting <code class="docutils literal notranslate"><span class="pre">base_folder</span></code>.</p></li>
+<li><p><strong>formatter</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="http://qcodes.github.io/Qcodes/api/data/format.html#qcodes.data.format.Formatter" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Formatter</span></code></a>]) – Formatter to use for data storage (e.g. GNUPlotFormat).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>New empty <code class="docutils literal notranslate"><span class="pre">DataSet</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.data_tools.get_data_folder">
+<code class="sig-prename descclassname">silq.tools.data_tools.</code><code class="sig-name descname">get_data_folder</code><span class="sig-paren">(</span><em class="sig-param">*path</em>, <em class="sig-param">newest_date=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/data_tools.html#get_data_folder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.data_tools.get_data_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get first data folder in main data folder satisfying conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*path</strong> – Filter for data folder.
+First arg can be an absolute path, in which case data folder is
+searched in that path.
+If a list of strings, each element corresponds to a subfolder in
+main data folder, whose folder name must contain the given string.
+Arg can be dataset index, in which case it must start with #, and be
+followed by digits. leading zeroes are not necessary.
+If not provided, first data folder in main data path is used.</p></li>
+<li><p><strong>newest_date</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Latest date for dataset. If specified, the first dataset
+earlier than this date is searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Relative path to found dataset</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>IterationError</strong> – No dataset found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.detect_peaks">
+<span id="silq-tools-detect-peaks-module"></span><h2>silq.tools.detect_peaks module<a class="headerlink" href="#module-silq.tools.detect_peaks" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.tools.detect_peaks.calculate_gradient">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">calculate_gradient</code><span class="sig-paren">(</span><em class="sig-param">Z</em>, <em class="sig-param">filter=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#calculate_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.calculate_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the theta matrix for a 2-dimensional charge stability diagram.</p>
+<p>The theta matrix indicates the direction of the 2-dimensional gradient.</p>
+<p># TODO Please elaborate code. At this moment all these arrays don’t make
+#     sense. Either say why the values are chosen, or refer to a
+#     website/paper where they were obtained from.
+#     -&gt; The wikipedia page for sobel operator explains most of this funtion <a class="reference external" href="https://en.wikipedia.org/wiki/Sobel_operator">https://en.wikipedia.org/wiki/Sobel_operator</a>
+# TODO Could modifying these values improve the code?
+#     -&gt; Yes, fine-tuning these values could definitely improve performance. This can be done later.
+# TODO From what I gather, we’re applying a kernel, so perhaps it makes sense
+#     to have kernel_size as a keyword argument.
+#     -&gt; This is a good point, i want to add that later.
+# TODO what does filter do excactly? What type of filtering is applied?
+#     -&gt; SY and SX are differentiating kernels, all others are binomial window filters.
+:type Z: <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>
+:param Z: 2-dimensional charge stability diagram matrix.
+:type filter: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>
+:param filter: Enables filtering during the calculations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Magnitude of gradient
+theta: 2-dimensional theta matrix.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>magnitude</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.calculate_theta_deviation">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">calculate_theta_deviation</code><span class="sig-paren">(</span><em class="sig-param">theta</em>, <em class="sig-param">theta_mode</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#calculate_theta_deviation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.calculate_theta_deviation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.calculate_transition_gradient">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">calculate_transition_gradient</code><span class="sig-paren">(</span><em class="sig-param">theta</em>, <em class="sig-param">filter=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#calculate_transition_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.calculate_transition_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the transition gradient matrix from a given theta matrix.</p>
+<p># TODO minor explanation of what a transition gradient is</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>theta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2-dimensional theta matrix of a charge stability diagram.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>2-dimensional transition gradient matrix.</dt><dd><p>x-axis is start position, y-axis is gradient.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.delete_transition">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">delete_transition</code><span class="sig-paren">(</span><em class="sig-param">theta</em>, <em class="sig-param">location</em>, <em class="sig-param">gradient</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#delete_transition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.delete_transition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a transition from a theta matrix. In order to find transitions, they are identified one at a time.
+The most prominent transition is identified first, then removed from the theta matrix so that the second most
+prominent transition can be found.</p>
+<p>Transitions can be identitified by their theta matrix being significantly different to the most common theta value.
+Thus, by replacing a transition with the most common value, it is essentially being removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2-dimensional theta matrix of a charge stability diagram.</p></li>
+<li><p><strong>location</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Base index of the charge transfer event in Z</p></li>
+<li><p><strong>gradient</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Gradient of the charge transfer event in Z</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>modified 2-dimensional theta matrix, with the specified transition removed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>theta</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.find_matrix_mode">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">find_matrix_mode</code><span class="sig-paren">(</span><em class="sig-param">M</em>, <em class="sig-param">bins=100</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#find_matrix_mode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.find_matrix_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the mode of a matrix (most-often occurring element).</p>
+<dl class="simple">
+<dt># TODO check if this description is accurate</dt><dd><p>-&gt; Yes it is.</p>
+</dd>
+</dl>
+<p>Mode is found by first generating a histogram of matrix values, and then
+returning the center value of the bin with the highest count.
+Values are grouped because floating numbers are only approximately equal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>M</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – n-dimensional matrix. Ideally a 2-dimensional theta matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>most common element of M after grouping via a histogram.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>mode</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.find_transitions">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">find_transitions</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">true_units=False</em>, <em class="sig-param">charge_transfer=False</em>, <em class="sig-param">plot='Off'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#find_transitions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.find_transitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Locate transitions within a 2-dimensional charge stability diagram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2-dimensional charge stability diagram matrix.</p></li>
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – 1-dimensional voltage vector for the x-axis of Z</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – 1-dimensional voltage vector for the y-axis of Z</p></li>
+<li><p><strong>min_gradient</strong> – Minimum gradient to count as a transition</p></li>
+<li><p><strong>true_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – <dl class="simple">
+<dt>if True:</dt><dd><p>Where applicable, return all values in proper units. i.e. voltage and current.</p>
+</dd>
+<dt>if False:</dt><dd><p>Return values in calculation specific form. i.e. index and ratios.</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>charge_transfer</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Enables calculation of voltage and current shift information about transitions.
+This is required to calculate dV, dI, dI_x, dI_y</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – <ul>
+<li><p>‘Off’     = No plots</p></li>
+<li><p>’Simple’  = Plot of DC data and transition data next to it</p></li>
+<li><p>’Complex’ = All of simple, plus the transition_gradient and theta plots for each transition.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: a list of dictionaries, one entry for each transition found:
+# TODO (Serwan) simplify this part
+if true_units == True:</p>
+<blockquote>
+<div><p>location  (float): Voltage at the base of the transition.
+gradient  (float): Gradient of the transition. in y_Voltage/x_Voltage
+intensity (float): Value between 0 and 1, indicating the strength of the transition
+dV        (float): The shift of coulomb peaks from a charge transfer event. dV = dVtop = ∆q/Ctop
+dI        (array): An array of current change from before to after a transition.</p>
+<blockquote>
+<div><p>Returns -1 if error.</p>
+</div></blockquote>
+<p>dI_x      (array): An array of x-voltages corresponding to the points in dI.
+dI_y      (array): An array of y-voltages corresponding to the points in dI.</p>
+</div></blockquote>
+<dl>
+<dt>if true_units == False):</dt><dd><p>location    (int): Index at the base of the transition.
+gradient  (float): Gradient of the transition. in y-index/x-index
+intensity (float): Value between 0 and 1, indicating the strength of the transition
+dV          (int): The shift of coulomb peaks from a charge transfer event in terms of index in X.</p>
+<blockquote>
+<div><p>dV*(y[1]-y[0]) = dVtop = ∆q/Ctop</p>
+</div></blockquote>
+<dl class="simple">
+<dt>dI        (array): An array of current change from before to after a transition.</dt><dd><p>Returns -1 if error.</p>
+</dd>
+</dl>
+<p>dI_x      (array): An array of x-indices corresponding to the points in dI.
+dI_y      (array): An array of y-indices corresponding to the points in dI.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.get_charge_transfer_information">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">get_charge_transfer_information</code><span class="sig-paren">(</span><em class="sig-param">Z</em>, <em class="sig-param">location</em>, <em class="sig-param">gradient</em>, <em class="sig-param">theta_mode</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#get_charge_transfer_information"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.get_charge_transfer_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate information about a particular charge transfer event.</p>
+<p>Firstly, calculates how much the coulomb peaks shift at a charge transfer event.
+It does this by taking two slices either side of the transition, then comparing the shift.</p>
+<p>Secondly, the algorithm locates points where the current difference could be conducive as a tuning point.
+It does this by again taking two slices either side of the transition and comparing the current difference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – 2-dimensional charge stability diagram matrix.</p></li>
+<li><p><strong>location</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Base index of the charge transfer event in Z</p></li>
+<li><p><strong>gradient</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Gradient of the charge transfer event in Z</p></li>
+<li><p><strong>theta_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Mode of theta (most common theta value)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The shift of coulomb peaks from a charge transfer event.</dt><dd><dl class="simple">
+<dt>Given as a shift of index in Z. When properly scaled:</dt><dd><p>dV = dVtop = delta_q/Ctop</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>dI: An array of current change from before to after a transition.
+dI_x: An array of x-indices corresponding to the points in dI.
+dI_y: An array of y-indices corresponding to the points in dI.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dV</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.max_index">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">max_index</code><span class="sig-paren">(</span><em class="sig-param">M</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#max_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.max_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index of the maximum element in M.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>M</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – n-dimensional matrix. Ideally a 2-dimensional theta matrix,
+2-dimensional charge stability diagram, or 2-dimensional transition
+gradient matrix.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Array with x and y index of maximum element.
+For a transition gradient matrix, I[0] is dx, and I[1] is x1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.plot_transition_gradient">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">plot_transition_gradient</code><span class="sig-paren">(</span><em class="sig-param">transition_gradient</em>, <em class="sig-param">theta_deviation</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#plot_transition_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.plot_transition_gradient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.detect_peaks.plot_transitions">
+<code class="sig-prename descclassname">silq.tools.detect_peaks.</code><code class="sig-name descname">plot_transitions</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">Z</em>, <em class="sig-param">transitions</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/detect_peaks.html#plot_transitions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.detect_peaks.plot_transitions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.general_tools">
+<span id="silq-tools-general-tools-module"></span><h2>silq.tools.general_tools module<a class="headerlink" href="#module-silq.tools.general_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.tools.general_tools.execfile">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">execfile</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">globals=None</em>, <em class="sig-param">locals=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#execfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.execfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute code in .py file, adding new variables to globals/locals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>globals</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]) – Global variables dictionary. If not specified, uses globals
+in first frame.</p></li>
+<li><p><strong>locals</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]) – Local variables dictionary. If not specified, uses locals in
+first frame.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.is_between">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">is_between</code><span class="sig-paren">(</span><em class="sig-param">val</em>, <em class="sig-param">min_val=None</em>, <em class="sig-param">max_val=None</em>, <em class="sig-param">tolerance=1e-13</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#is_between"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.is_between" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if value is between min and max, taking machine precision into account</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.get_truth">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">get_truth</code><span class="sig-paren">(</span><em class="sig-param">test_val</em>, <em class="sig-param">target_val</em>, <em class="sig-param">relation='=='</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#get_truth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.get_truth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tests if the <code class="docutils literal notranslate"><span class="pre">test_val</span></code> satisfies the <code class="docutils literal notranslate"><span class="pre">relation</span></code> to <code class="docutils literal notranslate"><span class="pre">target_val</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>test_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>) – lhs of relation with target_val.</p></li>
+<li><p><strong>target_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>) – rhs of relation with test_val</p></li>
+<li><p><strong>relation</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – relation between test_val and target_val. Default is ‘==’
+Can be: ‘&gt;’, ‘&lt;’, ‘&gt;=’, ‘&lt;=’, ‘==’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if relation holds</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.get_memory_usage">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">get_memory_usage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#get_memory_usage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.get_memory_usage" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the memory usage in MB</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.general_tools.SettingsClass">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">SettingsClass</code><span class="sig-paren">(</span><em class="sig-param">ignore_if_set=[]</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#SettingsClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.SettingsClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class used to temporarily override attributes.
+This can be done through obj.single_settings() and obj.temporary_settings().
+Any settings specified here will override the actual values of the object
+until settings are cleared</p>
+<p>Settings can be cleared in two ways:
+Using the decorator &#64;clear_single_settings on a method, which will delete
+the single_settings.
+Using obj.clear_settings(), which will clear both the single settings and
+temporary settings.</p>
+<p>Furthermore, attribute_names can be added to ignore_if_set.
+If the object’s value of that attribute is not equal to None, [], or (),
+it cannot be overridden through single or temporary settings.</p>
+<p>Note that for all attributes, they must be set in the object before they
+can be overridden by single/temporary settings</p>
+<dl class="method">
+<dt id="silq.tools.general_tools.SettingsClass.clear_settings">
+<code class="sig-name descname">clear_settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#SettingsClass.clear_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.SettingsClass.clear_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears temporary and single settings</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.general_tools.SettingsClass.settings">
+<code class="sig-name descname">settings</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#SettingsClass.settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.SettingsClass.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the meta properties of a measurement parameter</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.general_tools.SettingsClass.single_settings">
+<code class="sig-name descname">single_settings</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#SettingsClass.single_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.SettingsClass.single_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the meta properties of a measurement parameter</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.general_tools.SettingsClass.temporary_settings">
+<code class="sig-name descname">temporary_settings</code><span class="sig-paren">(</span><em class="sig-param">append=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#SettingsClass.temporary_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.SettingsClass.temporary_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the meta properties of a measurement parameter</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.general_tools.UpdateDotDict">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">UpdateDotDict</code><span class="sig-paren">(</span><em class="sig-param">update_function=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#UpdateDotDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.UpdateDotDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.config.config.DotDict</span></code></p>
+<p>DotDict that can evaluate function upon being updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>update_function</strong> – Function that is called every time a value changes.</p></li>
+<li><p><strong>**kwargs</strong> – Unused kwargs.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="silq.tools.general_tools.UpdateDotDict.exclude_from_dict">
+<code class="sig-name descname">exclude_from_dict</code><em class="property"> = ['update_function', 'exclude_from_dict']</em><a class="headerlink" href="#silq.tools.general_tools.UpdateDotDict.exclude_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.attribute_from_config">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">attribute_from_config</code><span class="sig-paren">(</span><em class="sig-param">item</em>, <em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#attribute_from_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.attribute_from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if attribute exists is an item in the config</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – key in config to check</p></li>
+<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – config to check</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Value in config. If dict-like, will be converted to dict.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(in Python v3.8)"><strong>AttributeError</strong></a> – item not found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.clear_single_settings">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">clear_single_settings</code><span class="sig-paren">(</span><em class="sig-param">f</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#clear_single_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.clear_single_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#silq.tools.general_tools.SettingsClass" title="silq.tools.general_tools.SettingsClass"><code class="xref any py py-class docutils literal notranslate"><span class="pre">SettingsClass</span></code></a> wrapper to clear single_settings after running function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>f</strong> – function after which to clear <code class="docutils literal notranslate"><span class="pre">single_settings</span></code> attribute.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.JSONEncoder">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">JSONEncoder</code><span class="sig-paren">(</span><em class="sig-param">obj</em>, <em class="sig-param">ignore_attrs=[]</em>, <em class="sig-param">ignore_vals=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#JSONEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.JSONEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encode object as dict for JSON encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ignore_attrs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Attributes that should not be included.</p></li>
+<li><p><strong>ignore_vals</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – Vals to be ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict representation of object.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<dl class="simple">
+<dt># If one of its attributes is an object containing method <code class="docutils literal notranslate"><span class="pre">_JSONEncoder</span></code>,</dt><dd><p>the method is called to get its JSON representation.</p>
+</dd>
+<dt># Lists are encoded using <a class="reference internal" href="#silq.tools.general_tools.JSONListEncoder" title="silq.tools.general_tools.JSONListEncoder"><code class="xref any py py-func docutils literal notranslate"><span class="pre">JSONListEncoder</span></code></a>, which has an additional</dt><dd><p>check for the method <code class="docutils literal notranslate"><span class="pre">_JSONEncoder</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="id5">
+<p class="admonition-title">Todo</p>
+<p>Ensure parameters etc. are encoded using their snapshot.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.JSONListEncoder">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">JSONListEncoder</code><span class="sig-paren">(</span><em class="sig-param">l</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#JSONListEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.JSONListEncoder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.run_code">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">run_code</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#run_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.run_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates cell to run code from global variable code_labels</p>
+<p>Code labels is a dictionary in which each key has a corresponding value
+that is a string representation of executable code.
+Note that the module variable code_labels must be set to equal the global
+variable code_labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> – label referring to code in dict code_labels</p></li>
+<li><p><strong>**kwargs</strong> – Optional kwargs that are replaced in code
+i.e. for a given kwarg {var}=5, a line matching:
+“{var} = {val}” will be replaced to “{var} = 5” (Note whitespaces)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Creates cell at bottom of notebook and executes it</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is not used anymore, though it should still work</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.get_exponent">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">get_exponent</code><span class="sig-paren">(</span><em class="sig-param">val</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#get_exponent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.get_exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get decimal exponent</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_exponent</span><span class="p">(</span><span class="mf">0.032</span><span class="p">)</span>
+<span class="go">-2</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Val of which to get exponent</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Exponent</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.get_first_digit">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">get_first_digit</code><span class="sig-paren">(</span><em class="sig-param">val</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#get_first_digit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.get_first_digit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get first nonzero digit.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_first_digit</span><span class="p">(</span><span class="mf">0.032</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Val for which to get first nonzero digit</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>First nonero digit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.general_tools.ParallelTimedRotatingFileHandler">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">ParallelTimedRotatingFileHandler</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">when='h'</em>, <em class="sig-param">interval=1</em>, <em class="sig-param">backupCount=0</em>, <em class="sig-param">encoding=None</em>, <em class="sig-param">delay=False</em>, <em class="sig-param">utc=False</em>, <em class="sig-param">postfix='.log'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#ParallelTimedRotatingFileHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.ParallelTimedRotatingFileHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.handlers.html#logging.handlers.TimedRotatingFileHandler" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.handlers.TimedRotatingFileHandler</span></code></a></p>
+<p>Logging handler that creates a new log file every day.</p>
+<p>Files are stored with .log suffix, and dates are included in filename
+from the beginning. Also allows multiple processes to access same log.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>From: <a class="reference external" href="https://stackoverflow.com/questions/24649789/how-to-force-a">https://stackoverflow.com/questions/24649789/how-to-force-a</a>
+-rotating-name-with-pythons-timedrotatingfilehandler</p></li>
+<li><p>Essentially a TimedRotatingFileHandler with some modifications.</p></li>
+<li><p>Haven’t gone through the code, but it does the trick.</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="silq.tools.general_tools.ParallelTimedRotatingFileHandler.calculateFileName">
+<code class="sig-name descname">calculateFileName</code><span class="sig-paren">(</span><em class="sig-param">currenttime</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#ParallelTimedRotatingFileHandler.calculateFileName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.ParallelTimedRotatingFileHandler.calculateFileName" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.general_tools.ParallelTimedRotatingFileHandler.doRollover">
+<code class="sig-name descname">doRollover</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#ParallelTimedRotatingFileHandler.doRollover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.ParallelTimedRotatingFileHandler.doRollover" title="Permalink to this definition">¶</a></dt>
+<dd><p>do a rollover; in this case, a date/time stamp is appended to the filename
+when the rollover happens.  However, you want the file to be named for the
+start of the interval, not the current time.  If there is a backup count,
+then we have to get a list of matching filenames, sort them and remove
+the one with the oldest suffix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.general_tools.ParallelTimedRotatingFileHandler.getFilesToDelete">
+<code class="sig-name descname">getFilesToDelete</code><span class="sig-paren">(</span><em class="sig-param">newFileName</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#ParallelTimedRotatingFileHandler.getFilesToDelete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.ParallelTimedRotatingFileHandler.getFilesToDelete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the files to delete when rolling over.</p>
+<p>More specific than the earlier method, which just used glob.glob().</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.convert_setpoints">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">convert_setpoints</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#convert_setpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.convert_setpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert setpoints to tuples, supporting multidimensional setpoints.</p>
+<p>Temporary solution to make setpoints work (see issue #627).
+Currently, setpoints need to be tuples (arrays etc. give issues). Further,
+the second setpoint array needs to be 2D etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*args</strong> – 1D setpoint arrays. each successive setpoints array gains an
+extra dimension</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Setpoint arrays converted to tuples.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.general_tools.Singleton">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">Singleton</code><a class="reference internal" href="silq/tools/general_tools.html#Singleton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.Singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a></p>
+<p>Meta-class for classes that can only have a single instance.</p>
+<p>If a second instance is created, it will instead return the already-existing
+instance.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.general_tools.property_ignore_setter">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">property_ignore_setter</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#property_ignore_setter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.property_ignore_setter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Decorator similar to &#64;property that ignores setter</p>
+<p>The setter shouldn’t be defined, and any setting of attribute is ignored.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.general_tools.freq_to_str">
+<code class="sig-prename descclassname">silq.tools.general_tools.</code><code class="sig-name descname">freq_to_str</code><span class="sig-paren">(</span><em class="sig-param">frequency</em>, <em class="sig-param">fmt='{:.15g}'</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/general_tools.html#freq_to_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.general_tools.freq_to_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats frequency, using right magnitude.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This will be superseded later on when all attributes are converted to
+parameters.</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.notebook_tools">
+<span id="silq-tools-notebook-tools-module"></span><h2>silq.tools.notebook_tools module<a class="headerlink" href="#module-silq.tools.notebook_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.tools.notebook_tools.create_cell">
+<code class="sig-prename descclassname">silq.tools.notebook_tools.</code><code class="sig-name descname">create_cell</code><span class="sig-paren">(</span><em class="sig-param">text</em>, <em class="sig-param">location='below'</em>, <em class="sig-param">execute=False</em>, <em class="sig-param">select=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/notebook_tools.html#create_cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.notebook_tools.create_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create code cell in Jupyter Notebook and optionally execute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Python code to place in cell.</p></li>
+<li><p><strong>location</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Cell location. Can be either <code class="docutils literal notranslate"><span class="pre">below</span></code> currently active cell,
+or <code class="docutils literal notranslate"><span class="pre">bottom</span></code> of notebook.</p></li>
+<li><p><strong>execute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Execute cell.</p></li>
+<li><p><strong>select</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Make new cell active cell</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.parameter_tools">
+<span id="silq-tools-parameter-tools-module"></span><h2>silq.tools.parameter_tools module<a class="headerlink" href="#module-silq.tools.parameter_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tools.parameter_tools.SweepDependentValues">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.parameter_tools.</code><code class="sig-name descname">SweepDependentValues</code><span class="sig-paren">(</span><em class="sig-param">parameter</em>, <em class="sig-param">step=None</em>, <em class="sig-param">step_percentage=None</em>, <em class="sig-param">num=None</em>, <em class="sig-param">window=None</em>, <em class="sig-param">center_val=None</em>, <em class="sig-param">min_val=None</em>, <em class="sig-param">max_val=None</em>, <em class="sig-param">reverse=False</em>, <em class="sig-param">fix=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/parameter_tools.html#SweepDependentValues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.parameter_tools.SweepDependentValues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.sweep_values.SweepValues</span></code></p>
+<p>Sweep Parameter values with args that depend on current value.</p>
+<p>This class is used in <code class="docutils literal notranslate"><span class="pre">Parameter.sweep</span></code> to extend the functionality to
+allow choosing values that depend on the parameter’s current value.</p>
+<p>Not all arguments need to be specified. Instead, a subset can be chosen.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/parameters/parameter.html#qcodes.instrument.parameter.Parameter" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – Parameter used for sweeping.</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Parameter value step size</p></li>
+<li><p><strong>step_percentage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Percentage for step size. If this value is used,
+<code class="docutils literal notranslate"><span class="pre">silq.config.parameters.{parameter.name}.steps</span></code> should be a list
+with two elements, the first corresponding to <code class="docutils literal notranslate"><span class="pre">step_percentage=0</span></code>,
+the second to <code class="docutils literal notranslate"><span class="pre">step_percentage=100</span></code>, with values in between being
+the logarithmic equivalent.</p></li>
+<li><p><strong>num</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Number of points.</p></li>
+<li><p><strong>window</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Range of values around center value.</p></li>
+<li><p><strong>center_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Center value, by default parameter’s current value.</p></li>
+<li><p><strong>min_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Minimum value.</p></li>
+<li><p><strong>max_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – Maximum value.</p></li>
+<li><p><strong>reverse</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Reverse order of values.</p></li>
+<li><p><strong>fix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Fix values, if True, the center value is recorded and not updated
+every iteration.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.parameter_tools.SweepDependentValues.calculate_step">
+<code class="sig-name descname">calculate_step</code><span class="sig-paren">(</span><em class="sig-param">min_step</em>, <em class="sig-param">max_step</em>, <em class="sig-param">percentage</em>, <em class="sig-param">round_vals=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/parameter_tools.html#SweepDependentValues.calculate_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.parameter_tools.SweepDependentValues.calculate_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.parameter_tools.SweepDependentValues.create_vals">
+<code class="sig-name descname">create_vals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/parameter_tools.html#SweepDependentValues.create_vals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.parameter_tools.SweepDependentValues.create_vals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.parameter_tools.SweepDependentValues.determine_step">
+<code class="sig-name descname">determine_step</code><span class="sig-paren">(</span><em class="sig-param">parameter</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/parameter_tools.html#SweepDependentValues.determine_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.parameter_tools.SweepDependentValues.determine_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="silq.tools.parameter_tools.create_set_vals">
+<code class="sig-prename descclassname">silq.tools.parameter_tools.</code><code class="sig-name descname">create_set_vals</code><span class="sig-paren">(</span><em class="sig-param">num_parameters=None</em>, <em class="sig-param">step=None</em>, <em class="sig-param">step_percentage=None</em>, <em class="sig-param">points=None</em>, <em class="sig-param">window=None</em>, <em class="sig-param">set_parameters=None</em>, <em class="sig-param">silent=True</em>, <em class="sig-param">center_val=None</em>, <em class="sig-param">min_val=None</em>, <em class="sig-param">max_val=None</em>, <em class="sig-param">reverse=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/parameter_tools.html#create_set_vals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.parameter_tools.create_set_vals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.plot_tools">
+<span id="silq-tools-plot-tools-module"></span><h2>silq.tools.plot_tools module<a class="headerlink" href="#module-silq.tools.plot_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tools.plot_tools.PlotAction">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">PlotAction</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">enable_key=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#PlotAction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.PlotAction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Interactive key/button action for <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code></p>
+<p>A PlotAction can be attached to an <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a>, adding some sort of
+interactivity, e.g. change parameter value when pressing a key button.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatPlot</span></code></a>) – Plot object</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Seconds before plot action is deactivated. Only relevant if the
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> differs from the actual key/button actions.</p></li>
+<li><p><strong>enable_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – String to enable plot action.</p></li>
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot action is enabled.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.PlotAction.button_press">
+<code class="sig-name descname">button_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#PlotAction.button_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.PlotAction.button_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib button press action.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.PlotAction.enable_key">
+<code class="sig-name descname">enable_key</code><em class="property"> = None</em><a class="headerlink" href="#silq.tools.plot_tools.PlotAction.enable_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.PlotAction.enabled">
+<em class="property">property </em><code class="sig-name descname">enabled</code><a class="headerlink" href="#silq.tools.plot_tools.PlotAction.enabled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.PlotAction.handle_code">
+<code class="sig-name descname">handle_code</code><span class="sig-paren">(</span><em class="sig-param">code</em>, <em class="sig-param">copy=False</em>, <em class="sig-param">execute=False</em>, <em class="sig-param">new_cell=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#PlotAction.handle_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.PlotAction.handle_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle code, either executing it or copying it to clipbard</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>code</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Python code to handle.</p></li>
+<li><p><strong>copy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Copy to clipboard.</p></li>
+<li><p><strong>execute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Execute code, only relevant if <code class="docutils literal notranslate"><span class="pre">new_cell</span></code> is True.</p></li>
+<li><p><strong>new_cell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Create new cell below current one and add code.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.PlotAction.key_press">
+<code class="sig-name descname">key_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#PlotAction.key_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.PlotAction.key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib key press.</p>
+<p>This enables PlotAction if key press is <code class="docutils literal notranslate"><span class="pre">enable_key</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.SetGates">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">SetGates</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">enable_key=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SetGates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SetGates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.PlotAction</span></code></a></p>
+<p>Set gates when button pressed in MatPlot, enabled with <code class="docutils literal notranslate"><span class="pre">alt</span> <span class="pre">+</span> <span class="pre">g</span></code>.</p>
+<p>Only works for 2D plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatPlot</span></code></a>) – Plot object</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Seconds before plot action is deactivated. Only relevant if the
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> differs from the actual key/button actions.</p></li>
+<li><p><strong>enable_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – String to enable plot action.</p></li>
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot action is enabled.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.SetGates.button_press">
+<code class="sig-name descname">button_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SetGates.button_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SetGates.button_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib button press action.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.SetGates.enable_key">
+<code class="sig-name descname">enable_key</code><em class="property"> = 'alt+g'</em><a class="headerlink" href="#silq.tools.plot_tools.SetGates.enable_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.MeasureSingle">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">MeasureSingle</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">enable_key=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#MeasureSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.MeasureSingle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.PlotAction</span></code></a></p>
+<p>Measure parameter at clicked gate vales, enabled with <code class="docutils literal notranslate"><span class="pre">alt</span> <span class="pre">+</span> <span class="pre">s</span></code></p>
+<p>Upon button click, a new cell below current one is created, in which gates
+are set to clicked values, and a qc.Measure is performed for measure_param.</p>
+<p>Only works for 2D plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatPlot</span></code></a>) – Plot object</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Seconds before plot action is deactivated. Only relevant if the
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> differs from the actual key/button actions.</p></li>
+<li><p><strong>enable_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – String to enable plot action.</p></li>
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot action is enabled.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.MeasureSingle.button_press">
+<code class="sig-name descname">button_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#MeasureSingle.button_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.MeasureSingle.button_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib button press action.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.MeasureSingle.enable_key">
+<code class="sig-name descname">enable_key</code><em class="property"> = 'alt+s'</em><a class="headerlink" href="#silq.tools.plot_tools.MeasureSingle.enable_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.MoveGates">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">MoveGates</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">enable_key=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#MoveGates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.MoveGates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.PlotAction</span></code></a></p>
+<p>Increase/decrease gates when pressing alt + {arrow}, enabled with alt+m.</p>
+<p>Alt + up/down moves the y-gate.
+Alt + left/right moves the x-gate.
+Alt + +/- increases/decreases step size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatPlot</span></code></a>) – Plot object</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Seconds before plot action is deactivated. Only relevant if the
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> differs from the actual key/button actions.</p></li>
+<li><p><strong>enable_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – String to enable plot action.</p></li>
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot action is enabled.</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Step size.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.MoveGates.button_press">
+<code class="sig-name descname">button_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#MoveGates.button_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.MoveGates.button_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib button press action.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.MoveGates.delta">
+<code class="sig-name descname">delta</code><em class="property"> = 0.001</em><a class="headerlink" href="#silq.tools.plot_tools.MoveGates.delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.MoveGates.enable_key">
+<code class="sig-name descname">enable_key</code><em class="property"> = 'alt+m'</em><a class="headerlink" href="#silq.tools.plot_tools.MoveGates.enable_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.MoveGates.key_press">
+<code class="sig-name descname">key_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#MoveGates.key_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.MoveGates.key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib key press.</p>
+<p>This enables PlotAction if key press is <code class="docutils literal notranslate"><span class="pre">enable_key</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.SwitchPlotIdx">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">SwitchPlotIdx</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">enable_key=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SwitchPlotIdx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SwitchPlotIdx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.PlotAction</span></code></a></p>
+<p>Change plot index when pressing <code class="docutils literal notranslate"><span class="pre">alt+{arrow}</span></code>, used with <a class="reference internal" href="#silq.tools.plot_tools.SliderPlot" title="silq.tools.plot_tools.SliderPlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">SliderPlot</span></code></a>.</p>
+<p>Alt + left/right changes first plot index.
+Alt + up/down changes second plot index (if two sliders).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatPlot</span></code></a>) – Plot object</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – Seconds before plot action is deactivated. Only relevant if the
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> differs from the actual key/button actions.</p></li>
+<li><p><strong>enable_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – String to enable plot action.</p></li>
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot action is enabled.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.SwitchPlotIdx.key_press">
+<code class="sig-name descname">key_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SwitchPlotIdx.key_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SwitchPlotIdx.key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle Matplotlib key press.</p>
+<p>This enables PlotAction if key press is <code class="docutils literal notranslate"><span class="pre">enable_key</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.InteractivePlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">InteractivePlot</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">actions=()</em>, <em class="sig-param">timeout=600</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#InteractivePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/plots/qcmatplotlib.html#qcodes.plots.qcmatplotlib.MatPlot" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.plots.qcmatplotlib.MatPlot</span></code></a></p>
+<p>Base class for <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code> plots adding interactivity.</p>
+<p>The QCoDeS <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>, which uses <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>, can be interactive, and
+respond to key/button presses. This subclass of MatPlot enables such
+interactivity by adding <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a> to the plot. Each <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a> can
+respond to specific key presses or button clicks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – args passed to <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+<li><p><strong>actions</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a>]) – <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a> list to use for plot.</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Timeout for any action to be disabled.</p></li>
+<li><p><strong>**kwargs</strong> – kwargs passed to <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.InteractivePlot.connect_event">
+<code class="sig-name descname">connect_event</code><span class="sig-paren">(</span><em class="sig-param">event</em>, <em class="sig-param">action</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#InteractivePlot.connect_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot.connect_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attach PlotAction to a specific event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – matplotlib event (e.g. key_press_event, button_press_event)</p></li>
+<li><p><strong>action</strong> (<a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a>) – PlotAction to attach</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.InteractivePlot.handle_button_press">
+<code class="sig-name descname">handle_button_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#InteractivePlot.handle_button_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot.handle_button_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle button press event, forwarding to relevant <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a>.</p>
+<p>The relative PlotActions are those that are already enabled.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.InteractivePlot.handle_key_press">
+<code class="sig-name descname">handle_key_press</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#InteractivePlot.handle_key_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot.handle_key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle key press event, forwarding to relevant <a class="reference internal" href="#silq.tools.plot_tools.PlotAction" title="silq.tools.plot_tools.PlotAction"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PlotAction</span></code></a></p>
+<p>The relevant PlotActions are those that are either enabled, or whose
+<code class="docutils literal notranslate"><span class="pre">enable_key</span></code> match the key press event.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.InteractivePlot.load_data_array">
+<code class="sig-name descname">load_data_array</code><span class="sig-paren">(</span><em class="sig-param">data_array</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#InteractivePlot.load_data_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot.load_data_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve properties of a <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>, such as set arrays and labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data_array</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/data/data_array.html#qcodes.data.data_array.DataArray" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></a>) – DataArray to extract</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>set_arrays (List[DataArray]): List of set arrays.
+labels: Labels of set arrays
+gates: Gates of set arrays, None if not in <code class="docutils literal notranslate"><span class="pre">Station</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.InteractivePlot.timeout">
+<em class="property">property </em><code class="sig-name descname">timeout</code><a class="headerlink" href="#silq.tools.plot_tools.InteractivePlot.timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.SliderPlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">SliderPlot</code><span class="sig-paren">(</span><em class="sig-param">data_array</em>, <em class="sig-param">ndim=2</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SliderPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SliderPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.InteractivePlot</span></code></a></p>
+<p>Slide through 1D/2D images of a <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> with more dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_array</strong> – Multidimensional <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> to display.</p></li>
+<li><p><strong>ndim</strong> – Plotting dimension (1 or 2)</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs to <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.SliderPlot.plot_kwargs">
+<em class="property">property </em><code class="sig-name descname">plot_kwargs</code><a class="headerlink" href="#silq.tools.plot_tools.SliderPlot.plot_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.SliderPlot.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SliderPlot.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SliderPlot.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the data in this plot, using the updaters given with
+MatPlot.add() or in the included DataSets, then include this in
+the plot.</p>
+<p>This is a wrapper routine that the update widget calls,
+inside this we call self.update() which should be subclassed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.SliderPlot.update_slider">
+<code class="sig-name descname">update_slider</code><span class="sig-paren">(</span><em class="sig-param">idx</em>, <em class="sig-param">value=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#SliderPlot.update_slider"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.SliderPlot.update_slider" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.CalibrationPlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">CalibrationPlot</code><span class="sig-paren">(</span><em class="sig-param">data_set</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#CalibrationPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.CalibrationPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.InteractivePlot</span></code></a></p>
+<p>Interactive plot for 2D calibrations, move gates and measure at points.</p>
+<p>The 2D calibration scan must contain a <code class="docutils literal notranslate"><span class="pre">Parameter</span></code> that returns the
+contrast. Pressing <code class="docutils literal notranslate"><span class="pre">alt</span> <span class="pre">+</span> <span class="pre">m</span></code> adds a dot on the colorplot, which can be
+moved by holding <code class="docutils literal notranslate"><span class="pre">alt</span></code> and pressing an arrow key. the contrast can then
+be measured at the dot by pressing <code class="docutils literal notranslate"><span class="pre">alt</span> <span class="pre">+</span> <span class="pre">s</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_set</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/data/data_set.html#qcodes.data.data_set.DataSet" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a>) – Calibration 2D scan data set.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs to <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+<li><p><strong>samples_measure</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Samples to use when measuring at a single point.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.CalibrationPlot.measure_parameter">
+<code class="sig-name descname">measure_parameter</code><em class="property"> = 'adiabatic_ESR'</em><a class="headerlink" href="#silq.tools.plot_tools.CalibrationPlot.measure_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.CalibrationPlot.samples_measure">
+<code class="sig-name descname">samples_measure</code><em class="property"> = 200</em><a class="headerlink" href="#silq.tools.plot_tools.CalibrationPlot.samples_measure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.DCPlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">DCPlot</code><span class="sig-paren">(</span><em class="sig-param">data_set</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#DCPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.DCPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.InteractivePlot</span></code></a></p>
+<p>Interactive plot for a 2D DC scan, For easy moving gates on 2D plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_set</strong> (<a class="reference external" href="http://qcodes.github.io/Qcodes/api/data/data_set.html#qcodes.data.data_set.DataSet" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a>) – 2D DC scan <code class="docutils literal notranslate"><span class="pre">DataSet</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs for <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.ScanningPlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">ScanningPlot</code><span class="sig-paren">(</span><em class="sig-param">parameter</em>, <em class="sig-param">interval=0.01</em>, <em class="sig-param">auto_start=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#ScanningPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.InteractivePlot</span></code></a></p>
+<p>Base class for interactive plots to repeatedly measure and refresh plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_BaseParameter</span></code>) – Parameter to measure and plot.</p></li>
+<li><p><strong>interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Measuring and updating interval.</p></li>
+<li><p><strong>auto_start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Start refreshing once initialized. If False, refreshing can
+be started by calling <a class="reference internal" href="#silq.tools.plot_tools.ScanningPlot.start" title="silq.tools.plot_tools.ScanningPlot.start"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">ScanningPlot.start</span></code></a>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs to <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">Matplot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.ScanningPlot.interval">
+<em class="property">property </em><code class="sig-name descname">interval</code><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot.interval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.ScanningPlot.scan">
+<code class="sig-name descname">scan</code><span class="sig-paren">(</span><em class="sig-param">initialize=False</em>, <em class="sig-param">stop=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#ScanningPlot.scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform single meeasurement and update plot.</p>
+<p>Repeatedly called by timer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initialize</strong> – True if this method is called during initialization.</p></li>
+<li><p><strong>stop</strong> – Stop instruments after acquisition.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.ScanningPlot.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><em class="sig-param">setup=True</em>, <em class="sig-param">start=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#ScanningPlot.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start measuring and refreshing plot</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>setup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Setup <a class="reference internal" href="silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a></p></li>
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Start instruments, only used if <code class="docutils literal notranslate"><span class="pre">setup</span></code> is True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.ScanningPlot.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#ScanningPlot.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop measuring and refreshing plot.</p>
+<p>Timer is stopped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*args</strong> – Unused args passed if method is called as a callback</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.ScanningPlot.update_interval">
+<em class="property">property </em><code class="sig-name descname">update_interval</code><a class="headerlink" href="#silq.tools.plot_tools.ScanningPlot.update_interval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.TracePlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">TracePlot</code><span class="sig-paren">(</span><em class="sig-param">parameter</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#TracePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.TracePlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.ScanningPlot" title="silq.tools.plot_tools.ScanningPlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.ScanningPlot</span></code></a></p>
+<p>Interactive plot that repeatedly measures pulse sequence and plots trace</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_BaseParameter</span></code>) – <a class="reference internal" href="silq.parameters.html#silq.parameters.acquisition_parameters.TraceParameter" title="silq.parameters.acquisition_parameters.TraceParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TraceParameter</span></code></a> whose pulse sequence to measure.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs to <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="silq.tools.plot_tools.TracePlot.update_plot">
+<code class="sig-name descname">update_plot</code><span class="sig-paren">(</span><em class="sig-param">initialize=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#TracePlot.update_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.TracePlot.update_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update plot with new trace</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Method called during initialization.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tools.plot_tools.DCSweepPlot">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tools.plot_tools.</code><code class="sig-name descname">DCSweepPlot</code><span class="sig-paren">(</span><em class="sig-param">parameter</em>, <em class="sig-param">gate_mapping=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#DCSweepPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.DCSweepPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tools.plot_tools.ScanningPlot" title="silq.tools.plot_tools.ScanningPlot"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tools.plot_tools.ScanningPlot</span></code></a></p>
+<p>Refreshing 2D DC plot using <a class="reference internal" href="silq.parameters.html#silq.parameters.acquisition_parameters.DCSweepParameter" title="silq.parameters.acquisition_parameters.DCSweepParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">DCSweepParameter</span></code></a> for fast 2D DC scanning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_BaseParameter</span></code>) – <a class="reference internal" href="silq.parameters.html#silq.parameters.acquisition_parameters.DCSweepParameter" title="silq.parameters.acquisition_parameters.DCSweepParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">DCSweepParameter</span></code></a> for fast 2D DC scanning.</p></li>
+<li><p><strong>gate_mapping</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – Mapping of gate names, for plot labels.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs to <a class="reference internal" href="#silq.tools.plot_tools.InteractivePlot" title="silq.tools.plot_tools.InteractivePlot"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InteractivePlot</span></code></a> and <code class="docutils literal notranslate"><span class="pre">MatPlot</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.DCSweepPlot.gate_mapping">
+<code class="sig-name descname">gate_mapping</code><em class="property"> = {}</em><a class="headerlink" href="#silq.tools.plot_tools.DCSweepPlot.gate_mapping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.tools.plot_tools.DCSweepPlot.point_color">
+<code class="sig-name descname">point_color</code><em class="property"> = 'r'</em><a class="headerlink" href="#silq.tools.plot_tools.DCSweepPlot.point_color" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tools.plot_tools.DCSweepPlot.update_plot">
+<code class="sig-name descname">update_plot</code><span class="sig-paren">(</span><em class="sig-param">initialize=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/plot_tools.html#DCSweepPlot.update_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.plot_tools.DCSweepPlot.update_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update plot with new 2D DC scan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>initialize</strong> – Method called during initialization.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tools.pulse_tools">
+<span id="silq-tools-pulse-tools-module"></span><h2>silq.tools.pulse_tools module<a class="headerlink" href="#module-silq.tools.pulse_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="silq.tools.pulse_tools.pulse_to_waveform_sequence">
+<code class="sig-prename descclassname">silq.tools.pulse_tools.</code><code class="sig-name descname">pulse_to_waveform_sequence</code><span class="sig-paren">(</span><em class="sig-param">max_points, frequency, sampling_rate, frequency_threshold, total_duration=None, final_delay_threshold=None, min_points=1, sample_points_multiple=1, point_offsets=[-1, 0, 1, 2], filters=[], plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tools/pulse_tools.html#pulse_to_waveform_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tools.pulse_tools.pulse_to_waveform_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method can be used when generating a periodic signal with an AWG device.
+Given a frequency and duration of the desired signal, a general AWG can produce
+that signal by repeating one waveform (waveform_1) for a number of times
+(cycles) and ending with a second waveform (waveform_2). This is a practical
+way of generating periodic signals that are long in duration without using
+a lot of the available RAM of the AWG.</p>
+<p>Because of the finite sampling rate and restrictions on amount of
+sample points (which must generally be a multiple of a certain number),
+there will be an error in the period of the generated signal. This error goes
+down with the number of periods (n) that one cycle of the repeated waveform contains.</p>
+<p>This function calculates the minimum number n for which the error threshold
+is satisfied. Therefore minimizing the total amount of sample points that
+need to be stored by the AWG.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>duration</strong> – duration of the signal in seconds</p></li>
+<li><p><strong>frequency</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – frequency of the signal in Hz</p></li>
+<li><p><strong>sampling_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – the sampling rate of the waveform</p></li>
+<li><p><strong>threshold</strong> – threshold in relative period error</p></li>
+<li><p><strong>n_min</strong> – minimum number of signal periods that the waveform must contain</p></li>
+<li><p><strong>n_max</strong> – maximum number of signal periods that a waveform can contain</p></li>
+<li><p><strong>sample_points_multiple</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of samples must be a multiple of</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl>
+<dt>‘optimum’: Dict of optimal settings</dt><dd><p>’error’: Relative frequency error of optimal settings
+‘final_delay’: Remaining duration of pulse after waveform repetitions.</p>
+<blockquote>
+<div><p>Cannot be negative.</p>
+</div></blockquote>
+<p>’periods’: Periods within waveform (using modified frequency)
+‘repetitions’: Repetitions of waveform to (almost) reach end of pulse
+‘duration’: Duration of main waveform
+‘points’: Number of waveform points
+‘idx’: index of optimal result. first index corresponds to period</p>
+<blockquote>
+<div><p>index of periods between min_periods and max_periods.
+Second index is the point offset index.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>’modified_frequency’: Frequency close to target frequency whose</dt><dd><p>period perfectly fits in the number of points</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>’filtered_results’: Array of settings that satisfy filters
+‘repetitions_multiple’: Repetition array for all settings
+‘final_delays’: Array of final_delays for all settings
+‘errors’: Array of relative frequency errors for all settings
+‘periods_range’: Range of periods that have been considered</p>
+<p>If the minimum number of periods (set by min_points) exceeds the maximum
+number of periods (set by max_points), None is returned</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict containing</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="silq-tools-trace-tools-module">
+<h2>silq.tools.trace_tools module<a class="headerlink" href="#silq-tools-trace-tools-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tools">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.tools" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

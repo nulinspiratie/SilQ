@@ -1,0 +1,565 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.spincore package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.spincore package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.instrument_interfaces.spincore.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-instrument-interfaces-spincore-package">
+<h1>silq.instrument_interfaces.spincore package<a class="headerlink" href="#silq-instrument-interfaces-spincore-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.instrument_interfaces.spincore.PulseBlasterDDS_interface">
+<span id="silq-instrument-interfaces-spincore-pulseblasterdds-interface-module"></span><h2>silq.instrument_interfaces.spincore.PulseBlasterDDS_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.spincore.PulseBlasterDDS_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.</code><code class="sig-name descname">PulseBlasterDDSInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#PulseBlasterDDSInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p>Interface for the Pulseblaster DDS</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<p>One important issue with the DDS is that it requires an inverted trigger,
+i.e. high voltage is the default, and a low voltage indicates a trigger.
+Not every interface has been programmed to handle this (so far only the
+PulseBlaster ESRPRO has).</p>
+<p>The interface also contains a list of all available channels in the
+instrument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>instrument_name</strong> – name of instrument for which this is an interface</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For a given instrument, its associated interface can be found using</dt><dd><p><a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.get_instrument_interface" title="silq.instrument_interfaces.get_instrument_interface"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_instrument_interface</span></code></a></p>
+</dd>
+</dl>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#PulseBlasterDDSInterface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List containing trigger pulse if not primary instrument</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">repeat=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#PulseBlasterDDSInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref any docutils literal notranslate"><span class="pre">Layout.start</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Ignored kwargs passed by layout.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#PulseBlasterDDSInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#PulseBlasterDDSInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.PulseBlasterDDSInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">frequencies</em>, <em class="sig-param">phases</em>, <em class="sig-param">amplitudes</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterDDS_interface.html#SinePulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterDDS_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface">
+<span id="silq-instrument-interfaces-spincore-pulseblasteresrpro-interface-module"></span><h2>silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.</code><code class="sig-name descname">MarkerPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#MarkerPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">t</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#MarkerPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.MarkerPulse" title="silq.pulses.pulse_types.MarkerPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.MarkerPulse</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#MarkerPulseImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.MarkerPulseImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tailors a PulseImplementation to a specific pulse.</p>
+<p>Targeting happens in three stages:</p>
+<ol class="arabic simple">
+<li><p>Both the pulse and pulse implementation are copied.</p></li>
+<li><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a> of the copied pulse is set to the copied
+pulse implementation, and <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse is set to the
+copied pulse. This way, they can both reference each other.</p></li>
+<li><p>The targeted pulse is returned</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><em>Pulse</em></a>) – Pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – PulseImplementation belongs.</p></li>
+<li><p><strong>connections</strong> (<em>List</em><em>[</em><em>Connection</em><em>]</em>) – All connections in <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional unused kwargs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – Pulse class does not match
+    <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse_class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.</code><code class="sig-name descname">PulseBlasterESRPROInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">channels=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3</em>, <em class="sig-param">4)</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#PulseBlasterESRPROInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p>Interface for the Pulseblaster ESR PRO</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<p>The interface also contains a list of all available channels in the
+instrument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instrument_name</strong> – name of instrument for which this is an interface</p></li>
+<li><p><strong>channels</strong> – List of channel indices. Default is (1, 2, 3, 4) corresponding
+to the BNC output connections. Additional channels are available on
+the board, requiring external connectors.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For a given instrument, its associated interface can be found using</dt><dd><p><a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.get_instrument_interface" title="silq.instrument_interfaces.get_instrument_interface"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_instrument_interface</span></code></a></p>
+</dd>
+</dl>
+</div>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>Check if interface works if it is not the primary instrument.</p>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">repeat=True</em>, <em class="sig-param">output_connections=[]</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#PulseBlasterESRPROInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref any docutils literal notranslate"><span class="pre">Layout.start</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>output_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – Output <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed to setup the instrument.</p></li>
+<li><p><strong>**kwargs</strong> – Ignored kwargs passed by layout.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>setup flags (see <code class="docutils literal notranslate"><span class="pre">Layout.flags</span></code>).</dt><dd><p>the <code class="docutils literal notranslate"><span class="pre">post_start_actions</span></code> flag is set to <code class="docutils literal notranslate"><span class="pre">[self.start]</span></code> if
+there are connections that need to have <code class="docutils literal notranslate"><span class="pre">high</span></code> voltage in the
+inactive state. This signifies that the pulse blaster should be
+started last, which ensures that other instrument have the right
+voltage.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#PulseBlasterESRPROInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#PulseBlasterESRPROInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.PulseBlasterESRPROInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.</code><code class="sig-name descname">TriggerPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#TriggerPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">t</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#TriggerPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.TriggerPulse" title="silq.pulses.pulse_types.TriggerPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.TriggerPulse</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/spincore/PulseBlasterESRPRO_interface.html#TriggerPulseImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.spincore.PulseBlasterESRPRO_interface.TriggerPulseImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tailors a PulseImplementation to a specific pulse.</p>
+<p>Targeting happens in three stages:</p>
+<ol class="arabic simple">
+<li><p>Both the pulse and pulse implementation are copied.</p></li>
+<li><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a> of the copied pulse is set to the copied
+pulse implementation, and <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse is set to the
+copied pulse. This way, they can both reference each other.</p></li>
+<li><p>The targeted pulse is returned</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><em>Pulse</em></a>) – Pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – PulseImplementation belongs.</p></li>
+<li><p><strong>connections</strong> (<em>List</em><em>[</em><em>Connection</em><em>]</em>) – All connections in <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional unused kwargs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – Pulse class does not match
+    <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse_class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.spincore">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.instrument_interfaces.spincore" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,980 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.AlazarTech.ATS_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.AlazarTech.ATS_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.AlazarTech.ATS_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument_drivers.AlazarTech.ATS</span> <span class="k">import</span> <span class="n">AlazarTech_ATS</span><span class="p">,</span> \
+    <span class="n">ATSAcquisitionParameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.station</span> <span class="k">import</span> <span class="n">Station</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument.base</span> <span class="k">import</span> <span class="n">Instrument</span>
+
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">InstrumentInterface</span><span class="p">,</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">silq.pulses</span> <span class="k">import</span> <span class="n">Pulse</span><span class="p">,</span> <span class="n">SteeredInitialization</span><span class="p">,</span> <span class="n">TriggerPulse</span><span class="p">,</span>\
+    <span class="n">MarkerPulse</span><span class="p">,</span> <span class="n">TriggerWaitPulse</span><span class="p">,</span> <span class="n">PulseImplementation</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ATSInterface"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface">[docs]</a><span class="k">class</span> <span class="nc">ATSInterface</span><span class="p">(</span><span class="n">InstrumentInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for the AlazarTech ATS.</span>
+
+<span class="sd">    When a `PulseSequence` is targeted in the `Layout`, the</span>
+<span class="sd">    pulses are directed to the appropriate interface. Each interface is</span>
+<span class="sd">    responsible for translating all pulses directed to it into instrument</span>
+<span class="sd">    commands. During the actual measurement, the instrument&#39;s operations will</span>
+<span class="sd">    correspond to that required by the pulse sequence.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        instrument_name: Name of ATS instrument.</span>
+<span class="sd">        acquisition_controller_names: Instrument names of all ATS</span>
+<span class="sd">            acquisition controllers. Interface will find the associated</span>
+<span class="sd">            acquisition controllers.</span>
+<span class="sd">        default_settings: Default settings to use for the ATS.</span>
+<span class="sd">        **kwargs: Additional kwargs passed to Instrument.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        * Only been tested on ATS9440, might give issues with other models,</span>
+<span class="sd">          in particular those having 2 channels instead of 4</span>
+<span class="sd">        * For a given instrument, its associated interface can be found using</span>
+<span class="sd">          `get_instrument_interface`</span>
+
+<span class="sd">    Todo:</span>
+<span class="sd">        * Choose continuous acquisition controller if pulse sequence only</span>
+<span class="sd">          consists of a measurement pulse, as this doesn&#39;t require a trigger</span>
+<span class="sd">          from another instrument</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">instrument_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">acquisition_controller_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+                 <span class="n">default_settings</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># TODO: Change acquisition_controller_names to acquisition_controllers</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Override untargeted pulse adding (measurement pulses can be added)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Define channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ch&#39;</span><span class="o">+</span><span class="n">idx</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ch&#39;</span><span class="o">+</span><span class="n">idx</span><span class="p">,</span>
+                               <span class="nb">id</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_aux_channels</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;aux&#39;</span><span class="o">+</span><span class="n">idx</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span>
+            <span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;aux&#39;</span><span class="o">+</span><span class="n">idx</span><span class="p">,</span>
+            <span class="n">input_TTL</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">output_TTL</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+                             <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_aux_channels</span><span class="p">,</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span>  <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;software_trig_out&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;software_trig_out&#39;</span><span class="p">)}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">SteeredInitializationImplementation</span><span class="p">(</span>
+                <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[]),</span>
+            <span class="n">TriggerWaitPulseImplementation</span><span class="p">(</span>
+                <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[])]</span>
+
+        <span class="c1"># Organize acquisition controllers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">acquisition_controller_name</span> <span class="ow">in</span> <span class="n">acquisition_controller_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_acquisition_controller</span><span class="p">(</span><span class="n">acquisition_controller_name</span><span class="p">)</span>
+
+        <span class="c1"># Obtain a list of all valid ATS configuration settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span>
+            <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">AlazarTech_ATS</span><span class="o">.</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="c1"># Obtain a list of all valid ATS acquisition settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span>
+            <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">AlazarTech_ATS</span><span class="o">.</span><span class="n">acquire</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_settings_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span> <span class="o">+</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default_settings&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="n">default_settings</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Default settings to use when setting up &#39;</span>
+                                     <span class="s1">&#39;ATS for a pulse sequence&#39;</span><span class="p">)</span>
+        <span class="n">initial_configuration_settings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">default_settings</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                          <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;configuration_settings&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">allowed_keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span><span class="p">),</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="n">initial_configuration_settings</span><span class="p">)</span>
+        <span class="n">initial_acquisition_settings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">default_settings</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_settings&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">allowed_keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span><span class="p">),</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="n">initial_acquisition_settings</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;acquisition&quot;</span><span class="p">,</span>
+                           <span class="n">parameter_class</span><span class="o">=</span><span class="n">ATSAcquisitionParameter</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default_acquisition_controller&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span>
+                               <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_controller&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span>
+                               <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="c1"># Names of acquisition channels [chA, chB, etc.]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_channels&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Anything</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Names of acquisition channels &#39;</span>
+                                     <span class="s1">&#39;[chA, chB, etc.]. Set by the layout&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of times to acquire the pulse &#39;</span>
+                                     <span class="s1">&#39;sequence.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;points_per_trace&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">samples_per_trace</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of points in a trace.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;trigger_channel&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="s1">&#39;disable&#39;</span><span class="p">,</span>
+                                          <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;trigger_slope&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;positive&#39;</span><span class="p">,</span> <span class="s1">&#39;negative&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;trigger_threshold&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sample_rate&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;samples/sec&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">setting</span><span class="p">,</span> <span class="s1">&#39;sample_rate&#39;</span><span class="p">),</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="n">x</span><span class="p">),</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Acquisition sampling rate (Hz)&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;capture_full_trace&#39;</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Capture from t=0 to end of pulse &#39;</span>
+                                     <span class="s1">&#39;sequence. False by default, in which &#39;</span>
+                                     <span class="s1">&#39;case start and stop times correspond to &#39;</span>
+                                     <span class="s1">&#39;min(t_start) and max(t_stop) of all &#39;</span>
+                                     <span class="s1">&#39;pulses with the flag acquire=True, &#39;</span>
+                                     <span class="s1">&#39;respectively.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_acquisition_controller</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Active acquisition controller&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ATSInterface.add_acquisition_controller"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.add_acquisition_controller">[docs]</a>    <span class="k">def</span> <span class="nf">add_acquisition_controller</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">acquisition_controller_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                                   <span class="n">cls_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an acquisition controller to the available controllers.</span>
+
+<span class="sd">        If another acquisition controller exists of the same class, it will</span>
+<span class="sd">        be overwritten.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            acquisition_controller_name: instrument name of controller.</span>
+<span class="sd">                Must be on same server as interface and ATS</span>
+<span class="sd">            cls_name: Optional name of class, which is used as controller key.</span>
+<span class="sd">                If no cls_name is provided, it is found from the instrument</span>
+<span class="sd">                class name</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: change acquisition_controller_name to acquisition_controller</span>
+        <span class="n">acquisition_controller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_instrument</span><span class="p">(</span>
+            <span class="n">acquisition_controller_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cls_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cls_name</span> <span class="o">=</span> <span class="n">acquisition_controller</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># Remove _AcquisitionController from cls_name</span>
+        <span class="n">cls_name</span> <span class="o">=</span> <span class="n">cls_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_AcquisitionController&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="p">[</span><span class="n">cls_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">acquisition_controller</span>
+
+        <span class="c1"># Update possible values for (default) acquisition controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_acquisition_controller</span><span class="o">.</span><span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span>
+            <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="o">.</span><span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span>
+            <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controllers</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ATSInterface.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Additional pulses required for instrument, e.g. trigger pulses.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connections: List of all connections in the layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            * Empty list if there are no acquisition pulses.</span>
+<span class="sd">            * A single trigger pulse at start of acquisition if using triggered</span>
+<span class="sd">              acquisition controller.</span>
+<span class="sd">            * AcquisitionPulse and TriggerWaitPulse if using the steered</span>
+<span class="sd">              initialization controller</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError</span>
+<span class="sd">                Using continous acquisition controller</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># No pulses need to be acquired</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Triggered&#39;</span><span class="p">:</span>
+            <span class="c1"># Add a single trigger pulse when starting acquisition</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">TriggerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                 <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                     <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                     <span class="s1">&#39;trigger&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Continuous&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Continuous mode not implemented&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">:</span>
+            <span class="c1"># TODO add possibility of continuous acquisition having correct</span>
+            <span class="c1"># timing even if it should acquire for the entire duration of the</span>
+            <span class="c1">#  pulse sequence.</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="n">t_stop</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="c1"># Add a marker high for readout stage</span>
+            <span class="c1"># Get steered initialization pulse</span>
+            <span class="n">initialization</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">acquisition_pulse</span> <span class="o">=</span> <span class="n">MarkerPulse</span><span class="p">(</span>
+                <span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_stop</span><span class="o">=</span><span class="n">t_stop</span><span class="p">,</span>
+                <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s1">&#39;connection&#39;</span><span class="p">:</span> <span class="n">initialization</span><span class="o">.</span><span class="n">trigger_connection</span><span class="p">})</span>
+            <span class="n">trigger_wait_pulse</span> <span class="o">=</span> <span class="n">TriggerWaitPulse</span><span class="p">(</span>
+                <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span>
+                <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s1">&#39;output_arg&#39;</span><span class="p">:</span> <span class="s1">&#39;ATS.software_trig_out&#39;</span><span class="p">})</span>
+
+            <span class="k">return</span> <span class="p">[</span><span class="n">acquisition_pulse</span><span class="p">,</span> <span class="n">trigger_wait_pulse</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No controller found&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ATSInterface.initialize"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes ATS interface by setting acquisition controller.</span>
+
+<span class="sd">        Called at the start of targeting a pulse sequence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_acquisition_controller</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ATSInterface.setup"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">samples</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot; Sets up ATS and its controller after targeting a pulse sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            samples: Number of acquisition samples.</span>
+<span class="sd">                If None, it will use the previously set value.</span>
+<span class="sd">            **kwargs: Unused setup kwargs passed from Layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            If using ``SteeredInitialization_AcquisitionController``,</span>
+<span class="sd">            a ``skip_start`` flag is passed with the target instrument, which</span>
+<span class="sd">            signals to the layout that that instrument should not be started.</span>
+<span class="sd">            Instead, it is triggered from the steered initialization controller.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">({</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_settings</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">({</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_settings</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup_trigger</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup_ATS</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup_acquisition_controller</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">:</span>
+            <span class="c1"># Add instruction for target instrument setup and to skip start</span>
+            <span class="n">target_instrument</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">target_instrument</span><span class="p">()</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;skip_start&#39;</span><span class="p">:</span> <span class="n">target_instrument</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="ATSInterface.setup_trigger"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_trigger">[docs]</a>    <span class="k">def</span> <span class="nf">setup_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Configure settings related to triggering of the ATS</span>
+
+<span class="sd">        Only configures anything if TriggeredAcquisitionController is used.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                TriggeredAcquisitionController is used, and no voltage</span>
+<span class="sd">                transition can be determined.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Correctly handle case where there are no trigger pulses</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Triggered&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">external_trigger_range</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+                <span class="n">trigger_range</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">trigger_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span><span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">()]</span>
+                <span class="n">trigger_id</span> <span class="o">=</span> <span class="n">trigger_channel</span><span class="o">.</span><span class="n">id</span>
+                <span class="n">trigger_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s1">&#39;channel_range&#39;</span> <span class="o">+</span> <span class="n">trigger_id</span><span class="p">)</span>
+
+            <span class="n">trigger_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span>
+                <span class="n">input_channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">trigger_pulses</span><span class="p">:</span>
+                <span class="n">trigger_pulse</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">trigger_pulses</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span>
+                <span class="n">pre_voltage</span><span class="p">,</span> <span class="n">post_voltage</span> <span class="o">=</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_transition_voltages</span><span class="p">(</span>
+                        <span class="n">pulse</span><span class="o">=</span><span class="n">trigger_pulse</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">post_voltage</span> <span class="o">!=</span> <span class="n">pre_voltage</span><span class="p">,</span> \
+                    <span class="s1">&#39;Could not determine trigger voltage transition&#39;</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">trigger_slope</span><span class="p">(</span><span class="s1">&#39;positive&#39;</span> <span class="k">if</span> <span class="n">post_voltage</span> <span class="o">&gt;</span> <span class="n">pre_voltage</span>
+                                   <span class="k">else</span> <span class="s1">&#39;negative&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trigger_threshold</span><span class="p">((</span><span class="n">pre_voltage</span> <span class="o">+</span> <span class="n">post_voltage</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="c1"># Trigger level is between 0 (-trigger_range)</span>
+                <span class="c1"># and 255 (+trigger_range)</span>
+                <span class="n">trigger_level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">128</span> <span class="o">+</span> <span class="mi">127</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_threshold</span><span class="p">()</span> <span class="o">/</span>
+                                                 <span class="n">trigger_range</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">trigger_operation</span><span class="o">=</span><span class="s1">&#39;J&#39;</span><span class="p">,</span>
+                                     <span class="n">trigger_engine1</span><span class="o">=</span><span class="s1">&#39;J&#39;</span><span class="p">,</span>
+                                     <span class="n">trigger_source1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">(),</span>
+                                     <span class="n">trigger_slope1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_slope</span><span class="p">(),</span>
+                                     <span class="n">trigger_level1</span><span class="o">=</span><span class="n">trigger_level</span><span class="p">,</span>
+                                     <span class="n">external_trigger_coupling</span><span class="o">=</span><span class="s1">&#39;DC&#39;</span><span class="p">,</span>
+                                     <span class="n">trigger_delay</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Cannot setup ATS trigger because there are no &#39;</span>
+                      <span class="s1">&#39;acquisition pulses&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ATSInterface.setup_ATS"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_ATS">[docs]</a>    <span class="k">def</span> <span class="nf">setup_ATS</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Configure ATS using ``ATS.config`` &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">channel_range</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">coupling</span><span class="o">=</span><span class="s1">&#39;DC&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ATSInterface.setup_acquisition_controller"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setup_acquisition_controller">[docs]</a>    <span class="k">def</span> <span class="nf">setup_acquisition_controller</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Setup acquisition controller</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            - ``Triggered_AcquisitionController``</span>
+<span class="sd">              The following settings are fixed at the moment, but there could be</span>
+<span class="sd">              siturations where these are not optimal, e.g. fast measurements.</span>
+
+<span class="sd">              - Allocated buffers is maximally 2.</span>
+<span class="sd">              - Records per buffer is fixed to 1.</span>
+
+<span class="sd">            - ``Continuous_AcquisitionController``:</span>
+
+<span class="sd">              - Allocated buffers is fixed to 20</span>
+
+<span class="sd">            - ``SteeredInitialization_AcquisitionController``:</span>
+
+<span class="sd">              - Allocated buffers is fixed to 80</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError if acquisition controller is not</span>
+<span class="sd">                ``Continuous_AcquisitionController``,</span>
+<span class="sd">                ``SteeredInitialization_AcquisitionController``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get duration of acquisition. Use flag acquire=True because</span>
+        <span class="c1"># otherwise initialization Pulses would be taken into account as well</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="n">t_stop</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Capture from t = 0 to end of pulse sequence.</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">t_stop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span>
+
+        <span class="c1"># Subtracting 1e-12 due to machine precision rounding</span>
+        <span class="c1"># Always subtract, since we later round samples_per_record upwards to</span>
+        <span class="c1"># the nearest multiple of 16</span>
+        <span class="n">acquisition_duration</span> <span class="o">=</span> <span class="n">t_stop</span> <span class="o">-</span> <span class="n">t_start</span> <span class="o">-</span> <span class="mf">1e-12</span>
+
+        <span class="n">samples_per_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()</span> <span class="o">*</span> <span class="n">acquisition_duration</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Triggered&#39;</span><span class="p">:</span>
+            <span class="c1"># samples_per_record must be a multiple of 16</span>
+            <span class="n">samples_per_record</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">16</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span> <span class="o">/</span> <span class="mi">16</span><span class="p">))</span>
+            <span class="c1"># TODO Allow variable records_per_buffer</span>
+            <span class="n">records_per_buffer</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">buffers_per_acquisition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">buffers_per_acquisition</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">allocated_buffers</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">allocated_buffers</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">samples_per_record</span><span class="o">=</span><span class="n">samples_per_record</span><span class="p">,</span>
+                                 <span class="n">records_per_buffer</span><span class="o">=</span><span class="n">records_per_buffer</span><span class="p">,</span>
+                                 <span class="n">buffers_per_acquisition</span><span class="o">=</span><span class="n">buffers_per_acquisition</span><span class="p">,</span>
+                                 <span class="n">allocated_buffers</span><span class="o">=</span><span class="n">allocated_buffers</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Continuous&#39;</span><span class="p">:</span>
+            <span class="c1"># records_per_buffer and buffers_per_acquisition are fixed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;records_per_buffer&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;buffers_per_acquisition&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="c1"># TODO better way to decide on allocated buffers</span>
+            <span class="n">allocated_buffers</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">allocated_buffers</span><span class="o">=</span><span class="n">allocated_buffers</span><span class="p">)</span>
+
+            <span class="c1"># samples_per_trace must be a multiple of samples_per_record</span>
+            <span class="n">samples_per_trace</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">16</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span> <span class="o">/</span> <span class="mi">16</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">samples_per_trace</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">traces_per_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">:</span>
+            <span class="c1"># records_per_buffer and buffers_per_acquisition are fixed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;records_per_buffer&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;buffers_per_acquisition&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="c1"># Get steered initialization pulse</span>
+            <span class="n">initialization</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># TODO better way to decide on allocated buffers</span>
+            <span class="n">allocated_buffers</span> <span class="o">=</span> <span class="mi">80</span>
+
+            <span class="n">samples_per_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()</span> <span class="o">*</span> \
+                                 <span class="n">initialization</span><span class="o">.</span><span class="n">t_buffer</span>
+            <span class="c1"># samples_per_record must be a multiple of 16</span>
+            <span class="n">samples_per_buffer</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">16</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">samples_per_buffer</span><span class="p">)</span> <span class="o">/</span> <span class="mi">16</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">samples_per_record</span><span class="o">=</span><span class="n">samples_per_buffer</span><span class="p">,</span>
+                                 <span class="n">allocated_buffers</span><span class="o">=</span><span class="n">allocated_buffers</span><span class="p">)</span>
+
+            <span class="c1"># Setup acquisition controller settings through initialization pulse</span>
+            <span class="n">initialization</span><span class="o">.</span><span class="n">implement</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="p">[</span><span class="n">initialization</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">,</span>
+                            <span class="n">initialization</span><span class="o">.</span><span class="n">readout_channel</span><span class="p">]:</span>
+                <span class="k">assert</span> <span class="n">channel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">(),</span> \
+                    <span class="n">f</span><span class="s2">&quot;Channel </span><span class="si">{channel}</span><span class="s2"> must be in acquisition channels&quot;</span>
+
+            <span class="c1"># samples_per_trace must be a multiple of samples_per_buffer</span>
+            <span class="n">samples_per_trace</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">samples_per_buffer</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span> <span class="o">/</span> <span class="n">samples_per_buffer</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">samples_per_trace</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">traces_per_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;No setup programmed for &quot;</span>
+                               <span class="n">f</span><span class="s2">&quot;{self.acquisition_controller()}&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set acquisition channels setting</span>
+        <span class="c1"># Channel_selection must be a sorted string of acquisition channel ids</span>
+        <span class="n">channel_ids</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_channels</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">()]))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">channel_ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># TODO add &#39;silent&#39; mode</span>
+            <span class="c1"># logging.warning(&quot;ATS cannot be configured with three acquisition &quot;</span>
+            <span class="c1">#                 &quot;channels {}, setting to ABCD&quot;.format(channel_ids))</span>
+            <span class="n">channel_ids</span> <span class="o">=</span> <span class="s1">&#39;ABCD&#39;</span>
+
+        <span class="n">buffer_timeout</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">20000</span><span class="p">,</span> <span class="mf">3.1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">channel_selection</span><span class="o">=</span><span class="n">channel_ids</span><span class="p">,</span>
+                             <span class="n">buffer_timeout</span><span class="o">=</span><span class="n">buffer_timeout</span><span class="p">)</span>  <span class="c1"># ms</span>
+
+        <span class="c1"># Update settings in acquisition controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">set_acquisition_settings</span><span class="p">(</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">average_mode</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ATSInterface.start"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Ignored method called from `Layout.start`&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ATSInterface.stop"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Ignored method called from `Layout.stop`&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ATSInterface.acquisition"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.acquisition">[docs]</a>    <span class="k">def</span> <span class="nf">acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Perform an acquisition.</span>
+
+<span class="sd">        Should only be called after the interface has been setup and all other</span>
+<span class="sd">        instruments have been started (via `Layout.start`).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Acquisition traces that have been segmented for each pulse.</span>
+<span class="sd">            Returned dictionary format is:</span>
+<span class="sd">            ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_controller</span><span class="o">.</span><span class="n">acquisition</span><span class="p">()</span>
+        <span class="c1"># Convert list of channel traces to a {ch_id: trace} dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="n">trace</span> <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">(),</span> <span class="n">traces</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment_traces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span></div>
+
+<div class="viewcode-block" id="ATSInterface.segment_traces"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.segment_traces">[docs]</a>    <span class="k">def</span> <span class="nf">segment_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot; Segment traces by acquisition pulses.</span>
+
+<span class="sd">        For each pulse with ``acquire`` set to True (which should be all pulses</span>
+<span class="sd">        passed along to the ATSInterface), the relevant portion of each channel</span>
+<span class="sd">        trace is segmented and returned in a new dict</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            traces: ``{channel_id: channel_traces}`` dict</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Dict[str, np.ndarray]:</span>
+<span class="sd">            Dict format is</span>
+<span class="sd">            ``{pulse.full_name: {channel_id: pulse_channel_trace}}``.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>
+            <span class="n">t_start_initial</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t_start_initial</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">delta_t_start</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">t_start_initial</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">delta_t_start</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">duration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+
+            <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">pulse_trace</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[:,</span> <span class="n">start_idx</span><span class="p">:</span><span class="n">start_idx</span> <span class="o">+</span> <span class="n">pts</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_trace</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;trace&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_trace</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="s1">&#39;point_segment&#39;</span> <span class="ow">in</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="p">:</span>
+                    <span class="n">segments</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">segments_idx</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pts</span> <span class="o">*</span> <span class="n">idx</span> <span class="o">/</span> <span class="n">segments</span><span class="p">))</span>
+                                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span><span class="p">):</span>
+                        <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                            <span class="n">pulse_trace</span><span class="p">[:,</span> <span class="n">segments_idx</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span><span class="n">segments_idx</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]])</span>
+                <span class="k">elif</span> <span class="s1">&#39;trace_segment&#39;</span> <span class="ow">in</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="p">:</span>
+                    <span class="n">segments</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">segments_idx</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pts</span> <span class="o">*</span> <span class="n">idx</span> <span class="o">/</span> <span class="n">segments</span><span class="p">))</span>
+                                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span><span class="p">):</span>
+                        <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="n">pulse_trace</span><span class="p">[:,</span> <span class="n">segments_idx</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span><span class="n">segments_idx</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span><span class="p">][</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse_trace</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unknown average mode </span><span class="si">{pulse.average}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pulse_traces</span></div>
+
+<div class="viewcode-block" id="ATSInterface.setting"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.setting">[docs]</a>    <span class="k">def</span> <span class="nf">setting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">setting</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Obtain a setting for the ATS.</span>
+
+<span class="sd">        It then checks if it is a configuration or acquisition setting.</span>
+<span class="sd">        If the setting is specified in self.configuration/acquisition_setting,</span>
+<span class="sd">        it returns that value, else it returns the value set in the ATS</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            setting: configuration or acquisition setting to look for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Value of the setting</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Setting is not an ATS configuration or acquisition setting.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_settings_names</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;Kwarg </span><span class="si">{setting}</span><span class="s2"> is not a valid ATS acquisition setting&quot;</span>
+        <span class="k">if</span> <span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">()[</span><span class="n">setting</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()[</span><span class="n">setting</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Must get latest value, since it may not be updated in ATS</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">setting</span><span class="p">]()</span></div>
+
+<div class="viewcode-block" id="ATSInterface.set_configuration_settings"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_configuration_settings">[docs]</a>    <span class="k">def</span> <span class="nf">set_configuration_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the configuration settings for the ATS through its controller.</span>
+
+<span class="sd">        All existing configuration settings are cleared.</span>
+<span class="sd">        The controller&#39;s configuration settings are not actually updated here,</span>
+<span class="sd">        but will be done when calling `ATSInterface.setup`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **settings: ATS configuration settings to be set</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Setting is not an ATS configuration setting</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span>
+                    <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">]),</span> \
+            <span class="s2">&quot;Settings are not all valid ATS configuration settings&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings</span> <span class="o">=</span> <span class="n">settings</span></div>
+
+<div class="viewcode-block" id="ATSInterface.set_acquisition_settings"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.set_acquisition_settings">[docs]</a>    <span class="k">def</span> <span class="nf">set_acquisition_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the acquisition settings for the ATS through its controller.</span>
+
+<span class="sd">        All existing acquisition settings are cleared.</span>
+<span class="sd">        The controller&#39;s acquisition settings are not actually updated here,</span>
+<span class="sd">        but will be done when calling `ATSInterface.setup`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **settings: ATS acquisition settings to be set</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Setting is not an ATS acquisition setting</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span>
+                    <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">]),</span> \
+            <span class="s2">&quot;Settings are not all valid ATS acquisition settings&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings</span> <span class="o">=</span> <span class="n">settings</span></div>
+
+<div class="viewcode-block" id="ATSInterface.update_settings"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.ATSInterface.update_settings">[docs]</a>    <span class="k">def</span> <span class="nf">update_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Update configuration and acquisition settings</span>
+
+<span class="sd">        The acquisition controller&#39;s settings are not actually updated here,</span>
+<span class="sd">        this will be done when calling `ATSInterface.setup`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **settings: ATS configuration and acquisition settings to be set.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Some settings are not configuration nor acquisition settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">settings_valid</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">setting</span><span class="p">:</span> <span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_settings_names</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="k">assert</span> <span class="n">settings_valid</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s1">&#39;Not all settings are valid ATS settings. Settings: </span><span class="si">{settings}</span><span class="se">\n</span><span class="s1">&#39;</span> \
+            <span class="n">f</span><span class="s1">&#39;Valid ATS settings: </span><span class="si">{self._settings_names}</span><span class="s1">&#39;</span>
+
+        <span class="n">configuration_settings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                  <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration_settings_names</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_settings</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">configuration_settings</span><span class="p">)</span>
+
+        <span class="n">acquisition_settings</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                  <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_settings_names</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_settings</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">acquisition_settings</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SteeredInitializationImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation">[docs]</a><span class="k">class</span> <span class="nc">SteeredInitializationImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">SteeredInitialization</span>
+
+<div class="viewcode-block" id="SteeredInitializationImplementation.target_pulse"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.target_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">target_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">pulse</span><span class="p">:</span> <span class="n">Pulse</span><span class="p">,</span>
+                     <span class="n">interface</span><span class="p">,</span>
+                     <span class="n">connections</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pulse</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Target steered initialization pulse to an interface.</span>
+
+<span class="sd">        The implementation will further have a ``readout_connection`` and</span>
+<span class="sd">        ``trigger_connection``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse: Steered initialization pulse to be targeted.</span>
+<span class="sd">            interface: Interface to target pulse to.</span>
+<span class="sd">            connections: List of output connections</span>
+<span class="sd">            **kwargs:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            targeted pulse</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Not exactly one readout connection found</span>
+<span class="sd">            AssertionError</span>
+<span class="sd">                Not exactly one trigger connection found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">targeted_pulse</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">target_pulse</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Add readout connection to targeted pulse</span>
+        <span class="n">readout_connection</span> <span class="o">=</span> <span class="p">[</span><span class="n">connection</span> <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">connections</span> <span class="k">if</span>
+                              <span class="n">connection</span><span class="o">.</span><span class="n">satisfies_conditions</span><span class="p">(</span>
+                                  <span class="n">output_arg</span><span class="o">=</span><span class="s1">&#39;chip.output&#39;</span><span class="p">)]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">readout_connection</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;No unique readout connection: </span><span class="si">{readout_connection}</span><span class="s2">&quot;</span>
+        <span class="n">targeted_pulse</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">readout_connection</span> <span class="o">=</span> <span class="n">readout_connection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Add trigger connection to targeted pulse</span>
+        <span class="n">trigger_connection</span> <span class="o">=</span> <span class="p">[</span><span class="n">connection</span> <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">connections</span> <span class="k">if</span>
+                              <span class="n">connection</span><span class="o">.</span><span class="n">satisfies_conditions</span><span class="p">(</span>
+                                  <span class="n">input_channel</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chA&#39;</span><span class="p">,</span> <span class="s1">&#39;chB&#39;</span><span class="p">,</span> <span class="s1">&#39;chC&#39;</span><span class="p">,</span> <span class="s1">&#39;chD&#39;</span><span class="p">],</span>
+                                  <span class="n">trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">trigger_connection</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;No unique trigger connection: </span><span class="si">{trigger_connection}</span><span class="s2">&quot;</span>
+        <span class="n">targeted_pulse</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">trigger_connection</span> <span class="o">=</span> <span class="n">trigger_connection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Force ATS acquisition mode to be continuous</span>
+        <span class="n">interface</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">(</span><span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">targeted_pulse</span></div>
+
+<div class="viewcode-block" id="SteeredInitializationImplementation.implement"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.SteeredInitializationImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">:</span> <span class="n">InstrumentInterface</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Implements pulse &quot;&quot;&quot;</span>
+        <span class="n">acquisition_controller</span> <span class="o">=</span> <span class="n">interface</span><span class="o">.</span><span class="n">_acquisition_controller</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">t_max_wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_max_wait</span><span class="p">)</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">t_no_blip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_no_blip</span><span class="p">)</span>
+
+        <span class="c1"># Setup readout channel and threshold voltage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">readout_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readout_connection</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">readout_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readout_channel</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">readout_threshold_voltage</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">readout_threshold_voltage</span><span class="p">)</span>
+
+        <span class="c1"># Setup trigger channel and threshold voltage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trigger_output_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trigger_connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
+        <span class="n">TTL_voltages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trigger_output_channel</span><span class="o">.</span><span class="n">output_TTL</span>
+        <span class="n">trigger_threshold_voltage</span> <span class="o">=</span> <span class="p">(</span><span class="n">TTL_voltages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">TTL_voltages</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trigger_connection</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_channel</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">acquisition_controller</span><span class="o">.</span><span class="n">trigger_threshold_voltage</span><span class="p">(</span>
+            <span class="n">trigger_threshold_voltage</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TriggerWaitPulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">TriggerWaitPulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">TriggerWaitPulse</span>
+
+<div class="viewcode-block" id="TriggerWaitPulseImplementation.target_pulse"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.target_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">target_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Verify that acquisition controller is SteeredInitialization</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">interface</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;ATS interface acquisition controller is not &#39;</span>
+                               <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">target_pulse</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TriggerWaitPulseImplementation.implement"><a class="viewcode-back" href="../../../silq.instrument_interfaces.AlazarTech.html#silq.instrument_interfaces.AlazarTech.ATS_interface.TriggerWaitPulseImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

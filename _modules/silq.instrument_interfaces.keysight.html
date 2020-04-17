@@ -1,0 +1,1177 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.keysight package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.keysight package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.instrument_interfaces.keysight.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-instrument-interfaces-keysight-package">
+<h1>silq.instrument_interfaces.keysight package<a class="headerlink" href="#silq-instrument-interfaces-keysight-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html">silq.instrument_interfaces.keysight.fpga_controllers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#silq-instrument-interfaces-keysight-fpga-controllers-bayesian-update-controller-module">silq.instrument_interfaces.keysight.fpga_controllers.Bayesian_Update_Controller module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#silq-instrument-interfaces-keysight-fpga-controllers-trigger-fpga-controller-module">silq.instrument_interfaces.keysight.fpga_controllers.trigger_FPGA_controller module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_controllers.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html">silq.instrument_interfaces.keysight.fpga_interfaces package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#silq-instrument-interfaces-keysight-fpga-interfaces-bayesian-update-interface-module">silq.instrument_interfaces.keysight.fpga_interfaces.Bayesian_update_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces.PCDDS_interface">silq.instrument_interfaces.keysight.fpga_interfaces.PCDDS_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces.trigger_FPGA_interface">silq.instrument_interfaces.keysight.fpga_interfaces.trigger_FPGA_interface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="silq.instrument_interfaces.keysight.fpga_interfaces.html#module-silq.instrument_interfaces.keysight.fpga_interfaces">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.instrument_interfaces.keysight.E8267D_interface">
+<span id="silq-instrument-interfaces-keysight-e8267d-interface-module"></span><h2>silq.instrument_interfaces.keysight.E8267D_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.keysight.E8267D_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.E8267D_interface.</code><code class="sig-name descname">E8267DInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#E8267DInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p>Interface for the Keysight E8267D</p>
+<p>When a <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted in the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the
+pulses are directed to the appropriate interface. Each interface is
+responsible for translating all pulses directed to it into instrument
+commands. During the actual measurement, the instrument’s operations will
+correspond to that required by the pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>instrument_name</strong> – name of instrument for which this is an interface</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For a given instrument, its associated interface can be found using</dt><dd><p><a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.get_instrument_interface" title="silq.instrument_interfaces.get_instrument_interface"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_instrument_interface</span></code></a></p>
+</dd>
+</dl>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#E8267DInterface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of additional pulses, such as IQ modulation pulses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#E8267DInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – Unused setup kwargs provided from Layout</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#E8267DInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#E8267DInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.E8267D_interface.</code><code class="sig-name descname">FrequencyRampPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#FrequencyRampPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">interface</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#FrequencyRampPulseImplementation.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide any additional pulses needed such as triggering pulses</p>
+<p>The additional pulses can be requested should usually have
+<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>.connection_conditions specified to ensure that the pulse is
+sent to the right connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – Interface to which this
+PulseImplementation belongs</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of additional pulses needed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse">Pulse</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.FrequencyRampPulse" title="silq.pulses.pulse_types.FrequencyRampPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.FrequencyRampPulse</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#FrequencyRampPulseImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tailors a PulseImplementation to a specific pulse.</p>
+<p>Targeting happens in three stages:</p>
+<ol class="arabic simple">
+<li><p>Both the pulse and pulse implementation are copied.</p></li>
+<li><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a> of the copied pulse is set to the copied
+pulse implementation, and <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse is set to the
+copied pulse. This way, they can both reference each other.</p></li>
+<li><p>The targeted pulse is returned</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><em>Pulse</em></a>) – Pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – PulseImplementation belongs.</p></li>
+<li><p><strong>connections</strong> (<em>List</em><em>[</em><em>Connection</em><em>]</em>) – All connections in <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional unused kwargs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – Pulse class does not match
+    <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse_class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.E8267D_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">interface</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#SinePulseImplementation.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide any additional pulses needed such as triggering pulses</p>
+<p>The additional pulses can be requested should usually have
+<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>.connection_conditions specified to ensure that the pulse is
+sent to the right connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – Interface to which this
+PulseImplementation belongs</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of additional pulses needed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse">Pulse</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.target_pulse">
+<code class="sig-name descname">target_pulse</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">interface</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/E8267D_interface.html#SinePulseImplementation.target_pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.target_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tailors a PulseImplementation to a specific pulse.</p>
+<p>Targeting happens in three stages:</p>
+<ol class="arabic simple">
+<li><p>Both the pulse and pulse implementation are copied.</p></li>
+<li><p><a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a> of the copied pulse is set to the copied
+pulse implementation, and <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse is set to the
+copied pulse. This way, they can both reference each other.</p></li>
+<li><p>The targeted pulse is returned</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pulse</strong> (<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><em>Pulse</em></a>) – Pulse to be targeted.</p></li>
+<li><p><strong>interface</strong> (<a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><em>InstrumentInterface</em></a>) – PulseImplementation belongs.</p></li>
+<li><p><strong>connections</strong> (<em>List</em><em>[</em><em>Connection</em><em>]</em>) – All connections in <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional unused kwargs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – Pulse class does not match
+    <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseImplementation</span></code></a>.pulse_class</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.keysight.Keysight_81180A_interface">
+<span id="silq-instrument-interfaces-keysight-keysight-81180a-interface-module"></span><h2>silq.instrument_interfaces.keysight.Keysight_81180A_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.keysight.Keysight_81180A_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_81180A_interface.</code><code class="sig-name descname">DCPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#DCPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation.implement">
+<em class="property">static </em><code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">pulse</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">max_points=6000</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#DCPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.DCPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.DCPulse" title="silq.pulses.pulse_types.DCPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.DCPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_81180A_interface.</code><code class="sig-name descname">FrequencyRampPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#FrequencyRampPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">sample_rate</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#FrequencyRampPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.FrequencyRampPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.FrequencyRampPulse" title="silq.pulses.pulse_types.FrequencyRampPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.FrequencyRampPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_81180A_interface.</code><code class="sig-name descname">Keysight81180AInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">max_amplitude=1.5</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>When the output is turned on, there is a certain ramping time of a few
+milliseconds. This negatively impacts the first repetition of a
+pulse sequence</p></li>
+<li><p>To ensure voltage is fixed at final voltage of the pulse sequence
+during any pulse_sequence.final_delay, the first point of the first
+waveform of the sequence is set to that final voltage.</p></li>
+<li><p>see <code class="docutils literal notranslate"><span class="pre">interface.additional_settings</span></code> for instrument settings that should
+be set manually</p></li>
+<li><p>When the last waveform of the sequence is finished, the time until the
+next trigger is spent at the voltages of the first point of the first
+waveform in the sequence. This includes any PulseSequence.final_delay.
+However, the behaviour should be that during this final_delay, the
+voltage is kept at the last point of the last waveform. To ensure this,
+the first point of the first waveform is modified to that of the last
+point of the last waveform.</p></li>
+<li><p>Creation of a sine waveform needs certain settings.
+Defaults are given in the SinePulseImplementation, but they can be
+overridden by setting the corresponding property in
+<code class="docutils literal notranslate"><span class="pre">silq.config.properties.sine_waveform_settings</span></code></p></li>
+</ul>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.add_pulse_waveforms">
+<code class="sig-name descname">add_pulse_waveforms</code><span class="sig-paren">(</span><em class="sig-param">channel_name</em>, <em class="sig-param">waveform</em>, <em class="sig-param">loops</em>, <em class="sig-param">waveform_initial</em>, <em class="sig-param">waveform_tail</em>, <em class="sig-param">t_stop</em>, <em class="sig-param">sample_rate</em>, <em class="sig-param">pulse_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.add_pulse_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.add_pulse_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.add_single_waveform">
+<code class="sig-name descname">add_single_waveform</code><span class="sig-paren">(</span><em class="sig-param">channel_name</em>, <em class="sig-param">waveform_array</em>, <em class="sig-param">allow_existing=True</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.add_single_waveform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.add_single_waveform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add waveform to instrument, uploading if necessary</p>
+<p>If the waveform already exists on the instrument and allow_existing=True,
+the existing waveform is used and no new waveform is uploaded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>channel_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of channel for which to upload waveform</p></li>
+<li><p><strong>waveform_array</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – Waveform array</p></li>
+<li><p><strong>allow_existing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Waveform index, used for sequencing</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>SyntaxError if waveform contains less than 320 points</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.generate_waveform_sequences">
+<code class="sig-name descname">generate_waveform_sequences</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.generate_waveform_sequences"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.generate_waveform_sequences" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of additional pulses, empty by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn all active instrument channels on</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#Keysight81180AInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.Keysight81180AInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn both instrument channels off</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_81180A_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">sample_rate</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_81180A_interface.html#SinePulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.settings">
+<code class="sig-name descname">settings</code><em class="property"> = {'frequency_threshold': 30, 'max_points': 50000.0}</em><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_81180A_interface.SinePulseImplementation.settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface">
+<span id="silq-instrument-interfaces-keysight-keysight-sd-awg-interface-module"></span><h2>silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">AWGPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#AWGPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#AWGPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.AWGPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.AWGPulse" title="silq.pulses.pulse_types.AWGPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.AWGPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">CombinationPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#CombinationPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#CombinationPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.CombinationPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.CombinationPulse" title="silq.pulses.pulse_types.CombinationPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.CombinationPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">DCPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#DCPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#DCPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.DCPulse" title="silq.pulses.pulse_types.DCPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.DCPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">DCRampPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#DCRampPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#DCRampPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.DCRampPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.DCRampPulse" title="silq.pulses.pulse_types.DCRampPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.DCRampPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">Keysight_SD_AWG_Interface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.active_channel_ids">
+<em class="property">property </em><code class="sig-name descname">active_channel_ids</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.active_channel_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorted list of active channel id’s</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.active_instrument_channels">
+<em class="property">property </em><code class="sig-name descname">active_instrument_channels</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.active_instrument_channels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.create_DC_waveform">
+<code class="sig-name descname">create_DC_waveform</code><span class="sig-paren">(</span><em class="sig-param">voltage</em>, <em class="sig-param">samples</em>, <em class="sig-param">prescaler</em>, <em class="sig-param">t_start</em>, <em class="sig-param">max_cycles=65536</em>, <em class="sig-param">final_voltage=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.create_DC_waveform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.create_DC_waveform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.create_waveforms">
+<code class="sig-name descname">create_waveforms</code><span class="sig-paren">(</span><em class="sig-param">error_threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.create_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.create_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<p>Trigger pulses are requested if trigger mode is hardware.
+Trigger at t_start is requested if there is a connection.trigger.
+Trigger at t=0 is requested if there is a connection.trigger_start/</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of additional pulses, empty by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.load_waveform_queue">
+<code class="sig-name descname">load_waveform_queue</code><span class="sig-paren">(</span><em class="sig-param">waveform_queue</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.load_waveform_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.load_waveform_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.load_waveforms">
+<code class="sig-name descname">load_waveforms</code><span class="sig-paren">(</span><em class="sig-param">waveforms</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.load_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.load_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">error_threshold=1e-06</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.setup_trigger">
+<code class="sig-name descname">setup_trigger</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.setup_trigger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.setup_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up triggering of the AWG.</p>
+<p>Triggering setup is only necessary if trigger_mode == ‘hardware’.
+If the AWG is setup as the primary instrument, the trigger_mode cannot
+be hardware, and so will be reset to ‘software’ here.
+Similarly, if the AWG is not the primary instrument, the trigger_mode
+will be reset to hardware.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start selected channels, and auto-triggering if primary instrument</p>
+<p>Auto-triggering is performed by creating a triggering thread</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.start_auto_trigger">
+<code class="sig-name descname">start_auto_trigger</code><span class="sig-paren">(</span><em class="sig-param">trigger_period</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.start_auto_trigger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.start_auto_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts auto-triggering of AWG, used if trigger_mode == ‘software’</p>
+<p>This method first restarts and triggers the AWG, and then starts a
+thread that calls this method again after trigger_period.</p>
+<p>If self.started == False, this method will not do anything, and so no
+thread is started</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>trigger_period</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Period before calling this method again</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#Keysight_SD_AWG_Interface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.Keysight_SD_AWG_Interface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">MarkerPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#MarkerPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#MarkerPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.MarkerPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.MarkerPulse" title="silq.pulses.pulse_types.MarkerPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.MarkerPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#SinePulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function takes the targeted pulse (i.e. an interface specific pulseimplementation) and converts
+it to a set of pulse-independent instructions/information that can be handled by interface.setup().</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SinePulseImplementation</span><span class="p">()</span>
+    <span class="n">initializes</span> <span class="n">a</span> <span class="n">generic</span> <span class="p">(</span><span class="n">interface</span> <span class="n">independent</span><span class="p">)</span> <span class="n">pulseimplementation</span> <span class="k">for</span> <span class="n">the</span> <span class="n">sinepulse</span>
+<span class="n">SinePulseImplementation</span><span class="o">.</span><span class="n">implement</span><span class="p">()</span>
+    <span class="n">takes</span> <span class="n">the</span> <span class="n">targeted</span> <span class="n">pulse</span> <span class="ow">and</span> <span class="n">returns</span> <span class="n">information</span><span class="o">/</span><span class="n">instructions</span> <span class="n">that</span> <span class="n">are</span> <span class="n">independent</span> <span class="n">of</span> <span class="n">the</span> <span class="n">pulse</span> <span class="nb">type</span>
+    <span class="p">(</span><span class="n">DCPulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="ow">and</span> <span class="n">can</span> <span class="n">be</span> <span class="n">handled</span> <span class="n">by</span> <span class="n">interface</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span> <span class="n">to</span> <span class="n">send</span> <span class="n">instructions</span> <span class="n">to</span> <span class="n">the</span> <span class="n">driver</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instrument</strong> (<em>Instrument</em>) – the M3201A instrument</p></li>
+<li><p><strong>sampling_rates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – dictionary containing sampling rates for each channel</p></li>
+<li><p><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – threshold in frequency error in Hz</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary containing waveform objects for each channel</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>waveforms (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a>)</p>
+</dd>
+</dl>
+<p>example return value:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">waveforms</span> <span class="o">=</span>
+    <span class="p">{</span>
+    <span class="s1">&#39;ch_1&#39;</span><span class="p">:</span>
+        <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;waveform&#39;</span><span class="p">:</span> <span class="n">waveform1</span><span class="p">,</span>
+                <span class="s1">&#39;cycles&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mf">0.0</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;waveform&#39;</span><span class="p">:</span> <span class="n">waveform2</span><span class="p">,</span>
+                <span class="s1">&#39;cycles&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mf">0.0</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.</code><code class="sig-name descname">TriggerPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#TriggerPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">interface</em>, <em class="sig-param">instrument</em>, <em class="sig-param">default_sampling_rate</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_AWG_interface.html#TriggerPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a targeted pulse for an InstrumentInterface.</p>
+<p>This method is called during <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface.setup" title="silq.instrument_interfaces.interface.InstrumentInterface.setup"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">InstrumentInterface.setup</span></code></a>.</p>
+<p>Implementation of a targeted pulse is very dependent on the interface.
+For an AWG, this method may return a list of waveform points.
+For a triggering source, this method may return the triggering time.
+In very simple cases, this method may not even be necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Interface-specific args to use</p></li>
+<li><p><strong>**kwargs</strong> – Interface-specific kwargs to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instrument-specific return values.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Other interface source codes may serve as a guide for this method.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_AWG_interface.TriggerPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.TriggerPulse" title="silq.pulses.pulse_types.TriggerPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.TriggerPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface">
+<span id="silq-instrument-interfaces-keysight-keysight-sd-dig-interface-module"></span><h2>silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.</code><code class="sig-name descname">Keysight_SD_DIG_Interface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.acquisition">
+<code class="sig-name descname">acquisition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.acquisition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.acquisition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform acquisition</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of additional pulses, empty by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.initialize_driver">
+<code class="sig-name descname">initialize_driver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.initialize_driver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.initialize_driver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Puts driver into a known initial state. Further configuration will
+be done in the configure_driver and get_additional_pulses
+functions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">samples=1</em>, <em class="sig-param">input_connections=()</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup_trigger">
+<code class="sig-name descname">setup_trigger</code><span class="sig-paren">(</span><em class="sig-param">t_start</em>, <em class="sig-param">input_connections</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.setup_trigger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup_trigger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/keysight/Keysight_SD_DIG_interface.html#Keysight_SD_DIG_Interface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.keysight">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.instrument_interfaces.keysight" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

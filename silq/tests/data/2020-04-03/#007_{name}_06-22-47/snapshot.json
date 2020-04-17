@@ -1,0 +1,16 @@
+{
+    "int": 1,
+    "list": [
+        1,
+        2
+    ],
+    "numpyarray": [
+        1
+    ],
+    "string": "P1",
+    "subdict": {
+        "stringlist": [
+            "P1"
+        ]
+    }
+}

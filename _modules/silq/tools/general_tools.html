@@ -1,0 +1,942 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.general_tools &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.general_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.general_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">wraps</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">logging.handlers</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">qcodes.config.config</span> <span class="k">import</span> <span class="n">DotDict</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter</span> <span class="k">import</span> <span class="n">Parameter</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;execfile&#39;</span><span class="p">,</span> <span class="s1">&#39;is_between&#39;</span><span class="p">,</span> <span class="s1">&#39;get_truth&#39;</span><span class="p">,</span> <span class="s1">&#39;get_memory_usage&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;SettingsClass&#39;</span><span class="p">,</span> <span class="s1">&#39;UpdateDotDict&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;attribute_from_config&#39;</span><span class="p">,</span> <span class="s1">&#39;clear_single_settings&#39;</span><span class="p">,</span> <span class="s1">&#39;JSONEncoder&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;JSONListEncoder&#39;</span><span class="p">,</span> <span class="s1">&#39;run_code&#39;</span><span class="p">,</span> <span class="s1">&#39;get_exponent&#39;</span><span class="p">,</span> <span class="s1">&#39;get_first_digit&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;ParallelTimedRotatingFileHandler&#39;</span><span class="p">,</span> <span class="s1">&#39;convert_setpoints&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;Singleton&#39;</span><span class="p">,</span> <span class="s1">&#39;property_ignore_setter&#39;</span><span class="p">,</span> <span class="s1">&#39;freq_to_str&#39;</span><span class="p">]</span>
+
+<span class="n">code_labels</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">properties_config</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;properties&#39;</span><span class="p">,</span> <span class="p">{})</span>
+
+
+<div class="viewcode-block" id="execfile"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.execfile">[docs]</a><span class="k">def</span> <span class="nf">execfile</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="nb">globals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="nb">locals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Execute code in .py file, adding new variables to globals/locals.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        globals: Global variables dictionary. If not specified, uses globals</span>
+<span class="sd">            in first frame.</span>
+<span class="sd">        locals: Local variables dictionary. If not specified, uses locals in</span>
+<span class="sd">            first frame.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">globals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">globals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_globals</span>
+    <span class="k">if</span> <span class="nb">locals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">locals</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_locals</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">exec</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">globals</span><span class="p">,</span> <span class="nb">locals</span><span class="p">)</span></div>
+
+<span class="sd">&quot;&quot;&quot;Comparison operators, used for `get_truth`&quot;&quot;&quot;</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;&gt;&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">gt</span><span class="p">,</span>
+       <span class="s1">&#39;&lt;&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">,</span>
+       <span class="s1">&#39;&gt;=&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ge</span><span class="p">,</span>
+       <span class="s1">&#39;&lt;=&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">le</span><span class="p">,</span>
+       <span class="s1">&#39;==&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="is_between"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.is_between">[docs]</a><span class="k">def</span> <span class="nf">is_between</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">min_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">max_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-13</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Check if value is between min and max, taking machine precision into account&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">min_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_val</span> <span class="o">-</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">max_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_val</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="get_truth"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.get_truth">[docs]</a><span class="k">def</span> <span class="nf">get_truth</span><span class="p">(</span><span class="n">test_val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+              <span class="n">target_val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+              <span class="n">relation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;==&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Tests if the ``test_val`` satisfies the ``relation`` to ``target_val``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        test_val: lhs of relation with target_val.</span>
+<span class="sd">        target_val: rhs of relation with test_val</span>
+<span class="sd">        relation: relation between test_val and target_val. Default is &#39;==&#39;</span>
+<span class="sd">            Can be: &#39;&gt;&#39;, &#39;&lt;&#39;, &#39;&gt;=&#39;, &#39;&lt;=&#39;, &#39;==&#39;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if relation holds</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ops</span><span class="p">[</span><span class="n">relation</span><span class="p">](</span><span class="n">test_val</span><span class="p">,</span> <span class="n">target_val</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_memory_usage"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.get_memory_usage">[docs]</a><span class="k">def</span> <span class="nf">get_memory_usage</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;return the memory usage in MB&quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span> <span class="nn">psutil</span>
+    <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+    <span class="n">mem</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mem</span></div>
+
+
+<div class="viewcode-block" id="SettingsClass"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.SettingsClass">[docs]</a><span class="k">class</span> <span class="nc">SettingsClass</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class used to temporarily override attributes.</span>
+<span class="sd">    This can be done through obj.single_settings() and obj.temporary_settings().</span>
+<span class="sd">    Any settings specified here will override the actual values of the object</span>
+<span class="sd">    until settings are cleared</span>
+
+<span class="sd">    Settings can be cleared in two ways:</span>
+<span class="sd">    Using the decorator @clear_single_settings on a method, which will delete</span>
+<span class="sd">    the single_settings.</span>
+<span class="sd">    Using obj.clear_settings(), which will clear both the single settings and</span>
+<span class="sd">    temporary settings.</span>
+
+<span class="sd">    Furthermore, attribute_names can be added to ignore_if_set.</span>
+<span class="sd">    If the object&#39;s value of that attribute is not equal to None, [], or (),</span>
+<span class="sd">    it cannot be overridden through single or temporary settings.</span>
+
+<span class="sd">    Note that for all attributes, they must be set in the object before they</span>
+<span class="sd">    can be overridden by single/temporary settings</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_single_settings</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_temporary_settings</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_ignore_if_set</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_if_set</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignore_if_set</span> <span class="o">=</span> <span class="n">ignore_if_set</span>
+
+    <span class="k">def</span> <span class="nf">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called when requesting an attribute.</span>
+<span class="sd">        The attribute is successively searched in the following places:</span>
+<span class="sd">        1. single_settings</span>
+<span class="sd">        2. temporary_settings</span>
+<span class="sd">        3. self.{attr}</span>
+<span class="sd">        4. If self.{attr} is explicitly None, it will check properties_config</span>
+
+<span class="sd">        Some attributes (such as &#39;mode&#39;) are not allowed</span>
+<span class="sd">        Args:</span>
+<span class="sd">            item: Attribute to be retrieved</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;_temporary_settings&#39;</span><span class="p">,</span> <span class="s1">&#39;_single_settings&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;_ignore_if_set&#39;</span><span class="p">,</span> <span class="s1">&#39;__setstate__&#39;</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignore_if_set</span> <span class="ow">and</span> \
+                        <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> \
+                        <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[],</span> <span class="p">()):</span>
+            <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="SettingsClass.settings"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.SettingsClass.settings">[docs]</a>    <span class="k">def</span> <span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the meta properties of a measurement parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Setting </span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SettingsClass.temporary_settings"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.SettingsClass.temporary_settings">[docs]</a>    <span class="k">def</span> <span class="nf">temporary_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the meta properties of a measurement parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">append</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Setting </span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="SettingsClass.single_settings"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.SettingsClass.single_settings">[docs]</a>    <span class="k">def</span> <span class="nf">single_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the meta properties of a measurement parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Setting </span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="SettingsClass.clear_settings"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.SettingsClass.clear_settings">[docs]</a>    <span class="k">def</span> <span class="nf">clear_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clears temporary and single settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temporary_settings</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="UpdateDotDict"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.UpdateDotDict">[docs]</a><span class="k">class</span> <span class="nc">UpdateDotDict</span><span class="p">(</span><span class="n">DotDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;DotDict that can evaluate function upon being updated.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        update_function: Function that is called every time a value changes.</span>
+<span class="sd">        **kwargs: Unused kwargs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exclude_from_dict</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;update_function&#39;</span><span class="p">,</span> <span class="s1">&#39;exclude_from_dict&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update_function</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_function</span> <span class="o">=</span> <span class="n">update_function</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">DotDict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_function</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="attribute_from_config"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.attribute_from_config">[docs]</a><span class="k">def</span> <span class="nf">attribute_from_config</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check if attribute exists is an item in the config</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: key in config to check</span>
+<span class="sd">        config: config to check</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Value in config. If dict-like, will be converted to dict.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AttributeError: item not found.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># check if {item}_{self.mode} is in properties_config</span>
+    <span class="c1"># if mode is None, mode_str=&#39;&#39;, in which case it checks for {item}</span>
+    <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+        <span class="c1"># Check if item is in properties config</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="n">DotDict</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="clear_single_settings"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.clear_single_settings">[docs]</a><span class="k">def</span> <span class="nf">clear_single_settings</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`SettingsClass` wrapper to clear single_settings after running function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        f: function after which to clear ``single_settings`` attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">clear_single_settings_decorator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_single_settings</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">output</span>
+    <span class="k">return</span> <span class="n">clear_single_settings_decorator</span></div>
+
+
+<div class="viewcode-block" id="JSONListEncoder"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.JSONListEncoder">[docs]</a><span class="k">def</span> <span class="nf">JSONListEncoder</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+    <span class="n">return_l</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">l</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="s1">&#39;_JSONEncoder&#39;</span><span class="p">):</span>
+            <span class="n">return_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">_JSONEncoder</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">return_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JSONListEncoder</span><span class="p">(</span><span class="n">element</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">return_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">element</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">return_l</span></div>
+
+
+<div class="viewcode-block" id="JSONEncoder"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.JSONEncoder">[docs]</a><span class="k">def</span> <span class="nf">JSONEncoder</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span>
+                <span class="n">ignore_attrs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+                <span class="n">ignore_vals</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;Encode object as dict for JSON encoding.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ignore_attrs: Attributes that should not be included.</span>
+<span class="sd">        ignore_vals: Vals to be ignored.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict representation of object.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        # If one of its attributes is an object containing method ``_JSONEncoder``,</span>
+<span class="sd">          the method is called to get its JSON representation.</span>
+<span class="sd">        # Lists are encoded using `JSONListEncoder`, which has an additional</span>
+<span class="sd">          check for the method ``_JSONEncoder``.</span>
+
+<span class="sd">    Todo:</span>
+<span class="sd">        Ensure parameters etc. are encoded using their snapshot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">return_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">ignore_attrs</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s1">&#39;_JSONEncoder&#39;</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">_JSONEncoder</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">JSONListEncoder</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+            <span class="c1"># TODO: is this right?</span>
+            <span class="n">return_dict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">elif</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_vals</span><span class="p">:</span>
+            <span class="n">return_dict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="n">return_dict</span><span class="p">[</span><span class="s1">&#39;class&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">return</span> <span class="n">return_dict</span></div>
+
+
+<div class="viewcode-block" id="run_code"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.run_code">[docs]</a><span class="k">def</span> <span class="nf">run_code</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates cell to run code from global variable code_labels</span>
+
+<span class="sd">    Code labels is a dictionary in which each key has a corresponding value</span>
+<span class="sd">    that is a string representation of executable code.</span>
+<span class="sd">    Note that the module variable code_labels must be set to equal the global</span>
+<span class="sd">    variable code_labels.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label: label referring to code in dict code_labels</span>
+<span class="sd">        **kwargs: Optional kwargs that are replaced in code</span>
+<span class="sd">            i.e. for a given kwarg {var}=5, a line matching:</span>
+<span class="sd">            &quot;{var} = {val}&quot; will be replaced to &quot;{var} = 5&quot; (Note whitespaces)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Creates cell at bottom of notebook and executes it</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This function is not used anymore, though it should still work</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">silq.tools.notebook_tools</span> <span class="k">import</span> <span class="n">create_cell</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">code_labels</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> = .+&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+        <span class="n">repl</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">create_cell</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">execute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_exponent"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.get_exponent">[docs]</a><span class="k">def</span> <span class="nf">get_exponent</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get decimal exponent</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; get_exponent(0.032)</span>
+<span class="sd">        -2</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        val: Val of which to get exponent</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Exponent</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Val </span><span class="si">{val}</span><span class="s1"> must be larger than zero&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">val</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="get_first_digit"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.get_first_digit">[docs]</a><span class="k">def</span> <span class="nf">get_first_digit</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get first nonzero digit.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; get_first_digit(0.032)</span>
+<span class="sd">        3</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        val: Val for which to get first nonzero digit</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        First nonero digit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">first_digit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">val</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="o">-</span><span class="n">get_exponent</span><span class="p">(</span><span class="n">val</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">first_digit</span></div>
+
+
+<div class="viewcode-block" id="ParallelTimedRotatingFileHandler"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.ParallelTimedRotatingFileHandler">[docs]</a><span class="k">class</span> <span class="nc">ParallelTimedRotatingFileHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">TimedRotatingFileHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Logging handler that creates a new log file every day.</span>
+
+<span class="sd">    Files are stored with .log suffix, and dates are included in filename</span>
+<span class="sd">    from the beginning. Also allows multiple processes to access same log.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        - From: https://stackoverflow.com/questions/24649789/how-to-force-a</span>
+<span class="sd">          -rotating-name-with-pythons-timedrotatingfilehandler</span>
+<span class="sd">        - Essentially a TimedRotatingFileHandler with some modifications.</span>
+<span class="sd">        - Haven&#39;t gone through the code, but it does the trick.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">backupCount</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">postfix</span> <span class="o">=</span> <span class="s2">&quot;.log&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">origFileName</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">=</span> <span class="n">when</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backupCount</span> <span class="o">=</span> <span class="n">backupCount</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utc</span> <span class="o">=</span> <span class="n">utc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span> <span class="o">=</span> <span class="n">postfix</span>
+
+        <span class="c1"># Seems to be needed for self.computeRollover</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atTime</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;S&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># one second</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">_\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">$&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;M&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="mi">60</span> <span class="c1"># one minute</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">_\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">$&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;H&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="c1"># one hour</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">_\d</span><span class="si">{2}</span><span class="s2">$&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;D&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;MIDNIGHT&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">24</span> <span class="c1"># one day</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">$&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;W&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">7</span> <span class="c1"># one week</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must specify a day for weekly rollover from 0 to 6 (0 is Monday): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="s1">&#39;0&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="s1">&#39;6&#39;</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid day specified for weekly rollover: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dayOfWeek</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">$&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid rollover interval specified: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">)</span>
+
+        <span class="n">currenttime</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">BaseRotatingHandler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculateFileName</span><span class="p">(</span><span class="n">currenttime</span><span class="p">),</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">*</span> <span class="n">interval</span> <span class="c1"># multiply by units requested</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rolloverAt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">computeRollover</span><span class="p">(</span><span class="n">currenttime</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ParallelTimedRotatingFileHandler.calculateFileName"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.ParallelTimedRotatingFileHandler.calculateFileName">[docs]</a>    <span class="k">def</span> <span class="nf">calculateFileName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">currenttime</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">utc</span><span class="p">:</span>
+             <span class="n">timeTuple</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">currenttime</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+             <span class="n">timeTuple</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">currenttime</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">origFileName</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">,</span> <span class="n">timeTuple</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span></div>
+
+<div class="viewcode-block" id="ParallelTimedRotatingFileHandler.getFilesToDelete"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.ParallelTimedRotatingFileHandler.getFilesToDelete">[docs]</a>    <span class="k">def</span> <span class="nf">getFilesToDelete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newFileName</span><span class="p">):</span>
+        <span class="n">dirName</span><span class="p">,</span> <span class="n">fName</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">origFileName</span><span class="p">)</span>
+        <span class="n">dName</span><span class="p">,</span> <span class="n">newFileName</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">newFileName</span><span class="p">)</span>
+
+        <span class="n">fileNames</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dirName</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="n">fName</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span>
+        <span class="n">postfix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span>
+        <span class="n">prelen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="n">postlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">postfix</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fileName</span> <span class="ow">in</span> <span class="n">fileNames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fileName</span><span class="p">[:</span><span class="n">prelen</span><span class="p">]</span> <span class="o">==</span> <span class="n">prefix</span> \
+                    <span class="ow">and</span> <span class="n">fileName</span><span class="p">[</span><span class="o">-</span><span class="n">postlen</span><span class="p">:]</span> <span class="o">==</span> <span class="n">postfix</span> \
+                    <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span><span class="o">-</span><span class="n">postlen</span> <span class="o">&gt;</span> <span class="n">prelen</span> \
+                    <span class="ow">and</span> <span class="n">fileName</span> <span class="o">!=</span> <span class="n">newFileName</span><span class="p">:</span>
+                <span class="n">suffix</span> <span class="o">=</span> <span class="n">fileName</span><span class="p">[</span><span class="n">prelen</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span><span class="o">-</span><span class="n">postlen</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extMatch</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">suffix</span><span class="p">):</span>
+                     <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirName</span><span class="p">,</span> <span class="n">fileName</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">backupCount</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">backupCount</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="ParallelTimedRotatingFileHandler.doRollover"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.ParallelTimedRotatingFileHandler.doRollover">[docs]</a>    <span class="k">def</span> <span class="nf">doRollover</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">currentTime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rolloverAt</span>
+        <span class="n">newFileName</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculateFileName</span><span class="p">(</span><span class="n">currentTime</span><span class="p">)</span>
+        <span class="n">newBaseFileName</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">newFileName</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseFilename</span> <span class="o">=</span> <span class="n">newBaseFileName</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;a&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_open</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">backupCount</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFilesToDelete</span><span class="p">(</span><span class="n">newFileName</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+        <span class="n">newRolloverAt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">computeRollover</span><span class="p">(</span><span class="n">currentTime</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">newRolloverAt</span> <span class="o">&lt;=</span> <span class="n">currentTime</span><span class="p">:</span>
+            <span class="n">newRolloverAt</span> <span class="o">=</span> <span class="n">newRolloverAt</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span>
+
+        <span class="c1">#If DST changes and midnight or weekly rollover, adjust for this.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="o">==</span> <span class="s1">&#39;MIDNIGHT&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;W&#39;</span><span class="p">))</span> \
+                <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">utc</span><span class="p">:</span>
+            <span class="n">dstNow</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">currentTime</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">dstAtRollover</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">newRolloverAt</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">dstNow</span> <span class="o">!=</span> <span class="n">dstAtRollover</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dstNow</span><span class="p">:</span>
+                    <span class="c1"># DST kicks in before next rollover, need to deduct an hour</span>
+                    <span class="n">newRolloverAt</span> <span class="o">=</span> <span class="n">newRolloverAt</span> <span class="o">-</span> <span class="mi">3600</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># DST bows out before next rollover, need to add an hour</span>
+                    <span class="n">newRolloverAt</span> <span class="o">=</span> <span class="n">newRolloverAt</span> <span class="o">+</span> <span class="mi">3600</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rolloverAt</span> <span class="o">=</span> <span class="n">newRolloverAt</span></div></div>
+
+
+<div class="viewcode-block" id="convert_setpoints"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.convert_setpoints">[docs]</a><span class="k">def</span> <span class="nf">convert_setpoints</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert setpoints to tuples, supporting multidimensional setpoints.</span>
+
+<span class="sd">    Temporary solution to make setpoints work (see issue #627).</span>
+<span class="sd">    Currently, setpoints need to be tuples (arrays etc. give issues). Further,</span>
+<span class="sd">    the second setpoint array needs to be 2D etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        *args: 1D setpoint arrays. each successive setpoints array gains an</span>
+<span class="sd">            extra dimension</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Setpoint arrays converted to tuples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">first_arg</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">remaining_args</span> <span class="o">=</span> <span class="n">convert_setpoints</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">if</span> <span class="n">remaining_args</span><span class="p">:</span>
+            <span class="n">remaining_args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">arg</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_arg</span><span class="p">)</span>
+                                   <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">remaining_args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">first_arg</span><span class="p">,</span> <span class="p">)</span> <span class="o">+</span> <span class="n">remaining_args</span></div>
+
+
+<div class="viewcode-block" id="Singleton"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.Singleton">[docs]</a><span class="k">class</span> <span class="nc">Singleton</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Meta-class for classes that can only have a single instance.</span>
+
+<span class="sd">    If a second instance is created, it will instead return the already-existing</span>
+<span class="sd">    instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_instances</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Singleton</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="property_ignore_setter"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.property_ignore_setter">[docs]</a><span class="k">class</span> <span class="nc">property_ignore_setter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator similar to @property that ignores setter</span>
+
+<span class="sd">    The setter shouldn&#39;t be defined, and any setting of attribute is ignored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">doc</span> <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span>
+
+    <span class="k">def</span> <span class="nf">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="freq_to_str"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.general_tools.freq_to_str">[docs]</a><span class="k">def</span> <span class="nf">freq_to_str</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{:.15g}</span><span class="s1">&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Formats frequency, using right magnitude.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This will be superseded later on when all attributes are converted to</span>
+<span class="sd">        parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e9</span><span class="p">:</span>
+        <span class="n">frequency_string</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frequency</span><span class="o">/</span><span class="mf">1e9</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; GHz&#39;</span>
+    <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e6</span><span class="p">:</span>
+        <span class="n">frequency_string</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frequency</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; MHz&#39;</span>
+    <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e3</span><span class="p">:</span>
+        <span class="n">frequency_string</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frequency</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; kHz&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">frequency_string</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Hz&#39;</span>
+
+    <span class="k">return</span> <span class="n">frequency_string</span></div>
+
+
+
+<span class="kn">import</span> <span class="nn">re</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">types</span><span class="o">,</span> <span class="nn">inspect</span>
+<span class="k">def</span> <span class="nf">formatAllArgs</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    makes a nice string representation of all the arguments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allargs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">allargs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">allargs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)))</span>
+    <span class="n">formattedArgs</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">formattedArgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">150</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">formattedArgs</span><span class="p">[:</span><span class="mi">146</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; ...&quot;</span>
+    <span class="k">return</span> <span class="n">formattedArgs</span>
+
+
+<span class="k">def</span> <span class="nf">logfunction</span><span class="p">(</span><span class="n">theFunction</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">displayName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator to log whenever a function is called including arguments&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">displayName</span><span class="p">:</span> <span class="n">displayName</span> <span class="o">=</span> <span class="n">theFunction</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">def</span> <span class="nf">_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">argstr</span> <span class="o">=</span> <span class="n">formatAllArgs</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">)</span>
+
+        <span class="c1"># Log the entry into the function</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%s</span><span class="s2">) &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">displayName</span><span class="p">,</span> <span class="n">argstr</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">returnval</span> <span class="o">=</span> <span class="n">theFunction</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+
+        <span class="c1"># Log return</span>
+        <span class="c1">##indentlog(&quot;return: %s&quot;% str(returnval)</span>
+        <span class="k">return</span> <span class="n">returnval</span>
+
+    <span class="k">return</span> <span class="n">_wrapper</span>
+
+
+<span class="k">def</span> <span class="nf">logmethod</span><span class="p">(</span><span class="n">theMethod</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">displayName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator to log whenever a method is called including arguments&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_methodWrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="s2">&quot;Use this one for instance or class methods&quot;</span>
+
+        <span class="n">argstr</span> <span class="o">=</span> <span class="n">formatAllArgs</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{displayName}</span><span class="s1">.</span><span class="si">{theMethod.__name__}</span><span class="s1">(</span><span class="si">{argstr}</span><span class="s1">)&#39;</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">returnval</span> <span class="o">=</span> <span class="n">theMethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">returnval</span>
+
+    <span class="k">return</span> <span class="n">_methodWrapper</span>
+
+
+<span class="k">def</span> <span class="nf">logclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">methodsAsFunctions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">log</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span>
+             <span class="n">logMatch</span><span class="o">=</span><span class="s2">&quot;.*&quot;</span><span class="p">,</span> <span class="n">logNotMatch</span><span class="o">=</span><span class="s2">&quot;asdfnomatch&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class &quot;decorator&quot;. But python doesn&#39;t support decorator syntax for</span>
+<span class="sd">    classes, so do it manually::</span>
+
+<span class="sd">        class C(object):</span>
+<span class="sd">           ...</span>
+<span class="sd">        C = logclass(C)</span>
+
+<span class="sd">    @param methodsAsFunctions: set to True if you always want methodname first</span>
+<span class="sd">    in the display.  Probably breaks if you&#39;re using class/staticmethods?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">allow</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">logMatch</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">logNotMatch</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="ow">and</span> \
+                      <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;__str__&#39;</span><span class="p">,</span> <span class="s1">&#39;__repr__&#39;</span><span class="p">)</span>
+
+    <span class="n">namesToCheck</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">namesToCheck</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">allow</span><span class="p">(</span><span class="n">name</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="c1"># unbound methods show up as mere functions in the values of</span>
+        <span class="c1"># cls.__dict__,so we have to go through getattr</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">methodsAsFunctions</span> <span class="ow">and</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logfunction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">FunctionType</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="vm">__name__</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logmethod</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">displayName</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">FunctionType</span><span class="p">):</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">logfunction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">log</span> <span class="o">=</span> <span class="n">log</span><span class="p">,</span>
+                            <span class="n">displayName</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                            <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="vm">__self__</span> <span class="ow">is</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">classmethod</span><span class="p">(</span>
+                <span class="n">logmethod</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="vm">__func__</span><span class="p">,</span> <span class="n">log</span> <span class="o">=</span> <span class="n">log</span><span class="p">,</span> <span class="n">displayName</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="bp">cls</span>
+
+<span class="k">def</span> <span class="nf">find_approximate_divisor</span><span class="p">(</span>
+    <span class="n">N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">max_cycles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">65535</span><span class="p">,</span>
+    <span class="n">points_multiple</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">min_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+    <span class="n">max_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6000</span><span class="p">,</span>
+    <span class="n">max_remaining_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+    <span class="n">min_remaining_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Find an approximate divisor for a number</span>
+
+<span class="sd">    The divisor (points) is chosen such that points * cycles &lt;= N, with</span>
+<span class="sd">    cycles as close as possible to max_cycles, with a low number of remaining</span>
+<span class="sd">    points</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        N: Number for which to find a divisor</span>
+<span class="sd">        max_cycles: Maximum number of cycles (for points * cycles)</span>
+<span class="sd">        points_multiple: Optional value that points must be a multiple of</span>
+<span class="sd">        min_points: Minimum number of waveform points.</span>
+<span class="sd">        max_points: Maximum number of waveform points.</span>
+<span class="sd">        max_remaining_points: Maximum number of remaining points.</span>
+<span class="sd">            Set to 0 to find an exact divisor</span>
+<span class="sd">        min_remaining_points: Minimum number of remaining points when not zero</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        If successful, a dict containing {&#39;points&#39;, &#39;cycles&#39;, &#39;remaining_points&#39;}</span>
+<span class="sd">        If unsuccessful, None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Minimum points can&#39;t be less than N/max_cycles</span>
+    <span class="n">min_points</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">N</span> <span class="o">/</span> <span class="n">max_cycles</span><span class="p">)),</span> <span class="n">min_points</span><span class="p">)</span>
+    <span class="c1"># Minimum points must be a multiple of points_multiple</span>
+    <span class="n">min_points</span> <span class="o">+=</span> <span class="p">(</span><span class="n">points_multiple</span> <span class="o">-</span> <span class="n">min_points</span><span class="p">)</span> <span class="o">%</span> <span class="n">points_multiple</span>
+
+    <span class="k">for</span> <span class="n">points</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">min_points</span><span class="p">,</span> <span class="n">max_points</span><span class="p">,</span> <span class="n">points_multiple</span><span class="p">):</span>
+        <span class="n">cycles</span> <span class="o">=</span> <span class="n">N</span> <span class="o">//</span> <span class="n">points</span>
+        <span class="n">remaining_points</span> <span class="o">=</span> <span class="n">N</span> <span class="o">-</span> <span class="n">points</span> <span class="o">*</span> <span class="n">cycles</span>
+
+        <span class="c1"># Increase remaining_points if there are remaining points and they</span>
+        <span class="c1"># are less than min_remaining_points</span>
+        <span class="k">if</span> <span class="n">remaining_points</span> <span class="ow">and</span> <span class="n">remaining_points</span> <span class="o">&lt;</span> <span class="n">min_remaining_points</span><span class="p">:</span>
+            <span class="n">subtract_cycles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">min_remaining_points</span> <span class="o">-</span> <span class="n">remaining_points</span><span class="p">)</span> <span class="o">/</span> <span class="n">points</span>
+            <span class="p">)</span>
+            <span class="n">remaining_points</span> <span class="o">+=</span> <span class="n">subtract_cycles</span> <span class="o">*</span> <span class="n">points</span>
+            <span class="k">if</span> <span class="n">cycles</span> <span class="o">-</span> <span class="n">subtract_cycles</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Remaining points cannot be incorporated</span>
+                <span class="k">continue</span>
+
+            <span class="n">cycles</span> <span class="o">-=</span> <span class="n">subtract_cycles</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">min_points</span> <span class="o">&lt;=</span> <span class="n">points</span> <span class="o">&lt;=</span> <span class="n">max_points</span>
+            <span class="ow">and</span> <span class="n">remaining_points</span> <span class="o">&lt;=</span> <span class="n">max_remaining_points</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">points</span><span class="p">),</span>
+                <span class="s2">&quot;cycles&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">cycles</span><span class="p">),</span>
+                <span class="s2">&quot;remaining_points&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">remaining_points</span><span class="p">),</span>
+            <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

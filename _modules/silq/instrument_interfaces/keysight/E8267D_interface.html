@@ -1,0 +1,656 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.keysight.E8267D_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.keysight.E8267D_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.keysight.E8267D_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">InstrumentInterface</span><span class="p">,</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">silq.pulses</span> <span class="k">import</span> <span class="n">Pulse</span><span class="p">,</span> <span class="n">DCPulse</span><span class="p">,</span> <span class="n">DCRampPulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">,</span> \
+    <span class="n">FrequencyRampPulse</span><span class="p">,</span> <span class="n">MarkerPulse</span><span class="p">,</span> <span class="n">PulseImplementation</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+
+<div class="viewcode-block" id="E8267DInterface"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface">[docs]</a><span class="k">class</span> <span class="nc">E8267DInterface</span><span class="p">(</span><span class="n">InstrumentInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Interface for the Keysight E8267D</span>
+
+<span class="sd">    When a `PulseSequence` is targeted in the `Layout`, the</span>
+<span class="sd">    pulses are directed to the appropriate interface. Each interface is</span>
+<span class="sd">    responsible for translating all pulses directed to it into instrument</span>
+<span class="sd">    commands. During the actual measurement, the instrument&#39;s operations will</span>
+<span class="sd">    correspond to that required by the pulse sequence.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        instrument_name: name of instrument for which this is an interface</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For a given instrument, its associated interface can be found using</span>
+<span class="sd">            `get_instrument_interface`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Initialize channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ext1&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ext1&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;ext2&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ext2&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;I&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;Q&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Q&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;RF_out&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="n">name</span><span class="o">=</span><span class="s1">&#39;RF_out&#39;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_channels</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span><span class="p">,</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;pattern_trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                       <span class="n">name</span><span class="o">=</span><span class="s1">&#39;pattern_trig_in&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">SinePulseImplementation</span><span class="p">(</span>
+                <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frequency&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">250e3</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">44e9</span><span class="p">})]</span>
+            <span class="p">),</span>
+            <span class="n">FrequencyRampPulseImplementation</span><span class="p">(</span>
+                <span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[</span>
+                    <span class="p">(</span><span class="s1">&#39;frequency_start&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">250e3</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">44e9</span><span class="p">}),</span>
+                    <span class="p">(</span><span class="s1">&#39;frequency_stop&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">250e3</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">44e9</span><span class="p">})]</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;envelope_padding&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mf">10e-3</span><span class="p">),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Padding for any pulses that use either &quot;</span>
+                                     <span class="s2">&quot;IQ and/or FM modulation. This is to &quot;</span>
+                                     <span class="s2">&quot;ensure that any such pulses start before &quot;</span>
+                                     <span class="s2">&quot;the gate marker pulse, and end afterwards. &quot;</span>
+                                     <span class="s2">&quot;This is ignored for chirp pulses where &quot;</span>
+                                     <span class="s2">&quot;FM_mode = &#39;IQ&#39;.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;marker_amplitude&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Amplitude of marker pulse used for gating&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;modulation_channel&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="s1">&#39;ext1&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_channels</span><span class="p">),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Channel to use for FM.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;fix_frequency&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Whether to fix frequency to current &quot;</span>
+                                     <span class="s2">&quot;value, or to dynamically choose frequency&quot;</span>
+                                     <span class="s2">&quot; during setup&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;fix_frequency_deviation&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Whether to fix frequency_deviation to &quot;</span>
+                                     <span class="s2">&quot;current value, or to dynamically choose &quot;</span>
+                                     <span class="s2">&quot;deviation during setup&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;frequency_carrier_choice&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">MultiType</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">),</span>
+                                           <span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">()),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;The choice for the microwave frequency, &#39;</span>
+                                     <span class="s1">&#39;This is used if pulses with multiple &#39;</span>
+                                     <span class="s1">&#39;frequencies are used, or if frequency &#39;</span>
+                                     <span class="s1">&#39;modulation is needed. Ignored if &#39;</span>
+                                     <span class="s1">&#39;fix_frequency = True. Can be either &quot;max&quot;,&#39;</span>
+                                     <span class="s1">&#39;&quot;min&quot;, or &quot;center&quot;, or a number which is &#39;</span>
+                                     <span class="s1">&#39;the offset from the center&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;frequency&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;frequency_deviation&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;IQ_modulation&#39;</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;off&#39;</span><span class="p">),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Whether to use IQ modulation. This &#39;</span>
+                                     <span class="s1">&#39;cannot be directly set, but is determined &#39;</span>
+                                     <span class="s1">&#39;by FM_mode and whether pulses have &#39;</span>
+                                     <span class="s1">&#39;frequency_sideband not None&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;FM_mode&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="s1">&#39;ramp&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;ramp&#39;</span><span class="p">,</span> <span class="s1">&#39;IQ&#39;</span><span class="p">),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Type of frequency modulation used. &quot;</span>
+                                     <span class="s2">&quot;Can be either &#39;ramp&#39; in which case the &quot;</span>
+                                     <span class="s2">&quot;internal FM is used by converting a DC &quot;</span>
+                                     <span class="s2">&quot;amplitude from an ext port, or &#39;IQ&#39;, in &quot;</span>
+                                     <span class="s2">&quot;which case the internal FM is turned off.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="E8267DInterface.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Pulse</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Additional pulses needed by instrument after targeting of main pulses</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connections: List of all connections in the layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of additional pulses, such as IQ modulation pulses</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">frequency_sidebands</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span><span class="p">))</span>
+                               <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+                               <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;IQ&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">frequency_sidebands</span> <span class="o">==</span> <span class="p">{</span><span class="kc">None</span><span class="p">},</span> \
+                <span class="s2">&quot;pulse.frequency_sideband must be None when FM_mode is &#39;IQ&#39;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">frequency_sidebands</span> <span class="o">==</span> <span class="p">{</span><span class="kc">None</span><span class="p">}</span> <span class="ow">or</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">frequency_sidebands</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;Sideband frequencies must either all be None, or all not &#39;</span> \
+                <span class="n">f</span><span class="s1">&#39;None when FM_mode is &quot;ramp&quot; (0 Hz is allowed). &#39;</span> \
+                <span class="n">f</span><span class="s1">&#39;frequency_sidebands: </span><span class="si">{frequency_sidebands}</span><span class="s1">&#39;</span>
+
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">frequency_sidebands</span><span class="p">:</span>
+            <span class="n">frequency_sidebands</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">frequency_sidebands</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;IQ&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IQ_modulation</span><span class="o">.</span><span class="n">_save_val</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IQ_modulation</span><span class="o">.</span><span class="n">_save_val</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Find minimum and maximum frequency</span>
+        <span class="n">min_frequency</span> <span class="o">=</span> <span class="n">max_frequency</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">:</span>
+            <span class="n">frequency_deviation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="s1">&#39;frequency_deviation&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">frequency_sideband</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+
+            <span class="n">pulse_min_frequency</span> <span class="o">=</span> <span class="n">pulse_max_frequency</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span>
+            <span class="k">if</span> <span class="n">frequency_deviation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pulse_min_frequency</span> <span class="o">-=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_deviation</span>
+                <span class="n">pulse_max_frequency</span> <span class="o">+=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_deviation</span>
+            <span class="k">if</span> <span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pulse_min_frequency</span> <span class="o">-=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+                <span class="n">pulse_max_frequency</span> <span class="o">-=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+
+            <span class="k">if</span> <span class="n">min_frequency</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">pulse_min_frequency</span> <span class="o">&lt;</span> <span class="n">min_frequency</span><span class="p">:</span>
+                <span class="n">min_frequency</span> <span class="o">=</span> <span class="n">pulse_min_frequency</span>
+            <span class="k">if</span> <span class="n">max_frequency</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">pulse_max_frequency</span> <span class="o">&gt;</span> <span class="n">max_frequency</span><span class="p">:</span>
+                <span class="n">max_frequency</span> <span class="o">=</span> <span class="n">pulse_max_frequency</span>
+
+        <span class="n">min_frequency</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">min_frequency</span><span class="p">))</span>
+        <span class="n">max_frequency</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">max_frequency</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fix_frequency</span><span class="p">():</span>
+            <span class="c1"># Choose center frequency</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_carrier_choice</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;center&#39;</span><span class="p">:</span>
+                <span class="n">frequency_carrier</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">min_frequency</span> <span class="o">+</span> <span class="n">max_frequency</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_carrier_choice</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span>
+                <span class="n">frequency_carrier</span> <span class="o">=</span> <span class="n">min_frequency</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_carrier_choice</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span>
+                <span class="n">frequency_carrier</span> <span class="o">=</span> <span class="n">max_frequency</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># value away from center</span>
+                <span class="n">frequency_carrier</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">min_frequency</span> <span class="o">+</span> <span class="n">max_frequency</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="n">frequency_carrier</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_carrier_choice</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="n">frequency_carrier</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fix_frequency_deviation</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">max</span><span class="p">([</span><span class="n">max_frequency</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">(),</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span> <span class="o">-</span> <span class="n">min_frequency</span><span class="p">]))))</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">80e6</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;IQ&#39;</span><span class="p">,</span> \
+            <span class="s2">&quot;Maximum FM frequency deviation is 80 MHz if FM_mode == &#39;ramp&#39;. &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;Current frequency deviation: {self.frequency_deviation()/1e6} MHz&quot;</span>
+
+        <span class="n">additional_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">:</span>
+            <span class="n">additional_pulses</span> <span class="o">+=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">get_additional_pulses</span><span class="p">(</span><span class="n">interface</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">additional_pulses</span></div>
+
+<div class="viewcode-block" id="E8267DInterface.setup"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set up instrument after layout has been targeted by pulse sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs: Unused setup kwargs provided from Layout</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">RF_output</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">phase_modulation</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+        <span class="n">powers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">({</span><span class="n">pulse</span><span class="o">.</span><span class="n">power</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">})</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">powers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Cannot handle multiple pulse powers&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">powers</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ramp&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">frequency_modulation</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">frequency_modulation_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modulation_channel</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">frequency_modulation</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">pulse_modulation</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">pulse_modulation_source</span><span class="p">(</span><span class="s1">&#39;ext&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">output_modulation</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">IQ_modulation</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;on&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;IQ&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">internal_IQ_modulation</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">internal_IQ_modulation</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="E8267DInterface.start"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start instrument&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">RF_output</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>  <span class="c1"># Sleep a short while for the RF to output</span></div>
+
+<div class="viewcode-block" id="E8267DInterface.stop"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.E8267DInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop instrument&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">RF_output</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SinePulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">SinePulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">SinePulse</span>
+
+<div class="viewcode-block" id="SinePulseImplementation.target_pulse"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.target_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">target_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Pulse must have power defined&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">target_pulse</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SinePulseImplementation.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.SinePulseImplementation.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">:</span> <span class="n">InstrumentInterface</span><span class="p">):</span>
+        <span class="c1"># Add an envelope pulse</span>
+        <span class="n">additional_pulses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">MarkerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                        <span class="n">amplitude</span><span class="o">=</span><span class="n">interface</span><span class="o">.</span><span class="n">marker_amplitude</span><span class="p">(),</span>
+                        <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;trig_in&#39;</span><span class="p">})]</span>
+
+        <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">IQ_modulation</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;off&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># No IQ modulation nor FM</span>
+                <span class="n">amplitude_FM</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># No IQ modulation, but FM</span>
+                <span class="n">frequency_difference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+                <span class="n">amplitude_FM</span> <span class="o">=</span> <span class="n">frequency_difference</span> <span class="o">/</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">()</span>
+                <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># interface.IQ_modulation() == &#39;on&#39;</span>
+            <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ramp&#39;</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+                    <span class="s2">&quot;Pulse.frequency_sideband must be defined when &quot;</span> \
+                    <span class="s2">&quot;FM_mode = &#39;ramp&#39; and IQ_modulation = &#39;on&#39;&quot;</span>
+
+                <span class="n">frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+                <span class="n">frequency_difference</span> <span class="o">=</span> <span class="n">frequency</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+                <span class="n">amplitude_FM</span> <span class="o">=</span> <span class="n">frequency_difference</span> <span class="o">/</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">()</span>
+                <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># interface.FM_mode() == &#39;IQ&#39;</span>
+                <span class="n">amplitude_FM</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">frequency_IQ</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_pulses</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+                <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_I&#39;</span><span class="p">,</span>
+                          <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">+</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">frequency</span><span class="o">=</span><span class="n">frequency_IQ</span><span class="p">,</span>
+                          <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">phase</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">phase</span><span class="p">,</span>
+                          <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                              <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;I&#39;</span><span class="p">}),</span>
+                <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_Q&#39;</span><span class="p">,</span>
+                          <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">+</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">frequency</span><span class="o">=</span><span class="n">frequency_IQ</span><span class="p">,</span>
+                          <span class="n">phase</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">phase</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span>
+                          <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                              <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;Q&#39;</span><span class="p">})])</span>
+
+        <span class="k">if</span> <span class="n">amplitude_FM</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">amplitude_FM</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mf">1e-13</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s1">&#39;abs(amplitude) </span><span class="si">{amplitude_FM}</span><span class="s1"> cannot be higher than 1&#39;</span>
+
+            <span class="n">additional_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                        <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">+</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                        <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude_FM</span><span class="p">,</span>
+                        <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">modulation_channel</span><span class="p">()}))</span>
+        <span class="k">return</span> <span class="n">additional_pulses</span></div></div>
+
+
+<div class="viewcode-block" id="FrequencyRampPulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">FrequencyRampPulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">FrequencyRampPulse</span>
+
+<div class="viewcode-block" id="FrequencyRampPulseImplementation.target_pulse"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.target_pulse">[docs]</a>    <span class="k">def</span> <span class="nf">target_pulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;Pulse must have power defined </span><span class="si">{pulse}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_start</span> <span class="o">!=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">frequency_stop</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s2">&quot;Pulse frequency_start must differ from frequency_stop </span><span class="si">{pulse}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">target_pulse</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FrequencyRampPulseImplementation.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.E8267D_interface.FrequencyRampPulseImplementation.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">:</span> <span class="n">InstrumentInterface</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&gt;=</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span> \
+            <span class="n">f</span><span class="s2">&quot;Keysight E8267D uses envelope padding &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;{interface.envelope_padding()} s before and after pulse for FM &quot;</span>\
+            <span class="n">f</span><span class="s2">&quot;and IQ modulation, so this is the minimum pulse.t_start.&quot;</span>
+
+        <span class="c1"># Add an envelope pulse</span>
+        <span class="n">additional_pulses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">MarkerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                        <span class="n">amplitude</span><span class="o">=</span><span class="n">interface</span><span class="o">.</span><span class="n">marker_amplitude</span><span class="p">(),</span>
+                        <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                            <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;trig_in&#39;</span><span class="p">},</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.pulse.name}</span><span class="s1">_marker&#39;</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">IQ_modulation</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;off&#39;</span><span class="p">:</span>
+            <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_IQ_start</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_IQ_stop</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_offset</span> <span class="o">=</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">interface</span><span class="o">.</span><span class="n">FM_mode</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ramp&#39;</span><span class="p">:</span>  <span class="c1"># interface.IQ_modulation() == &#39;on&#39;</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+                <span class="s2">&quot;Pulse.frequency_sideband must be defined when &quot;</span> \
+                <span class="s2">&quot;FM_mode = &#39;ramp&#39; and IQ_modulation = &#39;on&#39;&quot;</span>
+            <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+            <span class="n">frequency_IQ_start</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_IQ_stop</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_sideband</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># interface.FM_mode() == &#39;IQ&#39;</span>
+            <span class="n">frequency_IQ</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frequency_IQ_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+            <span class="n">frequency_IQ_stop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_stop</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+            <span class="n">frequency_offset</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">frequency_IQ</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_pulses</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+                <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_I&#39;</span><span class="p">,</span>
+                          <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">+</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">frequency</span><span class="o">=</span><span class="n">frequency_IQ</span><span class="p">,</span>
+                          <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">phase</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                          <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                              <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;I&#39;</span><span class="p">}),</span>
+                <span class="n">SinePulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_Q&#39;</span><span class="p">,</span>
+                          <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">+</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                          <span class="n">frequency</span><span class="o">=</span><span class="n">frequency_IQ</span><span class="p">,</span>
+                          <span class="n">phase</span><span class="o">=-</span><span class="mi">90</span><span class="p">,</span>
+                          <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                              <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;Q&#39;</span><span class="p">})])</span>
+        <span class="k">elif</span> <span class="n">frequency_IQ_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_pulses</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+                <span class="n">FrequencyRampPulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_I&#39;</span><span class="p">,</span>
+                                   <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span>
+                                   <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                                   <span class="n">frequency_start</span><span class="o">=</span><span class="n">frequency_IQ_start</span><span class="p">,</span>
+                                   <span class="n">frequency_stop</span><span class="o">=</span><span class="n">frequency_IQ_stop</span><span class="p">,</span>
+                                   <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">phase</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                   <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                       <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                       <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;I&#39;</span><span class="p">}),</span>
+                <span class="n">FrequencyRampPulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sideband_Q&#39;</span><span class="p">,</span>
+                                   <span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span>
+                                   <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                                   <span class="n">frequency_start</span><span class="o">=</span><span class="n">frequency_IQ_start</span><span class="p">,</span>
+                                   <span class="n">frequency_stop</span><span class="o">=</span><span class="n">frequency_IQ_stop</span><span class="p">,</span>
+                                   <span class="n">amplitude</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">phase</span><span class="o">=-</span><span class="mi">90</span><span class="p">,</span>
+                                   <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                       <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                       <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="s1">&#39;Q&#39;</span><span class="p">})])</span>
+
+        <span class="k">if</span> <span class="n">frequency_offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Add a DC ramp pulse for FM</span>
+            <span class="n">amplitude_start</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_start</span> <span class="o">-</span> <span class="n">frequency_offset</span><span class="p">)</span> \
+                              <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">interface</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">())</span>
+            <span class="n">amplitude_stop</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency_stop</span> <span class="o">-</span> <span class="n">frequency_offset</span><span class="p">)</span> \
+                             <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">interface</span><span class="o">.</span><span class="n">frequency_deviation</span><span class="p">())</span>
+            <span class="n">additional_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">DCRampPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span>
+                            <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                            <span class="n">amplitude_start</span><span class="o">=</span><span class="n">amplitude_start</span><span class="p">,</span>
+                            <span class="n">amplitude_stop</span><span class="o">=</span><span class="n">amplitude_stop</span><span class="p">,</span>
+                            <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">modulation_channel</span><span class="p">()}))</span>
+
+            <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Add padding DC pulses at start and end</span>
+                <span class="n">additional_pulses</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span>
+                    <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                            <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span>
+                            <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude_start</span><span class="p">,</span>
+                            <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">modulation_channel</span><span class="p">()}),</span>
+                    <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                            <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="o">+</span><span class="n">interface</span><span class="o">.</span><span class="n">envelope_padding</span><span class="p">(),</span>
+                            <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude_stop</span><span class="p">,</span>
+                            <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                                <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                                <span class="s1">&#39;input_channel&#39;</span><span class="p">:</span> <span class="n">interface</span><span class="o">.</span><span class="n">modulation_channel</span><span class="p">()})))</span>
+        <span class="k">return</span> <span class="n">additional_pulses</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,1258 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.pulses.pulse_sequences &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.pulses.pulse_sequences</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.pulses.pulse_sequences</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">.pulse_modules</span> <span class="k">import</span> <span class="n">PulseSequence</span>
+<span class="kn">from</span> <span class="nn">.pulse_types</span> <span class="k">import</span> <span class="n">DCPulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">,</span> <span class="n">FrequencyRampPulse</span><span class="p">,</span> <span class="n">Pulse</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PulseSequenceGenerator"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.PulseSequenceGenerator">[docs]</a><span class="k">class</span> <span class="nc">PulseSequenceGenerator</span><span class="p">(</span><span class="n">PulseSequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for a `PulseSequence` that is generated from settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulses</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># Update value in pulse settings if it exists</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+<div class="viewcode-block" id="PulseSequenceGenerator.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.PulseSequenceGenerator.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Needs to be implemented in subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PulseSequenceGenerator.up_to_date"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.PulseSequenceGenerator.up_to_date">[docs]</a>    <span class="k">def</span> <span class="nf">up_to_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Compare to attributes when pulse sequence was created</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span></div></div>
+
+
+<div class="viewcode-block" id="ESRPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.ESRPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">ESRPulseSequence</span><span class="p">(</span><span class="n">PulseSequenceGenerator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`PulseSequenceGenerator` for electron spin resonance (ESR).</span>
+
+<span class="sd">    This pulse sequence can handle many of the basic pulse sequences involving</span>
+<span class="sd">    ESR. The pulse sequence is generated from its pulse settings attributes.</span>
+
+<span class="sd">    In general the pulse sequence is as follows:</span>
+
+<span class="sd">    1. Perform any pre_pulses defined in ``ESRPulseSequence.pre_pulses``.</span>
+<span class="sd">    2. Perform stage pulse ``ESRPulseSequence.ESR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">       By default, this is the ``plunge`` pulse.</span>
+<span class="sd">    3. Perform ESR pulse within plunge pulse, the delay from start of plunge</span>
+<span class="sd">       pulse is defined in ``ESRPulseSequence.ESR[&#39;pulse_delay&#39;]``.</span>
+<span class="sd">    4. Perform read pulse ``ESRPulseSequence.ESR[&#39;read_pulse&#39;]``.</span>
+<span class="sd">    5. Repeat steps 2 and 3 for each ESR pulse in</span>
+<span class="sd">       ``ESRPulseSequence.ESR[&#39;ESR_pulses&#39;]``, which by default contains single</span>
+<span class="sd">       pulse ``ESRPulseSequence.ESR[&#39;ESR_pulse&#39;]``.</span>
+<span class="sd">    6. Perform empty-plunge-read sequence (EPR), but only if</span>
+<span class="sd">       ``ESRPulseSequence.EPR[&#39;enabled&#39;]`` is True.</span>
+<span class="sd">       EPR pulses are defined in ``ESRPulseSequence.EPR[&#39;pulses&#39;]``.</span>
+<span class="sd">    7. Perform any post_pulses defined in ``ESRPulseSequence.post_pulses``.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        ESR (dict): Pulse settings for the ESR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;plunge `DCPulse`.</span>
+<span class="sd">            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.</span>
+<span class="sd">              Default is &#39;ESR&#39; ``SinePulse``.</span>
+<span class="sd">            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to</span>
+<span class="sd">              use. Can be strings, in which case the string should be an item in</span>
+<span class="sd">              ``ESR`` whose value is a `Pulse`.</span>
+<span class="sd">            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage</span>
+<span class="sd">              pulse. Default is 5 ms.</span>
+<span class="sd">            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and</span>
+<span class="sd">              initialization of electron. Default is &#39;read_initialize`</span>
+<span class="sd">              `DCPulse`.</span>
+
+<span class="sd">        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the</span>
+<span class="sd">            pulse sequence. This part is optional, and is used for non-ESR</span>
+<span class="sd">            contast, and to measure dark counts and hence ESR contrast.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``enabled`` (bool): Enable EPR sequence.</span>
+<span class="sd">            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.</span>
+<span class="sd">              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.</span>
+
+<span class="sd">        pre_pulses (List[Pulse]): Pulses before main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        post_pulses (List[Pulse]): Pulses after main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pulse_settings (dict): Dict containing all pulse settings.</span>
+<span class="sd">        **kwargs: Additional kwargs to `PulseSequence`.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        The following code measures two ESR frequencies and performs an EPR</span>
+<span class="sd">        from which the contrast can be determined for each ESR frequency:</span>
+
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence = ESRPulseSequence()</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.ESR[&#39;pulse_delay&#39;] = 5e-3</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.ESR[&#39;stage_pulse&#39;] = DCPulse[&#39;plunge&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.ESR[&#39;ESR_pulse&#39;] = FrequencyRampPulse(&#39;ESR_adiabatic&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.ESR_frequencies = [39e9, 39.1e9]</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.EPR[&#39;enabled&#39;] = True</span>
+<span class="sd">        &gt;&gt;&gt; ESR_pulse_sequence.pulse_sequence.generate()</span>
+
+<span class="sd">        The total pulse sequence is plunge-read-plunge-read-empty-plunge-read</span>
+<span class="sd">        with an ESR pulse in the first two plunge pulses, 5 ms after the start</span>
+<span class="sd">        of the plunge pulse. The ESR pulses have different frequencies.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        For given pulse settings, `ESRPulseSequence.generate` will recreate the</span>
+<span class="sd">        pulse sequence from settings.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ESR_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;read_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read_initialize&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;ESR_pulses&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;EPR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">EPR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;pulses&#39;</span><span class="p">:[</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;empty&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read_long&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">)]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;final&#39;</span><span class="p">)]</span>
+
+        <span class="c1"># Primary ESR pulses, the first ESR pulse in each plunge.</span>
+        <span class="c1"># Used for assigning names during analysis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_ESR_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ESR_frequencies</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ESR_frequencies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">Pulse</span><span class="p">):</span>
+                <span class="n">ESR_frequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">ESR_frequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">pulse</span><span class="p">]</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="c1"># Pulse is a list containing other pulses</span>
+                <span class="c1"># These pulses will be joined in a single plunge</span>
+                <span class="n">ESR_subfrequencies</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">subpulse</span> <span class="ow">in</span> <span class="n">pulse</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpulse</span><span class="p">,</span> <span class="n">Pulse</span><span class="p">):</span>
+                        <span class="n">ESR_subfrequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subpulse</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">ESR_subfrequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">subpulse</span><span class="p">]</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;ESR subpulse must be a pulse or&#39;</span>
+                                           <span class="n">f</span><span class="s1">&#39;a string: {repr(subpulse)}&#39;</span><span class="p">)</span>
+                <span class="n">ESR_frequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ESR_subfrequencies</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;ESR pulse must be Pulse, str, or list &#39;</span>
+                                   <span class="n">f</span><span class="s1">&#39;of pulses: </span><span class="si">{pulse}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ESR_frequencies</span>
+
+<div class="viewcode-block" id="ESRPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.ESRPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ESR_frequencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add ESR pulses to the pulse sequence</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ESR_frequencies: List of ESR frequencies. If provided, the pulses in</span>
+<span class="sd">                ESR[&#39;ESR_pulses&#39;] will be reset to  copies of ESR[&#39;ESR_pulse&#39;]</span>
+<span class="sd">                with the provided frequencies</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">              Each element in ESR_frequencies can also be a list of multiple</span>
+<span class="sd">              frequencies, in which case multiple pulses with the provided</span>
+<span class="sd">              subfrequencies will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Manually set ESR frequencies if not explicitly provided, and a pulse</span>
+        <span class="c1"># sequence has not yet been generated or the ``ESR[&#39;ESR_pulse&#39;]`` has</span>
+        <span class="c1"># been modified</span>
+        <span class="k">if</span> <span class="n">ESR_frequencies</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">][</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">]):</span>
+            <span class="c1"># Generate ESR frequencies via property</span>
+            <span class="n">ESR_frequencies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR_frequencies</span>
+
+        <span class="k">if</span> <span class="n">ESR_frequencies</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">][</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">]):</span>
+            <span class="c1"># Generate ESR frequencies via property</span>
+            <span class="n">ESR_frequencies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR_frequencies</span>
+
+        <span class="k">if</span> <span class="n">ESR_frequencies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Resetting all ESR pulses to default ESR[&#39;ESR_pulse&#39;]&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ESR_frequency</span> <span class="ow">in</span> <span class="n">ESR_frequencies</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_frequency</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                    <span class="n">ESR_pulse</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">])</span>
+                    <span class="n">ESR_pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">ESR_frequency</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_frequency</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">ESR_pulse</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">ESR_subfrequency</span> <span class="ow">in</span> <span class="n">ESR_frequency</span><span class="p">:</span>
+                        <span class="n">ESR_subpulse</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">])</span>
+                        <span class="n">ESR_subpulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">ESR_subfrequency</span>
+                        <span class="n">ESR_pulse</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ESR_subpulse</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Each ESR frequency must be a number or a&#39;</span>
+                                       <span class="n">f</span><span class="s1">&#39; list of numbers. </span><span class="si">{ESR_frequencies}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">)</span>
+
+        <span class="c1"># Convert any pulse strings to pulses if necessary</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">pulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">pulse</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse_copy</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="c1"># Pulse is a list containing other pulses</span>
+                <span class="c1"># These pulses will be joined in a single plunge</span>
+                <span class="k">for</span> <span class="n">kk</span><span class="p">,</span> <span class="n">subpulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pulse</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">subpulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">subpulse</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">kk</span><span class="p">]</span> <span class="o">=</span> <span class="n">subpulse_copy</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_ESR_pulses</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Clear primary ESR pulses (first in each plunge)</span>
+        <span class="c1"># Add pulses to pulse sequence</span>
+        <span class="k">for</span> <span class="n">single_plunge_ESR_pulses</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]:</span>
+            <span class="c1"># Each element should be the ESR pulses to apply within a single</span>
+            <span class="c1"># plunge, between elements there is a read</span>
+
+            <span class="n">ESR_pulse</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">single_plunge_ESR_pulses</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="c1"># Single ESR pulse provided, turn into list</span>
+                <span class="n">single_plunge_ESR_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">single_plunge_ESR_pulses</span><span class="p">]</span>
+
+            <span class="n">plunge_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+            <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">plunge_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ESR_subpulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">single_plunge_ESR_pulses</span><span class="p">):</span>
+                <span class="c1"># Add a plunge and read pulse for each frequency</span>
+                <span class="n">ESR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ESR_subpulse</span><span class="p">)</span>
+                <span class="n">t_connect</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+                <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                    <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">primary_ESR_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ESR_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">plunge_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                        <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;read_pulse&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ESRPulseSequence.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.ESRPulseSequence.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ESR_frequencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Update self.ESR[&#39;ESR_pulses&#39;]. Converts any pulses that are strings to</span>
+        <span class="c1"># actual pulses, and sets correct frequencies</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">(</span><span class="n">ESR_frequencies</span><span class="o">=</span><span class="n">ESR_frequencies</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">EPR</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_EPR_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">EPR</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ESR_pulses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="T2ElectronPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.T2ElectronPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">T2ElectronPulseSequence</span><span class="p">(</span><span class="n">PulseSequenceGenerator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`PulseSequenceGenerator` for electron coherence (T2) measurements.</span>
+
+<span class="sd">    This pulse sequence can handle measurements on the electron coherence time,</span>
+<span class="sd">    including adding refocusing pulses</span>
+
+<span class="sd">    In general the pulse sequence is as follows:</span>
+
+<span class="sd">    1. Perform any pre_pulses defined in ``T2ElectronPulseSequence.pre_pulses``.</span>
+<span class="sd">    2. Perform stage pulse ``T2ElectronPulseSequence.ESR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">       By default, this is the ``plunge`` pulse.</span>
+<span class="sd">    3. Perform initial ESR pulse</span>
+<span class="sd">       ``T2ElectronPulseSequence.ESR[&#39;ESR_initial_pulse&#39;]`` within plunge pulse,</span>
+<span class="sd">       the delay until start of the ESR pulse is defined in</span>
+<span class="sd">       ``T2ElectronPulseSequence.ESR[&#39;pre_delay&#39;]``.</span>
+<span class="sd">    4. For ``T2ElectronPulseSequence.ESR[&#39;num_refocusing_pulses&#39;]`` times, wait</span>
+<span class="sd">       for ``T2ElectronPulseSequence.ESR[&#39;inter_delay&#39;]` and apply</span>
+<span class="sd">       ``T2ElectronPulseSequence.ESR[&#39;ESR_refocusing_pulse]``.</span>
+<span class="sd">    5. Wait ``T2ElectronPulseSequence.ESR[&#39;ESR_refocusing_pulse&#39;]`` and apply</span>
+<span class="sd">       ``T2ElectronPulseSequence.ESR[&#39;ESR_final_pulse&#39;]``.</span>
+<span class="sd">    6. Wait ``T2ElectronPulseSequence.ESR[&#39;post_delay&#39;]``, then stop stage pulse</span>
+<span class="sd">       and Perform read pulse ``T2ElectronPulseSequence.ESR[&#39;read_pulse&#39;]``.</span>
+<span class="sd">    7. Perform empty-plunge-read sequence (EPR), but only if</span>
+<span class="sd">       ``T2ElectronPulseSequence.EPR[&#39;enabled&#39;]`` is True.</span>
+<span class="sd">       EPR pulses are defined in ``T2ElectronPulseSequence.EPR[&#39;pulses&#39;]``.</span>
+<span class="sd">    8. Perform any post_pulses defined in ``ESRPulseSequence.post_pulses``.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        ESR (dict): Pulse settings for the ESR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            :stage_pulse (Pulse): Stage pulse in which to perform ESR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;plunge `DCPulse`.</span>
+<span class="sd">            :ESR_initial_pulse (Pulse): Initial ESR pulse to apply within</span>
+<span class="sd">              stage pulse. Default is ``ESR_piHalf`` `SinePulse`.</span>
+<span class="sd">              Ignored if set to ``None``</span>
+<span class="sd">            :ESR_refocusing_pulse (Pulse): Refocusing ESR pulses between</span>
+<span class="sd">              initial and final ESR pulse. Zero refocusing pulses measures</span>
+<span class="sd">              T2star, one refocusing pulse measures T2Echo.</span>
+<span class="sd">              Default is ``ESR_pi`` `SinePulse`.</span>
+<span class="sd">            :ESR_final_pulse (Pulse): Final ESR pulse within stage pulse.</span>
+<span class="sd">              Default is ``ESR_piHalf`` `SinePulse`.</span>
+<span class="sd">              Ignored if set to ``None``.</span>
+<span class="sd">            :num_refocusing_pulses (int): Number of refocusing pulses</span>
+<span class="sd">              ``T2ElectronPulseSequence.ESR[&#39;ESR_refocusing_pulse&#39;]`` to apply.</span>
+<span class="sd">            :pre_delay (float): Delay after stage pulse before first ESR</span>
+<span class="sd">              pulse.</span>
+<span class="sd">            :inter_delay (float): Delay between successive ESR pulses.</span>
+<span class="sd">            :post_delay (float): Delay after final ESR pulse.</span>
+<span class="sd">            :read_pulse (Pulse): Pulse after stage pulse for readout and</span>
+<span class="sd">              initialization of electron. Default is &#39;read_initialize`</span>
+<span class="sd">              `DCPulse`.</span>
+
+<span class="sd">        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the</span>
+<span class="sd">            pulse sequence. This part is optional, and is used for non-ESR</span>
+<span class="sd">            contast, and to measure dark counts and hence ESR contrast.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            :enabled: (bool): Enable EPR sequence.</span>
+<span class="sd">            :pulses: (List[Pulse]): List of pulses for EPR sequence.</span>
+<span class="sd">              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.</span>
+
+<span class="sd">        pre_pulses (List[Pulse]): Pulses before main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        post_pulses (List[Pulse]): Pulses after main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pulse_settings (dict): Dict containing all pulse settings.</span>
+<span class="sd">        **kwargs: Additional kwargs to `PulseSequence`.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        For given pulse settings, `T2ElectronPulseSequence.generate` will</span>
+<span class="sd">        recreate the pulse sequence from settings.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ESR_initial_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR_PiHalf&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ESR_refocusing_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR_Pi&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ESR_final_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR_PiHalf&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;read_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">),</span>
+
+            <span class="s1">&#39;num_refocusing_pulses&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;EPR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">EPR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;pulses&#39;</span><span class="p">:[</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;empty&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read_long&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">)]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="T2ElectronPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.T2ElectronPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Add stage pulse, duration will be specified later</span>
+        <span class="n">stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Add initial pulse (evolve to state where T2 effects can be observed)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_initial_pulse&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ESR_initial_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_initial_pulse&#39;</span><span class="p">])</span>
+            <span class="n">ESR_initial_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">ESR_initial_pulse</span><span class="o">.</span><span class="n">duration</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;num_refocusing_pulses&#39;</span><span class="p">]):</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">]</span>
+            <span class="n">ESR_refocusing_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_refocusing_pulse&#39;</span><span class="p">])</span>
+            <span class="n">ESR_refocusing_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">ESR_refocusing_pulse</span><span class="o">.</span><span class="n">duration</span>
+
+        <span class="n">t</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_final_pulse&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ESR_final_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_final_pulse&#39;</span><span class="p">])</span>
+            <span class="n">ESR_final_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">ESR_final_pulse</span><span class="o">.</span><span class="n">duration</span>
+
+        <span class="n">t</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">]</span>
+
+        <span class="n">stage_pulse</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">t_start</span>
+
+        <span class="c1"># Add final read pulse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;read_pulse&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="T2ElectronPulseSequence.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.T2ElectronPulseSequence.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the pulse sequence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize pulse sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">EPR</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">EPR</span><span class="p">[</span><span class="s1">&#39;pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Create copy of current pulse settings for comparison later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="NMRPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">NMRPulseSequence</span><span class="p">(</span><span class="n">PulseSequenceGenerator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).</span>
+
+<span class="sd">    This pulse sequence can handle many of the basic pulse sequences involving</span>
+<span class="sd">    NMR. The pulse sequence is generated from its pulse settings attributes.</span>
+
+<span class="sd">    In general, the pulse sequence is as follows:</span>
+
+<span class="sd">    1. Perform any pre_pulses defined in ``NMRPulseSequence.pre_pulses``.</span>
+<span class="sd">    2. Perform NMR sequence</span>
+
+<span class="sd">       1. Perform stage pulse ``NMRPulseSequence.NMR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">          Default is &#39;empty&#39; `DCPulse`.</span>
+<span class="sd">       2. Perform NMR pulses within the stage pulse. The NMR pulses defined</span>
+<span class="sd">          in ``NMRPulseSequence.NMR[&#39;NMR_pulses&#39;]`` are applied successively.</span>
+<span class="sd">          The delay after start of the stage pulse is</span>
+<span class="sd">          ``NMRPulseSequence.NMR[&#39;pre_delay&#39;]``, delays between NMR pulses is</span>
+<span class="sd">          ``NMRPulseSequence.NMR[&#39;inter_delay&#39;]``, and the delay after the final</span>
+<span class="sd">          NMR pulse is ``NMRPulseSequence.NMR[&#39;post_delay&#39;]``.</span>
+
+<span class="sd">    3. Perform ESR sequence</span>
+
+<span class="sd">       1. Perform stage pulse ``NMRPulseSequence.ESR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">          Default is &#39;plunge&#39; `DCPulse`.</span>
+<span class="sd">       2. Perform ESR pulse within stage pulse for first pulse in</span>
+<span class="sd">          ``NMRPulseSequence.ESR[&#39;ESR_pulses&#39;]``.</span>
+<span class="sd">       3. Perform ``NMRPulseSequence.ESR[&#39;read_pulse&#39;]``, and acquire trace.</span>
+<span class="sd">       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses</span>
+<span class="sd">          usually correspond to different ESR frequencies (see</span>
+<span class="sd">          `NMRPulseSequence`.ESR_frequencies).</span>
+<span class="sd">       5. Repeat steps 1 - 4 for ``NMRPulseSequence.ESR[&#39;shots_per_frequency&#39;]``</span>
+<span class="sd">          This effectively interleaves the ESR pulses, which counters effects of</span>
+<span class="sd">          the nucleus flipping within an acquisition.</span>
+
+<span class="sd">    By measuring the average up proportion for each ESR frequency, a switching</span>
+<span class="sd">    between high and low up proportion indicates a flipping of the nucleus</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        NMR (dict): Pulse settings for the NMR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform NMR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;empty&#39; `DCPulse`. Duration of stage</span>
+<span class="sd">              pulse is adapted to NMR pulses and delays.</span>
+<span class="sd">            * ``NMR_pulse`` (Pulse): Default NMR pulse to use.</span>
+<span class="sd">              By default &#39;NMR&#39; `SinePulse`.</span>
+<span class="sd">            * ``NMR_pulses`` (List[Union[str, Pulse]]): List of NMR pulses to</span>
+<span class="sd">              successively apply. Can be strings, in which case the string</span>
+<span class="sd">              should be an item in ``NMR`` whose value is a `Pulse`. Default is</span>
+<span class="sd">              single element ``NMRPulseSequence.NMR[&#39;NMR_pulse&#39;]``.</span>
+<span class="sd">            * ``pre_delay`` (float): Delay after start of ``stage`` pulse,</span>
+<span class="sd">              until first NMR pulse.</span>
+<span class="sd">            * ``inter_delay`` (float): Delay between successive NMR pulses.</span>
+<span class="sd">            * ``post_delay`` (float): Delay after final NMR pulse until stage</span>
+<span class="sd">              pulse end.</span>
+
+<span class="sd">        ESR (dict): Pulse settings for the ESR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;plunge `DCPulse`.</span>
+<span class="sd">            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.</span>
+<span class="sd">              Default is &#39;ESR&#39; ``SinePulse``.</span>
+<span class="sd">            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to</span>
+<span class="sd">              use. Can be strings, in which case the string should be an item in</span>
+<span class="sd">              ``ESR`` whose value is a `Pulse`.</span>
+<span class="sd">            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage</span>
+<span class="sd">              pulse. Default is 5 ms.</span>
+<span class="sd">            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and</span>
+<span class="sd">              initialization of electron. Default is &#39;read_initialize`</span>
+<span class="sd">              `DCPulse`.</span>
+
+<span class="sd">        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the</span>
+<span class="sd">            pulse sequence. This part is optional, and is used for non-ESR</span>
+<span class="sd">            contast, and to measure dark counts and hence ESR contrast.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``enabled`` (bool): Enable EPR sequence.</span>
+<span class="sd">            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.</span>
+<span class="sd">              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.</span>
+
+<span class="sd">        pre_pulses (List[Pulse]): Pulses before main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pre_ESR_pulses (List[Pulse]): Pulses before ESR readout pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        post_pulses (List[Pulse]): Pulses after main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pulse_settings (dict): Dict containing all pulse settings.</span>
+<span class="sd">        **kwargs: Additional kwargs to `PulseSequence`.</span>
+
+<span class="sd">    See Also:</span>
+<span class="sd">        NMRParameter</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        For given pulse settings, `NMRPulseSequence.generate` will recreate the</span>
+<span class="sd">        pulse sequence from settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulses</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;NMR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;empty&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;NMR_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;NMR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;NMR_pulses&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;NMR_pulse&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;intermediate_pulses&#39;</span> <span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">2e-3</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ESR_pulse&#39;</span><span class="p">:</span> <span class="n">FrequencyRampPulse</span><span class="p">(</span><span class="s1">&#39;adiabatic_ESR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ESR_pulses&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;read_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read_initialize&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;shots_per_frequency&#39;</span><span class="p">:</span> <span class="mi">25</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_ESR_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_ESR_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NMRPulseSequence.add_NMR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRPulseSequence.add_NMR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_NMR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_sequence</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pulse_sequence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pulse_sequence</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># Convert any pulse strings to pulses if necessary</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">pulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="n">pulse</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse_copy</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="c1"># Pulse is a list containing sub-pulses</span>
+                <span class="c1"># These pulses will be sequenced during a single stage pulse</span>
+                <span class="k">for</span> <span class="n">kk</span><span class="p">,</span> <span class="n">subpulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pulse</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">subpulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="n">subpulse</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">kk</span><span class="p">]</span> <span class="o">=</span> <span class="n">subpulse_copy</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_NMR_pulses</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Clear primary NMR pulses (first in each stage pulse)</span>
+
+        <span class="c1"># Add pulses to pulse sequence</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">single_stage_NMR_pulses</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">]):</span>
+            <span class="c1"># Each element should be the NMR pulses to apply within a single</span>
+            <span class="c1"># stage, between each subsequence there will be a pre-delay and</span>
+            <span class="c1"># post-delay</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="c1"># Single NMR pulse provided, turn into list</span>
+                <span class="n">single_stage_NMR_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">single_stage_NMR_pulses</span><span class="p">]</span>
+
+            <span class="n">NMR_stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+            <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">primary_NMR_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">NMR_subpulse</span> <span class="ow">in</span> <span class="n">single_stage_NMR_pulses</span><span class="p">:</span>
+                <span class="n">NMR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">NMR_subpulse</span><span class="p">)</span>
+                <span class="n">t_connect</span><span class="p">(</span><span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+                <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                    <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">NMR_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">NMR_stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Add any intermediate pulses, except for the final NMR sequence</span>
+                <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">intermediate_pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;intermediate_pulses&#39;</span><span class="p">]:</span>
+                    <span class="n">int_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">intermediate_pulse</span><span class="p">)</span>
+                    <span class="n">t_connect</span><span class="p">(</span><span class="n">int_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+                    <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">int_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pulse_sequence</span></div>
+
+<div class="viewcode-block" id="NMRPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_sequence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">previous_pulse</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pulse_sequence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pulse_sequence</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;shots_per_frequency&#39;</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">ESR_pulses</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]:</span>
+                <span class="c1"># Add a plunge and read pulse for each frequency</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_pulses</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="c1"># Treat frequency as list, as one could add multiple ESR</span>
+                    <span class="c1"># pulses</span>
+                    <span class="n">ESR_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">ESR_pulses</span><span class="p">]</span>
+
+                <span class="n">stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ESR_pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ESR_pulses</span><span class="p">):</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="c1"># Pulse is a reference to some pulse in self.ESR</span>
+                        <span class="n">ESR_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">ESR_pulse</span><span class="p">]</span>
+
+                    <span class="n">ESR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">)</span>
+
+                    <span class="c1"># Delay also depends on any previous ESR pulses</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">k</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">]</span>
+                    <span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">],</span>
+                                                    <span class="n">offset</span><span class="o">=</span><span class="n">delay</span><span class="p">)</span>
+                <span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                            <span class="n">offset</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">t_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span>
+                <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;read_pulse&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="NMRPulseSequence.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRPulseSequence.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the pulse sequence&quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize pulse sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_NMR_pulses</span><span class="p">()</span>
+
+        <span class="c1"># Note: This was added when performing NMR on the electron-up manifold,</span>
+        <span class="c1"># where it is important to reload a spin-down electron for readout.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_ESR_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Create copy of current pulse settings for comparison later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="NMRCPMGPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRCPMGPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">NMRCPMGPulseSequence</span><span class="p">(</span><span class="n">NMRPulseSequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).</span>
+
+<span class="sd">    This pulse sequence can handle many of the basic pulse sequences involving</span>
+<span class="sd">    NMR. The pulse sequence is generated from its pulse settings attributes.</span>
+
+<span class="sd">    In general, the pulse sequence is as follows:</span>
+
+<span class="sd">    1. Perform any pre_pulses defined in ``NMRPulseSequence.pre_pulses``.</span>
+<span class="sd">    2. Perform NMR sequence</span>
+
+<span class="sd">       1. Perform stage pulse ``NMRPulseSequence.NMR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">          Default is &#39;empty&#39; `DCPulse`.</span>
+<span class="sd">       2. Perform NMR pulses within the stage pulse. The NMR pulses defined</span>
+<span class="sd">          in ``NMRPulseSequence.NMR[&#39;NMR_pulses&#39;]`` are applied successively.</span>
+<span class="sd">          The delay after start of the stage pulse is</span>
+<span class="sd">          ``NMRPulseSequence.NMR[&#39;pre_delay&#39;]``, delays between NMR pulses is</span>
+<span class="sd">          ``NMRPulseSequence.NMR[&#39;inter_delay&#39;]``, and the delay after the final</span>
+<span class="sd">          NMR pulse is ``NMRPulseSequence.NMR[&#39;post_delay&#39;]``.</span>
+
+<span class="sd">    3. Perform ESR sequence</span>
+
+<span class="sd">       1. Perform stage pulse ``NMRPulseSequence.ESR[&#39;stage_pulse&#39;]``.</span>
+<span class="sd">          Default is &#39;plunge&#39; `DCPulse`.</span>
+<span class="sd">       2. Perform ESR pulse within stage pulse for first pulse in</span>
+<span class="sd">          ``NMRPulseSequence.ESR[&#39;ESR_pulses&#39;]``.</span>
+<span class="sd">       3. Perform ``NMRPulseSequence.ESR[&#39;read_pulse&#39;]``, and acquire trace.</span>
+<span class="sd">       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses</span>
+<span class="sd">          usually correspond to different ESR frequencies (see</span>
+<span class="sd">          `NMRPulseSequence`.ESR_frequencies).</span>
+<span class="sd">       5. Repeat steps 1 - 4 for ``NMRPulseSequence.ESR[&#39;shots_per_frequency&#39;]``</span>
+<span class="sd">          This effectively interleaves the ESR pulses, which counters effects of</span>
+<span class="sd">          the nucleus flipping within an acquisition.</span>
+
+<span class="sd">    By measuring the average up proportion for each ESR frequency, a switching</span>
+<span class="sd">    between high and low up proportion indicates a flipping of the nucleus</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        NMR (dict): Pulse settings for the NMR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform NMR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;empty&#39; `DCPulse`. Duration of stage</span>
+<span class="sd">              pulse is adapted to NMR pulses and delays.</span>
+<span class="sd">            * ``NMR_pulse`` (Pulse): Default NMR pulse to use.</span>
+<span class="sd">              By default &#39;NMR&#39; `SinePulse`.</span>
+<span class="sd">            * ``NMR_pulses`` (List[Union[str, Pulse]]): List of NMR pulses to</span>
+<span class="sd">              successively apply. Can be strings, in which case the string</span>
+<span class="sd">              should be an item in ``NMR`` whose value is a `Pulse`. Default is</span>
+<span class="sd">              single element ``NMRPulseSequence.NMR[&#39;NMR_pulse&#39;]``.</span>
+<span class="sd">            * ``pre_delay`` (float): Delay after start of ``stage`` pulse,</span>
+<span class="sd">              until first NMR pulse.</span>
+<span class="sd">            * ``inter_delay`` (float): Delay between successive NMR pulses.</span>
+<span class="sd">            * ``post_delay`` (float): Delay after final NMR pulse until stage</span>
+<span class="sd">              pulse end.</span>
+
+<span class="sd">        ESR (dict): Pulse settings for the ESR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR</span>
+<span class="sd">              (e.g. plunge). Default is &#39;plunge `DCPulse`.</span>
+<span class="sd">            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.</span>
+<span class="sd">              Default is &#39;ESR&#39; ``SinePulse``.</span>
+<span class="sd">            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to</span>
+<span class="sd">              use. Can be strings, in which case the string should be an item in</span>
+<span class="sd">              ``ESR`` whose value is a `Pulse`.</span>
+<span class="sd">            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage</span>
+<span class="sd">              pulse. Default is 5 ms.</span>
+<span class="sd">            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and</span>
+<span class="sd">              initialization of electron. Default is &#39;read_initialize`</span>
+<span class="sd">              `DCPulse`.</span>
+
+<span class="sd">        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the</span>
+<span class="sd">            pulse sequence. This part is optional, and is used for non-ESR</span>
+<span class="sd">            contast, and to measure dark counts and hence ESR contrast.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``enabled`` (bool): Enable EPR sequence.</span>
+<span class="sd">            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.</span>
+<span class="sd">              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.</span>
+
+<span class="sd">        pre_pulses (List[Pulse]): Pulses before main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pre_ESR_pulses (List[Pulse]): Pulses before ESR readout pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        post_pulses (List[Pulse]): Pulses after main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pulse_settings (dict): Dict containing all pulse settings.</span>
+<span class="sd">        **kwargs: Additional kwargs to `PulseSequence`.</span>
+
+<span class="sd">    See Also:</span>
+<span class="sd">        NMRParameter</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        For given pulse settings, `NMRPulseSequence.generate` will recreate the</span>
+<span class="sd">        pulse sequence from settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulses</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;NMR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;empty&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;NMR_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;NMR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;NMR_pulses&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;NMR_pulse&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">2e-3</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ESR_pulse&#39;</span><span class="p">:</span> <span class="n">FrequencyRampPulse</span><span class="p">(</span><span class="s1">&#39;adiabatic_ESR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ESR_pulses&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ESR_pulse&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;read_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read_initialize&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;shots_per_frequency&#39;</span><span class="p">:</span> <span class="mi">25</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_ESR_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_ESR_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NMRCPMGPulseSequence.add_NMR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRCPMGPulseSequence.add_NMR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_NMR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_sequence</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pulse_sequence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pulse_sequence</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># Convert any pulse strings to pulses if necessary</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">pulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="n">pulse</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse_copy</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="c1"># Pulse is a list containing sub-pulses</span>
+                <span class="c1"># These pulses will be sequenced during a single stage pulse</span>
+                <span class="k">for</span> <span class="n">kk</span><span class="p">,</span> <span class="n">subpulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pulse</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subpulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">subpulse_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="n">subpulse</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">kk</span><span class="p">]</span> <span class="o">=</span> <span class="n">subpulse_copy</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_NMR_pulses</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Clear primary NMR pulses (first in each stage pulse)</span>
+
+        <span class="c1"># Add pulses to pulse sequence</span>
+        <span class="k">for</span> <span class="n">single_stage_NMR_pulses</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;NMR_pulses&#39;</span><span class="p">]:</span>
+            <span class="c1"># Each element should be the NMR pulses to apply within a single</span>
+            <span class="c1"># stage, between each subsequence there will be a pre-delay and</span>
+            <span class="c1"># post-delay</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="c1"># Single NMR pulse provided, turn into list</span>
+                <span class="n">single_stage_NMR_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">single_stage_NMR_pulses</span><span class="p">]</span>
+
+            <span class="n">NMR_stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+            <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">primary_NMR_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">NMR_subpulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">):</span>
+                <span class="n">NMR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">NMR_subpulse</span><span class="p">)</span>
+                <span class="n">t_connect</span><span class="p">(</span><span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+                <span class="c1"># The first and last pulses have only a single inter-delay time between pulses</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">single_stage_NMR_pulses</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                        <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">t_connect</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                        <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">NMR_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">NMR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">NMR_stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NMR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">pulse_sequence</span></div>
+
+<div class="viewcode-block" id="NMRCPMGPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRCPMGPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_sequence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">previous_pulse</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pulse_sequence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pulse_sequence</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;shots_per_frequency&#39;</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">ESR_pulses</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;ESR_pulses&#39;</span><span class="p">]:</span>
+                <span class="c1"># Add a plunge and read pulse for each frequency</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_pulses</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="c1"># Treat frequency as list, as one could add multiple ESR</span>
+                    <span class="c1"># pulses</span>
+                    <span class="n">ESR_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">ESR_pulses</span><span class="p">]</span>
+
+                <span class="n">stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+                <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ESR_pulse</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ESR_pulses</span><span class="p">):</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="c1"># Pulse is a reference to some pulse in self.ESR</span>
+                        <span class="n">ESR_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="n">ESR_pulse</span><span class="p">]</span>
+
+                    <span class="n">ESR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">)</span>
+
+                    <span class="c1"># Delay also depends on any previous ESR pulses</span>
+                    <span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">],</span>
+                                                   <span class="n">offset</span><span class="o">=</span><span class="n">delay</span><span class="p">)</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span> <span class="o">+</span> <span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">]</span>
+
+                <span class="n">ESR_pulse</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                              <span class="n">offset</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">t_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span>
+                <span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;read_pulse&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="NMRCPMGPulseSequence.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.NMRCPMGPulseSequence.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the pulse sequence&quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize pulse sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_NMR_pulses</span><span class="p">()</span>
+
+        <span class="c1"># Note: This was added when performing NMR on the electron-up manifold,</span>
+        <span class="c1"># where it is important to reload a spin-down electron for readout.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_ESR_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Create copy of current pulse settings for comparison later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_pulse_settings</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="FlipFlopPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.FlipFlopPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">FlipFlopPulseSequence</span><span class="p">(</span><span class="n">PulseSequenceGenerator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`PulseSequenceGenerator` for hitting the flip-flop transition</span>
+
+<span class="sd">    The flip-flop transition is the one where both the electron and nucleus flip</span>
+<span class="sd">    in opposite direction, thus keeping the total spin constant.</span>
+
+<span class="sd">    This pulse sequence is mainly used to flip the nucleus to a certain state</span>
+<span class="sd">    without having to perform NMR or even having to measure the electron.</span>
+
+<span class="sd">    The flip-flop transitions between a nuclear spin state S1 and (S1+1) is:</span>
+
+<span class="sd">    f_ESR(S1) + A/2 + gamma_n * B_0,</span>
+
+<span class="sd">    where f_ESR(S1) is the ESR frequency for nuclear state S1, A is the</span>
+<span class="sd">    hyperfine, gamma_n is the nuclear Zeeman, and B_0 is the static magnetic</span>
+<span class="sd">    field. The transition will flip (electron down, nucleus S+1) to</span>
+<span class="sd">    (electron up, nucleus S) and vice versa.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        ESR (dict): Pulse settings for the ESR part of the pulse sequence.</span>
+<span class="sd">            Contains the following items:</span>
+
+<span class="sd">            * ``frequency`` (float): ESR frequency below the flip-flop</span>
+<span class="sd">              transition (Hz).</span>
+<span class="sd">            * ``hyperfine`` (float): Hyperfine interaction (Hz).</span>
+<span class="sd">            * ``nuclear_zeeman`` (float): Nuclear zeeman strength (gamma_n*B_0)</span>
+<span class="sd">            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR</span>
+<span class="sd">              (e.g. plunge). Default is `DCPulse`(&#39;plunge&#39;).</span>
+<span class="sd">            * ``pre_flip_ESR_pulse`` (Pulse): ESR pulse to use before the</span>
+<span class="sd">              flip-flop pulse to pre-flip the electron to spin-up,</span>
+<span class="sd">              which allows the nucleus to be flipped to a higher state.</span>
+<span class="sd">              Default is `SinePulse`(&#39;ESR&#39;).</span>
+<span class="sd">            * ``flip_flop_pulse`` (Pulse): Flip-flop ESR pulse, whose</span>
+<span class="sd">              frequency will be set to A/2 + gamma_n*B_0 higher than the</span>
+<span class="sd">              ``frequency`` setting. Default pulse is `SinePulse`(&#39;ESR&#39;)</span>
+<span class="sd">            * ``pre_flip`` (bool): Whether to pre-flip the electron, to</span>
+<span class="sd">              transition to a higher nuclear state. Default is False.</span>
+<span class="sd">            * ``pre_delay`` (float): Delay between start of stage pulse and</span>
+<span class="sd">              first pulse (``pre_flip_ESR_pulse`` or ``flip_flop_pulse``).</span>
+<span class="sd">            * ``inter_delay`` (float): Delay between ``pre_flip_ESR_pulse`` and</span>
+<span class="sd">              ``flip_flop_pulse``. Ignored if pre_flip is False</span>
+<span class="sd">            * ``post_delay`` (float): Delay after last frequency pulse and end</span>
+<span class="sd">              of stage pulse.</span>
+
+<span class="sd">        pre_pulses (List[Pulse]): Pulses before main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        post_pulses (List[Pulse]): Pulses after main pulse sequence.</span>
+<span class="sd">            Empty by default.</span>
+<span class="sd">        pulse_settings (dict): Dict containing all pulse settings.</span>
+<span class="sd">        **kwargs: Additional kwargs to `PulseSequence`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;frequencies&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">28e9</span><span class="p">,</span> <span class="mf">28e9</span><span class="p">],</span>
+            <span class="s1">&#39;hyperfine&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;nuclear_zeeman&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.5e6</span><span class="p">,</span>
+            <span class="s1">&#39;stage_pulse&#39;</span><span class="p">:</span> <span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;plunge&#39;</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="s1">&#39;pre_flip_ESR_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;flip_flop_pulse&#39;</span><span class="p">:</span> <span class="n">SinePulse</span><span class="p">(</span><span class="s1">&#39;ESR&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;pre_flip&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s1">&#39;pre_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">,</span>
+            <span class="s1">&#39;inter_delay&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;post_delay&#39;</span><span class="p">:</span> <span class="mf">5e-3</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_pulses</span> <span class="o">=</span> <span class="p">[</span><span class="n">DCPulse</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FlipFlopPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.FlipFlopPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">])</span>
+        <span class="n">ESR_t_start</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                              <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_delay&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_flip&#39;</span><span class="p">]:</span>
+            <span class="c1"># First add the pre-flip the ESR pulses (start with excited electron)</span>
+            <span class="k">for</span> <span class="n">ESR_frequency</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;frequencies&#39;</span><span class="p">]:</span>
+                <span class="n">pre_flip_ESR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;pre_flip_ESR_pulse&#39;</span><span class="p">])</span>
+                <span class="n">pre_flip_ESR_pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">ESR_frequency</span>
+                <span class="n">ESR_t_start</span><span class="p">(</span><span class="n">pre_flip_ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+
+                <span class="c1"># Update t_start of next ESR pulse</span>
+                <span class="n">ESR_t_start</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">pre_flip_ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">,</span>
+                                      <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;inter_delay&#39;</span><span class="p">])</span>
+
+        <span class="n">flip_flop_ESR_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;flip_flop_pulse&#39;</span><span class="p">])</span>
+        <span class="n">ESR_t_start</span><span class="p">(</span><span class="n">flip_flop_ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Calculate flip-flop frequency</span>
+        <span class="n">ESR_max_frequency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;frequencies&#39;</span><span class="p">])</span>
+        <span class="n">hyperfine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;hyperfine&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">hyperfine</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Choose difference between two ESR frequencies</span>
+            <span class="n">hyperfine</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;frequencies&#39;</span><span class="p">])))</span>
+
+        <span class="n">flip_flop_ESR_pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="p">(</span><span class="n">ESR_max_frequency</span>
+                                         <span class="o">-</span> <span class="n">hyperfine</span> <span class="o">/</span> <span class="mi">2</span>
+                                         <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;nuclear_zeeman&#39;</span><span class="p">])</span>
+        <span class="n">flip_flop_ESR_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">],</span>
+                                              <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;post_delay&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="FlipFlopPulseSequence.generate"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.FlipFlopPulseSequence.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the pulse sequence&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;pre_pulses&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;post_pulses&#39;</span><span class="p">])</span></div></div>
+
+<div class="viewcode-block" id="ESRRamseyDetuningPulseSequence"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.ESRRamseyDetuningPulseSequence">[docs]</a><span class="k">class</span> <span class="nc">ESRRamseyDetuningPulseSequence</span><span class="p">(</span><span class="n">ESRPulseSequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot; Created to implement an arbitrary number of DC pulses in a Ramsey sequence during the wait time. Please Refer to ESRPulseSequence for the ESR pulses.</span>
+
+<span class="sd">    Highlights:</span>
+
+<span class="sd">   - DC pulses can be stored in  [&#39;ESR&#39;][&#39;detuning_pulses&#39;] and will become the new &#39;stage_pulse&#39;</span>
+<span class="sd">   - t_start_detuning is the time at which the DC detuning pulses start. In the case the detuning starts right after the ESR pi/2 , then this time should</span>
+<span class="sd">    be equal to [&#39;pre_delay&#39;] +ESR[&#39;piHalf&#39;].duration</span>
+<span class="sd">   - If  the time for the detuning pulses is shorter that the total stage duration, the final part of the pulse (called post_stage) will the standard stage pulse  &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">][</span><span class="s1">&#39;t_start_detuning&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">][</span><span class="s1">&#39;detuning_pulses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ESRRamseyDetuningPulseSequence.add_ESR_pulses"><a class="viewcode-back" href="../../silq.pulses.html#silq.pulses.pulse_sequences.ESRRamseyDetuningPulseSequence.add_ESR_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">add_ESR_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ESR_frequencies</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_ESR_pulses</span><span class="p">(</span><span class="n">ESR_frequencies</span><span class="o">=</span><span class="n">ESR_frequencies</span><span class="p">)</span>
+        <span class="c1"># At this point there is a single `stage` pulse for each group of ESR pulses.</span>
+        <span class="c1"># We want to inject our detuning  pulses in between this stage pulse</span>
+
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;EPR&#39;</span><span class="p">][</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span> <span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Currently not programmed to include EPR pulse&#39;</span><span class="p">)</span>
+
+
+
+        <span class="n">stage_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;stage_pulse&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">stage_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Could not find existing stage pulse in pulse sequence&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">!=</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">connection_label</span>
+               <span class="ow">or</span> <span class="n">pulse</span><span class="o">.</span><span class="n">connection</span> <span class="o">!=</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">connection</span>
+               <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;detuning_pulses&#39;</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;All detuning pulses must have same connection as stage pulse&#39;</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">_delay</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;t_start_detuning&#39;</span><span class="p">]</span>
+        <span class="c1"># Add an initial stage pulse if t_start_detuning &gt; 0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_settings</span><span class="p">[</span><span class="s1">&#39;ESR&#39;</span><span class="p">][</span><span class="s1">&#39;t_start_detuning&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pre_stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">)</span>
+            <span class="n">pre_stage_pulse</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;pre_stage&#39;</span>
+            <span class="n">pre_stage_pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="n">t</span>
+
+        <span class="c1"># Add all detuning pulses</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ESR</span><span class="p">[</span><span class="s1">&#39;detuning_pulses&#39;</span><span class="p">]:</span>
+            <span class="n">detuning_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span>
+            <span class="n">detuning_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">detuning_pulse</span><span class="o">.</span><span class="n">duration</span>
+
+        <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Total duration of detuning pulses exceeds total stage pulse duration&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">t_stop</span><span class="p">:</span>
+            <span class="c1"># Add a final stage pulse</span>
+            <span class="n">post_stage_pulse</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stage_pulse</span><span class="p">)</span>
+            <span class="n">post_stage_pulse</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;post_stage&#39;</span>
+            <span class="n">post_stage_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">post_stage_pulse</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="n">stage_pulse</span><span class="o">.</span><span class="n">t_stop</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

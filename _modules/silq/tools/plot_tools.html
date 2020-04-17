@@ -1,0 +1,1064 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.plot_tools &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.plot_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.plot_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">from</span> <span class="nn">qcodes.plots.qcmatplotlib</span> <span class="k">import</span> <span class="n">MatPlot</span>
+<span class="kn">from</span> <span class="nn">silq.tools.notebook_tools</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">pyperclip</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter</span> <span class="k">import</span> <span class="n">_BaseParameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.station</span> <span class="k">import</span> <span class="n">Station</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.data_set</span> <span class="k">import</span> <span class="n">DataSet</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.data_array</span> <span class="k">import</span> <span class="n">DataArray</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PlotAction&#39;</span><span class="p">,</span> <span class="s1">&#39;SetGates&#39;</span><span class="p">,</span> <span class="s1">&#39;MeasureSingle&#39;</span><span class="p">,</span> <span class="s1">&#39;MoveGates&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;SwitchPlotIdx&#39;</span><span class="p">,</span> <span class="s1">&#39;InteractivePlot&#39;</span><span class="p">,</span> <span class="s1">&#39;SliderPlot&#39;</span><span class="p">,</span> <span class="s1">&#39;CalibrationPlot&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DCPlot&#39;</span><span class="p">,</span> <span class="s1">&#39;ScanningPlot&#39;</span><span class="p">,</span> <span class="s1">&#39;TracePlot&#39;</span><span class="p">,</span> <span class="s1">&#39;DCSweepPlot&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PlotAction"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.PlotAction">[docs]</a><span class="k">class</span> <span class="nc">PlotAction</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Interactive key/button action for ``MatPlot``</span>
+
+<span class="sd">    A PlotAction can be attached to an `InteractivePlot`, adding some sort of</span>
+<span class="sd">    interactivity, e.g. change parameter value when pressing a key button.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        plot: Plot object</span>
+<span class="sd">        timeout: Seconds before plot action is deactivated. Only relevant if the</span>
+<span class="sd">            ``enable_key`` differs from the actual key/button actions.</span>
+<span class="sd">        enable_key: String to enable plot action.</span>
+<span class="sd">        enabled (bool): Plot action is enabled.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">enable_key</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">plot</span><span class="p">:</span> <span class="n">MatPlot</span><span class="p">,</span>
+                 <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">enable_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_enable_key_pressed</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">enable_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enable_key</span> <span class="o">=</span> <span class="n">enable_key</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="n">plot</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># No enable key specified, so always enabled</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_enable_key_pressed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Enable key never pressed, so disabled</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Enable key pressed, and no timeout, so enabled</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Depends on if last enable_key press was within timeout seconds</span>
+            <span class="k">return</span> <span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_enable_key_pressed</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+
+<div class="viewcode-block" id="PlotAction.key_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.PlotAction.key_press">[docs]</a>    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handle Matplotlib key press.</span>
+
+<span class="sd">        This enables PlotAction if key press is ``enable_key``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_key</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Enabling action </span><span class="si">{self}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t_enable_key_pressed</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="PlotAction.button_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.PlotAction.button_press">[docs]</a>    <span class="k">def</span> <span class="nf">button_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handle Matplotlib button press action.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="PlotAction.handle_code"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.PlotAction.handle_code">[docs]</a>    <span class="k">def</span> <span class="nf">handle_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">execute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">new_cell</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handle code, either executing it or copying it to clipbard</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            code: Python code to handle.</span>
+<span class="sd">            copy: Copy to clipboard.</span>
+<span class="sd">            execute: Execute code, only relevant if ``new_cell`` is True.</span>
+<span class="sd">            new_cell: Create new cell below current one and add code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Copying code to clipboard&#39;</span><span class="p">)</span>
+            <span class="n">pyperclip</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">new_cell</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Adding code to new cell below, execute: </span><span class="si">{execute}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">create_cell</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">execute</span><span class="o">=</span><span class="n">execute</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s1">&#39;below&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SetGates"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SetGates">[docs]</a><span class="k">class</span> <span class="nc">SetGates</span><span class="p">(</span><span class="n">PlotAction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set gates when button pressed in MatPlot, enabled with ``alt + g``.</span>
+
+<span class="sd">    Only works for 2D plots.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        plot: Plot object</span>
+<span class="sd">        timeout: Seconds before plot action is deactivated. Only relevant if the</span>
+<span class="sd">            ``enable_key`` differs from the actual key/button actions.</span>
+<span class="sd">        enable_key: String to enable plot action.</span>
+<span class="sd">        enabled (bool): Plot action is enabled.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">enable_key</span> <span class="o">=</span> <span class="s1">&#39;alt+g&#39;</span>
+
+<div class="viewcode-block" id="SetGates.button_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SetGates.button_press">[docs]</a>    <span class="k">def</span> <span class="nf">button_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">button_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">txt</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.plot.x_label}</span><span class="s2">(</span><span class="si">{event.xdata:.5f}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span> \
+                   <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.plot.y_label}</span><span class="s2">(</span><span class="si">{event.ydata:.5g}</span><span class="s2">)&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle_code</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">txt</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">execute</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MeasureSingle"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.MeasureSingle">[docs]</a><span class="k">class</span> <span class="nc">MeasureSingle</span><span class="p">(</span><span class="n">PlotAction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Measure parameter at clicked gate vales, enabled with ``alt + s``</span>
+
+<span class="sd">    Upon button click, a new cell below current one is created, in which gates</span>
+<span class="sd">    are set to clicked values, and a qc.Measure is performed for measure_param.</span>
+
+<span class="sd">    Only works for 2D plots.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        plot: Plot object</span>
+<span class="sd">        timeout: Seconds before plot action is deactivated. Only relevant if the</span>
+<span class="sd">            ``enable_key`` differs from the actual key/button actions.</span>
+<span class="sd">        enable_key: String to enable plot action.</span>
+<span class="sd">        enabled (bool): Plot action is enabled.&quot;&quot;&quot;</span>
+    <span class="n">enable_key</span> <span class="o">=</span> <span class="s1">&#39;alt+s&#39;</span>
+
+<div class="viewcode-block" id="MeasureSingle.button_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.MeasureSingle.button_press">[docs]</a>    <span class="k">def</span> <span class="nf">button_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">button_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">txt</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.plot.x_label}</span><span class="s2">(</span><span class="si">{event.xdata:.5f}</span><span class="se">\n</span><span class="s2">&quot;</span> \
+                   <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.plot.y_label}</span><span class="s2">(</span><span class="si">{event.ydata:.5g}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span> \
+                   <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.plot.measure_parameter}</span><span class="s2">_parameter.single_settings&quot;</span> \
+                   <span class="n">f</span><span class="s2">&quot;(samples=</span><span class="si">{self.plot.samples_measure}</span><span class="s2">, silent=False)</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                   <span class="n">f</span><span class="s2">&quot;qc.Measure(</span><span class="si">{param}</span><span class="s2">_parameter).run&quot;</span> \
+                   <span class="n">f</span><span class="s2">&quot;(name=&#39;</span><span class="si">{self.plot.measure_parameter}</span><span class="s2">_measure&#39;, quiet=True)&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle_code</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">txt</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">execute</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MoveGates"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.MoveGates">[docs]</a><span class="k">class</span> <span class="nc">MoveGates</span><span class="p">(</span><span class="n">PlotAction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Increase/decrease gates when pressing alt + {arrow}, enabled with alt+m.</span>
+
+<span class="sd">    Alt + up/down moves the y-gate.</span>
+<span class="sd">    Alt + left/right moves the x-gate.</span>
+<span class="sd">    Alt + +/- increases/decreases step size.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        plot: Plot object</span>
+<span class="sd">        timeout: Seconds before plot action is deactivated. Only relevant if the</span>
+<span class="sd">            ``enable_key`` differs from the actual key/button actions.</span>
+<span class="sd">        enable_key: String to enable plot action.</span>
+<span class="sd">        enabled (bool): Plot action is enabled.</span>
+<span class="sd">        delta (float): Step size.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">enable_key</span> <span class="o">=</span> <span class="s1">&#39;alt+m&#39;</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="mf">0.001</span> <span class="c1"># step to move when pressing a key</span>
+
+<div class="viewcode-block" id="MoveGates.key_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.MoveGates.key_press">[docs]</a>    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">key_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">x_gate</span><span class="p">(),</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">y_gate</span><span class="p">(),</span> <span class="s1">&#39;ob&#39;</span><span class="p">,</span> <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_xdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">x_gate</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">y_gate</span><span class="p">())</span>
+
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt+up&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+down&#39;</span><span class="p">]:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">y_gate</span><span class="p">()</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+up&#39;</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">y_gate</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt+left&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+right&#39;</span><span class="p">]:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">x_gate</span><span class="p">()</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+right&#39;</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">x_gate</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_xdata</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt++&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+=&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">/=</span> <span class="mf">1.5</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+-&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">*=</span> <span class="mf">1.5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="MoveGates.button_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.MoveGates.button_press">[docs]</a>    <span class="k">def</span> <span class="nf">button_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">button_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;MoveGates button pressed&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">guiEvent</span><span class="p">[</span><span class="s1">&#39;altKey&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Moving to gates (</span><span class="si">{event.xdata}</span><span class="s1">, </span><span class="si">{event.ydata}</span><span class="s1">)&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">x_gate</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_xdata</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">y_gate</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Alt key not pressed, not moving gates&#39;</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">TuneCompensation</span><span class="p">(</span><span class="n">PlotAction</span><span class="p">):</span>
+    <span class="n">enable_key</span> <span class="o">=</span> <span class="s1">&#39;alt+c&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A tool to plot a line of compensated plunging/emptying on a DC scan.</span>
+
+<span class="sd">        Key commands:</span>
+<span class="sd">          &#39;alt+c&#39;            : enables this tool</span>
+<span class="sd">          &#39;alt+&lt;arrow_key&gt;&#39;  : move the central (read) position of your line in that respective direction</span>
+<span class="sd">          &#39;alt+&lt;+ or -&gt;&#39;     : increase/decrease the compensation angle with the horizontal</span>
+<span class="sd">          &#39;alt+&lt;8 or 2&gt;&#39;     : increase/decrease the empty depth</span>
+<span class="sd">          &#39;alt+&lt;6 or 4&gt;&#39;     : increase/decrease the plunge depth</span>
+<span class="sd">          &#39;alt+5&#39;            : reset all parameters to their default values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_empty_depth</span> <span class="o">=</span> <span class="mf">10e-3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_plunge_depth</span> <span class="o">=</span> <span class="o">-</span><span class="mf">10e-3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_theta</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="c1"># degrees</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_y_read</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">DC_voltage</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_x_read</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">DC_voltage</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_feats</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span> <span class="o">=</span> <span class="mf">1e-3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_t</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">initialize_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plunge_depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_plunge_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empty_depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_empty_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_theta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_x_read</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_y_read</span>
+
+    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">key_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt+up&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+down&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+left&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+right&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+8&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;alt+6&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+4&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+2&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+5&#39;</span><span class="p">,</span> <span class="s1">&#39;alt++&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+-&#39;</span><span class="p">]:</span>
+
+            <span class="c1"># Tune compensation</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt++&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_t</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+-&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_t</span>
+
+            <span class="c1"># Tune read position</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+up&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+down&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+right&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">x_read</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+left&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">x_read</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+
+            <span class="c1"># Tune empty depth</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+8&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">empty_depth</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+2&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">empty_depth</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+
+            <span class="c1"># Tune plunge depth</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+6&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plunge_depth</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+4&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plunge_depth</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_v</span>
+
+            <span class="c1"># Reset</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+5&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">initialize_parameters</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_features</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">draw_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Remove old features before drawing new ones</span>
+        <span class="k">for</span> <span class="n">plot_feat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_feats</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">plot_feat</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="k">del</span> <span class="n">f</span>
+
+        <span class="n">set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">DC_voltage</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Calculate compensation factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">))</span>
+
+        <span class="n">read_pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_read</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span><span class="p">,</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span>
+                                    <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">)</span>
+
+        <span class="n">empty_pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_read</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty_depth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compensation</span><span class="p">)</span> <span class="o">*</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">empty_depth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                     <span class="s1">&#39;go&#39;</span><span class="p">,</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">)</span>
+
+        <span class="n">plunge_pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_read</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">plunge_depth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compensation</span><span class="p">)</span> <span class="o">*</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">plunge_depth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                      <span class="s1">&#39;yo&#39;</span><span class="p">,</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">)</span>
+
+        <span class="n">comp_line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">set_vals</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">set_vals</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_read</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">compensation</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_read</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_feats</span> <span class="o">=</span> <span class="p">[</span><span class="n">read_pt</span><span class="p">,</span> <span class="n">empty_pt</span><span class="p">,</span> <span class="n">plunge_pt</span><span class="p">,</span> <span class="n">comp_line</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="SwitchPlotIdx"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SwitchPlotIdx">[docs]</a><span class="k">class</span> <span class="nc">SwitchPlotIdx</span><span class="p">(</span><span class="n">PlotAction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Change plot index when pressing ``alt+{arrow}``, used with `SliderPlot`.</span>
+
+<span class="sd">    Alt + left/right changes first plot index.</span>
+<span class="sd">    Alt + up/down changes second plot index (if two sliders).</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        plot: Plot object</span>
+<span class="sd">        timeout: Seconds before plot action is deactivated. Only relevant if the</span>
+<span class="sd">            ``enable_key`` differs from the actual key/button actions.</span>
+<span class="sd">        enable_key: String to enable plot action.</span>
+<span class="sd">        enabled (bool): Plot action is enabled.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SwitchPlotIdx.key_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SwitchPlotIdx.key_press">[docs]</a>    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">key_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="n">plot_idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt+left&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+right&#39;</span><span class="p">]:</span>
+            <span class="n">set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+left&#39;</span><span class="p">:</span>
+                <span class="n">plot_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plot_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">set_vals</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">plot_idx</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">update_slider</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;alt+down&#39;</span><span class="p">,</span> <span class="s1">&#39;alt+up&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;alt+down&#39;</span><span class="p">:</span>
+                <span class="n">plot_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plot_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">set_vals</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">plot_idx</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">plot_idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">update_slider</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="InteractivePlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.InteractivePlot">[docs]</a><span class="k">class</span> <span class="nc">InteractivePlot</span><span class="p">(</span><span class="n">MatPlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for ``MatPlot`` plots adding interactivity.</span>
+
+<span class="sd">    The QCoDeS ``MatPlot``, which uses ``matplotlib``, can be interactive, and</span>
+<span class="sd">    respond to key/button presses. This subclass of MatPlot enables such</span>
+<span class="sd">    interactivity by adding `PlotAction` to the plot. Each `PlotAction` can</span>
+<span class="sd">    respond to specific key presses or button clicks.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        *args: args passed to ``MatPlot``.</span>
+<span class="sd">        actions: `PlotAction` list to use for plot.</span>
+<span class="sd">        timeout: Timeout for any action to be disabled.</span>
+<span class="sd">        **kwargs: kwargs passed to ``MatPlot``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                 <span class="n">actions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">PlotAction</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+                 <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">600</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="o">.</span><span class="n">default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="s1">&#39;layout&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
+        <span class="c1"># setting timeout sets it for all actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+        <span class="c1"># cid is used to connect specific functions to event handlers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cid</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_key</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_button</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect_event</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_key_press</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect_event</span><span class="p">(</span><span class="s1">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_button_press</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span>
+
+    <span class="nd">@timeout</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+<div class="viewcode-block" id="InteractivePlot.load_data_array"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.InteractivePlot.load_data_array">[docs]</a>    <span class="k">def</span> <span class="nf">load_data_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_array</span><span class="p">:</span> <span class="n">DataArray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve properties of a ``DataArray``, such as set arrays and labels.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_array: DataArray to extract</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Any]:</span>
+<span class="sd">            set_arrays (List[DataArray]): List of set arrays.</span>
+<span class="sd">            labels: Labels of set arrays</span>
+<span class="sd">            gates: Gates of set arrays, None if not in ``Station``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">set_arrays</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">set_arrays</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">gates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">set_array</span> <span class="ow">in</span> <span class="n">data_array</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">:</span>
+            <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">set_array</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">gates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">set_array</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;set_arrays&#39;</span><span class="p">:</span> <span class="n">set_arrays</span><span class="p">,</span>
+                <span class="s1">&#39;labels&#39;</span><span class="p">:</span> <span class="n">labels</span><span class="p">,</span>
+                <span class="s1">&#39;gates&#39;</span><span class="p">:</span> <span class="n">gates</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="InteractivePlot.connect_event"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.InteractivePlot.connect_event">[docs]</a>    <span class="k">def</span> <span class="nf">connect_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">event</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">action</span><span class="p">:</span> <span class="n">PlotAction</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach PlotAction to a specific event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event: matplotlib event (e.g. key_press_event, button_press_event)</span>
+<span class="sd">            action: PlotAction to attach</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cid</span><span class="p">[</span><span class="n">event</span><span class="p">])</span>
+
+        <span class="n">cid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cid</span><span class="p">[</span><span class="n">event</span><span class="p">]</span> <span class="o">=</span> <span class="n">cid</span></div>
+
+<div class="viewcode-block" id="InteractivePlot.handle_key_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.InteractivePlot.handle_key_press">[docs]</a>    <span class="k">def</span> <span class="nf">handle_key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handle key press event, forwarding to relevant `PlotAction`</span>
+
+<span class="sd">        The relevant PlotActions are those that are either enabled, or whose</span>
+<span class="sd">        ``enable_key`` match the key press event.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_key</span> <span class="o">=</span> <span class="n">event</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Key pressed: </span><span class="si">{event.key}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">action</span><span class="o">.</span><span class="n">enable_key</span><span class="p">:</span>
+                    <span class="n">action</span><span class="o">.</span><span class="n">key_press</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;key press: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InteractivePlot.handle_button_press"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.InteractivePlot.handle_button_press">[docs]</a>    <span class="k">def</span> <span class="nf">handle_button_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handle button press event, forwarding to relevant `PlotAction`.</span>
+
+<span class="sd">        The relative PlotActions are those that are already enabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_button</span> <span class="o">=</span> <span class="n">event</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Clicked (x:</span><span class="si">{event.xdata:.6}</span><span class="s1">, y:</span><span class="si">{event.ydata:.6}</span><span class="s1">)&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+                    <span class="n">action</span><span class="o">.</span><span class="n">button_press</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;button press: </span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SliderPlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SliderPlot">[docs]</a><span class="k">class</span> <span class="nc">SliderPlot</span><span class="p">(</span><span class="n">InteractivePlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Slide through 1D/2D images of a ``DataArray`` with more dimensions.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        data_array: Multidimensional ``DataArray`` to display.</span>
+<span class="sd">        ndim: Plotting dimension (1 or 2)</span>
+<span class="sd">        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_array</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="n">ndim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_array</span> <span class="o">=</span> <span class="n">data_array</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="n">SwitchPlotIdx</span><span class="p">(</span><span class="bp">self</span><span class="p">)],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data_array</span><span class="p">(</span><span class="n">data_array</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;set_arrays&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_sliders</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[:</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ndim</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">],</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Add sliders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slideraxes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.13</span><span class="p">,</span> <span class="mf">0.02</span> <span class="o">+</span> <span class="mf">0.04</span><span class="o">*</span><span class="n">k</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">],</span>
+                                             <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">)</span>
+                           <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sliders</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sliders</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">sliderax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slideraxes</span><span class="p">):</span>
+            <span class="n">set_idx</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="n">set_idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">set_vals</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># Make more general for &gt; 2D</span>
+                <span class="n">set_vals</span> <span class="o">=</span> <span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">slider</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">sliderax</span><span class="p">,</span>
+                                        <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="n">set_idx</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                        <span class="n">valmin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">set_vals</span><span class="p">),</span>
+                                        <span class="n">valmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">set_vals</span><span class="p">),</span>
+                                        <span class="n">valinit</span><span class="o">=</span><span class="n">set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">set_vals</span><span class="p">)</span>
+            <span class="n">slider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update_slider</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span>
+            <span class="n">slider</span><span class="o">.</span><span class="n">drawon</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sliders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slider</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">plot_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="s1">&#39;xlabel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s1">&#39;ylabel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s1">&#39;xunit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
+                    <span class="s1">&#39;yunit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="o">.</span><span class="n">unit</span><span class="p">,}</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">],</span>
+                    <span class="s1">&#39;xlabel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s1">&#39;ylabel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s1">&#39;zlabel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s1">&#39;xunit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
+                    <span class="s1">&#39;yunit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
+                    <span class="s1">&#39;zunit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="o">.</span><span class="n">unit</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.ndim}</span><span class="s1"> dims not supported&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SliderPlot.update_slider"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SliderPlot.update_slider">[docs]</a>    <span class="k">def</span> <span class="nf">update_slider</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sliders</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Check if value is one of the set values</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Updating slider </span><span class="si">{idx}</span><span class="s1"> to </span><span class="si">{value}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">slider_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">value</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">val</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">idx</span> <span class="k">else</span> <span class="n">slider_idx</span>
+                                  <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">))</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sliders</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SliderPlot.update"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.SliderPlot.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Update plot</span>
+        <span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_array</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_idx</span><span class="p">],</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CalibrationPlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.CalibrationPlot">[docs]</a><span class="k">class</span> <span class="nc">CalibrationPlot</span><span class="p">(</span><span class="n">InteractivePlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interactive plot for 2D calibrations, move gates and measure at points.</span>
+
+<span class="sd">    The 2D calibration scan must contain a ``Parameter`` that returns the</span>
+<span class="sd">    contrast. Pressing ``alt + m`` adds a dot on the colorplot, which can be</span>
+<span class="sd">    moved by holding ``alt`` and pressing an arrow key. the contrast can then</span>
+<span class="sd">    be measured at the dot by pressing ``alt + s``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_set: Calibration 2D scan data set.</span>
+<span class="sd">        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.</span>
+<span class="sd">        samples_measure (int): Samples to use when measuring at a single point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">measure_parameter</span> <span class="o">=</span> <span class="s1">&#39;adiabatic_ESR&#39;</span>
+    <span class="n">samples_measure</span> <span class="o">=</span> <span class="mi">200</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">:</span> <span class="n">DataSet</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span> <span class="o">=</span> <span class="n">data_set</span>
+        <span class="k">if</span> <span class="s1">&#39;voltage_difference&#39;</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">contrast</span><span class="p">,</span> <span class="n">data_set</span><span class="o">.</span><span class="n">dark_counts</span><span class="p">,</span>
+                             <span class="n">data_set</span><span class="o">.</span><span class="n">voltage_difference</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">contrast</span><span class="p">,</span> <span class="n">data_set</span><span class="o">.</span><span class="n">dark_counts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">contrast</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;gates&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="n">SetGates</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">MeasureSingle</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">MoveGates</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="DCPlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.DCPlot">[docs]</a><span class="k">class</span> <span class="nc">DCPlot</span><span class="p">(</span><span class="n">InteractivePlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interactive plot for a 2D DC scan, For easy moving gates on 2D plot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_set: 2D DC scan ``DataSet``.</span>
+<span class="sd">        **kwargs: Additional kwargs for `InteractivePlot` and ``MatPlot``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">:</span> <span class="n">DataSet</span><span class="p">,</span>  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span> <span class="o">=</span> <span class="n">data_set</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">DC_voltage</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data_array</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">DC_voltage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;gates&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="n">SetGates</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">MoveGates</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">TuneCompensation</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="ScanningPlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.ScanningPlot">[docs]</a><span class="k">class</span> <span class="nc">ScanningPlot</span><span class="p">(</span><span class="n">InteractivePlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for interactive plots to repeatedly measure and refresh plot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        parameter: Parameter to measure and plot.</span>
+<span class="sd">        interval: Measuring and updating interval.</span>
+<span class="sd">        auto_start: Start refreshing once initialized. If False, refreshing can</span>
+<span class="sd">            be started by calling `ScanningPlot.start`.</span>
+<span class="sd">        **kwargs: Additional kwargs to `InteractivePlot` and ``Matplot``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># AcquisitionParameter type</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">parameter</span><span class="p">:</span> <span class="n">_BaseParameter</span><span class="p">,</span>
+                 <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+                 <span class="n">auto_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_start_idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">new_timer</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="n">interval</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect_event</span><span class="p">(</span><span class="s1">&#39;close_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span> <span class="o">=</span> <span class="n">parameter</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="n">auto_start</span>
+        <span class="k">if</span> <span class="n">auto_start</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">auto_start</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">auto_start</span><span class="p">:</span>
+            <span class="c1"># Already started during acquire</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">setup</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">interval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">interval</span> <span class="o">/</span> <span class="mi">1000</span>
+
+    <span class="nd">@interval</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;timer&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span> <span class="o">*</span> <span class="mi">1000</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">update_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">-</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">update_start_idx</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ScanningPlot.start"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.ScanningPlot.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">setup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="n">start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start measuring and refreshing plot</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            setup: Setup `AcquisitionParameter`</span>
+<span class="sd">            start: Start instruments, only used if ``setup`` is True.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">setup</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="ScanningPlot.stop"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.ScanningPlot.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop measuring and refreshing plot.</span>
+
+<span class="sd">        Timer is stopped.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Unused args passed if method is called as a callback</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Stopped&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="ScanningPlot.scan"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.ScanningPlot.scan">[docs]</a>    <span class="k">def</span> <span class="nf">scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform single meeasurement and update plot.</span>
+
+<span class="sd">        Repeatedly called by timer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            initialize: True if this method is called during initialization.</span>
+<span class="sd">            stop: Stop instruments after acquisition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_start_idx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stop</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_plot</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">initialize</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_idx</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="TracePlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.TracePlot">[docs]</a><span class="k">class</span> <span class="nc">TracePlot</span><span class="p">(</span><span class="n">ScanningPlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interactive plot that repeatedly measures pulse sequence and plots trace</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        parameter: `TraceParameter` whose pulse sequence to measure.</span>
+<span class="sd">        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TraceParameter type</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">:</span> <span class="n">_BaseParameter</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">subplots</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;subplots&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">average_mode</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="s1">&#39;average_mode&#39;</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">samples</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">average_mode</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+            <span class="n">subplots</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">()),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subplots</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="n">subplots</span><span class="o">=</span><span class="n">subplots</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># self.actions = [MoveGates(self)]</span>
+
+<div class="viewcode-block" id="TracePlot.update_plot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.TracePlot.update_plot">[docs]</a>    <span class="k">def</span> <span class="nf">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update plot with new trace</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            initialize: Method called during initialization.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">names</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">initialize</span><span class="p">:</span>
+                <span class="n">setpoints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoints</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">setpoint_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoint_names</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">setpoint_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoint_units</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">setpoints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="c1"># import pdb; pdb.set_trace()</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xlabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">ylabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">yunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">zlabel</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                                <span class="n">zunit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">y_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span> <span class="o">=</span> <span class="n">setpoint_names</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span><span class="p">)</span> <span class="ow">and</span> \
+                            <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">x_gate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">y_gate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()],</span>
+                                     <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">()],</span> <span class="s1">&#39;ob&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;adding plot for </span><span class="si">{name}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="c1"># import pdb; pdb.set_trace()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xlabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">ylabel</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                                <span class="n">xunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">yunit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;z&#39;</span> <span class="ow">in</span> <span class="n">result_config</span><span class="p">:</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_plot</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="DCSweepPlot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.DCSweepPlot">[docs]</a><span class="k">class</span> <span class="nc">DCSweepPlot</span><span class="p">(</span><span class="n">ScanningPlot</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Refreshing 2D DC plot using `DCSweepParameter` for fast 2D DC scanning.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        parameter: `DCSweepParameter` for fast 2D DC scanning.</span>
+<span class="sd">        gate_mapping: Mapping of gate names, for plot labels.</span>
+<span class="sd">        **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gate_mapping</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">point_color</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>
+    <span class="c1"># DCSweepParameter type</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">parameter</span><span class="p">:</span> <span class="n">_BaseParameter</span><span class="p">,</span>
+                 <span class="n">gate_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">gate_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gate_mapping</span> <span class="o">=</span> <span class="n">gate_mapping</span>
+
+        <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">trace_pulse</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="n">subplots</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;gridspec_kw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;height_ratios&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]}</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;figsize&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mf">6.5</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subplots</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">point</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="n">subplots</span><span class="o">=</span><span class="n">subplots</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">trace_pulse</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="n">MoveGates</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="DCSweepPlot.update_plot"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.plot_tools.DCSweepPlot.update_plot">[docs]</a>    <span class="k">def</span> <span class="nf">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update plot with new 2D DC scan.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            initialize: Method called during initialization.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">names</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">initialize</span><span class="p">:</span>
+                <span class="n">setpoints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoints</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">setpoint_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoint_names</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">setpoint_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoint_units</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">setpoints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xlabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">ylabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">yunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">zlabel</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                                <span class="n">zunit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gate_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                                         <span class="n">setpoint_names</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gate_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                         <span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span><span class="p">)</span> <span class="ow">and</span> \
+                            <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_label</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">(),</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">(),</span>
+                                                  <span class="s1">&#39;o&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">point_color</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">5</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">setpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">xlabel</span><span class="o">=</span><span class="n">setpoint_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">ylabel</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                                <span class="n">xunit</span><span class="o">=</span><span class="n">setpoint_units</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">yunit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;z&#39;</span> <span class="ow">in</span> <span class="n">result_config</span><span class="p">:</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoints</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span><span class="o">.</span><span class="n">setpoints</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">point</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_xdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">())</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="o">.</span><span class="n">get_latest</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result_config</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_plot</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

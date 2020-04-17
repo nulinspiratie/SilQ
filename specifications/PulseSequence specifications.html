@@ -1,0 +1,475 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PulseSequence specifications &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Frequently asked questions" href="../docs/FAQ.html" />
+    <link rel="prev" title="Pulse specifications" href="Pulse specifications.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Future work</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="config specifications.html">Config specifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Layout targeting specifications.html">Layout targeting specifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulse specifications.html">Pulse specifications</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PulseSequence specifications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#current-features">Current features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#desired-features">Desired features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nesting-pulsesequence-within-another-pulsesequence">Nesting PulseSequence within another PulseSequence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#loop-over-pulses">Loop over pulses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#look-up-pulsesequence-from-config">Look up PulseSequence from config</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#logic-operations">Logic operations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Future work</a> &raquo;</li>
+        
+      <li>PulseSequence specifications</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/specifications/PulseSequence specifications.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="pulsesequence-specifications">
+<h1>PulseSequence specifications<a class="headerlink" href="#pulsesequence-specifications" title="Permalink to this headline">¶</a></h1>
+<p>The PulseSequence is a class that combines Pulses, and is able to define a
+measurement. Its current features are as follows:</p>
+<div class="section" id="current-features">
+<h2>Current features<a class="headerlink" href="#current-features" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Ability to add/remove/address pulses</p></li>
+<li><p>Fixed total duration, determined from the pulses it contains</p></li>
+<li><p>Handle enabling/disabling of individual pulses</p></li>
+<li><p>Restrictions on adding (un)targeted pulses</p></li>
+<li><p>Find pulse(s) based on certain pulse or connection properties</p></li>
+<li><p>Find connection based on certain pulse or connection properties</p></li>
+<li><p>Check if pulses overlap</p></li>
+<li><p>Get transition voltage between two pulses (useful for triggering)</p></li>
+<li><p>Initialization stage for PulseSequence (before t=0). To be replaced.</p></li>
+</ul>
+</div>
+<div class="section" id="desired-features">
+<h2>Desired features<a class="headerlink" href="#desired-features" title="Permalink to this headline">¶</a></h2>
+<p>Although the PulseSequence suits our current needs for performing a measurement,
+it lacks some useful features, and is in need of an upgrade. The following
+sections highlight the features that are lacking, including a consideration
+of issues and implementation.</p>
+<div class="section" id="nesting-pulsesequence-within-another-pulsesequence">
+<h3>Nesting PulseSequence within another PulseSequence<a class="headerlink" href="#nesting-pulsesequence-within-another-pulsesequence" title="Permalink to this headline">¶</a></h3>
+<p>The ability to nest a PulseSequence in another PulseSequence allows a
+natural way to break up a complex measurement into different layers.
+For example, a PulseSequence could consists of three stages:</p>
+<ol class="arabic simple">
+<li><p>Initialization - Perform the necessary pulses to initialize the system</p></li>
+<li><p>Manipulation - Manipulate the qubit through pulses</p></li>
+<li><p>Read - Read out the state of the qubit</p></li>
+</ol>
+<p>Each of these stages could be an independent PulseSequence, which are joined
+together in the larger PulseSequence. If you combine this with the idea of
+registering a PulseSequence in the config, it becomes especially useful. For
+instance, the Read stage can be identical for different measurements, and so
+you only have to program the Read PulseSequence once, and it can then be
+called from all measurements.</p>
+<div class="section" id="issues">
+<h4>Issues<a class="headerlink" href="#issues" title="Permalink to this headline">¶</a></h4>
+<p>One of the main issues is that targeting of a PulseSequence currently
+targets individual pulses. Now instead a PulseSequence could consist of not
+only Pulses, but also PulseSequences.</p>
+<p>One solution is to roll-out the inner PulseSequences, effectively
+concatenating their pulses together into one long PulseSequence. This can
+become a problem when you combine it with logic operations, as these may
+point towards an entire PulseSequence instead of a single pulse.</p>
+<p>Another solution is to create an encompassing class, which itself
+contains PulseSequences. You can then make the distinction that
+PulseSequences have a fixed duration. Combining PulseSequences and
+performing logic operations, such as conditional operations, can only be
+implemented at the level of the encompassing class. However, this only shifts
+the problem, as you could also want to join such encompassing classes together.</p>
+<p>The actual problem may well be that the whole targeting process needs an
+upgrade.</p>
+</div>
+<div class="section" id="implementation">
+<h4>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h4>
+<p>If we assume that targeting is taken care of, nesting PulseSequences should
+have the following features:</p>
+<ul class="simple">
+<li><p>Adding a nested PulseSequences should happen the same as adding a pulse.</p></li>
+<li><p>A name, which can be used to identify the PulseSequence when it is nested.</p></li>
+<li><p>The duration, if it exists. This may not be the case if the PulseSequence
+contains logic operations.</p></li>
+<li><p>Each nested PulseSequence should start at <code class="docutils literal notranslate"><span class="pre">t=0</span></code>. This would probably mean
+that each interface would need to know about all the nested PulseSequences,
+because if it would get a Pulse, it would need to know what PulseSequence
+it belongs to.</p></li>
+<li><p><strong>Optional</strong> If a PulseSequence contains at least one PulseSequence, there
+should always be an active PulseSequence. If a Pulse is then added, it is
+automatically added to a PulseSequence. This way you ensure that a
+PulseSequence contains either Pulses or PulseSequences, but never both. One
+could even create a separate PulseSequence class for PulseSequences that
+contains other PulseSequences, although I’m not sure if its necessary.</p></li>
+<li><p><strong>Optional</strong> Some sort of output data, which can be treated as input variables
+for other PulseSequences. This is related to logic operations.</p></li>
+<li><p><strong>Optional</strong> Analysis within the PulseSequence. For instance, check for blips.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="loop-over-pulses">
+<h3>Loop over pulses<a class="headerlink" href="#loop-over-pulses" title="Permalink to this headline">¶</a></h3>
+<p>There are situations where you want to loop over a pulse, or perhaps even over a
+PulseSequence. An example is the CPMG sequence, which consists of many
+identical pi pulses. Instead of having to add 8192 pi-pulses to a
+PulseSequence, which can significantly slow down the measurement, it is much
+easier to add a single pulse with a command to apply it a number of times.
+This idea could be extended to also iteratively modifying an attribute of the
+Pulse being looped.</p>
+<div class="section" id="features">
+<h4>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Loop over a Pulse or a PulseSequence</p></li>
+<li><p>The duration of the loop should take the repetitions into account.</p></li>
+</ul>
+</div>
+<div class="section" id="id1">
+<h4>Issues<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>During targeting the loop should remain, i.e. the pulse should not be
+copied 8192 times.</p></li>
+</ul>
+</div>
+<div class="section" id="id2">
+<h4>Implementation<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>Perhaps the easiest way to implement this is to add a
+<code class="docutils literal notranslate"><span class="pre">PulseSequence.repetitions</span></code> attribute, equal to 1 by default. When you then
+want to loop over one or more pulses, you wrap them in a PulseSequence and
+increase the repetitions. In this case it would be necessary to also somehow
+pass along the PulseSequence (which has information on <code class="docutils literal notranslate"><span class="pre">repetitions</span></code>) during
+targeting.</p>
+<p>Another solution is to create logic that says: Go back to beginning of pulse
+8192 times. However, this feels less elegant than the previous solution, also
+since passing along logic can be complicated.</p>
+<p>A third solution is to create a LoopPulse, which loops over a pulse. This
+also seems less elegant than the first solution, mainly because it becomes
+awkward to loop over a PulseSequence (a PulseSequence within a pulse?).</p>
+</div>
+</div>
+<div class="section" id="look-up-pulsesequence-from-config">
+<h3>Look up PulseSequence from config<a class="headerlink" href="#look-up-pulsesequence-from-config" title="Permalink to this headline">¶</a></h3>
+<p>Being able to efficiently store and load PulseSequences eases the reuse of
+PulseSequences for different measurements, and also for different sessions. A
+good option for this is in a config file.</p>
+<div class="section" id="id3">
+<h4>Features<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Load and save PulseSequence to config,</p></li>
+<li><p>Easy creation of stored PulseSequence (preferably by creating
+PulseSequence with same name/label as the stored PulseSequence). Optionally
+there could be a flag <code class="docutils literal notranslate"><span class="pre">load_from_config</span></code>, which only loads if set to True.</p></li>
+<li><p>Easy modification of stored PulseSequence. Preferably a file that can be
+easily modified. This could either be a JSON dictionary, or something that
+can be converted to/from a JSON dictionary.</p></li>
+<li><p>PulseSequence properties from a config can be overridden when creating an
+instance of the PulseSequence</p></li>
+<li><p>When a property in the PulseSequence config is updated, it is immediately
+reflected in the PulseSequence</p></li>
+<li><p>The pulses in a PulseSequence can also be loaded from a Pulse config.</p></li>
+</ul>
+</div>
+<div class="section" id="id4">
+<h4>Issues<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>If a PulseSequence coincidentally has the same name as one in the config, it
+could automatically be loaded even though this is not wanted.</p>
+</div>
+<div class="section" id="id5">
+<h4>Implementation<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>QCoDeS has a config file, and it may be good enough for our purposes.
+However, modifying such a config is somewhat difficult, and so we might opt
+for a separate SilQ config. In this case, we need to ensure that it is also
+stored during each measurement.</p>
+<p>The name/label of a PulseSequence can be used to identify a PulseSequence in a
+config.</p>
+</div>
+</div>
+<div class="section" id="logic-operations">
+<h3>Logic operations<a class="headerlink" href="#logic-operations" title="Permalink to this headline">¶</a></h3>
+<p>Advanced instruments, especially those containing an FPGA, can perform logic
+operations. As a primary example, either PulseSequence A or PulseSequence B
+is performed depending on the outcome of a measurement.</p>
+<p>An existing example is the steered initialization, which remains idle until
+no blips have been measured for a threshold duration. At the moment, this is
+programmed in a hacky way, by letting a PulseSequence have an initialization
+stage, after which the actual PulseSequence starts with <code class="docutils literal notranslate"><span class="pre">t=0</span></code>. Ideally we
+would want this to be replaced by a separate nested PulseSequence which ends
+with a logic operation.</p>
+<div class="section" id="id6">
+<h4>Issues<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<p>There are quite a few issues with adding logic to PulseSequences. The main
+issue is probably how each of the interfaces will be informed about logic
+operations, and how they will deal with it. In fact, most instruments are not
+able to deal with general logic operations, but only in very specific cases.
+As an example we consider an AWG that outputs pulses sequentially after
+each trigger. It is not able to either output pulse A or pulse B depending on
+the outcome of a measurement. However, it will be able to wait with
+outputting a pulse until it receives a final trigger. The AWG can therefore
+implement a subset of all logic operations.</p>
+<p>Programming each interface how to discern if it can implement a PulseSequence
+containing logic operations can become quite complicated. You would want
+interfaces to raise errors if they cannot implement some sort of logic.
+However, this means that all relevant interfaces would need to know about the
+logic being used</p>
+<div class="section" id="possible-types-of-logic">
+<h5>Possible types of logic<a class="headerlink" href="#possible-types-of-logic" title="Permalink to this headline">¶</a></h5>
+<ul class="simple">
+<li><p>If/elif/else statements. In each of these cases, it should be able to point
+to a point in the PulseSequence, such as a different PulseSequence. It
+could also be other commands, such as <code class="docutils literal notranslate"><span class="pre">continue</span></code> and <code class="docutils literal notranslate"><span class="pre">stop</span></code>.</p></li>
+<li><p>Perform analysis, such as check for blips. In this case, it would often
+need to point at the acquisition of data from a previous pulse.</p></li>
+<li><p><span class="red">More types of logic?</span></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="id7">
+<h4>Implementation<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>If there is logic within a PulseSequence, there may not be a well-defined
+duration. For instance if an if statement can point to two different
+PulseSequences. In this case, PulseSequence.duration should either raise an
+error, or return None.</p></li>
+<li><p>Logic should not be a child of the Pulse class, but rather a separate class.
+Perhaps even another class for analysis?</p></li>
+<li><p>Analysis could be used in interfaces similar to PulseImplementations. In
+this case, instruments such as the Signadyne could have an
+AnalysisImplementation for finding blips.</p></li>
+<li><p>Implementing logic could be more tricky, as it clearly does not belong to a
+single interface, but rather affects all interfaces that are involved in
+the measurement.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../docs/FAQ.html" class="btn btn-neutral float-right" title="Frequently asked questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Pulse specifications.html" class="btn btn-neutral float-left" title="Pulse specifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

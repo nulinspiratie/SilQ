@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tests.mocks.mock_interfaces package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.tests.mocks.mock_interfaces package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.tests.mocks.mock_interfaces.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-tests-mocks-mock-interfaces-package">
+<h1>silq.tests.mocks.mock_interfaces package<a class="headerlink" href="#silq-tests-mocks-mock-interfaces-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_interfaces.mock_AWG_interface">
+<span id="silq-tests-mocks-mock-interfaces-mock-awg-interface-module"></span><h2>silq.tests.mocks.mock_interfaces.mock_AWG_interface module<a class="headerlink" href="#module-silq.tests.mocks.mock_interfaces.mock_AWG_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.DCPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_AWG_interface.</code><code class="sig-name descname">DCPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#DCPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.DCPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="attribute">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.DCPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.DCPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.DCPulse" title="silq.pulses.pulse_types.DCPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.DCPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_AWG_interface.</code><code class="sig-name descname">MockAWGInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#MockAWGInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_interfaces.mock_interface.MockInterface" title="silq.tests.mocks.mock_interfaces.mock_interface.MockInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_interfaces.mock_interface.MockInterface</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#MockAWGInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#MockAWGInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Acquisition instruments usually don’t need to be started</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#MockAWGInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.MockAWGInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_AWG_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_AWG_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="attribute">
+<dt id="silq.tests.mocks.mock_interfaces.mock_AWG_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_AWG_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_interfaces.mock_digitizer_interface">
+<span id="silq-tests-mocks-mock-interfaces-mock-digitizer-interface-module"></span><h2>silq.tests.mocks.mock_interfaces.mock_digitizer_interface module<a class="headerlink" href="#module-silq.tests.mocks.mock_interfaces.mock_digitizer_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_digitizer_interface.</code><code class="sig-name descname">MockDigitizerInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_interfaces.mock_interface.MockInterface" title="silq.tests.mocks.mock_interfaces.mock_interface.MockInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_interfaces.mock_interface.MockInterface</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.acquisition">
+<code class="sig-name descname">acquisition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface.acquisition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.acquisition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.segment_traces">
+<code class="sig-name descname">segment_traces</code><span class="sig-paren">(</span><em class="sig-param">traces</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface.segment_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.segment_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Segment traces per pulse, and optionally perform averaging</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">samples</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Acquisition instruments usually don’t need to be started</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_digitizer_interface.html#MockDigitizerInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_digitizer_interface.MockDigitizerInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_interfaces.mock_interface">
+<span id="silq-tests-mocks-mock-interfaces-mock-interface-module"></span><h2>silq.tests.mocks.mock_interfaces.mock_interface module<a class="headerlink" href="#module-silq.tests.mocks.mock_interfaces.mock_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_interface.MockInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_interface.</code><code class="sig-name descname">MockInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_interface.html#MockInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_interface.MockInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_interfaces.mock_trigger_interface">
+<span id="silq-tests-mocks-mock-interfaces-mock-trigger-interface-module"></span><h2>silq.tests.mocks.mock_interfaces.mock_trigger_interface module<a class="headerlink" href="#module-silq.tests.mocks.mock_interfaces.mock_trigger_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_trigger_interface.</code><code class="sig-name descname">MockTriggerInterface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_trigger_interface.html#MockTriggerInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_interfaces.mock_interface.MockInterface" title="silq.tests.mocks.mock_interfaces.mock_interface.MockInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_interfaces.mock_interface.MockInterface</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_trigger_interface.html#MockTriggerInterface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_trigger_interface.html#MockTriggerInterface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Acquisition instruments usually don’t need to be started</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_trigger_interface.html#MockTriggerInterface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.MockTriggerInterface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.TriggerPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_interfaces.mock_trigger_interface.</code><code class="sig-name descname">TriggerPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_interfaces/mock_trigger_interface.html#TriggerPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.TriggerPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="attribute">
+<dt id="silq.tests.mocks.mock_interfaces.mock_trigger_interface.TriggerPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.tests.mocks.mock_interfaces.mock_trigger_interface.TriggerPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.TriggerPulse" title="silq.pulses.pulse_types.TriggerPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.TriggerPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_interfaces">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.tests.mocks.mock_interfaces" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

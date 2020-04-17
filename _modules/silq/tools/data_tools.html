@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.data_tools &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.data_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.data_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="k">import</span> <span class="n">parse</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.format</span> <span class="k">import</span> <span class="n">Formatter</span>
+<span class="kn">import</span> <span class="nn">silq</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.data_set</span> <span class="k">import</span> <span class="n">new_data</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;create_data_set&#39;</span><span class="p">,</span> <span class="s1">&#39;get_data_folder&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="create_data_set"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.data_tools.create_data_set">[docs]</a><span class="k">def</span> <span class="nf">create_data_set</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">base_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">subfolder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">formatter</span><span class="p">:</span> <span class="n">Formatter</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create empty ``DataSet`` within main data folder.</span>
+
+<span class="sd">    Uses ``new_data``, and handles location formatting.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: ``DataSet`` name, used as DataSet folder name.</span>
+<span class="sd">        base_folder: Base folder for DataSet. Should be a pre-existing</span>
+<span class="sd">            ``DataSet`` folder. If None, a new folder is created in main data</span>
+<span class="sd">            folder.</span>
+<span class="sd">        subfolder: Adds subfolder within base_folder for ``DataSet``.</span>
+<span class="sd">            Should not be used without explicitly setting ``base_folder``.</span>
+<span class="sd">        formatter: Formatter to use for data storage (e.g. GNUPlotFormat).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        New empty ``DataSet``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">location_string</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{base_folder}</span><span class="s1">/&#39;</span>
+    <span class="k">if</span> <span class="n">subfolder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">location_string</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{subfolder}</span><span class="s1">/&#39;</span>
+    <span class="n">location_string</span> <span class="o">+=</span> <span class="s1">&#39;#{{counter}}_{{name}}_{{time}}&#39;</span>
+
+    <span class="n">location</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">FormatLocation</span><span class="p">(</span>
+        <span class="n">fmt</span><span class="o">=</span><span class="n">location_string</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">base_folder</span><span class="o">=</span><span class="n">base_folder</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                                   <span class="n">subfolder</span><span class="o">=</span><span class="n">subfolder</span><span class="p">))</span>
+
+    <span class="n">data_set</span> <span class="o">=</span> <span class="n">new_data</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">formatter</span><span class="o">=</span><span class="n">formatter</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_set</span></div>
+
+
+<div class="viewcode-block" id="get_data_folder"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.data_tools.get_data_folder">[docs]</a><span class="k">def</span> <span class="nf">get_data_folder</span><span class="p">(</span><span class="o">*</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">newest_date</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get first data folder in main data folder satisfying conditions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        *path: Filter for data folder.</span>
+<span class="sd">            First arg can be an absolute path, in which case data folder is</span>
+<span class="sd">            searched in that path.</span>
+<span class="sd">            If a list of strings, each element corresponds to a subfolder in</span>
+<span class="sd">            main data folder, whose folder name must contain the given string.</span>
+<span class="sd">            Arg can be dataset index, in which case it must start with #, and be</span>
+<span class="sd">            followed by digits. leading zeroes are not necessary.</span>
+<span class="sd">            If not provided, first data folder in main data path is used.</span>
+<span class="sd">        newest_date: Latest date for dataset. If specified, the first dataset</span>
+<span class="sd">            earlier than this date is searched.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Relative path to found dataset</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        IterationError: No dataset found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Ensure that all path items use &#39;/&#39;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">path</span><span class="p">]</span>
+
+    <span class="c1"># Determine if a specific date and/or data filter is required</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;No path args provided, any data folder will suffice&#39;</span><span class="p">)</span>
+        <span class="n">date_folder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="s1">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">date_folder</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Date </span><span class="si">{date_folder}</span><span class="s1"> and filter </span><span class="si">{path[0]}</span><span class="s1"> provided&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">date_folder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Data filter </span><span class="si">{path[0]}</span><span class="s1"> provided, but no date&#39;</span><span class="p">)</span>
+
+    <span class="n">base_path</span> <span class="o">=</span> <span class="n">silq</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">data_folder</span>
+    <span class="n">base_path</span> <span class="o">=</span> <span class="n">base_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">date_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Find latest date folder</span>
+        <span class="n">date_folders</span> <span class="o">=</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">base_path</span><span class="p">))</span>
+        <span class="c1"># Cycle through date folders</span>
+        <span class="k">for</span> <span class="n">date_folder</span> <span class="ow">in</span> <span class="n">date_folders</span><span class="p">:</span>
+            <span class="c1"># Check if folder is actual date folder containing data</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">date_folder</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c1"># not actual date folder</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">newest_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">date</span> <span class="o">&gt;</span> <span class="n">newest_date</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;No matching date folder found in </span><span class="si">{base_path}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Iteratively go through path items and add them to the data path</span>
+    <span class="n">relative_path</span> <span class="o">=</span> <span class="n">date_folder</span>
+    <span class="k">for</span> <span class="n">subpath</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">subpath</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;#&#39;</span> <span class="ow">and</span> <span class="n">subpath</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="c1"># prepend zeros if necessary</span>
+            <span class="n">subpath</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;#{int(subpath[1:]):03}&#39;</span>
+
+        <span class="n">data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">relative_path</span><span class="p">)</span>
+        <span class="n">data_folder</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">folder</span> <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">data_path</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                           <span class="k">if</span> <span class="n">subpath</span> <span class="ow">in</span> <span class="n">folder</span><span class="p">)</span>
+        <span class="n">relative_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">relative_path</span><span class="p">,</span> <span class="n">data_folder</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">relative_path</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

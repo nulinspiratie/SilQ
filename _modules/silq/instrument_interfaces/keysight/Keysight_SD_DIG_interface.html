@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">InstrumentInterface</span><span class="p">,</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">silq.pulses.pulse_types</span> <span class="k">import</span> <span class="n">Pulse</span><span class="p">,</span> <span class="n">TriggerPulse</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument_drivers.Keysight.SD_common.SD_acquisition_controller</span> \
+    <span class="kn">import</span> <span class="nn">Triggered_Controller</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface">[docs]</a><span class="k">class</span> <span class="nc">Keysight_SD_DIG_Interface</span><span class="p">(</span><span class="n">InstrumentInterface</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">allow_untargeted_pulses</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">allow_pulse_overlap</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Initialize channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span>  <span class="o">=</span> <span class="p">{</span>
+            <span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">n_channels</span><span class="p">)}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pxi_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">f</span><span class="s1">&#39;pxi</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;pxi</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">4000</span> <span class="o">+</span> <span class="n">k</span><span class="p">,</span> <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                               <span class="n">output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">n_triggers</span><span class="p">)}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_channels</span> <span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_pxi_channels</span><span class="p">,</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_controller&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Acquisition controller for acquiring &#39;</span>
+                                     <span class="s1">&#39;data with SD digitizer. &#39;</span>
+                                     <span class="s1">&#39;Must be acquisition controller object.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;acquisition_channels&#39;</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="p">[],</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Lists</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Names of acquisition channels &#39;</span>
+                                     <span class="s1">&#39;[chA, chB, etc.]. Set by the layout&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;sample_rate&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(),</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Acquisition sampling rate (Hz)&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(),</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of times to acquire the pulse &#39;</span>
+                                     <span class="s1">&#39;sequence.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;points_per_trace&#39;</span><span class="p">,</span>
+                           <span class="n">get_cmd</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">samples_per_trace</span><span class="p">(),</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Number of points in a trace.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;channel_selection&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Active channel indices to acquire. &#39;</span>
+                                     <span class="s1">&#39;Zero-based index (chA -&gt; 0, etc.). &#39;</span>
+                                     <span class="s1">&#39;Set during setup and should not be set&#39;</span>
+                                     <span class="s1">&#39;manually.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;minimum_timeout_interval&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(),</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Minimum value for timeout when acquiring &#39;</span>
+                                     <span class="s1">&#39;data. If 2.1 * pulse_sequence.duration &#39;</span>
+                                     <span class="s1">&#39;is lower than this value, it will be &#39;</span>
+                                     <span class="s1">&#39;used instead&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;trigger_in_duration&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(),</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mf">15e-6</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s2">&quot;Duration for a receiving trigger signal. &quot;</span>
+                                     <span class="s2">&quot;This is passed the the interface that is &quot;</span>
+                                     <span class="s2">&quot;sending the triggers to this instrument.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;capture_full_trace&#39;</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Capture from t=0 to end of pulse &#39;</span>
+                                     <span class="s1">&#39;sequence. False by default, in which &#39;</span>
+                                     <span class="s1">&#39;case start and stop times correspond to &#39;</span>
+                                     <span class="s1">&#39;min(t_start) and max(t_stop) of all &#39;</span>
+                                     <span class="s1">&#39;pulses with the flag acquire=True, &#39;</span>
+                                     <span class="s1">&#39;respectively.&#39;</span><span class="p">)</span>
+        <span class="c1"># dict of raw unsegmented traces {ch_name: ch_traces}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Segmented traces per pulse, {pulse_name: {channel_name: {ch_pulse_traces}}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Set up the driver to a known default state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_driver</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.acquisition"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.acquisition">[docs]</a>    <span class="k">def</span> <span class="nf">acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform acquisition&quot;&quot;&quot;</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">acquisition</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="n">ch_traces</span> <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch_traces</span>
+                       <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">(),</span> <span class="n">traces</span><span class="p">)}</span>
+
+        <span class="c1"># The start of acquisition</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+        <span class="c1"># Split data into pulse traces</span>
+        <span class="n">pulse_traces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">full_name</span>
+            <span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ch_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">()):</span>
+                <span class="n">ch_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">ch_name</span><span class="p">]</span>
+                <span class="n">start_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+                <span class="n">stop_idx</span> <span class="o">=</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">duration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+
+                <span class="c1"># Extract pulse data from the channel data</span>
+                <span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_data</span><span class="p">[:,</span> <span class="n">start_idx</span><span class="p">:</span><span class="n">stop_idx</span><span class="p">]</span>
+                <span class="c1"># Further average the pulse data</span>
+                <span class="k">if</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;trace&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="s1">&#39;point_segment&#39;</span> <span class="ow">in</span> <span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="p">:</span>
+                    <span class="n">segments</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">average</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">split_arrs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">],</span> <span class="n">segments</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">pulse_traces</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ch_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">split_arrs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;average mode </span><span class="si">{pulse.average}</span><span class="s1"> not configured&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_traces</span> <span class="o">=</span> <span class="n">pulse_traces</span>
+        <span class="k">return</span> <span class="n">pulse_traces</span></div>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.initialize_driver"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.initialize_driver">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_driver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Puts driver into a known initial state. Further configuration will</span>
+<span class="sd">            be done in the configure_driver and get_additional_pulses</span>
+<span class="sd">            functions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">impedance</span><span class="p">(</span><span class="s1">&#39;50&#39;</span><span class="p">)</span> <span class="c1"># 50 Ohm impedance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">coupling</span><span class="p">(</span><span class="s1">&#39;DC&#39;</span><span class="p">)</span>  <span class="c1"># DC Coupled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">full_scale</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span>  <span class="c1"># 3.0 Volts</span></div>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Pulse</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Additional pulses needed by instrument after targeting of main pulses</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connections: List of all connections in the layout</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of additional pulses, empty by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;SD digitizer has a manual trigger pulse defined.&#39;</span>
+                           <span class="s1">&#39;This should normally be done automatically instead.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># No pulses need to be acquired</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># A trigger pulse is needed</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">trigger_connection</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">connection</span> <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">connections</span>
+                                          <span class="k">if</span> <span class="n">connection</span><span class="o">.</span><span class="n">trigger</span> <span class="ow">or</span> <span class="n">connection</span><span class="o">.</span><span class="n">trigger_start</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Could not find trigger connection for SD digitizer&#39;</span><span class="p">)</span>
+
+            <span class="n">connection_requirements</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">()}</span>
+
+            <span class="k">if</span> <span class="n">trigger_connection</span><span class="o">.</span><span class="n">trigger</span><span class="p">:</span>
+                <span class="n">connection_requirements</span><span class="p">[</span><span class="s1">&#39;trigger&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># connection.trigger_start or capture full trace</span>
+                <span class="n">connection_requirements</span><span class="p">[</span><span class="s1">&#39;trigger_start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>  <span class="c1"># Override t_start to capture full trace</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">return</span> <span class="p">[</span><span class="n">TriggerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_in_duration</span><span class="p">(),</span>
+                                 <span class="n">connection_requirements</span><span class="o">=</span><span class="n">connection_requirements</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.setup"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_connections</span><span class="o">=</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+
+        <span class="c1"># Select the channels to acquire</span>
+        <span class="n">channel_selection</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ch_name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">ch_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_channels</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel_selection</span><span class="p">(</span><span class="n">channel_selection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">channel_selection</span><span class="p">(</span><span class="n">channel_selection</span><span class="p">)</span>
+
+        <span class="c1"># Pulse averaging is done in the interface, not the controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">average_mode</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">(),</span> <span class="n">Triggered_Controller</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">traces_per_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">())</span>
+
+            <span class="c1"># Capture maximum number of samples on all channels</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">capture_full_trace</span><span class="p">():</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_start_list</span><span class="p">)</span>
+                <span class="n">t_stop</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_stop_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Capture full trace, even if no pulses have acquire=True</span>
+                <span class="c1"># Mainly done so that the full trace can be stored.</span>
+                <span class="n">t_start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">t_stop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span>
+
+            <span class="c1">#  !!! Changed np.ceil to np.round !!!</span>
+            <span class="n">samples_per_trace</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">t_stop</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+            <span class="n">samples_per_trace</span> <span class="o">+=</span> <span class="n">samples_per_trace</span> <span class="o">%</span> <span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">samples_per_trace</span><span class="p">(</span><span class="n">samples_per_trace</span><span class="p">)</span>
+
+            <span class="c1"># Set read timeout interval</span>
+            <span class="c1"># This is the interval for requesting an acquisition.</span>
+            <span class="c1"># This allows us to interrupt an acquisition prematurely.</span>
+            <span class="n">timeout_interval</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">2.1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">minimum_timeout_interval</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">timeout_interval</span><span class="p">(</span><span class="n">timeout_interval</span><span class="p">)</span>
+            <span class="c1"># An error is raised if no data has been acquired within 64 seconds.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="mf">64.0</span><span class="p">)</span>
+
+            <span class="c1"># Traces per read should not be longer than the timeout interval</span>
+            <span class="n">traces_per_read</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">timeout_interval</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">traces_per_read</span><span class="p">(</span><span class="n">traces_per_read</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_trigger</span><span class="p">(</span><span class="n">t_start</span><span class="p">,</span> <span class="n">input_connections</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No setup configured for acquisition controller &#39;</span>
+                               <span class="n">f</span><span class="s1">&#39;{self.acquisition_controller()}&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.setup_trigger"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.setup_trigger">[docs]</a>    <span class="k">def</span> <span class="nf">setup_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_start</span><span class="p">,</span> <span class="n">input_connections</span><span class="p">):</span>
+        <span class="c1"># Setup triggering</span>
+        <span class="n">trigger_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">trigger_pulse</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trigger_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">trigger_start</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">trigger_pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;No trigger pulse found for digitizer&quot;</span>
+        <span class="n">trigger_channel</span> <span class="o">=</span> <span class="n">trigger_pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+        <span class="c1"># Also sets trigger mode, etc.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">trigger_channel</span><span class="p">(</span><span class="n">trigger_channel</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">trigger_channel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;ch&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">analog_trigger_edge</span><span class="p">(</span><span class="s1">&#39;rising&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">analog_trigger_threshold</span><span class="p">(</span>
+                <span class="n">trigger_pulse</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">trigger_channel</span> <span class="o">==</span> <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">digital_trigger_mode</span><span class="p">(</span><span class="s1">&#39;rising&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># PXI channel</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">digital_trigger_mode</span><span class="p">(</span><span class="s1">&#39;rising&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Bayes&#39;</span><span class="p">):</span>
+            <span class="n">bayesian_pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Bayes&#39;</span><span class="p">)</span>
+            <span class="n">trigger_delay</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bayesian_pulse</span><span class="o">.</span><span class="n">t_start</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">())</span>
+            <span class="n">trigger_delay_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">trigger_delay</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+        <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">connection</span><span class="o">.</span><span class="n">trigger_start</span> <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">input_connections</span><span class="p">):</span>
+            <span class="n">trigger_delay_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">t_start</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trigger_delay_samples</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_controller</span><span class="p">()</span><span class="o">.</span><span class="n">trigger_delay_samples</span><span class="p">(</span><span class="n">trigger_delay_samples</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Keysight_SD_DIG_Interface.stop"><a class="viewcode-back" href="../../../silq.instrument_interfaces.keysight.html#silq.instrument_interfaces.keysight.Keysight_SD_DIG_interface.Keysight_SD_DIG_Interface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Stop all DAQs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">stop_channels</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">))</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

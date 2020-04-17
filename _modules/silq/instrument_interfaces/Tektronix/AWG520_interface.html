@@ -1,0 +1,681 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.Tektronix.AWG520_interface &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../silq.html">silq</a> &raquo;</li>
+        
+          <li><a href="../../instrument_interfaces.html">silq.instrument_interfaces</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.Tektronix.AWG520_interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.instrument_interfaces.Tektronix.AWG520_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span>
+
+<span class="kn">import</span> <span class="nn">silq</span>
+<span class="kn">from</span> <span class="nn">silq.instrument_interfaces</span> <span class="k">import</span> <span class="n">InstrumentInterface</span><span class="p">,</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">silq.pulses</span> <span class="k">import</span> <span class="n">DCPulse</span><span class="p">,</span> <span class="n">DCRampPulse</span><span class="p">,</span> <span class="n">TriggerPulse</span><span class="p">,</span> <span class="n">SinePulse</span><span class="p">,</span> \
+    <span class="n">PulseImplementation</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils.helpers</span> <span class="k">import</span> <span class="n">arreqclose_in_list</span>
+<span class="kn">from</span> <span class="nn">silq.tools.pulse_tools</span> <span class="k">import</span> <span class="n">pulse_to_waveform_sequence</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils.validators</span> <span class="k">import</span> <span class="n">Lists</span><span class="p">,</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Numbers</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWG520Interface"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface">[docs]</a><span class="k">class</span> <span class="nc">AWG520Interface</span><span class="p">(</span><span class="n">InstrumentInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        - Sets first point of each waveform to final voltage of previous</span>
+<span class="sd">          waveform because this is the value used when the previous waveform</span>
+<span class="sd">          ended and is waiting for triggers.</span>
+<span class="sd">        - Amplitude significantly decreases above 400 MHz at 1 GHz sampling.</span>
+<span class="sd">        - The interface receives a trigger at the end of the sequence, ignoring</span>
+<span class="sd">          any final_delay. This means that the pulse sequence will already have</span>
+<span class="sd">          restarted during any final delay, which may cause issues.</span>
+<span class="sd">    Todo:</span>
+<span class="sd">        Check if only channel 2 can be programmed</span>
+<span class="sd">        Add marker channels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_waveforms</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                              <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;ch</span><span class="si">{k}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_channels</span><span class="p">,</span>
+            <span class="s1">&#39;trig_in&#39;</span><span class="p">:</span> <span class="n">Channel</span><span class="p">(</span><span class="n">instrument_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trig_in&#39;</span><span class="p">,</span> <span class="n">input_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_implementations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">DCPulseImplementation</span><span class="p">(</span><span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                                                                     <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})]),</span>
+            <span class="n">SinePulseImplementation</span><span class="p">(</span><span class="n">pulse_requirements</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frequency&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">500e6</span><span class="p">}),</span>
+                                                        <span class="p">(</span><span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                                                                       <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})])</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;pulse_final_delay&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=.</span><span class="mf">1e-6</span><span class="p">,</span>
+                           <span class="n">docstring</span><span class="o">=</span><span class="s1">&#39;Time subtracted from each waveform to ensure &#39;</span>
+                               <span class="s1">&#39;that it is finished once next trigger arrives.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;trigger_in_duration&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=.</span><span class="mf">1e-6</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;active_channels&#39;</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">Lists</span><span class="p">(</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;ch1&#39;</span><span class="p">,</span> <span class="s1">&#39;ch2&#39;</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;sampling_rate&#39;</span><span class="p">,</span>
+                           <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;1/s&#39;</span><span class="p">,</span>
+                           <span class="n">initial_value</span><span class="o">=</span><span class="mf">1e9</span><span class="p">,</span>
+                           <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">vals</span><span class="o">=</span><span class="n">Numbers</span><span class="p">(</span><span class="n">max_value</span><span class="o">=</span><span class="mf">1e9</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveforms</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Create silq folder to place waveforms and sequences in</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">change_folder</span><span class="p">(</span><span class="s1">&#39;/silq&#39;</span><span class="p">,</span> <span class="n">create_if_necessary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Delete all files in folder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">delete_all_files</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AWG520Interface.get_additional_pulses"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.get_additional_pulses">[docs]</a>    <span class="k">def</span> <span class="nf">get_additional_pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Return empty list if no pulses are in the pulse sequence</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">active_channels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                                   <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">))</span>
+
+        <span class="n">connections</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span>
+            <span class="n">output_instrument</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">active_channels</span><span class="p">}</span>
+
+        <span class="c1"># If a pulse starts on one channel and needs a trigger while another</span>
+        <span class="c1"># pulse is still active on the other channel, this would cause the other</span>
+        <span class="c1"># pulse to move onto the next pulse prematurely. This only happens if</span>
+        <span class="c1"># the other pulse finished its waveform and is waiting for a trigger.</span>
+        <span class="c1"># Here we check that this does not occur.</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">active_channels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">gap_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">t_start</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_start_list</span><span class="p">:</span>
+
+                <span class="k">if</span> <span class="n">t_start</span> <span class="o">&lt;</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="n">f</span><span class="s1">&#39;Pulse starting before end of previous pulse </span><span class="si">{t}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">t_start</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="c1"># Add gap pulses for each channel</span>
+                    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">active_channels</span><span class="p">:</span>
+                        <span class="n">gap_pulse</span> <span class="o">=</span> <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                                            <span class="n">t_stop</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                            <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                            <span class="n">connection</span><span class="o">=</span><span class="n">connections</span><span class="p">[</span><span class="n">ch</span><span class="p">])</span>
+                        <span class="n">gap_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pulse_implementation</span><span class="p">(</span><span class="n">gap_pulse</span><span class="p">))</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">t_start</span>
+
+                <span class="n">pulses</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                                            <span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">active_channels</span><span class="p">}</span>
+
+                <span class="k">if</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;pulse sequence has t_start=</span><span class="si">{t_start}</span><span class="s2">, &quot;</span>
+                                        <span class="s2">&quot;but couldn&#39;t find pulse for either channel&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">==</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> \
+                        <span class="n">f</span><span class="s2">&quot;t_stop of pulses starting at </span><span class="si">{t_start}</span><span class="s2"> must be equal.&quot;</span> \
+                        <span class="n">f</span><span class="s2">&quot;This is a current limitation of the AWG interface.&quot;</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span>
+                <span class="k">elif</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># add gap pulse for ch2</span>
+                    <span class="n">gap_pulse</span> <span class="o">=</span> <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                        <span class="n">t_stop</span><span class="o">=</span><span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                                        <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">connection</span><span class="o">=</span><span class="n">connections</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">])</span>
+                    <span class="n">gap_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pulse_implementation</span><span class="p">(</span><span class="n">gap_pulse</span><span class="p">))</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># add gap pulse for ch1</span>
+                    <span class="n">gap_pulse</span> <span class="o">=</span> <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                        <span class="n">t_stop</span><span class="o">=</span><span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span>
+                                        <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">connection</span><span class="o">=</span><span class="n">connections</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">])</span>
+                    <span class="n">gap_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pulse_implementation</span><span class="p">(</span><span class="n">gap_pulse</span><span class="p">))</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="n">active_channels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># only add gap pulses for active channel</span>
+            <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span>
+                <span class="n">output_instrument</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span>
+            <span class="n">gap_pulses</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">t_start</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_start_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">t_start</span> <span class="o">&lt;</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Pulse starting before previous pulse &#39;</span>
+                                       <span class="n">f</span><span class="s1">&#39;finished </span><span class="si">{t}</span><span class="s1"> s&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">t_start</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="c1"># Add gap pulse</span>
+                    <span class="n">gap_pulse</span> <span class="o">=</span> <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                                        <span class="n">t_stop</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                        <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">)</span>
+                    <span class="n">gap_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pulse_implementation</span><span class="p">(</span><span class="n">gap_pulse</span><span class="p">))</span>
+
+                <span class="n">pulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                                      <span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span>
+                <span class="c1"># Pulse will be None if the pulse sequence has a final delay</span>
+                <span class="k">if</span> <span class="n">pulse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">pulse</span><span class="o">.</span><span class="n">t_stop</span>
+
+        <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">active_channels</span><span class="p">:</span>
+                <span class="n">gap_pulse</span> <span class="o">=</span> <span class="n">DCPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                                    <span class="n">t_stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span>
+                                    <span class="n">amplitude</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                    <span class="n">connection</span><span class="o">=</span><span class="n">connections</span><span class="p">[</span><span class="n">ch</span><span class="p">])</span>
+                <span class="n">gap_pulses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pulse_implementation</span><span class="p">(</span><span class="n">gap_pulse</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">gap_pulses</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="n">gap_pulses</span><span class="p">)</span>
+
+        <span class="c1"># TODO test if first waveform needs trigger as well</span>
+        <span class="n">additional_pulses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">TriggerPulse</span><span class="p">(</span><span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                         <span class="n">duration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trigger_in_duration</span><span class="p">(),</span>
+                         <span class="n">connection_requirements</span><span class="o">=</span><span class="p">{</span>
+                             <span class="s1">&#39;input_instrument&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument_name</span><span class="p">(),</span>
+                             <span class="s1">&#39;trigger&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">t_start</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">t_start_list</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">duration</span><span class="p">]</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">additional_pulses</span></div>
+
+<div class="viewcode-block" id="AWG520Interface.setup"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_primary</span><span class="p">(),</span> <span class="s1">&#39;AWG520 not programmed as primary instrument&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">(</span><span class="nb">list</span><span class="p">({</span><span class="n">pulse</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                                   <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="p">}))</span>
+
+        <span class="c1"># Get waveforms for all channels</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">pulses</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_sequence</span><span class="o">.</span><span class="n">get_pulses</span><span class="p">(</span><span class="n">output_channel</span><span class="o">=</span><span class="n">ch</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses</span><span class="p">[</span><span class="s1">&#39;ch2&#39;</span><span class="p">]),</span> \
+                <span class="s2">&quot;Channel1 and channel2 do not have equal number of pulses&quot;</span>
+
+        <span class="n">N_instructions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulses</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()[</span><span class="mi">0</span><span class="p">]])</span>
+
+        <span class="n">waveforms</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">N_instructions</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()}</span>
+        <span class="n">repetitions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">N_instructions</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_instructions</span><span class="p">):</span>
+            <span class="n">pulse</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="n">pulses</span><span class="p">[</span><span class="n">ch</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()}</span>
+            <span class="c1"># Get pulse of first channel</span>
+            <span class="n">pulse1</span> <span class="o">=</span> <span class="n">pulse</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">t</span> <span class="o">==</span> <span class="n">pulse</span><span class="p">[</span><span class="s2">&quot;ch1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">t_start</span> <span class="o">==</span> <span class="n">pulse</span><span class="p">[</span><span class="s2">&quot;ch2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> \
+                    <span class="n">f</span><span class="s1">&#39;t=</span><span class="si">{t}</span><span class="s1"> does not match pulse.t_start=</span><span class="si">{pulse[&quot;ch1&quot;].t_start}</span><span class="s1">&#39;</span>
+                <span class="k">assert</span> <span class="n">pulse</span><span class="p">[</span><span class="s2">&quot;ch1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">==</span> <span class="n">pulse</span><span class="p">[</span><span class="s2">&quot;ch2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> \
+                    <span class="n">f</span><span class="s1">&#39;pulse[&quot;ch1&quot;].t_stop != pulse[&quot;ch2&quot;].t_stop: &#39;</span> \
+                    <span class="n">f</span><span class="s1">&#39;</span><span class="si">{pulse[&quot;ch1&quot;].t_stop}</span><span class="s1"> != </span><span class="si">{pulse[&quot;ch2&quot;].t_stop}</span><span class="s1">&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">t</span> <span class="o">==</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="s2">&quot;t != pulse.t_start: </span><span class="si">{t}</span><span class="s2"> != </span><span class="si">{pulse1.t_start}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Waveform points of both channels need to match</span>
+            <span class="c1"># Here we find out the number of points needed</span>
+            <span class="n">pulse_pts</span> <span class="o">=</span> <span class="p">[</span><span class="n">pulse</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">pts</span> <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="n">pulse</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">pulse_pts</span><span class="p">:</span>
+                <span class="n">waveform_pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse_final_delay</span><span class="p">()</span> <span class="o">-</span>
+                                          <span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">()))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">waveform_pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">pulse_pts</span><span class="p">)))</span>
+
+            <span class="c1"># subtract 0.5 from waveform points to ensure correct length</span>
+            <span class="n">t_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span>
+                               <span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span> <span class="o">+</span> <span class="p">(</span><span class="n">waveform_pts</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">(),</span>
+                               <span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="c1"># Points need to be increment of 4</span>
+                <span class="n">t_list</span> <span class="o">=</span> <span class="n">t_list</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span><span class="p">)]</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">256</span><span class="p">,</span> \
+                <span class="n">f</span><span class="s2">&quot;Waveform has too few points at pulse.t_start=</span><span class="si">{pulse1.t_start}</span><span class="s2">&quot;</span>
+
+            <span class="n">single_repetitions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()]</span>
+            <span class="k">for</span> <span class="n">ch_idx</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()):</span>
+                <span class="n">waveforms</span><span class="p">[</span><span class="n">ch</span><span class="p">][</span><span class="n">k</span><span class="p">],</span> <span class="n">single_repetitions</span><span class="p">[</span><span class="n">ch_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">pulse</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">implement</span><span class="p">(</span>
+                    <span class="n">t_list</span><span class="o">=</span><span class="n">t_list</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">repetition</span> <span class="o">==</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">repetition</span> <span class="ow">in</span> <span class="n">single_repetitions</span><span class="p">):</span>
+                <span class="c1"># None of the channel pulses cares about repetitions, set to 1</span>
+                <span class="n">repetitions</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">specified_repetitions</span> <span class="o">=</span> <span class="p">{</span><span class="n">elem</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">single_repetitions</span>
+                                         <span class="k">if</span> <span class="n">elem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">specified_repetitions</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Pulses </span><span class="si">{pulse}</span><span class="s1"> require different number&#39;</span>
+                                       <span class="n">f</span><span class="s1">&#39;of repetitions: </span><span class="si">{single_repetitions}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">repetitions</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">specified_repetitions</span><span class="p">))</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span>
+
+        <span class="c1"># Set first point of each waveform to endpoint of previous waveform</span>
+        <span class="n">endpoint_voltages</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="p">[</span><span class="n">waveform</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="n">ch_waveforms</span><span class="p">]</span>
+                             <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch_waveforms</span> <span class="ow">in</span> <span class="n">waveforms</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">waveforms</span><span class="p">[</span><span class="n">ch</span><span class="p">]):</span>
+                <span class="n">waveform</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint_voltages</span><span class="p">[</span><span class="n">ch</span><span class="p">][(</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">waveforms</span><span class="p">[</span><span class="n">ch</span><span class="p">])]</span>
+
+        <span class="c1"># Create list of unique waveforms and corresponding sequence</span>
+        <span class="n">waveforms_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sequence</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="n">waveforms</span><span class="p">[</span><span class="n">ch</span><span class="p">]:</span>
+                <span class="n">waveform_idx</span> <span class="o">=</span> <span class="n">arreqclose_in_list</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="n">waveforms_list</span><span class="p">,</span>
+                                                  <span class="n">rtol</span><span class="o">=-</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">waveform_idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">waveforms_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">waveform</span><span class="p">)</span>
+                    <span class="n">waveform_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">waveforms_list</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">sequence</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">waveform_idx</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">trigger_mode</span><span class="p">(</span><span class="s1">&#39;ENH&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">trigger_level</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">clock_freq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">())</span>
+
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ch1&#39;</span><span class="p">,</span> <span class="s1">&#39;ch2&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{ch}</span><span class="s1">_offset&#39;</span><span class="p">](</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{ch}</span><span class="s1">_amp&#39;</span><span class="p">](</span><span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{ch}</span><span class="s1">_status&#39;</span><span class="p">](</span><span class="s1">&#39;OFF&#39;</span><span class="p">)</span>
+        <span class="c1"># for ch in [self.instrument.ch1, self.instrument.ch2]:</span>
+        <span class="c1">#     ch.offset(0)</span>
+        <span class="c1">#     ch.amplitude(1)</span>
+        <span class="c1">#     ch.status(&#39;OFF&#39;)</span>
+
+        <span class="c1"># Create silq folder to place waveforms and sequences in</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">change_folder</span><span class="p">(</span><span class="s1">&#39;/silq&#39;</span><span class="p">,</span> <span class="n">create_if_necessary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">total_waveform_points</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">waveform</span><span class="p">)</span> <span class="k">for</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="n">waveforms_list</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">total_waveform_points</span> <span class="o">&lt;</span> <span class="mf">3.99e6</span><span class="p">,</span> \
+            <span class="n">f</span><span class="s1">&#39;Too many total waveform points: </span><span class="si">{total_waveform_points}</span><span class="s1">&#39;</span>
+
+        <span class="n">total_existing_waveform_points</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">waveform</span><span class="p">)</span> <span class="k">for</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">total_waveform_points</span> <span class="o">+</span> <span class="n">total_existing_waveform_points</span> <span class="o">&gt;</span> <span class="mf">3.99e6</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_waveforms</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Deleting existing waveforms from hard disk&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">delete_all_files</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="n">waveform_filename_mapping</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Copy waveform filenames because we only want to update the attribute</span>
+        <span class="c1"># If the setup is complete</span>
+        <span class="n">waveform_filenames</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">waveform</span> <span class="ow">in</span> <span class="n">waveforms_list</span><span class="p">:</span>
+            <span class="n">waveform_idx</span> <span class="o">=</span> <span class="n">arreqclose_in_list</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span>
+                                              <span class="n">waveform_filenames</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
+                                              <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">waveform_idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Waveform has not yet been uploaded</span>
+                <span class="n">waveform_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">waveform_filenames</span><span class="p">)</span>
+
+                <span class="c1"># Upload waveform</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;waveform_</span><span class="si">{waveform_idx}</span><span class="s1">.wfm&#39;</span>
+                <span class="n">marker1</span> <span class="o">=</span> <span class="n">marker2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">waveform</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">send_waveform</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span>
+                                              <span class="n">marker1</span><span class="p">,</span>
+                                              <span class="n">marker2</span><span class="p">,</span>
+                                              <span class="n">filename</span><span class="p">,</span>
+                                              <span class="n">clock</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">())</span>
+                <span class="n">waveform_filenames</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">waveform</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">waveform_filenames</span><span class="p">)[</span><span class="n">waveform_idx</span><span class="p">]</span>
+            <span class="c1"># Add waveform mapping</span>
+            <span class="n">waveform_filename_mapping</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+        <span class="c1"># Upload sequence</span>
+        <span class="n">sequence_waveform_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="n">waveform_filename_mapping</span><span class="p">[</span><span class="n">waveform_idx</span><span class="p">]</span>
+             <span class="k">for</span> <span class="n">waveform_idx</span> <span class="ow">in</span> <span class="n">sequence</span><span class="p">[</span><span class="n">ch</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">()]</span>
+
+        <span class="n">wait_trigger</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">N_instructions</span><span class="p">)</span>
+        <span class="n">goto_one</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N_instructions</span><span class="p">)</span>
+        <span class="n">logic_jump</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N_instructions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">())</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sequence_waveform_names</span> <span class="o">=</span> <span class="n">sequence_waveform_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">send_sequence</span><span class="p">(</span><span class="s1">&#39;sequence.seq&#39;</span><span class="p">,</span>
+                                      <span class="n">sequence_waveform_names</span><span class="p">,</span>
+                                      <span class="n">repetitions</span><span class="p">,</span>
+                                      <span class="n">wait_trigger</span><span class="p">,</span>
+                                      <span class="n">goto_one</span><span class="p">,</span>
+                                      <span class="n">logic_jump</span><span class="p">)</span>
+
+        <span class="c1"># Check for errors here because else it adds a 50% overhead because it&#39;s</span>
+        <span class="c1"># still busy setting the sequence</span>
+        <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">get_errors</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">set_sequence</span><span class="p">(</span><span class="s1">&#39;sequence.seq&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveforms</span> <span class="o">=</span> <span class="n">waveforms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveform_filenames</span> <span class="o">=</span> <span class="n">waveform_filenames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="n">sequence</span></div>
+
+<div class="viewcode-block" id="AWG520Interface.start"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_channels</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{ch}</span><span class="s1">_status&#39;</span><span class="p">](</span><span class="s1">&#39;ON&#39;</span><span class="p">)</span>
+        <span class="c1"># self.instrument.ch1.status(&#39;ON&#39;)</span>
+        <span class="c1"># self.instrument.ch2.status(&#39;ON&#39;)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="c1"># SLeep for a short time because else it sometimes misses first trigger</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWG520Interface.stop"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">ch1_status</span><span class="p">(</span><span class="s1">&#39;OFF&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">ch2_status</span><span class="p">(</span><span class="s1">&#39;OFF&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="DCPulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">DCPulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="c1"># Number of points in a waveform (must be at least 256)</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">DCPulse</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="mi">256</span>
+
+<div class="viewcode-block" id="DCPulseImplementation.implement"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                  <span class="n">t_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Implements the DC pulses for the AWG520</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            first_point_voltage: Voltage to set first point of waveform to.</span>
+<span class="sd">                When the previous waveform ends, the voltage is set to the first</span>
+<span class="sd">                point of the next voltage.</span>
+<span class="sd">            sampling_rate: AWG sampling rate</span>
+<span class="sd">            final_delay: Final part of waveform to skip. If this does not exist,</span>
+<span class="sd">                the waveform may not have finished when next trigger arrives,</span>
+<span class="sd">                in which case the trigger is ignored.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            waveform</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># AWG520 requires waveforms of at least 256 points</span>
+        <span class="n">waveform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">))</span>
+        <span class="n">repetitions</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Repetitions is irrelevant</span>
+
+        <span class="k">return</span> <span class="n">waveform</span><span class="p">,</span> <span class="n">repetitions</span></div></div>
+
+
+<div class="viewcode-block" id="SinePulseImplementation"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation">[docs]</a><span class="k">class</span> <span class="nc">SinePulseImplementation</span><span class="p">(</span><span class="n">PulseImplementation</span><span class="p">):</span>
+    <span class="c1"># Number of points in a waveform (must be at least 256)</span>
+    <span class="n">pulse_class</span> <span class="o">=</span> <span class="n">SinePulse</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">settings</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="SinePulseImplementation.implement"><a class="viewcode-back" href="../../../silq.instrument_interfaces.Tektronix.html#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.implement">[docs]</a>    <span class="k">def</span> <span class="nf">implement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                  <span class="n">t_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                  <span class="n">sampling_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Implements Sine pulses for the AWG520</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            first_point_voltage: Voltage to set first point of waveform to.</span>
+<span class="sd">                When the previous waveform ends, the voltage is set to the first</span>
+<span class="sd">                point of the next voltage.</span>
+<span class="sd">            sampling_rate: AWG sampling rate</span>
+<span class="sd">            final_delay: Final part of waveform to skip. If this does not exist,</span>
+<span class="sd">                the waveform may not have finished when next trigger arrives,</span>
+<span class="sd">                in which case the trigger is ignored.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Waveform array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">silq</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sine_waveform_settings&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">}</span>
+        <span class="n">max_points</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;max_points&#39;</span><span class="p">,</span> <span class="mi">50000</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_points</span><span class="p">:</span>
+            <span class="n">waveform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span>
+            <span class="n">repetitions</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">t_list</span><span class="p">)</span>
+            <span class="n">min_points</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;min_points&#39;</span><span class="p">,</span>
+                                      <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="mi">65536</span> <span class="o">*</span> <span class="n">sampling_rate</span><span class="p">))</span>
+            <span class="n">use_modified_frequency</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;use_modified_frequency&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">pulse_to_waveform_sequence</span><span class="p">(</span><span class="n">max_points</span><span class="o">=</span><span class="n">max_points</span><span class="p">,</span>
+                                                 <span class="n">frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span>
+                                                 <span class="n">sampling_rate</span><span class="o">=</span><span class="n">sampling_rate</span><span class="p">,</span>
+                                                 <span class="n">total_duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+                                                 <span class="n">min_points</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="n">min_points</span><span class="p">),</span>
+                                                 <span class="n">sample_points_multiple</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                                                 <span class="o">**</span><span class="n">settings</span>
+                                                 <span class="p">)</span>
+            <span class="c1"># Store results for debugging purposes</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">results</span>
+
+            <span class="k">if</span> <span class="n">use_modified_frequency</span><span class="p">:</span>
+                <span class="c1"># Temporarily change frequency to modified value</span>
+                <span class="n">original_frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;optimum&#39;</span><span class="p">][</span><span class="s1">&#39;modified_frequency&#39;</span><span class="p">]</span>
+
+            <span class="n">t_list_segment</span> <span class="o">=</span> <span class="n">t_list</span><span class="p">[:</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;optimum&#39;</span><span class="p">][</span><span class="s1">&#39;points&#39;</span><span class="p">]]</span>
+            <span class="n">waveform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">t_list_segment</span><span class="p">)</span>
+            <span class="n">repetitions</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;optimum&#39;</span><span class="p">][</span><span class="s1">&#39;repetitions&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">use_modified_frequency</span><span class="p">:</span>
+                <span class="c1"># Revert frequency to original</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">original_frequency</span>
+
+        <span class="k">return</span> <span class="n">waveform</span><span class="p">,</span> <span class="n">repetitions</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,722 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Creating IPython Widgets (IPywidgets) &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Code snippets" href="code snippets/index.html" />
+    <link rel="prev" title="Analysis notebook guidelines" href="Analysis notebook guidelines.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Parameter guide.html">Parameter guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulses and PulseSequences.html">Pulses and PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Experiment folder guide.html">Experiment folder guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InstrumentInterface guidelines.html">InstrumentInterface guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Analysis notebook guidelines.html">Analysis notebook guidelines</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Creating IPython Widgets (IPywidgets)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Creating-an-IPywidget">Creating an IPywidget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Standard-IPywidgets-(no-Javascript)">Standard IPywidgets (no Javascript)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Method-1:-Creating-Javascript-cell">Method 1: Creating Javascript cell</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-and-executing-files">Creating and executing files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-custom-package">Creating custom package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Jupyter-notebook-extensions">Jupyter notebook extensions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>Creating IPython Widgets (IPywidgets)</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/Creating IPython Widgets.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    min-width: 5ex;
+    padding-top: 0.3rem;
+    padding-right: 0.3rem;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 0.3rem;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Creating-IPython-Widgets-(IPywidgets)">
+<h1>Creating IPython Widgets (IPywidgets)<a class="headerlink" href="#Creating-IPython-Widgets-(IPywidgets)" title="Permalink to this headline">¶</a></h1>
+<p><strong>ipywidgets is a Python package that can be installed using ``pip install ipywidgets``.
+Be sure to have the latest version of ipywidgets (at least 7.0).</strong> ## Introduction IPython widgets can be used to enhance the interactivity of Jupyter notebooks. They allow adding GUI-like elements, such as buttons, textboxes, tabs, that can be linked to Python code execution. Widgets can be further linked to Javascript code, an important feature as it allows modification of the Javascript front-end. This enables: - Adding new elements using Javascript. - Cell manipulation
+(creating/deleting/moving/executing cells) - Linking keyboard shortcuts to code execution - Changing/adding CSS to change the page style</p>
+<p>IPywidgets can be used to create very interesting interactive features. As an example, one could create a sidebar with buttons that, when pressed, execute specific notebook cells.</p>
+<p>For more information, please read: - IPywidgets documentation: <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/">https://ipywidgets.readthedocs.io/en/stable/</a>. In particular: - List of standard IPywidgets: <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20List.html">https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20List.html</a> - IPywidget interaction with Javascript: <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Custom.html">https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Custom.html</a> - Jupyter notebook extensions <a class="reference external" href="https://github.com/ipython-contrib/jupyter_contrib_nbextensions">https://github.com/ipython-contrib/jupyter_contrib_nbextensions</a> These extensions are written in Javascript, and so the code can
+also be used for IPywidgets. The big difference is that a notebook extension is always executed when a notebook starts (if it’s enabled), while an IPywidget needs to be created in Python. Furthermore, an extension is limited to Javascript, but an IPywidget can have both Python and Javascript, and can interact between the two. It contains many good examples; for a good overview, install <a class="reference external" href="https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator">https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator</a> - QCoDeS used to have widgets as well,
+which showed an interesting way of using them. Check version 1.3 (hash fb3c964c8c64cc81af6e9dee181ba0b3ab45a0c0)</p>
+<div class="section" id="Creating-an-IPywidget">
+<h2>Creating an IPywidget<a class="headerlink" href="#Creating-an-IPywidget" title="Permalink to this headline">¶</a></h2>
+<p>There are four ways (that I know of) to create an IPywidget. Each of these ways is explained below</p>
+<div class="section" id="Standard-IPywidgets-(no-Javascript)">
+<h3>Standard IPywidgets (no Javascript)<a class="headerlink" href="#Standard-IPywidgets-(no-Javascript)" title="Permalink to this headline">¶</a></h3>
+<p>The simplest method to use widgets is to import ipywidgets and use its standard widget objects. As an example, we create a button that, when presed, will print some text.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="k">import</span> <span class="n">widgets</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="k">import</span> <span class="n">display</span>
+<span class="n">button</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;click me&#39;</span><span class="p">)</span>
+<span class="c1"># Attach callback when pressed</span>
+<span class="n">button</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;You clicked me&#39;</span><span class="p">))</span>
+
+<span class="c1"># Display button</span>
+<span class="n">display</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+A Jupyter Widget
+</pre></div></div>
+</div>
+<p>This already provides quite some interactivity, as it allows execution of Python code when events occur. The advantage is that the code is very simple, and so it’s easy to create such widgets. There are several disadvantages though: - It is difficult to interact these elements with Javascript (you would need to subclass it) - The widgets can only be modified by a limited amount (no real css modification)</p>
+<p>Therefore, this method is only useful for very simple widgets. However, you can add these widgets as part of larger widgets created using the methods described below.</p>
+<p>More info: <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Basics.html">https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Basics.html</a></p>
+</div>
+<div class="section" id="Method-1:-Creating-Javascript-cell">
+<h3>Method 1: Creating Javascript cell<a class="headerlink" href="#Method-1:-Creating-Javascript-cell" title="Permalink to this headline">¶</a></h3>
+<p>Jupyter notebook allows direct execution of javascript code by starting the code with <code class="docutils literal notranslate"><span class="pre">%%javascript</span></code>. As an example, the code below sends a message to the console</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-javascript notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="nx">javascript</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;this is a console message.&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;IPython.core.display.Javascript object&gt;
+</pre></div></div>
+</div>
+<p>Console messages can be read by going to the browser console, usually in developer tools (press F12 for chrome in windows).</p>
+<p>We will go through a small example of a custom widget. This shows the interaction between the Javascript front-end and the Python back-end. The example is based on the IPywidgets documentation, and shows additional information: <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Custom.html">https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Custom.html</a></p>
+<div class="section" id="Javascript-front-end">
+<h4>Javascript front-end<a class="headerlink" href="#Javascript-front-end" title="Permalink to this headline">¶</a></h4>
+<p>Python widgets can be linked to a Javascript module. These module use the AMD mechanism, used to load modules asynchronously. These AMD modules are defined with the <code class="docutils literal notranslate"><span class="pre">define</span></code> command, where the first argument is the name, and the second is the list of required packages. These packages are passed as arguments to the function (in this case widgets).</p>
+<p>An IPywidget is connected to a specific view within a single module (in the example below HelloView in the hello module).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-javascript notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="nx">javascript</span>
+<span class="c1">// This line is needed to ensure that the module does not already exist</span>
+<span class="nx">require</span><span class="p">.</span><span class="nx">undef</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">);</span>
+
+<span class="nx">define</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;@jupyter-widgets/base&quot;</span><span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">widgets</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="kd">var</span> <span class="nx">HelloView</span> <span class="o">=</span> <span class="nx">widgets</span><span class="p">.</span><span class="nx">DOMWidgetView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+
+        <span class="nx">render</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">value_changed</span><span class="p">();</span>
+            <span class="c1">// We specify a Javascript callback when the `value` attribute changes value</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;change:value&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">value_changed</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">value_changed</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">// Change the text output every time the value attribute changes</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">el</span><span class="p">.</span><span class="nx">textContent</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">);</span>
+        <span class="p">},</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">HelloView</span> <span class="o">:</span> <span class="nx">HelloView</span>
+    <span class="p">};</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;IPython.core.display.Javascript object&gt;
+</pre></div></div>
+</div>
+<p>Some packages are already automatically loaded, and therefore don’t need to be explicitly passed. For instance, <code class="docutils literal notranslate"><span class="pre">Jupyter</span></code> can be used to interact with the Jupyter notebook (create cells etc.), and <code class="docutils literal notranslate"><span class="pre">$</span></code> is used for jQuery</p>
+</div>
+<div class="section" id="Python-back-end">
+<h4>Python back-end<a class="headerlink" href="#Python-back-end" title="Permalink to this headline">¶</a></h4>
+<p>A custom Ipywidget can be created by inheriting from widgets.DOMWidget. Below, we see one such widget, which three attributes. These are special attributes, as they are traitlet instances. The tag sync=True ensures that they are linked to the Javascript front-end, allowing communication between the two.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">_view_module</span></code> attribute specifies the widget module, and the <code class="docutils literal notranslate"><span class="pre">_view_name</span></code> specifies the Javascript View within the module. The <code class="docutils literal notranslate"><span class="pre">value</span></code> attribute is used to interact between the Python backend and the Javascript front-end</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">traitlets</span> <span class="k">import</span> <span class="n">Unicode</span>
+<span class="k">class</span> <span class="nc">HelloWidget</span><span class="p">(</span><span class="n">widgets</span><span class="o">.</span><span class="n">DOMWidget</span><span class="p">):</span>
+    <span class="n">_view_name</span> <span class="o">=</span> <span class="n">Unicode</span><span class="p">(</span><span class="s1">&#39;HelloView&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">_view_module</span> <span class="o">=</span> <span class="n">Unicode</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">Unicode</span><span class="p">(</span><span class="s1">&#39;Hello World!&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Here we instantiate the widget and display it</span>
+<span class="n">hello_widget</span> <span class="o">=</span> <span class="n">HelloWidget</span><span class="p">()</span>
+<span class="n">display</span><span class="p">(</span><span class="n">hello_widget</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+A Jupyter Widget
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># When we change the value attribute, this immediately changes the text above (via Javascript)</span>
+<span class="n">hello_widget</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s1">&#39;Newer text&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+event changed
+</pre></div></div>
+</div>
+<p>We’ve seen above that a change in value can trigger a Javascript callback. We can also register a Python callback as follow:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">hello_widget</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;event changed&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Changing the value now also emits a print statement</span>
+<span class="n">hello_widget</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s1">&#39;Newest text&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+event changed
+event changed
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="CSS">
+<h4>CSS<a class="headerlink" href="#CSS" title="Permalink to this headline">¶</a></h4>
+<p>It’s worth mentioning that the Javascript front-end can be combined with CSS. I really don’t know much about CSS, but the sidebar_toc repository contains an example.</p>
+<p>Also important is that anything created with Javascript/CSS (such as buttons) allows much more customizability. For more complex widgets, it’s therefore recommended to create all the buttons etc. in javascript+CSS, and only have the Python backend to allow the user to interact with it through Python code.</p>
+</div>
+</div>
+<div class="section" id="Creating-and-executing-files">
+<h3>Creating and executing files<a class="headerlink" href="#Creating-and-executing-files" title="Permalink to this headline">¶</a></h3>
+<p>Although the above method provides an easy way to create a new widget and test it, once it is working you don’t want all this code remaining in your notebook. A better approach is to create files for Javascript, Python, (and possibly CSS). IPython allows you to execute arbitrary chunks of Javascript, HTML (including CSS), and others:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="k">import</span> <span class="n">Javascript</span><span class="p">,</span> <span class="n">HTML</span>
+</pre></div>
+</div>
+</div>
+<p>QCoDeS contains a piece of code that allows easy execution of Javascript/CSS/HTML files, if they are placed within the QCoDeS folder. For instance, the following code would execute all the Javascript within qcodes/widgets/sidebar_widget.js</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">qcodes.widgets.display</span> <span class="k">import</span> <span class="n">display_auto</span>
+<span class="n">display_auto</span><span class="p">(</span><span class="s1">&#39;widgets/sidebar_widget.js&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>For QCoDeS-specific widgets, it is therefore recommended to place the widgets inside the qcodes/widgets folder, and execute it this way. See the sidebar widget for an example.</p>
+</div>
+<div class="section" id="Creating-custom-package">
+<h3>Creating custom package<a class="headerlink" href="#Creating-custom-package" title="Permalink to this headline">¶</a></h3>
+<p>If you have a widget that would be useful outside of QCoDeS as well, you could decide to create a package for it that you can import. This does take some time and effort, and is not recommended for things QCoDeS related.</p>
+<p>There is a template for such packages here: <a class="reference external" href="https://github.com/jupyter-widgets/widget-cookiecutter">https://github.com/jupyter-widgets/widget-cookiecutter</a> There are a few annoying differences when using this template. Most importantly, the template does not use the AMD define method. Also, installing a widget package can be complicated, as it requires installation of npm</p>
+<p>If you want an example of making a custom widget package, see <a class="reference external" href="https://github.com/nulinspiratie/cell-tab-widget">https://github.com/nulinspiratie/cell-tab-widget</a></p>
+</div>
+</div>
+<div class="section" id="Jupyter-notebook-extensions">
+<h2>Jupyter notebook extensions<a class="headerlink" href="#Jupyter-notebook-extensions" title="Permalink to this headline">¶</a></h2>
+<p>Although not a widget, a notebook extension does allow adding arbitrary javascript code. Therefore, if you don’t need any communication with the Python backend, it might be worthwhile to create an extension instead.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="code snippets/index.html" class="btn btn-neutral float-right" title="Code snippets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Analysis notebook guidelines.html" class="btn btn-neutral float-left" title="Analysis notebook guidelines" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

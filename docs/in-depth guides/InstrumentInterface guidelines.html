@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>InstrumentInterface guidelines &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Saving traces" href="Saving traces.html" />
+    <link rel="prev" title="Experiment folder guide" href="Experiment folder guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Parameter guide.html">Parameter guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulses and PulseSequences.html">Pulses and PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Experiment folder guide.html">Experiment folder guide</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">InstrumentInterface guidelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#adding-new-interfaces">Adding new interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#changing-existing-files">Changing existing files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-new-files">Creating new files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#instrument-interfaces-guidelines">Instrument Interfaces guidelines</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Analysis notebook guidelines.html">Analysis notebook guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Creating IPython Widgets.html">Creating IPython Widgets (IPywidgets)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>InstrumentInterface guidelines</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/InstrumentInterface guidelines.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="instrumentinterface-guidelines">
+<h1>InstrumentInterface guidelines<a class="headerlink" href="#instrumentinterface-guidelines" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="adding-new-interfaces">
+<h2>Adding new interfaces<a class="headerlink" href="#adding-new-interfaces" title="Permalink to this headline">¶</a></h2>
+<p>Adding a new instrument interface involves changing a handful of existing files
+and creating some necessary new files.
+This section gives a quick overview on how to add a new (empty) interface.</p>
+<div class="section" id="changing-existing-files">
+<h3>Changing existing files<a class="headerlink" href="#changing-existing-files" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">silq/instrument_interfaces/__init__.py</span></code></p>
+<p>Add a new line for importing the new interface class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.</span><span class="o">&lt;</span><span class="n">company</span><span class="o">&gt;.&lt;</span><span class="n">model</span><span class="o">&gt;</span><span class="n">_interface</span> <span class="kn">import</span> <span class="o">&lt;</span><span class="n">model</span><span class="o">&gt;</span><span class="n">Interface</span>
+</pre></div>
+</div>
+<p>Add a new entry in the <code class="docutils literal notranslate"><span class="pre">instrument_interfaces</span></code> dictionary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>``&lt;instrument_class_name&gt;``: &lt;model&gt;Interface,
+</pre></div>
+</div>
+<p>This connects the new interface to the corresponding Qcodes driver of the instrument</p>
+</div>
+<div class="section" id="creating-new-files">
+<h3>Creating new files<a class="headerlink" href="#creating-new-files" title="Permalink to this headline">¶</a></h3>
+<p>The following files need to be created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ``silq/instrument_interfaces/&lt;company&gt;/&lt;model&gt;_interface.py``</span>
+</pre></div>
+</div>
+<p>This is the main file containing most of the interface functionality. This
+file should contain a class specific for <code class="docutils literal notranslate"><span class="pre">&lt;model&gt;`</span> <span class="pre">called</span> <span class="pre">``&lt;model&gt;Interface</span></code>
+which inherits from <a class="reference internal" href="../../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> and should implement all abstract
+methods.</p>
+<p># <code class="docutils literal notranslate"><span class="pre">silq/instrument_interfaces/&lt;company&gt;/__init__.py</span></code></p>
+<p>This file is used for importing (possibly multiple) interface(s) of a specific
+company. Add a new line to do so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.</span><span class="o">&lt;</span><span class="n">model</span><span class="o">&gt;</span><span class="n">_interface</span> <span class="kn">import</span> <span class="o">&lt;</span><span class="n">model</span><span class="o">&gt;</span><span class="n">Interface</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="instrument-interfaces-guidelines">
+<h3>Instrument Interfaces guidelines<a class="headerlink" href="#instrument-interfaces-guidelines" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="triggering">
+<h4>Triggering<a class="headerlink" href="#triggering" title="Permalink to this headline">¶</a></h4>
+<p>The duration of a trigger pulse is specified by the receiving instrument
+interface. Therefore, if the interface needs to be or can be triggered by
+another instrument, it should have a parameter called <code class="docutils literal notranslate"><span class="pre">trigger_in_duration</span></code>.
+This value can be set by the user, and is used when requesting additional
+trigger pulses.</p>
+</div>
+<div class="section" id="acquisition-interfaces">
+<h4>Acquisition interfaces<a class="headerlink" href="#acquisition-interfaces" title="Permalink to this headline">¶</a></h4>
+<p>Should have the following parameters:</p>
+<dl class="simple">
+<dt>acquisition_channels</dt><dd><p>Names of acquisition channels [chA, chB, etc.]. Set by the layout.</p>
+</dd>
+<dt>sample rate</dt><dd><p>Acquisition sampling rate (Hz)</p>
+</dd>
+<dt>samples</dt><dd><p>Number of times to acquire the pulse sequence.</p>
+</dd>
+<dt>capture_full_trace</dt><dd><p>Capture from t=0 to end of pulse sequence. False by default, in which case
+start and stop times correspond to min(t_start) and max(t_stop) of all pulses
+with the flag acquire=True, respectively. Setting to True is useful for
+viewing/storing the full traces.</p>
+</dd>
+<dt>points_per_trace</dt><dd><p>Number of points in a trace.</p>
+</dd>
+</dl>
+<p>Should furthermore have the the attributes:</p>
+<dl class="simple">
+<dt>traces</dt><dd><p>Dictionary of raw unsegemnted traces, of shape {channel_name: channel_traces}</p>
+</dd>
+<dt>pulse_traces</dt><dd><p>Dictionary containing traces segmented per pulse.
+Shape is: {pulse_name: {channel_name: pulse_channel_traces}}</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Saving traces.html" class="btn btn-neutral float-right" title="Saving traces" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Experiment folder guide.html" class="btn btn-neutral float-left" title="Experiment folder guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

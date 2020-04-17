@@ -1,0 +1,718 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.detect_peaks &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.detect_peaks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.detect_peaks</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="k">import</span> <span class="n">convolve2d</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">pi</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">MatPlot</span><span class="p">,</span> <span class="n">DataArray</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TODO plan:</span>
+<span class="sd">*- Do any TODO that Serwan or myself adds.</span>
+<span class="sd">*- Add plot capabilities and any minor modifications to functions</span>
+<span class="sd">*  - &#39;Off&#39;     = No plots</span>
+<span class="sd">*  - &#39;Simple&#39;  = Plot of DC data and transition data next to it</span>
+<span class="sd">*  - &#39;Complex&#39; = All of simple, plus the transition_gradient and theta plots for each point.</span>
+<span class="sd">- Make a function to test sweeps and display it nicely</span>
+<span class="sd">  Ideal function:</span>
+<span class="sd">  - Input: X, Y, Z, data</span>
+<span class="sd">  - Output: slope of transition(s) while varying gate (Z)</span>
+<span class="sd">- test this on new test data</span>
+<span class="sd">- If time allows, use capacitance matrix to find location of the donor.</span>
+
+<span class="sd">* = tentatively done</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="max_index"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.max_index">[docs]</a><span class="k">def</span> <span class="nf">max_index</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the index of the maximum element in M.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        M: n-dimensional matrix. Ideally a 2-dimensional theta matrix,</span>
+<span class="sd">            2-dimensional charge stability diagram, or 2-dimensional transition</span>
+<span class="sd">            gradient matrix.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Array with x and y index of maximum element.</span>
+<span class="sd">        For a transition gradient matrix, I[0] is dx, and I[1] is x1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="calculate_gradient"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.calculate_gradient">[docs]</a><span class="k">def</span> <span class="nf">calculate_gradient</span><span class="p">(</span><span class="n">Z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Computes the theta matrix for a 2-dimensional charge stability diagram.</span>
+
+<span class="sd">    The theta matrix indicates the direction of the 2-dimensional gradient.</span>
+
+<span class="sd">    # TODO Please elaborate code. At this moment all these arrays don&#39;t make</span>
+<span class="sd">    #     sense. Either say why the values are chosen, or refer to a</span>
+<span class="sd">    #     website/paper where they were obtained from.</span>
+<span class="sd">    #     -&gt; The wikipedia page for sobel operator explains most of this funtion https://en.wikipedia.org/wiki/Sobel_operator</span>
+<span class="sd">    # TODO Could modifying these values improve the code?</span>
+<span class="sd">    #     -&gt; Yes, fine-tuning these values could definitely improve performance. This can be done later.</span>
+<span class="sd">    # TODO From what I gather, we&#39;re applying a kernel, so perhaps it makes sense</span>
+<span class="sd">    #     to have kernel_size as a keyword argument.</span>
+<span class="sd">    #     -&gt; This is a good point, i want to add that later.</span>
+<span class="sd">    # TODO what does filter do excactly? What type of filtering is applied?</span>
+<span class="sd">    #     -&gt; SY and SX are differentiating kernels, all others are binomial window filters.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        Z: 2-dimensional charge stability diagram matrix.</span>
+<span class="sd">        filter: Enables filtering during the calculations.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        magnitude: Magnitude of gradient</span>
+<span class="sd">        theta: 2-dimensional theta matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">### Filter coefficients</span>
+
+    <span class="c1"># Refer to https://en.wikipedia.org/wiki/Sobel_operator</span>
+    <span class="c1"># That explains the prinicples used here.</span>
+
+    <span class="c1"># Sobel Operator</span>
+    <span class="c1"># SY and SX are differentiating kernels, while the ySfil and xSfil are averaging.</span>
+    <span class="n">SY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">ySfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="n">SY</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">SY</span><span class="p">,</span> <span class="n">ySfil</span><span class="p">)</span>
+    <span class="n">SX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">xSfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">SX</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">SX</span><span class="p">,</span> <span class="n">xSfil</span><span class="p">)</span>
+
+    <span class="c1"># Binomial filter kernel for the X and Y gradient matrices.</span>
+    <span class="n">xGfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">yGfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="n">Gfil</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">xGfil</span><span class="p">,</span> <span class="n">yGfil</span><span class="p">)</span>
+
+    <span class="c1"># Binomial filter kernel for the source matrix Z prior to computing the gradients.</span>
+    <span class="n">xZfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">yZfil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="n">Zfil</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">xZfil</span><span class="p">,</span> <span class="n">yZfil</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">filter</span><span class="p">:</span>
+        <span class="c1"># This will filter the source matrix Z prior to computing the gradients.</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">Zfil</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+
+    <span class="c1">#Calculate X and Y gradient matrices</span>
+    <span class="n">GY</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">SY</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+    <span class="n">GX</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">filter</span><span class="p">:</span>
+        <span class="c1">#This will filter the gradient matrices once they have been calculated.</span>
+        <span class="n">GY</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">GY</span><span class="p">,</span> <span class="n">Gfil</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+        <span class="n">GX</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">GX</span><span class="p">,</span> <span class="n">Gfil</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Calculate gradient magnitude</span>
+    <span class="n">magnitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">GY</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">GX</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1">#Calculate gradient direction.</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">GY</span> <span class="o">/</span> <span class="n">GX</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">theta</span></div>
+
+
+<div class="viewcode-block" id="find_matrix_mode"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.find_matrix_mode">[docs]</a><span class="k">def</span> <span class="nf">find_matrix_mode</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Determines the mode of a matrix (most-often occurring element).</span>
+
+<span class="sd">    # TODO check if this description is accurate</span>
+<span class="sd">        -&gt; Yes it is.</span>
+<span class="sd">    Mode is found by first generating a histogram of matrix values, and then</span>
+<span class="sd">    returning the center value of the bin with the highest count.</span>
+<span class="sd">    Values are grouped because floating numbers are only approximately equal.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        M: n-dimensional matrix. Ideally a 2-dimensional theta matrix.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        mode: most common element of M after grouping via a histogram.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hist</span><span class="p">,</span> <span class="n">hist_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">pi</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">bins</span><span class="p">))</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">max_index</span><span class="p">(</span><span class="n">hist</span><span class="p">)</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="p">(</span><span class="n">hist_edges</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">+</span> <span class="n">hist_edges</span><span class="p">[</span><span class="n">ind</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">])])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="calculate_transition_gradient"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.calculate_transition_gradient">[docs]</a><span class="k">def</span> <span class="nf">calculate_transition_gradient</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compute the transition gradient matrix from a given theta matrix.</span>
+
+<span class="sd">    # TODO minor explanation of what a transition gradient is</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        theta: 2-dimensional theta matrix of a charge stability diagram.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        2-dimensional transition gradient matrix.</span>
+<span class="sd">            x-axis is start position, y-axis is gradient.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Low priority: duplicate this function to recalculate transition_gradent with reduced range.</span>
+
+    <span class="c1"># Generate Lines</span>
+    <span class="n">ly</span><span class="p">,</span> <span class="n">lx</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">yl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ly</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="c1"># TODO where does this value come from?</span>
+    <span class="c1"># -&gt; This value was found to be roughly twice the maximum dx value a transition will have</span>
+    <span class="n">dx_max</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">ly</span> <span class="o">/</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="n">transition_gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dx_max</span><span class="p">,</span> <span class="n">lx</span><span class="p">))</span>
+
+    <span class="c1"># TODO (Serwan) there&#39;s probably a loopless way to implement this</span>
+    <span class="c1"># -&gt; I don&#39;t suspect there is.</span>
+    <span class="k">for</span> <span class="n">x1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lx</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">dx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">([</span><span class="n">x1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dx_max</span><span class="p">])):</span>
+            <span class="n">xl</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="o">-</span><span class="n">dx</span> <span class="o">*</span> <span class="n">yl</span> <span class="o">/</span> <span class="n">ly</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">transition_gradient</span><span class="p">[</span><span class="n">dx</span><span class="p">,</span> <span class="n">x1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">xl</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">filter</span><span class="p">:</span>
+        <span class="c1">#This filters transition_gradient but can also lose some information.</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+        <span class="n">transition_gradient</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">,</span> <span class="n">filt</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span><span class="o">/</span><span class="mi">9</span>
+
+    <span class="k">return</span> <span class="n">transition_gradient</span></div>
+
+
+<div class="viewcode-block" id="delete_transition"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.delete_transition">[docs]</a><span class="k">def</span> <span class="nf">delete_transition</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">location</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Removes a transition from a theta matrix. In order to find transitions, they are identified one at a time. </span>
+<span class="sd">    The most prominent transition is identified first, then removed from the theta matrix so that the second most </span>
+<span class="sd">    prominent transition can be found.</span>
+<span class="sd">    </span>
+<span class="sd">    Transitions can be identitified by their theta matrix being significantly different to the most common theta value. </span>
+<span class="sd">    Thus, by replacing a transition with the most common value, it is essentially being removed.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        theta: 2-dimensional theta matrix of a charge stability diagram.</span>
+<span class="sd">        location: Base index of the charge transfer event in Z</span>
+<span class="sd">        gradient: Gradient of the charge transfer event in Z</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        theta: modified 2-dimensional theta matrix, with the specified transition removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ly</span><span class="p">,</span><span class="n">lx</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">yl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ly</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="c1"># Start and stop are the base locations from which to delete a transition from.</span>
+    <span class="c1"># TODO improve start, stop, why is +-3 chosen?</span>
+    <span class="c1"># -&gt; Because of how theta is filtered, the transition will roughly be visible within a +-3 range.</span>
+    <span class="c1">#    This could definitely be fine tuned later to be variable length depending on how much filtering there is. </span>
+    <span class="c1">#    I&#39;d say this low priority for the moment but should be done in future.</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">location</span> <span class="o">-</span> <span class="mi">3</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">location</span> <span class="o">+</span> <span class="mi">3</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">gradient</span>
+
+    <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">stop</span> <span class="o">&gt;</span> <span class="n">lx</span><span class="p">:</span>  <span class="c1"># this needs some fix</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="n">lx</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="o">-</span> <span class="n">dx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">start</span>
+
+    <span class="c1"># TODO (Serwan) there&#39;s probably a faster loop-less way to do this</span>
+    <span class="k">for</span> <span class="n">x1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">):</span>
+        <span class="n">xl</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="o">-</span><span class="n">dx</span> <span class="o">*</span> <span class="n">yl</span> <span class="o">/</span> <span class="n">ly</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">theta</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">xl</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">theta</span></div>
+
+
+<div class="viewcode-block" id="calculate_theta_deviation"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.calculate_theta_deviation">[docs]</a><span class="k">def</span> <span class="nf">calculate_theta_deviation</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">theta_mode</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="c1">#i will add documentation soon</span>
+    <span class="c1">#you can change this method for potential improvements</span>
+    <span class="n">theta_deviation</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_mode</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">theta_deviation</span></div>
+
+
+<span class="c1"># Serwan i re-did the plot_transitions to make it easier for me to generate plots.</span>
+<span class="c1"># I imagine this function could easily be defined in a notebook and used still seperate from this package if you need it.</span>
+<span class="c1"># def plot_transitions(transitions, ax=None, **plot_kwargs):</span>
+<span class="c1">#     if ax is None:</span>
+<span class="c1">#         fig, ax = plt.subplots()</span>
+
+<span class="c1">#     plot_kwargs.setdefault(&#39;linestyle&#39;, &#39;-&#39;)</span>
+
+<span class="c1">#     for transition in transitions:</span>
+<span class="c1">#         yvals = ax.get_ylim()</span>
+<span class="c1">#         xvals = [transition[&#39;location&#39;], transition[&#39;location&#39;]]</span>
+<span class="c1">#         xvals[1] += (yvals[1] - yvals[0]) / transition[&#39;gradient&#39;]</span>
+<span class="c1">#         ax.plot(xvals, yvals, **plot_kwargs)</span>
+
+<div class="viewcode-block" id="plot_transitions"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.plot_transitions">[docs]</a><span class="k">def</span> <span class="nf">plot_transitions</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">transitions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]):</span>
+    <span class="c1">#will add documentation later</span>
+    <span class="c1">#Plotting code</span>
+    <span class="n">fig0</span><span class="p">,(</span><span class="n">ax0</span><span class="p">,</span><span class="n">ax1</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">fig0</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;Transition Identification&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;semibold&#39;</span><span class="p">)</span>
+
+    <span class="n">ax0</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hot&#39;</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;DBL &amp; DBR Voltage (V)&#39;</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;TGAC Voltage (V)&#39;</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Source scan&#39;</span><span class="p">)</span>
+
+    <span class="n">ax1</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hot&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;DBL &amp; DBR Voltage (V)&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Transitions Identified&#39;</span><span class="p">)</span>
+
+    <span class="n">yvals</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">transition</span> <span class="ow">in</span> <span class="n">transitions</span><span class="p">:</span>
+        <span class="n">x_base</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">x_base</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">)</span> <span class="p">:</span> <span class="n">x_base</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">x_base</span><span class="p">]</span>
+
+        <span class="n">xvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_base</span><span class="p">,</span> <span class="n">x_base</span><span class="p">]</span>
+        <span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">yvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">yvals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">transition</span><span class="p">[</span><span class="s1">&#39;gradient&#39;</span><span class="p">]</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+            <span class="c1"># TODO add plot of transition in DC scan</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="plot_transition_gradient"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.plot_transition_gradient">[docs]</a><span class="k">def</span> <span class="nf">plot_transition_gradient</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">theta_deviation</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+    <span class="c1">#will add documentation later</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">13</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+
+    <span class="n">c</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;inferno&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;∆x value&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;DBL &amp; DBR voltage index&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Transition Gradient Matrix&#39;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">theta_deviation</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;DBL &amp; DBR voltage index&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;TGAC voltage index&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Theta Matrix&#39;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="find_transitions"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.find_transitions">[docs]</a><span class="k">def</span> <span class="nf">find_transitions</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                     <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="c1">#Serwan, i removed min_gradient because it is not really a minimum gradient and i have updated conditions.</span>
+                     <span class="c1">#Perhaps this could be changed later but for now i think it should be kept set.</span>
+                     <span class="n">true_units</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">charge_transfer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">plot</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Off&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Locate transitions within a 2-dimensional charge stability diagram</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        z: 2-dimensional charge stability diagram matrix.</span>
+<span class="sd">        x: 1-dimensional voltage vector for the x-axis of Z</span>
+<span class="sd">        y: 1-dimensional voltage vector for the y-axis of Z</span>
+<span class="sd">        min_gradient: Minimum gradient to count as a transition</span>
+<span class="sd">        true_units:</span>
+<span class="sd">            if True:</span>
+<span class="sd">                Where applicable, return all values in proper units. i.e. voltage and current.</span>
+<span class="sd">            if False:</span>
+<span class="sd">                Return values in calculation specific form. i.e. index and ratios.</span>
+<span class="sd">        charge_transfer:</span>
+<span class="sd">            Enables calculation of voltage and current shift information about transitions.</span>
+<span class="sd">            This is required to calculate dV, dI, dI_x, dI_y</span>
+<span class="sd">        plot:</span>
+<span class="sd">             - &#39;Off&#39;     = No plots</span>
+<span class="sd">             - &#39;Simple&#39;  = Plot of DC data and transition data next to it</span>
+<span class="sd">             - &#39;Complex&#39; = All of simple, plus the transition_gradient and theta plots for each transition.</span>
+
+<span class="sd">    Returns: a list of dictionaries, one entry for each transition found:</span>
+<span class="sd">    # TODO (Serwan) simplify this part</span>
+<span class="sd">    if true_units == True:</span>
+<span class="sd">        location  (float): Voltage at the base of the transition.</span>
+<span class="sd">        gradient  (float): Gradient of the transition. in y_Voltage/x_Voltage</span>
+<span class="sd">        intensity (float): Value between 0 and 1, indicating the strength of the transition</span>
+<span class="sd">        dV        (float): The shift of coulomb peaks from a charge transfer event. dV = dVtop = ∆q/Ctop</span>
+<span class="sd">        dI        (array): An array of current change from before to after a transition.</span>
+<span class="sd">                           Returns -1 if error.</span>
+<span class="sd">        dI_x      (array): An array of x-voltages corresponding to the points in dI.</span>
+<span class="sd">        dI_y      (array): An array of y-voltages corresponding to the points in dI.</span>
+<span class="sd">    if true_units == False):</span>
+<span class="sd">        location    (int): Index at the base of the transition.</span>
+<span class="sd">        gradient  (float): Gradient of the transition. in y-index/x-index</span>
+<span class="sd">        intensity (float): Value between 0 and 1, indicating the strength of the transition</span>
+<span class="sd">        dV          (int): The shift of coulomb peaks from a charge transfer event in terms of index in X.</span>
+<span class="sd">                           dV*(y[1]-y[0]) = dVtop = ∆q/Ctop</span>
+<span class="sd">        dI        (array): An array of current change from before to after a transition.</span>
+<span class="sd">                           Returns -1 if error.</span>
+<span class="sd">        dI_x      (array): An array of x-indices corresponding to the points in dI.</span>
+<span class="sd">        dI_y      (array): An array of y-indices corresponding to the points in dI.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">DataArray</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">ndarray</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">calculate_gradient</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">theta_mode</span> <span class="o">=</span> <span class="n">find_matrix_mode</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">theta_deviation</span> <span class="o">=</span> <span class="n">calculate_theta_deviation</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">theta_mode</span><span class="p">)</span>
+
+    <span class="n">transition_gradient</span> <span class="o">=</span> <span class="n">calculate_transition_gradient</span><span class="p">(</span><span class="n">theta_deviation</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;Complex&#39;</span><span class="p">):</span> <span class="n">plot_transition_gradient</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">,</span><span class="n">theta_deviation</span><span class="p">)</span>
+
+    <span class="n">transitions</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># This condition seems good now, could be improved later but i&#39;d say low priority.</span>
+    <span class="k">while</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">)</span> <span class="o">&gt;</span><span class="mf">0.3</span><span class="p">)):</span>
+        
+        <span class="c1">#maximum element of transition_gradient will reveal where the transition is</span>
+        <span class="n">raw_gradient</span><span class="p">,</span> <span class="n">raw_location</span> <span class="o">=</span> <span class="n">max_index</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">)</span> 
+        <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">)</span> 
+
+        <span class="c1"># When filtering with convolution, the size of theta and transition_gradient will differ from the initial Z matrix.</span>
+        <span class="c1"># The following lines adjust the raw_location from transition_gradient to be a true location in Z</span>
+        <span class="n">difx</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span> <span class="c1">#difference in x-axis size</span>
+        <span class="n">dify</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span> <span class="c1">#difference in y-axis size</span>
+        <span class="c1">#Adjusting the location: </span>
+        <span class="c1"># raw_location </span>
+        <span class="c1"># + difference in x</span>
+        <span class="c1"># + difference in x from dify due to gradient shift.</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">difx</span> <span class="o">+</span> <span class="n">raw_location</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">dify</span> <span class="o">*</span> <span class="n">raw_gradient</span> <span class="o">/</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        
+        <span class="c1">#Recalculate theta with the identified transition removed</span>
+        <span class="n">theta_deviation</span> <span class="o">=</span> <span class="n">delete_transition</span><span class="p">(</span><span class="n">theta_deviation</span><span class="p">,</span> <span class="n">raw_location</span><span class="p">,</span> <span class="n">raw_gradient</span><span class="p">)</span>
+        <span class="c1">#Recalculate transition_gradient with an updated theta</span>
+        <span class="n">transition_gradient</span> <span class="o">=</span> <span class="n">calculate_transition_gradient</span><span class="p">(</span><span class="n">theta_deviation</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1">#If the gradient registers as being close to perfectly vertical, skip over this transition, </span>
+        <span class="c1">#since transitions are never perfectly vertical. </span>
+        <span class="c1">#You can change this if you don&#39;t believe me but the algorithm will be more buggy</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">raw_gradient</span> <span class="o">&lt;</span><span class="mi">2</span><span class="p">):</span> <span class="k">continue</span>
+        
+        <span class="c1">#gradient = dy/dx = y_length/dx = theta.shape[0]/raw_gradient</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">raw_gradient</span><span class="p">)</span>
+        
+        <span class="c1"># The following lines combine together to come up with the final error calculation</span>
+        <span class="c1">#minimum_gradient = dy/max_dx = -(theta.shape[0]/(raw_gradient+1))</span>
+        <span class="c1">#maximum_gradient = dy/min_dx = -(theta.shape[0]/(raw_gradient-1))</span>
+        <span class="c1">#abs_error        = (maximum_gradient - minimum_gradient)/2</span>
+        <span class="c1">#percent_error    = abs_error/observed_gradient*100                = abs_error/(-(theta.shape[0]/raw_gradient))*100</span>
+        <span class="n">gradient_error</span>    <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">raw_gradient</span><span class="o">/</span><span class="p">(</span><span class="n">raw_gradient</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">raw_gradient</span><span class="o">/</span><span class="p">(</span><span class="n">raw_gradient</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">*</span><span class="mi">50</span>
+        
+
+        <span class="k">if</span> <span class="n">true_units</span><span class="p">:</span>  <span class="c1"># Convert indices to units</span>
+            <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># in V/V</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>  <span class="c1"># units in V</span>
+
+        <span class="k">if</span> <span class="n">charge_transfer</span><span class="p">:</span>  <span class="c1"># TODO What is the downside to applying this by default?</span>
+            <span class="c1"># This is not set to be enabled by default for three main reasons:</span>
+            <span class="c1"># 1. It can clutter the output and make it less clear to understand/read</span>
+            <span class="c1"># 2. It is called multiple times and takes up processing time (approx 10ms)</span>
+            <span class="c1"># 3. I haven&#39;t found anything useful for it yet, so it&#39;s not needed all the time</span>
+            
+            <span class="c1"># dV = dVtop = delta_q/Ctop</span>
+            <span class="n">dV</span><span class="p">,</span> <span class="n">dI</span><span class="p">,</span> <span class="n">dI_x</span><span class="p">,</span> <span class="n">dI_y</span> <span class="o">=</span> <span class="n">get_charge_transfer_information</span><span class="p">(</span>
+                <span class="n">z</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">theta_mode</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">true_units</span><span class="p">:</span> <span class="c1"># Convert indices to units</span>
+                <span class="n">dV</span> <span class="o">=</span> <span class="n">dV</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># units in V</span>
+                <span class="n">dI_y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">dI_y</span><span class="p">]</span> <span class="c1"># units in V</span>
+                <span class="n">dI_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">dI_x</span><span class="p">]</span> <span class="c1"># units in V</span>
+            <span class="n">transition</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
+                          <span class="s1">&#39;gradient&#39;</span><span class="p">:</span> <span class="n">gradient</span><span class="p">,</span>
+                          <span class="s1">&#39;gradient_error&#39;</span><span class="p">:</span> <span class="n">gradient_error</span><span class="p">,</span>
+                          <span class="s1">&#39;intensity&#39;</span><span class="p">:</span> <span class="n">intensity</span><span class="p">,</span>
+                          <span class="s1">&#39;dVtop&#39;</span><span class="p">:</span> <span class="n">dV</span><span class="p">,</span>
+                          <span class="s1">&#39;dI_y&#39;</span><span class="p">:</span> <span class="n">dI_y</span><span class="p">,</span>
+                          <span class="s1">&#39;dI_x&#39;</span><span class="p">:</span> <span class="n">dI_x</span><span class="p">,</span>
+                          <span class="s1">&#39;dI&#39;</span><span class="p">:</span> <span class="n">dI</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">transition</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
+                          <span class="s1">&#39;gradient&#39;</span><span class="p">:</span> <span class="n">gradient</span><span class="p">,</span>
+                          <span class="s1">&#39;gradient_error&#39;</span><span class="p">:</span> <span class="n">gradient_error</span><span class="p">,</span>
+                          <span class="s1">&#39;intensity&#39;</span><span class="p">:</span> <span class="n">intensity</span><span class="p">}</span>
+
+        <span class="c1">#Add transition entry onto the output list</span>
+        <span class="n">transitions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transition</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;Complex&#39;</span><span class="p">):</span> <span class="n">plot_transition_gradient</span><span class="p">(</span><span class="n">transition_gradient</span><span class="p">,</span><span class="n">theta_deviation</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;Simple&#39;</span><span class="p">)</span><span class="o">|</span><span class="p">(</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;Complex&#39;</span><span class="p">):</span> <span class="n">plot_transitions</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">transitions</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">transitions</span></div>
+
+
+<div class="viewcode-block" id="get_charge_transfer_information"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.detect_peaks.get_charge_transfer_information">[docs]</a><span class="k">def</span> <span class="nf">get_charge_transfer_information</span><span class="p">(</span><span class="n">Z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                    <span class="n">location</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                                    <span class="n">gradient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                                    <span class="n">theta_mode</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                                   <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Calculate information about a particular charge transfer event.</span>
+
+<span class="sd">    Firstly, calculates how much the coulomb peaks shift at a charge transfer event.</span>
+<span class="sd">    It does this by taking two slices either side of the transition, then comparing the shift.</span>
+<span class="sd">    </span>
+<span class="sd">    Secondly, the algorithm locates points where the current difference could be conducive as a tuning point.</span>
+<span class="sd">    It does this by again taking two slices either side of the transition and comparing the current difference.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Z: 2-dimensional charge stability diagram matrix.</span>
+<span class="sd">        location: Base index of the charge transfer event in Z</span>
+<span class="sd">        gradient: Gradient of the charge transfer event in Z</span>
+<span class="sd">        theta_mode: Mode of theta (most common theta value)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dV: The shift of coulomb peaks from a charge transfer event.</span>
+<span class="sd">                      Given as a shift of index in Z. When properly scaled:</span>
+<span class="sd">                          dV = dVtop = delta_q/Ctop</span>
+<span class="sd">        dI: An array of current change from before to after a transition.</span>
+<span class="sd">        dI_x: An array of x-indices corresponding to the points in dI.</span>
+<span class="sd">        dI_y: An array of y-indices corresponding to the points in dI.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#9.95 ms ± 369 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)</span>
+
+    <span class="n">ly</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">yl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ly</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">xl</span> <span class="o">=</span> <span class="p">(</span><span class="n">location</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">yl</span> <span class="o">/</span> <span class="n">gradient</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+
+    <span class="c1"># Take two current lines to the left and right of the transition, these will be compared to see what changes.</span>
+    <span class="c1"># 3 can be chosen arbitrarily, it doesn&#39;t matter too much, </span>
+    <span class="c1"># as long as each line is definitely on each side of the transition</span>
+    <span class="n">shift</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">pre</span>  <span class="o">=</span> <span class="n">xl</span> <span class="o">-</span> <span class="n">shift</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">xl</span> <span class="o">+</span> <span class="n">shift</span>
+    <span class="k">if</span> <span class="p">((</span><span class="nb">min</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">|</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span><span class="o">&gt;</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
+        <span class="c1">#if the pre-post lines are out of bounds, then don&#39;t bother computing. This could be improved later.</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">line_pre</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">pre</span><span class="p">]</span>
+    <span class="n">line_pos</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">post</span><span class="p">]</span>
+    
+    <span class="c1"># Average Magnitude Difference Function. </span>
+    <span class="c1"># This will shift and compare the lines before and after to see how much the transition shifted the coulomb peaks</span>
+    <span class="n">AMDF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ly</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ly</span><span class="p">):</span>
+        
+        <span class="n">AMDF</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+            <span class="n">line_pre</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ly</span> <span class="o">-</span> <span class="n">i</span><span class="p">))]</span>
+            <span class="o">-</span><span class="n">line_pos</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ly</span><span class="p">))]))</span>  \
+            <span class="o">*</span> <span class="p">(</span><span class="n">ly</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">ly</span>                      <span class="c1">#Adjustment for the decreasing comparison window as lines are shifted</span>
+
+    <span class="c1"># qc.MatPlot(AMDF, figsize=(14,5))</span>
+    <span class="c1"># peakshift exists to find out how much of the shift in coulomb peaks in the difference is due to the </span>
+    <span class="c1"># natural gradient of the coulomb peaks. This can be worked out using tan, the coulomb peak gradient (theta_mode), </span>
+    <span class="c1"># and the shift amount</span>
+    <span class="n">peakshift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">theta_mode</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">shift</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+        <span class="nb">int</span><span class="p">)</span>
+    <span class="n">dV</span> <span class="o">=</span> <span class="n">max_index</span><span class="p">(</span><span class="n">AMDF</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">peakshift</span>
+
+    <span class="c1">#*** This following section of code could be improved.</span>
+    <span class="c1">#*** It is a rudimentary implimentation of finding potential tuning points. </span>
+    
+    <span class="c1">#Now we will take closer lines to compare, in order to find the biggest difference in SET current.</span>
+    <span class="n">shift</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">line_pre</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">xl</span> <span class="o">-</span> <span class="n">shift</span><span class="p">]</span>
+    <span class="n">line_pos</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">yl</span><span class="p">,</span> <span class="n">xl</span> <span class="o">+</span> <span class="n">shift</span><span class="p">]</span>
+
+    <span class="c1">#Compare the lines and find peaks in the difference </span>
+    <span class="c1">#the find_peaks parameters could really be improved.</span>
+    <span class="c1">#also, using a %difference could be much better than absolute. Use (line_pre-line_pos)/line_pos when re-evaluating.</span>
+    <span class="n">peaks</span> <span class="o">=</span> <span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="n">line_pre</span> <span class="o">-</span> <span class="n">line_pos</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
+    <span class="n">dI_y</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">#y-index of the peaks location</span>
+    <span class="n">dI_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">location</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">dI_y</span> <span class="o">/</span> <span class="n">gradient</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="c1">#x-index of the peaks</span>
+    <span class="n">dI</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;peak_heights&#39;</span><span class="p">]</span> <span class="c1">#the value of the peaks</span>
+
+    <span class="k">return</span> <span class="n">dV</span><span class="p">,</span> <span class="n">dI</span><span class="p">,</span> <span class="n">dI_x</span><span class="p">,</span> <span class="n">dI_y</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

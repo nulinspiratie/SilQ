@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tests.mocks.mock_instruments package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.tests.mocks.mock_instruments package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.tests.mocks.mock_instruments.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-tests-mocks-mock-instruments-package">
+<h1>silq.tests.mocks.mock_instruments package<a class="headerlink" href="#silq-tests-mocks-mock-instruments-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_ATS">
+<span id="silq-tests-mocks-mock-instruments-mock-ats-module"></span><h2>silq.tests.mocks.mock_instruments.mock_ATS module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_ATS" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_ATS.MockATS">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_ATS.</code><code class="sig-name descname">MockATS</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_ATS.html#MockATS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_ATS.MockATS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_ATS.MockATS.acquire">
+<code class="sig-name descname">acquire</code><span class="sig-paren">(</span><em class="sig-param">mode=None</em>, <em class="sig-param">samples_per_record=None</em>, <em class="sig-param">records_per_buffer=None</em>, <em class="sig-param">buffers_per_acquisition=None</em>, <em class="sig-param">channel_selection=None</em>, <em class="sig-param">transfer_offset=None</em>, <em class="sig-param">external_startcapture=None</em>, <em class="sig-param">enable_record_headers=None</em>, <em class="sig-param">alloc_buffers=None</em>, <em class="sig-param">fifo_only_streaming=None</em>, <em class="sig-param">interleave_samples=None</em>, <em class="sig-param">get_processed_data=None</em>, <em class="sig-param">allocated_buffers=None</em>, <em class="sig-param">buffer_timeout=None</em>, <em class="sig-param">acquisition_controller=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_ATS.html#MockATS.acquire"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_ATS.MockATS.acquire" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_ATS.MockATS.config">
+<code class="sig-name descname">config</code><span class="sig-paren">(</span><em class="sig-param">clock_source=None</em>, <em class="sig-param">sample_rate=None</em>, <em class="sig-param">clock_edge=None</em>, <em class="sig-param">decimation=None</em>, <em class="sig-param">coupling=None</em>, <em class="sig-param">channel_range=None</em>, <em class="sig-param">impedance=None</em>, <em class="sig-param">bwlimit=None</em>, <em class="sig-param">trigger_operation=None</em>, <em class="sig-param">trigger_engine1=None</em>, <em class="sig-param">trigger_source1=None</em>, <em class="sig-param">trigger_slope1=None</em>, <em class="sig-param">trigger_level1=None</em>, <em class="sig-param">trigger_engine2=None</em>, <em class="sig-param">trigger_source2=None</em>, <em class="sig-param">trigger_slope2=None</em>, <em class="sig-param">trigger_level2=None</em>, <em class="sig-param">external_trigger_coupling=None</em>, <em class="sig-param">external_trigger_range=None</em>, <em class="sig-param">trigger_delay=None</em>, <em class="sig-param">timeout_ticks=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_ATS.html#MockATS.config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_ATS.MockATS.config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_ATS.MockATS.get_setting">
+<code class="sig-name descname">get_setting</code><span class="sig-paren">(</span><em class="sig-param">setting</em>, <em class="sig-param">idx=None</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_ATS.html#MockATS.get_setting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_ATS.MockATS.get_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_ATS.MockATS.set_setting">
+<code class="sig-name descname">set_setting</code><span class="sig-paren">(</span><em class="sig-param">setting</em>, <em class="sig-param">val</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_ATS.html#MockATS.set_setting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_ATS.MockATS.set_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_acquisition_controller">
+<span id="silq-tests-mocks-mock-instruments-mock-acquisition-controller-module"></span><h2>silq.tests.mocks.mock_instruments.mock_acquisition_controller module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_acquisition_controller" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_acquisition_controller.</code><code class="sig-name descname">MockAcquisitionController</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">alazar_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_acquisition_controller.html#MockAcquisitionController"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.get_acquisition_setting">
+<code class="sig-name descname">get_acquisition_setting</code><span class="sig-paren">(</span><em class="sig-param">setting</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_acquisition_controller.html#MockAcquisitionController.get_acquisition_setting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.get_acquisition_setting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain an acquisition setting for the ATS.
+It checks if the setting is in ATS_controller._acquisition_settings
+If not, it will retrieve the ATS latest parameter value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>setting</strong> – acquisition setting to look for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Value of the acquisition setting</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.set_acquisition_settings">
+<code class="sig-name descname">set_acquisition_settings</code><span class="sig-paren">(</span><em class="sig-param">**settings</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_acquisition_controller.html#MockAcquisitionController.set_acquisition_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.set_acquisition_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_acquisition_controller.html#MockAcquisitionController.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.update_acquisition_settings">
+<code class="sig-name descname">update_acquisition_settings</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_acquisition_controller.html#MockAcquisitionController.update_acquisition_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_acquisition_controller.MockAcquisitionController.update_acquisition_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_arbstudio">
+<span id="silq-tests-mocks-mock-instruments-mock-arbstudio-module"></span><h2>silq.tests.mocks.mock_instruments.mock_arbstudio module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_arbstudio" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_arbstudio.</code><code class="sig-name descname">MockArbStudio</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_arbstudio.html#MockArbStudio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.get_waveforms">
+<code class="sig-name descname">get_waveforms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_arbstudio.html#MockArbStudio.get_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.get_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.load_sequence">
+<code class="sig-name descname">load_sequence</code><span class="sig-paren">(</span><em class="sig-param">channels=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_arbstudio.html#MockArbStudio.load_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.load_sequence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.load_waveforms">
+<code class="sig-name descname">load_waveforms</code><span class="sig-paren">(</span><em class="sig-param">channels=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_arbstudio.html#MockArbStudio.load_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_arbstudio.MockArbStudio.load_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_awg_instrument">
+<span id="silq-tests-mocks-mock-instruments-mock-awg-instrument-module"></span><h2>silq.tests.mocks.mock_instruments.mock_awg_instrument module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_awg_instrument" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_awg_instrument.MockAWGInstrument">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_awg_instrument.</code><code class="sig-name descname">MockAWGInstrument</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_awg_instrument.html#MockAWGInstrument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_awg_instrument.MockAWGInstrument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_digitizer_instrument">
+<span id="silq-tests-mocks-mock-instruments-mock-digitizer-instrument-module"></span><h2>silq.tests.mocks.mock_instruments.mock_digitizer_instrument module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_digitizer_instrument" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_digitizer_instrument.MockDigitizerInstrument">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_digitizer_instrument.</code><code class="sig-name descname">MockDigitizerInstrument</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_digitizer_instrument.html#MockDigitizerInstrument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_digitizer_instrument.MockDigitizerInstrument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_instrument">
+<span id="silq-tests-mocks-mock-instruments-mock-instrument-module"></span><h2>silq.tests.mocks.mock_instruments.mock_instrument module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_instrument" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_instrument.</code><code class="sig-name descname">MockInstrument</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">silent=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_instrument.html#MockInstrument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">qcodes.instrument.base.Instrument</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument.print_function">
+<code class="sig-name descname">print_function</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">function='{f}'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_instrument.html#MockInstrument.print_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument.print_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_pulseblaster">
+<span id="silq-tests-mocks-mock-instruments-mock-pulseblaster-module"></span><h2>silq.tests.mocks.mock_instruments.mock_pulseblaster module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_pulseblaster" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_pulseblaster.MockPulseBlaster">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_pulseblaster.</code><code class="sig-name descname">MockPulseBlaster</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_pulseblaster.html#MockPulseBlaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_pulseblaster.MockPulseBlaster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument</span></code></a></p>
+<dl class="method">
+<dt id="silq.tests.mocks.mock_instruments.mock_pulseblaster.MockPulseBlaster.send_instruction">
+<code class="sig-name descname">send_instruction</code><span class="sig-paren">(</span><em class="sig-param">flags</em>, <em class="sig-param">instruction</em>, <em class="sig-param">inst_args</em>, <em class="sig-param">length</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_pulseblaster.html#MockPulseBlaster.send_instruction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_pulseblaster.MockPulseBlaster.send_instruction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments.mock_trigger_instrument">
+<span id="silq-tests-mocks-mock-instruments-mock-trigger-instrument-module"></span><h2>silq.tests.mocks.mock_instruments.mock_trigger_instrument module<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments.mock_trigger_instrument" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.tests.mocks.mock_instruments.mock_trigger_instrument.MockTriggerInstrument">
+<em class="property">class </em><code class="sig-prename descclassname">silq.tests.mocks.mock_instruments.mock_trigger_instrument.</code><code class="sig-name descname">MockTriggerInstrument</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">silent=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/tests/mocks/mock_instruments/mock_trigger_instrument.html#MockTriggerInstrument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.tests.mocks.mock_instruments.mock_trigger_instrument.MockTriggerInstrument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument" title="silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.tests.mocks.mock_instruments.mock_instrument.MockInstrument</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.tests.mocks.mock_instruments">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.tests.mocks.mock_instruments" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

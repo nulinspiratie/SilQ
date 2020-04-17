@@ -1,0 +1,1505 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.pulses.pulse_types &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.pulses.pulse_types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.pulses.pulse_types</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">silq.tools.general_tools</span> <span class="k">import</span> <span class="n">get_truth</span><span class="p">,</span> <span class="n">property_ignore_setter</span><span class="p">,</span> \
+    <span class="n">freq_to_str</span><span class="p">,</span> <span class="n">is_between</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter_node</span> <span class="k">import</span> <span class="n">ParameterNode</span><span class="p">,</span> <span class="n">parameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">qcodes.utils</span> <span class="k">import</span> <span class="n">validators</span> <span class="k">as</span> <span class="n">vals</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Pulse&#39;</span><span class="p">,</span> <span class="s1">&#39;SteeredInitialization&#39;</span><span class="p">,</span> <span class="s1">&#39;SinePulse&#39;</span><span class="p">,</span> <span class="s1">&#39;FrequencyRampPulse&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DCPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;DCRampPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;TriggerPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;MarkerPulse&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;TriggerWaitPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;MeasurementPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;CombinationPulse&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;AWGPulse&#39;</span><span class="p">,</span> <span class="s1">&#39;pulse_conditions&#39;</span><span class="p">]</span>
+
+<span class="c1"># Set of valid connection conditions for satisfies_conditions. These are</span>
+<span class="c1"># useful when multiple objects have distinct satisfies_conditions kwargs</span>
+<span class="n">pulse_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;t_start&#39;</span><span class="p">,</span> <span class="s1">&#39;t_stop&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;duration&#39;</span><span class="p">,</span> <span class="s1">&#39;acquire&#39;</span><span class="p">,</span> <span class="s1">&#39;initialize&#39;</span><span class="p">,</span> <span class="s1">&#39;connection&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;average&#39;</span><span class="p">,</span> <span class="s1">&#39;pulse_class&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Pulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.Pulse">[docs]</a><span class="k">class</span> <span class="nc">Pulse</span><span class="p">(</span><span class="n">ParameterNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Representation of physical pulse, component in a `PulseSequence`.</span>
+
+<span class="sd">    A Pulse is a representation of a physical pulse, usually one that is</span>
+<span class="sd">    outputted by an instrument. All pulses have specific timings, defined by</span>
+<span class="sd">    ``t_start``, ``t_stop``, and ``duration``. Additional attributes specify</span>
+<span class="sd">    ancillary properties, such as if the acquisition instrument should</span>
+<span class="sd">    ``acquire`` the pulse. Specific pulse types (subclasses of `Pulse`) have</span>
+<span class="sd">    additional properties, such as a ``frequency``.</span>
+
+<span class="sd">    Pulses can be added to a `PulseSequence`, which can in turn be targeted by</span>
+<span class="sd">    the `Layout`. Here, each `Pulse` is targeted to a `Connection`, which can</span>
+<span class="sd">    modify the pulse (e.g. applying an amplitude scale). Next the pulse is</span>
+<span class="sd">    targeted by the output and input `InstrumentInterface` of the connection,</span>
+<span class="sd">    which provide an instrument-specific implementation of the pulse.</span>
+
+<span class="sd">    Pulses usually have a name, which is used to retrieve any default properties</span>
+<span class="sd">    from the config. If the pulse name is an entry in</span>
+<span class="sd">    ``silq.config.{environment}.pulses``, the properties in that entry are</span>
+<span class="sd">    used by default. These default values can be overridden by either passing</span>
+<span class="sd">    them explicitly during the pulse initialization, or afterwards.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        If ``silq.config.{environment}.pulses`` contains:</span>
+
+<span class="sd">        &gt;&gt;&gt; {&#39;read&#39;: {&#39;amplitude&#39;: 0.5, &#39;duration&#39;: 100e-3}}</span>
+
+<span class="sd">        Then creating the following pulse will partially use these properties:</span>
+
+<span class="sd">        &gt;&gt;&gt; DCPulse(&#39;read&#39;, duration=200e-3)</span>
+<span class="sd">        DCPulse(&#39;read&#39;, amplitude=0.5, duration=200e-3)</span>
+
+<span class="sd">        Here the default ``amplitude`` value is used, but the duration is</span>
+<span class="sd">        overridden during initialization.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name. If corresponding name is registered in pulse</span>
+<span class="sd">            config, its properties will be copied to the pulse.</span>
+<span class="sd">        id: Unique pulse identifier, assigned when added to `PulseSequence` if</span>
+<span class="sd">            it already has another pulse with same name. Pre-existing pulse will</span>
+<span class="sd">            be assigned id 0, and will increase for each successive pulse added.</span>
+<span class="sd">        full_name: Pulse name, including id if not None.</span>
+<span class="sd">            If id is not None, full_name is &#39;{name}[{id}]&#39;</span>
+<span class="sd">        environment: Config environment to use for pulse config. If not set,</span>
+<span class="sd">            default environment (``silq.config.properties.default_environment``)</span>
+<span class="sd">            is used.</span>
+<span class="sd">        t_start: Pulse start time. If undefined and added to `PulseSequence`, it</span>
+<span class="sd">            will be set to `Pulse`.t_stop of last pulse.</span>
+<span class="sd">            If no pulses are present, it will be set to zero.</span>
+<span class="sd">        t_stop: Pulse stop time. Is updated whenever ``t_start`` or ``duration``</span>
+<span class="sd">            is changed. Changing this modifies ``duration`` but not ``t_start``.</span>
+<span class="sd">        duration: Pulse duration.</span>
+<span class="sd">        acquire: Flag to acquire pulse. If True, pulse will be passed on to the</span>
+<span class="sd">            acquisition `InstrumentInterface` by the `Layout` during targeting.</span>
+<span class="sd">        initialize: Pulse is used for initialization. This signals that the</span>
+<span class="sd">            pulse can exist before the pulse sequence starts. In this case,</span>
+<span class="sd">            pulse duration should be zero.</span>
+<span class="sd">        connection (Connection): Connection that pulse is targeted to.</span>
+<span class="sd">            Is only set for targeted pulse.</span>
+<span class="sd">        enabled: Pulse is enabled. If False, it still exists in a</span>
+<span class="sd">            PulseSequence, but is not included in targeting.</span>
+<span class="sd">        average: Pulse acquisition average mode. Allowed modes are:</span>
+
+<span class="sd">            * **&#39;none&#39;**: No averaging (return ``samples x points_per_trace``).</span>
+<span class="sd">            * **&#39;trace&#39;**: Average over time (return ``points_per_trace``).</span>
+<span class="sd">            * **&#39;point&#39;**: Average over time and sample (return single point).</span>
+<span class="sd">            * **&#39;point_segment:{N}&#39;** Segment trace into N segment, average</span>
+<span class="sd">              each segment into a point.</span>
+
+<span class="sd">        connection_label: `Connection` label that Pulse should be targeted to.</span>
+<span class="sd">            These are defined in ``silq.config.{environment}.connections``.</span>
+<span class="sd">            If unspecified, pulse can only be targeted if</span>
+<span class="sd">            ``connection_requirements`` uniquely determine connection.</span>
+<span class="sd">        connection_requirements: Requirements that a connection must satisfy for</span>
+<span class="sd">            targeting. If ``connection_label`` is defined, these are ignored.</span>
+<span class="sd">        pulse_config: Pulse config whose attributes to match. If it exists,</span>
+<span class="sd">            equal to ``silq.config.{environment}.pulses.{pulse.name}``,</span>
+<span class="sd">            otherwise equal to zero.</span>
+<span class="sd">        properties_config: General properties config whose attributes to match.</span>
+<span class="sd">            If it exists, equal to ``silq.config.{environment}.properties``,</span>
+<span class="sd">            otherwise None. Only `Pulse`.properties_attrs are matched.</span>
+<span class="sd">        properties_attrs (List[str]): Attributes in properties config to match.</span>
+<span class="sd">            Should be defined in ``__init__`` before calling ``Pulse.__init__``.</span>
+<span class="sd">        implementation (PulseImplementation): Pulse implementation for targeted</span>
+<span class="sd">            pulse, see `PulseImplementation`.</span>
+<span class="sd">        connect_to_config: Connect parameters to the config (default True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># base config link to use for connecting pulse parameters to the config</span>
+    <span class="c1"># Changing this will only affect pulses instantiated after change</span>
+    <span class="n">config_link</span> <span class="o">=</span> <span class="s1">&#39;environment:pulses&#39;</span>
+    <span class="n">multiple_senders</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_stop</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquire</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">initialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">connection</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">average</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                 <span class="n">connection_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">connection_requirements</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+                 <span class="n">connect_to_config</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">use_as_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="n">log_changes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">simplify_snapshot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Strings</span><span class="p">(),</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Ints</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                            <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wrap_get</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;full_name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># Update to latest value</span>
+
+        <span class="c1">### Set attributes</span>
+        <span class="c1"># Set attributes that can also be retrieved from pulse_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span>
+                                 <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wrap_get</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wrap_get</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="n">wrap_get</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># We separately set and get t_stop to ensure duration is also updated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="n">t_stop</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="c1"># Since t_stop get/set cmd depends on t_start and duration, we perform</span>
+        <span class="c1"># another set to ensure that duration is also set if t_stop is not None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">raw_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">raw_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">connection_label</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Set attributes that should not be retrieved from pulse_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquire</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">acquire</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">initialize</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">average</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">average</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Strings</span><span class="p">(),</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Pulses can have a PulseImplementation after targeting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># List of potential connection requirements.</span>
+        <span class="c1"># These can be set so that the pulse can only be sent to connections</span>
+        <span class="c1"># matching these requirements</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_requirements</span> <span class="o">=</span> <span class="n">connection_requirements</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected_to_config</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">connect_to_config</span><span class="p">:</span>
+            <span class="c1"># Sets _connected_to_config to True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">()</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">average_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;trace&#39;</span><span class="p">,</span> <span class="s1">&#39;point&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="s1">&#39;point_segment&#39;</span> <span class="ow">in</span> <span class="n">value</span> <span class="ow">or</span> <span class="s1">&#39;trace_segment&#39;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">full_name_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">[</span><span class="si">{self.id}</span><span class="s1">]&#39;</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_start_set_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">t_start</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">t_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">t_start</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t_start</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_start_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">t_start</span><span class="p">):</span>
+        <span class="c1"># Emit a t_stop signal when t_start is set</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span><span class="p">[</span><span class="s1">&#39;raw_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_start</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">duration_set_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">duration</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">duration_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="c1"># Emit a t_stop signal when duration is set</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span><span class="p">[</span><span class="s1">&#39;raw_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;t_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_stop_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">parameter</span><span class="o">.</span><span class="n">_save_val</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># Explicit save_val since we don&#39;t wrap_get</span>
+        <span class="k">return</span> <span class="n">val</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">t_stop_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">t_stop</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">t_stop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Setting duration sends a signal for duration</span>
+            <span class="c1"># do not evaluate as it otherwise sends a second t_stop signal</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">t_stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="mi">11</span><span class="p">),</span>
+                                 <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Comparison when pulses are equal</span>
+
+<span class="sd">        Pulses are equal if all of their parameters (excluding list below) are</span>
+<span class="sd">        equal. Furthermore, their classes need to be identical, which further</span>
+<span class="sd">        means that any non-pulse object will never be equal.</span>
+
+<span class="sd">        Connections are handled slightly differently. For pulses to be the same,</span>
+<span class="sd">        they must either have the same connection or connection_label.</span>
+<span class="sd">        Alternatively, if one pulse has a connection and the other a connection</span>
+<span class="sd">        label, the label of the first pulse&#39;s connection is compared instead.</span>
+<span class="sd">        If one pulse has a connection/connection label, and the other has</span>
+<span class="sd">        neither, the pulses are not equal.</span>
+
+<span class="sd">        Excluded parameters:</span>
+<span class="sd">            - id</span>
+<span class="sd">            - connection_requirements</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if all above conditions hold, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exclude_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;connection&#39;</span><span class="p">,</span> <span class="s1">&#39;connection_label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;full_name&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">matches_parameter_node</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">exclude_parameters</span><span class="o">=</span><span class="n">exclude_parameters</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Perform additional checks based on connection (labels).</span>
+        <span class="c1"># Pulses are equal if they have the same connection, or has a matching</span>
+        <span class="c1"># label, or if both pulses don&#39;t have a connection and connection label.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">connection</span>
+            <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">connection_label</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">label</span>
+            <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_label</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">connection_label</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">connection_label</span> <span class="ow">is</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define custom hash, used for creating a set of unique elements&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">())))</span>
+
+    <span class="k">def</span> <span class="nf">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pulse is always equal to True&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Pulse&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CombinationPulse&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; This method is called when adding two pulses: ``pulse1 + pulse2``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: The pulse instance to be added to self.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new pulse instance representing the combination of two pulses.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;CombinationPulse_{id(self)+id(other)}&#39;</span>
+        <span class="k">return</span> <span class="n">CombinationPulse</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Pulse&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; This method is called when reverse adding something to a pulse.</span>
+
+<span class="sd">        The reason this method is implemented is so that the user can sum over</span>
+<span class="sd">        multiple pulses by performing:</span>
+
+<span class="sd">        &gt;&gt;&gt; combination_pulse = sum([pulse1, pulse2, pulse3])</span>
+
+<span class="sd">        The sum method actually tries calling 0.__add__(pulse1), which doesn&#39;t</span>
+<span class="sd">        exist, so it is converted into pulse1.__radd__(0).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: an instance of unknown type that might be int(0)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Either self (if other is zero) or self + other.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Pulse&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CombinationPulse&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Called when subtracting two pulses: ``pulse1 - pulse2``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: The pulse instance to be subtracted from self.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new pulse instance representing the combination of two pulses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;CombinationPulse_{id(self)+id(other)}&#39;</span>
+        <span class="k">return</span> <span class="n">CombinationPulse</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Pulse&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CombinationPulse&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Called when multiplying two pulses: ``pulse1 * pulse2``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: The pulse instance to be multiplied with self.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new pulse instance representing the combination of two pulses.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;CombinationPulse_{id(self)+id(other)}&#39;</span>
+        <span class="k">return</span> <span class="n">CombinationPulse</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a copy of the pulse.</span>
+
+<span class="sd">        Aside from using the default copy feature of the ParameterNode, this</span>
+<span class="sd">        also connects the copied parameters to the config if the original ones</span>
+<span class="sd">        are also connected</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">self_copy</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__copy__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected_to_config</span><span class="p">:</span>
+            <span class="n">self_copy</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">self_copy</span>
+
+    <span class="k">def</span> <span class="nf">_get_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties_str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get standard representation for pulse.</span>
+
+<span class="sd">        Should be appended in each Pulse subclass.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">connection: </span><span class="si">{self.connection}</span><span class="s1">&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_label</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">connection_label: </span><span class="si">{self.connection_label}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_requirements</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">requirements: </span><span class="si">{self.connection_requirements}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;additional_pulses&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">additional_pulses</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">additional_pulses:&#39;</span>
+            <span class="k">for</span> <span class="n">pulse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">additional_pulses</span><span class="p">:</span>
+                <span class="n">pulse_repr</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">pulse</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\n\t</span><span class="si">{pulse_repr}</span><span class="s1">&#39;</span>
+
+        <span class="n">pulse_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{pulse_class}</span><span class="s1">(</span><span class="si">{self.full_name}</span><span class="s1">, </span><span class="si">{properties_str}</span><span class="s1">)&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_connect_parameters_to_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Connect Pulse parameters to config using Pulse.config_link.</span>
+
+<span class="sd">        By connecting a parameter, every time the corresponding config value</span>
+<span class="sd">        changes, this in turn changes the parameter value.</span>
+
+<span class="sd">        The config link is {Pulse.config_link}.{self.name}.{parameter.name}</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">             parameters: Parameters to Connect. Can be</span>
+
+<span class="sd">             - None: Connect all parameters in self.parameters</span>
+<span class="sd">             - str list: Connect all parameter with given string names</span>
+<span class="sd">             - Parameter list: Connect all parameters in list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="n">parameter</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span>
+                              <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">parameter</span>
+                              <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+
+        <span class="k">for</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">config_link</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.config_link}</span><span class="s1">.</span><span class="si">{self.name}</span><span class="s1">.</span><span class="si">{parameter_name}</span><span class="s1">&#39;</span>
+            <span class="n">config_value</span> <span class="o">=</span> <span class="n">parameter</span><span class="o">.</span><span class="n">set_config_link</span><span class="p">(</span><span class="n">config_link</span><span class="o">=</span><span class="n">config_link</span><span class="p">)</span>
+
+            <span class="c1"># Update parameter value if not yet set, and set in config</span>
+            <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">raw_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">config_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">parameter</span><span class="p">(</span><span class="n">config_value</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected_to_config</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="Pulse.snapshot_base"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.Pulse.snapshot_base">[docs]</a>    <span class="k">def</span> <span class="nf">snapshot_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">params_to_skip_update</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">snapshot</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">snapshot_base</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">snapshot</span><span class="p">[</span><span class="s1">&#39;connection&#39;</span><span class="p">]:</span>
+            <span class="n">snapshot</span><span class="p">[</span><span class="s1">&#39;connection&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">snapshot</span><span class="p">[</span><span class="s1">&#39;connection&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">snapshot</span></div>
+
+<div class="viewcode-block" id="Pulse.satisfies_conditions"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.Pulse.satisfies_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">satisfies_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">pulse_class</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if pulse satisfies certain conditions.</span>
+
+<span class="sd">        Each kwarg is a condition, and can be a value (equality testing) or it</span>
+<span class="sd">        can be a tuple (relation, value), in which case the relation is tested.</span>
+<span class="sd">        Possible relations: &#39;&gt;&#39;, &#39;&lt;&#39;, &#39;&gt;=&#39;, &#39;&lt;=&#39;, &#39;==&#39;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pulse_class: Pulse must have specific class.</span>
+<span class="sd">            name: Pulse must have name, which may include id.</span>
+<span class="sd">            **kwargs: Additional pulse attributes to be satisfied.</span>
+<span class="sd">                Examples are ``t_start``, ``connection``, etc.</span>
+<span class="sd">                Time ``t`` can also be passed, in which case the condition is</span>
+<span class="sd">                satisfied if t is between `Pulse`.t_start and `Pulse`.t_stop</span>
+<span class="sd">                (including limits).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if all conditions are satisfied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pulse_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pulse_class</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;]&#39;</span><span class="p">:</span>
+                <span class="c1"># Pulse id is part of name</span>
+                <span class="n">name</span><span class="p">,</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">)</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="k">for</span> <span class="nb">property</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="nb">property</span> <span class="o">==</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="ow">or</span> <span class="n">val</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="nb">property</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If arg is a tuple, the first element specifies its relation</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="n">relation</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">val</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">get_truth</span><span class="p">(</span><span class="n">test_val</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="nb">property</span><span class="p">]</span><span class="o">.</span><span class="n">get_latest</span><span class="p">(),</span>
+                            <span class="c1"># test_val=getattr(self, property),</span>
+                                     <span class="n">target_val</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+                                     <span class="n">relation</span><span class="o">=</span><span class="n">relation</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="nb">property</span><span class="p">]</span><span class="o">.</span><span class="n">_latest</span><span class="p">[</span><span class="s1">&#39;raw_value&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Pulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.Pulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Pulse.get_voltage should be implemented in a subclass&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SteeredInitialization"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.SteeredInitialization">[docs]</a><span class="k">class</span> <span class="nc">SteeredInitialization</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initialization pulse to ensure a spin-down electron is loaded.</span>
+
+<span class="sd">    This is performed by continuously measuring at the read stage until no blip</span>
+<span class="sd">    has been measured for ``t_no_blip``, or until ``t_max_wait`` has elapsed.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        t_no_blip: Min duration without measuring blips. If condition is met,</span>
+<span class="sd">            an event should be fired to the primary instrument to start the</span>
+<span class="sd">            pulse sequence.</span>
+<span class="sd">        t_max_wait: Maximum wait time for the no-blip condition.</span>
+<span class="sd">            If ``t_max_wait`` has elapsed, an event should be fired to the</span>
+<span class="sd">            primary instrument to start the pulse seqeuence.</span>
+<span class="sd">        t_buffer: Duration of a single acquisition buffer. Shorter buffers mean</span>
+<span class="sd">            that one can more closely approach ``t_no_blip``, but too short</span>
+<span class="sd">            buffers may cause lagging.</span>
+<span class="sd">        readout_threshold_voltage: Threshold voltage for a blip.</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_no_blip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_max_wait</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">readout_threshold_voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_no_blip</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">t_no_blip</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_max_wait</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">t_max_wait</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_buffer</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">t_buffer</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">readout_threshold_voltage</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">readout_threshold_voltage</span><span class="p">,</span>
+                                                   <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                   <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;t_no_blip&#39;</span><span class="p">,</span> <span class="s1">&#39;t_max_wait&#39;</span><span class="p">,</span> <span class="s1">&#39;t_buffer&#39;</span><span class="p">,</span> <span class="s1">&#39;readout_threshold_voltage&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;t_no_blip=</span><span class="si">{self.t_no_blip}</span><span class="s1"> ms, &#39;</span> <span class="o">+</span>
+                              <span class="n">f</span><span class="s1">&#39;t_max_wait=</span><span class="si">{self.t_max_wait}</span><span class="s1">, &#39;</span> <span class="o">+</span>
+                              <span class="n">f</span><span class="s1">&#39;t_buffer=</span><span class="si">{self.t_buffer}</span><span class="s1">, &#39;</span> <span class="o">+</span>
+                              <span class="n">f</span><span class="s1">&#39;V_th=</span><span class="si">{self.readout_threshold_voltage}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SinePulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.SinePulse">[docs]</a><span class="k">class</span> <span class="nc">SinePulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sinusoidal pulse</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        frequency: Pulse frequency</span>
+<span class="sd">        phase: Pulse phase</span>
+<span class="sd">        amplitude: Pulse amplitude. If not set, power must be set.</span>
+<span class="sd">        power: Pulse power. If not set, amplitude must be set.</span>
+<span class="sd">        offset: amplitude offset, zero by default</span>
+<span class="sd">        frequency_sideband: Mixer sideband frequency (off by default).</span>
+<span class="sd">        sideband_mode: Sideband frequency to apply. This feature must</span>
+<span class="sd">            be existent in interface. Not used if not set.</span>
+<span class="sd">        phase_reference: What point in the the phase is with respect to.</span>
+<span class="sd">            Can be two modes:</span>
+
+<span class="sd">            - &#39;absolute&#39;: phase is with respect to `Pulse.t_start`.</span>
+<span class="sd">            - &#39;relative&#39;: phase is with respect to t=0 (phase-coherent).</span>
+
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        Either amplitude or power must be set, depending on the instrument</span>
+<span class="sd">        that should output the pulse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">phase</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_sideband</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sideband_mode</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">phase_reference</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">frequency</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">phase</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                               <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;dBm&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                               <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">frequency_sideband</span><span class="p">,</span>
+                                            <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                            <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">sideband_mode</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                       <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;IQ&#39;</span><span class="p">,</span> <span class="s1">&#39;double&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">phase_reference</span><span class="p">,</span>
+                                         <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;relative&#39;</span><span class="p">,</span>
+                                                                      <span class="s1">&#39;absolute&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">,</span> <span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="s1">&#39;power&#39;</span><span class="p">,</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;frequency_sideband&#39;</span><span class="p">,</span> <span class="s1">&#39;sideband_mode&#39;</span><span class="p">,</span> <span class="s1">&#39;phase_reference&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="o">=</span> <span class="s1">&#39;IQ&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">=</span> <span class="s1">&#39;absolute&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;f={freq_to_str(self.frequency)}&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, phase=</span><span class="si">{self.phase}</span><span class="s1"> deg &#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="s1">&#39;(rel)&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">==</span> <span class="s1">&#39;relative&#39;</span> <span class="k">else</span> <span class="s1">&#39;(abs)&#39;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, power=</span><span class="si">{self.power}</span><span class="s1"> dBm&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, A=</span><span class="si">{self.amplitude}</span><span class="s1"> V&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, offset=</span><span class="si">{self.offset}</span><span class="s1"> V&#39;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;f_sb={freq_to_str(self.frequency_sideband)} &#39;</span> \
+                                  <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.sideband_mode}</span><span class="s1">&#39;</span>
+
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, t_start=</span><span class="si">{self.t_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SinePulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.SinePulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="n">f</span><span class="s2">&quot;voltage at </span><span class="si">{t}</span><span class="s2"> s is not in the time range &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.t_start}</span><span class="s2"> s - </span><span class="si">{self.t_stop}</span><span class="s2"> s of pulse </span><span class="si">{self}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">==</span> <span class="s1">&#39;relative&#39;</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span>
+
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span>
+        <span class="k">if</span> <span class="n">amplitude</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Pulse </span><span class="si">{self.name}</span><span class="s1"> does not have a specified power or amplitude.&#39;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;power&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="s1">&#39;dBm&#39;</span><span class="p">:</span>
+                <span class="c1"># This formula assumes the source is 50 Ohm matched and power is in dBm</span>
+                <span class="c1"># A factor of 2 comes from the conversion from amplitude to RMS.</span>
+                <span class="n">amplitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+        <span class="n">waveform</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">/</span> <span class="mi">360</span><span class="p">))</span>
+        <span class="n">waveform</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+
+        <span class="k">return</span> <span class="n">waveform</span></div></div>
+
+
+<div class="viewcode-block" id="FrequencyRampPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.FrequencyRampPulse">[docs]</a><span class="k">class</span> <span class="nc">FrequencyRampPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Linearly increasing/decreasing frequency `Pulse`.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        frequency_start: Start frequency</span>
+<span class="sd">        frequency_stop: Stop frequency.</span>
+<span class="sd">        frequency: Center frequency, only used if ``frequency_start`` and</span>
+<span class="sd">            ``frequency_stop`` not used.</span>
+<span class="sd">        frequency_deviation: Frequency deviation, only used if</span>
+<span class="sd">            ``frequency_start`` and ``frequency_stop`` not used.</span>
+<span class="sd">        frequency_final: Can be either ``start`` or ``stop`` indicating the</span>
+<span class="sd">            frequency when reaching ``frequency_stop`` should go back to the</span>
+<span class="sd">            initial frequency or stay at current frequency. Useful if the</span>
+<span class="sd">            pulse doesn&#39;t immediately stop at the end (this depends on how</span>
+<span class="sd">            the corresponding instrument/interface is programmed).</span>
+<span class="sd">        amplitude: Pulse amplitude. If not set, power must be set.</span>
+<span class="sd">        power: Pulse power. If not set, amplitude must be set.</span>
+<span class="sd">        offset: amplitude offset, zero by default</span>
+<span class="sd">        frequency_sideband: Sideband frequency to apply. This feature must</span>
+<span class="sd">            be existent in interface. Not used if not set.</span>
+<span class="sd">        sideband_mode: Type of mixer sideband (&#39;IQ&#39; by default)</span>
+
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        Either amplitude or power must be set, depending on the instrument</span>
+<span class="sd">        that should output the pulse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_stop</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_deviation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">phase</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_sideband</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sideband_mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">phase_reference</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">frequency_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frequency_stop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_start</span> <span class="o">+</span> <span class="n">frequency_stop</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="n">frequency_deviation</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_stop</span> <span class="o">-</span> <span class="n">frequency_start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">frequency</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">frequency_deviation</span><span class="p">,</span>
+                                             <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                             <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_start</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                         <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_stop</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">frequency_sideband</span><span class="p">,</span>
+                                            <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                            <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">sideband_mode</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                       <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;IQ&#39;</span><span class="p">,</span> <span class="s1">&#39;double&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;dBm&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                               <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">phase</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                               <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">phase_reference</span><span class="p">,</span>
+                                         <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;relative&#39;</span><span class="p">,</span>
+                                                                      <span class="s1">&#39;absolute&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">,</span> <span class="s1">&#39;frequency_deviation&#39;</span><span class="p">,</span> <span class="s1">&#39;frequency_start&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;frequency_stop&#39;</span><span class="p">,</span> <span class="s1">&#39;frequency_sideband&#39;</span><span class="p">,</span> <span class="s1">&#39;sideband_mode&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;power&#39;</span><span class="p">,</span> <span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">,</span> <span class="s1">&#39;phase_reference&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Set default value for sideband_mode after connecting parameters,</span>
+        <span class="c1"># because its value may have been retrieved from config</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sideband_mode</span> <span class="o">=</span> <span class="s1">&#39;IQ&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">=</span> <span class="s1">&#39;relative&#39;</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">frequency_start_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">frequency_start_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">frequency_start</span><span class="p">):</span>
+        <span class="n">frequency_stop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_stop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_start</span> <span class="o">+</span> <span class="n">frequency_stop</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_stop</span> <span class="o">-</span> <span class="n">frequency_start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">frequency_stop_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span>
+
+    <span class="nd">@parameter</span>
+    <span class="k">def</span> <span class="nf">frequency_stop_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">frequency_stop</span><span class="p">):</span>
+        <span class="n">frequency_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_start</span> <span class="o">+</span> <span class="n">frequency_stop</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span> <span class="o">=</span> <span class="p">(</span><span class="n">frequency_stop</span> <span class="o">-</span> <span class="n">frequency_start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;f={freq_to_str(self.frequency)}&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, f_dev={freq_to_str(self.frequency_deviation)}&#39;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_sideband</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, f_sb={freq_to_str(self.frequency_sideband)}&#39;</span> \
+                                  <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.sideband_mode}</span><span class="s1">&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, power=</span><span class="si">{self.power}</span><span class="s1"> dBm&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, A=</span><span class="si">{self.amplitude}</span><span class="s1"> V&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, offset=</span><span class="si">{self.offset}</span><span class="s1"> V&#39;</span>
+
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, t_start=</span><span class="si">{self.t_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FrequencyRampPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.FrequencyRampPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">frequency_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span>
+        <span class="n">frequency_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_deviation</span>
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span>
+        <span class="k">if</span> <span class="n">amplitude</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;Pulse </span><span class="si">{self.name}</span><span class="s1"> does not have a specified power or amplitude.&#39;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;power&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="s1">&#39;dBm&#39;</span><span class="p">:</span>
+                <span class="c1"># This formula assumes the source is 50 Ohm matched and power is in dBm</span>
+                <span class="c1"># A factor of 2 comes from the conversion from amplitude to RMS.</span>
+                <span class="n">amplitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_reference</span> <span class="o">==</span> <span class="s1">&#39;relative&#39;</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span>
+
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">frequency_start</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">frequency_rate</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span></div></div>
+
+<div class="viewcode-block" id="DCPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.DCPulse">[docs]</a><span class="k">class</span> <span class="nc">DCPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;DC (fixed-voltage) `Pulse`.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        amplitue: Pulse amplitude</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">([</span><span class="s1">&#39;amplitude&#39;</span><span class="p">])</span>
+
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;A=</span><span class="si">{self.amplitude}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, t_start=</span><span class="si">{self.t_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DCPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.DCPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="n">f</span><span class="s2">&quot;voltage at </span><span class="si">{t}</span><span class="s2"> s is not in the time range &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.t_start}</span><span class="s2"> s - </span><span class="si">{self.t_stop}</span><span class="s2"> s of pulse </span><span class="si">{self}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span></div></div>
+
+
+<div class="viewcode-block" id="DCRampPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.DCRampPulse">[docs]</a><span class="k">class</span> <span class="nc">DCRampPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Linearly ramping voltage `Pulse`.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        amplitude_start: Start amplitude of pulse.</span>
+<span class="sd">        amplitude_stop: Final amplitude of pulse.</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">amplitude_start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">amplitude_stop</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_start</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude_start</span><span class="p">,</span>
+                                         <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                         <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_stop</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude_stop</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                                        <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">([</span><span class="s1">&#39;amplitude_start&#39;</span><span class="p">,</span> <span class="s1">&#39;amplitude_stop&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;A_start=</span><span class="si">{self.amplitude_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, A_stop=</span><span class="si">{self.amplitude_stop}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, t_start=</span><span class="si">{self.t_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39;, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DCRampPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.DCRampPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="n">f</span><span class="s2">&quot;voltage at </span><span class="si">{t}</span><span class="s2"> s is not in the time range </span><span class="si">{self.t_start}</span><span class="s2"> s &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;- </span><span class="si">{self.t_stop}</span><span class="s2"> s of pulse </span><span class="si">{self}</span><span class="s2">&quot;</span>
+
+        <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amplitude_stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_start</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_start</span> <span class="o">-</span> <span class="n">slope</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span>
+
+        <span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">t</span></div></div>
+
+
+<div class="viewcode-block" id="TriggerPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.TriggerPulse">[docs]</a><span class="k">class</span> <span class="nc">TriggerPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Triggering pulse.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name.</span>
+<span class="sd">        duration: Pulse duration (default 100 ns).</span>
+<span class="sd">        amplitude: Pulse amplitude (default 1V).</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default_duration</span> <span class="o">=</span> <span class="mf">100e-9</span>
+    <span class="n">default_amplitude</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;trigger&#39;</span><span class="p">,</span>
+                 <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">default_duration</span><span class="p">,</span>
+                 <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">default_amplitude</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">([</span><span class="s1">&#39;amplitude&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;t_start=</span><span class="si">{self.t_start}</span><span class="s1">, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TriggerPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.TriggerPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="n">f</span><span class="s2">&quot;voltage at </span><span class="si">{t}</span><span class="s2"> s is not in the time range &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.t_start}</span><span class="s2"> s - </span><span class="si">{self.t_stop}</span><span class="s2"> s of pulse </span><span class="si">{self}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Amplitude can only be provided in an implementation.</span>
+        <span class="c1"># This is dependent on input/output channel properties.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span></div></div>
+
+
+<div class="viewcode-block" id="MarkerPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.MarkerPulse">[docs]</a><span class="k">class</span> <span class="nc">MarkerPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Marker pulse</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name.</span>
+<span class="sd">        amplitude: Pulse amplitude (default 1V).</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default_amplitude</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">default_amplitude</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;V&#39;</span><span class="p">,</span>
+                                   <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="o">.</span><span class="n">Numbers</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters_to_config</span><span class="p">([</span><span class="s1">&#39;amplitude&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_amplitude</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;t_start=</span><span class="si">{self.t_start}</span><span class="s1">, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MarkerPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.MarkerPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="n">f</span><span class="s2">&quot;voltage at </span><span class="si">{t}</span><span class="s2"> s is not in the time range &quot;</span> \
+            <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.t_start}</span><span class="s2"> s - </span><span class="si">{self.t_stop}</span><span class="s2"> s of pulse </span><span class="si">{self}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Amplitude can only be provided in an implementation.</span>
+        <span class="c1"># This is dependent on input/output channel properties.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span></div></div>
+
+
+<div class="viewcode-block" id="TriggerWaitPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.TriggerWaitPulse">[docs]</a><span class="k">class</span> <span class="nc">TriggerWaitPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pulse that wait until condition is met and then applies trigger</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name</span>
+<span class="sd">        t_start: Pulse start time.</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Duration is fixed at 0s.</span>
+
+<span class="sd">    See Also:</span>
+<span class="sd">        `SteeredInitialization`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;t_start=</span><span class="si">{self.t_start}</span><span class="s1">, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MeasurementPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.MeasurementPulse">[docs]</a><span class="k">class</span> <span class="nc">MeasurementPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pulse that is only used to signify an acquiition</span>
+
+<span class="sd">    This pulse is not directed to any interface other than the acquisition</span>
+<span class="sd">    interface.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name.</span>
+<span class="sd">        acquire: Acquire pulse (default True)</span>
+<span class="sd">        **kwargs: Additional parameters of `Pulse`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">acquire</span><span class="o">=</span><span class="n">acquire</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;t_start=</span><span class="si">{self.t_start}</span><span class="s1">, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MeasurementPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.MeasurementPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Measurement pulses do not have a voltage&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CombinationPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.CombinationPulse">[docs]</a><span class="k">class</span> <span class="nc">CombinationPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pulse that is a combination of multiple pulse types.</span>
+
+<span class="sd">    Like any other pulse, a CombinationPulse has a name, t_start and t_stop.</span>
+<span class="sd">    t_start and t_stop are calculated and updated from the pulses that make up</span>
+<span class="sd">    the combination.</span>
+
+<span class="sd">    A CombinationPulse is itself a child of the Pulse class, therefore a</span>
+<span class="sd">    CombinationPulse can also be used in consecutive combinations like:</span>
+
+<span class="sd">    &gt;&gt;&gt; CombinationPulse1 = SinePulse1 + DCPulse</span>
+<span class="sd">    &gt;&gt;&gt;CombinationPulse2 = SinePulse2 + CombinationPulse1</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; CombinationPulse = SinePulse + DCPulse</span>
+<span class="sd">        &gt;&gt;&gt; CombinationPulse = DCPulse * SinePulse</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: The name for this CombinationPulse.</span>
+<span class="sd">        pulse1: The first pulse this combination is made up from.</span>
+<span class="sd">        pulse2: The second pulse this combination is made up from.</span>
+<span class="sd">        relation: The relation between pulse1 and pulse2.</span>
+<span class="sd">            This must be one of the following:</span>
+
+<span class="sd">            * &#39;+&#39;     :   pulse1 + pulse2</span>
+<span class="sd">            * &#39;-&#39;     :   pulse1 - pulse2</span>
+<span class="sd">            * &#39;*&#39;     :   pulse1 * pulse2</span>
+
+<span class="sd">        **kwargs: Additional kwargs of `Pulse`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pulse1</span><span class="p">:</span> <span class="n">Pulse</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pulse2</span><span class="p">:</span> <span class="n">Pulse</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">relation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span> <span class="o">=</span> <span class="n">pulse1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span> <span class="o">=</span> <span class="n">pulse2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">=</span> <span class="n">relation</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse1</span><span class="p">,</span> <span class="n">Pulse</span><span class="p">),</span> <span class="s1">&#39;pulse1 needs to be a Pulse&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pulse2</span><span class="p">,</span> <span class="n">Pulse</span><span class="p">),</span> <span class="s1">&#39;pulse2 needs to be a Pulse&#39;</span>
+        <span class="k">assert</span> <span class="n">relation</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">],</span> <span class="s1">&#39;relation has a non-supported value&#39;</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">t_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_start</span><span class="p">)</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">t_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_stop</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">combination_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="p">,</span> <span class="n">CombinationPulse</span><span class="p">):</span>
+            <span class="n">pulse1_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">combination_string</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pulse1_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="p">,</span> <span class="n">CombinationPulse</span><span class="p">):</span>
+            <span class="n">pulse2_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">combination_string</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pulse2_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="s1">&#39;(</span><span class="si">{pulse1}</span><span class="s1"> </span><span class="si">{relation}</span><span class="s1"> </span><span class="si">{pulse2}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pulse1</span><span class="o">=</span><span class="n">pulse1_string</span><span class="p">,</span>
+                                                       <span class="n">relation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">,</span>
+                                                       <span class="n">pulse2</span><span class="o">=</span><span class="n">pulse2_string</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pulse_details</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="p">,</span> <span class="n">CombinationPulse</span><span class="p">):</span>
+            <span class="n">pulse1_details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">pulse_details</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pulse1_details</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1"> </span><span class="si">{self.pulse1.name}</span><span class="s1"> : {repr(self.pulse1)}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="p">,</span> <span class="n">CombinationPulse</span><span class="p">):</span>
+            <span class="n">pulse2_details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">pulse_details</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pulse2_details</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1"> </span><span class="si">{self.pulse2.name}</span><span class="s1"> : {repr(self.pulse2)}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">pulse1_details</span> <span class="o">+</span> <span class="n">pulse2_details</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;combination: </span><span class="si">{self.combination}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="s1">&#39;, </span><span class="si">{self.pulse_details}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CombinationPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.CombinationPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="s2">&quot;voltage at </span><span class="si">{}</span><span class="s2"> s is not in the time range </span><span class="si">{}</span><span class="s2"> s - </span><span class="si">{}</span><span class="s2"> s of &quot;</span> \
+            <span class="s2">&quot;pulse </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">result1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">result2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="n">pulse1_t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">,</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span><span class="p">],</span>
+                            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="n">pulse2_t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">,</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_stop</span><span class="p">],</span>
+                            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+
+        <span class="n">voltage1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">pulse1_t</span><span class="p">)</span>
+        <span class="n">voltage2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="n">pulse2_t</span><span class="p">)</span>
+
+        <span class="n">result1</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">,</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse1</span><span class="o">.</span><span class="n">t_stop</span><span class="p">],</span>
+                       <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">voltage1</span>
+        <span class="n">result2</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_start</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">,</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse2</span><span class="o">.</span><span class="n">t_stop</span><span class="p">],</span>
+                       <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">voltage2</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result1</span> <span class="o">+</span> <span class="n">result2</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result1</span> <span class="o">-</span> <span class="n">result2</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result1</span> <span class="o">*</span> <span class="n">result2</span></div></div>
+
+
+<div class="viewcode-block" id="AWGPulse"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.AWGPulse">[docs]</a><span class="k">class</span> <span class="nc">AWGPulse</span><span class="p">(</span><span class="n">Pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Arbitrary waveform pulses that can be implemented by AWGs.</span>
+
+<span class="sd">    This class allows the user to create a truly arbitrary pulse by either:</span>
+<span class="sd">        - providing a function that converts time-stamps to waveform points</span>
+<span class="sd">        - an array of waveform points</span>
+
+<span class="sd">    The resulting AWGPulse can be sampled at different sample rates,</span>
+<span class="sd">    interpolating between waveform points if necessary.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        name: Pulse name.</span>
+<span class="sd">        fun: The function used for calculating waveform points based on</span>
+<span class="sd">            time-stamps.</span>
+<span class="sd">        wf_array: Numpy array of (float) with time-stamps and waveform points.</span>
+<span class="sd">        interpolate: Use interpolation of the wf_array.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fun</span><span class="p">:</span><span class="n">Callable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">wf_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">interpolate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fun</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">fun</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;The argument `function` must be a callable function.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_function</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="n">fun</span>
+        <span class="k">elif</span> <span class="n">wf_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">wf_array</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;The argument `array` must be of type `np.ndarray`.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">wf_array</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;The argument `array` must be of length 2.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">wf_array</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">wf_array</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;The argument `array` must have equal time-stamps and waveform points&#39;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">wf_array</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;the time-stamps must be increasing&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span> <span class="o">=</span> <span class="n">wf_array</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span> <span class="o">=</span> <span class="n">wf_array</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_function</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="n">wf_array</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span> <span class="o">=</span> <span class="n">interpolate</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provide either a function or an array.&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWGPulse.from_array"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.AWGPulse.from_array">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_array</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">wf_array</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWGPulse.from_function"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.AWGPulse.from_function">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_function</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fun</span><span class="o">=</span><span class="n">function</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_function</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;function:</span><span class="si">{self.function}</span><span class="s1">&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">properties_str</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;array:</span><span class="si">{self.array.shape}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="s1">&#39;, t_start=</span><span class="si">{self.t_start}</span><span class="s1">&#39;</span>
+            <span class="n">properties_str</span> <span class="o">+=</span> <span class="s1">&#39;, duration=</span><span class="si">{self.duration}</span><span class="s1">&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_repr</span><span class="p">(</span><span class="n">properties_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWGPulse.get_voltage"><a class="viewcode-back" href="../../silq.pulses.html#silq.instrument_interfaces.chip_interface.AWGPulse.get_voltage">[docs]</a>    <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get voltage(s) at time(s) t.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: not all ``t`` between `Pulse`.t_start and</span>
+<span class="sd">                `Pulse`.t_stop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_between</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">),</span> \
+            <span class="s2">&quot;voltage at </span><span class="si">{}</span><span class="s2"> s is not in the time range </span><span class="si">{}</span><span class="s2"> s - </span><span class="si">{}</span><span class="s2"> s of &quot;</span> \
+            <span class="s2">&quot;pulse </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_stop</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_function</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s1">&#39;All requested t-values must be in wf_array since interpolation is disabled.&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

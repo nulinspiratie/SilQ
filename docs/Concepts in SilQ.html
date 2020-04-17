@@ -1,0 +1,636 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Concepts in SilQ &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="For developers" href="For developers.html" />
+    <link rel="prev" title="Brief QCoDeS guide" href="Brief QCoDeS guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Concepts in SilQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#main-classes">Main classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#instrumentinterface">InstrumentInterface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connection">Connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#layout">Layout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pulse">Pulse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pulsesequence">PulseSequence</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#targeting-a-pulse-sequence">Targeting a pulse sequence</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#stage-1-pulse-distribution">Stage 1 - Pulse distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stage-2-instrument-setup">Stage 2 - Instrument setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-a-pulse-sequence">Running a pulse sequence</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#step-1-starting-instruments">Step 1 - Starting instruments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#step-2-acquiring-data">Step 2 - Acquiring data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#step-3-stopping-instruments">Step 3 - Stopping instruments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#acquisitionparameter">AcquisitionParameter</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Concepts in SilQ</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/docs/Concepts in SilQ.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="concepts-in-silq">
+<h1>Concepts in SilQ<a class="headerlink" href="#concepts-in-silq" title="Permalink to this headline">¶</a></h1>
+<p>This page describes the main concept in SilQ.
+The first section describes the <a class="reference internal" href="#main-classes"><span class="std std-ref">Main classes</span></a> that build up the
+layers of abstraction.
+The second section describes how all these classes interact with one another
+when <a class="reference internal" href="#targeting-pulsesequence"><span class="std std-ref">Targeting a pulse sequence</span></a> to a specific
+experimental setup.
+The final section describes the <a class="reference internal" href="#acquisition-parameter"><span class="std std-ref">AcquisitionParameter</span></a>,
+which is another main class, and the final layer of abstraction, and whose
+description requires knowledge of how pulse sequence targeting works.</p>
+<div class="section" id="main-classes">
+<span id="id1"></span><h2>Main classes<a class="headerlink" href="#main-classes" title="Permalink to this headline">¶</a></h2>
+<p>The classes described here are ordered by how they control one another.
+In general, classes later on control the classes described earlier.
+Every class described here is a QCoDeS ParameterNode, and their properties
+are Parameters, and so they benefit from all the features
+provided by these.
+See <a class="reference internal" href="in-depth guides/Parameter guide.html"><span class="doc">Parameter guide</span></a> and <a class="reference internal" href="in-depth guides/ParameterNode guide.html"><span class="doc">ParameterNode
+guide</span></a> for more information.</p>
+<div class="section" id="instrumentinterface">
+<h3>InstrumentInterface<a class="headerlink" href="#instrumentinterface" title="Permalink to this headline">¶</a></h3>
+<p>Each instrument has a corresponding QCoDeS
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a> driver that facilitates
+communication with the user via Python. These drivers usually directly copy the
+commands described in the instrument manual, and occasionally add some features.
+As a result, each Instrument is controlled slightly differently.
+On top of this, different instruments that are meant to perform similar tasks,
+such as arbitrary waveform generators (AWGs), can have a completely different
+way of controlling.</p>
+<p>To be able to start with a setup-independent pulse sequence, an interface is
+needed that can convert generic instructions, such as outputting a pulse, to
+instructions specific for the particular instrument. This is exactly what the
+<a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> does.
+When a pulse sequence is being setup (targeted), the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>
+receives a list of pulses that it should output when the experiment starts.
+This will usually be a subset of the whole pulse sequence, plus potentially
+ancillary pulses.
+The <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> then converts these pulses into specific instrument
+instructions and sets up the instrument.
+An <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> has a list of pulses that it can program, defined
+in its attribute <code class="docutils literal notranslate"><span class="pre">pulse_implementations</span></code>, and if it receives any pulse that
+is not defined here, it will raise an error.</p>
+<p>Furthermore, the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> may request additional pulses, such
+as triggering pulses or modulation pulses.
+These get sent back to the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> (described next), which will then direct
+those to the appropriate <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While an <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> is supposed to set all the parameters of the
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a> relevant to outputting a pulse,
+often there are simply too many parameters, and some are not included.
+However, these are usually parameters that are rarely modified.
+Additionally, the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> itself has parameters that can be
+set by the user, and will influence how it programs the <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a>.</p>
+</div>
+</div>
+<div class="section" id="connection">
+<h3>Connection<a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h3>
+<p>In an experimental setup, instruments are physically connected to one another
+by cables.
+This physical connection is represented by the <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code>, which has an input
+and output instrument and channel.
+It can additionally have flags, such as being a trigger connection, or having
+a scale (attenuation).
+Connections can also be combined into a <code class="xref any docutils literal notranslate"><span class="pre">CombinedConnection</span></code>, which can be useful
+when you want a single pulse to be sent to multiple connections.</p>
+<p>It is convenient to identify a connection by a label.
+This way, a pulse can be passed the same connection_label to ensure it is passed
+to that specific connection.
+Surprisingly, this helps keeping the pulse sequence setup-independent.
+For example, a pulse having the connection_label <code class="docutils literal notranslate"><span class="pre">output</span></code> can be directed to
+completely different connections in different setups, as the <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code> having
+label <code class="docutils literal notranslate"><span class="pre">output</span></code> can differ.</p>
+</div>
+<div class="section" id="layout">
+<h3>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> is at the heart of the experimental setup.
+Its basis is being a layout of all the instruments and the connectivity between
+them.
+A <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is passed onto the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, which will then use its knowledge
+of the experimental setup to direct each of the pulses to the appropriate
+<a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>.
+If an <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> requests additional pulses, the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> can find
+the appropriate <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> using its knowledge of the connectivity
+between instruments.
+The <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> also communicates with the data acquisition instrument (via its
+interface) to perform data acquisition.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> never directly communicates with an <a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a>, but always
+via the corresponding <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>.</p>
+</div>
+</div>
+<div class="section" id="pulse">
+<h3>Pulse<a class="headerlink" href="#pulse" title="Permalink to this headline">¶</a></h3>
+<p>A <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> is a representation of a physical pulse sent in an experiment.
+There are many different <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> subclasses, common ones are <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.DCPulse" title="silq.pulses.pulse_types.DCPulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">DCPulse</span></code></a>,
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">SinePulse</span></code></a>, <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.TriggerPulse" title="silq.pulses.pulse_types.TriggerPulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TriggerPulse</span></code></a>.
+These pulses usually have several attributes, such as a <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">amplitude</span></code>,
+<code class="docutils literal notranslate"><span class="pre">duration</span></code>, and <code class="docutils literal notranslate"><span class="pre">frequency</span></code>.
+In an experiment, a pulse is always attached to a particular connection
+(e.g. an AWG outputting a pulse from one of its channels to the input of a gate
+on your device sample).
+This is reflected in the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>, which is linked to a specific <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code>.
+This means that when the pulse is targeted by the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, the <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code>’s
+output <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> will be instructed to program the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> to that
+particular connection.
+A <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> also has ancillary properties, such as <code class="docutils literal notranslate"><span class="pre">acquire</span></code>, which signals the
+<code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> that the signal during this pulse should be acquired by the data
+acquisition instrument.</p>
+<p>Often, pulses with a specific name are reused, either in a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, or
+in different <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequences</span></code></a>.
+Instead of having to specify all the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> properties every time,
+properties belonging to a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> with a specific name can be stored in the
+config.
+This way, any time a new <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a> with that name is created, it will use those
+properties by default.</p>
+<p>For more information on the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulse</span></code></a>, see <a class="reference internal" href="in-depth guides/Pulses and PulseSequences.html"><span class="doc">Pulses and PulseSequences</span></a>.</p>
+</div>
+<div class="section" id="pulsesequence">
+<h3>PulseSequence<a class="headerlink" href="#pulsesequence" title="Permalink to this headline">¶</a></h3>
+<p>An experiment usually consists of a sequence of pulses being output by different
+instruments at precise timings.
+In SilQ, this is represented by the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, which contains
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulses</span></code></a> that
+have specific start times, durations, and <code class="xref any docutils literal notranslate"><span class="pre">Connections</span></code>.
+A <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> can be passed onto the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>, which then targets the
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> to the particular experimental setup by passing its <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulses</span></code></a>
+along to the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a>, which then set up
+their instruments.</p>
+<p>If the properties of the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> and
+<code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> have been
+configured, passing a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> to the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> is sufficient to execute
+the pulse sequence, and obtain the resulting traces from the data acquisition
+interface.</p>
+<p>For more information on the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, see <a class="reference internal" href="in-depth guides/Pulses and PulseSequences.html"><span class="doc">Pulses and PulseSequences</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Incorporating feedback routines into the pulse sequence is one of the
+future goals.</p>
+</div>
+</div>
+</div>
+<div class="section" id="targeting-a-pulse-sequence">
+<span id="targeting-pulsesequence"></span><h2>Targeting a pulse sequence<a class="headerlink" href="#targeting-a-pulse-sequence" title="Permalink to this headline">¶</a></h2>
+<p>There are several steps happening when a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is targeted by the
+<code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> to a specific experimental setup.
+To understand the processes that happen behind the scenes, the most important
+piece of information is knowing which classes interact with each other, and
+if it’s a one-way interaction or two-way interaction.
+Below is a figure containing a very simple experimental setup (top), and the
+corresponding representation in SilQ.</p>
+<img alt="Alternative text" src="../_images/Pulse sequence targeting.jpg" />
+<p>The experiment shown above is a simplified version of a typical
+experimental setup.
+It only contains three instruments, and for simplicity we ignore any sample
+being experimented on.
+A trigger instrument (left) handles the timing of the system by sending
+periodic triggers to the other instruments to indicate an event.
+The waveform generator (middle) can output waveforms (pulses).
+It receives triggers from the trigger instrument to indicate that it should
+output the next pulse.
+Alternatively, a trigger can indicate that it should output the entire pulse
+sequence and wait for the next trigger (this is usually the case for
+experiments requiring nanoscale precision).
+The waveform generator emits the pulses to the acquisition card, which
+is programmed to record a fixed-duration digitized signal when it receives a
+trigger from the trigger instrument.
+By programming the instruments correctly, the acquisition card can be
+setup to record specific pulses from the waveform generator.</p>
+<p>Even such a simple measurement as the one described above requires many
+commands to be sent to the different instruments.
+In SilQ, this is handled by the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> targeting a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> to the
+particular experimental setup.
+The bottom of the figure shows how the different SilQ objects interact with
+one another when targeting a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>.
+The arrows indicate the direction of communication, a round dot indicates
+being a property of the class the line originates from.
+Blue lines indicate a <code class="xref any docutils literal notranslate"><span class="pre">Connection</span></code> between the
+<a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> (there is also a connection between
+the left-most and right-most interface).</p>
+<p>Targeting a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is actually a two-stage process.
+However, stage zero is having preprogrammed all the Instruments,
+<a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a>, and <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code>.
+This does not mean manually sending all the commands to output the pulse
+sequence, but specifying the parameters that are freely configurable,
+such as the``sample rate``.</p>
+<div class="section" id="stage-1-pulse-distribution">
+<h3>Stage 1 - Pulse distribution<a class="headerlink" href="#stage-1-pulse-distribution" title="Permalink to this headline">¶</a></h3>
+<p>The first stage is invoked by setting the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">pulse_sequence</span>
+</pre></div>
+</div>
+<p>In the first step, no instruments are actually configured, but instead the
+<code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> passes the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulses</span></code></a> around to the different
+<a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a>.
+These then verify that they can program their instrument to output the pulse,
+and optionally request ancillary pulses from the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> (such as trigger
+pulses).
+If any <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> is not able to program its instrument to output
+all the required pulses, an error is raised.</p>
+<p>If the first does not raise any errors, then each of the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> will have its <code class="docutils literal notranslate"><span class="pre">InstrumentInterface.pulse_sequence</span></code>
+filled with the pulses it should output.
+Additionally, <code class="docutils literal notranslate"><span class="pre">InstrumentInterface.input_pulse_sequence</span></code> contains a list of
+pulses that it receives.
+All <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulses</span></code></a> in the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> that have <code class="docutils literal notranslate"><span class="pre">Pulse.acquire</span> <span class="pre">=</span> <span class="pre">True</span></code>
+are passed onto the acquisition <code class="docutils literal notranslate"><span class="pre">InstrumentInterface.input_pulse_sequence</span></code>.
+This is a good moment to see if the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> have pulse sequences that actually make sense.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When <code class="xref any docutils literal notranslate"><span class="pre">Layout.pulse_sequence</span></code> is set to a new <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, a copy of the
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> can be stored on the computer as a python <code class="docutils literal notranslate"><span class="pre">pickle</span></code> with a
+timestamp.
+This can be useful as a logging feature, as the timestamp allows you to see
+what <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> was targeted at a given time.
+See <a class="reference internal" href="in-depth guides/Storing PulseSequences.html"><span class="doc">Storing PulseSequences</span></a> for more information.</p>
+</div>
+</div>
+<div class="section" id="stage-2-instrument-setup">
+<h3>Stage 2 - Instrument setup<a class="headerlink" href="#stage-2-instrument-setup" title="Permalink to this headline">¶</a></h3>
+<p>The second stage consists of programming the Instruments.
+This is invoked by calling</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>At this point the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> signals all the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> to program their Instruments.
+Each <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> will convert its <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> into
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/instrument/base.html#qcodes.instrument.base.Instrument" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a> commands, and execute them.
+At this stage, errors may also be raised.
+This is often the case when an instrument command cannot be executed by the
+instrument.</p>
+</div>
+<div class="section" id="running-a-pulse-sequence">
+<h3>Running a pulse sequence<a class="headerlink" href="#running-a-pulse-sequence" title="Permalink to this headline">¶</a></h3>
+<p>Once the <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> has successfully targeted a <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, the pulse
+sequence can be executed on the experimental setup.
+This generally happens in three steps.</p>
+<div class="section" id="step-1-starting-instruments">
+<h4>Step 1 - Starting instruments<a class="headerlink" href="#step-1-starting-instruments" title="Permalink to this headline">¶</a></h4>
+<p>The first step consists of starting the instruments, and is called by</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The order of starting Instruments is based on their hierarchy:
+instruments that need to be triggered are started
+before the instrument that performs the triggering.
+At the top of the chain is the <code class="docutils literal notranslate"><span class="pre">primary_instrument</span></code> (in this case the
+triggering instrument), which is started last.
+This ensures that all other instruments are awaiting a trigger and thus are
+synchronized.
+When the <code class="docutils literal notranslate"><span class="pre">primary_instrument</span></code> is started, the pulse sequence is being output
+by the instruments.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> of any <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> is empty, i.e. it does
+not need to output pulses, it won’t be started.</p>
+</div>
+</div>
+<div class="section" id="step-2-acquiring-data">
+<h4>Step 2 - Acquiring data<a class="headerlink" href="#step-2-acquiring-data" title="Permalink to this headline">¶</a></h4>
+<p>Once the pulse sequence is running, the acquisition instrument, specified by
+<code class="docutils literal notranslate"><span class="pre">layout.acquisition_interface</span></code>, can be used to acquire a signal.
+Data acquisition can be performed by calling</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">acquisition</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>At this point the acquisition instrument will acquire traces and pass them
+onto its <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>.
+The <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a> will then segment the traces for each of the pulses.
+This way, each pulse in its <code class="docutils literal notranslate"><span class="pre">input_pulse_sequence</span></code> (which all have
+<code class="docutils literal notranslate"><span class="pre">Pulse.acquire</span> <span class="pre">=</span> <span class="pre">True</span></code>) has its corresponding measured traces.
+At this point, optional averaging of the traces, specified by <code class="docutils literal notranslate"><span class="pre">Pulse.average</span></code>,
+is also performed.</p>
+<p>When traces are acquired, more than one channel can be measured.
+These channels are specified in <code class="docutils literal notranslate"><span class="pre">Layout.acquisition_channels</span></code>, and each channel
+is given a label.
+This allows the different acquisition channels to have meaningful labels (e.g.
+<code class="docutils literal notranslate"><span class="pre">chip</span> <span class="pre">output</span></code>) instead of channel indices (e.g. <code class="docutils literal notranslate"><span class="pre">channel_A</span></code>).
+The <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> attaches these labels once it receives the processed traces from
+the acquisition <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterface</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>The number of traces is specified by <code class="docutils literal notranslate"><span class="pre">Layout.samples</span></code>.</p></li>
+<li><p><code class="xref any docutils literal notranslate"><span class="pre">Layout.start()</span></code> is called if the instruments have not yet been started.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="step-3-stopping-instruments">
+<h4>Step 3 - Stopping instruments<a class="headerlink" href="#step-3-stopping-instruments" title="Permalink to this headline">¶</a></h4>
+<p>The final step is to stop the instruments after the acquisition is
+finished, and can be called by</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will stop the instruments according to the same hierarchy used when
+starting the instruments.
+This step actually happens by default at the end of an acquisition (step 2).
+However, since there is overhead involved in stopping/starting instruments, it
+can be ignored by calling <code class="docutils literal notranslate"><span class="pre">layout.acquisition(stop=False)</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">layout.stop()</span></code> is a useful command if you want to be absolutely sure
+that all instruments are not outputting anything.
+It will stop all instruments, even those that aren’t involved in the
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, and does not raise an error if instruments are already
+stopped.</p>
+</div>
+</div>
+</div>
+<div class="section" id="summary">
+<h3>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h3>
+<p>Although there are many steps involved in setting up and running a
+<a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, most of this happens under the hood.
+If the <a class="reference internal" href="../_modules/silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref any py py-class docutils literal notranslate"><span class="pre">InstrumentInterfaces</span></code></a> and <code class="xref any docutils literal notranslate"><span class="pre">Layout</span></code> have been
+set up correctly, this whole process can be executed with just three commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="o">=</span> <span class="n">pulse_sequence</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layout</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">traces</span> <span class="o">=</span> <span class="n">layout</span><span class="o">.</span><span class="n">acquisition</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="acquisitionparameter">
+<span id="acquisition-parameter"></span><h2>AcquisitionParameter<a class="headerlink" href="#acquisitionparameter" title="Permalink to this headline">¶</a></h2>
+<p>Performing a pulse sequence and acquiring its traces is usually only half the
+story; the traces often need to be analysed afterwards.
+While the complicated analysis should be done at a later point (potentially
+in an <a class="reference internal" href="in-depth guides/Analysis notebook guidelines.html"><span class="doc">analysis notebook</span></a>,
+initial postprocessing can usually be done straight away.
+Examples are measuring if a trace has a spike (blip) in current, or
+performing IQ demodulation of the output signal.
+This postprocessing is usually dependent on the type of measurement
+performed, and is therefore inherently linked to the pulse sequence.</p>
+<p>The goal of the <a class="reference internal" href="../_modules/silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a> is to combine the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> with
+the corresponding postprocessing analysis, such that the user performs a
+measurement, and gets the processed data straight away.
+Each <a class="reference internal" href="../_modules/silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a> has a specific <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>
+(<code class="docutils literal notranslate"><span class="pre">AcquisitionParameter.pulse_sequence</span></code>)and analysis
+(<code class="docutils literal notranslate"><span class="pre">AcquisitionParameter.analysis()</span></code>) attached
+to it.
+This does not mean that the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a> is fixed; its properties can
+still be modified.
+However, the analysis usually analyses traces of specific <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_types.Pulse" title="silq.pulses.pulse_types.Pulse"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pulses</span></code></a> in
+the <a class="reference internal" href="../_modules/silq.pulses.html#silq.pulses.pulse_modules.PulseSequence" title="silq.pulses.pulse_modules.PulseSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">PulseSequence</span></code></a>, and so these pulses need to be present.</p>
+<p>As its name suggests, an <a class="reference internal" href="../_modules/silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a> is a
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/parameters/parameter.html#qcodes.instrument.parameter.Parameter" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> and not a <code class="docutils literal notranslate"><span class="pre">ParameterNode</span></code>.
+The main reason is that you can use an <a class="reference internal" href="../_modules/silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a> in a
+measurement <a class="reference external" href="http://qcodes.github.io/Qcodes/api/loops.html#qcodes.loops.Loop" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loop</span></code></a> as you would any other
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/parameters/parameter.html#qcodes.instrument.parameter.Parameter" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>.
+The <a class="reference internal" href="../_modules/silq.parameters.html#silq.parameters.acquisition_parameters.AcquisitionParameter" title="silq.parameters.acquisition_parameters.AcquisitionParameter"><code class="xref any py py-class docutils literal notranslate"><span class="pre">AcquisitionParameter</span></code></a> contains the attribute <code class="docutils literal notranslate"><span class="pre">names</span></code>, which is a list of
+things that the analysis returns.
+Each of these is saved in the <a class="reference external" href="http://qcodes.github.io/Qcodes/api/data/data_set.html#qcodes.data.data_set.DataSet" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a> during a
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/loops.html#qcodes.loops.Loop" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loop</span></code></a>.</p>
+<p>By default, calling <code class="docutils literal notranslate"><span class="pre">AcquisitionParameter.get()</span></code>
+performs the following tasks:</p>
+<ol class="arabic simple">
+<li><p>Target its pulse sequence</p></li>
+<li><p>Setup instruments</p></li>
+<li><p>Start instruments</p></li>
+<li><p>Perform acquisition</p></li>
+<li><p>Stop instruments</p></li>
+<li><p>Perform its analysis and return results.</p></li>
+</ol>
+<p>The AcquisitionParameter has a rich set of options/features, for more
+information see <code class="xref any docutils literal notranslate"><span class="pre">in-depth</span> <span class="pre">guides/AcquisitionParameter</span> <span class="pre">guide</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The raw traces can also be saved during a measurement
+<a class="reference external" href="http://qcodes.github.io/Qcodes/api/loops.html#qcodes.loops.Loop" title="(in QCoDeS)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loop</span></code></a>, see <a class="reference internal" href="in-depth guides/Saving traces.html"><span class="doc">Saving traces</span></a>.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="For developers.html" class="btn btn-neutral float-right" title="For developers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Brief QCoDeS guide.html" class="btn btn-neutral float-left" title="Brief QCoDeS guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

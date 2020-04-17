@@ -1,0 +1,1446 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.parameters.measurement_parameters &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.parameters.measurement_parameters</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.parameters.measurement_parameters</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">numbers</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
+
+<span class="kn">import</span> <span class="nn">qcodes</span> <span class="k">as</span> <span class="nn">qc</span>
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">Instrument</span>
+<span class="kn">from</span> <span class="nn">qcodes.loops</span> <span class="k">import</span> <span class="n">active_dataset</span><span class="p">,</span> <span class="n">Loop</span><span class="p">,</span> <span class="n">BreakIf</span>
+<span class="kn">from</span> <span class="nn">qcodes.data</span> <span class="k">import</span> <span class="n">hdf5_format</span>
+<span class="kn">from</span> <span class="nn">qcodes.instrument.parameter</span> <span class="k">import</span> <span class="n">MultiParameter</span>
+
+<span class="kn">from</span> <span class="nn">silq</span> <span class="k">import</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">silq.tools.general_tools</span> <span class="k">import</span> <span class="n">SettingsClass</span><span class="p">,</span> <span class="n">clear_single_settings</span><span class="p">,</span> \
+    <span class="n">attribute_from_config</span><span class="p">,</span> <span class="n">convert_setpoints</span><span class="p">,</span> <span class="n">property_ignore_setter</span>
+<span class="kn">from</span> <span class="nn">silq.tools.parameter_tools</span> <span class="k">import</span> <span class="n">create_set_vals</span>
+<span class="kn">from</span> <span class="nn">silq.measurements.measurement_types</span> <span class="k">import</span> <span class="n">Loop0DMeasurement</span><span class="p">,</span> \
+    <span class="n">Loop1DMeasurement</span><span class="p">,</span> <span class="n">Loop2DMeasurement</span><span class="p">,</span> <span class="n">ConditionSet</span><span class="p">,</span> <span class="n">TruthCondition</span>
+<span class="kn">from</span> <span class="nn">silq.measurements.measurement_modules</span> <span class="k">import</span> <span class="n">MeasurementSequence</span>
+<span class="kn">from</span> <span class="nn">silq.parameters</span> <span class="k">import</span> <span class="n">DCParameter</span><span class="p">,</span> <span class="n">CombinedParameter</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MeasurementParameter&#39;</span><span class="p">,</span> <span class="s1">&#39;RetuneBlipsParameter&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;CoulombPeakParameter&#39;</span><span class="p">,</span> <span class="s1">&#39;DCMultisweepParameter&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;MeasurementSequenceParameter&#39;</span><span class="p">,</span> <span class="s1">&#39;SelectFrequencyParameter&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;TrackPeakParameter&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">properties_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;properties&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="n">parameter_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="n">measurement_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;measurements&#39;</span><span class="p">,</span> <span class="p">{})</span>
+
+
+<div class="viewcode-block" id="MeasurementParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.MeasurementParameter">[docs]</a><span class="k">class</span> <span class="nc">MeasurementParameter</span><span class="p">(</span><span class="n">SettingsClass</span><span class="p">,</span> <span class="n">MultiParameter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for parameters that perform measurements.</span>
+
+<span class="sd">    A `MeasurementParameter` usually consists of several acquisitions,</span>
+<span class="sd">    which it uses for complex sequences.</span>
+
+<span class="sd">    A `MeasurementParameter` usually uses a ``qcodes.Loop`` or a</span>
+<span class="sd">    ``qcodes.Measure`` or several in succession. The results in the ``DataSet``</span>
+<span class="sd">    are analysed and often some post-action is performed.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        An example of a `MeasurementParameter` is a retuning sequence, which</span>
+<span class="sd">        uses an `AcquisitionParameter`, and from that determines how much</span>
+<span class="sd">        voltages have to be modified to retune the system</span>
+<span class="sd">        (e.g. `RetuneBlipsParameter`).</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The MeasurementParameter needs to be updated. It was originally created</span>
+<span class="sd">        to be used with the `MeasurementSequence`, but this class turned out to</span>
+<span class="sd">        be too rigid. Instead, measurements should be programmed by subclassing</span>
+<span class="sd">        the MeasurementParameter.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Name: Parameter name</span>
+<span class="sd">        acquisition_parameter: Acquisition_parameter to use. Fails in case of</span>
+<span class="sd">            multiple or no acquisition parameters</span>
+<span class="sd">        discriminant: data array in dataset to discriminate. Fails if there is</span>
+<span class="sd">            no single discriminant.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        silent (str): Print results during .get()</span>
+
+<span class="sd">    Todo:</span>
+<span class="sd">        * Clean up MeasurementParameter, remove attributes</span>
+<span class="sd">          ``MeasurementParameter.discriminant`` and</span>
+<span class="sd">          ``MeasurementParameter.acquisition_parameter``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">discriminant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">SettingsClass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">MultiParameter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">snapshot_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">MeasurementParameter</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">Instrument</span><span class="o">.</span><span class="n">find_instrument</span><span class="p">(</span>
+                    <span class="s1">&#39;layout&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;No layout found for </span><span class="si">{self}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span> <span class="o">=</span> <span class="n">discriminant</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">silent</span> <span class="o">=</span> <span class="n">silent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">acquisition_parameter</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta_attrs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;acquisition_parameter_name&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1"> measurement parameter&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attribute_from_config</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">loc_provider</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{date}</span><span class="s1">/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">+</span> <span class="s1">&#39;/#</span><span class="si">{counter}</span><span class="s1">_</span><span class="si">{name}</span><span class="s1">_</span><span class="si">{time}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">qc</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">FormatLocation</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">acquisition_parameter_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">base_folder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain measurement base folder (if any).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            If in a measurement, the base folder is the relative path of the</span>
+<span class="sd">            data folder. Otherwise None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">active_dataset</span> <span class="o">=</span> <span class="n">active_dataset</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">active_dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">active_dataset</span><span class="p">,</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">active_dataset</span><span class="o">.</span><span class="n">location</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">active_dataset</span><span class="p">,</span> <span class="s1">&#39;_location&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">active_dataset</span><span class="o">.</span><span class="n">_location</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">discriminant</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discriminant</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discriminant</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@discriminant</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">discriminant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discriminant</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">discriminant_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="MeasurementParameter.print_results"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.MeasurementParameter.print_results">[docs]</a>    <span class="k">def</span> <span class="nf">print_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;names&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{name}</span><span class="s1">: </span><span class="si">{result:.3f}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{name}</span><span class="s1">: </span><span class="si">{result}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;results&#39;</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.name}</span><span class="s1">: </span><span class="si">{self.results[self.name]:.3f}</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RetuneBlipsParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.RetuneBlipsParameter">[docs]</a><span class="k">class</span> <span class="nc">RetuneBlipsParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parameter that retunes by analysing blips using a neural network</span>
+
+<span class="sd">    The first (optional) stage is to use a CoulombPeakParameter to find the</span>
+<span class="sd">    center of the Coulomb peak.</span>
+
+<span class="sd">    Second, a sweep parameter is varied for a range of sweep values. For each</span>
+<span class="sd">    sweep point, a trace is acquired, and its blips measured in a BlipsParameter.</span>
+<span class="sd">    This information is then analysed by a neural network, from which the</span>
+<span class="sd">    optimal tuning position is predicted.</span>
+
+<span class="sd">    The Neural network is a Keras model that needs to be pre-trained with data.</span>
+<span class="sd">    More info: Experiments/personal/Serwan/Neural networks/Retune blips.ipynb</span>
+<span class="sd">    The following Neural Network seems to produce decent results:</span>
+
+<span class="sd">    &gt;&gt;&gt; model = Sequential()</span>
+<span class="sd">    &gt;&gt;&gt; model.add(Dense(3, activation=&#39;linear&#39;, input_shape=(21,3)))</span>
+<span class="sd">    &gt;&gt;&gt; model.add(Flatten())</span>
+<span class="sd">    &gt;&gt;&gt; model.add(Dense(1, activation=&#39;linear&#39;))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s1">&#39;retune_blips&#39;</span><span class="p">,</span>
+                 <span class="n">coulomb_peak_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">blips_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sweep_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sweep_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">tune_to_coulomb_peak</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">tune_to_optimum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">optimum_DC_offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">model_filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">voltage_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">optimum_method</span><span class="o">=</span><span class="s1">&#39;neural_network&#39;</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            name: name of parameter (default `retune_blips`)</span>
+<span class="sd">            coulomb_peak_parameter: CoulombPeakParameter that tunes to the</span>
+<span class="sd">                center of the Coulomb peak. Should have all its settings</span>
+<span class="sd">                predefined, including sweep_range, and DC_offset</span>
+<span class="sd">            blips_parameter: BlipsParameter that measures blips properties from</span>
+<span class="sd">                a trace, to be analysed by a neural network. Should have all its</span>
+<span class="sd">                settings predefined, including duration</span>
+<span class="sd">            sweep_parameter: sweep CombinedParameter with scales defined to</span>
+<span class="sd">                remain compensated on the Coulomb peak. The offsets must be set</span>
+<span class="sd">                such that zero approximately corresponds to the tuning position.</span>
+<span class="sd">            sweep_vals: Range of sweep values to sweep the sweep_parameter and</span>
+<span class="sd">                measure blips_parameter. It is important that both the number of</span>
+<span class="sd">                sweep values and distance between sweep points is the same as</span>
+<span class="sd">                in the training data.</span>
+<span class="sd">            tune_to_coulomb_peak: Whether to use the coulomb_peak_parameter.</span>
+<span class="sd">                Otherwise, it will always assume the system remains on the</span>
+<span class="sd">                Coulomb peak</span>
+<span class="sd">            tune_to_optimum: Tune to optimum values predicted by neural network.</span>
+<span class="sd">                If True, the offsets of the sweep parameter are also zeroed.</span>
+<span class="sd">            optimum_DC_offset: Additional offset to optimum determined from</span>
+<span class="sd">                neural network model. Used if the model is not trained properly</span>
+<span class="sd">                and has a constant offset in predictions.</span>
+<span class="sd">                If single value, combined parameter will be offset.</span>
+<span class="sd">                If tuple, offsets are per parameter in combined parameter.</span>
+<span class="sd">            model_filepath: Filepath of Keras neural network (.h5 extension).</span>
+<span class="sd">            voltage_limit: Maximum voltage difference from initial offsets to</span>
+<span class="sd">                avoid the system .</span>
+<span class="sd">                The first time this parameter is called, the sweep parameter&#39;s</span>
+<span class="sd">                initial offsets are stored. If one of the optimal values is more</span>
+<span class="sd">                than voltage_limit away from its initial offset, a warning is</span>
+<span class="sd">                raised and the gates are returned to the initial offsets.</span>
+<span class="sd">            **kwargs: kwargs passed to MeasurementParameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Load model here because it takes quite a while to load</span>
+        <span class="kn">from</span> <span class="nn">keras.models</span> <span class="k">import</span> <span class="n">load_model</span>
+        <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                         <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;optimal_vals&#39;</span><span class="p">,</span> <span class="s1">&#39;offsets&#39;</span><span class="p">],</span>
+                         <span class="n">units</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">],</span>
+                         <span class="n">shapes</span><span class="o">=</span><span class="p">((),</span> <span class="p">()),</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span> <span class="o">=</span> <span class="n">sweep_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coulomb_peak_parameter</span> <span class="o">=</span> <span class="n">coulomb_peak_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blips_parameter</span> <span class="o">=</span> <span class="n">blips_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep_vals</span> <span class="o">=</span> <span class="n">sweep_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_coulomb_peak</span> <span class="o">=</span> <span class="n">tune_to_coulomb_peak</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="n">tune_to_optimum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimum_DC_offset</span> <span class="o">=</span> <span class="n">optimum_DC_offset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_offsets</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage_limit</span> <span class="o">=</span> <span class="n">voltage_limit</span>
+
+        <span class="k">assert</span> <span class="n">optimum_method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;neural_network&#39;</span><span class="p">,</span> <span class="s1">&#39;max_blips&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimum_method</span> <span class="o">=</span> <span class="n">optimum_method</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_filepath</span> <span class="o">=</span> <span class="n">model_filepath</span>
+        <span class="k">if</span> <span class="n">model_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_filepath</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_make_predict_function</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">get_default_graph</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;No neural network model loaded for </span><span class="si">{self}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Tools to only execute every nth call</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">every_nth</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta_attrs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;sweep_vals&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;tune_to_coulomb_peak&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;tune_to_optimum&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;initial_offsets&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;voltage_limit&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;every_nth&#39;</span><span class="p">])</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">,</span> <span class="n">CombinedParameter</span><span class="p">):</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">parameters</span><span class="p">),)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">shape</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RetuneBlipsParameter.create_loop"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.RetuneBlipsParameter.create_loop">[docs]</a>    <span class="k">def</span> <span class="nf">create_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create loop that sweep sweep_parameter over sweep_vals and measures</span>
+<span class="sd">        blips_parameter at each sweep point.</span>
+<span class="sd">        Returns: loop</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">Loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_vals</span><span class="p">])</span><span class="o">.</span><span class="n">each</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blips_parameter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loop</span></div>
+
+<div class="viewcode-block" id="RetuneBlipsParameter.calculate_optimum"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.RetuneBlipsParameter.calculate_optimum">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_optimum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate optimum of dataset from neural network</span>
+<span class="sd">        Returns: optimal voltage of combined set parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">blips_per_second</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">blips_per_second</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="n">blips_per_second</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">)</span>
+        <span class="n">mean_low_blip_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mean_low_blip_duration</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="n">mean_low_blip_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">mean_low_blip_duration</span><span class="p">)</span>
+        <span class="n">mean_high_blip_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mean_high_blip_duration</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="n">mean_high_blip_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">mean_high_blip_duration</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimum_method</span> <span class="o">==</span> <span class="s1">&#39;max_blips&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_vals</span><span class="p">[</span><span class="n">max_idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;No Neural network model provided. skipping retune&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">21</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s1">&#39;Must have 21 sweep vals, not {len(blips_per_second)}&#39;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+
+        <span class="c1"># normalize data</span>
+        <span class="c1"># Blips per second gets a gaussian normalization</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">blips_per_second</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">blips_per_second</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                <span class="n">blips_per_second</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># blip durations get a logarithmic normalization, since the region</span>
+        <span class="c1"># of interest has a low value</span>
+        <span class="n">log_offset</span> <span class="o">=</span> <span class="mf">1e-3</span>  <span class="c1"># add offset since otherwise log(0) raises an error</span>
+        <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">mean_low_blip_duration</span> <span class="o">+</span> <span class="n">log_offset</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">mean_high_blip_duration</span> <span class="o">+</span> <span class="n">log_offset</span><span class="p">)</span>
+
+        <span class="c1"># Center logarithmic blip durations around zero</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">1.5</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Predict optimum value</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">neural_network_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">traceback</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">())</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Scale results</span>
+        <span class="c1"># Neural network output is between -1 (sweep_vals[0]) and +1 (sweep_vals[-1])</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_vals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neural_network_results</span> <span class="o">*</span> <span class="n">scale_factor</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_val</span></div>
+
+<div class="viewcode-block" id="RetuneBlipsParameter.get_raw"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.RetuneBlipsParameter.get_raw">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Must provide model filepath&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">every_nth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_nth</span> <span class="o">!=</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;skipping iteration </span><span class="si">{self.idx}</span><span class="s1"> % </span><span class="si">{self.every_nth}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># Skip this iteration, return old results</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+
+        <span class="n">initial_set_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">()</span>
+        <span class="n">initial_offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">offsets</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_offsets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Set initial offsets to ensure tuning does not reach out of bounds</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_offsets</span> <span class="o">=</span> <span class="n">initial_offsets</span>
+
+        <span class="c1"># Get Coulomb peak</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_coulomb_peak</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coulomb_peak_parameter</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">get_data_set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;count_blips&#39;</span><span class="p">,</span>
+                                           <span class="n">location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loc_provider</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">set_active</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="n">initial_set_val</span><span class="p">)</span>
+
+        <span class="n">optimum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_optimum</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">optimum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">optimal_vals</span> <span class="o">=</span> <span class="n">initial_offsets</span>
+            <span class="n">offsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_offsets</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">optimal_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">calculate_individual_values</span><span class="p">(</span><span class="n">optimum</span><span class="p">)</span>
+            <span class="n">offsets</span> <span class="o">=</span> <span class="p">[</span><span class="n">offset</span> <span class="o">-</span> <span class="n">initial_offset</span> <span class="k">for</span> <span class="n">offset</span><span class="p">,</span> <span class="n">initial_offset</span> <span class="ow">in</span>
+                       <span class="nb">zip</span><span class="p">(</span><span class="n">optimal_vals</span><span class="p">,</span> <span class="n">initial_offsets</span><span class="p">)]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_optimum</span><span class="p">:</span>
+                <span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">voltage_differences</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_offsets</span><span class="p">)</span> <span class="o">-</span> <span class="n">optimal_vals</span>
+                <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">voltage_differences</span><span class="p">))</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_limit</span><span class="p">:</span>
+                    <span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;tune voltage </span><span class="si">{optimal_vals}</span><span class="s1"> outside &#39;</span>
+                                    <span class="n">f</span><span class="s1">&#39;range, tuning back to initial value&#39;</span><span class="p">)</span>
+                    <span class="c1"># self.sweep_parameter.offsets = self.initial_offsets</span>
+                    <span class="c1"># self.sweep_parameter(0)</span>
+                    <span class="n">tune_to_optimum</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">tune_to_optimum</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="n">optimum</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">zero_offset</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimum_DC_offset</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimum_DC_offset</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimum_DC_offset</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">optimum_DC_offset</span><span class="p">):</span>
+                    <span class="n">parameter</span><span class="p">(</span><span class="n">parameter</span><span class="p">()</span> <span class="o">+</span> <span class="n">offset</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;optimal_vals&#39;</span><span class="p">:</span> <span class="n">optimal_vals</span><span class="p">,</span>
+            <span class="s1">&#39;offsets&#39;</span><span class="p">:</span> <span class="n">offsets</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="CoulombPeakParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.CoulombPeakParameter">[docs]</a><span class="k">class</span> <span class="nc">CoulombPeakParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameter that finds Coulomb peak and can tune to it.</span>
+<span class="sd">    Finding the Coulomb peak is done by sweeping a gate and measuring the DC</span>
+<span class="sd">    voltage at each point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s1">&#39;coulomb_peak&#39;</span><span class="p">,</span>
+                 <span class="n">sweep_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">combined_set_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">DC_peak_offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">tune_to_peak</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">min_voltage</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">interpolate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            name: name of parameter (default coulomb_peak)</span>
+<span class="sd">            sweep_parameter: gate parameter to sweep over Coulomb peak</span>
+<span class="sd">            acquisition_parameter: parameter that measures DC voltage.</span>
+<span class="sd">                If not provided, a default DCParameter is created.</span>
+<span class="sd">            combined_set_parameter: CombinedParameter of gate parameters whose</span>
+<span class="sd">                scale must be set to remain compensated on the Coulomb peak.</span>
+<span class="sd">                Only needed if a DC_peak_offset is provided.</span>
+<span class="sd">                Offsets must be set such that DC_peak_offset is relative to</span>
+<span class="sd">                zero.</span>
+<span class="sd">            DC_peak_offset: Any DC peak offset to set the combined_set_parameter</span>
+<span class="sd">                to. Useful if you want to tune away from the transition when</span>
+<span class="sd">                performing Coulomb peak scan.</span>
+<span class="sd">            tune_to_peak: Tune to peak after scan is complete.</span>
+<span class="sd">                If a combined_set_parameter and DC_peak_offset is provided,</span>
+<span class="sd">                the offsets are zeroed after the scan.</span>
+<span class="sd">                Otherwise, sweep_parameter is set to optimum</span>
+<span class="sd">            min_voltage: Minimum voltage that Coulomb peak must have.</span>
+<span class="sd">                If not satisfied, measurement has failed, and system is reset to</span>
+<span class="sd">                initial value.</span>
+<span class="sd">            **kwargs: kwargs passed to MeasurementParameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">acquisition_parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">DCParameter</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span> <span class="o">=</span> <span class="n">sweep_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                      <span class="s1">&#39;step_percentage&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="s1">&#39;num&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_voltage</span> <span class="o">=</span> <span class="n">min_voltage</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span> <span class="o">=</span> <span class="n">combined_set_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span> <span class="o">=</span> <span class="n">DC_peak_offset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_peak</span> <span class="o">=</span> <span class="n">tune_to_peak</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span> <span class="o">=</span> <span class="n">interpolate</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                         <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;peak_optimum&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_offset&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;max_voltage&#39;</span><span class="p">,</span> <span class="s1">&#39;DC_voltage&#39;</span><span class="p">],</span>
+                         <span class="n">units</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">],</span>
+                         <span class="n">shapes</span><span class="o">=</span><span class="p">((),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">()),</span>
+                         <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                         <span class="n">wrap_set</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta_attrs</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;min_voltage&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CoulombPeakParameter.calculate_sweep_vals"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.CoulombPeakParameter.calculate_sweep_vals">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_sweep_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;range&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">]]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="p">[</span><span class="s1">&#39;step_percentage&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="o">.</span><span class="n">sweep</span><span class="p">(</span>
+                <span class="n">step_percentage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="p">[</span><span class="s1">&#39;step_percentage&#39;</span><span class="p">],</span>
+                <span class="n">num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sweep_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_sweep_vals</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sweep_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="n">sweep_vals</span><span class="o">.</span><span class="n">parameter</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{sweep_parameter.name}</span><span class="s1">_optimum&#39;</span><span class="p">,</span>
+                    <span class="n">f</span><span class="s1">&#39;</span><span class="si">{sweep_parameter.name}</span><span class="s1">_offset&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;max_voltage&#39;</span><span class="p">,</span> <span class="s1">&#39;DC_voltage&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="s1">&#39;peak_optimum&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_offset&#39;</span><span class="p">,</span> <span class="s1">&#39;max_voltage&#39;</span><span class="p">,</span> <span class="s1">&#39;DC_voltage&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sweep_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_sweep_vals</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sweep_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sweep_vals</span><span class="p">),))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">())</span>
+
+<div class="viewcode-block" id="CoulombPeakParameter.create_loop"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.CoulombPeakParameter.create_loop">[docs]</a>    <span class="k">def</span> <span class="nf">create_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sweep_vals</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sweep_vals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Must define self.sweep_vals&#39;</span><span class="p">)</span>
+
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">Loop</span><span class="p">(</span><span class="n">sweep_vals</span><span class="p">)</span><span class="o">.</span><span class="n">each</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loop</span></div>
+
+<div class="viewcode-block" id="CoulombPeakParameter.get_raw"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.CoulombPeakParameter.get_raw">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Must specify combined_set_parameter&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Add DC offset</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span><span class="p">)</span>
+
+        <span class="c1"># Calculate sweep vals</span>
+        <span class="n">initial_set_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">()</span>
+        <span class="n">sweep_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_sweep_vals</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_loop</span><span class="p">(</span><span class="n">sweep_vals</span><span class="o">=</span><span class="n">sweep_vals</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">get_data_set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                           <span class="n">location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loc_provider</span><span class="p">)</span>
+
+        <span class="c1"># Perform measurement</span>
+        <span class="k">if</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">pulse_sequence</span>
+        <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">samples</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">samples</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">set_active</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">stop</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c1"># Error occurred, reset to initial values and raise error</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="n">initial_set_val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="c1"># Analyse measurement results</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_voltage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DC_voltage</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_voltage</span><span class="p">:</span>
+            <span class="c1"># Could not find coulomb peak</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="c1"># Tune back to original position</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="n">initial_set_val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Found coulomb peak</span>
+            <span class="c1"># Perform some smoothing of data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DC_voltage</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">sweep_vals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_arr</span><span class="p">,</span>
+                                              <span class="s1">&#39;cubic&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_x_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">sweep_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="n">sweep_vals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_y_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_x_vals</span><span class="p">)</span>
+                <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interpolation_y_vals</span><span class="p">)</span>
+                <span class="n">max_set_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_x_vals</span><span class="p">[</span><span class="n">max_idx</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_arr</span><span class="p">)</span>
+                <span class="n">max_set_val</span> <span class="o">=</span> <span class="n">sweep_vals</span><span class="p">[</span><span class="n">max_idx</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">max_set_val</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">max_set_val</span> <span class="o">-</span> <span class="n">initial_set_val</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tune_to_peak</span><span class="p">:</span>
+                <span class="c1"># Update parameter values</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DC_peak_offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">(</span><span class="n">max_set_val</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Update combined_set_parameter offset</span>
+                    <span class="n">peak_offset</span> <span class="o">=</span> <span class="n">max_set_val</span> <span class="o">-</span> <span class="n">initial_set_val</span>
+
+                    <span class="n">sweep_parameter_idx</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                        <span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span>
+                        <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="o">.</span><span class="n">offsets</span><span class="p">[</span>
+                        <span class="n">sweep_parameter_idx</span><span class="p">]</span> <span class="o">+=</span> <span class="n">peak_offset</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">combined_set_parameter</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;max_voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DC_voltage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;DC_voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DC_voltage</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">MeasureFlipNucleusParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s1">&#39;measure_flip_nucleus&#39;</span><span class="p">,</span>
+                 <span class="n">measure_nucleus_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">flip_nucleus_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">max_attempts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                 <span class="n">target_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">final_measure</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">measure_nucleus_parameter</span> <span class="o">=</span> <span class="n">measure_nucleus_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flip_nucleus_parameter</span> <span class="o">=</span> <span class="n">flip_nucleus_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span> <span class="o">=</span> <span class="n">max_attempts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_state</span> <span class="o">=</span> <span class="n">target_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_measure</span> <span class="o">=</span> <span class="n">final_measure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">silent</span> <span class="o">=</span> <span class="n">silent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="n">condition</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="n">shapes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">,</span>
+                         <span class="n">wrap_set</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;nuclear_states&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;nucleus_up_proportions&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;nucleus_pulse_sequences&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;nucleus_flip_success&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_measure</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;final state&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">names</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">shapes</span> <span class="o">=</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">,),</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">measure_nucleus_parameter</span><span class="o">.</span><span class="n">frequency_vals</span><span class="p">)),</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">,),</span>
+                  <span class="p">()]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_measure</span><span class="p">:</span>
+            <span class="n">shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(())</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shapes</span><span class="p">)</span>
+
+    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="s1">&#39;Must provide MeasureFlipNucleusParameter.target_state&#39;</span><span class="p">)</span>
+
+        <span class="n">nuclear_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">)</span>
+        <span class="n">nucleus_up_proportions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">measure_nucleus_parameter</span><span class="o">.</span><span class="n">frequency_vals</span><span class="p">)))</span>
+        <span class="n">nucleus_pulse_sequences</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">)</span>
+        <span class="n">nucleus_flip_success</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">nucleus_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">():</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">measure_nucleus_parameter</span><span class="p">()</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measure_nucleus_parameter</span><span class="o">.</span><span class="n">results</span>
+                <span class="n">nucleus_state</span> <span class="o">=</span> <span class="n">nuclear_states</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;nucleus_state&#39;</span><span class="p">]</span>
+                <span class="n">nucleus_up_proportions</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                                 <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;nucleus_up_proportion&#39;</span><span class="p">))</span>
+
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;found_nucleus_state&#39;</span><span class="p">]:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Could not determine nucleus state. perhaps in a &#39;</span>
+                                <span class="s1">&#39;state for which ESR frequency is not known&#39;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">nucleus_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_state</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Nucleus is in target state </span><span class="si">{self.target_state}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">nucleus_flip_success</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Flipping nucleus from </span><span class="si">{nucleus_state}</span><span class="s1"> &#39;</span>
+                                <span class="n">f</span><span class="s1">&#39;to </span><span class="si">{self.target_state}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">flip_nucleus_parameter</span><span class="p">(</span><span class="n">nucleus_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_state</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nucleus_flip_success</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_results</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;nuclear_states&#39;</span><span class="p">:</span> <span class="n">nuclear_states</span><span class="p">,</span>
+                        <span class="s1">&#39;nucleus_up_proportions&#39;</span><span class="p">:</span> <span class="n">nucleus_up_proportions</span><span class="p">,</span>
+                        <span class="s1">&#39;nucleus_pulse_sequences&#39;</span><span class="p">:</span> <span class="n">nucleus_pulse_sequences</span><span class="p">,</span>
+                        <span class="s1">&#39;nucleus_flip_success&#39;</span><span class="p">:</span> <span class="n">nucleus_flip_success</span><span class="p">,</span>
+                        <span class="s1">&#39;final_state&#39;</span><span class="p">:</span> <span class="n">nucleus_state</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_state</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">single_settings</span><span class="p">(</span><span class="n">target_state</span><span class="o">=</span><span class="n">target_state</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">MeasureNucleusParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s1">&#39;measure_nucleus&#39;</span><span class="p">,</span>
+                 <span class="n">discriminant</span><span class="o">=</span><span class="s1">&#39;contrast_ESR&#39;</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_set_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequency_order</span><span class="o">=</span><span class="s1">&#39;descending&#39;</span><span class="p">,</span>
+                 <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">break_if_satisfied</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+                         <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;found_nucleus_state&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;nucleus_state&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;max_nucleus_&#39;</span> <span class="o">+</span> <span class="n">discriminant</span><span class="p">,</span>
+                                <span class="s1">&#39;nucleus_&#39;</span> <span class="o">+</span> <span class="n">discriminant</span><span class="p">,</span>
+                                <span class="s1">&#39;average_&#39;</span> <span class="o">+</span> <span class="n">discriminant</span><span class="p">],</span>
+                         <span class="n">discriminant</span><span class="o">=</span><span class="n">discriminant</span><span class="p">,</span>
+                         <span class="n">shapes</span><span class="o">=</span><span class="p">((),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">()),</span>
+                         <span class="n">wrap_set</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_set_parameter</span> <span class="o">=</span> <span class="n">frequency_set_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_vals</span> <span class="o">=</span> <span class="n">frequency_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_order</span> <span class="o">=</span> <span class="n">frequency_order</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">break_if_satisfied</span> <span class="o">=</span> <span class="n">break_if_satisfied</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">silent</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">((),</span> <span class="p">(),</span> <span class="p">(),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_vals</span><span class="p">),</span> <span class="p">),</span> <span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">frequency_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">frequency_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_vals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">frequency_vals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span>
+                              <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;environment:properties.ESR_vals&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">frequency_vals</span>
+
+    <span class="nd">@frequency_vals</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">frequency_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="s1">&#39;frequency_vals must be None or dict&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_vals</span> <span class="o">=</span> <span class="n">vals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">frequency_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">frequency_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_vals</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_order</span> <span class="o">==</span> <span class="s1">&#39;descending&#39;</span><span class="p">:</span>
+            <span class="n">frequency_order</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frequency_vals</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_order</span> <span class="o">==</span> <span class="s1">&#39;ascending&#39;</span><span class="p">:</span>
+            <span class="n">frequency_order</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frequency_vals</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Frequency order is a list</span>
+            <span class="n">frequency_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_order</span>
+
+        <span class="k">return</span> <span class="n">frequency_order</span>
+
+    <span class="nd">@frequency_order</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">frequency_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">order</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ascending&#39;</span><span class="p">,</span> <span class="s1">&#39;descending&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_order</span> <span class="o">=</span> <span class="n">order</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frequency_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;frequency order must either be an iterable, &#39;</span>
+                            <span class="s1">&#39;or `ascending` or `descending`&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">frequency_vals_sorted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">frequency_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_vals</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">frequency_vals</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_order</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">create_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">above_threshold</span><span class="p">():</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">]</span>
+            <span class="n">is_above_threshold</span> <span class="o">=</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self.discriminant}</span><span class="s1"> </span><span class="si">{val}</span><span class="s1"> &gt; </span><span class="si">{self.threshold}</span><span class="s1">: </span><span class="si">{is_above_threshold}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">is_above_threshold</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Must specify acquisition_parameter&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_set_parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Must specify frequency_set_parameter&#39;</span><span class="p">)</span>
+
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">break_if_satisfied</span><span class="p">:</span>
+            <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BreakIf</span><span class="p">(</span><span class="n">above_threshold</span><span class="p">))</span>
+
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">Loop</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency_set_parameter</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_vals_sorted</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">each</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">actions</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">loop</span>
+
+    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">get_data_set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                           <span class="n">location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loc_provider</span><span class="p">)</span>
+
+        <span class="n">temporary_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;continuous&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                              <span class="s2">&quot;base_folder&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">location</span><span class="p">,</span>
+                              <span class="s2">&quot;subfolder&quot;</span><span class="p">:</span> <span class="s1">&#39;traces&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">temporary_settings</span><span class="p">[</span><span class="s1">&#39;samples&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">temporary_settings</span><span class="p">(</span><span class="o">**</span><span class="n">temporary_settings</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">pulse_sequence</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">pulse_sequence</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">samples</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">samples</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">set_active</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">stop</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span><span class="p">)</span>
+
+        <span class="n">discriminant_vals</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">)</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">discriminant_vals</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Successfully found nucleus state</span>
+                <span class="n">frequency_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">discriminant_vals</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;found_nucleus_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;nucleus_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">frequency_order</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Could not localize nucleus state</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;found_nucleus_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;nucleus_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;max_nucleus_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">discriminant_vals</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;nucleus_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">]</span> <span class="o">=</span> <span class="n">discriminant_vals</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;average_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">discriminant_vals</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_results</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Set single settings</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_settings</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)()</span>
+
+
+<div class="viewcode-block" id="DCMultisweepParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.DCMultisweepParameter">[docs]</a><span class="k">class</span> <span class="nc">DCMultisweepParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="p">,</span> <span class="n">x_gate</span><span class="p">,</span> <span class="n">y_gate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DC_voltage&#39;</span><span class="p">],</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DC voltage&#39;</span><span class="p">],</span>
+                         <span class="n">units</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">],</span> <span class="n">shapes</span><span class="o">=</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),),</span>
+                         <span class="n">setpoint_names</span><span class="o">=</span><span class="p">((</span><span class="n">y_gate</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">x_gate</span><span class="o">.</span><span class="n">name</span><span class="p">),),</span>
+                         <span class="n">setpoint_units</span><span class="o">=</span><span class="p">((</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">),),</span>
+                         <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span> <span class="o">=</span> <span class="n">x_gate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span> <span class="o">=</span> <span class="n">y_gate</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">AC_range</span> <span class="o">=</span> <span class="mf">0.2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pts</span> <span class="o">=</span> <span class="mi">120</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_sweeps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">AC_range</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y_sweeps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">AC_range</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_sweep_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sweeps</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y_sweep_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sweeps</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">AC_x_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">pts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">AC_y_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">y_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">pts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">DC_x_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">x_sweeps</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">DC_y_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sweep_range</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">y_sweeps</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">setpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">convert_setpoints</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">pts</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sweeps</span><span class="p">),</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">pts</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sweeps</span><span class="p">)),</span>
+
+    <span class="nd">@property_ignore_setter</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_y_vals</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_x_vals</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">),</span>
+
+<div class="viewcode-block" id="DCMultisweepParameter.setup"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.DCMultisweepParameter.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">sweep_parameters</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">add_sweep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">AC_x_vals</span><span class="p">,</span>
+                                             <span class="n">connection_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                             <span class="n">offset_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">add_sweep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">AC_y_vals</span><span class="p">,</span>
+                                             <span class="n">connection_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                             <span class="n">offset_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DCMultisweepParameter.get"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.DCMultisweepParameter.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">Loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_gate</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_y_vals</span><span class="p">])</span><span class="o">.</span><span class="n">loop</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_gate</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_x_vals</span><span class="p">])</span><span class="o">.</span><span class="n">each</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">temporary_settings</span><span class="p">(</span><span class="n">continuous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;multi_2D_scan&#39;</span><span class="p">,</span>
+                                      <span class="n">set_active</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                      <span class="n">formatter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">formatter</span><span class="p">,</span>
+                                      <span class="n">save_metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># except:</span>
+        <span class="c1">#     logger.debug(&#39;except stopping&#39;)</span>
+        <span class="c1">#     self.layout.stop()</span>
+        <span class="c1">#     self.acquisition_parameter.clear_settings()</span>
+        <span class="c1">#     raise</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuous</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;finally stopping&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">clear_settings</span><span class="p">()</span>
+
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_y_vals</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">,</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_x_vals</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">y_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_y_vals</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">x_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DC_x_vals</span><span class="p">)):</span>
+                <span class="n">DC_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DC_voltage</span><span class="p">[</span><span class="n">y_idx</span><span class="p">,</span> <span class="n">x_idx</span><span class="p">]</span>
+                <span class="n">arr</span><span class="p">[</span><span class="n">y_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">:(</span><span class="n">y_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">,</span>
+                <span class="n">x_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">:(</span><span class="n">x_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pts</span><span class="p">]</span> <span class="o">=</span> <span class="n">DC_data</span>
+        <span class="k">return</span> <span class="n">arr</span><span class="p">,</span></div></div>
+
+
+<div class="viewcode-block" id="MeasurementSequenceParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.MeasurementSequenceParameter">[docs]</a><span class="k">class</span> <span class="nc">MeasurementSequenceParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">measurement_sequence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">set_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">discriminant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">start_condition</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name:</span>
+<span class="sd">            set_parameters:</span>
+<span class="sd">            acquisition_parameter:</span>
+<span class="sd">            operations:</span>
+<span class="sd">            discriminant:</span>
+<span class="sd">            conditions: Must be of one of the following forms</span>
+<span class="sd">                {&#39;mode&#39;: &#39;measure&#39;}</span>
+<span class="sd">                {&#39;mode&#39;: &#39;1D_scan&#39;, &#39;span&#39;, &#39;set_points&#39;, &#39;set_parameter&#39;,</span>
+<span class="sd">                 &#39;center_val&#39;(optional)</span>
+<span class="sd">            **kwargs:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SettingsClass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span> <span class="o">=</span> <span class="n">discriminant</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span> <span class="o">=</span> <span class="n">set_parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_condition</span> <span class="o">=</span> <span class="n">start_condition</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">measurement_sequence</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="c1"># Load sequence from dict</span>
+            <span class="n">load_dict</span> <span class="o">=</span> <span class="n">measurement_config</span><span class="p">[</span><span class="n">measurement_sequence</span><span class="p">]</span>
+            <span class="n">measurement_sequence</span> <span class="o">=</span> <span class="n">MeasurementSequence</span><span class="o">.</span><span class="n">load_from_dict</span><span class="p">(</span><span class="n">load_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span> <span class="o">=</span> <span class="n">measurement_sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">measurement_sequence</span><span class="o">.</span><span class="n">acquisition_parameter</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_msmts&#39;</span><span class="p">,</span> <span class="s1">&#39;optimal_set_vals&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">],</span>
+            <span class="n">shapes</span><span class="o">=</span><span class="p">((),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">),),</span> <span class="p">()),</span>
+            <span class="n">discriminant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span>
+            <span class="n">acquisition_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta_attrs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;discriminant&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="MeasurementSequenceParameter.get"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.MeasurementSequenceParameter.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_condition</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start_condition_satisfied</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_condition</span><span class="p">,</span> <span class="n">TruthCondition</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Start TruthCondition satisfied because &#39;</span>
+                            <span class="s1">&#39;acquisition parameter has no results&#39;</span><span class="p">)</span>
+                <span class="n">start_condition_satisfied</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">start_condition_satisfied</span> <span class="o">=</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">start_condition</span><span class="o">.</span><span class="n">check_satisfied</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">results</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Start Truth condition </span><span class="si">{self.start_condition}</span><span class="s1"> &#39;</span>
+                            <span class="n">f</span><span class="s1">&#39;satisfied: </span><span class="si">{start_condition_satisfied}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_condition_satisfied</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_condition</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Start condition function </span><span class="si">{self.start_condition}</span><span class="s1"> &#39;</span>
+                        <span class="n">f</span><span class="s1">&#39;satisfied: </span><span class="si">{start_condition_satisfied}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">start_condition_satisfied</span><span class="p">:</span>
+            <span class="n">num_measurements</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">]</span>
+            <span class="n">optimal_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="o">.</span><span class="n">optimal_val</span>
+            <span class="k">return</span> <span class="n">num_measurements</span><span class="p">,</span> <span class="n">optimal_set_vals</span><span class="p">,</span> <span class="n">optimal_val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="o">.</span><span class="n">base_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="p">()</span>
+            <span class="n">num_measurements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="o">.</span><span class="n">num_measurements</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Measurements performed: </span><span class="si">{num_measurements}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;success&#39;</span><span class="p">:</span>
+                <span class="c1"># Retrieve dict of {param.name: val} of optimal set vals</span>
+                <span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="o">.</span><span class="n">optimal_set_vals</span>
+                <span class="c1"># Convert dict to list of set vals</span>
+                <span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">optimal_set_vals</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="p">())</span>
+                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">optimal_set_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">]</span>
+
+            <span class="n">optimal_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement_sequence</span><span class="o">.</span><span class="n">optimal_val</span>
+
+        <span class="k">return</span> <span class="n">num_measurements</span><span class="p">,</span> <span class="n">optimal_set_vals</span><span class="p">,</span> <span class="n">optimal_val</span></div></div>
+
+
+<div class="viewcode-block" id="SelectFrequencyParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.SelectFrequencyParameter">[docs]</a><span class="k">class</span> <span class="nc">SelectFrequencyParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">discriminant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">frequencies</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">update_frequency</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Initialize SettingsClass first because its needed for</span>
+        <span class="c1"># self.spin_states, self.discriminant etc.</span>
+        <span class="n">SettingsClass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discriminant</span> <span class="o">=</span> <span class="n">discriminant</span>
+
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span> <span class="n">spin_state</span><span class="p">)</span>
+                 <span class="k">for</span> <span class="n">spin_state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spin_states</span><span class="p">]</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;frequency&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;select_frequency&#39;</span><span class="p">,</span>
+                         <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Select frequency&#39;</span><span class="p">,</span>
+                         <span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span>
+                         <span class="n">discriminant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">acquisition_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_frequency</span> <span class="o">=</span> <span class="n">update_frequency</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="n">frequencies</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta_attrs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;frequencies&#39;</span><span class="p">,</span> <span class="s1">&#39;frequency&#39;</span><span class="p">,</span> <span class="s1">&#39;update_frequency&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;spin_states&#39;</span><span class="p">,</span> <span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="s1">&#39;discriminant&#39;</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spin_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">spin_states_unsorted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">spin_states_unsorted</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SelectFrequencyParameter.get"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.SelectFrequencyParameter.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Initialize frequency to the current frequency (default in case none</span>
+        <span class="c1">#  of the measured frequencies satisfy conditions)</span>
+        <span class="n">frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">frequency</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">temporary_settings</span><span class="p">(</span><span class="n">samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span>
+
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">[</span><span class="n">spin_state</span><span class="p">]</span>
+                       <span class="k">for</span> <span class="n">spin_state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spin_states</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span> <span class="o">=</span> <span class="n">ConditionSet</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">))</span>
+
+        <span class="c1"># Create Measurement object and perform measurement</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">Loop1DMeasurement</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+            <span class="n">set_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+            <span class="n">base_folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span><span class="p">,</span>
+            <span class="n">condition_sets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">)}</span>
+
+        <span class="c1"># Determine optimal frequency and update config entry if needed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">check_condition_sets</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition_result</span><span class="p">[</span><span class="s1">&#39;is_satsisfied&#39;</span><span class="p">]:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">optimal_set_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_frequency</span><span class="p">:</span>
+                <span class="n">properties_config</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Could not find frequency with high enough &quot;</span>
+                               <span class="s2">&quot;contrast&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="o">.</span><span class="n">clear_settings</span><span class="p">()</span>
+
+        <span class="c1"># Print results</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_results</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="TrackPeakParameter"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.TrackPeakParameter">[docs]</a><span class="k">class</span> <span class="nc">TrackPeakParameter</span><span class="p">(</span><span class="n">MeasurementParameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">set_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">step_percentage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">peak_width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">discriminant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">SettingsClass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span> <span class="o">=</span> <span class="n">set_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span> <span class="o">=</span> <span class="n">acquisition_parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discriminant</span> <span class="o">=</span> <span class="n">discriminant</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;optimal_set_vals&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_set&#39;</span><span class="p">,</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span> <span class="n">discriminant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span>
+                         <span class="n">acquisition_parameter</span><span class="o">=</span><span class="n">acquisition_parameter</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span> <span class="o">=</span> <span class="n">step_percentage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_width</span> <span class="o">=</span> <span class="n">peak_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">set_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">peak_width</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="c1"># Retrieve peak_width from parameter config only if above</span>
+            <span class="c1"># conditions are satisfied</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peak_width</span> <span class="o">=</span> <span class="n">parameter_config</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">][</span><span class="s1">&#39;peak_width&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">create_set_vals</span><span class="p">(</span><span class="n">num_parameters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="n">step_percentage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step_percentage</span><span class="p">,</span>
+                               <span class="n">points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span>
+                               <span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">peak_width</span><span class="p">,</span>
+                               <span class="n">set_parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shapes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[(),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">),),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">),)]</span>
+
+<div class="viewcode-block" id="TrackPeakParameter.get"><a class="viewcode-back" href="../../silq.parameters.html#silq.parameters.measurement_parameters.TrackPeakParameter.get">[docs]</a>    <span class="nd">@clear_single_settings</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Create measurement object</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Set condition set</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span> <span class="o">=</span> \
+                <span class="p">[</span><span class="n">ConditionSet</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">))]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span> <span class="o">=</span> <span class="n">Loop1DMeasurement</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">acquisition_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">acquisition_parameter</span><span class="p">,</span>
+            <span class="n">set_parameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">,</span>
+            <span class="n">base_folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_folder</span><span class="p">,</span>
+            <span class="n">condition_sets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_sets</span><span class="p">,</span>
+            <span class="n">discriminant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">,</span>
+            <span class="n">silent</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">silent</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Set loop values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">)</span>
+        <span class="c1"># Obtain set vals as a list instead of a parameter iterable</span>
+        <span class="n">set_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_vals</span><span class="p">[:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="p">()</span>
+
+        <span class="n">trace</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">discriminant</span><span class="p">)</span>
+
+        <span class="n">optimal_set_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">measurement</span><span class="o">.</span><span class="n">optimal_set_vals</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">optimal_set_val</span><span class="p">,</span> <span class="n">set_vals</span><span class="p">,</span> <span class="n">trace</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

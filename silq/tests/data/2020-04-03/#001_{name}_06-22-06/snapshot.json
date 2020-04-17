@@ -1,0 +1,16 @@
+{
+    "subdict": {
+        "stringlist": [
+            "P1"
+        ]
+    },
+    "string": "P1",
+    "int": 1,
+    "list": [
+        1,
+        2
+    ],
+    "numpyarray": [
+        1
+    ]
+}

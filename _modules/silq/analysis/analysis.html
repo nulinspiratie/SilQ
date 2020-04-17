@@ -1,0 +1,1073 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.analysis.analysis &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.analysis.analysis</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.analysis.analysis</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">peakutils</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">from</span> <span class="nn">silq</span> <span class="k">import</span> <span class="n">config</span>
+
+<span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">MatPlot</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;find_high_low&#39;</span><span class="p">,</span> <span class="s1">&#39;edge_voltage&#39;</span><span class="p">,</span> <span class="s1">&#39;find_up_proportion&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;count_blips&#39;</span><span class="p">,</span> <span class="s1">&#39;analyse_traces&#39;</span><span class="p">,</span> <span class="s1">&#39;analyse_EPR&#39;</span><span class="p">,</span> <span class="s1">&#39;analyse_flips&#39;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="find_high_low"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.find_high_low">[docs]</a><span class="k">def</span> <span class="nf">find_high_low</span><span class="p">(</span><span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                  <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">threshold_peak</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span><span class="p">,</span>
+                  <span class="n">attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+                  <span class="n">threshold_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+                  <span class="n">min_voltage_difference</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+                  <span class="n">threshold_requires_high_low</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+                  <span class="n">min_SNR</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Find high and low voltages of traces using histograms</span>
+
+<span class="sd">    This function determines the high and low voltages of traces by binning them</span>
+<span class="sd">    into 30 bins, and trying to discern two peaks.</span>
+<span class="sd">    Useful for determining the threshold value for measuring a blip.</span>
+
+<span class="sd">    If no two peaks can be discerned after all attempts, None is returned for</span>
+<span class="sd">    each of the returned dict keys except DC_voltage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces: 2D array of acquisition traces</span>
+<span class="sd">        plot: Whether to plot the histograms</span>
+<span class="sd">        threshold_peak: Threshold for discerning a peak. Will be varied if too</span>
+<span class="sd">            many/few peaks are found</span>
+<span class="sd">        attempts: Maximum number of attempts for discerning two peaks.</span>
+<span class="sd">            Each attempt the threshold_peak is decreased/increased depending on</span>
+<span class="sd">            if too many/few peaks were found</span>
+<span class="sd">        threshold_method: Method used to determine the threshold voltage.</span>
+<span class="sd">            Allowed methods are:</span>
+
+<span class="sd">            * **mean**: average of high and low voltage.</span>
+<span class="sd">            * **{n}\*std_low**: n standard deviations above mean low voltage,</span>
+<span class="sd">              where n is a float (ignore slash in raw docstring).</span>
+<span class="sd">            * **{n}\*std_high**: n standard deviations below mean high voltage,</span>
+<span class="sd">              where n is a float (ignore slash in raw docstring).</span>
+<span class="sd">            * **config**: Use threshold method provided in</span>
+<span class="sd">              ``config.analysis.threshold_method`` (``mean`` if not specified)</span>
+
+<span class="sd">        min_voltage_difference: minimum difference between high and low voltage.</span>
+<span class="sd">            If not satisfied, all results are None.</span>
+<span class="sd">            Will try to retrieve from config.analysis.min_voltage_difference,</span>
+<span class="sd">            else defaults to 0.3V</span>
+<span class="sd">        threshold_requires_high_low: Whether or not both a high and low voltage</span>
+<span class="sd">            must be discerned before returning a threshold voltage.</span>
+<span class="sd">            If set to False and threshold_method is not ``mean``, a threshold</span>
+<span class="sd">            voltage is always determined, even if no two voltage peaks can be</span>
+<span class="sd">            discerned. In this situation, there usually aren&#39;t any blips, or the</span>
+<span class="sd">            blips are too short-lived to have a proper high current.</span>
+<span class="sd">            When the threshold_method is ``std_low`` (``std_high``), the top</span>
+<span class="sd">            (bottom) 20% of voltages are scrapped to ensure any short-lived blips</span>
+<span class="sd">            with a high (low) current aren&#39;t included.</span>
+<span class="sd">            The average is then taken over the remaining 80% of voltages, which</span>
+<span class="sd">            is then the average low (high) voltage.</span>
+<span class="sd">            Default is True.</span>
+<span class="sd">            Can be set by config.analysis.threshold_requires_high_low</span>
+<span class="sd">        min_SNR: Minimum SNR between high and low voltages required to determine</span>
+<span class="sd">            a threshold voltage (default None).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, Any]:</span>
+<span class="sd">        * **low** (float): Mean low voltage, ``None`` if two peaks cannot be</span>
+<span class="sd">          discerned</span>
+<span class="sd">        * **high** (float): Mean high voltage, ``None`` if no two peaks cannot</span>
+<span class="sd">          be discerned</span>
+<span class="sd">        * **threshold_voltage** (float): Threshold voltage for a blip. If SNR is</span>
+<span class="sd">          below ``min_SNR`` or no two peaks can be discerned, returns ``None``.</span>
+<span class="sd">        * **voltage_difference** (float): Difference between low and high</span>
+<span class="sd">          voltage. If not two peaks can be discerned, returns ``None``.</span>
+<span class="sd">        * **DC_voltage** (float): Average voltage of traces.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">attempts</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="n">f</span><span class="s1">&#39;Attempts </span><span class="si">{attempts}</span><span class="s1"> to find high and low voltage must be at least 1&#39;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Retrieve properties from config.analysis</span>
+    <span class="n">analysis_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;analysis&#39;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">if</span> <span class="n">threshold_method</span> <span class="o">==</span> <span class="s1">&#39;config&#39;</span><span class="p">:</span>
+        <span class="n">threshold_method</span> <span class="o">=</span> <span class="n">analysis_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;threshold_method&#39;</span><span class="p">,</span> <span class="s1">&#39;mean&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">min_voltage_difference</span> <span class="o">==</span> <span class="s1">&#39;config&#39;</span><span class="p">:</span>
+        <span class="n">min_voltage_difference</span> <span class="o">=</span> <span class="n">analysis_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;min_voltage_difference&#39;</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">threshold_requires_high_low</span> <span class="o">==</span> <span class="s1">&#39;config&#39;</span><span class="p">:</span>
+        <span class="n">threshold_requires_high_low</span> <span class="o">=</span> <span class="n">analysis_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;threshold_requires_high_low&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">min_SNR</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">min_SNR</span> <span class="o">=</span> <span class="n">analysis_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;min_SNR&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Calculate DC (mean) voltage</span>
+    <span class="n">DC_voltage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+
+    <span class="c1"># Perform a histogram over all voltages in all traces. These bins will be</span>
+    <span class="c1"># used to determine two peaks, corresponding to low/high voltage</span>
+    <span class="n">hist</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">traces</span><span class="p">),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+    <span class="c1"># Determine minimum number of bins between successive histogram peaks</span>
+    <span class="k">if</span> <span class="n">min_voltage_difference</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_voltage_difference</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">min_dist</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="c1"># Find two peaks by changing the threshold dependent on the number of peaks foudn</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
+        <span class="n">peaks_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">peakutils</span><span class="o">.</span><span class="n">indexes</span><span class="p">(</span><span class="n">hist</span><span class="p">,</span> <span class="n">thres</span><span class="o">=</span><span class="n">threshold_peak</span><span class="p">,</span>
+                                              <span class="n">min_dist</span><span class="o">=</span><span class="n">min_dist</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks_idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks_idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># print(&#39;One peak found instead of two, lowering threshold&#39;)</span>
+            <span class="n">threshold_peak</span> <span class="o">/=</span> <span class="mf">1.5</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks_idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># print(f&#39;Found {len(peaks_idx)} peaks instead of two, &#39;</span>
+            <span class="c1">#        &#39;increasing threshold&#39;)</span>
+            <span class="n">threshold_peak</span> <span class="o">*=</span> <span class="mf">1.5</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Could not identify two peaks after all attempts</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;low&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;high&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;threshold_voltage&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;voltage_difference&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;DC_voltage&#39;</span><span class="p">:</span> <span class="n">DC_voltage</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">threshold_requires_high_low</span> <span class="ow">and</span> <span class="n">threshold_method</span> <span class="o">!=</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
+            <span class="c1"># Still return threshold voltage even though no two peaks were observed</span>
+            <span class="c1"># Use {factor}*std_low/high to determine threshold voltage</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold_method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">voltages</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">traces</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">threshold_method</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;std_low&#39;</span><span class="p">):</span>
+                <span class="c1"># Remove top 20 percent (high voltage)</span>
+                <span class="n">cutoff_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltages</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># standard deviations should be subtracted from mean</span>
+                <span class="c1"># Remove bottom 20 percent of voltages (low voltage)</span>
+                <span class="n">cutoff_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltages</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">voltages_cutoff</span> <span class="o">=</span> <span class="n">voltages</span><span class="p">[</span><span class="n">cutoff_slice</span><span class="p">]</span>
+            <span class="n">voltage_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">voltages_cutoff</span><span class="p">)</span>
+            <span class="n">voltage_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">voltages_cutoff</span><span class="p">)</span>
+            <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">voltage_mean</span> <span class="o">+</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">voltage_std</span>
+            <span class="n">results</span><span class="p">[</span><span class="s1">&#39;threshold_voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">threshold_voltage</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="c1"># Find mean voltage, used to determine which points are low/high</span>
+    <span class="c1"># Note that this is slightly odd, since we might use another threshold_method</span>
+    <span class="c1"># later on to distinguish between high and low voltage</span>
+    <span class="n">mean_voltage_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">peaks_idx</span><span class="p">)))</span>
+    <span class="n">mean_voltage</span> <span class="o">=</span> <span class="n">bin_edges</span><span class="p">[</span><span class="n">mean_voltage_idx</span><span class="p">]</span>
+
+    <span class="c1"># Create dictionaries containing information about the low, high state</span>
+    <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+    <span class="n">low</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="n">traces</span> <span class="o">&lt;</span> <span class="n">mean_voltage</span><span class="p">]</span>
+    <span class="n">high</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="n">traces</span> <span class="o">&gt;</span> <span class="n">mean_voltage</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">signal</span> <span class="ow">in</span> <span class="p">[</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">]:</span>
+        <span class="n">signal</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">])</span>
+        <span class="n">signal</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">])</span>
+    <span class="n">voltage_difference</span> <span class="o">=</span> <span class="p">(</span><span class="n">high</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">low</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">threshold_method</span> <span class="o">==</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
+        <span class="c1"># Threshold_method is midway between low and high mean</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="p">(</span><span class="n">high</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">low</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">elif</span> <span class="n">threshold_method</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;std_low&#39;</span><span class="p">):</span>
+        <span class="c1"># Threshold_method is {factor} standard deviations above low mean</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold_method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">low</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">low</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">threshold_method</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;std_high&#39;</span><span class="p">):</span>
+        <span class="c1"># Threshold_method is {factor} standard deviations below high mean</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold_method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">high</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">high</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Threshold method </span><span class="si">{threshold_method}</span><span class="s1"> not understood&#39;</span><span class="p">)</span>
+
+    <span class="n">SNR</span> <span class="o">=</span> <span class="n">voltage_difference</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">high</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">low</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">min_SNR</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">SNR</span> <span class="o">&lt;</span> <span class="n">min_SNR</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Signal to noise ratio </span><span class="si">{SNR}</span><span class="s1"> is too low&#39;</span><span class="p">)</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Plotting</span>
+    <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">plot</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">signal</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">]):</span>
+            <span class="n">sub_hist</span><span class="p">,</span> <span class="n">sub_bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">sub_bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">sub_hist</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;bg&#39;</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks_idx</span><span class="p">):</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">],</span> <span class="n">hist</span><span class="p">[</span><span class="n">peaks_idx</span><span class="p">[</span><span class="n">k</span><span class="p">]],</span> <span class="s1">&#39;or&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;low&#39;</span><span class="p">:</span> <span class="n">low</span><span class="p">,</span>
+            <span class="s1">&#39;high&#39;</span><span class="p">:</span> <span class="n">high</span><span class="p">,</span>
+            <span class="s1">&#39;threshold_voltage&#39;</span><span class="p">:</span> <span class="n">threshold_voltage</span><span class="p">,</span>
+            <span class="s1">&#39;voltage_difference&#39;</span><span class="p">:</span> <span class="n">voltage_difference</span><span class="p">,</span>
+            <span class="s1">&#39;SNR&#39;</span><span class="p">:</span> <span class="n">SNR</span><span class="p">,</span>
+            <span class="s1">&#39;DC_voltage&#39;</span><span class="p">:</span> <span class="n">DC_voltage</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="edge_voltage"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.edge_voltage">[docs]</a><span class="k">def</span> <span class="nf">edge_voltage</span><span class="p">(</span><span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                 <span class="n">edge</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">state</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">threshold_voltage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">start_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Test traces for having a high/low voltage at begin/end</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces: 2D array of acquisition traces</span>
+<span class="sd">        edge: which side of traces to test, either ``begin`` or ``end``</span>
+<span class="sd">        state: voltage that the edge must have, either ``low`` or ``high``</span>
+<span class="sd">        threshold_voltage: threshold voltage for a ``high`` voltage (blip).</span>
+<span class="sd">            If not specified, ``find_high_low`` is used to determine threshold</span>
+<span class="sd">        points: Number of data points to average over to determine state</span>
+<span class="sd">        start_idx: index of first point to use. Useful if there is some</span>
+<span class="sd">            capacitive voltage spike occuring at the start.</span>
+<span class="sd">            Only used if edge is ``begin``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        1D boolean array, True if the trace has the correct state at the edge</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">edge</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;begin&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">],</span> <span class="n">f</span><span class="s1">&#39;Edge </span><span class="si">{edge}</span><span class="s1"> must be `begin` or `end`&#39;</span>
+    <span class="k">assert</span> <span class="n">state</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="s1">&#39;high&#39;</span><span class="p">],</span> <span class="n">f</span><span class="s1">&#39;State </span><span class="si">{state}</span><span class="s1"> must be `low` or `high`&#39;</span>
+
+    <span class="k">if</span> <span class="n">edge</span> <span class="o">==</span> <span class="s1">&#39;begin&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">start_idx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">idx_list</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="n">points</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx_list</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">idx_list</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="n">points</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Determine threshold voltage if not provided</span>
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">find_high_low</span><span class="p">(</span><span class="n">traces</span><span class="p">)[</span><span class="s1">&#39;threshold_voltage&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># print(&#39;Could not find two peaks for empty and load state&#39;)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;low&#39;</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">idx_list</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">threshold_voltage</span>
+                   <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">idx_list</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">threshold_voltage</span>
+                   <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">success</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="find_up_proportion"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.find_up_proportion">[docs]</a><span class="k">def</span> <span class="nf">find_up_proportion</span><span class="p">(</span><span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                       <span class="n">threshold_voltage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">return_array</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                       <span class="n">start_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                       <span class="n">filter_window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot; Determine the up proportion of traces (traces that have blips)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces: 2D array of acquisition traces</span>
+<span class="sd">        threshold_voltage: threshold voltage for a ``high`` voltage (blip).</span>
+<span class="sd">            If not specified, ``find_high_low`` is used to determine threshold</span>
+<span class="sd">        return_array: whether to return the boolean array or the up proportion</span>
+<span class="sd">        start_idx: index of first point to use. Useful if there is some</span>
+<span class="sd">            capacitive voltage spike occuring at the start.</span>
+<span class="sd">            Only used if edge is ``begin``</span>
+<span class="sd">        filter_window: number of points of smoothing (0 means no smoothing)</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">        if return_array is False</span>
+<span class="sd">            (float) The proportion of traces with a blip</span>
+<span class="sd">        else</span>
+<span class="sd">            Boolean array, True if the trace has a blip</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># trace has to contain read stage only</span>
+    <span class="c1"># TODO Change start point to start time (sampling rate independent)</span>
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">find_high_low</span><span class="p">(</span><span class="n">traces</span><span class="p">)[</span><span class="s1">&#39;threshold_voltage&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">filter_window</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">filter_window</span><span class="p">)</span> <span class="o">/</span> <span class="n">filter_window</span><span class="p">,</span>
+                              <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+
+    <span class="c1"># Filter out the traces that contain one or more peaks</span>
+    <span class="n">traces_up_electron</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">start_idx</span><span class="p">:]</span> <span class="o">&gt;</span> <span class="n">threshold_voltage</span><span class="p">)</span>
+                                   <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_array</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">traces_up_electron</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">traces_up_electron</span></div>
+
+
+<div class="viewcode-block" id="count_blips"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.count_blips">[docs]</a><span class="k">def</span> <span class="nf">count_blips</span><span class="p">(</span><span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">threshold_voltage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">t_skip</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">ignore_final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Count number of blips and durations in high/low state.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces: 2D array of acquisition traces.</span>
+<span class="sd">        threshold_voltage: Threshold voltage for a ``high`` voltage (blip).</span>
+<span class="sd">        sample_rate: Acquisition sample rate (per second).</span>
+<span class="sd">        t_skip: Initial time to skip for each trace (ms).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, Any]:</span>
+<span class="sd">        * **blips** (float): Number of blips per trace.</span>
+<span class="sd">        * **blips_per_second** (float): Number of blips per second.</span>
+<span class="sd">        * **low_blip_duration** (np.ndarray): Durations in low-voltage state.</span>
+<span class="sd">        * **high_blip_duration** (np.ndarray): Durations in high-voltage state.</span>
+<span class="sd">        * **mean_low_blip_duration** (float): Average duration in low state.</span>
+<span class="sd">        * **mean_high_blip_duration** (float): Average duration in high state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">low_blip_pts</span><span class="p">,</span> <span class="n">high_blip_pts</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">t_skip</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+    <span class="n">blip_events</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">))]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">traces</span><span class="p">):</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">start_idx</span>
+        <span class="n">trace_above_threshold</span> <span class="o">=</span> <span class="n">trace</span> <span class="o">&gt;</span> <span class="n">threshold_voltage</span>
+        <span class="n">trace_below_threshold</span> <span class="o">=</span> <span class="o">~</span><span class="n">trace_above_threshold</span>
+        <span class="k">while</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">trace</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold_voltage</span><span class="p">:</span>
+                <span class="n">next_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">trace_above_threshold</span><span class="p">[</span><span class="n">idx</span><span class="p">:])</span>
+                <span class="n">blip_list</span> <span class="o">=</span> <span class="n">low_blip_pts</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">next_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">trace_below_threshold</span><span class="p">[</span><span class="n">idx</span><span class="p">:])</span>
+                <span class="n">blip_list</span> <span class="o">=</span> <span class="n">high_blip_pts</span>
+
+            <span class="k">if</span> <span class="n">next_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Reached end of trace</span>
+                <span class="n">next_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="o">-</span> <span class="n">idx</span>
+                <span class="n">blip_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_idx</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ignore_final</span><span class="p">:</span>
+                    <span class="n">blip_events</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">threshold_voltage</span><span class="p">),</span> <span class="n">next_idx</span><span class="p">))</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">blip_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_idx</span><span class="p">)</span>
+                <span class="n">blip_events</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">threshold_voltage</span><span class="p">),</span> <span class="n">next_idx</span><span class="p">))</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="n">next_idx</span>
+
+    <span class="n">low_blip_durations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">low_blip_pts</span><span class="p">)</span> <span class="o">/</span> <span class="n">sample_rate</span>
+    <span class="n">high_blip_durations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">high_blip_pts</span><span class="p">)</span> <span class="o">/</span> <span class="n">sample_rate</span>
+
+    <span class="n">mean_low_blip_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">low_blip_durations</span><span class="p">)</span> \
+        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">low_blip_durations</span><span class="p">)</span>
+    <span class="n">mean_high_blip_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">high_blip_durations</span><span class="p">)</span> \
+        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">high_blip_durations</span><span class="p">)</span>
+
+    <span class="n">blips</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">low_blip_durations</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+
+    <span class="n">duration</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">sample_rate</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;blips&#39;</span><span class="p">:</span> <span class="n">blips</span><span class="p">,</span>
+            <span class="s1">&#39;blip_events&#39;</span><span class="p">:</span> <span class="n">blip_events</span><span class="p">,</span>
+            <span class="s1">&#39;blips_per_second&#39;</span><span class="p">:</span> <span class="n">blips</span> <span class="o">/</span> <span class="n">duration</span><span class="p">,</span>
+            <span class="s1">&#39;low_blip_durations&#39;</span><span class="p">:</span> <span class="n">low_blip_durations</span><span class="p">,</span>
+            <span class="s1">&#39;high_blip_durations&#39;</span><span class="p">:</span> <span class="n">high_blip_durations</span><span class="p">,</span>
+            <span class="s1">&#39;mean_low_blip_duration&#39;</span><span class="p">:</span> <span class="n">mean_low_blip_duration</span><span class="p">,</span>
+            <span class="s1">&#39;mean_high_blip_duration&#39;</span><span class="p">:</span> <span class="n">mean_high_blip_duration</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="analyse_traces"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.analyse_traces">[docs]</a><span class="k">def</span> <span class="nf">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                   <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                   <span class="nb">filter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">min_filter_proportion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                   <span class="n">t_skip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                   <span class="n">t_read</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">segment</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;begin&#39;</span><span class="p">,</span>
+                   <span class="n">threshold_voltage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">threshold_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+                   <span class="n">plot</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">Axis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">plot_high_low</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">Axis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Analyse voltage, up proportions, and blips of acquisition traces</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces: 2D array of acquisition traces.</span>
+<span class="sd">        sample_rate: acquisition sample rate (per second).</span>
+<span class="sd">        filter: only use traces that begin in low or high voltage.</span>
+<span class="sd">            Allowed values are ``low``, ``high`` or ``None`` (do not filter).</span>
+<span class="sd">        min_filter_proportion: minimum proportion of traces that satisfy filter.</span>
+<span class="sd">            If below this value, up_proportion etc. are not calculated.</span>
+<span class="sd">        t_skip: initial time to skip for each trace (ms).</span>
+<span class="sd">        t_read: duration of each trace to use for calculating up_proportion etc.</span>
+<span class="sd">            e.g. for a long trace, you want to compare up proportion of start</span>
+<span class="sd">            and end segments.</span>
+<span class="sd">        segment: Use beginning or end of trace for ``t_read``.</span>
+<span class="sd">            Allowed values are ``begin`` and ``end``.</span>
+<span class="sd">        threshold_voltage: threshold voltage for a ``high`` voltage (blip).</span>
+<span class="sd">            If not specified, ``find_high_low`` is used to determine threshold.</span>
+<span class="sd">        threshold_method: Method used to determine the threshold voltage.</span>
+<span class="sd">            Allowed methods are:</span>
+
+<span class="sd">            * **mean**: average of high and low voltage.</span>
+<span class="sd">            * **{n}\*std_low**: n standard deviations above mean low voltage,</span>
+<span class="sd">              where n is a float (ignore slash in raw docstring).</span>
+<span class="sd">            * **{n}\*std_high**: n standard deviations below mean high voltage,</span>
+<span class="sd">              where n is a float (ignore slash in raw docstring).</span>
+<span class="sd">            * **config**: Use threshold method provided in</span>
+<span class="sd">              ``config.analysis.threshold_method`` (``mean`` if not specified)</span>
+
+<span class="sd">        plot: Whether to plot traces with results.</span>
+<span class="sd">            If True, will create a MatPlot object and add results.</span>
+<span class="sd">            Can also pass a MatPlot axis, in which case that will be used.</span>
+<span class="sd">            Each trace is preceded by a block that can be green (measured blip</span>
+<span class="sd">            during start), red (no blip measured), or white (trace was filtered</span>
+<span class="sd">            out).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, Any]:</span>
+<span class="sd">        * **up_proportion** (float): proportion of traces that has a blip</span>
+<span class="sd">        * **end_high** (float): proportion of traces that end with high voltage</span>
+<span class="sd">        * **end_low** (float): proportion of traces that end with low voltage</span>
+<span class="sd">        * **num_traces** (int): Number of traces that satisfy filter</span>
+<span class="sd">        * **filtered_traces_idx** (np.ndarray): 1D bool array,</span>
+<span class="sd">          True if that trace satisfies filter</span>
+<span class="sd">        * **voltage_difference** (float): voltage difference between high and</span>
+<span class="sd">          low voltages</span>
+<span class="sd">        * **average_voltage** (float): average voltage over all traces</span>
+<span class="sd">        * **threshold_voltage** (float): threshold voltage for counting a blip</span>
+<span class="sd">          (high voltage). Is calculated if not provided as input arg.</span>
+<span class="sd">        * **blips** (float): average blips per trace.</span>
+<span class="sd">        * **mean_low_blip_duration** (float): average duration in low state</span>
+<span class="sd">        * **mean_high_blip_duration** (float): average duration in high state</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        If no threshold voltage is provided, and no two peaks can be discerned,</span>
+<span class="sd">            all results except average_voltage are set to an initial value</span>
+<span class="sd">            (either 0 or undefined)</span>
+<span class="sd">        If the filtered trace proportion is less than min_filter_proportion,</span>
+<span class="sd">            the results ``up_proportion``, ``end_low``, ``end_high`` are set to an</span>
+<span class="sd">            initial value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">filter</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;low&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;high&#39;</span><span class="p">],</span> <span class="s1">&#39;filter must be None, `low`, or `high`&#39;</span>
+
+    <span class="k">assert</span> <span class="n">segment</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;begin&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;end&#39;</span><span class="p">],</span> <span class="s1">&#39;segment must be either `begin` or `end`&#39;</span>
+
+    <span class="c1"># Initialize all results to None</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="s1">&#39;end_high&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="s1">&#39;end_low&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="s1">&#39;num_traces&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="s1">&#39;filtered_traces_idx&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="s1">&#39;voltage_difference&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="s1">&#39;average_voltage&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">traces</span><span class="p">),</span>
+               <span class="s1">&#39;threshold_voltage&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="s1">&#39;blips&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="s1">&#39;mean_low_blip_duration&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="s1">&#39;mean_high_blip_duration&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+
+    <span class="c1"># minimum trace idx to include (to discard initial capacitor spike)</span>
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">t_skip</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>  <span class="c1"># Create plot for traces</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">MatPlot</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="n">plot</span>
+        <span class="n">t_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">t_list</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+               <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;seismic&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">())</span>
+        <span class="c1"># Modify x-limits to add blips information</span>
+        <span class="n">xlim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+        <span class="n">xpadding</span> <span class="o">=</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="o">==</span> <span class="s1">&#39;begin&#39;</span><span class="p">:</span>
+            <span class="n">xpadding_range</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">xpadding</span> <span class="o">+</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">xpadding</span> <span class="o">+</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xpadding_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">xpadding</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">xpadding</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Calculate threshold voltage if not provided</span>
+        <span class="c1"># Histogram trace voltages to find two peaks corresponding to high and low</span>
+        <span class="n">high_low_results</span> <span class="o">=</span> <span class="n">find_high_low</span><span class="p">(</span><span class="n">traces</span><span class="p">[:,</span> <span class="n">start_idx</span><span class="p">:],</span>
+                                         <span class="n">threshold_method</span><span class="o">=</span><span class="n">threshold_method</span><span class="p">,</span>
+                                         <span class="n">plot</span><span class="o">=</span><span class="n">plot_high_low</span><span class="p">)</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;high_low_results&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">high_low_results</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">high_low_results</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">]</span>
+        <span class="c1"># Use threshold voltage from high_low_results</span>
+        <span class="n">threshold_voltage</span> <span class="o">=</span> <span class="n">high_low_results</span><span class="p">[</span><span class="s1">&#39;threshold_voltage&#39;</span><span class="p">]</span>
+
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;threshold_voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">threshold_voltage</span>
+
+        <span class="k">if</span> <span class="n">threshold_voltage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Could not determine threshold voltage&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xlim</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span>
+                        <span class="s1">&#39;Unknown threshold voltage&#39;</span><span class="p">,</span>
+                        <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">results</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># We don&#39;t know voltage difference since we skip a high_low measure.</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Analyse blips (disabled because it&#39;s very slow)</span>
+    <span class="c1"># blips_results = count_blips(traces=traces,</span>
+    <span class="c1">#                             sample_rate=sample_rate,</span>
+    <span class="c1">#                             threshold_voltage=threshold_voltage,</span>
+    <span class="c1">#                             t_skip=t_skip)</span>
+    <span class="c1"># results[&#39;blips&#39;] = blips_results[&#39;blips&#39;]</span>
+    <span class="c1"># results[&#39;mean_low_blip_duration&#39;] = blips_results[&#39;mean_low_blip_duration&#39;]</span>
+    <span class="c1"># results[&#39;mean_high_blip_duration&#39;] = blips_results[&#39;mean_high_blip_duration&#39;]</span>
+
+    <span class="k">if</span> <span class="nb">filter</span> <span class="o">==</span> <span class="s1">&#39;low&#39;</span><span class="p">:</span>  <span class="c1"># Filter all traces that do not start with low voltage</span>
+        <span class="n">filtered_traces_idx</span> <span class="o">=</span> <span class="n">edge_voltage</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;begin&#39;</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span>
+                                           <span class="n">start_idx</span><span class="o">=</span><span class="n">start_idx</span><span class="p">,</span>
+                                           <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">filter</span> <span class="o">==</span> <span class="s1">&#39;high&#39;</span><span class="p">:</span>  <span class="c1"># Filter all traces that do not start with high voltage</span>
+        <span class="n">filtered_traces_idx</span> <span class="o">=</span> <span class="n">edge_voltage</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;begin&#39;</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span>
+                                           <span class="n">start_idx</span><span class="o">=</span><span class="n">start_idx</span><span class="p">,</span>
+                                           <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Do not filter traces</span>
+        <span class="n">filtered_traces_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;filtered_traces_idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filtered_traces_idx</span>
+    <span class="n">filtered_traces</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="n">filtered_traces_idx</span><span class="p">]</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;num_traces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_traces</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_traces</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_filter_proportion</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Not enough traces start </span><span class="si">{filter}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">xpadding_range</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span>
+                          <span class="n">filtered_traces</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;RdYlGn&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">xlim</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span>
+                    <span class="n">f</span><span class="s1">&#39;filtered traces: {len(filtered_traces)} / {len(traces)} = &#39;</span>
+                    <span class="n">f</span><span class="s1">&#39;{len(filtered_traces) / len(traces):.2f} &lt; </span><span class="si">{min_filter_proportion}</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">if</span> <span class="n">t_read</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Only use a time segment of each trace</span>
+        <span class="n">read_pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">t_read</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="o">==</span> <span class="s1">&#39;begin&#39;</span><span class="p">:</span>
+            <span class="n">segmented_filtered_traces</span> <span class="o">=</span> <span class="n">filtered_traces</span><span class="p">[:,</span> <span class="p">:</span><span class="n">read_pts</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">segmented_filtered_traces</span> <span class="o">=</span> <span class="n">filtered_traces</span><span class="p">[:,</span> <span class="o">-</span><span class="n">read_pts</span><span class="p">:]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">segmented_filtered_traces</span> <span class="o">=</span> <span class="n">filtered_traces</span>
+
+    <span class="c1"># Calculate up proportion of traces</span>
+    <span class="n">up_proportion_idxs</span> <span class="o">=</span> <span class="n">find_up_proportion</span><span class="p">(</span><span class="n">segmented_filtered_traces</span><span class="p">,</span>
+                                            <span class="n">start_idx</span><span class="o">=</span><span class="n">start_idx</span><span class="p">,</span>
+                                            <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                            <span class="n">return_array</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">up_proportion_idxs</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+
+    <span class="c1"># Calculate ratio of traces that end up with low voltage</span>
+    <span class="n">idx_end_low</span> <span class="o">=</span> <span class="n">edge_voltage</span><span class="p">(</span><span class="n">segmented_filtered_traces</span><span class="p">,</span>
+                               <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
+                               <span class="n">state</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span>
+                               <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;end_low&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">idx_end_low</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">segmented_filtered_traces</span><span class="p">)</span>
+
+    <span class="c1"># Calculate ratio of traces that end up with high voltage</span>
+    <span class="n">idx_end_high</span> <span class="o">=</span> <span class="n">edge_voltage</span><span class="p">(</span><span class="n">segmented_filtered_traces</span><span class="p">,</span>
+                                <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
+                                <span class="n">state</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span>
+                                <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;end_high&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">idx_end_high</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">segmented_filtered_traces</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="c1"># Plot information on up proportion</span>
+        <span class="n">up_proportion_arr</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">up_proportion_idxs</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">up_proportion_arr</span><span class="p">[</span><span class="o">~</span><span class="n">filtered_traces_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">up_proportion_arr</span> <span class="o">=</span> <span class="n">up_proportion_arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Make array 2D</span>
+
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">xpadding_range</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span>
+                             <span class="n">up_proportion_arr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;RdYlGn&#39;</span><span class="p">)</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Add vertical line for t_read</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">t_read</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span>
+                  <span class="n">color</span><span class="o">=</span><span class="s1">&#39;orange&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">t_read</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;t_read={t_read*1e3} ms&#39;</span><span class="p">,</span>
+                <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">t_skip</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;t_skip={t_skip*1e3} ms&#39;</span><span class="p">,</span>
+                <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+<div class="viewcode-block" id="analyse_EPR"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.analyse_EPR">[docs]</a><span class="k">def</span> <span class="nf">analyse_EPR</span><span class="p">(</span><span class="n">empty_traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">plunge_traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">read_traces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">t_skip</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">t_read</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="n">min_filter_proportion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">threshold_voltage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">filter_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Analyse an empty-plunge-read sequence</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        empty_traces: 2D array of acquisition traces in empty (ionized) state</span>
+<span class="sd">        plunge_traces: 2D array of acquisition traces in plunge (neutral) state</span>
+<span class="sd">        read_traces: 2D array of acquisition traces in read state</span>
+<span class="sd">        sample_rate: acquisition sample rate (per second).</span>
+<span class="sd">        t_skip: initial time to skip for each trace (ms).</span>
+<span class="sd">        t_read: duration of each trace to use for calculating up_proportion etc.</span>
+<span class="sd">            e.g. for a long trace, you want to compare up proportion of start</span>
+<span class="sd">            and end segments.</span>
+<span class="sd">        min_filter_proportion: minimum proportion of traces that satisfy filter.</span>
+<span class="sd">            If below this value, up_proportion etc. are not calculated.</span>
+<span class="sd">        threshold_voltage: threshold voltage for a ``high`` voltage (blip).</span>
+<span class="sd">            If not specified, ``find_high_low`` is used to determine threshold.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, float]:</span>
+<span class="sd">        * **fidelity_empty** (float): proportion of empty traces that end</span>
+<span class="sd">          ionized (high voltage). Traces are filtered out that do not start</span>
+<span class="sd">          neutral (low voltage).</span>
+<span class="sd">        * **voltage_difference_empty** (float): voltage difference between high</span>
+<span class="sd">          and low state in empty traces</span>
+<span class="sd">        * **fidelity_load** (float): proportion of plunge traces that end</span>
+<span class="sd">          neutral (low voltage). Traces are filtered out that do not start</span>
+<span class="sd">          ionized (high voltage).</span>
+<span class="sd">        * **voltage_difference_load** (float): voltage difference between high</span>
+<span class="sd">          and low state in plunge traces</span>
+<span class="sd">        * **up_proportion** (float): proportion of read traces that have blips</span>
+<span class="sd">          For each trace, only up to t_read is considered.</span>
+<span class="sd">        * **dark_counts** (float): proportion of read traces that have dark</span>
+<span class="sd">          counts. For each trace, only the final t_read is considered.</span>
+<span class="sd">        * **contrast** (float): =up_proportion - dark_counts</span>
+<span class="sd">        * **voltage_difference_read** (float): voltage difference between high</span>
+<span class="sd">          and low state in read traces</span>
+<span class="sd">        * **blips** (float): average blips per trace in read traces.</span>
+<span class="sd">        * **mean_low_blip_duration** (float): average duration in low state.</span>
+<span class="sd">        * **mean_high_blip_duration** (float): average duration in high state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">plot</span> <span class="o">=</span> <span class="n">MatPlot</span><span class="p">(</span><span class="n">subplots</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Empty&#39;</span><span class="p">)</span>
+        <span class="n">plot</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Plunge&#39;</span><span class="p">)</span>
+        <span class="n">plot</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Read long&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">plot</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">plot</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+
+    <span class="c1"># Analyse empty stage</span>
+    <span class="n">results_empty</span> <span class="o">=</span> <span class="n">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">empty_traces</span><span class="p">,</span>
+                                   <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+                                   <span class="nb">filter</span><span class="o">=</span><span class="s1">&#39;low&#39;</span> <span class="k">if</span> <span class="n">filter_traces</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">min_filter_proportion</span><span class="o">=</span><span class="n">min_filter_proportion</span><span class="p">,</span>
+                                   <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                   <span class="n">t_skip</span><span class="o">=</span><span class="n">t_skip</span><span class="p">,</span>
+                                   <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Analyse plunge stage</span>
+    <span class="n">results_load</span> <span class="o">=</span> <span class="n">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">plunge_traces</span><span class="p">,</span>
+                                  <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+                                  <span class="nb">filter</span><span class="o">=</span><span class="s1">&#39;high&#39;</span> <span class="k">if</span> <span class="n">filter_traces</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                                  <span class="n">min_filter_proportion</span><span class="o">=</span><span class="n">min_filter_proportion</span><span class="p">,</span>
+                                  <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                  <span class="n">t_skip</span><span class="o">=</span><span class="n">t_skip</span><span class="p">,</span>
+                                  <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># Analyse read stage</span>
+    <span class="n">results_read</span> <span class="o">=</span> <span class="n">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">read_traces</span><span class="p">,</span>
+                                  <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+                                  <span class="nb">filter</span><span class="o">=</span><span class="s1">&#39;low&#39;</span> <span class="k">if</span> <span class="n">filter_traces</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                                  <span class="n">min_filter_proportion</span><span class="o">=</span><span class="n">min_filter_proportion</span><span class="p">,</span>
+                                  <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                  <span class="n">t_skip</span><span class="o">=</span><span class="n">t_skip</span><span class="p">)</span>
+    <span class="n">results_read_begin</span> <span class="o">=</span> <span class="n">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">read_traces</span><span class="p">,</span>
+                                        <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+                                        <span class="nb">filter</span><span class="o">=</span><span class="s1">&#39;low&#39;</span> <span class="k">if</span> <span class="n">filter_traces</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">min_filter_proportion</span><span class="o">=</span><span class="n">min_filter_proportion</span><span class="p">,</span>
+                                        <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                        <span class="n">t_read</span><span class="o">=</span><span class="n">t_read</span><span class="p">,</span>
+                                        <span class="n">segment</span><span class="o">=</span><span class="s1">&#39;begin&#39;</span><span class="p">,</span>
+                                        <span class="n">t_skip</span><span class="o">=</span><span class="n">t_skip</span><span class="p">,</span>
+                                        <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">results_read_end</span> <span class="o">=</span> <span class="n">analyse_traces</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">read_traces</span><span class="p">,</span>
+                                      <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+                                      <span class="n">t_read</span><span class="o">=</span><span class="n">t_read</span><span class="p">,</span>
+                                      <span class="n">threshold_voltage</span><span class="o">=</span><span class="n">threshold_voltage</span><span class="p">,</span>
+                                      <span class="n">segment</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
+                                      <span class="n">t_skip</span><span class="o">=</span><span class="n">t_skip</span><span class="p">,</span>
+                                      <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;fidelity_empty&#39;</span><span class="p">:</span> <span class="n">results_empty</span><span class="p">[</span><span class="s1">&#39;end_high&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;voltage_difference_empty&#39;</span><span class="p">:</span> <span class="n">results_empty</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">],</span>
+
+            <span class="s1">&#39;fidelity_load&#39;</span><span class="p">:</span> <span class="n">results_load</span><span class="p">[</span><span class="s1">&#39;end_low&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;voltage_difference_load&#39;</span><span class="p">:</span> <span class="n">results_load</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">],</span>
+
+            <span class="s1">&#39;up_proportion&#39;</span><span class="p">:</span> <span class="n">results_read_begin</span><span class="p">[</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;contrast&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">results_read_begin</span><span class="p">[</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">]</span> <span class="o">-</span>
+                         <span class="n">results_read_end</span><span class="p">[</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;dark_counts&#39;</span><span class="p">:</span> <span class="n">results_read_end</span><span class="p">[</span><span class="s1">&#39;up_proportion&#39;</span><span class="p">],</span>
+
+            <span class="s1">&#39;voltage_difference_read&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;voltage_difference&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;voltage_average_read&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;average_voltage&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;num_traces&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;num_traces&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;filtered_traces_idx&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;filtered_traces_idx&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;blips&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;blips&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;mean_low_blip_duration&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;mean_low_blip_duration&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;mean_high_blip_duration&#39;</span><span class="p">:</span> <span class="n">results_read</span><span class="p">[</span><span class="s1">&#39;mean_high_blip_duration&#39;</span><span class="p">]}</span></div>
+
+
+<div class="viewcode-block" id="analyse_flips"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.analysis.analyse_flips">[docs]</a><span class="k">def</span> <span class="nf">analyse_flips</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                  <span class="n">threshold_up_proportion</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot; Analyse flipping between NMR states</span>
+
+<span class="sd">    For each up_proportion array, it will count the number of flips</span>
+<span class="sd">    (transition between high/low up proportion) for each sample.</span>
+
+<span class="sd">    If more than one up_proportion array is passed, combined flipping events</span>
+<span class="sd">    between each pair of states is also considered (i.e. one goes from low to</span>
+<span class="sd">    high up proportion, the other from high to low). Furthermore, filtering is</span>
+<span class="sd">    also performed where flips are only counted if the nuclear state remains in</span>
+<span class="sd">    the subspace spanned by the pair of states for all samples.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        up_proportions_arrs: 3D Arrays of up proportions, calculated from</span>
+<span class="sd">            `analyse_traces`. Up proportion is the proportion of traces that</span>
+<span class="sd">            contain blips. First and second dimensions are arbitrary (can be a</span>
+<span class="sd">            singleton), third dimension is samples.</span>
+<span class="sd">        threshold_up_proportion: Threshold for when an up_proportion is high</span>
+<span class="sd">            enough to count the nucleus as being in that state (consistently</span>
+<span class="sd">            able to flip the electron). Can also be a tuple with two elements,</span>
+<span class="sd">            in which case the first is a lower threshold, below which we can</span>
+<span class="sd">            say the nucleus is not in the state, and the second is an upper</span>
+<span class="sd">            threshold . If any up proportion is not in that state, it is in an</span>
+<span class="sd">            undefined state, and not counted for flipping. For any filtering</span>
+<span class="sd">            on up_proportion pairs, the whole row is considered invalid (NaN).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, Any]:</span>
+<span class="sd">        * **flips(_{idx})** (int): Flips between high/low up_proportion.</span>
+<span class="sd">          If more than one up_proportion_arr is provided, a zero-based index is</span>
+<span class="sd">          added to specify the up_proportion_array. If an up_proportion is</span>
+<span class="sd">          between the lower and upper threshold, it is not counted.</span>
+<span class="sd">        * **flip_probability(_{idx})** (float): proportion of flips compared to</span>
+<span class="sd">          maximum flips (samples - 1). If more than one up_proportion_arr is</span>
+<span class="sd">          provided, a zero-based index is added to specify the</span>
+<span class="sd">          up_proportion_array.</span>
+
+<span class="sd">        The following results are between neighbouring pairs of</span>
+<span class="sd">        up_proportion_arrs (idx1-idx2\ == +-1), and are only returned if more</span>
+<span class="sd">        than one up_proportion_arr is given:</span>
+
+<span class="sd">        * **combined_flips_{idx1}{idx2}**: combined flipping events between</span>
+<span class="sd">          up_proportion_arrs idx1 and idx2, where one of the</span>
+<span class="sd">          up_proportions switches from high to low, and the other from</span>
+<span class="sd">          low to high.</span>
+<span class="sd">        * **combined_flip_probability_{idx1}{idx2}**: Flipping probability</span>
+<span class="sd">          of the combined flipping events.</span>
+
+<span class="sd">        Additionally, each of the above results will have another result with</span>
+<span class="sd">        the same name, but prepended with ``filtered_``, and appended with</span>
+<span class="sd">        ``_{idx1}{idx2}`` if not already present. Here, all the values are</span>
+<span class="sd">        filtered out where the corresponding pair of up_proportion samples do</span>
+<span class="sd">        not have exactly one high and one low for each sample. The values that</span>
+<span class="sd">        do not satisfy the filter are set to np.nan.</span>
+
+<span class="sd">        * **filtered_scans_{idx1}{idx2}**: 2D bool array, True if pair of</span>
+<span class="sd">          up_proportion rows remain in subspace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">threshold_up_proportion</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">threshold_up_proportion</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;threshold_up_proportion must be either single &#39;</span>
+                              <span class="s1">&#39;value, or two values (low and high threshold)&#39;</span><span class="p">)</span>
+        <span class="n">threshold_up_proportion_low</span> <span class="o">=</span> <span class="n">threshold_up_proportion</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">threshold_up_proportion_high</span> <span class="o">=</span> <span class="n">threshold_up_proportion</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">threshold_up_proportion_low</span> <span class="o">=</span> <span class="n">threshold_up_proportion</span>
+        <span class="n">threshold_up_proportion_high</span> <span class="o">=</span> <span class="n">threshold_up_proportion</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="c1"># Convert to numpy array to allow</span>
+        <span class="n">up_proportions_arrs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">)</span>
+
+    <span class="n">max_flips</span> <span class="o">=</span> <span class="n">up_proportions_arrs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># number of samples - 1</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Boolean arrs equal to True if up proportion is above/below threshold</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+        <span class="c1"># errstate used because up_proportions may contain NaN</span>
+        <span class="n">up_proportions_high</span> <span class="o">=</span> <span class="n">up_proportions_arrs</span> <span class="o">&gt;</span> <span class="n">threshold_up_proportion_high</span>
+        <span class="n">up_proportions_low</span> <span class="o">=</span> <span class="n">up_proportions_arrs</span> <span class="o">&lt;</span> <span class="n">threshold_up_proportion_low</span>
+
+    <span class="c1"># State of up proportions by threshold (above: 1, below: -1, between: 0)</span>
+    <span class="n">state_arrs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">state_arrs</span><span class="p">[</span><span class="n">up_proportions_high</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">state_arrs</span><span class="p">[</span><span class="n">up_proportions_low</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="c1"># results[&#39;state_arrs&#39;] = state_arrs</span>
+
+    <span class="k">for</span> <span class="n">f_idx</span><span class="p">,</span> <span class="n">state_arr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_arrs</span><span class="p">):</span>
+        <span class="c1"># TODO verify that sum is over correct axis</span>
+        <span class="n">flips</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">state_arr</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># Flip probability by dividing flips by number of samples - 1</span>
+        <span class="n">flip_probability</span> <span class="o">=</span> <span class="n">flips</span> <span class="o">/</span> <span class="n">max_flips</span>
+
+        <span class="c1"># Add suffix if more than one up_proportion array is provided</span>
+        <span class="n">suffix</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;_</span><span class="si">{f_idx}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;flips&#39;</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">]</span> <span class="o">=</span> <span class="n">flips</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;flip_probability&#39;</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">]</span> <span class="o">=</span> <span class="n">flip_probability</span>
+
+        <span class="c1"># Only do this if more than one up_proportions is provided</span>
+        <span class="k">for</span> <span class="n">f_idx2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">f_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">)):</span>
+            <span class="n">state_arr2</span> <span class="o">=</span> <span class="n">state_arrs</span><span class="p">[</span><span class="n">f_idx2</span><span class="p">]</span>
+
+            <span class="c1"># Calculate relative states (default zero)</span>
+            <span class="n">relative_state_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">state_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="c1"># state1 low, state2 high: 1</span>
+            <span class="n">relative_state_arr</span><span class="p">[(</span><span class="n">state_arr2</span> <span class="o">-</span> <span class="n">state_arr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="c1"># state1 high, state2 low: -1</span>
+            <span class="n">relative_state_arr</span><span class="p">[(</span><span class="n">state_arr2</span> <span class="o">-</span> <span class="n">state_arr</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="c1"># results[f&#39;relative_state_arr_{f_idx}{f_idx2}&#39;] = relative_state_arr</span>
+
+            <span class="c1"># Combined flips, happens if relative_state_arr changes by 2</span>
+            <span class="c1"># (high, low) -&gt; (low, high) and (low, high) -&gt; (high, low) equal 1</span>
+            <span class="n">combined_flips_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">relative_state_arr</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;combined_flips_</span><span class="si">{f_idx}{f_idx2}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combined_flips_arr</span>
+            <span class="n">combined_flip_probability</span> <span class="o">=</span> <span class="n">combined_flips_arr</span> <span class="o">/</span> <span class="n">max_flips</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;combined_flip_probability_</span><span class="si">{f_idx}{f_idx2}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">combined_flip_probability</span>
+
+            <span class="c1"># Filter out scans that are not entirely in subspace i.e. not all</span>
+            <span class="c1"># up proportion combinations have exactly one high, one low state</span>
+            <span class="c1"># For this, the multiplied states must equal -1 (one +1, one -1)</span>
+            <span class="n">filtered_scans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">state_arr</span> <span class="o">*</span> <span class="n">state_arr2</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;filtered_scans_</span><span class="si">{f_idx}{f_idx2}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filtered_scans</span>
+
+            <span class="c1"># Add filtered version of combined flips</span>
+            <span class="k">for</span> <span class="n">arr_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span><span class="s1">&#39;combined_flips_</span><span class="si">{f_idx}{f_idx2}</span><span class="s1">&#39;</span><span class="p">,</span>
+                             <span class="n">f</span><span class="s1">&#39;combined_flip_probability_</span><span class="si">{f_idx}{f_idx2}</span><span class="s1">&#39;</span><span class="p">]:</span>
+                <span class="n">filtered_arr</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">arr_name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">filtered_arr</span><span class="p">[</span><span class="o">~</span><span class="n">filtered_scans</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="n">results</span><span class="p">[</span><span class="s1">&#39;filtered_&#39;</span> <span class="o">+</span> <span class="n">arr_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">filtered_arr</span>
+
+        <span class="c1"># Also filter flips and flip_probability</span>
+        <span class="c1"># This is done afterwards since otherwise these arrays may not exist</span>
+        <span class="c1"># e.g. flips_1 does not exist when filtered_scans_01 is created</span>
+        <span class="k">for</span> <span class="n">arr_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span><span class="s1">&#39;flips_</span><span class="si">{f_idx}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;flip_probability_</span><span class="si">{f_idx}</span><span class="s1">&#39;</span><span class="p">]:</span>
+            <span class="c1"># Only loop over nearest indices</span>
+            <span class="k">for</span> <span class="n">f_idx2</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f_idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">f_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">f_idx2</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">f_idx2</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_proportions_arrs</span><span class="p">):</span>
+                    <span class="c1"># f_idx is either first or last element</span>
+                    <span class="k">continue</span>
+                <span class="n">suffix</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;_{min(f_idx,f_idx2)}{max(f_idx, f_idx2)}&#39;</span>
+                <span class="n">filtered_scans</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;filtered_scans&#39;</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">]</span>
+                <span class="n">filtered_arr</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">arr_name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">filtered_arr</span><span class="p">[</span><span class="o">~</span><span class="n">filtered_scans</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;filtered_</span><span class="si">{arr_name}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">]</span> <span class="o">=</span> <span class="n">filtered_arr</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

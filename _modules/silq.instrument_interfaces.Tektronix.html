@@ -1,0 +1,410 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.instrument_interfaces.Tektronix package &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>silq.instrument_interfaces.Tektronix package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_modules/silq.instrument_interfaces.Tektronix.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="silq-instrument-interfaces-tektronix-package">
+<h1>silq.instrument_interfaces.Tektronix package<a class="headerlink" href="#silq-instrument-interfaces-tektronix-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-silq.instrument_interfaces.Tektronix.AWG520_interface">
+<span id="silq-instrument-interfaces-tektronix-awg520-interface-module"></span><h2>silq.instrument_interfaces.Tektronix.AWG520_interface module<a class="headerlink" href="#module-silq.instrument_interfaces.Tektronix.AWG520_interface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.Tektronix.AWG520_interface.</code><code class="sig-name descname">AWG520Interface</code><span class="sig-paren">(</span><em class="sig-param">instrument_name</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#AWG520Interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.instrument_interfaces.html#silq.instrument_interfaces.interface.InstrumentInterface" title="silq.instrument_interfaces.interface.InstrumentInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.instrument_interfaces.interface.InstrumentInterface</span></code></a></p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Sets first point of each waveform to final voltage of previous
+waveform because this is the value used when the previous waveform
+ended and is waiting for triggers.</p></li>
+<li><p>Amplitude significantly decreases above 400 MHz at 1 GHz sampling.</p></li>
+<li><p>The interface receives a trigger at the end of the sequence, ignoring
+any final_delay. This means that the pulse sequence will already have
+restarted during any final delay, which may cause issues.</p></li>
+</ul>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>Check if only channel 2 can be programmed
+Add marker channels</p>
+</div>
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.get_additional_pulses">
+<code class="sig-name descname">get_additional_pulses</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#AWG520Interface.get_additional_pulses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.get_additional_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional pulses needed by instrument after targeting of main pulses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>connections</strong> – List of all connections in the layout</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of additional pulses, empty by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.max_waveforms">
+<code class="sig-name descname">max_waveforms</code><em class="property"> = 200</em><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.max_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#AWG520Interface.setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up instrument after layout has been targeted by pulse sequence.</p>
+<p>Needs to be implemented in subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>samples</strong> – Number of acquisition samples.
+If None, it will use the previously set value.</p></li>
+<li><p><strong>input_connections</strong> – Input <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>output_connections</strong> – Output <code class="xref py py-class docutils literal notranslate"><span class="pre">Connection</span></code> list of
+instrument, needed by some interfaces to setup the instrument.</p></li>
+<li><p><strong>repeat</strong> – Repeat the pulse sequence indefinitely. If False, calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Layout.start()</span></code> will only run the pulse sequence once.</p></li>
+<li><p><strong>**kwargs</strong> – Additional interface-specific kwarg.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>setup flags (see <code class="xref py py-attr docutils literal notranslate"><span class="pre">Layout.flags</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#AWG520Interface.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start instrument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Acquisition instruments usually don’t need to be started</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#AWG520Interface.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.AWG520Interface.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop instrument</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.Tektronix.AWG520_interface.</code><code class="sig-name descname">DCPulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#DCPulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">t_list</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#DCPulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the DC pulses for the AWG520</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_point_voltage</strong> – Voltage to set first point of waveform to.
+When the previous waveform ends, the voltage is set to the first
+point of the next voltage.</p></li>
+<li><p><strong>sampling_rate</strong> – AWG sampling rate</p></li>
+<li><p><strong>final_delay</strong> – Final part of waveform to skip. If this does not exist,
+the waveform may not have finished when next trigger arrives,
+in which case the trigger is ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>waveform</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.pts">
+<code class="sig-name descname">pts</code><em class="property"> = 256</em><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.pts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.DCPulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.DCPulse" title="silq.pulses.pulse_types.DCPulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.DCPulse</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation">
+<em class="property">class </em><code class="sig-prename descclassname">silq.instrument_interfaces.Tektronix.AWG520_interface.</code><code class="sig-name descname">SinePulseImplementation</code><span class="sig-paren">(</span><em class="sig-param">pulse_requirements=[]</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#SinePulseImplementation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_modules.PulseImplementation" title="silq.pulses.pulse_modules.PulseImplementation"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_modules.PulseImplementation</span></code></a></p>
+<dl class="method">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.implement">
+<code class="sig-name descname">implement</code><span class="sig-paren">(</span><em class="sig-param">t_list</em>, <em class="sig-param">sampling_rate</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="silq/instrument_interfaces/Tektronix/AWG520_interface.html#SinePulseImplementation.implement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.implement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements Sine pulses for the AWG520</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_point_voltage</strong> – Voltage to set first point of waveform to.
+When the previous waveform ends, the voltage is set to the first
+point of the next voltage.</p></li>
+<li><p><strong>sampling_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – AWG sampling rate</p></li>
+<li><p><strong>final_delay</strong> – Final part of waveform to skip. If this does not exist,
+the waveform may not have finished when next trigger arrives,
+in which case the trigger is ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Waveform array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.pts">
+<code class="sig-name descname">pts</code><em class="property"> = None</em><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.pts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.pulse_class">
+<code class="sig-name descname">pulse_class</code><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.pulse_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="silq.pulses.html#silq.pulses.pulse_types.SinePulse" title="silq.pulses.pulse_types.SinePulse"><code class="xref py py-class docutils literal notranslate"><span class="pre">silq.pulses.pulse_types.SinePulse</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.settings">
+<code class="sig-name descname">settings</code><em class="property"> = {}</em><a class="headerlink" href="#silq.instrument_interfaces.Tektronix.AWG520_interface.SinePulseImplementation.settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-silq.instrument_interfaces.Tektronix">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-silq.instrument_interfaces.Tektronix" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,657 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>qcodes.data.hdf5_format &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>qcodes.data.hdf5_format</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qcodes.data.hdf5_format</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">.data_array</span> <span class="k">import</span> <span class="n">DataArray</span>
+<span class="kn">from</span> <span class="nn">.format</span> <span class="k">import</span> <span class="n">Formatter</span>
+
+
+<span class="k">class</span> <span class="nc">HDF5Format</span><span class="p">(</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    HDF5 formatter for saving qcodes datasets.</span>
+
+<span class="sd">    Capable of storing (write) and recovering (read) qcodes datasets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">close_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Closes the hdf5 file open in the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="s1">&#39;_h5_base_group&#39;</span><span class="p">):</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="c1"># Removes reference to closed file</span>
+            <span class="k">del</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;Cannot close file, data_set has no open hdf5 file&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_create_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        creates a hdf5 file (data_object) at a location specifed by</span>
+<span class="sd">        filepath</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">folder</span><span class="p">,</span> <span class="n">_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">folder</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file</span>
+
+    <span class="k">def</span> <span class="nf">_open_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">location</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath_from_location</span><span class="p">(</span><span class="n">location</span><span class="p">,</span>
+                                                <span class="n">io_manager</span><span class="o">=</span><span class="n">data_set</span><span class="o">.</span><span class="n">io</span><span class="p">)</span>
+        <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r+&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reads an hdf5 file specified by location into a data_set object.</span>
+<span class="sd">        If no data_set is provided will creata an empty data_set to read into.</span>
+<span class="sd">        If no location is provided will use the location specified in the</span>
+<span class="sd">        dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_open_file</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">array_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="p">[</span><span class="s1">&#39;Data Arrays&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="c1"># Decoding string is needed because of h5py/issues/379</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">array_id</span>  <span class="c1"># will be overwritten if not in file</span>
+            <span class="n">dat_arr</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="p">[</span><span class="s1">&#39;Data Arrays&#39;</span><span class="p">][</span><span class="n">array_id</span><span class="p">]</span>
+
+            <span class="c1"># write ensures these attributes always exist</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+            <span class="c1"># get unit from units if no unit field, for backward compatibility</span>
+            <span class="k">if</span> <span class="s1">&#39;unit&#39;</span> <span class="ow">in</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+            <span class="n">is_setpoint</span> <span class="o">=</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;is_setpoint&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+            <span class="c1"># if not is_setpoint:</span>
+            <span class="n">set_arrays</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;set_arrays&#39;</span><span class="p">]</span>
+            <span class="n">set_arrays</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">set_arrays</span><span class="p">]</span>
+            <span class="c1"># else:</span>
+            <span class="c1">#     set_arrays = ()</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;shape&#39;</span> <span class="ow">in</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">array_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>  <span class="c1"># create new array</span>
+                <span class="n">d_array</span> <span class="o">=</span> <span class="n">DataArray</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">array_id</span><span class="o">=</span><span class="n">array_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+                    <span class="n">is_setpoint</span><span class="o">=</span><span class="n">is_setpoint</span><span class="p">,</span> <span class="n">set_arrays</span><span class="o">=</span><span class="p">(),</span>
+                    <span class="n">preset_data</span><span class="o">=</span><span class="n">vals</span><span class="p">)</span>
+                <span class="n">data_set</span><span class="o">.</span><span class="n">add_array</span><span class="p">(</span><span class="n">d_array</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># update existing array with extracted values</span>
+                <span class="n">d_array</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">array_id</span><span class="p">]</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">unit</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">is_setpoint</span> <span class="o">=</span> <span class="n">is_setpoint</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">dat_arr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]</span>
+            <span class="c1"># needed because I cannot add set_arrays at this point</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">array_id</span><span class="p">]</span><span class="o">.</span><span class="n">_sa_array_ids</span> <span class="o">=</span> <span class="n">set_arrays</span>
+
+        <span class="c1"># Add copy/ref of setarrays (not array id only)</span>
+        <span class="c1"># Note, this is not pretty but a result of how the dataset works</span>
+        <span class="k">for</span> <span class="n">array_id</span><span class="p">,</span> <span class="n">d_array</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">sa_id</span> <span class="ow">in</span> <span class="n">d_array</span><span class="o">.</span><span class="n">_sa_array_ids</span><span class="p">:</span>
+                <span class="n">d_array</span><span class="o">.</span><span class="n">set_arrays</span> <span class="o">+=</span> <span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">sa_id</span><span class="p">],</span> <span class="p">)</span>
+        <span class="n">data_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data_set</span>
+
+    <span class="k">def</span> <span class="nf">_filepath_from_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">io_manager</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">location</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">to_path</span><span class="p">(</span><span class="n">location</span> <span class="o">+</span>
+                                      <span class="s1">&#39;/</span><span class="si">{}</span><span class="s1">.hdf5&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">filepath</span>
+
+    <span class="k">def</span> <span class="nf">_create_data_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                <span class="c1"># Create the file if it is not there yet</span>
+        <span class="k">if</span> <span class="n">io_manager</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">io_manager</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">io</span>
+        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">location</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filepath_from_location</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">io_manager</span><span class="p">)</span>
+        <span class="c1"># note that this creates an hdf5 file in a folder with the same</span>
+        <span class="c1"># name. This is useful for saving e.g. images in the same folder</span>
+        <span class="c1"># I think this is a sane default (MAR).</span>
+        <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">force_write</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">write_metadata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">only_complete</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes a data_set to an hdf5 file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_set: qcodes data_set to write to hdf5 file</span>
+<span class="sd">            io_manager: io_manger used for providing path</span>
+<span class="sd">            location: location can be used to specify custom location</span>
+<span class="sd">            force_write (bool): if True creates a new file to write to</span>
+<span class="sd">            flush (bool) : whether to flush after writing, can be disabled</span>
+<span class="sd">                for testing or performance reasons</span>
+<span class="sd">            only_complete (bool): Not used by this formatter, but must be</span>
+<span class="sd">                included in the call signature to avoid an &quot;unexpected</span>
+<span class="sd">                keyword argument&quot; TypeError.</span>
+
+<span class="sd">        N.B. It is recommended to close the file after writing, this can be</span>
+<span class="sd">        done by calling ``HDF5Format.close_file(data_set)`` or</span>
+<span class="sd">        ``data_set.finalize()`` if the data_set formatter is set to an</span>
+<span class="sd">        hdf5 formatter.  Note that this is not required if the dataset</span>
+<span class="sd">        is created from a Loop as this includes a data_set.finalize()</span>
+<span class="sd">        statement.</span>
+
+<span class="sd">        The write function consists of two parts, writing DataArrays and</span>
+<span class="sd">        writing metadata.</span>
+
+<span class="sd">            - The main part of write consists of writing and resizing arrays,</span>
+<span class="sd">              the resizing providing support for incremental writes.</span>
+
+<span class="sd">            - write_metadata is called at the end of write and dumps a</span>
+<span class="sd">              dictionary to an hdf5 file. If there already is metadata it will</span>
+<span class="sd">              delete this and overwrite it with current metadata.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="s1">&#39;_h5_base_group&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">force_write</span><span class="p">:</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_data_object</span><span class="p">(</span>
+                <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
+
+        <span class="n">data_name</span> <span class="o">=</span> <span class="s1">&#39;Data Arrays&#39;</span>
+
+        <span class="k">if</span> <span class="n">data_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">arr_group</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">data_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">arr_group</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="p">[</span><span class="n">data_name</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">array_id</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">array_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">arr_group</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">or</span> <span class="n">force_write</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_create_dataarray_dset</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">array_id</span><span class="p">],</span>
+                                            <span class="n">group</span><span class="o">=</span><span class="n">arr_group</span><span class="p">)</span>
+            <span class="n">dset</span> <span class="o">=</span> <span class="n">arr_group</span><span class="p">[</span><span class="n">array_id</span><span class="p">]</span>
+            <span class="c1"># Resize the dataset and add the new values</span>
+
+            <span class="c1"># dataset refers to the hdf5 dataset here</span>
+            <span class="n">datasetshape</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">old_dlen</span> <span class="o">=</span> <span class="n">datasetshape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">array_id</span><span class="p">]</span>
+            <span class="n">new_dlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">)])</span>
+            <span class="n">new_datasetshape</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_dlen</span><span class="p">,</span>
+                                <span class="n">datasetshape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">dset</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_datasetshape</span><span class="p">)</span>
+            <span class="n">new_data_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_dlen</span> <span class="o">-</span> <span class="n">old_dlen</span><span class="p">,</span> <span class="n">datasetshape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">dset</span><span class="p">[</span><span class="n">old_dlen</span><span class="p">:</span><span class="n">new_dlen</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()[</span><span class="n">old_dlen</span><span class="p">:</span><span class="n">new_dlen</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="n">new_data_shape</span><span class="p">)</span>
+            <span class="c1"># allow resizing extracted data, here so it gets written for</span>
+            <span class="c1"># incremental writes aswell</span>
+            <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="n">write_metadata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span>
+                <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="o">=</span><span class="n">io_manager</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">)</span>
+
+        <span class="c1"># flush ensures buffers are written to disk</span>
+        <span class="c1"># (useful for ensuring openable by other files)</span>
+        <span class="k">if</span> <span class="n">flush</span><span class="p">:</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_create_dataarray_dset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        input arguments</span>
+<span class="sd">        array:  Dataset data array</span>
+<span class="sd">        group:  group in the hdf5 file where the dset will be created</span>
+
+<span class="sd">        creates a hdf5 datasaset that represents the data array.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Check for empty meta attributes, use array_id if name and/or label</span>
+        <span class="c1"># is not specified</span>
+        <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">label</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">array_id</span>
+
+        <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">array_id</span>
+
+        <span class="c1"># Create the hdf5 dataset</span>
+        <span class="n">dset</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+            <span class="n">array</span><span class="o">.</span><span class="n">array_id</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_encode_to_utf8</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_encode_to_utf8</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_encode_to_utf8</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">unit</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;is_setpoint&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_encode_to_utf8</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">is_setpoint</span><span class="p">))</span>
+
+        <span class="n">set_arrays</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># list will remain empty if array does not have set_array</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">)):</span>
+            <span class="n">set_arrays</span> <span class="o">+=</span> <span class="p">[</span><span class="n">_encode_to_utf8</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">set_arrays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">array_id</span><span class="p">))]</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;set_arrays&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">set_arrays</span>
+
+        <span class="k">return</span> <span class="n">dset</span>
+
+    <span class="k">def</span> <span class="nf">write_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read_first</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes metadata of dataset to file using write_dict_to_hdf5 method</span>
+
+<span class="sd">        Note that io and location are arguments that are only here because</span>
+<span class="sd">        of backwards compatibility with the loop.</span>
+<span class="sd">        This formatter uses io and location as specified for the main</span>
+<span class="sd">        dataset.</span>
+<span class="sd">        The read_first argument is ignored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="s1">&#39;_h5_base_group&#39;</span><span class="p">):</span>
+            <span class="c1"># added here because loop writes metadata before data itself</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_data_object</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">del</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span>
+        <span class="n">metadata_group</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;metadata&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_dict_to_hdf5</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">metadata_group</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">write_dict_to_hdf5</span><span class="p">(</span><span class="n">data_dict</span><span class="p">,</span> <span class="n">entry_point</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">entry_point</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># as h5py does not support saving None as attribute</span>
+                <span class="c1"># I create special string, note that this can create</span>
+                <span class="c1"># unexpected behaviour if someone saves a string with this name</span>
+                <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NoneType:__None__&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">entry_point</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">HDF5Format</span><span class="o">.</span><span class="n">write_dict_to_hdf5</span><span class="p">(</span><span class="n">data_dict</span><span class="o">=</span><span class="n">item</span><span class="p">,</span>
+                                   <span class="n">entry_point</span><span class="o">=</span><span class="n">entry_point</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">elt_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                    <span class="c1"># If elt_type is either int or float, allow both types</span>
+                    <span class="k">if</span> <span class="n">elt_type</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+                        <span class="n">elt_type</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">elt_type</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span>
+                                                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
+
+                            <span class="n">entry_point</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span>
+                                                       <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+                            <span class="n">entry_point</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;list_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;array&#39;</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                            <span class="n">dt</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">special_dtype</span><span class="p">(</span><span class="n">vlen</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                            <span class="n">ds</span> <span class="o">=</span> <span class="n">entry_point</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                                <span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
+                            <span class="n">ds</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">data</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+                            <span class="n">entry_point</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                            <span class="n">group_attrs</span> <span class="o">=</span> <span class="n">entry_point</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
+                            <span class="n">group_attrs</span><span class="p">[</span><span class="s1">&#39;list_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span>
+                            <span class="n">base_list_key</span> <span class="o">=</span> <span class="s1">&#39;list_idx_</span><span class="si">{}</span><span class="s1">&#39;</span>
+                            <span class="n">group_attrs</span><span class="p">[</span><span class="s1">&#39;base_list_key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_list_key</span>
+                            <span class="n">group_attrs</span><span class="p">[</span><span class="s1">&#39;list_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">list_item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+                                <span class="n">list_item_grp</span> <span class="o">=</span> <span class="n">entry_point</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span>
+                                    <span class="n">base_list_key</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+                                <span class="n">HDF5Format</span><span class="o">.</span><span class="n">write_dict_to_hdf5</span><span class="p">(</span>
+                                    <span class="n">data_dict</span><span class="o">=</span><span class="n">list_item</span><span class="p">,</span>
+                                    <span class="n">entry_point</span><span class="o">=</span><span class="n">list_item_grp</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                <span class="s1">&#39;List of type &quot;</span><span class="si">{}</span><span class="s1">&quot; for &quot;</span><span class="si">{}</span><span class="s1">&quot;:&quot;</span><span class="si">{}</span><span class="s1">&quot; not &#39;</span>
+                                <span class="s1">&#39;supported, storing as string&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">elt_type</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+                            <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s1">&#39;List of mixed type for &quot;</span><span class="si">{}</span><span class="s1">&quot;:&quot;</span><span class="si">{}</span><span class="s1">&quot; not supported, &#39;</span>
+                            <span class="s1">&#39;storing as string&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+                        <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># as h5py does not support saving None as attribute</span>
+                    <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NoneType:__emptylist__&#39;</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s1">&#39;Type &quot;</span><span class="si">{}</span><span class="s1">&quot; for &quot;</span><span class="si">{}</span><span class="s1">&quot;:&quot;</span><span class="si">{}</span><span class="s1">&quot; not supported, &#39;</span>
+                    <span class="s1">&#39;storing as string&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+                <span class="n">entry_point</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reads in the metadata, this is also called at the end of a read</span>
+<span class="sd">        statement so there should be no need to call this explicitly.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># checks if there is an open file in the dataset as load_data does</span>
+        <span class="c1"># reading of metadata before reading the complete dataset</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_h5_base_group&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_open_file</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">metadata_group</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">_h5_base_group</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_dict_from_hdf5</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">metadata_group</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data_set</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">read_dict_from_hdf5</span><span class="p">(</span><span class="n">data_dict</span><span class="p">,</span> <span class="n">h5_group</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;list_type&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">HDF5Format</span><span class="o">.</span><span class="n">read_dict_from_hdf5</span><span class="p">(</span>
+                        <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">item</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># item either a group or a dataset</span>
+                    <span class="k">if</span> <span class="s1">&#39;list_type&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+                        <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+                    <span class="c1"># Extracts &quot;None&quot; as an exception as h5py does not support</span>
+                    <span class="c1"># storing None, nested if statement to avoid elementwise</span>
+                    <span class="c1"># comparison warning</span>
+                    <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s1">&#39;NoneType:__None__&#39;</span><span class="p">:</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">elif</span> <span class="n">item</span> <span class="o">==</span> <span class="s1">&#39;NoneType:__emptylist__&#39;</span><span class="p">:</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">elif</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;list_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="c1"># preallocate empty list</span>
+            <span class="n">list_to_be_filled</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;list_length&#39;</span><span class="p">]</span>
+            <span class="n">base_list_key</span> <span class="o">=</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;base_list_key&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;list_length&#39;</span><span class="p">]):</span>
+                <span class="n">list_to_be_filled</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">HDF5Format</span><span class="o">.</span><span class="n">read_dict_from_hdf5</span><span class="p">(</span>
+                    <span class="n">data_dict</span><span class="o">=</span><span class="n">list_to_be_filled</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">h5_group</span><span class="o">=</span><span class="n">h5_group</span><span class="p">[</span><span class="n">base_list_key</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)])</span>
+
+            <span class="c1"># THe error is here!, extract correctly but not adding to</span>
+            <span class="c1"># data dict correctly</span>
+            <span class="n">data_dict</span> <span class="o">=</span> <span class="n">list_to_be_filled</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;cannot read &quot;list_type&quot;:&quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">h5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;list_type&#39;</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">data_dict</span>
+
+
+<span class="k">def</span> <span class="nf">_encode_to_utf8</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Required because h5py does not support python3 strings</span>
+<span class="sd">    converts byte type to string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">str_to_bool</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="n">s</span> <span class="o">==</span> <span class="s1">&#39;False&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot covert </span><span class="si">{}</span><span class="s2"> to a bool&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+
+<span class="kn">from</span> <span class="nn">qcodes.utils.helpers</span> <span class="k">import</span> <span class="n">deep_update</span><span class="p">,</span> <span class="n">NumpyJSONEncoder</span>
+
+
+<span class="k">class</span> <span class="nc">HDF5FormatMetadata</span><span class="p">(</span><span class="n">HDF5Format</span><span class="p">):</span>
+
+    <span class="n">metadata_file</span> <span class="o">=</span> <span class="s1">&#39;snapshot.json&#39;</span>
+
+    <span class="k">def</span> <span class="nf">write_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">io_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read_first</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write all metadata in this DataSet to storage.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_set (DataSet): the data we&#39;re storing</span>
+
+<span class="sd">            io_manager (io_manager): the base location to write to</span>
+
+<span class="sd">            location (str): the file location within io_manager</span>
+
+<span class="sd">            read_first (bool, optional): read previously saved metadata before</span>
+<span class="sd">                writing? The current metadata will still be the used if</span>
+<span class="sd">                there are changes, but if the saved metadata has information</span>
+<span class="sd">                not present in the current metadata, it will be retained.</span>
+<span class="sd">                Default True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># this statement is here to make the linter happy</span>
+        <span class="k">if</span> <span class="n">io_manager</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;please set io_manager and location arguments &#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">read_first</span><span class="p">:</span>
+            <span class="c1"># In case the saved file has more metadata than we have here,</span>
+            <span class="c1"># read it in first. But any changes to the in-memory copy should</span>
+            <span class="c1"># override the saved file data.</span>
+            <span class="n">memory_metadata</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_metadata</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+            <span class="n">deep_update</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">memory_metadata</span><span class="p">)</span>
+
+        <span class="n">fn</span> <span class="o">=</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">snap_file</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">snap_file</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">NumpyJSONEncoder</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">):</span>
+        <span class="n">io_manager</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">io</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">location</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">io_manager</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">snap_file</span><span class="p">:</span>
+                <span class="n">metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">snap_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf8&#39;</span><span class="p">)</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,416 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.tools.pulse_tools &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.tools.pulse_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.tools.pulse_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pulse_to_waveform_sequence&quot;</span><span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="pulse_to_waveform_sequence"><a class="viewcode-back" href="../../silq.tools.html#silq.tools.pulse_tools.pulse_to_waveform_sequence">[docs]</a><span class="k">def</span> <span class="nf">pulse_to_waveform_sequence</span><span class="p">(</span>
+    <span class="n">max_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">sampling_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">frequency_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">total_duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">final_delay_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">sample_points_multiple</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">point_offsets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This method can be used when generating a periodic signal with an AWG device.</span>
+<span class="sd">    Given a frequency and duration of the desired signal, a general AWG can produce</span>
+<span class="sd">    that signal by repeating one waveform (waveform_1) for a number of times</span>
+<span class="sd">    (cycles) and ending with a second waveform (waveform_2). This is a practical</span>
+<span class="sd">    way of generating periodic signals that are long in duration without using</span>
+<span class="sd">    a lot of the available RAM of the AWG.</span>
+
+<span class="sd">    Because of the finite sampling rate and restrictions on amount of</span>
+<span class="sd">    sample points (which must generally be a multiple of a certain number),</span>
+<span class="sd">    there will be an error in the period of the generated signal. This error goes</span>
+<span class="sd">    down with the number of periods (n) that one cycle of the repeated waveform contains.</span>
+
+<span class="sd">    This function calculates the minimum number n for which the error threshold</span>
+<span class="sd">    is satisfied. Therefore minimizing the total amount of sample points that</span>
+<span class="sd">    need to be stored by the AWG.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        duration: duration of the signal in seconds</span>
+<span class="sd">        frequency: frequency of the signal in Hz</span>
+<span class="sd">        sampling_rate: the sampling rate of the waveform</span>
+<span class="sd">        threshold: threshold in relative period error</span>
+<span class="sd">        n_min: minimum number of signal periods that the waveform must contain</span>
+<span class="sd">        n_max: maximum number of signal periods that a waveform can contain</span>
+<span class="sd">        sample_points_multiple: the number of samples must be a multiple of</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict containing:</span>
+<span class="sd">        &#39;optimum&#39;: Dict of optimal settings</span>
+<span class="sd">            &#39;error&#39;: Relative frequency error of optimal settings</span>
+<span class="sd">            &#39;final_delay&#39;: Remaining duration of pulse after waveform repetitions.</span>
+<span class="sd">                Cannot be negative.</span>
+<span class="sd">            &#39;periods&#39;: Periods within waveform (using modified frequency)</span>
+<span class="sd">            &#39;repetitions&#39;: Repetitions of waveform to (almost) reach end of pulse</span>
+<span class="sd">            &#39;duration&#39;: Duration of main waveform</span>
+<span class="sd">            &#39;points&#39;: Number of waveform points</span>
+<span class="sd">            &#39;idx&#39;: index of optimal result. first index corresponds to period</span>
+<span class="sd">                index of periods between min_periods and max_periods.</span>
+<span class="sd">                Second index is the point offset index.</span>
+<span class="sd">            &#39;modified_frequency&#39;: Frequency close to target frequency whose</span>
+<span class="sd">                period perfectly fits in the number of points</span>
+<span class="sd">        &#39;filtered_results&#39;: Array of settings that satisfy filters</span>
+<span class="sd">        &#39;repetitions_multiple&#39;: Repetition array for all settings</span>
+<span class="sd">        &#39;final_delays&#39;: Array of final_delays for all settings</span>
+<span class="sd">        &#39;errors&#39;: Array of relative frequency errors for all settings</span>
+<span class="sd">        &#39;periods_range&#39;: Range of periods that have been considered</span>
+
+<span class="sd">        If the minimum number of periods (set by min_points) exceeds the maximum</span>
+<span class="sd">        number of periods (set by max_points), None is returned</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">t_period</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+    <span class="n">max_periods</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_points</span> <span class="o">/</span> <span class="n">sampling_rate</span> <span class="o">/</span> <span class="n">t_period</span><span class="p">)</span>  <span class="c1"># Bounded by max_points</span>
+    <span class="n">min_periods</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_points</span> <span class="o">/</span> <span class="n">sampling_rate</span> <span class="o">/</span> <span class="n">t_period</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># Bounded by min_points</span>
+
+    <span class="k">if</span> <span class="n">min_periods</span> <span class="o">&gt;=</span> <span class="n">max_periods</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">periods</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_periods</span><span class="p">,</span> <span class="n">max_periods</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">t_periods</span> <span class="o">=</span> <span class="n">periods</span> <span class="o">*</span> <span class="n">t_period</span>
+    <span class="c1"># Always consider neighbouring points as well, as they may have more favourable settings</span>
+    <span class="n">point_offsets_multiple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">point_offsets</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_points_multiple</span>
+
+    <span class="c1"># Calculate frequency errors</span>
+    <span class="n">points_periods</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">t_periods</span> <span class="o">*</span> <span class="n">sampling_rate</span>
+    <span class="p">)</span>  <span class="c1"># Unrounded points for each periods value (1D)</span>
+    <span class="n">points_cutoff</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">sample_points_multiple</span> <span class="o">*</span> <span class="p">(</span><span class="n">points_periods</span> <span class="o">//</span> <span class="n">sample_points_multiple</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+        <span class="nb">int</span>
+    <span class="p">)</span>  <span class="c1"># Rounded (floor) points for each periods value (1D)</span>
+    <span class="c1"># Rounded (floor) points for each periods value with offsets (2D)</span>
+    <span class="n">points_cutoff_multiple</span> <span class="o">=</span> <span class="n">points_cutoff</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">+</span> <span class="n">point_offsets_multiple</span>
+    <span class="c1"># Durations of rounded (floor) points for each periods value with offsets (2D)</span>
+    <span class="n">t_cutoff_multiple</span> <span class="o">=</span> <span class="n">points_cutoff_multiple</span> <span class="o">/</span> <span class="n">sampling_rate</span>
+    <span class="c1"># Relative frequency error (2D)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">t_cutoff_multiple</span> <span class="o">/</span> <span class="n">t_periods</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
+
+    <span class="c1"># Calculate final delays</span>
+    <span class="n">final_delays</span> <span class="o">=</span> <span class="n">total_duration</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">points_cutoff_multiple</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c1"># We add a small value to avoid machine precision errors.</span>
+    <span class="c1"># Note that we add instead of round since we do floor division</span>
+    <span class="n">repetitions_multiple</span> <span class="o">=</span> <span class="p">((</span><span class="n">total_duration</span> <span class="o">+</span> <span class="mf">1e-13</span><span class="p">)</span> <span class="o">//</span> <span class="n">t_cutoff_multiple</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">t_periods_cutoff_multiple</span> <span class="o">=</span> <span class="n">t_cutoff_multiple</span> <span class="o">*</span> <span class="n">repetitions_multiple</span>
+    <span class="n">final_delays</span> <span class="o">-=</span> <span class="n">t_periods_cutoff_multiple</span>
+
+    <span class="c1"># Filter results</span>
+    <span class="n">filtered_results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">errors</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="c1"># Ensure that all results have at least one repetition</span>
+    <span class="n">filtered_results</span><span class="p">[</span><span class="n">repetitions_multiple</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="o">~</span><span class="n">filtered_results</span><span class="p">):</span>
+        <span class="c1"># TODO Don&#39;t raise an error, but return the original frequency</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Pulse cannot be approximated because it is too short&#39;</span><span class="p">)</span>
+
+    <span class="n">filter_arrs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="p">,</span>
+        <span class="s2">&quot;final_delay&quot;</span><span class="p">:</span> <span class="n">final_delays</span><span class="p">,</span>
+        <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">points_cutoff_multiple</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="c1"># Prepend thresholds to filters</span>
+    <span class="k">if</span> <span class="n">final_delay_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;final_delay&quot;</span><span class="p">,</span> <span class="n">final_delay_threshold</span><span class="p">)]</span> <span class="o">+</span> <span class="n">filters</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="n">frequency_threshold</span><span class="p">)]</span> <span class="o">+</span> <span class="n">filters</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">filter_name</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filters</span><span class="p">):</span>
+        <span class="n">filter_arr</span> <span class="o">=</span> <span class="n">filter_arrs</span><span class="p">[</span><span class="n">filter_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">filtered_results</span><span class="p">[</span><span class="n">filter_arr</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">]):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;Found {np.sum(filtered_results[filter_arr &lt;= threshold])} &quot;</span>
+                <span class="n">f</span><span class="s2">&quot;satisfying </span><span class="si">{filter_name}</span><span class="s2"> &lt; </span><span class="si">{threshold}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">filtered_results</span><span class="p">[</span><span class="n">filter_arr</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_val</span> <span class="o">=</span> <span class="n">filter_arr</span><span class="p">[</span><span class="n">filtered_results</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">remaining_results</span> <span class="o">=</span> <span class="n">filtered_results</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">remaining_results</span><span class="p">[</span><span class="n">filter_arr</span> <span class="o">!=</span> <span class="n">min_val</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># min_idx is a tuple containing the first element that minimizes</span>
+            <span class="c1"># according to the filter</span>
+            <span class="n">min_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span>
+                <span class="n">remaining_results</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">remaining_results</span><span class="o">.</span><span class="n">shape</span>
+            <span class="p">)</span>
+            <span class="n">log_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;Could not find any sine waveform decomposition with &quot;</span>
+                <span class="n">f</span><span class="s2">&quot;</span><span class="si">{filter_name}</span><span class="s2"> error &lt; </span><span class="si">{threshold}</span><span class="s2">, &quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Print log message, either as warning or as debug message</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">final_delay_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
+            <span class="k">break</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Satisfied all filters, choosing lowest frequency error&quot;</span><span class="p">)</span>
+        <span class="n">min_val</span> <span class="o">=</span> <span class="n">errors</span><span class="p">[</span><span class="n">filtered_results</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">remaining_results</span> <span class="o">=</span> <span class="n">filtered_results</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">remaining_results</span><span class="p">[</span><span class="n">errors</span> <span class="o">!=</span> <span class="n">min_val</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">min_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">remaining_results</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">remaining_results</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">modified_frequency</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span>
+        <span class="n">points_cutoff_multiple</span><span class="p">[</span><span class="n">min_idx</span><span class="p">]</span> <span class="o">/</span> <span class="n">periods</span><span class="p">[</span><span class="n">min_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">/</span> <span class="n">sampling_rate</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">frequency</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">modified_frequency</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="n">optimum</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="p">[</span><span class="n">min_idx</span><span class="p">],</span>
+        <span class="s2">&quot;final_delay&quot;</span><span class="p">:</span> <span class="n">final_delays</span><span class="p">[</span><span class="n">min_idx</span><span class="p">],</span>
+        <span class="s2">&quot;periods&quot;</span><span class="p">:</span> <span class="n">min_periods</span> <span class="o">+</span> <span class="n">min_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;repetitions&quot;</span><span class="p">:</span> <span class="n">repetitions_multiple</span><span class="p">[</span><span class="n">min_idx</span><span class="p">],</span>
+        <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">points_cutoff_multiple</span><span class="p">[</span><span class="n">min_idx</span><span class="p">]</span> <span class="o">/</span> <span class="n">sampling_rate</span><span class="p">,</span>
+        <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">points_cutoff_multiple</span><span class="p">[</span><span class="n">min_idx</span><span class="p">],</span>
+        <span class="s2">&quot;idx&quot;</span><span class="p">:</span> <span class="n">min_idx</span><span class="p">,</span>
+        <span class="s2">&quot;modified_frequency&quot;</span><span class="p">:</span> <span class="n">modified_frequency</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">repetitions_multiple</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">final_delays</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Repetitions&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Rel. frequency error&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Final delay (s)&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Periods&quot;</span><span class="p">)</span>
+
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span>
+            <span class="n">optimum</span><span class="p">[</span><span class="s2">&quot;periods&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">optimum</span><span class="p">[</span><span class="s2">&quot;periods&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">optimum</span><span class="p">[</span><span class="s2">&quot;periods&quot;</span><span class="p">],</span> <span class="o">*</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="n">handle</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;optimum&quot;</span><span class="p">])</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="p">,</span>
+        <span class="s2">&quot;periods_range&quot;</span><span class="p">:</span> <span class="n">periods</span><span class="p">,</span>
+        <span class="s2">&quot;final_delays&quot;</span><span class="p">:</span> <span class="n">final_delays</span><span class="p">,</span>
+        <span class="s2">&quot;repetitions_multiple&quot;</span><span class="p">:</span> <span class="n">repetitions_multiple</span><span class="p">,</span>
+        <span class="s2">&quot;points_per_period&quot;</span><span class="p">:</span> <span class="n">points_cutoff_multiple</span><span class="p">,</span>
+        <span class="s2">&quot;filtered_results&quot;</span><span class="p">:</span> <span class="n">filtered_results</span><span class="p">,</span>
+        <span class="s2">&quot;optimum&quot;</span><span class="p">:</span> <span class="n">optimum</span><span class="p">,</span>
+    <span class="p">}</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

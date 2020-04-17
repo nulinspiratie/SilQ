@@ -1,0 +1,809 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parameter guide &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ParameterNode guide" href="ParameterNode guide.html" />
+    <link rel="prev" title="In-depth guides" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../For developers.html">For developers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">In-depth guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Parameter guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#What-is-a-parameter?">What is a parameter?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Parameter-types">Parameter types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Instrument-independent-parameters">Instrument-independent parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Subclassing-parameters">Subclassing parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Parameter-set-callbacks">Parameter set callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Linking-a-parameter-to-config">Linking a parameter to config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ParameterNode guide.html">ParameterNode guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data plotting guide.html">Data plotting guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pulses and PulseSequences.html">Pulses and PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Experiment folder guide.html">Experiment folder guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InstrumentInterface guidelines.html">InstrumentInterface guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Saving traces.html">Saving traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Storing PulseSequences.html">Storing PulseSequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Analysis notebook guidelines.html">Analysis notebook guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Creating IPython Widgets.html">Creating IPython Widgets (IPywidgets)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code snippets/index.html">Code snippets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#future-guides">Future guides</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">In-depth guides</a> &raquo;</li>
+        
+      <li>Parameter guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/docs/in-depth guides/Parameter guide.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    min-width: 5ex;
+    padding-top: 0.3rem;
+    padding-right: 0.3rem;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 0.3rem;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Parameter-guide">
+<h1>Parameter guide<a class="headerlink" href="#Parameter-guide" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="What-is-a-parameter?">
+<h2>What is a parameter?<a class="headerlink" href="#What-is-a-parameter?" title="Permalink to this headline">¶</a></h2>
+<p>A parameter usually represents a single value of a single feature of an instrument, e.g. the frequency of a function generator, the mode of a multimeter (resistance, current, or voltage), or the input impedance of an oscilloscope channel. Basic attributes of a <code class="docutils literal notranslate"><span class="pre">Parameter</span></code> are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: the name used internally by QCoDeS, e.g. ‘input_impedance’</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">label</span></code>: the label to use for plotting this parameter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unit</span></code>: the physical unit. ALWAYS use SI units if a unit is applicable</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_cmd</span></code>, the command to set the parameter. Either a SCPI string with a single ‘{}’, or a function taking one argument (see examples below)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_cmd</span></code>: the command to get the parameter. Follows the same scheme as <code class="docutils literal notranslate"><span class="pre">set_cmd</span></code></p></li>
+</ul>
+<p>Note that there are many more attributes, the full list can be found in the Parameter documentation.</p>
+<div class="line-block">
+<div class="line">A basic example of a parameter is <code class="docutils literal notranslate"><span class="pre">microwave_source.frequency</span></code>, in which case <code class="docutils literal notranslate"><span class="pre">microwave_source</span></code> is an <code class="docutils literal notranslate"><span class="pre">Instrument</span></code>, and the Parameter is <code class="docutils literal notranslate"><span class="pre">frequency</span></code>.</div>
+<div class="line">Getting and setting the microwave frequency can be performed as such:</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">microwave_source</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="mf">42e9</span><span class="p">)</span>  <span class="c1"># Set microwave source frequency to 42 GHz</span>
+<span class="n">microwave_source</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>  <span class="c1"># Get frequency</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mf">42e9</span>
+</pre></div>
+</div>
+<p>Note that these set/get commands do not simply set a variable in Python; usually they actually send VISA commands to the instrument to get/set the frequency. For examples, look at the QCoDeS drivers.</p>
+<div class="line-block">
+<div class="line">In QCoDes, measurements are performed by varying parameter values and measuring other parameters. This is one of the primary motivations for creating a Parameter: having a standardized way for setting/getting/saving data during a measurement.</div>
+<div class="line">This is both an advantage and disadvantage.</div>
+<div class="line">The advantage is that information about the Parameter being measured is known beforehand (e.g. name, unit, shape), and so does not need to be specified when creating a measurement. The disadvantage is that requiring everything measured to be a Parameter removes some flexibility, as one cannot simply run arbitrary Python code, though there are ways to (partially) circumvent this.</div>
+</div>
+<p><strong>Note</strong>: The new QCoDeS DataSet has dropped the requirement of only sweeping and measuring Parameters (more specifically it does not rely on the <code class="docutils literal notranslate"><span class="pre">Loop</span></code> class). However, our group’s version of QCoDeS has not switched to this method.</p>
+</div>
+<div class="section" id="Parameter-types">
+<h2>Parameter types<a class="headerlink" href="#Parameter-types" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">There are three basic types of Parameters, categorized by the type of value it holds: - <strong>Parameter</strong> The Parameter is the most common type of Parameter.</div>
+<div class="line">It can hold a single value (e.g. int, float, bool, string). - <strong>ArrayParameter</strong> The ArrayParameter can hold an array of values. The array shape should be specified so that size of the <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> can be determined during a measurement. - <strong>MultiParameter</strong> The MultiParameter can hold multiple values. Each of these values can be either a single value (like a <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>), or an array (like an <code class="docutils literal notranslate"><span class="pre">ArrayParameter</span></code>).</div>
+</div>
+<div class="line-block">
+<div class="line">In this notebook, we will focus on the standard <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>.</div>
+<div class="line">For details on the <code class="docutils literal notranslate"><span class="pre">ArrayParameter</span></code> and <code class="docutils literal notranslate"><span class="pre">MultiParameter</span></code> see the <code class="docutils literal notranslate"><span class="pre">docs/examples/Parameters.ipynb</span></code> notebook</div>
+</div>
+</div>
+<div class="section" id="Instrument-independent-parameters">
+<h2>Instrument-independent parameters<a class="headerlink" href="#Instrument-independent-parameters" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">Parameters need not be attached to Instruments; they can be created independent of them.</div>
+<div class="line">Here we see a simple example, where a Parameter simply holds a value:</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">qcodes</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="n">param</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;param&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>  <span class="c1"># Default set_cmd is False, in which case we cannot set it (see below)</span>
+
+<span class="n">param</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>  <span class="c1"># set value</span>
+<span class="n">param</span><span class="p">()</span>  <span class="c1"># get value</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+42
+</pre></div></div>
+</div>
+<div class="line-block">
+<div class="line">Parameters have many features, the two most important of which are functions called during <code class="docutils literal notranslate"><span class="pre">get</span></code>/<code class="docutils literal notranslate"><span class="pre">set</span></code>.</div>
+<div class="line">The simplest method to do this is via the keyword arguments <code class="docutils literal notranslate"><span class="pre">get_cmd</span></code> and <code class="docutils literal notranslate"><span class="pre">set_cmd</span></code> passed during instantiation:</div>
+</div>
+<ul class="simple">
+<li><p><strong>get_cmd</strong>: Function to call during get command.
+Must accept zero arguments, and return value.
+If attached to an Instrument, it can also be a string, which corresponds to the VISA command.
+Can also be</p>
+<ul>
+<li><p><strong>False</strong>: Raise an error when a get is called</p></li>
+<li><p><strong>None</strong>: Return latest set value (This is the default)</p></li>
+</ul>
+</li>
+<li><p><strong>set_cmd</strong>: Function to call during set command Must accept one argument, which is the value being set
+If attached to an Instrument, it can also be a string, which corresponds to the VISA command.
+Can also be <strong>False</strong> and <strong>None</strong> (see above), the default being <strong>False</strong>.</p></li>
+</ul>
+<p>As an example, here we create a parameter with a specific action during get and set: - During a <code class="docutils literal notranslate"><span class="pre">get</span></code>, it will return a random value between 0 and 1 - During a <code class="docutils literal notranslate"><span class="pre">set</span></code>, it will print the value it’s being set to.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="k">def</span> <span class="nf">print_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Value set to&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;param&#39;</span><span class="p">,</span> <span class="n">get_cmd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="n">print_value</span><span class="p">)</span>
+
+<span class="n">p</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>  <span class="c1"># Setting calls a print statement</span>
+<span class="n">p</span><span class="p">()</span>  <span class="c1"># Get return a random value between 0 and 1</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Value set to 42
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.960839463495372
+</pre></div></div>
+</div>
+<div class="line-block">
+<div class="line">Parameters have many more features related to it’s get/set functionality, such as validation, ramping, value parsing/mapping, scaling, etc. These are all attributes of parameters and can also be changed after instantiation.</div>
+<div class="line">For a full list, look at the documentation of the <code class="docutils literal notranslate"><span class="pre">Parameter</span></code> and <code class="docutils literal notranslate"><span class="pre">_BaseParameter</span></code>.</div>
+</div>
+</div>
+<div class="section" id="Subclassing-parameters">
+<h2>Subclassing parameters<a class="headerlink" href="#Subclassing-parameters" title="Permalink to this headline">¶</a></h2>
+<p>While the <code class="docutils literal notranslate"><span class="pre">get_cmd</span></code>/<code class="docutils literal notranslate"><span class="pre">set_cmd</span></code> are sufficient for most needs, more complex situations can arise where simple commands do not suffice. For example, the parameter is not passed as <code class="docutils literal notranslate"><span class="pre">self</span></code>, and so the get/set function cannot access other parameter attributes. In these cases, it is better to subclass the Parameter and add these functionalities in the subclass.</p>
+<p>To demonstrate this, we create a parameter that either returns the latest set value, or the exponent of that value depending on the boolean attribute <code class="docutils literal notranslate"><span class="pre">exponentiate</span></code>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">class</span> <span class="nc">ExponentiateParameter</span><span class="p">(</span><span class="n">Parameter</span><span class="p">):</span>
+    <span class="n">exponentiate</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exponentiate</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_value</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">exponentiate_parameter</span> <span class="o">=</span> <span class="n">ExponentiateParameter</span><span class="p">(</span><span class="s1">&#39;exponentiation&#39;</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Without exponentiation:&#39;</span><span class="p">,</span> <span class="n">exponentiate_parameter</span><span class="p">())</span>
+
+<span class="n">exponentiate_parameter</span><span class="o">.</span><span class="n">exponentiate</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;With exponentiation:&#39;</span><span class="p">,</span> <span class="n">exponentiate_parameter</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Without exponentiation: 3
+With exponentiation: 20.085536923187668
+</pre></div></div>
+</div>
+<p>Subclassing Parameters can be a very useful way to create complex parameters with many functions (e.g. a retuning sequence).</p>
+<p><strong>Note</strong>: A third way to add get/set commands is through the ParameterNode (see below)</p>
+</div>
+<div class="section" id="Parameter-set-callbacks">
+<h2>Parameter set callbacks<a class="headerlink" href="#Parameter-set-callbacks" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">There are situations where we want an ancillary function to be called every time a parameter is set.</div>
+<div class="line">This is facilitated by connecting a callback to a parameter.</div>
+</div>
+<div class="line-block">
+<div class="line">In this example, we have a parameter to set the magnetic field.</div>
+<div class="line">Our goal is to measure the temperature every time the magnetic field is changed.</div>
+<div class="line">We do this by attaching the function <code class="docutils literal notranslate"><span class="pre">measure_temperature</span></code> to the magnetic field parameter (via <code class="docutils literal notranslate"><span class="pre">magnetic_field.connect</span></code>)</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">measure_temperature</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Temperature is at {np.random.randint(0, 300)} K&#39;</span><span class="p">)</span>
+
+<span class="n">magnetic_field</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;magnetic_field&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">magnetic_field</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">measure_temperature</span><span class="p">,</span>
+                       <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Update value to perform initial temperature_measurement</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting magnetic field to 1T&#39;</span><span class="p">)</span>
+<span class="n">magnetic_field</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting magnetic field to 2T&#39;</span><span class="p">)</span>
+<span class="n">magnetic_field</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Temperature is at 53 K
+Setting magnetic field to 1T
+Temperature is at 241 K
+Setting magnetic field to 2T
+Temperature is at 54 K
+</pre></div></div>
+</div>
+<div class="line-block">
+<div class="line">Parameters can also be connected to each other. These can also have a scale and offset applied to the value.</div>
+<div class="line">Here we connect <code class="docutils literal notranslate"><span class="pre">param2</span></code> to <code class="docutils literal notranslate"><span class="pre">param1</span></code> with an offset of 2:</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">param1</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;param1&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">param2</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;param2&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">param1</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">param2</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">param1</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">param2</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+44
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Linking-a-parameter-to-config">
+<h2>Linking a parameter to config<a class="headerlink" href="#Linking-a-parameter-to-config" title="Permalink to this headline">¶</a></h2>
+<p><strong>Note</strong>: This feature is only available with SilQ, which uses the <code class="docutils literal notranslate"><span class="pre">SubConfig</span></code>.</p>
+<div class="line-block">
+<div class="line">The config is a dictionary containing general settings related to the experiment.</div>
+<div class="line">Parameters can not only be connected to other parameters, they can also be connected to a key in the config.</div>
+<div class="line">This has the advantage that every time the config is updated, the parameter will reflect this value.</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">silq</span> <span class="k">import</span> <span class="n">config</span>
+<span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">read_duration</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">config</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;properties&#39;: {&#39;read_duration&#39;: 1}}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">read_duration</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;read_duration&#39;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">read_duration</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0
+</pre></div></div>
+</div>
+<div class="line-block">
+<div class="line">We now connect the parameter to the config path <code class="docutils literal notranslate"><span class="pre">properties.read_duration</span></code>.</div>
+<div class="line">Initially, this won’t change the value:</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">read_duration</span><span class="o">.</span><span class="n">set_config_link</span><span class="p">(</span><span class="s1">&#39;config:properties.read_duration&#39;</span><span class="p">)</span>  <span class="c1"># Note that config paths start with `config:`</span>
+<span class="n">read_duration</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0
+</pre></div></div>
+</div>
+<p>However, once we modify the value in the config, the parameter value does change:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">config</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">read_duration</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">read_duration</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2
+</pre></div></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ParameterNode guide.html" class="btn btn-neutral float-right" title="ParameterNode guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="In-depth guides" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,1507 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>silq.analysis.fit_toolbox &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specifications/index.html">Future work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../silq.html">silq</a> &raquo;</li>
+        
+      <li>silq.analysis.fit_toolbox</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for silq.analysis.fit_toolbox</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">lmfit</span> <span class="k">import</span> <span class="n">Parameters</span><span class="p">,</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">lmfit.model</span> <span class="k">import</span> <span class="n">ModelResult</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.axis</span> <span class="k">import</span> <span class="n">Axis</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="k">import</span> <span class="n">find_peaks</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">import</span> <span class="n">gaussian_filter1d</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">qcodes.data.data_array</span> <span class="k">import</span> <span class="n">DataArray</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Fit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit">[docs]</a><span class="k">class</span> <span class="nc">Fit</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Base fitting class.</span>
+
+<span class="sd">    To fit a specific function, this class should be subclassed.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;linestyle&#39;</span><span class="p">:</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="s1">&#39;lw&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">print</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_function</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_handle</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ydata</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fit</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">perform_fit</span><span class="p">(</span><span class="nb">print</span><span class="o">=</span><span class="nb">print</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Fit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.fit_function">[docs]</a>    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;This should be implemented in a subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;This should be implemented in a subclass&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fit.find_nearest_index"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.find_nearest_index">[docs]</a>    <span class="k">def</span> <span class="nf">find_nearest_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find index in array that is closest to a value</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: array from which to find the nearest index</span>
+<span class="sd">            value: target value for which we want the index of the nearest</span>
+<span class="sd">                array element</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Index of element in array that is closest to target value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">array</span> <span class="o">-</span> <span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">array</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Fit.find_nearest_value"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.find_nearest_value">[docs]</a>    <span class="k">def</span> <span class="nf">find_nearest_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Find value in array that is closest to target value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: array from which to find the nearest value.</span>
+<span class="sd">            value: target value for which we want the nearest array element.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            element in array that is nearest to value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">array</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">find_nearest_index</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">value</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="Fit.get_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.get_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+                       <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{},</span> <span class="n">parameter_constraints</span><span class="o">=</span><span class="p">{},</span>
+                       <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get parameters for fitting</span>
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: Data points</span>
+<span class="sd">            initial_parameters: {parameter: initial_value} combination,</span>
+<span class="sd">                to specify the initial value of certain parameters. The initial</span>
+<span class="sd">                values of other parameters are found using</span>
+<span class="sd">                `Fit.find_initial_parameters`.</span>
+<span class="sd">            fixed_parameters: {parameter: fixed_value} combination,</span>
+<span class="sd">                to specify parameters whose values should not be varied.</span>
+<span class="sd">            parameter_constraints: {parameter: {constraint : value, ...},  ...}</span>
+<span class="sd">                combination to further constrain existing parameters. e.g.</span>
+<span class="sd">                {&#39;frequency&#39; : {&#39;min&#39; : 0}} ensures only positive frequencies</span>
+<span class="sd">                can be fit.</span>
+<span class="sd">            weights: Weights for data points, must have same shape as ydata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xvals</span><span class="p">,</span> <span class="n">DataArray</span><span class="p">):</span>
+            <span class="n">xvals</span> <span class="o">=</span> <span class="n">xvals</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xvals</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">xvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ydata</span><span class="p">,</span> <span class="n">DataArray</span><span class="p">):</span>
+            <span class="n">ydata</span> <span class="o">=</span> <span class="n">ydata</span><span class="o">.</span><span class="n">ndarray</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ydata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">ydata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="c1"># Filter out all NaNs</span>
+        <span class="n">non_nan_indices</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span>
+        <span class="n">xvals</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="n">non_nan_indices</span><span class="p">]</span>
+        <span class="n">ydata</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="n">non_nan_indices</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">non_nan_indices</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span> <span class="o">=</span> <span class="n">xvals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ydata</span> <span class="o">=</span> <span class="n">ydata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="c1"># Find initial parameters, also pass fixed parameters along so they are</span>
+        <span class="c1"># not modified</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_initial_parameters</span><span class="p">(</span>
+            <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">fixed_parameters</span><span class="p">,</span>
+                                              <span class="o">**</span><span class="n">initial_parameters</span><span class="p">})</span>
+
+        <span class="c1"># Ensure that fixed parameters do not vary</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fixed_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">vary</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Apply all constraints to parameters</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">constraints_dict</span> <span class="ow">in</span> <span class="n">parameter_constraints</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">opt</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">constraints_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">opt</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span></div>
+
+<div class="viewcode-block" id="Fit.perform_fit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.perform_fit">[docs]</a>    <span class="k">def</span> <span class="nf">perform_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="nb">print</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">plot</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelResult</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Perform fitting routine</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ModelResult object containing fitting results</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydata</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                                         <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span>
+                                         <span class="o">**</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="nb">print</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_results</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_to_plot</span><span class="p">(</span><span class="n">plot</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span></div>
+
+<div class="viewcode-block" id="Fit.print_results"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.print_results">[docs]</a>    <span class="k">def</span> <span class="nf">print_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;No fit results&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">fit_report</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">fit_report</span><span class="p">(</span><span class="n">show_correl</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">fit_report</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="n">variables_idx</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;[[Variables]]&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">variables_idx</span><span class="p">:]</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Fit.add_to_plot"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.Fit.add_to_plot">[docs]</a>    <span class="k">def</span> <span class="nf">add_to_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">ax</span><span class="p">:</span> <span class="n">Axis</span><span class="p">,</span>
+                    <span class="n">N</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">201</span><span class="p">,</span>
+                    <span class="n">xrange</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">xscale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">yscale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add fit to existing plot axis</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ax: Axis to add plot to</span>
+<span class="sd">            N: number of points to use as x values (to smoothe fit curve)</span>
+<span class="sd">            xrange: Optional range for x values (min, max)</span>
+<span class="sd">            xscale: value to multiple x values by to rescale axis</span>
+<span class="sd">            yscale: value to multiple y values by to rescale axis</span>
+<span class="sd">            kwargs: Additional plot kwargs. By default Fit.plot_kwargs are used</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            plot_handle of fit curve</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">xrange</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span>
+            <span class="n">x_vals_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x_vals</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x_vals</span><span class="p">),</span> <span class="n">N</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_vals_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">xrange</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+
+        <span class="n">y_vals_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span>
+            <span class="o">**</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_parameter</span><span class="p">:</span> <span class="n">x_vals_full</span><span class="p">})</span>
+        <span class="n">x_vals_full</span> <span class="o">*=</span> <span class="n">xscale</span>
+        <span class="n">y_vals_full</span> <span class="o">*=</span> <span class="n">yscale</span>
+        <span class="n">plot_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_handle</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">x_vals_full</span><span class="p">,</span> <span class="n">y_vals_full</span><span class="p">,</span> <span class="o">**</span><span class="n">plot_kwargs</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_handle</span></div></div>
+
+
+<div class="viewcode-block" id="LinearFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LinearFit">[docs]</a><span class="k">class</span> <span class="nc">LinearFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a linear function.</span>
+
+<span class="sd">        To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">        This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">        after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The fitting routine uses lmfit, a wrapper package around</span>
+<span class="sd">            scipy.optimize.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="LinearFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LinearFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">gradient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time.</span>
+<span class="sd">            gradient:</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            linear data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="LinearFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LinearFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;gradient&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gradient&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> \
+                                             <span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="LorentzianFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LorentzianFit">[docs]</a><span class="k">class</span> <span class="nc">LorentzianFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a Lorentzian function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span>
+
+<div class="viewcode-block" id="LorentzianFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LorentzianFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Lorentzian function using x as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: x-values</span>
+<span class="sd">            mean: mean</span>
+<span class="sd">            amplitude: amplitude</span>
+<span class="sd">            gamma: standard deviation</span>
+<span class="sd">            offset: offset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            lorentzian data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="p">(</span><span class="n">gamma</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">gamma</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="LorentzianFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.LorentzianFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;gamma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="c1"># Attempt to find the FWHM of the Gaussian to lessening degrees</span>
+            <span class="c1"># of accuracy</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">]:</span>
+                    <span class="n">idxs</span><span class="p">,</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">ratio</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                                    <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                        <span class="k">break</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;gamma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+                    <span class="c1"># 5% of the x-axis</span>
+                    <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">xvals</span><span class="p">))</span> <span class="o">/</span> <span class="mi">20</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;mean&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ydata</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="VoigtFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.VoigtFit">[docs]</a><span class="k">class</span> <span class="nc">VoigtFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a Voigt function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span>
+
+<div class="viewcode-block" id="VoigtFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.VoigtFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Gaussian function using x as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: independent variable</span>
+<span class="sd">            mean: mean</span>
+<span class="sd">            amplitude:</span>
+<span class="sd">            sigma: standard deviation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="n">gamma</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> \
+               <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="VoigtFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.VoigtFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;gamma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="c1"># Attempt to find the FWHM of the Gaussian to lessening degrees</span>
+            <span class="c1"># of accuracy</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">]:</span>
+                    <span class="n">idxs</span><span class="p">,</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">ratio</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                                    <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                        <span class="k">break</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;gamma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+                    <span class="c1"># 5% of the x-axis</span>
+                    <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span>
+                        <span class="n">xvals</span><span class="p">))</span> <span class="o">/</span> <span class="mi">20</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;sigma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="c1"># Attempt to find the FWHM of the Gaussian to lessening degrees</span>
+            <span class="c1"># of accuracy</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">]:</span>
+                    <span class="n">idxs</span><span class="p">,</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">ratio</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                                    <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                        <span class="k">break</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;sigma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+                    <span class="c1"># 5% of the x-axis</span>
+                    <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span>
+                        <span class="n">xvals</span><span class="p">))</span> <span class="o">/</span> <span class="mi">20</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;mean&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="n">max_idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="c1">#         parameters[&#39;tau&#39;].min = 0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="GaussianFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.GaussianFit">[docs]</a><span class="k">class</span> <span class="nc">GaussianFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a Gaussian function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span>
+
+<div class="viewcode-block" id="GaussianFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.GaussianFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Gaussian function using x as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: x-values.</span>
+<span class="sd">            mean: mean</span>
+<span class="sd">            amplitude: amplitude</span>
+<span class="sd">            sigma: standard deviation</span>
+<span class="sd">            offset: offset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            gaussian data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="GaussianFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.GaussianFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;mean&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ydata</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;sigma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="c1"># Attempt to find the FWHM of the Gaussian to lessening degrees</span>
+            <span class="c1"># of accuracy</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">]:</span>
+                    <span class="n">idxs</span><span class="p">,</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">ratio</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                                    <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                        <span class="k">break</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;sigma&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+                    <span class="c1"># 5% of the x-axis</span>
+                    <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">xvals</span><span class="p">))</span> <span class="o">/</span> <span class="mi">20</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="ExponentialFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialFit">[docs]</a><span class="k">class</span> <span class="nc">ExponentialFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for an exponential function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="ExponentialFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time.</span>
+<span class="sd">            tau: Decay constant.</span>
+<span class="sd">            amplitude:</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="ExponentialFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;tau&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">exponent_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+                            <span class="o">+</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">nearest_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">exponent_val</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">nearest_idx</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="DoubleExponentialFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleExponentialFit">[docs]</a><span class="k">class</span> <span class="nc">DoubleExponentialFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a double exponential function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DoubleExponentialFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleExponentialFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">tau_1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">A_1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">A_2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">tau_2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time.</span>
+<span class="sd">            tau_1: First decay constant.</span>
+<span class="sd">            tau_2: Second decay constant.</span>
+<span class="sd">            A_1: Amplitude of first decay</span>
+<span class="sd">            A_2: Amplitude of second decay</span>
+<span class="sd">            offset: Offset of double exponential (t -&gt; infinity)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">A_1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">+</span> <span class="n">A_2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau_2</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="DoubleExponentialFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleExponentialFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;A_1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ydata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;A_2&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ydata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;tau_1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">exponent_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+                            <span class="o">+</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_1&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                            <span class="o">+</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_2&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">nearest_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">exponent_val</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">nearest_idx</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;tau_2&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;tau_2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;A_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;A_2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="SineFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.SineFit">[docs]</a><span class="k">class</span> <span class="nc">SineFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="SineFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.SineFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">phase</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Sinusoidal fit using time as x-coordinates</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time</span>
+<span class="sd">            amplitude:</span>
+<span class="sd">            frequency:</span>
+<span class="sd">            phase:</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sinusoidal data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">frequency</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">phase</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="SineFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.SineFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+                                <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">fft_flips</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="n">fft_flips_abs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">fft_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">),</span> <span class="n">dt</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span>
+            <span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">frequency_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">fft_flips_abs</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="s1">&#39;frequency&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="n">fft_freqs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">]</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency</span>
+
+            <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fft_freqs</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">,</span> <span class="s1">&#39;o&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;phase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">])</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;phase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phase</span>
+        <span class="k">if</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="c1"># Amplitude is a positive real.</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="AMSineFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.AMSineFit">[docs]</a><span class="k">class</span> <span class="nc">AMSineFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="AMSineFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.AMSineFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">phase</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">amplitude_AM</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">frequency_AM</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">phase_AM</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot; Amplitude-Modulated Sinusoidal fit using time as x-coordinates</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time</span>
+<span class="sd">            amplitude:</span>
+<span class="sd">            frequency:</span>
+<span class="sd">            phase:</span>
+<span class="sd">            offset:</span>
+<span class="sd">            amplitude_AM:</span>
+<span class="sd">            frequency_AM:</span>
+<span class="sd">            phase_AM:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Amplitude-Modulated Sinusoidal data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">amplitude_AM</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">frequency_AM</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">phase_AM</span><span class="p">)</span> <span class="o">*</span> \
+               <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">frequency</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">phase</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="AMSineFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.AMSineFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+                                <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">fft_flips</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="n">fft_flips_abs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">fft_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">),</span> <span class="n">dt</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span>
+            <span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">frequency_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">fft_flips_abs</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="s1">&#39;frequency&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="n">fft_freqs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">]</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency</span>
+
+            <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fft_freqs</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">,</span> <span class="s1">&#39;o&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;phase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">])</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;phase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phase</span>
+        <span class="k">if</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="s1">&#39;amplitude_AM&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude_AM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+        <span class="k">if</span> <span class="s1">&#39;frequency_AM&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">frequency_AM</span> <span class="o">=</span> <span class="n">fft_freqs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">]</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;frequency_AM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency_AM</span>
+
+            <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fft_freqs</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">,</span> <span class="s1">&#39;o&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">frequency_AM</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;phase_AM&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">phase_AM</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;phase_AM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phase_AM</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="c1"># parameters[&#39;amplitude&#39;].set(exp r=&#39;(1-offset)/(1+amplitude_AM)&#39;)</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;amplitude_AM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="p">)</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;frequency_AM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="p">)</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="ExponentialSineFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialSineFit">[docs]</a><span class="k">class</span> <span class="nc">ExponentialSineFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="ExponentialSineFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialSineFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span>
+                     <span class="n">exponent_factor</span><span class="p">):</span>
+        <span class="n">exponential</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau</span><span class="p">,</span> <span class="n">exponent_factor</span><span class="p">))</span>
+        <span class="n">sine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">frequency</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="n">phase</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">exponential</span> <span class="o">*</span> <span class="n">sine</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="ExponentialSineFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.ExponentialSineFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+                                <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;amplitude&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="s1">&#39;tau&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">fft_flips</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="n">fft_flips_abs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">fft_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">),</span> <span class="n">dt</span><span class="p">)[:</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">frequency_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">fft_flips_abs</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="s1">&#39;frequency&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="n">fft_freqs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">]</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frequency</span>
+
+            <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fft_freqs</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">fft_flips_abs</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;phase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">fft_flips</span><span class="p">[</span><span class="n">frequency_idx</span><span class="p">])</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;phase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phase</span>
+        <span class="k">if</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;exponent_factor&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;exponent_factor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;tau&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;exponent_factor&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="RabiFrequencyFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.RabiFrequencyFit">[docs]</a><span class="k">class</span> <span class="nc">RabiFrequencyFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;f&#39;</span>
+
+<div class="viewcode-block" id="RabiFrequencyFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.RabiFrequencyFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">f0</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">Omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">gamma</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">f</span> <span class="o">-</span> <span class="n">f0</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gamma</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">Omega</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">Omega</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="RabiFrequencyFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.RabiFrequencyFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="o">=</span><span class="p">{},</span>
+                                <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+
+        <span class="n">max_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="n">max_frequency</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="n">max_idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;f0&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;f0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_frequency</span>
+
+        <span class="k">if</span> <span class="s1">&#39;gamma&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;t&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+                <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="n">initial_parameters</span><span class="p">[</span>
+                    <span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">FWHM_min_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">xvals</span> <span class="o">&gt;</span> <span class="n">max_frequency</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">FWHM_max_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">xvals</span> <span class="o">&gt;</span> <span class="n">max_frequency</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span>
+                        <span class="n">xvals</span><span class="p">[</span><span class="n">FWHM_max_idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">FWHM_min_idx</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="s1">&#39;t&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;gamma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;f_Rabi&#39;</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="s1">&#39;gamma/pi&#39;</span><span class="p">)</span>
+        <span class="c1"># parameters.add(&#39;amplitude&#39;, expr=&#39;gamma^2/ Omega^2&#39;)</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="BayesianUpdateFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.BayesianUpdateFit">[docs]</a><span class="k">class</span> <span class="nc">BayesianUpdateFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a &#39;Bayesian update&#39; function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;t&#39;</span>
+
+<div class="viewcode-block" id="BayesianUpdateFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.BayesianUpdateFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">tau_1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">tau_2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">prior</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            t: Time.</span>
+<span class="sd">            prior:</span>
+<span class="sd">            tau_down_out:</span>
+<span class="sd">            tau_up_out:</span>
+<span class="sd">            amplitude:</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">prior</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">*</span> <span class="n">prior</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">/</span> <span class="n">tau_2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">prior</span><span class="p">))</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="BayesianUpdateFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.BayesianUpdateFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;prior&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;prior&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;tau_1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">exponent_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+                            <span class="o">+</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;prior&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">nearest_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ydata</span> <span class="o">-</span> <span class="n">exponent_val</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">xvals</span><span class="p">[</span><span class="n">nearest_idx</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;tau_2&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;tau_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;tau_2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="FermiFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.FermiFit">[docs]</a><span class="k">class</span> <span class="nc">FermiFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a Fermi-Dirac distribution function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;V&#39;</span>
+    <span class="n">kB</span> <span class="o">=</span> <span class="mf">8.61733034e-5</span>  <span class="c1"># Boltzmann constant in eV</span>
+
+<div class="viewcode-block" id="FermiFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.FermiFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">V</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">A</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">U</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            V: electric potential being swept.</span>
+<span class="sd">            A: rescaling factor for function</span>
+<span class="sd">            U: Fermi level</span>
+<span class="sd">            T: System temperature (K)</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">A</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="n">V</span> <span class="o">-</span> <span class="n">U</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">DoubleFermiFit</span><span class="o">.</span><span class="n">kB</span> <span class="o">*</span> <span class="n">T</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="FermiFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.FermiFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">100e-3</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;A&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;U&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="DoubleFermiFit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleFermiFit">[docs]</a><span class="k">class</span> <span class="nc">DoubleFermiFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a double Fermi-Dirac distribution function.</span>
+
+<span class="sd">    To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">    This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">    after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The fitting routine uses lmfit, a wrapper package around scipy.optimize.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;V&#39;</span>
+    <span class="n">kB</span> <span class="o">=</span> <span class="mf">8.61733034e-5</span>  <span class="c1"># Boltzmann constant in eV</span>
+
+<div class="viewcode-block" id="DoubleFermiFit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleFermiFit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">V</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">A_1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">A_2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">U_1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">U_2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Exponential function using time as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            V: electric potential being swept.</span>
+<span class="sd">            A: rescaling factor for function</span>
+<span class="sd">            lower: lower Fermi level (for T=0)</span>
+<span class="sd">            upper: upper Fermi level (for T=0)</span>
+<span class="sd">            T: System temperature (K)</span>
+<span class="sd">            alpha : electrochemical potential lever arm from applied gate</span>
+<span class="sd">            potential</span>
+<span class="sd">            offset:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            exponential data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">A_1</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">U_1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">DoubleFermiFit</span><span class="o">.</span><span class="n">kB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">A_2</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">U_2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">DoubleFermiFit</span><span class="o">.</span><span class="n">kB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">+</span> \
+               <span class="n">offset</span></div>
+
+<div class="viewcode-block" id="DoubleFermiFit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.DoubleFermiFit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">100e-3</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;A_1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;A_2&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;A_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;offset&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ydata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;U_1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;U_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;U_2&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;U_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xvals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">initial_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="mf">165e-6</span><span class="p">),</span>
+                       <span class="n">vary</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="s1">&#39;E/(U_2-U_1)&#39;</span><span class="p">)</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<div class="viewcode-block" id="T1Fit"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.T1Fit">[docs]</a><span class="k">class</span> <span class="nc">T1Fit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fitting class for a 1/T1 vs magnetic field (B) function.</span>
+
+<span class="sd">        To fit data to a function, use the method `Fit.perform_fit`.</span>
+<span class="sd">        This will find its initial parameters via `Fit.find_initial_parameters`,</span>
+<span class="sd">        after which it will fit the data to `Fit.fit_function`.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The fitting routine uses lmfit, a wrapper package around</span>
+<span class="sd">            scipy.optimize.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">sweep_parameter</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span>
+
+<div class="viewcode-block" id="T1Fit.fit_function"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.T1Fit.fit_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                     <span class="n">K0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">K1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">K3</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">K5</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                     <span class="n">K7</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;T1 function using B-field as x-coordinate</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: field.</span>
+<span class="sd">            K0:</span>
+<span class="sd">            K1:</span>
+<span class="sd">            K5:</span>
+<span class="sd">            K7:</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            magic</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">K0</span> <span class="o">+</span> <span class="n">K1</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">K3</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">K5</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">5</span> <span class="o">+</span> <span class="n">K7</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">7</span></div>
+
+<div class="viewcode-block" id="T1Fit.find_initial_parameters"><a class="viewcode-back" href="../../silq.analysis.html#silq.analysis.fit_toolbox.T1Fit.find_initial_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">find_initial_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">xvals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">ydata</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">initial_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Parameters</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Estimate initial parameters from data.</span>
+
+<span class="sd">        This is needed to ensure that the fitting will converge.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xvals: x-coordinates of data points</span>
+<span class="sd">            ydata: data points</span>
+<span class="sd">            initial_parameters: Fixed initial parameters to be skipped.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parameters object containing initial parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initial_parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initial_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;K0&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;K5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;K1&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;K1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;K3&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;K3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;K5&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;K5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;K7&#39;</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">initial_parameters</span><span class="p">[</span><span class="s1">&#39;K7&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">initial_parameters</span><span class="p">:</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">initial_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;K0&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;K1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;K3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;K5&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;K7&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

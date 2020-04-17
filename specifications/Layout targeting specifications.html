@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Layout targeting specifications &mdash; SilQ 1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/silq_icon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Pulse specifications" href="Pulse specifications.html" />
+    <link rel="prev" title="Config specifications" href="config specifications.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> SilQ
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../docs/What is SilQ.html">What is SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Getting started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Brief QCoDeS guide.html">Brief QCoDeS guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Concepts in SilQ.html">Concepts in SilQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/For developers.html">For developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/in-depth guides/index.html">In-depth guides</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Future work</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="config specifications.html">Config specifications</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Layout targeting specifications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#current-targeting-scheme">Current targeting scheme</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#desired-features">Desired features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#easily-direct-similar-pulses-to-different-connections">Easily direct similar pulses to different connections</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#targeting-strategy">Targeting strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Pulse specifications.html">Pulse specifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PulseSequence specifications.html">PulseSequence specifications</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/FAQ.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docs/Classes and functions index.html">Classes and functions index</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SilQ</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Future work</a> &raquo;</li>
+        
+      <li>Layout targeting specifications</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/specifications/Layout targeting specifications.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="layout-targeting-specifications">
+<h1>Layout targeting specifications<a class="headerlink" href="#layout-targeting-specifications" title="Permalink to this headline">¶</a></h1>
+<p>When the Layout receives an abstract PulseSequence (usually setup-independent),
+it needs to target each pulse in the PulseSequence to the experimental setup. It does
+this by distributing the pulses over the interfaces. Each interface then
+implements the pulses it has received on its associated instrument, such that
+the PulseSequence is played once the acquisition is started.</p>
+<div class="section" id="current-targeting-scheme">
+<h2>Current targeting scheme<a class="headerlink" href="#current-targeting-scheme" title="Permalink to this headline">¶</a></h2>
+<p>Currently, targeting of an abstract PulseSequence is performed as follows.
+Once the Layout receives the PulseSequence, it will loop over the pulses.</p>
+<dl class="simple">
+<dt>-. For each pulse, it will check <code class="docutils literal notranslate"><span class="pre">interface.pulse_implementations</span></code> to see</dt><dd><p>which of the interfaces can output a given pulse. Exactly one interface
+must be able to handle a given pulse, or it will raise an error.</p>
+</dd>
+<dt>-. If a unique interface is found, it checks which connections can be used to</dt><dd><p>output a pulse. If more than one connection is found, it will check if any
+of them have attribute <code class="docutils literal notranslate"><span class="pre">connection.default</span> <span class="pre">=</span> <span class="pre">True</span></code>. If this is the case,
+or only one connection is found, it will choose this connection, else it
+will raise an error.</p>
+</dd>
+<dt>-. If a unique connection is found, the connection will first target the pulse.</dt><dd><p>This consists of creating a copy of the pulse (needed to keep the original
+pulse abstract), and attaching itself to <code class="docutils literal notranslate"><span class="pre">pulse.connection</span></code>. It can
+further perform operations, such as modifying <code class="docutils literal notranslate"><span class="pre">pulse.amplitude</span></code> by
+<code class="docutils literal notranslate"><span class="pre">connection.scale</span></code>. If the connection is a CombinedConnection, this will
+furthermore result in several pulses, targeted to each of the underlying
+connections.</p>
+</dd>
+<dt>-. Next the interface transforms the pulses into PulseImplementations that</dt><dd><p>are specific to the interface. First, a PulseImplementation is created,
+after which properties from the pulse are copied over to the
+PulseImplementation. At this stage, the PulseImplementation can require
+additional pulses such as triggering. These pulses are then placed in
+<code class="docutils literal notranslate"><span class="pre">PulseImplementation.additional_pulses</span></code>. The PulseImplementation has a
+method <code class="docutils literal notranslate"><span class="pre">PulseImplementation.implement()</span></code>, which implements the pulse for
+a specific interface. The PulseImplementation is then added to
+<code class="docutils literal notranslate"><span class="pre">interface.pulse_sequence</span></code>.</p>
+</dd>
+<dt>-. Any additional pulses are also targeted in the same way before looping to</dt><dd><p>the next pulse.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="desired-features">
+<h2>Desired features<a class="headerlink" href="#desired-features" title="Permalink to this headline">¶</a></h2>
+<p>The current targeting scheme has worked for the relatively simple
+measurements we have performed so far in SilQ, but is not very practical for
+more complicated measurements. This is especially the case when considering the
+upcoming improvements on the PulseSequence (see PulseSequence specifications).</p>
+<ul class="simple">
+<li><p>Easily direct similar pulses to different connections</p></li>
+<li><p>Targeting of logic operations</p></li>
+<li><p>Dealing with nested PulseSequences</p></li>
+<li><p>Handling PulseSequences which have repetitions</p></li>
+</ul>
+<div class="section" id="easily-direct-similar-pulses-to-different-connections">
+<h3>Easily direct similar pulses to different connections<a class="headerlink" href="#easily-direct-similar-pulses-to-different-connections" title="Permalink to this headline">¶</a></h3>
+<p>Figuring out which pulse should go to which connection is currently done
+almost entirely autonomous. While this is in principle a good thing, it
+breaks down when</p>
+<ul class="simple">
+<li><p>The pulse should go to a connection that is not default</p></li>
+<li><p>When there are multiple possible connections, none of which are default</p></li>
+<li><p>When there are multiple interfaces that can implement the given pulse</p></li>
+</ul>
+<p>This can be circumvented by giving kwargs to <code class="docutils literal notranslate"><span class="pre">pulse.connection_requirements</span></code>
+that specify the connection it should go to, but this is awkward, and more
+importantly counters the whole idea of generalization that SilQ is meant to
+achieve. While the user should still be able to specify the connection in
+<code class="docutils literal notranslate"><span class="pre">pulse.connection_requirements</span></code>, there should be more convenient
+alternatives that keep the code general.</p>
+<p>As an example for when we would want to easily specify the connection a pulse
+should go to, we look at a multi-qubit system. In this case, pulses are
+usually directed to one qubit, each of which has its own associated connections.
+If you could therefore connect a pulse to a qubit, you would be able to go
+through its connections to extract the connection it should be targeted to.
+Having some sort of label/tag associated to a pulse would allow this.
+This label can furthermore be used to extract sample/setup-dependent
+parameters such as the ESR frequency.</p>
+</div>
+</div>
+<div class="section" id="targeting-strategy">
+<h2>Targeting strategy<a class="headerlink" href="#targeting-strategy" title="Permalink to this headline">¶</a></h2>
+<p>When we assume that the PulseSequence will be upgraded according to the
+specifications laid out in PulseSequence specifications, a good strategy
+needs to be used to target a PulseSequence. The proposed strategy is as follows:</p>
+<p>The config maintains a list of <code class="docutils literal notranslate"><span class="pre">environments</span></code> (needs better word). Each
+environment has a name/label, and with it a list of associated connections.
+These connections each have a label within the environment, and can be linked to
+certain pulses (i.e. connection <code class="docutils literal notranslate"><span class="pre">qubit1.DC</span></code> corresponds to connection <code class="docutils literal notranslate"><span class="pre">DC</span></code>
+in environment <code class="docutils literal notranslate"><span class="pre">qubit1</span></code>). This environment furthermore can contain
+pulse-specific implementations, such as the duration and frequency of a
+pi-pulse. The idea is that the label of such an environment could be
+something like <code class="docutils literal notranslate"><span class="pre">qubit1</span></code>, which then contains information about the
+connections used to send pulses to qubit 1, and also information on the
+pulses, such as the resonance frequency.</p>
+<p>At the first stage of targeting, the Layout will target the PulseSequence to
+connections. To this end, the PulseSequence is first copied, such that the
+original PulseSequence remains untargeted. Each pulse has an associated
+connection label, which is linked to a connection within an environment. This
+allows each pulse to be mapped to a unique connection. At the end of this stage,
+a copy of the original PulseSequence is generated where all pulses are
+targeted to connections. All pulse properties are now also hard properties of
+the pulse, i.e. they are no longer extracted from the config.</p>
+<p>Next, the pulses are distributed to the interfaces. Instead of looping
+through the pulses, interfaces are looped over. This looping should be done
+hierarchically (starting with instruments that are not triggering
+instruments, then their triggering instruments etc.). For each interface, a
+skeleton of the PulseSequence is created, and pulses whose connection
+includes the interface is added. The skeleton means everything excluding
+the actual pulses. this therefore includes the nested PulseSequence with
+relevant properties (such as duration), the analysis, the logic operations,
+etc. Transferring the skeleton allows the interfaces to verify if they can
+actually implement the PulseSequence.</p>
+<p>For each interface, additional pulses may be required, such as triggers. This
+is then returned to the original Layout as a secondary PulseSequence skeleton
+containing these additional pulses. When the Layout reaches interfaces that
+need to implement these additional pulses, it will add these pulses to the
+original PulseSequence skeleton.</p>
+<p>This strategy allows straightforward implementation of the desired features
+mentioned above. First of all, nested PulseSequences are also passed along,
+as they are part of the PulseSequence skeleton. The same holds for logic
+operations and PulseSequences with repetitions, as these also belong to the
+skeleton. Furthermore, the <code class="docutils literal notranslate"><span class="pre">environment</span></code> facilitates directing similar pulses
+to different connections.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Pulse specifications.html" class="btn btn-neutral float-right" title="Pulse specifications" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="config specifications.html" class="btn btn-neutral float-left" title="Config specifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Serwan Asaad, Mark Johnson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
