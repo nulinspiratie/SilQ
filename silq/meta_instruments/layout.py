@@ -953,8 +953,12 @@ class Layout(Instrument):
                 return next(connection for connection in self.connections
                             if connection.label == connection_label)
             except StopIteration:
+                allowed_labels = [
+                    connection.label for connection in self.connections
+                    if connection_label is not None
+                ]
                 raise StopIteration(f'Cannot find connection with label {connection_label}. '
-                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
+                                    f'Allowed labels: {allowed_labels}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
