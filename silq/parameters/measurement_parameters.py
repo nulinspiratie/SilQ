@@ -451,6 +451,7 @@ class CoulombPeakParameter(MeasurementParameter):
                  tune_to_peak=True,
                  min_voltage=0.5,
                  interpolate: bool = True,
+                 sweep_settings: dict = None,
                  **kwargs):
         """
         Args:
@@ -473,6 +474,8 @@ class CoulombPeakParameter(MeasurementParameter):
             min_voltage: Minimum voltage that Coulomb peak must have.
                 If not satisfied, measurement has failed, and system is reset to
                 initial value.
+            sweep_settings: Kwargs passed to sweep_parameter to determine sweep vals.
+                Can for instance be `window` and `num`
             **kwargs: kwargs passed to MeasurementParameter
         """
 
@@ -480,9 +483,7 @@ class CoulombPeakParameter(MeasurementParameter):
             acquisition_parameter = DCParameter()
 
         self.sweep_parameter = sweep_parameter
-        self.sweep = {'range': [],
-                      'step_percentage': None,
-                      'num': None}
+        self.sweep_settings = sweep_settings or {}
         self.min_voltage = min_voltage
 
         self.combined_set_parameter = combined_set_parameter
@@ -501,39 +502,23 @@ class CoulombPeakParameter(MeasurementParameter):
                          units=['V', 'V', 'V', 'V'],
                          shapes=((), (), (), ()),
                          acquisition_parameter=acquisition_parameter,
-                         wrap_set=False, **kwargs)
+                         wrap_set= False,
+                         **kwargs)
 
         self._meta_attrs += ['min_voltage']
 
-    def calculate_sweep_vals(self):
-        if self.sweep_parameter is None:
-            return None
-        elif self.sweep.get('range', None):
-            return self.sweep_parameter[self.sweep['range']]
-        elif self.sweep['step_percentage'] and self.sweep['num']:
-            return self.sweep_parameter.sweep(
-                step_percentage=self.sweep['step_percentage'],
-                num=self.sweep['num'])
-        else:
-            return None
-
     @property_ignore_setter
     def names(self):
-        sweep_vals = self.calculate_sweep_vals()
-        if sweep_vals is not None:
-            sweep_parameter = sweep_vals.parameter
-            return [f'{sweep_parameter.name}_optimum',
-                    f'{sweep_parameter.name}_offset',
-                    'max_voltage', 'DC_voltage']
-        else:
-            return ['peak_optimum', 'peak_offset', 'max_voltage', 'DC_voltage']
+        return [f'{self.sweep_parameter.name}_optimum',
+                f'{self.sweep_parameter.name}_offset',
+                'max_voltage', 'DC_voltage']
 
     @property_ignore_setter
     def shapes(self):
-        sweep_vals = self.calculate_sweep_vals()
-        if sweep_vals is not None:
+        try:
+            sweep_vals = self.calculate_sweep_vals()
             return ((), (), (), (len(sweep_vals),))
-        else:
+        except:
             return ((), (), (), ())
 
     def create_loop(self, sweep_vals):
@@ -542,6 +527,9 @@ class CoulombPeakParameter(MeasurementParameter):
 
         loop = Loop(sweep_vals).each(self.acquisition_parameter)
         return loop
+
+    def calculate_sweep_vals(self):
+        return self.sweep_parameter.sweep(**self.sweep_settings)
 
     @clear_single_settings
     def get_raw(self):
@@ -562,9 +550,8 @@ class CoulombPeakParameter(MeasurementParameter):
                                            location=self.loc_provider)
 
         # Perform measurement
-        if (
-                self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
-        or self.layout.samples() != self.acquisition_parameter.samples):
+        if (self.layout.pulse_sequence != self.acquisition_parameter.pulse_sequence
+                or self.layout.samples() != self.acquisition_parameter.samples):
             self.acquisition_parameter.setup()
         try:
             self.loop.run(set_active=False, quiet=True,
@@ -625,6 +612,8 @@ class CoulombPeakParameter(MeasurementParameter):
                         sweep_parameter_idx] += peak_offset
 
                     self.combined_set_parameter(0)
+            elif self.DC_peak_offset is not None:
+                self.combined_set_parameter(0)
 
         self.results['max_voltage'] = np.max(self.data.DC_voltage)
         self.results['DC_voltage'] = self.data.DC_voltage
