@@ -11,7 +11,7 @@ from silq.pulses.pulse_sequences import (
 )
 from silq.pulses.pulse_types import Pulse
 from silq.tools import property_ignore_setter
-from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseFlips
+from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
@@ -185,13 +185,10 @@ class ESRParameterComposite(AcquisitionParameterComposite):
         self.EPR["enabled"].connect(self.analyses.EPR["enabled"])
         self.ESR["enabled"].connect(self.analyses.ESR["enabled"])
 
-        num_frequencies = self.analyses.ESR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        samples = self.analyses.ESR.settings["samples"]
-        samples.get_raw = lambda: self.samples
-        samples.get = samples._wrap_get(samples.get_raw)
+        self.analyses.ESR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.ESR.settings["samples"].define_get(lambda: self.samples)
 
         super().__init__(name=name, **kwargs)
 
@@ -352,25 +349,28 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         self.analyses = ParameterNode()
         self.analyses.ESR = AnalyseElectronReadout('ESR')
-        self.analyses.NMR = AnalyseFlips('NMR')
+        self.analyses.NMR = AnalyseMultiStateReadout('NMR')
 
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
+        self.analyses.ESR.settings['labels'].connect(
+            self.analyses.NMR.settings['labels']
+        )
+        self.analyses.NMR.settings['labels'].connect(
+            self.analyses.ESR.settings['labels']
+        )
 
-        shots_per_frequency = self.analyses.ESR.settings["shots_per_frequency"]
-        shots_per_frequency.get_raw = partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
-        shots_per_frequency.get = shots_per_frequency._wrap_get(shots_per_frequency.get_raw)
-
-        num_frequencies = self.analyses.ESR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        num_frequencies = self.analyses.NMR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        samples = self.analyses.ESR.settings["samples"]
-        samples.get_raw = lambda: self.samples
-        samples.get = samples._wrap_get(samples.get_raw)
+        self.analyses.ESR.settings["shots_per_frequency"].define_get(
+            partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
+        )
+        self.analyses.ESR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.NMR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.ESR.settings["samples"].define_get(
+            lambda: self.samples
+        )
 
         super().__init__(name=name, **kwargs)
 
@@ -412,10 +412,10 @@ class NMRParameterComposite(AcquisitionParameterComposite):
             traces=traces.ESR, plot=plot
         )
 
-        up_proportions_arrs = [
+        up_proportions_arrs = np.array([
             val for key, val in self.results['ESR'].items()
             if key.startswith('up_proportion')
-        ]
+        ])
 
         self.results["NMR"] = self.analyses.NMR.analyse(
             up_proportions_arrs=up_proportions_arrs

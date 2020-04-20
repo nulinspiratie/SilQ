@@ -1671,7 +1671,7 @@ class NMRParameter(AcquisitionParameter):
     ``up_proportion`` is measured. By looking over successive samples and
     measuring how often the ``up_proportions`` switch between above/below
     ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
-    (see `NMRParameter.analyse` and `analyse_flips`).
+    (see `NMRParameter.analyse` and `analyse_flips_old`).
 
     Args:
         name: Parameter name
@@ -1868,7 +1868,7 @@ class NMRParameter(AcquisitionParameter):
             :up_proportions_{idx} (np.ndarray): Up proportions, the
               dimensionality being equal to ``NMRParameter.samples``.
               ``{idx}`` is replaced with the zero-based ESR frequency index.
-            :Results from `analyse_flips`. These are:
+            :Results from `analyse_flips_old`. These are:
 
               - flips_{idx},
               - flip_probability_{idx}
@@ -1933,9 +1933,9 @@ class NMRParameter(AcquisitionParameter):
             else:
                 results['up_proportions'] = up_proportions[f_idx]
 
-        # Add singleton dimension because analyse_flips handles 3D up_proportions
+        # Add singleton dimension because analyse_flips_old handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
-        results_flips = analysis.analyse_flips(
+        results_flips = analysis.analyse_flips_old(
             up_proportions_arrs=up_proportions,
             threshold_up_proportion=self.threshold_up_proportion)
         # Add results, only choosing first element so its no longer an array

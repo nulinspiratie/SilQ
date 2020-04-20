@@ -16,16 +16,28 @@ from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
-__all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
-           'count_blips', 'analyse_traces', 'analyse_EPR', 'analyse_flips',
-           'Analysis', 'AnalyseEPR', 'AnalyseElectronReadout', 'AnalyseFlips']
+__all__ = [
+    "find_high_low",
+    "edge_voltage",
+    "find_up_proportion",
+    "count_blips",
+    "analyse_traces",
+    "analyse_EPR",
+    "determine_threshold_up_proportion",
+    "analyse_flips",
+    "Analysis",
+    "AnalyseEPR",
+    "AnalyseElectronReadout",
+    "AnalyseMultiStateReadout",
+]
 
 logger = logging.getLogger(__name__)
 
 from silq import config
-if 'analysis' not in config:
-    config['analysis'] = {}
-analysis_config = config['analysis']
+
+if "analysis" not in config:
+    config["analysis"] = {}
+analysis_config = config["analysis"]
 
 
 class Analysis(ParameterNode):
@@ -58,20 +70,24 @@ class Analysis(ParameterNode):
 
     @property_ignore_setter
     def shapes(self):
-        return tuple([getattr(parameter, 'shape', ()) for parameter in self.result_parameters])
+        return tuple(
+            [getattr(parameter, "shape", ()) for parameter in self.result_parameters]
+        )
 
     def analyse(self, **kwargs):
         raise NotImplementedError("Analysis must be implemented in a subclass")
 
 
-def find_high_low(traces: np.ndarray,
-                  plot: bool = False,
-                  threshold_peak: float = 0.02,
-                  attempts: int = 8,
-                  threshold_method: str = 'config',
-                  min_voltage_difference: Union[float, str] = 'config',
-                  threshold_requires_high_low: Union[bool, str] = 'config',
-                  min_SNR: Union[float, None] = None):
+def find_high_low(
+    traces: np.ndarray,
+    plot: bool = False,
+    threshold_peak: float = 0.02,
+    attempts: int = 8,
+    threshold_method: str = "config",
+    min_voltage_difference: Union[float, str] = "config",
+    threshold_requires_high_low: Union[bool, str] = "config",
+    min_SNR: Union[float, None] = None,
+):
     """ Find high and low voltages of traces using histograms
 
     This function determines the high and low voltages of traces by binning them
@@ -134,19 +150,21 @@ def find_high_low(traces: np.ndarray,
     """
     if attempts < 1:
         raise ValueError(
-            f'Attempts {attempts} to find high and low voltage must be at least 1'
+            f"Attempts {attempts} to find high and low voltage must be at least 1"
         )
 
     # Retrieve properties from config.analysis
-    analysis_config = config.get('analysis', {})
-    if threshold_method == 'config':
-        threshold_method = analysis_config.get('threshold_method', 'mean')
-    if min_voltage_difference == 'config':
-        min_voltage_difference = analysis_config.get('min_voltage_difference', 0.3)
-    if threshold_requires_high_low == 'config':
-        threshold_requires_high_low = analysis_config.get('threshold_requires_high_low', True)
+    analysis_config = config.get("analysis", {})
+    if threshold_method == "config":
+        threshold_method = analysis_config.get("threshold_method", "mean")
+    if min_voltage_difference == "config":
+        min_voltage_difference = analysis_config.get("min_voltage_difference", 0.3)
+    if threshold_requires_high_low == "config":
+        threshold_requires_high_low = analysis_config.get(
+            "threshold_requires_high_low", True
+        )
     if min_SNR is None:
-        min_SNR = analysis_config.get('min_SNR', None)
+        min_SNR = analysis_config.get("min_SNR", None)
 
     # Calculate DC (mean) voltage
     DC_voltage = np.mean(traces)
@@ -163,8 +181,9 @@ def find_high_low(traces: np.ndarray,
 
     # Find two peaks by changing the threshold dependent on the number of peaks foudn
     for k in range(attempts):
-        peaks_idx = np.sort(peakutils.indexes(hist, thres=threshold_peak,
-                                              min_dist=min_dist))
+        peaks_idx = np.sort(
+            peakutils.indexes(hist, thres=threshold_peak, min_dist=min_dist)
+        )
         if len(peaks_idx) == 2:
             break
         elif len(peaks_idx) == 1:
@@ -176,19 +195,19 @@ def find_high_low(traces: np.ndarray,
             threshold_peak *= 1.5
     else:  # Could not identify two peaks after all attempts
         results = {
-            'low': None,
-            'high': None,
-            'threshold_voltage': None,
-            'voltage_difference': None,
-            'DC_voltage': DC_voltage
+            "low": None,
+            "high": None,
+            "threshold_voltage": None,
+            "voltage_difference": None,
+            "DC_voltage": DC_voltage,
         }
 
-        if not threshold_requires_high_low and threshold_method != 'mean':
+        if not threshold_requires_high_low and threshold_method != "mean":
             # Still return threshold voltage even though no two peaks were observed
             # Use {factor}*std_low/high to determine threshold voltage
-            factor = float(threshold_method.split('*')[0])
+            factor = float(threshold_method.split("*")[0])
             voltages = sorted(traces.flatten())
-            if threshold_method.endswith('std_low'):
+            if threshold_method.endswith("std_low"):
                 # Remove top 20 percent (high voltage)
                 cutoff_slice = slice(None, int(0.8 * len(voltages)))
             else:
@@ -199,7 +218,7 @@ def find_high_low(traces: np.ndarray,
             voltage_mean = np.mean(voltages_cutoff)
             voltage_std = np.std(voltages_cutoff)
             threshold_voltage = voltage_mean + factor * voltage_std
-            results['threshold_voltage'] = threshold_voltage
+            results["threshold_voltage"] = threshold_voltage
 
         return results
 
@@ -211,31 +230,31 @@ def find_high_low(traces: np.ndarray,
 
     # Create dictionaries containing information about the low, high state
     low, high = {}, {}
-    low['traces'] = traces[traces < mean_voltage]
-    high['traces'] = traces[traces > mean_voltage]
+    low["traces"] = traces[traces < mean_voltage]
+    high["traces"] = traces[traces > mean_voltage]
     for signal in [low, high]:
-        signal['mean'] = np.mean(signal['traces'])
-        signal['std'] = np.std(signal['traces'])
-    voltage_difference = (high['mean'] - low['mean'])
+        signal["mean"] = np.mean(signal["traces"])
+        signal["std"] = np.std(signal["traces"])
+    voltage_difference = high["mean"] - low["mean"]
 
-    if threshold_method == 'mean':
+    if threshold_method == "mean":
         # Threshold_method is midway between low and high mean
-        threshold_voltage = (high['mean'] + low['mean']) / 2
-    elif threshold_method.endswith('std_low'):
+        threshold_voltage = (high["mean"] + low["mean"]) / 2
+    elif threshold_method.endswith("std_low"):
         # Threshold_method is {factor} standard deviations above low mean
-        factor = float(threshold_method.split('*')[0])
-        threshold_voltage = low['mean'] + factor * low['std']
-    elif threshold_method.endswith('std_high'):
+        factor = float(threshold_method.split("*")[0])
+        threshold_voltage = low["mean"] + factor * low["std"]
+    elif threshold_method.endswith("std_high"):
         # Threshold_method is {factor} standard deviations below high mean
-        factor = float(threshold_method.split('*')[0])
-        threshold_voltage = high['mean'] - factor * high['std']
+        factor = float(threshold_method.split("*")[0])
+        threshold_voltage = high["mean"] - factor * high["std"]
     else:
-        raise RuntimeError(f'Threshold method {threshold_method} not understood')
+        raise RuntimeError(f"Threshold method {threshold_method} not understood")
 
-    SNR = voltage_difference / np.sqrt(high['std'] ** 2 + low['std'] ** 2)
+    SNR = voltage_difference / np.sqrt(high["std"] ** 2 + low["std"] ** 2)
 
     if min_SNR is not None and SNR < min_SNR:
-        logger.info(f'Signal to noise ratio {SNR} is too low')
+        logger.info(f"Signal to noise ratio {SNR} is too low")
         threshold_voltage = None
 
     # Plotting
@@ -245,25 +264,29 @@ def find_high_low(traces: np.ndarray,
         else:
             plt.sca(plot)
         for k, signal in enumerate([low, high]):
-            sub_hist, sub_bin_edges = np.histogram(np.ravel(signal['traces']), bins=10)
-            plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color='bg'[k])
+            sub_hist, sub_bin_edges = np.histogram(np.ravel(signal["traces"]), bins=10)
+            plt.bar(sub_bin_edges[:-1], sub_hist, width=0.05, color="bg"[k])
             if k < len(peaks_idx):
-                plt.plot(signal['mean'], hist[peaks_idx[k]], 'or', ms=12)
+                plt.plot(signal["mean"], hist[peaks_idx[k]], "or", ms=12)
 
-    return {'low': low,
-            'high': high,
-            'threshold_voltage': threshold_voltage,
-            'voltage_difference': voltage_difference,
-            'SNR': SNR,
-            'DC_voltage': DC_voltage}
+    return {
+        "low": low,
+        "high": high,
+        "threshold_voltage": threshold_voltage,
+        "voltage_difference": voltage_difference,
+        "SNR": SNR,
+        "DC_voltage": DC_voltage,
+    }
 
 
-def edge_voltage(traces: np.ndarray,
-                 edge: str,
-                 state: str,
-                 threshold_voltage: Union[float, None] = None,
-                 points: int = 5,
-                 start_idx: int = 0) -> np.ndarray:
+def edge_voltage(
+    traces: np.ndarray,
+    edge: str,
+    state: str,
+    threshold_voltage: Union[float, None] = None,
+    points: int = 5,
+    start_idx: int = 0,
+) -> np.ndarray:
     """ Test traces for having a high/low voltage at begin/end
 
     Args:
@@ -280,10 +303,10 @@ def edge_voltage(traces: np.ndarray,
     Returns:
         1D boolean array, True if the trace has the correct state at the edge
     """
-    assert edge in ['begin', 'end'], f'Edge {edge} must be `begin` or `end`'
-    assert state in ['low', 'high'], f'State {state} must be `low` or `high`'
+    assert edge in ["begin", "end"], f"Edge {edge} must be `begin` or `end`"
+    assert state in ["low", "high"], f"State {state} must be `low` or `high`"
 
-    if edge == 'begin':
+    if edge == "begin":
         if start_idx > 0:
             idx_list = slice(start_idx, start_idx + points)
         else:
@@ -293,25 +316,25 @@ def edge_voltage(traces: np.ndarray,
 
     # Determine threshold voltage if not provided
     if threshold_voltage is None:
-        threshold_voltage = find_high_low(traces)['threshold_voltage']
+        threshold_voltage = find_high_low(traces)["threshold_voltage"]
 
     if threshold_voltage is None:
         # print('Could not find two peaks for empty and load state')
         success = np.array([False] * len(traces))
-    elif state == 'low':
-        success = [np.mean(trace[idx_list]) < threshold_voltage
-                   for trace in traces]
+    elif state == "low":
+        success = [np.mean(trace[idx_list]) < threshold_voltage for trace in traces]
     else:
-        success = [np.mean(trace[idx_list]) > threshold_voltage
-                   for trace in traces]
+        success = [np.mean(trace[idx_list]) > threshold_voltage for trace in traces]
     return np.array(success)
 
 
-def find_up_proportion(traces: np.ndarray,
-                       threshold_voltage: Union[float, None] = None,
-                       return_array: bool = False,
-                       start_idx: int = 0,
-                       filter_window: int = 0) -> Union[float, np.ndarray]:
+def find_up_proportion(
+    traces: np.ndarray,
+    threshold_voltage: Union[float, None] = None,
+    return_array: bool = False,
+    start_idx: int = 0,
+    filter_window: int = 0,
+) -> Union[float, np.ndarray]:
     """ Determine the up proportion of traces (traces that have blips)
 
     Args:
@@ -335,19 +358,21 @@ def find_up_proportion(traces: np.ndarray,
     # trace has to contain read stage only
     # TODO Change start point to start time (sampling rate independent)
     if threshold_voltage is None:
-        threshold_voltage = find_high_low(traces)['threshold_voltage']
+        threshold_voltage = find_high_low(traces)["threshold_voltage"]
 
     if threshold_voltage is None:
         return 0
 
     if filter_window > 0:
-        traces = [np.convolve(trace, np.ones(filter_window) / filter_window,
-                              mode='valid')
-                  for trace in traces]
+        traces = [
+            np.convolve(trace, np.ones(filter_window) / filter_window, mode="valid")
+            for trace in traces
+        ]
 
     # Filter out the traces that contain one or more peaks
-    traces_up_electron = np.array([np.any(trace[start_idx:] > threshold_voltage)
-                                   for trace in traces])
+    traces_up_electron = np.array(
+        [np.any(trace[start_idx:] > threshold_voltage) for trace in traces]
+    )
 
     if not return_array:
         return sum(traces_up_electron) / len(traces)
@@ -355,11 +380,13 @@ def find_up_proportion(traces: np.ndarray,
         return traces_up_electron
 
 
-def count_blips(traces: np.ndarray,
-                threshold_voltage: float,
-                sample_rate: float,
-                t_skip: float,
-                ignore_final: bool = False):
+def count_blips(
+    traces: np.ndarray,
+    threshold_voltage: float,
+    sample_rate: float,
+    t_skip: float,
+    ignore_final: bool = False,
+):
     """ Count number of blips and durations in high/low state.
 
     Args:
@@ -397,7 +424,9 @@ def count_blips(traces: np.ndarray,
                 next_idx = len(trace) - idx
                 blip_list.append(next_idx)
                 if not ignore_final:
-                    blip_events[k].append((int(trace[idx] >= threshold_voltage), next_idx))
+                    blip_events[k].append(
+                        (int(trace[idx] >= threshold_voltage), next_idx)
+                    )
                 break
             else:
                 blip_list.append(next_idx)
@@ -407,34 +436,40 @@ def count_blips(traces: np.ndarray,
     low_blip_durations = np.array(low_blip_pts) / sample_rate
     high_blip_durations = np.array(high_blip_pts) / sample_rate
 
-    mean_low_blip_duration = np.NaN if not len(low_blip_durations) \
-        else np.mean(low_blip_durations)
-    mean_high_blip_duration = np.NaN if not len(high_blip_durations) \
-        else np.mean(high_blip_durations)
+    mean_low_blip_duration = (
+        np.NaN if not len(low_blip_durations) else np.mean(low_blip_durations)
+    )
+    mean_high_blip_duration = (
+        np.NaN if not len(high_blip_durations) else np.mean(high_blip_durations)
+    )
 
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
-    return {'blips': blips,
-            'blip_events': blip_events,
-            'blips_per_second': blips / duration,
-            'low_blip_durations': low_blip_durations,
-            'high_blip_durations': high_blip_durations,
-            'mean_low_blip_duration': mean_low_blip_duration,
-            'mean_high_blip_duration': mean_high_blip_duration}
+    return {
+        "blips": blips,
+        "blip_events": blip_events,
+        "blips_per_second": blips / duration,
+        "low_blip_durations": low_blip_durations,
+        "high_blip_durations": high_blip_durations,
+        "mean_low_blip_duration": mean_low_blip_duration,
+        "mean_high_blip_duration": mean_high_blip_duration,
+    }
 
 
-def analyse_traces(traces: np.ndarray,
-                   sample_rate: float,
-                   filter: Union[str, None] = None,
-                   min_filter_proportion: float = 0.5,
-                   t_skip: float = 0,
-                   t_read: Union[float, None] = None,
-                   segment: str = 'begin',
-                   threshold_voltage: Union[float, None] = None,
-                   threshold_method: str = 'config',
-                   plot: Union[bool, Axis] = False,
-                   plot_high_low: Union[bool, Axis] = False):
+def analyse_traces(
+    traces: np.ndarray,
+    sample_rate: float,
+    filter: Union[str, None] = None,
+    min_filter_proportion: float = 0.5,
+    t_skip: float = 0,
+    t_read: Union[float, None] = None,
+    segment: str = "begin",
+    threshold_voltage: Union[float, None] = None,
+    threshold_method: str = "config",
+    plot: Union[bool, Axis] = False,
+    plot_high_low: Union[bool, Axis] = False,
+):
     """ Analyse voltage, up proportions, and blips of acquisition traces
 
     Args:
@@ -495,24 +530,24 @@ def analyse_traces(traces: np.ndarray,
             the results ``up_proportion``, ``end_low``, ``end_high`` are set to an
             initial value
     """
-    assert filter in [None, 'low',
-                      'high'], 'filter must be None, `low`, or `high`'
+    assert filter in [None, "low", "high"], "filter must be None, `low`, or `high`"
 
-    assert segment in ['begin',
-                       'end'], 'segment must be either `begin` or `end`'
+    assert segment in ["begin", "end"], "segment must be either `begin` or `end`"
 
     # Initialize all results to None
-    results = {'up_proportion': 0,
-               'end_high': 0,
-               'end_low': 0,
-               'num_traces': 0,
-               'filtered_traces_idx': None,
-               'voltage_difference': None,
-               'average_voltage': np.mean(traces),
-               'threshold_voltage': None,
-               'blips': None,
-               'mean_low_blip_duration': None,
-               'mean_high_blip_duration': None}
+    results = {
+        "up_proportion": 0,
+        "end_high": 0,
+        "end_low": 0,
+        "num_traces": 0,
+        "filtered_traces_idx": None,
+        "voltage_difference": None,
+        "average_voltage": np.mean(traces),
+        "threshold_voltage": None,
+        "blips": None,
+        "mean_low_blip_duration": None,
+        "mean_high_blip_duration": None,
+    }
 
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = round(t_skip * sample_rate)
@@ -521,13 +556,12 @@ def analyse_traces(traces: np.ndarray,
         ax = MatPlot()[0] if plot is True else plot
         t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0]))
         print(ax.get_xlim())
-        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float),
-               cmap='seismic')
+        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float), cmap="seismic")
         print(ax.get_xlim())
         # Modify x-limits to add blips information
         xlim = ax.get_xlim()
         xpadding = 0.05 * (xlim[1] - xlim[0])
-        if segment == 'begin':
+        if segment == "begin":
             xpadding_range = [-xpadding + xlim[0], xlim[0]]
             ax.set_xlim(-xpadding + xlim[0], xlim[1])
         else:
@@ -536,26 +570,29 @@ def analyse_traces(traces: np.ndarray,
 
     if threshold_voltage is None:  # Calculate threshold voltage if not provided
         # Histogram trace voltages to find two peaks corresponding to high and low
-        high_low_results = find_high_low(traces[:, start_idx:],
-                                         threshold_method=threshold_method,
-                                         plot=plot_high_low)
-        results['high_low_results'] = high_low_results
-        results['voltage_difference'] = high_low_results['voltage_difference']
+        high_low_results = find_high_low(
+            traces[:, start_idx:], threshold_method=threshold_method, plot=plot_high_low
+        )
+        results["high_low_results"] = high_low_results
+        results["voltage_difference"] = high_low_results["voltage_difference"]
         # Use threshold voltage from high_low_results
-        threshold_voltage = high_low_results['threshold_voltage']
+        threshold_voltage = high_low_results["threshold_voltage"]
 
-        results['threshold_voltage'] = threshold_voltage
+        results["threshold_voltage"] = threshold_voltage
 
         if threshold_voltage is None:
-            logger.debug('Could not determine threshold voltage')
+            logger.debug("Could not determine threshold voltage")
             if plot is not False:
-                ax.text(np.mean(xlim), len(traces) + 0.5,
-                        'Unknown threshold voltage',
-                        horizontalalignment='center')
+                ax.text(
+                    np.mean(xlim),
+                    len(traces) + 0.5,
+                    "Unknown threshold voltage",
+                    horizontalalignment="center",
+                )
             return results
     else:
         # We don't know voltage difference since we skip a high_low measure.
-        results['voltage_difference'] = None
+        results["voltage_difference"] = None
 
     # Analyse blips (disabled because it's very slow)
     # blips_results = count_blips(traces=traces,
@@ -566,36 +603,51 @@ def analyse_traces(traces: np.ndarray,
     # results['mean_low_blip_duration'] = blips_results['mean_low_blip_duration']
     # results['mean_high_blip_duration'] = blips_results['mean_high_blip_duration']
 
-    if filter == 'low':  # Filter all traces that do not start with low voltage
-        filtered_traces_idx = edge_voltage(traces, edge='begin', state='low',
-                                           start_idx=start_idx,
-                                           threshold_voltage=threshold_voltage)
-    elif filter == 'high':  # Filter all traces that do not start with high voltage
-        filtered_traces_idx = edge_voltage(traces, edge='begin', state='high',
-                                           start_idx=start_idx,
-                                           threshold_voltage=threshold_voltage)
+    if filter == "low":  # Filter all traces that do not start with low voltage
+        filtered_traces_idx = edge_voltage(
+            traces,
+            edge="begin",
+            state="low",
+            start_idx=start_idx,
+            threshold_voltage=threshold_voltage,
+        )
+    elif filter == "high":  # Filter all traces that do not start with high voltage
+        filtered_traces_idx = edge_voltage(
+            traces,
+            edge="begin",
+            state="high",
+            start_idx=start_idx,
+            threshold_voltage=threshold_voltage,
+        )
     else:  # Do not filter traces
         filtered_traces_idx = np.ones(len(traces), dtype=bool)
 
-    results['filtered_traces_idx'] = filtered_traces_idx
+    results["filtered_traces_idx"] = filtered_traces_idx
     filtered_traces = traces[filtered_traces_idx]
-    results['num_traces'] = len(filtered_traces)
+    results["num_traces"] = len(filtered_traces)
 
     if len(filtered_traces) / len(traces) < min_filter_proportion:
-        logger.debug(f'Not enough traces start {filter}')
+        logger.debug(f"Not enough traces start {filter}")
 
         if plot is not False:
-            ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
-                          filtered_traces.reshape(1, -1), cmap='RdYlGn')
-            ax.text(np.mean(xlim), len(traces) + 0.5,
-                    f'filtered traces: {len(filtered_traces)} / {len(traces)} = '
-                    f'{len(filtered_traces) / len(traces):.2f} < {min_filter_proportion}',
-                    horizontalalignment='center')
+            ax.pcolormesh(
+                xpadding_range,
+                np.arange(len(traces) + 1) - 0.5,
+                filtered_traces.reshape(1, -1),
+                cmap="RdYlGn",
+            )
+            ax.text(
+                np.mean(xlim),
+                len(traces) + 0.5,
+                f"filtered traces: {len(filtered_traces)} / {len(traces)} = "
+                f"{len(filtered_traces) / len(traces):.2f} < {min_filter_proportion}",
+                horizontalalignment="center",
+            )
         return results
 
     if t_read is not None:  # Only use a time segment of each trace
         read_pts = int(round(t_read * sample_rate))
-        if segment == 'begin':
+        if segment == "begin":
             segmented_filtered_traces = filtered_traces[:, :read_pts]
         else:
             segmented_filtered_traces = filtered_traces[:, -read_pts:]
@@ -603,25 +655,31 @@ def analyse_traces(traces: np.ndarray,
         segmented_filtered_traces = filtered_traces
 
     # Calculate up proportion of traces
-    up_proportion_idxs = find_up_proportion(segmented_filtered_traces,
-                                            start_idx=start_idx,
-                                            threshold_voltage=threshold_voltage,
-                                            return_array=True)
-    results['up_proportion'] = sum(up_proportion_idxs) / len(traces)
+    up_proportion_idxs = find_up_proportion(
+        segmented_filtered_traces,
+        start_idx=start_idx,
+        threshold_voltage=threshold_voltage,
+        return_array=True,
+    )
+    results["up_proportion"] = sum(up_proportion_idxs) / len(traces)
 
     # Calculate ratio of traces that end up with low voltage
-    idx_end_low = edge_voltage(segmented_filtered_traces,
-                               edge='end',
-                               state='low',
-                               threshold_voltage=threshold_voltage)
-    results['end_low'] = np.sum(idx_end_low) / len(segmented_filtered_traces)
+    idx_end_low = edge_voltage(
+        segmented_filtered_traces,
+        edge="end",
+        state="low",
+        threshold_voltage=threshold_voltage,
+    )
+    results["end_low"] = np.sum(idx_end_low) / len(segmented_filtered_traces)
 
     # Calculate ratio of traces that end up with high voltage
-    idx_end_high = edge_voltage(segmented_filtered_traces,
-                                edge='end',
-                                state='high',
-                                threshold_voltage=threshold_voltage)
-    results['end_high'] = np.sum(idx_end_high) / len(segmented_filtered_traces)
+    idx_end_high = edge_voltage(
+        segmented_filtered_traces,
+        edge="end",
+        state="high",
+        threshold_voltage=threshold_voltage,
+    )
+    results["end_high"] = np.sum(idx_end_high) / len(segmented_filtered_traces)
 
     if plot is not False:
         # Plot information on up proportion
@@ -629,31 +687,46 @@ def analyse_traces(traces: np.ndarray,
         up_proportion_arr[~filtered_traces_idx] = 0
         up_proportion_arr = up_proportion_arr.reshape(-1, 1)  # Make array 2D
 
-        mesh = ax.pcolormesh(xpadding_range, np.arange(len(traces) + 1) - 0.5,
-                             up_proportion_arr, cmap='RdYlGn')
+        mesh = ax.pcolormesh(
+            xpadding_range,
+            np.arange(len(traces) + 1) - 0.5,
+            up_proportion_arr,
+            cmap="RdYlGn",
+        )
         mesh.set_clim(-1, 1)
 
         # Add vertical line for t_read
-        ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle='--',
-                  color='orange')
-        ax.text(t_read, len(traces) + 0.5, f't_read={t_read*1e3} ms',
-                horizontalalignment='center', verticalalignment='bottom')
-        ax.text(t_skip, len(traces) + 0.5, f't_skip={t_skip*1e3} ms',
-                horizontalalignment='center', verticalalignment='bottom')
+        ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
+        ax.text(
+            t_read,
+            len(traces) + 0.5,
+            f"t_read={t_read*1e3} ms",
+            horizontalalignment="center",
+            verticalalignment="bottom",
+        )
+        ax.text(
+            t_skip,
+            len(traces) + 0.5,
+            f"t_skip={t_skip*1e3} ms",
+            horizontalalignment="center",
+            verticalalignment="bottom",
+        )
 
     return results
 
 
-def analyse_EPR(empty_traces: np.ndarray,
-                plunge_traces: np.ndarray,
-                read_traces: np.ndarray,
-                sample_rate: float,
-                t_skip: float,
-                t_read: float,
-                min_filter_proportion: float = 0.5,
-                threshold_voltage: Union[float, None] = None,
-                filter_traces=True,
-                plot: bool = False):
+def analyse_EPR(
+    empty_traces: np.ndarray,
+    plunge_traces: np.ndarray,
+    read_traces: np.ndarray,
+    sample_rate: float,
+    t_skip: float,
+    t_read: float,
+    min_filter_proportion: float = 0.5,
+    threshold_voltage: Union[float, None] = None,
+    filter_traces=True,
+    plot: bool = False,
+):
     """ Analyse an empty-plunge-read sequence
 
     Args:
@@ -695,119 +768,144 @@ def analyse_EPR(empty_traces: np.ndarray,
     """
     if plot is True:
         plot = MatPlot(subplots=3)
-        plot[0].set_title('Empty')
-        plot[1].set_title('Plunge')
-        plot[2].set_title('Read long')
+        plot[0].set_title("Empty")
+        plot[1].set_title("Plunge")
+        plot[2].set_title("Read long")
     elif plot is False:
         plot = [False] * 3
 
     # Analyse empty stage
-    results_empty = analyse_traces(traces=empty_traces,
-                                   sample_rate=sample_rate,
-                                   filter='low' if filter_traces else None,
-                                   min_filter_proportion=min_filter_proportion,
-                                   threshold_voltage=threshold_voltage,
-                                   t_skip=t_skip,
-                                   plot=plot[0])
+    results_empty = analyse_traces(
+        traces=empty_traces,
+        sample_rate=sample_rate,
+        filter="low" if filter_traces else None,
+        min_filter_proportion=min_filter_proportion,
+        threshold_voltage=threshold_voltage,
+        t_skip=t_skip,
+        plot=plot[0],
+    )
 
     # Analyse plunge stage
-    results_load = analyse_traces(traces=plunge_traces,
-                                  sample_rate=sample_rate,
-                                  filter='high' if filter_traces else None,
-                                  min_filter_proportion=min_filter_proportion,
-                                  threshold_voltage=threshold_voltage,
-                                  t_skip=t_skip,
-                                  plot=plot[1])
+    results_load = analyse_traces(
+        traces=plunge_traces,
+        sample_rate=sample_rate,
+        filter="high" if filter_traces else None,
+        min_filter_proportion=min_filter_proportion,
+        threshold_voltage=threshold_voltage,
+        t_skip=t_skip,
+        plot=plot[1],
+    )
 
     # Analyse read stage
-    results_read = analyse_traces(traces=read_traces,
-                                  sample_rate=sample_rate,
-                                  filter='low' if filter_traces else None,
-                                  min_filter_proportion=min_filter_proportion,
-                                  threshold_voltage=threshold_voltage,
-                                  t_skip=t_skip)
-    results_read_begin = analyse_traces(traces=read_traces,
-                                        sample_rate=sample_rate,
-                                        filter='low' if filter_traces else None,
-                                        min_filter_proportion=min_filter_proportion,
-                                        threshold_voltage=threshold_voltage,
-                                        t_read=t_read,
-                                        segment='begin',
-                                        t_skip=t_skip,
-                                        plot=plot[2])
-    results_read_end = analyse_traces(traces=read_traces,
-                                      sample_rate=sample_rate,
-                                      t_read=t_read,
-                                      threshold_voltage=threshold_voltage,
-                                      segment='end',
-                                      t_skip=t_skip,
-                                      plot=plot[2])
+    results_read = analyse_traces(
+        traces=read_traces,
+        sample_rate=sample_rate,
+        filter="low" if filter_traces else None,
+        min_filter_proportion=min_filter_proportion,
+        threshold_voltage=threshold_voltage,
+        t_skip=t_skip,
+    )
+    results_read_begin = analyse_traces(
+        traces=read_traces,
+        sample_rate=sample_rate,
+        filter="low" if filter_traces else None,
+        min_filter_proportion=min_filter_proportion,
+        threshold_voltage=threshold_voltage,
+        t_read=t_read,
+        segment="begin",
+        t_skip=t_skip,
+        plot=plot[2],
+    )
+    results_read_end = analyse_traces(
+        traces=read_traces,
+        sample_rate=sample_rate,
+        t_read=t_read,
+        threshold_voltage=threshold_voltage,
+        segment="end",
+        t_skip=t_skip,
+        plot=plot[2],
+    )
 
-    return {'fidelity_empty': results_empty['end_high'],
-            'voltage_difference_empty': results_empty['voltage_difference'],
-
-            'fidelity_load': results_load['end_low'],
-            'voltage_difference_load': results_load['voltage_difference'],
-
-            'up_proportion': results_read_begin['up_proportion'],
-            'contrast': (results_read_begin['up_proportion'] -
-                         results_read_end['up_proportion']),
-            'dark_counts': results_read_end['up_proportion'],
-
-            'voltage_difference_read': results_read['voltage_difference'],
-            'voltage_average_read': results_read['average_voltage'],
-            'num_traces': results_read['num_traces'],
-            'filtered_traces_idx': results_read['filtered_traces_idx'],
-            'blips': results_read['blips'],
-            'mean_low_blip_duration': results_read['mean_low_blip_duration'],
-            'mean_high_blip_duration': results_read['mean_high_blip_duration']}
+    return {
+        "fidelity_empty": results_empty["end_high"],
+        "voltage_difference_empty": results_empty["voltage_difference"],
+        "fidelity_load": results_load["end_low"],
+        "voltage_difference_load": results_load["voltage_difference"],
+        "up_proportion": results_read_begin["up_proportion"],
+        "contrast": (
+            results_read_begin["up_proportion"] - results_read_end["up_proportion"]
+        ),
+        "dark_counts": results_read_end["up_proportion"],
+        "voltage_difference_read": results_read["voltage_difference"],
+        "voltage_average_read": results_read["average_voltage"],
+        "num_traces": results_read["num_traces"],
+        "filtered_traces_idx": results_read["filtered_traces_idx"],
+        "blips": results_read["blips"],
+        "mean_low_blip_duration": results_read["mean_low_blip_duration"],
+        "mean_high_blip_duration": results_read["mean_high_blip_duration"],
+    }
 
 
 class AnalyseEPR(Analysis):
     def __init__(self, name):
         super().__init__(name=name)
-        self.settings.sample_rate = Parameter(
-            set_cmd=None
-        )
+        self.settings.sample_rate = Parameter(set_cmd=None)
         self.settings.t_skip = Parameter(
-            initial_value=4e-5, set_cmd=None,
-            config_link='properties.t_skip',
-            update_from_config=True
+            initial_value=4e-5,
+            set_cmd=None,
+            config_link="properties.t_skip",
+            update_from_config=True,
         )
         self.settings.t_read = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='properties.t_read',
-            update_from_config=True
+            initial_value=None,
+            set_cmd=None,
+            config_link="properties.t_read",
+            update_from_config=True,
         )
         self.settings.min_filter_proportion = Parameter(
-            initial_value=0.5, set_cmd=None,
-            config_link='analysis.min_filter_proportion',
-            update_from_config=True
+            initial_value=0.5,
+            set_cmd=None,
+            config_link="analysis.min_filter_proportion",
+            update_from_config=True,
         )
         self.settings.threshold_voltage = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='analysis.threshold_voltage',
-            update_from_config=True
+            initial_value=None,
+            set_cmd=None,
+            config_link="analysis.threshold_voltage",
+            update_from_config=True,
         )
         self.settings.filter_traces = Parameter(
-            initial_value=True, set_cmd=None,
-            config_link='analysis.filter_traces',
-            update_from_config=True
+            initial_value=True,
+            set_cmd=None,
+            config_link="analysis.filter_traces",
+            update_from_config=True,
         )
 
         self.outputs.fidelity_empty = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.voltage_difference_empty = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.voltage_difference_empty = Parameter(
+            initial_value=False, unit="V", set_cmd=None
+        )
         self.outputs.fidelity_load = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.voltage_difference_load = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.voltage_difference_load = Parameter(
+            initial_value=False, unit="V", set_cmd=None
+        )
         self.outputs.up_proportion = Parameter(initial_value=True, set_cmd=None)
         self.outputs.contrast = Parameter(initial_value=True, set_cmd=None)
         self.outputs.dark_counts = Parameter(initial_value=True, set_cmd=None)
-        self.outputs.voltage_difference_read = Parameter(initial_value=True, unit='V', set_cmd=None)
-        self.outputs.voltage_average_read = Parameter(initial_value=False, unit='V', set_cmd=None)
+        self.outputs.voltage_difference_read = Parameter(
+            initial_value=True, unit="V", set_cmd=None
+        )
+        self.outputs.voltage_average_read = Parameter(
+            initial_value=False, unit="V", set_cmd=None
+        )
         self.outputs.num_traces = Parameter(initial_value=False, set_cmd=None)
         self.outputs.blips = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.mean_low_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
-        self.outputs.mean_high_blip_duration = Parameter(initial_value=False, unit='s', set_cmd=None)
+        self.outputs.mean_low_blip_duration = Parameter(
+            initial_value=False, unit="s", set_cmd=None
+        )
+        self.outputs.mean_high_blip_duration = Parameter(
+            initial_value=False, unit="s", set_cmd=None
+        )
 
     @functools.wraps(analyse_EPR)
     def analyse(self, **kwargs):
@@ -818,42 +916,41 @@ class AnalyseEPR(Analysis):
 
 
 def analyse_electron_readout(
-        traces: dict,
-        sample_rate: float,
-        shots_per_frequency: int = 1,
-        labels: List[str] = None,
-        t_skip: float = 0,
-        t_read: Union[float, None] = None,
-        threshold_voltage: Union[float, None] = None,
-        threshold_method: str = 'config',
-        min_filter_proportion: float = 0.5,
-        dark_counts: float = None,
-        plot: Union[bool, Axis] = False,
-        plot_high_low: Union[bool, Axis] = False
+    traces: dict,
+    sample_rate: float,
+    shots_per_frequency: int = 1,
+    labels: List[str] = None,
+    t_skip: float = 0,
+    t_read: Union[float, None] = None,
+    threshold_voltage: Union[float, None] = None,
+    threshold_method: str = "config",
+    min_filter_proportion: float = 0.5,
+    dark_counts: float = None,
+    plot: Union[bool, Axis] = False,
+    plot_high_low: Union[bool, Axis] = False,
 ):
     if len(traces) % shots_per_frequency:
         raise RuntimeError(
-            'Number of electron readout traces is not a multiple of shots_per_frequency'
+            "Number of electron readout traces is not a multiple of shots_per_frequency"
         )
     num_frequencies = int(len(traces) / shots_per_frequency)
 
-    results = {'read_results': [[] for _ in range(num_frequencies)]}
+    results = {"read_results": [[] for _ in range(num_frequencies)]}
 
     # Extract samples and points per shot
     first_trace = next(iter(traces.values()))
     if isinstance(first_trace, dict):
         # All trace values are dictinoaries for each channel, select output channel
-        traces = {key: trace_arr['output'] for key, trace_arr in traces.items()}
-        first_trace = first_trace['output']
+        traces = {key: trace_arr["output"] for key, trace_arr in traces.items()}
+        first_trace = first_trace["output"]
     samples, points_per_shot = first_trace.shape
 
     if threshold_voltage is None:
         # Calculate threshold voltages from combined read traces
         high_low = find_high_low(
-            np.ravel([trace for trace in traces.values()]),
-            plot=plot_high_low
+            np.ravel([trace for trace in traces.values()]), plot=plot_high_low
         )
-        threshold_voltage = results['threshold_voltage'] = high_low['threshold_voltage']
+        threshold_voltage = results["threshold_voltage"] = high_low["threshold_voltage"]
 
     if shots_per_frequency == 1:
         read_traces = [[traces_arr] for traces_arr in traces.values()]
@@ -883,23 +980,23 @@ def analyse_electron_readout(
                 threshold_voltage=threshold_voltage,
                 threshold_method=threshold_method,
                 min_filter_proportion=min_filter_proportion,
-                plot=plot
+                plot=plot,
             )
-            results['read_results'][f_idx].append(read_result)
+            results["read_results"][f_idx].append(read_result)
 
-            up_proportions[f_idx, sample_idx] = read_result['up_proportion']
-            num_traces[f_idx, sample_idx] = read_result['num_traces']
+            up_proportions[f_idx, sample_idx] = read_result["up_proportion"]
+            num_traces[f_idx, sample_idx] = read_result["num_traces"]
 
     # Add all up proportions as measurement results
     for k, up_proportion_arr in enumerate(up_proportions):
         # Determine the right up_proportion label
-        label = 'up_proportion' if shots_per_frequency == 1 else 'up_proportions'
+        label = "up_proportion" if shots_per_frequency == 1 else "up_proportions"
         if labels is not None:
-            suffix = f'_{labels[k]}'
+            suffix = f"_{labels[k]}"
         elif num_frequencies > 1:
             suffix = str(k)  # Note that we avoid an underscore
         else:
-            suffix = ''
+            suffix = ""
 
         if shots_per_frequency == 1:  # Remove outer dimension
             up_proportion_arr = up_proportion_arr[0]
@@ -907,78 +1004,81 @@ def analyse_electron_readout(
         results[label + suffix] = up_proportion_arr
 
         if dark_counts is not None:
-            results['contrast' + suffix] = up_proportion_arr - dark_counts
+            results["contrast" + suffix] = up_proportion_arr - dark_counts
 
-        results['num_traces' + suffix] = sum(num_traces[k])
+        results["num_traces" + suffix] = sum(num_traces[k])
 
         # Determine voltage difference
         voltage_differences = [
-            result['voltage_difference'] for results_list in results['read_results']
+            result["voltage_difference"]
+            for results_list in results["read_results"]
             for result in results_list
-            if result['voltage_difference'] is not None
+            if result["voltage_difference"] is not None
         ]
         if voltage_differences:
-            results['voltage_difference'] = np.mean(voltage_differences)
+            results["voltage_difference"] = np.mean(voltage_differences)
         else:
-            results['voltage_difference'] = np.nan
+            results["voltage_difference"] = np.nan
     return results
 
 
 class AnalyseElectronReadout(Analysis):
     def __init__(self, name):
         super().__init__(name=name)
-        self.settings.sample_rate = Parameter(
-            set_cmd=None
-        )
-        self.settings.num_frequencies = Parameter(
-            initial_value=1, set_cmd=None,
-        )
+        self.settings.sample_rate = Parameter(set_cmd=None)
+        self.settings.num_frequencies = Parameter(initial_value=1, set_cmd=None,)
         self.settings.samples = Parameter(
-            initial_value=1, set_cmd=None,
+            initial_value=1,
+            set_cmd=None,
             docstring=(
                 "Number of samples (pulse sequence repetitions). Only relevant "
                 "when shots_per_frequency > 1, in which case the shape of each "
                 "up_proportions is equal to the number of samples"
-            )  # TODO get rid of this parameter once the new Measurement is used
+            ),  # TODO get rid of this parameter once the new Measurement is used
         )
-        self.settings.shots_per_frequency = Parameter(
-            initial_value=1, set_cmd=None,
-        )
-        self.settings.labels = Parameter(
-            initial_value=None, set_cmd=None,
-        )
+        self.settings.shots_per_frequency = Parameter(initial_value=1, set_cmd=None,)
+        self.settings.labels = Parameter(initial_value=None, set_cmd=None,)
         self.settings.t_skip = Parameter(
-            initial_value=4e-5, set_cmd=None,
-            config_link='properties.t_skip',
-            update_from_config=True
+            initial_value=4e-5,
+            set_cmd=None,
+            config_link="properties.t_skip",
+            update_from_config=True,
         )
         self.settings.t_read = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='properties.t_read',
-            update_from_config=True
+            initial_value=None,
+            set_cmd=None,
+            config_link="properties.t_read",
+            update_from_config=True,
         )
         self.settings.threshold_voltage = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='analysis.threshold_voltage',
-            update_from_config=True
+            initial_value=None,
+            set_cmd=None,
+            config_link="analysis.threshold_voltage",
+            update_from_config=True,
         )
         self.settings.threshold_method = Parameter(
-            initial_value='mean', set_cmd=None,
-            config_link='analysis.threshold_method',
-            update_from_config=True
+            initial_value="mean",
+            set_cmd=None,
+            config_link="analysis.threshold_method",
+            update_from_config=True,
         )
         self.settings.min_filter_proportion = Parameter(
-            initial_value=0.5, set_cmd=None,
-            config_link='analysis.min_filter_proportion',
-            update_from_config=True
+            initial_value=0.5,
+            set_cmd=None,
+            config_link="analysis.min_filter_proportion",
+            update_from_config=True,
         )
 
         self.outputs.read_results = Parameter(initial_value=False, set_cmd=False)
         self.outputs.up_proportion = Parameter(initial_value=True, set_cmd=None)
         self.outputs.contrast = Parameter(initial_value=False, set_cmd=None)
         self.outputs.num_traces = Parameter(initial_value=True, set_cmd=None)
-        self.outputs.voltage_difference = Parameter(initial_value=True, unit='V', set_cmd=None)
-        self.outputs.threshold_voltage = Parameter(initial_value=True, unit='V', set_cmd=None)
+        self.outputs.voltage_difference = Parameter(
+            initial_value=True, unit="V", set_cmd=None
+        )
+        self.outputs.threshold_voltage = Parameter(
+            initial_value=True, unit="V", set_cmd=None
+        )
 
     @property
     def result_parameters(self):
@@ -987,22 +1087,25 @@ class AnalyseElectronReadout(Analysis):
             if not output():
                 continue
 
-            if name in ['up_proportion', 'contrast', 'num_traces']:
+            if name in ["up_proportion", "contrast", "num_traces"]:
                 # Add a label for each frequency
                 for k in range(self.settings.num_frequencies):
                     if self.settings.labels is not None:
-                        suffix = f'_{self.settings.labels[k]}'
+                        suffix = f"_{self.settings.labels[k]}"
                     elif self.settings.num_frequencies > 1:
                         suffix = str(k)  # Note that we avoid an underscore
                     else:
-                        suffix = ''
+                        suffix = ""
 
                     output_copy = copy(output)
                     output_copy.name = name + suffix
 
-                    if name == 'up_proportion' and self.settings.shots_per_frequency > 1:
-                        output_copy.name = 'up_proportions' + suffix
-                        output_copy.shape = (self.settings.samples, )
+                    if (
+                        name == "up_proportion"
+                        and self.settings.shots_per_frequency > 1
+                    ):
+                        output_copy.name = "up_proportions" + suffix
+                        output_copy.shape = (self.settings.samples,)
 
                     parameters.append(output_copy)
             else:
@@ -1014,16 +1117,16 @@ class AnalyseElectronReadout(Analysis):
     def analyse(self, **kwargs):
         settings = self.settings.to_dict(get_latest=False)
         settings.update(**kwargs)
-        settings.pop('num_frequencies', None)  # Not needed
-        settings.pop('samples', None)  # Not needed
+        settings.pop("num_frequencies", None)  # Not needed
+        settings.pop("samples", None)  # Not needed
         self.results = analyse_electron_readout(**settings)
         return self.results
 
 
 def determine_threshold_up_proportion(
-        up_proportions_arrs: np.ndarray,
-        threshold_up_proportion: Union[float, Tuple[float, float]] = None,
-        filtered_pairs: np.ndarray = None
+    up_proportions_arrs: np.ndarray,
+    threshold_up_proportion: Union[float, Tuple[float, float]] = None,
+    filtered_shots: np.ndarray = None,
 ) -> dict:
     """Extract the threshold_up_proportion from up proportion arrays
 
@@ -1038,8 +1141,11 @@ def determine_threshold_up_proportion(
             Each column corresponds to a single readout, and the rows correspond
             to the different possible states
         threshold_up_proportion: Optional preset threshold_up_proportion.
-          Can be either a single value, or (threshold_low, threshold_high) pair.
-          If provided, will simply return the value.
+            Can be either a single value, or (threshold_low, threshold_high) pair.
+            If provided, will simply return the value.
+        filtered_shots: Optional 1D boolean array, where True indicates that the
+            corresponding column in up_proportions_arrs should be used in this
+            analysis to calculate the threshold.
 
     Returns:
         Dict containing
@@ -1053,10 +1159,12 @@ def determine_threshold_up_proportion(
             condition holds
         - ``filtered_fraction`` fraction of up proportion pairs that have one
             up proportion above threshold_high and one below threshold_low
-        - ``N_filtered`` number of up proportion pairs that have one
+        - ``N_filtered_shots`` number of up proportion pairs that have one
             up proportion above threshold_high and one below threshold_low
-        - ``filtered_pairs`` numpy boolean 1D array, an element is True if one
-            up proportion is above threshold_high and the rest below threshold_low
+        - ``filtered_shots`` numpy boolean 1D array, an element is True if one
+            up proportion is above threshold_high and the rest below threshold_low.
+            If filtered_shots is also provided as an arg, the two are combined
+            using a logical ``and``.
 
     Raises:
         AssertionError if up_proportion arrays are not 1D
@@ -1068,12 +1176,12 @@ def determine_threshold_up_proportion(
     assert up_proportions_arrs.ndim == 2
 
     results = {
-        'threshold_up_proportion': None,
-        'threshold_high': None,
-        'threshold_low': None,
-        'filtered_fraction': 0,
-        'N_filtered': 0,
-        'filtered_pairs': np.zeros(up_proportions_arrs.shape[1], dtype=bool)
+        "threshold_up_proportion": None,
+        "threshold_high": None,
+        "threshold_low": None,
+        "filtered_fraction": 0,
+        "N_filtered_shots": 0,
+        "filtered_shots": np.zeros(up_proportions_arrs.shape[1], dtype=bool),
     }
 
     unique_up_proportions = sorted({up_proportions_arrs.ravel()})
@@ -1089,22 +1197,22 @@ def determine_threshold_up_proportion(
         # Threshold already provided
         if isinstance(threshold_up_proportion, float):
             # Single threshold provided => equal low and high thresholds
-            results['threshold_low'] = threshold_up_proportion
-            results['threshold_high'] = threshold_up_proportion
-            results['threshold_up_proportion'] = threshold_up_proportion
+            results["threshold_low"] = threshold_up_proportion
+            results["threshold_high"] = threshold_up_proportion
+            results["threshold_up_proportion"] = threshold_up_proportion
         elif isinstance(threshold_up_proportion, Sequence):
             # A separate low and high threshold is provided
             assert len(threshold_up_proportion) == 2
 
-            results['threshold_low'] = threshold_up_proportion[0]
-            results['threshold_high'] = threshold_up_proportion[1]
-            results['threshold_up_proportion'] = np.mean(threshold_up_proportion)
+            results["threshold_low"] = threshold_up_proportion[0]
+            results["threshold_high"] = threshold_up_proportion[1]
+            results["threshold_up_proportion"] = np.mean(threshold_up_proportion)
         else:
-            raise RuntimeError('Threshold_up_proportion must be float or float pair')
+            raise RuntimeError("Threshold_up_proportion must be float or float pair")
     elif max(up_min) < min(up_max):
-        results['threshold_low'] = max(up_min)
-        results['threshold_high'] = min(up_max)
-        results['threshold_up_proportion'] = np.mean([min(up_max), max(up_min)])
+        results["threshold_low"] = max(up_min)
+        results["threshold_high"] = min(up_max)
+        results["threshold_up_proportion"] = np.mean([min(up_max), max(up_min)])
     else:
         # No threshold can be determined for which one up proportion is above
         # and one below. We find the best threshold.
@@ -1116,46 +1224,45 @@ def determine_threshold_up_proportion(
         threshold_results = [
             determine_threshold_up_proportion(
                 up_proportions_arrs=up_proportions_arrs,
-                threshold_up_proportion=threshold
+                threshold_up_proportion=threshold,
             )
             for threshold in up_proportion_inter
         ]
         # The best threshold is the one with the highest filtered_fraction
-        optimal_idx = np.argmax([
-            result['filtered_fraction'] for result in threshold_results
-        ])
+        optimal_idx = np.argmax(
+            [result["filtered_fraction"] for result in threshold_results]
+        )
         optimal_threshold = up_proportion_inter[optimal_idx]
         threshold_difference = up_proportion_differences[optimal_idx]
-        results['threshold_up_proportion'] = optimal_threshold
-        results['threshold_high']: optimal_threshold + threshold_difference / 2
-        results['threshold_low']: optimal_threshold - threshold_difference / 2
+        results["threshold_up_proportion"] = optimal_threshold
+        results["threshold_high"]: optimal_threshold + threshold_difference / 2
+        results["threshold_low"]: optimal_threshold - threshold_difference / 2
 
     # Determine the fraction of up proportion pairs that have one
     # up proportion above threshold_high and one below threshold_low
-    above_threshold = np.nansum(up_proportions_arrs > results['threshold_high'], axis=0)
-    below_threshold = np.nansum(up_proportions_arrs < results['threshold_low'], axis=0)
+    above_threshold = np.nansum(up_proportions_arrs > results["threshold_high"], axis=0)
+    below_threshold = np.nansum(up_proportions_arrs < results["threshold_low"], axis=0)
 
     # Each column should have one up proportion above threshold, and the
     # remaining should be below threshold
-    results['filtered_pairs'] = np.logical_and(
-        above_threshold == 1,
-        below_threshold == below_threshold.shape[0] - 1
+    results["filtered_shots"] = np.logical_and(
+        above_threshold == 1, below_threshold == below_threshold.shape[0] - 1
     )
-    if filtered_pairs:
-        # An explicit filtered_pairs is also provided
-        results['filtered_pairs'] = np.logical_and(
-            filtered_pairs, results['filtered_pairs']
+    if filtered_shots:
+        # An explicit filtered_shots is also provided
+        results["filtered_shots"] = np.logical_and(
+            filtered_shots, results["filtered_shots"]
         )
-    results['N_filtered'] = sum(results['filtered_pairs'])
-    results['filtered_fraction'] = results['N_filtered'] / len(results['filtered_pairs'])
+    results["N_filtered_shots"] = sum(results["filtered_shots"])
+    results["filtered_fraction"] = results["N_filtered_shots"] / len(
+        results["filtered_shots"]
+    )
 
     return results
 
 
 def analyse_flips(
-        states: np.ndarray,
-        flip_pairs: List[Tuple[int, int]] = None,
-        num_states: int = None
+    states: np.ndarray, flip_pairs: List[Tuple[int, int]] = None, num_states: int = None
 ) -> Dict[str, Dict[Tuple, Union[int, float]]]:
     """Analyse flipping between pairs of states. Used for nuclear spin readout
 
@@ -1183,11 +1290,7 @@ def analyse_flips(
         - ``flip_probability``: flips / possible_flips for each state pair.
             If possible_flips == 0, flip_probability is NaN
     """
-    results = {
-        'possible_flips': {},
-        'flips': {},
-        'flip_probabilities': {}
-    }
+    results = {"possible_flips": {}, "flips": {}, "flip_probabilities": {}}
 
     if flip_pairs is not None:
         # Ensure flip_pairs are valid
@@ -1198,7 +1301,7 @@ def analyse_flips(
     else:
         if num_states is None:
             if np.all(np.isnan(states)):
-                logger.warning('All states in analyse_flips are NaN')
+                logger.warning("All states in analyse_flips are NaN")
                 return results
 
             # Set the number of states based on the maximum state index
@@ -1206,7 +1309,7 @@ def analyse_flips(
 
         # Choose all possible pairs of states.
         # Note that each element is a list, not a tuple
-        flip_pairs = itertools.combinations(range(num_states))
+        flip_pairs = itertools.combinations(range(num_states), r=2)
 
     # Sort each flip pair in ascending order
     flip_pairs = [tuple(sorted(flip_pair)) for flip_pair in flip_pairs]
@@ -1232,81 +1335,195 @@ def analyse_flips(
 
     flip_probabilities = {
         flips[flip_pair] / possible_flips[flip_pair]
-        if possible_flips[flip_pair] else np.nan
+        if possible_flips[flip_pair]
+        else np.nan
         for flip_pair in flip_pairs
     }
 
     return {
-        'possible_flips': possible_flips,
-        'flips': flips,
-        'flip_probabilities': flip_probabilities
+        "possible_flips": possible_flips,
+        "flips": flips,
+        "flip_probabilities": flip_probabilities,
     }
 
 
-def analyse_multi_readout(
-        up_proportions_arrs: np.ndarray,
-        threshold_up_proportion: Union[float, Tuple[float, float]] = None,
-        filtered_pairs: np.ndarray = None,
-        labels: Tuple[str, str] = None,
-        flip_pairs: List[Tuple[Union[int, str], Union[int, str]]] = None
+def analyse_multi_state_readout(
+    up_proportions_arrs: np.ndarray,
+    threshold_up_proportion: Union[float, Tuple[float, float]] = None,
+    filtered_shots: np.ndarray = None,
+    labels: Tuple[str, str] = None,
+    flip_pairs: List[Tuple[Union[int, str], Union[int, str]]] = None,
 ):
     """
 
     Args:
         up_proportions_arrs:
         threshold_up_proportion:
-        filtered_pairs:
+        filtered_shots:
         labels:
 
     Returns:
 
     TODO:
         determine flip probability if only one array is provided
-
     """
     results = {}
     num_states = len(up_proportions_arrs)
-
-    if labels is None:
-        labels = list(map(str, range(num_states)))
-        separator = ''  # No separator should be used for combined flips labels
-    else:
-        separator = '_'  # Use separator to distinguish labels in combined flips
 
     # Determine threshold_up_proportion. If already provided, it will simply
     # return the threshold, while otherwise it will determine the best threshold
     threshold_results = determine_threshold_up_proportion(
         up_proportions_arrs=up_proportions_arrs,
         threshold_up_proportion=threshold_up_proportion,
-        filtered_pairs=filtered_pairs
+        filtered_shots=filtered_shots,
     )
-    filtered_pairs = threshold_results['filtered_pairs']
-    threshold_high = threshold_results['threshold_high']
-    threshold_low = threshold_results['threshold_low']
-    N_filtered = threshold_results['N_filtered']
-    # TODO add values to results
+    results.update(**threshold_results)
+    filtered_shots = threshold_results["filtered_shots"]
+    N_filtered_shots = threshold_results["N_filtered_shots"]
 
-    if threshold_results['threshold_up_proportion'] is None:
-        raise RuntimeError('No threshold up proportion')
+    if threshold_results["threshold_up_proportion"] is None:
+        raise RuntimeError("No threshold up proportion")
         # TODO do not raise error, but return results
+
+    # TODO what if N_filtered_shots is zero?
 
     # Determine the state for each column
     # Each index is the corresponding state index for the given column
     states = np.nanargmax(up_proportions_arrs, axis=0).astype(float)
     # state is NaN if it cannot be uniquely determined, i.e. is filtered out
-    states[~filtered_pairs] = np.nan
-    state_probabilities = [states == k / N_filtered for k in range(num_states)]
-    # TODO add state, state_probability to results
+    states[~filtered_shots] = np.nan
+    results["states"] = states
+    results["state_probabilities"] = [
+        (states == k) / N_filtered_shots for k in range(num_states)
+    ]
 
     # Determine flip probabilities
-    flip_results = analyse_flips(states=states, flip_pairs=flip_pairs)
+    if flip_pairs is not None:
+        # Ensure each flip pair contains ints.
+        if isinstance(flip_pairs, str):
+            # Flip pairs is a string specifying the different combinations
+            if flip_pairs == "neighbouring":
+                flip_pairs_int = zip(range(num_states - 1), range(1, num_states))
+            elif flip_pairs == "all":
+                flip_pairs_int = itertools.combinations(range(num_states), r=2)
+            else:
+                raise RuntimeError(f"Flip pairs {flip_pairs} not understood")
+
+            if labels is None:
+                flip_pairs = flip_pairs_int
+            else:
+                flip_pairs = [(labels[k1], labels[k2]) for (k1, k2) in flip_pairs_int]
+        elif isinstance(flip_pairs[0][0], str):
+            # Flip pairs use state labels, convert to state indices
+            assert labels is not None
+            flip_pairs_int = [map(labels.index, flip_pair) for flip_pair in flip_pairs]
+        else:
+            flip_pairs_int = flip_pairs
+        # Ensure flip_pairs_int are tuples and sorted
+        flip_pairs_int = [tuple(sorted(flip_pair)) for flip_pair in flip_pairs_int]
+
+        flip_results = analyse_flips(states=states, flip_pairs=flip_pairs_int)
+
+        for (label1, label2), flip_pair_int in zip(flip_pairs, flip_pairs_int):
+            for key, val in flip_results.items():
+                results[f"{key}_{label1}_{label2}"] = val[flip_pair_int]
+
+    return results
 
 
-def analyse_flips(
-        up_proportions_arrs: List[np.ndarray],
-        threshold_up_proportion: Union[Sequence, float] = None,
-        labels: List[str] = None,
-        label_pairs: List[List[str]] = 'neighbouring'
+class AnalyseMultiStateReadout(Analysis):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.settings.threshold_up_proportion = Parameter(
+            initial_value=None,
+            set_cmd=None,
+            config_link="analysis.threshold_up_proportion",
+            update_from_config=True,
+        )
+        self.settings.num_frequencies = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Ints()
+        )
+        self.settings.labels = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Lists()
+        )
+        self.settings.flip_pairs = Parameter(
+            initial_value="neighbouring",
+            set_cmd=None,
+            vals=vals.MultiType(vals.Enum("neighbouring", "all"), vals.Lists()),
+        )
+
+        self.outputs.threshold_up_proportion = Parameter(
+            initial_value=False, set_cmd=None
+        )
+        self.outputs.threshold_low = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.threshold_high = Parameter(initial_value=False, set_cmd=None)
+
+        self.outputs.filtered_fraction = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.N_filtered_shots = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.filtered_shots = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.states = Parameter(initial_value=False, set_cmd=None)
+        self.outputs.state_probabilities = Parameter(initial_value=False, set_cmd=None)
+
+        self.outputs.flips = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.flip_probability = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.possible_flips = Parameter(initial_value=True, set_cmd=None)
+
+    @property
+    def labels(self):
+        if self.settings.labels is not None:
+            return self.settings.labels
+        elif self.settings.num_frequencies is not None:
+            return [str(k) for k in range(self.settings.num_frequencies)]
+        else:
+            return []
+
+    @property
+    def flip_pairs(self):
+        if self.settings.flip_pairs == "neighbouring":
+            flip_pairs = list(zip(self.labels[:-1], self.labels[1:]))
+        elif self.settings.flip_pairs == "all":
+            flip_pairs = []
+            for k, label1 in enumerate(self.labels):
+                for label2 in self.labels[k + 1 :]:
+                    flip_pairs.append((label1, label2))
+        else:
+            flip_pairs = self.settings.flip_pairs
+
+        return flip_pairs
+
+    @property
+    def flip_pairs_str(self):
+        return [f"{label1}_{label2}" for (label1, label2) in self.flip_pairs]
+
+    @property
+    def result_parameters(self):
+        parameters = []
+        for name, output in self.outputs.parameters.items():
+            if not output():
+                continue
+            elif name in ["flips", "flip_probability", "possible_flips"]:
+                for label_pair_str in self.flip_pairs_str:
+                    output_copy = copy(output)
+                    output_copy.name = f"{name}_{label_pair_str}"
+                    parameters.append(output_copy)
+            else:
+                parameters.append(copy(output))
+        return parameters
+
+    @functools.wraps(analyse_multi_state_readout)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+        settings.pop("num_frequencies", None)  # Not needed
+        self.results = analyse_multi_state_readout(**settings)
+        return self.results
+
+
+def analyse_flips_old(
+    up_proportions_arrs: List[np.ndarray],
+    threshold_up_proportion: Union[Sequence, float] = None,
+    labels: List[str] = None,
+    label_pairs: List[List[str]] = "neighbouring",
 ):
     """ Analyse flipping between NMR states
 
@@ -1382,22 +1599,26 @@ def analyse_flips(
 
     if labels is None:
         labels = [str(k) for k in range(len(up_proportions_arrs))]
-        separator = ''  # No separator should be used for combined flips labels
+        separator = ""  # No separator should be used for combined flips labels
     else:
-        separator = '_'  # Use separator to distinguish labels in combined flips
+        separator = "_"  # Use separator to distinguish labels in combined flips
 
     if not isinstance(up_proportions_arrs, np.ndarray):  # Convert to numpy array
         up_proportions_arrs = np.array(up_proportions_arrs)
 
-    up_proportions_dict = {label: arr for label, arr in zip(labels, up_proportions_arrs)}
+    up_proportions_dict = {
+        label: arr for label, arr in zip(labels, up_proportions_arrs)
+    }
 
     max_flips = up_proportions_arrs.shape[-1] - 1  # number of samples - 1
 
     # Determine threshold_up_proportion_low/high
     if isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:
-            raise SyntaxError(f'threshold_up_proportion must be either single '
-                              'value, or two values (low and high threshold)')
+            raise SyntaxError(
+                f"threshold_up_proportion must be either single "
+                "value, or two values (low and high threshold)"
+            )
         threshold_low = threshold_up_proportion[0]
         threshold_high = threshold_up_proportion[1]
     else:
@@ -1408,7 +1629,9 @@ def analyse_flips(
     # Note that we skip this step if threshold_up_proportion is None
     if threshold_up_proportion is not None:
         # State of up proportions by threshold (above: 1, below: -1, between: 0)
-        with np.errstate(invalid='ignore'): # ignore errors (up_proportions may contain NaN)
+        with np.errstate(
+            invalid="ignore"
+        ):  # ignore errors (up_proportions may contain NaN)
             state_arrs = np.zeros(up_proportions_arrs.shape)
             state_arrs[up_proportions_arrs > threshold_high] = 1
             state_arrs[up_proportions_arrs < threshold_low] = -1
@@ -1419,25 +1642,25 @@ def analyse_flips(
             flip_probability = flips / max_flips
 
             # Add suffix if more than one up_proportion array is provided
-            suffix = f'_{labels[k]}' if len(up_proportions_arrs) > 1 else ''
-            results['flips' + suffix] = flips
-            results['flip_probability' + suffix] = flip_probability
+            suffix = f"_{labels[k]}" if len(up_proportions_arrs) > 1 else ""
+            results["flips" + suffix] = flips
+            results["flip_probability" + suffix] = flip_probability
 
     # Determine combined flips/flip_probability
     if len(up_proportions_arrs) > 1:
-        if label_pairs == 'neighbouring':
+        if label_pairs == "neighbouring":
             # Only look at neighbouring combined flips
             label_pairs = list(zip(labels[:-1], labels[1:]))
-        elif label_pairs == 'full':
+        elif label_pairs == "full":
             label_pairs = []
             for k, label1 in enumerate(labels):
-                for label2 in labels[k+1:]:
+                for label2 in labels[k + 1 :]:
                     label_pairs.append((label1, label2))
 
         for label1, label2 in label_pairs:
             up_proportions_1 = up_proportions_dict[label1]
             up_proportions_2 = up_proportions_dict[label2]
-            suffix = f'_{label1}{separator}{label2}'
+            suffix = f"_{label1}{separator}{label2}"
 
             # If no threshold is provided, it is dynamically chosen as the value
             # for which every pair of up proportions has exactly one value above
@@ -1452,18 +1675,20 @@ def analyse_flips(
                     threshold_low = threshold_up_proportion
                 else:
                     # No threshold can be determined, do not proceed with this pair
-                    results['combined_flips' + suffix] = np.nan
-                    results['combined_flip_probability' + suffix] = np.nan
-                    results['filtered_combined_flips' + suffix] = np.nan
-                    results['filtered_combined_flip_probability' + suffix] = np.nan
-                    results['possible_flips' + suffix] = np.nan
+                    results["combined_flips" + suffix] = np.nan
+                    results["combined_flip_probability" + suffix] = np.nan
+                    results["filtered_combined_flips" + suffix] = np.nan
+                    results["filtered_combined_flip_probability" + suffix] = np.nan
+                    results["possible_flips" + suffix] = np.nan
                     continue
 
             # Determine state that are above/below threshold.
             state_arrs = []
             for k, up_proportions in enumerate([up_proportions_1, up_proportions_2]):
                 # Boolean arrs equal to True if up proportion is above/below threshold
-                with np.errstate(invalid='ignore'): # ignore errors if up_proportions contains NaN
+                with np.errstate(
+                    invalid="ignore"
+                ):  # ignore errors if up_proportions contains NaN
                     state_arr = np.zeros(up_proportions.shape)
                     state_arr[up_proportions > threshold_high] = 1
                     state_arr[up_proportions < threshold_low] = -1
@@ -1481,128 +1706,32 @@ def analyse_flips(
             # Combined flips, happens if relative_state_arr changes by 4
             # (high, low) -> (low, high) and (low, high) -> (high, low)
             combined_flips = np.sum(
-                np.abs(np.diff(relative_state_arr)) == 4,
-                axis=-1, dtype=float
+                np.abs(np.diff(relative_state_arr)) == 4, axis=-1, dtype=float
             )
-            results['combined_flips' + suffix] = combined_flips
+            results["combined_flips" + suffix] = combined_flips
 
             # Number of possible flips, i.e. where successive up_proportion pairs
             # both satisfy one being above and one below threshold
             possible_flips = np.sum(
-                ~np.isnan(np.diff(relative_state_arr)),
-                axis=-1, dtype=float
+                ~np.isnan(np.diff(relative_state_arr)), axis=-1, dtype=float
             )
-            results['possible_flips' + suffix] = possible_flips
+            results["possible_flips" + suffix] = possible_flips
             if possible_flips > 0:
                 combined_flip_probability = combined_flips / possible_flips
             else:
                 combined_flip_probability = np.nan
-            results['combined_flip_probability' + suffix]  = combined_flip_probability
+            results["combined_flip_probability" + suffix] = combined_flip_probability
 
             # Check if all up_proportion pairs satisfy threshold condition
             if possible_flips == max_flips:
-                results['filtered_combined_flips' + suffix] = combined_flips
-                results['filtered_combined_flip_probability' + suffix] = combined_flip_probability
+                results["filtered_combined_flips" + suffix] = combined_flips
+                results[
+                    "filtered_combined_flip_probability" + suffix
+                ] = combined_flip_probability
             else:
-                results['filtered_combined_flips' + suffix] = np.nan
-                results['filtered_combined_flip_probability' + suffix] = np.nan
+                results["filtered_combined_flips" + suffix] = np.nan
+                results["filtered_combined_flip_probability" + suffix] = np.nan
 
-            results['threshold_up_proportion'] = (threshold_low, threshold_high)
+            results["threshold_up_proportion"] = (threshold_low, threshold_high)
 
     return results
-
-
-class AnalyseFlips(Analysis):
-    def __init__(self, name):
-        super().__init__(name=name)
-        self.settings.threshold_up_proportion = Parameter(
-            initial_value=None, set_cmd=None,
-            config_link='analysis.threshold_up_proportion',
-            update_from_config=True
-        )
-        self.settings.num_frequencies = Parameter(
-            initial_value=None, set_cmd=None, vals=vals.Ints()
-        )
-        self.settings.labels = Parameter(
-            initial_value=None, set_cmd=None, vals=vals.Lists()
-        )
-        self.settings.label_pairs = Parameter(
-            initial_value='neighbouring', set_cmd=None,
-            vals=vals.MultiType(vals.Enum('neighbouring', 'all'), vals.Lists())
-        )
-
-        self.outputs.flips = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.flip_probability = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.possible_flips = Parameter(initial_value=True, set_cmd=None)
-        self.outputs.combined_flips = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
-        self.outputs.filtered_combined_flips = Parameter(initial_value=False, set_cmd=None)
-        self.outputs.filtered_combined_flip_probability = Parameter(initial_value=True, set_cmd=None)
-
-    @property
-    def labels(self):
-        if self.settings.labels is not None:
-            return self.settings.labels
-        elif self.settings.num_frequencies is not None:
-            return [str(k) for k in range(self.settings.num_frequencies)]
-        else:
-            return []
-
-    @property
-    def label_pairs(self):
-        # Only use _ between labels when labels are provided
-        separator = '' if self.settings.labels is None else '_'
-
-        if self.settings.label_pairs == 'neighbouring':
-            label_pairs = list(zip(self.labels[:-1], self.labels[1:]))
-        elif self.settings.label_pairs == 'all':
-            label_pairs = []
-            for k, label1 in enumerate(self.labels):
-                for label2 in self.labels[k+1:]:
-                    label_pairs.append((label1, label2))
-        else:
-            label_pairs = self.settings.label_pairs
-
-        return label_pairs
-
-    @property
-    def label_pairs_str(self):
-        # Only use _ between labels when labels are provided
-        separator = '' if self.settings.labels is None else '_'
-        return [f'{label1}{separator}{label2}' for (label1, label2) in self.label_pairs]
-
-    @property
-    def result_parameters(self):
-        parameters = []
-        if self.settings.threshold_up_proportion is not None:
-            for label in self.labels:
-                for name in ['flips', 'flip_probability']:
-                    output = self.outputs[name]
-                    if output():
-                        output_copy = copy(output)
-                        output_copy.name = f'{name}_{label}'
-                        parameters.append(output_copy)
-
-        for label_pair_str in self.label_pairs_str:
-            array_names = [
-                'possible_flips',
-                'combined_flips',
-                'combined_flip_probability',
-                'filtered_combined_flips',
-                'filtered_combined_flip_probability'
-            ]
-            for name in array_names:
-                output = self.outputs[name]
-                if output:
-                    output_copy = copy(output)
-                    output_copy.name = f'{name}_{label_pair_str}'
-                    parameters.append(output_copy)
-        return parameters
-
-    @functools.wraps(analyse_flips)
-    def analyse(self, **kwargs):
-        settings = self.settings.to_dict(get_latest=False)
-        settings.update(**kwargs)
-        settings.pop('num_frequencies', None)  # Not needed
-        self.results = analyse_flips(**settings)
-        return self.results

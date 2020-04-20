@@ -3,7 +3,7 @@ import unittest
 from copy import copy, deepcopy
 import pickle
 
-from silq.analysis.analysis import AnalyseElectronReadout, AnalyseFlips
+from silq.analysis.analysis import AnalyseElectronReadout, AnalyseMultiStateReadout
 
 
 class TestAnalysis(unittest.TestCase):
@@ -49,7 +49,7 @@ class TestAnalysis(unittest.TestCase):
         self.assertTupleEqual(ESR.shapes, ((5,), (5,), (), (), (), ()))
 
     def test_analyse_flips(self):
-        analysis = AnalyseFlips('ESR')
+        analysis = AnalyseMultiStateReadout('ESR')
 
         print(analysis.result_parameters)
         print(analysis.names)
