@@ -1237,8 +1237,8 @@ def determine_threshold_up_proportion(
         optimal_threshold = up_proportion_inter[optimal_idx]
         threshold_difference = up_proportion_differences[optimal_idx]
         results["threshold_up_proportion"] = optimal_threshold
-        results["threshold_high"]: optimal_threshold + threshold_difference / 2
-        results["threshold_low"]: optimal_threshold - threshold_difference / 2
+        results["threshold_high"] = optimal_threshold + threshold_difference / 2
+        results["threshold_low"] = optimal_threshold - threshold_difference / 2
 
     # Determine the fraction of up proportion pairs that have one
     # up proportion above threshold_high and one below threshold_low
