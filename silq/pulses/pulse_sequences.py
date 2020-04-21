@@ -121,7 +121,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         self.pulse_settings = DotDict({
             'RF_pulse': SinePulse('ESR'),
             'stage_pulse': DCPulse('plunge'),
-            'read_pulse': DCPulse('read_initialize', acquire=True),
+            'read_pulse': DCPulse('read_initialize', acquire=True),  # Can be set to None
             'pre_delay': 5e-3,
             'inter_delay': 5e-3,
             'post_delay': 5e-3,
@@ -282,7 +282,8 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                     self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
                 )
 
-            self.add(self.pulse_settings['read_pulse'])
+            if self.pulse_settings['read_pulse'] is not None:
+                self.add(self.pulse_settings['read_pulse'])
 
     def generate(self):
         # Clear all pulses from pulse sequence
