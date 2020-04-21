@@ -1037,7 +1037,9 @@ class AnalyseElectronReadout(Analysis):
             ),  # TODO get rid of this parameter once the new Measurement is used
         )
         self.settings.shots_per_frequency = Parameter(initial_value=1, set_cmd=None,)
-        self.settings.labels = Parameter(initial_value=None, set_cmd=None,)
+        self.settings.labels = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Lists(allow_none=True)
+        )
         self.settings.t_skip = Parameter(
             initial_value=4e-5,
             set_cmd=None,
@@ -1184,7 +1186,7 @@ def determine_threshold_up_proportion(
         "filtered_shots": np.zeros(up_proportions_arrs.shape[1], dtype=bool),
     }
 
-    unique_up_proportions = sorted({up_proportions_arrs.ravel()})
+    unique_up_proportions = sorted({*up_proportions_arrs.ravel()})
     if len(unique_up_proportions) == 1:
         # No distinct up proportions provided, system is likely out of tune
         return results
@@ -1240,13 +1242,13 @@ def determine_threshold_up_proportion(
 
     # Determine the fraction of up proportion pairs that have one
     # up proportion above threshold_high and one below threshold_low
-    above_threshold = np.nansum(up_proportions_arrs > results["threshold_high"], axis=0)
-    below_threshold = np.nansum(up_proportions_arrs < results["threshold_low"], axis=0)
+    above_threshold = np.nansum(up_proportions_arrs >= results["threshold_high"], axis=0)
+    below_threshold = np.nansum(up_proportions_arrs <= results["threshold_low"], axis=0)
 
     # Each column should have one up proportion above threshold, and the
     # remaining should be below threshold
     results["filtered_shots"] = np.logical_and(
-        above_threshold == 1, below_threshold == below_threshold.shape[0] - 1
+        above_threshold == 1, below_threshold == up_proportions_arrs.shape[0] - 1
     )
     if filtered_shots:
         # An explicit filtered_shots is also provided
@@ -1261,8 +1263,69 @@ def determine_threshold_up_proportion(
     return results
 
 
+def parse_flip_pairs(
+        flip_pairs: Union[str, List[Tuple[int, int]]],
+        num_states: int = None,
+        labels: List[str] = None
+) -> Tuple[list, list]:
+    """
+
+    Args:
+        flip_pairs: Pairs of states between which to compare flips.
+            Can either be specific strings, or a list of pair tuples.
+            The following strings are allowed:
+
+            - ``all``: Compare flipping between all states
+            - ``neighbouring``: Only compare flipping between neighbouring states
+
+            Additionally, tuple pairs of states are allowed.
+            The states can either be integers, or strings
+        num_states: Total number of states. If not provided, ``labels`` must be
+            provided, and num_states will equal ``len(labels)``.
+        labels: Labels for each of the states. If not provided, num_states must
+            be provided and the state labels are simply the state indices
+
+    Returns:
+        flip_pairs: Parsed pairs of states between which to consider flipping
+            events. If ``flip_pairs`` is a str, it will be converted to the
+            corresponding pairs of states. States are also converted to their
+            corresponding labels.
+        flip_pairs_indices: Indices of the flip pairs
+
+    """
+    if num_states is None and labels is None:
+        raise SyntaxError('Either num_states or labels must be provided')
+    elif num_states is None:
+        num_states = len(labels)
+
+    # Ensure each flip pair contains ints.
+    if isinstance(flip_pairs, str):
+        # Flip pairs is a string specifying the different combinations
+        if flip_pairs == "neighbouring":
+            flip_pair_indices = list(zip(range(num_states - 1), range(1, num_states)))
+        elif flip_pairs == "all":
+            flip_pair_indices = itertools.combinations(range(num_states), r=2)
+        else:
+            raise RuntimeError(f"Flip pairs {flip_pairs} not understood")
+
+        if labels is None:
+            flip_pairs = flip_pair_indices
+        else:
+            flip_pairs = [(labels[k1], labels[k2]) for (k1, k2) in flip_pair_indices]
+    elif isinstance(flip_pairs[0][0], str):
+        # Flip pairs use state labels, convert to state indices
+        assert labels is not None
+        flip_pair_indices = [map(labels.index, flip_pair) for flip_pair in flip_pairs]
+    else:
+        flip_pair_indices = flip_pairs
+    # Ensure flip_pairs_int are tuples and sorted
+    flip_pair_indices = [tuple(sorted(flip_pair)) for flip_pair in flip_pair_indices]
+
+    return flip_pairs, flip_pair_indices
+
+
 def analyse_flips(
-    states: np.ndarray, flip_pairs: List[Tuple[int, int]] = None, num_states: int = None
+    states: np.ndarray, flip_pairs: Union[str, List[Tuple[int, int]]] = None, num_states: int = None
 ) -> Dict[str, Dict[Tuple, Union[int, float]]]:
     """Analyse flipping between pairs of states. Used for nuclear spin readout
 
@@ -1327,14 +1390,14 @@ def analyse_flips(
                 # first state does not belong to the flip pair
                 continue
 
-            if state2 in flip_pair:
+            if state2 != state1 and state2 in flip_pair:
                 # Flip occurred between the two states
                 flips[flip_pair] += 1
 
             possible_flips[flip_pair] += 1
 
     flip_probabilities = {
-        flips[flip_pair] / possible_flips[flip_pair]
+        flip_pair: flips[flip_pair] / possible_flips[flip_pair]
         if possible_flips[flip_pair]
         else np.nan
         for flip_pair in flip_pairs
@@ -1382,50 +1445,49 @@ def analyse_multi_state_readout(
     N_filtered_shots = threshold_results["N_filtered_shots"]
 
     if threshold_results["threshold_up_proportion"] is None:
-        raise RuntimeError("No threshold up proportion")
-        # TODO do not raise error, but return results
+        logger.warning(
+            'No threshold up proportion could be determined. This probably means '
+            'the system is out of tune (all up proportions are 1 or all are zero)'
+        )
+        results['states'] = np.zeros(up_proportions_arrs.shape[1])
+        results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
+        if flip_pairs is not None:
+            flip_pairs, flip_pairs_indices = parse_flip_pairs(
+                flip_pairs, labels=labels, num_states=num_states
+            )
+            for label1, label2 in flip_pairs:
+                results[f"possible_flips_{label1}_{label2}"] = 0
+                results[f"flips_{label1}_{label2}"] = 0
+                results[f"flip_probability_{label1}_{label2}"] = np.nan
 
-    # TODO what if N_filtered_shots is zero?
+        return results
 
-    # Determine the state for each column
-    # Each index is the corresponding state index for the given column
-    states = np.nanargmax(up_proportions_arrs, axis=0).astype(float)
-    # state is NaN if it cannot be uniquely determined, i.e. is filtered out
-    states[~filtered_shots] = np.nan
-    results["states"] = states
-    results["state_probabilities"] = [
-        (states == k) / N_filtered_shots for k in range(num_states)
-    ]
+    if N_filtered_shots == 0:
+        results['states'] = states = np.zeros(up_proportions_arrs.shape[1])
+        results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
+    else:
+        # Determine the state for each column
+        # Each index is the corresponding state index for the given column
+        states = np.nanargmax(up_proportions_arrs, axis=0).astype(float)
+        # state is NaN if it cannot be uniquely determined, i.e. is filtered out
+        states[~filtered_shots] = np.nan
+        results["states"] = states
+        results["state_probabilities"] = [
+            sum((states == k)) / N_filtered_shots for k in range(num_states)
+        ]
 
     # Determine flip probabilities
     if flip_pairs is not None:
-        # Ensure each flip pair contains ints.
-        if isinstance(flip_pairs, str):
-            # Flip pairs is a string specifying the different combinations
-            if flip_pairs == "neighbouring":
-                flip_pairs_int = zip(range(num_states - 1), range(1, num_states))
-            elif flip_pairs == "all":
-                flip_pairs_int = itertools.combinations(range(num_states), r=2)
-            else:
-                raise RuntimeError(f"Flip pairs {flip_pairs} not understood")
+        flip_pairs, flip_pairs_indices = parse_flip_pairs(
+            flip_pairs, labels=labels, num_states=num_states
+        )
+        flip_results = analyse_flips(states=states, flip_pairs=flip_pairs_indices)
 
-            if labels is None:
-                flip_pairs = flip_pairs_int
-            else:
-                flip_pairs = [(labels[k1], labels[k2]) for (k1, k2) in flip_pairs_int]
-        elif isinstance(flip_pairs[0][0], str):
-            # Flip pairs use state labels, convert to state indices
-            assert labels is not None
-            flip_pairs_int = [map(labels.index, flip_pair) for flip_pair in flip_pairs]
-        else:
-            flip_pairs_int = flip_pairs
-        # Ensure flip_pairs_int are tuples and sorted
-        flip_pairs_int = [tuple(sorted(flip_pair)) for flip_pair in flip_pairs_int]
-
-        flip_results = analyse_flips(states=states, flip_pairs=flip_pairs_int)
-
-        for (label1, label2), flip_pair_int in zip(flip_pairs, flip_pairs_int):
+        for (label1, label2), flip_pair_int in zip(flip_pairs, flip_pairs_indices):
             for key, val in flip_results.items():
+                if key == 'flip_probabilities':
+                    key = 'flip_probability'
+
                 results[f"{key}_{label1}_{label2}"] = val[flip_pair_int]
 
     return results
@@ -1444,7 +1506,7 @@ class AnalyseMultiStateReadout(Analysis):
             initial_value=None, set_cmd=None, vals=vals.Ints()
         )
         self.settings.labels = Parameter(
-            initial_value=None, set_cmd=None, vals=vals.Lists()
+            initial_value=None, set_cmd=None, vals=vals.Lists(allow_none=True)
         )
         self.settings.flip_pairs = Parameter(
             initial_value="neighbouring",
