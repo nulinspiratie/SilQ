@@ -1187,7 +1187,7 @@ def determine_threshold_up_proportion(
     }
 
     unique_up_proportions = sorted({*up_proportions_arrs.ravel()})
-    if len(unique_up_proportions) == 1:
+    if len(unique_up_proportions) == 1 and threshold_up_proportion is None:
         # No distinct up proportions provided, system is likely out of tune
         return results
 
@@ -1449,7 +1449,7 @@ def analyse_multi_state_readout(
             'No threshold up proportion could be determined. This probably means '
             'the system is out of tune (all up proportions are 1 or all are zero)'
         )
-        results['states'] = np.zeros(up_proportions_arrs.shape[1])
+        results['states'] = np.nan * np.ones(up_proportions_arrs.shape[1])
         results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
         if flip_pairs is not None:
             flip_pairs, flip_pairs_indices = parse_flip_pairs(
@@ -1463,7 +1463,7 @@ def analyse_multi_state_readout(
         return results
 
     if N_filtered_shots == 0:
-        results['states'] = states = np.zeros(up_proportions_arrs.shape[1])
+        results['states'] = states = np.nan * np.ones(up_proportions_arrs.shape[1])
         results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
     else:
         # Determine the state for each column
