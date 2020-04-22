@@ -1962,14 +1962,19 @@ class EDSRParameter(NMRParameter):
                                      'state_probability_0', 'state_probability_1',
                                      'EDSR_up_proportion'],
                  **kwargs):
-        super().__init__(name=name, names=names, **kwargs)
+        super().__init__(name=name,
+                         names=names,
+                         **kwargs)
 
     @property
     def names(self):
-        names = super().names()
+        names = super().names
         names.append('EDSR_up_proportion')
         return names
 
+    @names.setter
+    def names(self, names):
+        self._names = names
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
         """
