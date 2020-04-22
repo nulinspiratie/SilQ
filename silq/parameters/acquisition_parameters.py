@@ -23,7 +23,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'VariableReadParameter',
+           'NMRParameter', 'EDSRParameter', 'VariableReadParameter',
            'BlipsParameter', 'FlipNucleusParameter', 'FlipFlopParameter',
            'NeuralNetworkParameter', 'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
