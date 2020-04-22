@@ -1936,7 +1936,7 @@ class NMRParameter(AcquisitionParameter):
 
             state_probability_0[f_idx] = np.sum(up_proportions[f_idx] <
                                                 self.threshold_up_proportion)/self.samples
-            state_probability_1[f_idx] = np.sum(up_proportions[f_idx] >
+            state_probability_1[f_idx] = np.sum(up_proportions[f_idx] >=
                                                 self.threshold_up_proportion)/self.samples
 
             if len(self.ESR_frequencies) > 1:
