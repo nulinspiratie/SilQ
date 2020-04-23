@@ -1,4 +1,4 @@
-from typing import Union, Sequence, Callable
+from typing import Union, Sequence, Callable, List
 import numpy as np
 import collections
 import logging
@@ -10,10 +10,10 @@ from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
-__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
-           'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
-           'TriggerWaitPulse', 'MeasurementPulse', 'CombinationPulse',
-           'AWGPulse', 'pulse_conditions']
+__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
+           'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
+           'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
+           'CombinationPulse', 'AWGPulse', 'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -668,6 +668,134 @@ class SinePulse(Pulse):
         return waveform
 
 
+class MultiSinePulse(Pulse):
+    """MultiSinusoidal pulse
+
+    Parameters:
+        name: Pulse name
+        frequency: main Pulse frequency - !!! to be checked !!!
+        frequencies: list of pulse frequencies
+        phase: Pulse phase
+        amplitude: Pulse amplitude. If not set, power must be set.
+        power: Pulse power. If not set, amplitude must be set.
+        offset: amplitude offset, zero by default
+        frequency_sideband: Mixer sideband frequency (off by default).
+        sideband_mode: Sideband frequency to apply. This feature must
+            be existent in interface. Not used if not set.
+        phase_reference: What point in the the phase is with respect to.
+            Can be two modes:
+            - 'absolute': phase is with respect to `Pulse.t_start`.
+            - 'relative': phase is with respect to t=0 (phase-coherent).
+
+        **kwargs: Additional parameters of `Pulse`.
+
+    Notes:
+        Either amplitude or power must be set, depending on the instrument
+        that should output the pulse.
+    """
+    def __init__(self,
+                 name: str = None,
+                 frequency: float = None,
+                 frequencies: List[float] = None,
+                 phase: float = None,
+                 amplitude: float = None,
+                 power: float = None,
+                 offset: float = None,
+                 frequency_sideband: float = None,
+                 sideband_mode: float = None,
+                 phase_reference: str = None,
+                 **kwargs):
+
+        super().__init__(name=name, **kwargs)
+
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
+                                     set_cmd=None, vals=vals.Lists())
+        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
+                               vals=vals.Numbers())
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.amplitude = Parameter(initial_value=amplitude, unit='V',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
+        self._connect_parameters_to_config(
+            ['frequency', 'frequencies', 'phase', 'power', 'amplitude', 'phase',
+             'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
+
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'absolute'
+        if self.phase is None:
+            self.phase = 0
+        if self.offset is None:
+            self.offset = 0
+
+    def __repr__(self):
+        properties_str = ''
+        try:
+            properties_str = f'f_main={freq_to_str(self.frequency)}'
+            properties_str += f'f={[freq_to_str(freq) for freq in self.frequencies]}'
+            properties_str += f', phase={self.phase} deg '
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+            if self.power is not None:
+                properties_str += f', power={self.power} dBm'
+
+            if self.amplitude is not None:
+                properties_str += f', A={self.amplitude} V'
+
+            if self.offset:
+                properties_str += f', offset={self.offset} V'
+            if self.frequency_sideband is not None:
+                properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
+
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
+        except:
+            pass
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and
+                `Pulse`.t_stop
+        """
+        assert is_between(t, self.t_start, self.t_stop), \
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
+
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
+
+        amplitude = self.amplitude
+        if amplitude is None:
+            assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
+            if self['power'].unit == 'dBm':
+                # This formula assumes the source is 50 Ohm matched and power is in dBm
+                # A factor of 2 comes from the conversion from amplitude to RMS.
+                amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
+        waveform = 0
+        for frequency in self.frequencies:
+            waveform += amplitude * np.sin(2 * np.pi * (frequency * t + self.phase / 360))
+        waveform += self.offset
+
+        return waveform
+
+
 class FrequencyRampPulse(Pulse):
     """Linearly increasing/decreasing frequency `Pulse`.
 
@@ -818,6 +946,7 @@ class FrequencyRampPulse(Pulse):
             t = t - self.t_start
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
+
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
