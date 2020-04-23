@@ -381,8 +381,6 @@ class ESRPulseSequenceComposite(PulseSequence):
         pulse sequence from settings.
 """
     def __init__(self, pulse_sequences=None, **kwargs):
-        super().__init__(**kwargs)
-
         if pulse_sequences is None:
             pulse_sequences = [
                 ElectronReadoutPulseSequence(name='ESR'),
@@ -394,17 +392,11 @@ class ESRPulseSequenceComposite(PulseSequence):
                         DCPulse('read_long', acquire=True)
                     ]
                 )
-                ]
+            ]
+        super().__init__(pulse_sequences=pulse_sequences, **kwargs)
 
-        self.pulse_sequences = pulse_sequences
-
-    @property
-    def ESR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
-
-    @property
-    def EPR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'EPR')
+        self.ESR = next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
+        self.EPR = next(pseq for pseq in self.pulse_sequences if pseq.name == 'EPR')
 
 
 class NMRPulseSequenceComposite(PulseSequence):
@@ -445,7 +437,7 @@ class NMRPulseSequenceComposite(PulseSequence):
     between high and low up proportion indicates a flipping of the nucleus
 
     Parameters:
-        NMR (dict): Pulse settings for the NMR part of the pulse sequence.
+        NMR (PulseSequence): Pulse settings for the NMR part of the pulse sequence.
             Contains the following items:
 
             * ``stage_pulse`` (Pulse): Stage pulse in which to perform NMR
@@ -463,7 +455,7 @@ class NMRPulseSequenceComposite(PulseSequence):
             * ``post_delay`` (float): Delay after final NMR pulse until stage
               pulse end.
 
-        ESR (dict): Pulse settings for the ESR part of the pulse sequence.
+        ESR (PulseSequence): Pulse settings for the ESR part of the pulse sequence.
             Contains the following items:
 
             * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR
@@ -508,20 +500,22 @@ class NMRPulseSequenceComposite(PulseSequence):
         if pulse_sequences is None:
             pulse_sequences = [
                 ElectronReadoutPulseSequence(name='NMR'),
-                ElectronReadoutPulseSequence(name='ESR'),
+                ElectronReadoutPulseSequence(name='ESR')
             ]
+
         super().__init__(pulse_sequences=pulse_sequences, **kwargs)
+
+        self.ESR = next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
+        self.NMR = next(pseq for pseq in self.pulse_sequences if pseq.name == 'NMR')
+        try:
+            self.initialization = next(
+                pseq for pseq in self.pulse_sequences if pseq.name == 'initialization'
+            )
+        except:
+            self.initialization = None
 
         # Disable read pulse acquire by default
         self.NMR.settings['read_pulse'].acquire = False
-
-    @property
-    def NMR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'NMR')
-
-    @property
-    def ESR(self):
-        return next(pseq for pseq in self.pulse_sequences if pseq.name == 'ESR')
 
 
 class T2PulseSequence(ElectronReadoutPulseSequence):

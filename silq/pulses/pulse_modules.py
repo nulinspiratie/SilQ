@@ -961,7 +961,13 @@ class PulseSequence(ParameterNode):
         for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
-                pulse_sequence['enabled'].signal.receivers.clear()
+                
+                # Remove any pre-existing connection to pulse_sequence.enabled
+                # This may link to another parent pulse sequence
+                enabled_receivers = pulse_sequence['enabled'].signal.receivers
+                for receiver_key, receiver in list(enabled_receivers.items()):
+                    if receiver.func_name == '_link_pulse_sequences':
+                        enabled_receivers.pop(receiver_key)
 
             pulse_sequence['enabled'].connect(
                 self._link_pulse_sequences, update=False
@@ -1123,8 +1129,10 @@ class PulseSequence(ParameterNode):
             raise RuntimeError(f'Found more than one pulse satisfiying {conditions}')
 
     def get_pulse_sequence(self, name):
+        pulse_sequences = self.get_pulse_sequences(nested=True)
+
         same_full_name = [
-            pulse_sequence for pulse_sequence in self.pulse_sequences
+            pulse_sequence for pulse_sequence in pulse_sequences
             if pulse_sequence.full_name == name
         ]
 
@@ -1134,7 +1142,7 @@ class PulseSequence(ParameterNode):
             return same_full_name[0]
         else:
             same_name = [
-                pulse_sequence for pulse_sequence in self.pulse_sequences
+                pulse_sequence for pulse_sequence in pulse_sequences
                 if pulse_sequence.name == name
             ]
 
@@ -1145,6 +1153,22 @@ class PulseSequence(ParameterNode):
             else:
                 return None
 
+    def get_pulse_sequences(self, nested=True):
+        """Get all pulse sequences, including nested sequences
+
+        Args:
+            nested: Include nested pulse sequences (recursively)
+
+        Returns:
+            list of pulse sequences
+
+        """
+        pulse_sequences = self.pulse_sequences
+        if nested:
+            for pulse_sequence in self.pulse_sequences:
+                pulse_sequences += pulse_sequence.get_pulse_sequences(nested=True)
+
+        return pulse_sequences
 
     def get_connection(self, **conditions):
         """Get unique connections from any pulse satisfying conditions.
@@ -1368,6 +1392,7 @@ class PulseSequence(ParameterNode):
         self.name = pulse_sequence.name
         self.duration = pulse_sequence.duration
         self.final_delay = pulse_sequence.final_delay
+        self.enabled = pulse_sequence.enabled
 
 
 class PulseImplementation:
