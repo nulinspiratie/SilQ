@@ -15,7 +15,7 @@ from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMu
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
-
+from qcodes.plots.qcmatplotlib import MatPlot
 
 __all__ = [
     'AcquisitionParameterComposite',
@@ -408,6 +408,27 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         traces = DotDict(traces)
 
         self.results = DotDict()
+
+        initialization_sequence = getattr(self.pulse_sequence, 'initialization', None)
+        if initialization_sequence is not None and initialization_sequence.enabled:
+            # An initialization sequence is added, we need to filter the results
+            # based on whether initialization was successful
+            self.results["initialization"] = self.analyses.initialization.analyse(
+                traces=traces.ESR_initialization, plot=plot
+            )
+            try:
+                filtered_shots = next(
+                    val for key, val in self.results["initialization"].items()
+                    if key.startswith("filtered_shots")
+                )
+            except StopIteration:
+                "No filtered_shots found, be sure to set " \
+                "analyses.initialization.settings.threshold_up_proportion"
+                filtered_shots = self.results.initialization.up_proportions > 0.5
+        else:
+            # Do not use filtered shots
+            filtered_shots = None
+
         self.results["ESR"] = self.analyses.ESR.analyse(
             traces=traces.ESR, plot=plot
         )
@@ -418,7 +439,36 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         ])
 
         self.results["NMR"] = self.analyses.NMR.analyse(
-            up_proportions_arrs=up_proportions_arrs
+            up_proportions_arrs=up_proportions_arrs,
+            filtered_shots=filtered_shots
         )
 
         return self.results
+
+    def plot_flips(self):
+        up_proportion_arrays = [
+            val for key, val in self.results.ESR.items()
+            if key.startswith('up_proportion')
+        ]
+        assert len(up_proportion_arrays) == 2
+
+        plot = MatPlot(up_proportion_arrays, marker='o', linestyle='')
+
+        ax = plot[0]
+        ax.set_xlim(-0.5, len(up_proportion_arrays[0])-0.5)
+        ax.set_ylim(-0.015, 1.015)
+        ax.set_xlabel('Shot index')
+        ax.set_ylabel('Up proportion')
+
+        # Add threshold lines
+        ax.hlines(self.results.NMR.threshold_up_proportion, *ax.get_xlim(), lw=3)
+        ax.hlines(self.results.NMR.threshold_low, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
+        ax.hlines(self.results.NMR.threshold_high, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
+
+        filtered_shots = self.results.NMR.filtered_shots
+        for k, up_proportion_pair in enumerate(zip(*up_proportion_arrays)):
+            color = 'green' if filtered_shots[k] else 'red'
+            ax.plot([k, k], up_proportion_pair, color=color, zorder=-1)
+
+        plot.tight_layout()
+        return plot
