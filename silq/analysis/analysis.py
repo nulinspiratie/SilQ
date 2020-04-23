@@ -749,8 +749,11 @@ def analyse_threshold_up_proportion(up_proportions_arrs: np.ndarray,
     return threshold_up_proportion
 
 
-def analyse_flips(up_proportions_arrs: List[np.ndarray],
-                  threshold_up_proportion: Union[Sequence, float]):
+def analyse_flips(
+        up_proportions_arrs: List[np.ndarray],
+        threshold_up_proportion: Union[Sequence, float, None],
+        shots_per_frequency: int
+):
     """ Analyse flipping between NMR states
 
     For each up_proportion array, it will count the number of flips
@@ -808,7 +811,13 @@ def analyse_flips(up_proportions_arrs: List[np.ndarray],
         * **filtered_scans_{idx1}{idx2}**: 2D bool array, True if pair of
           up_proportion rows remain in subspace
     """
-    if isinstance(threshold_up_proportion, collections.Sequence):
+    if (len(up_proportions_arrs) == 1) and (threshold_up_proportion is None):
+        threshold_up_proportion = analyse_threshold_up_proportion(
+            up_proportions_arrs=up_proportions_arrs,
+            shots_per_frequency=shots_per_frequency)
+        threshold_up_proportion_low = threshold_up_proportion
+        threshold_up_proportion_high = threshold_up_proportion
+    elif isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:
             raise SyntaxError(f'threshold_up_proportion must be either single '
                               'value, or two values (low and high threshold)')
