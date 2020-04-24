@@ -1059,11 +1059,12 @@ class PulseSequence(ParameterNode):
         else:
             return True
 
-    def get_pulses(self, enabled=True, connection=None, connection_label=None,
-                   **conditions):
+    def get_pulses(self, name=None, enabled=True, connection=None,
+                   connection_label=None, **conditions):
         """Get list of pulses in pulse sequence satisfying conditions
 
         Args:
+            name: pulse name
             enabled: Pulse must be enabled
             connection: pulse must have connection
             **conditions: Additional connection and pulse conditions.
@@ -1076,6 +1077,8 @@ class PulseSequence(ParameterNode):
         """
         pulses = self.enabled_pulses if enabled else self.pulses
         # Filter pulses by pulse conditions
+        if name is not None:
+            conditions['name'] = name
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions and v is not None}
         pulses = [pulse for pulse in pulses if pulse.satisfies_conditions(**pulse_conditions)]
@@ -1104,10 +1107,11 @@ class PulseSequence(ParameterNode):
         pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
         return pulses
 
-    def get_pulse(self, **conditions):
+    def get_pulse(self, name=None, **conditions):
         """Get unique pulse in pulse sequence satisfying conditions.
 
         Args:
+            name: Pulse name
             **conditions: Connection and pulse conditions.
 
         Returns:
@@ -1119,6 +1123,9 @@ class PulseSequence(ParameterNode):
         Raises:
             RuntimeError: No unique pulse satisfying conditions
         """
+        if name is not None:
+            conditions['name'] = name
+
         pulses = self.get_pulses(**conditions)
 
         if not pulses:
