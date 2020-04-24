@@ -619,13 +619,18 @@ class PulseSequence(ParameterNode):
     def add(self, *pulses,
             reset_duration: bool = True,
             copy: bool = True,
-            nest: bool = False):
+            nest: bool = False,
+            connect: bool = True
+            ):
         """Adds pulse(s) to the PulseSequence.
 
         Args:
             *pulses (Pulse): Pulses to add
             reset_duration: Reset duration of pulse sequence to t_stop of final
                 pulse
+            copy: Copy the pulse when adding to the pulse sequence
+            nest: Add pulse to a nested pulse sequence if it belongs there
+            connect: Connect pulse.t_start to end of previous pulse.
 
         Returns:
             List[Pulse]: Added pulses, which are copies of the original pulses.
@@ -712,12 +717,19 @@ class PulseSequence(ParameterNode):
             # the end of the last pulse on the same connection(_label)
             if pulse_copy.t_start is None and self.pulses:
                 # Find relevant pulses that share same connection(_label)
-                relevant_pulses = self.get_pulses(connection=pulse_copy.connection,
-                                                  connection_label=pulse_copy.connection_label)
+                relevant_pulses = self.get_pulses(
+                    connection=pulse_copy.connection,
+                    connection_label=pulse_copy.connection_label
+                )
                 if relevant_pulses:
-                    last_pulse = max(relevant_pulses,
-                                     key=lambda pulse: pulse.parameters['t_stop'].raw_value)
-                    last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
+                    last_pulse = max(
+                        relevant_pulses,
+                        key=lambda pulse: pulse.parameters['t_stop'].raw_value
+                    )
+                    if connect:
+                        last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
+                    else:
+                        pulse_copy.t_start = last_pulse.t_stop
 
             if pulse_copy.t_start is None:  # No relevant pulses found
                 pulse_copy.t_start = self.t_start
