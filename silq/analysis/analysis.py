@@ -1468,6 +1468,7 @@ def analyse_multi_state_readout(
         threshold_up_proportion:
         filtered_shots:
         labels:
+        flip_pairs:
 
     Returns:
 
@@ -1493,7 +1494,8 @@ def analyse_multi_state_readout(
             'No threshold up proportion could be determined. This probably means '
             'the system is out of tune (all up proportions are 1 or all are zero)'
         )
-        results['states'] = np.nan * np.ones(up_proportions_arrs.shape[1])
+        results['state_sequence'] = np.nan * np.ones(up_proportions_arrs.shape[1])
+        results['states'] = np.nan * np.ones(up_proportions_arrs.shape[0])
         results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
         if flip_pairs is not None:
             flip_pairs, flip_pairs_indices = parse_flip_pairs(
@@ -1507,18 +1509,18 @@ def analyse_multi_state_readout(
         return results
 
     if N_filtered_shots == 0:
-        results['states'] = states = np.nan * np.ones(up_proportions_arrs.shape[1])
+        results['state_sequence'] = np.nan * np.ones(up_proportions_arrs.shape[1])
+        results['states'] = np.nan * np.ones(up_proportions_arrs.shape[0])
         results['state_probabilities'] = np.nan * np.ones(up_proportions_arrs.shape[0])
     else:
         # Determine the state for each column
         # Each index is the corresponding state index for the given column
-        states = np.nanargmax(up_proportions_arrs, axis=0).astype(float)
+        state_sequence = np.nanargmax(up_proportions_arrs, axis=0).astype(float)
         # state is NaN if it cannot be uniquely determined, i.e. is filtered out
-        states[~filtered_shots] = np.nan
-        results["states"] = states
-        results["state_probabilities"] = [
-            sum((states == k)) / N_filtered_shots for k in range(num_states)
-        ]
+        state_sequence[~filtered_shots] = np.nan
+        results['state_sequence'] = state_sequence
+        results['states'] = np.array([sum((state_sequence == k)) for k in range(num_states)])
+        results["state_probabilities"] = results['states'] / N_filtered_shots
 
     # Determine flip probabilities
     if flip_pairs is not None:
@@ -1526,7 +1528,7 @@ def analyse_multi_state_readout(
             flip_pairs, labels=labels, num_states=num_states
         )
         flip_results = analyse_flips(
-            states=states,
+            states=results["state_sequence"],
             flip_pairs=flip_pairs_indices,
             all_filtered=threshold_results["all_filtered"]
         )
@@ -1571,6 +1573,7 @@ class AnalyseMultiStateReadout(Analysis):
         self.outputs.N_filtered_shots = Parameter(initial_value=False, set_cmd=None)
         self.outputs.filtered_shots = Parameter(initial_value=False, set_cmd=None)
         self.outputs.all_filtered = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.state_sequence = Parameter(initial_value=True, set_cmd=None)
         self.outputs.states = Parameter(initial_value=False, set_cmd=None)
         self.outputs.state_probabilities = Parameter(initial_value=False, set_cmd=None)
 
@@ -1595,7 +1598,7 @@ class AnalyseMultiStateReadout(Analysis):
         elif self.settings.flip_pairs == "all":
             flip_pairs = []
             for k, label1 in enumerate(self.labels):
-                for label2 in self.labels[k + 1 :]:
+                for label2 in self.labels[k + 1:]:
                     flip_pairs.append((label1, label2))
         else:
             flip_pairs = self.settings.flip_pairs
@@ -1768,7 +1771,7 @@ def analyse_flips_old(
         elif label_pairs == "full":
             label_pairs = []
             for k, label1 in enumerate(labels):
-                for label2 in labels[k + 1 :]:
+                for label2 in labels[k + 1:]:
                     label_pairs.append((label1, label2))
 
         for label1, label2 in label_pairs:
