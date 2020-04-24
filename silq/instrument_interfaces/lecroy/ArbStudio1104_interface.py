@@ -66,6 +66,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.pulse_implementations = [SinePulseImplementation(
             pulse_requirements=[('frequency', {'min': 1e2, 'max': 125e6})]),
+            MultiSinePulseImplementation(),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
             MarkerPulseImplementation(),
