@@ -229,6 +229,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         """
 
         self.primary_RF_pulses = []  # Clear primary RF pulses (first in each plunge)
+
         # Add pulses to pulse sequence
         for RF_pulses_single_stage in self.pulse_settings['RF_pulses']:
             # Each element should be the RF pulses to apply within a single
@@ -278,9 +279,10 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                         stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
                     )
             else:
-                stage_pulse.t_stop = (
-                    self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
-                )
+                duration = self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
+                if self.pulse_settings['min_duration'] is not None:
+                    duration = max(duration, self.pulse_settings['min_duration'])
+                stage_pulse.duration = duration
 
             if self.pulse_settings['read_pulse'] is not None:
                 self.add(self.pulse_settings['read_pulse'])
