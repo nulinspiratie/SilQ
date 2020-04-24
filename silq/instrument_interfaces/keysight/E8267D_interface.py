@@ -55,9 +55,6 @@ class E8267DInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
             ),
-            MultiSinePulseImplementation(
-                pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
-            ),
             FrequencyRampPulseImplementation(
                 pulse_requirements=[
                     ('frequency_start', {'min': 250e3, 'max': 44e9}),
@@ -472,7 +469,7 @@ class MultiSinePulseImplementation(PulseImplementation):
             raise ValueError('FM_mode should be IQ and '
                              'IQ_modulation should be ON for MultiSinePulses')
         else:
-            frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
+            frequencies_IQ = np.array(self.pulse.frequencies) - interface.frequency()
 
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
@@ -487,7 +484,7 @@ class MultiSinePulseImplementation(PulseImplementation):
             MultiSinePulse(name='sideband_Q',
                            t_start=self.pulse.t_start - interface.envelope_padding(),
                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
+                           frequency=frequencies_IQ,
                            phase=self.pulse.phase-90,
                            amplitude=1,
                            connection_requirements={
