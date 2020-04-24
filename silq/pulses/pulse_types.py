@@ -788,7 +788,7 @@ class MultiSinePulse(Pulse):
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
-        waveform = 0
+        waveform = 0.0
         for frequency in self.frequencies:
             waveform += amplitude * np.sin(2 * np.pi * (frequency * t + self.phase / 360))
         waveform += self.offset
