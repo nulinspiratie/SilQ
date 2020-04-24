@@ -209,7 +209,10 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
-        if frequency_sidebands or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
+        multiple_frequencies = getattr(pulse, 'frequencies', None)
+
+        if frequency_sidebands or (self.FM_mode() == 'IQ' and
+                                   ((min_frequency != max_frequency) or (multiple_frequencies is not None))):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
