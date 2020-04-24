@@ -147,7 +147,10 @@ class Pulse(ParameterNode):
         self.t_start = Parameter(initial_value=t_start,
                                  unit='s', set_cmd=None, wrap_get=False)
         self['t_start']._relative_value = t_start
-        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
+        self.duration = Parameter(
+            initial_value=duration, unit='s', set_cmd=None, wrap_get=False,
+            vals=vals.Numbers(min_value=0, allow_none=True)
+        )
         self.t_stop = Parameter(unit='s', wrap_get=False)
 
         # We separately set and get t_stop to ensure duration is also updated
