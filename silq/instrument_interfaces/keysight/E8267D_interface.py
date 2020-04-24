@@ -1,5 +1,6 @@
 from typing import List
 from time import sleep
+import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \

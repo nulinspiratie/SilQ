@@ -744,9 +744,10 @@ class MultiSinePulse(Pulse):
     def __repr__(self):
         properties_str = ''
         try:
-            properties_str = f'f_main={freq_to_str(self.frequency)}'
-            properties_str += f'f={[freq_to_str(freq) for freq in self.frequencies]}'
-            properties_str += f', phase={self.phase} deg '
+            properties_str = f'f_main={freq_to_str(self.frequency)}, f=['
+            for freq in self.frequencies:
+                properties_str += f'{freq_to_str(freq)},'
+            properties_str += f'], phase={self.phase} deg '
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
             if self.power is not None:
                 properties_str += f', power={self.power} dBm'
