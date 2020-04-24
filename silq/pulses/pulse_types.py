@@ -792,7 +792,8 @@ class MultiSinePulse(Pulse):
         for frequency in self.frequencies:
             waveform += amplitude * np.sin(2 * np.pi * (frequency * t + self.phase / 360))
         waveform += self.offset
-
+        # We need to insure the waveform is limited by +- 1V:
+        waveform = waveform/np.max(waveform)
         return waveform
 
 
