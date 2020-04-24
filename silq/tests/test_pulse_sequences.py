@@ -3,10 +3,12 @@ from copy import copy, deepcopy
 import pickle
 import numpy as np
 import random
+import itertools
 
 import silq
 from silq import DictConfig
-from silq.pulses import PulseSequence, DCPulse, TriggerPulse, Pulse
+from silq.pulses import PulseSequence, DCPulse, SinePulse, TriggerPulse, Pulse
+from silq.pulses.pulse_sequences import ElectronReadoutPulseSequence
 from silq.instrument_interfaces import Channel
 from silq.meta_instruments.layout import SingleConnection
 import qcodes as qc
@@ -1381,6 +1383,108 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         self.assertEqual(pulse_sequence.t_start, 0)
         self.assertEqual(pulse_sequence.duration, 3.4)
         self.assertEqual(pulse_sequence.t_stop, 3.4)
+
+
+class TestElectronReadoutPulseSequence(unittest.TestCase):
+    def setUp(self):
+        self.pulse_sequence = ElectronReadoutPulseSequence()
+        self.pulse_sequence.settings.RF_pulse = SinePulse('ESR', duration=1e-6)
+        self.pulse_sequence.settings.stage_pulse = DCPulse('plunge', duration=1e-3)
+        self.pulse_sequence.settings.read_pulse = DCPulse('read', duration=1e-3)
+
+        self.pulse_sequence.settings.pre_delay = 0.1e-3
+        self.pulse_sequence.settings.inter_delay = 0.2e-3
+        self.pulse_sequence.settings.post_delay = 0.3e-3
+
+    def test_pulse_sequence_generate(self):
+        self.pulse_sequence.generate()
+
+    def test_multi_RF_pulses(self):
+        pulse_sequence = self.pulse_sequence
+
+        possible_pulses = [
+            None,
+            [],
+            SinePulse('ESR', duration=1e-6),
+            [
+                SinePulse('ESR', duration=2e-6),
+                SinePulse('ESR', duration=3e-6)
+             ]
+        ]
+        for N_pulses in range(4):
+            for pulses in itertools.product(possible_pulses, repeat=N_pulses):
+                pulse_sequence.settings.RF_pulses = pulses
+                pulse_sequence.generate()
+
+                stage_pulses = pulse_sequence.get_pulses('plunge')
+                read_pulses = pulse_sequence.get_pulses('read')
+                ESR_pulses = iter(pulse_sequence.get_pulses('ESR'))
+
+                t = 0
+                for k in range(len(pulses)):
+                    stage_pulse = stage_pulses[k]
+                    read_pulse = read_pulses[k]
+                    RF_pulses = pulses[k]
+                    if RF_pulses is None:
+                        RF_pulses = []
+                    elif isinstance(RF_pulses, Pulse):
+                        RF_pulses = [RF_pulses]
+
+                    self.assertAlmostEqual(stage_pulse.t_start, t)
+
+                    t += pulse_sequence.settings.pre_delay
+
+                    for k, RF_pulse in enumerate(RF_pulses):
+                        ESR_pulse = next(ESR_pulses)
+                        self.assertAlmostEqual(ESR_pulse.duration, RF_pulse.duration)
+                        self.assertAlmostEqual(ESR_pulse.t_start, t)
+
+                        t += ESR_pulse.duration
+                        if k < len(RF_pulses) - 1:
+                            t += pulse_sequence.settings.inter_delay
+
+                    t += pulse_sequence.settings.post_delay
+
+                    self.assertAlmostEqual(stage_pulse.t_stop, t)
+                    self.assertAlmostEqual(read_pulse.t_start, t)
+
+                    self.assertAlmostEqual(
+                        read_pulse.duration,
+                        pulse_sequence.settings.read_pulse.duration
+                    )
+                    t += read_pulse.duration
+
+    def test_RF_pulseSequence(self):
+        pulse_sequence = self.pulse_sequence
+        RF_pulse_sequence = PulseSequence(
+            name='RF_subsequence',
+            pulses=[
+                SinePulse('sub_ESR', t_start=0.3e-3, duration=2e-3)
+            ]
+        )
+        RF_pulse_sequence.duration = 5e-3
+
+        pulse_sequence.settings.RF_pulses = [
+            SinePulse('ESR', duration=1.5e-3),
+            RF_pulse_sequence
+        ]
+
+        pulse_sequence.generate()
+
+        stage_pulses = pulse_sequence.get_pulses('plunge')
+        ESR_pulse = pulse_sequence.get_pulse('ESR')
+        sub_ESR_pulse = pulse_sequence.get_pulse('sub_ESR')
+
+        self.assertEqual(stage_pulses[0].t_start, 0)
+        self.assertEqual(ESR_pulse.t_start, 0.1e-3)
+        self.assertEqual(ESR_pulse.t_stop, 1.6e-3)
+        self.assertEqual(stage_pulses[0].t_stop, 1.9e-3)
+
+        self.assertEqual(stage_pulses[1].t_start, 2.9e-3)
+        self.assertEqual(sub_ESR_pulse.t_start, 3.2e-3)
+        self.assertEqual(sub_ESR_pulse.t_stop, 5.2e-3)
+        self.assertEqual(stage_pulses[1].t_stop, 7.9e-3)
+
 
 if __name__ == '__main__':
     unittest.main()
