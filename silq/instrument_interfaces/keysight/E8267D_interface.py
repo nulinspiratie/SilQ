@@ -3,7 +3,7 @@ from time import sleep
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
-    MultiSinePulse, FrequencyRampPulse, MarkerPulse, PulseImplementation
+    FrequencyRampPulse, MarkerPulse, PulseImplementation
 
 from qcodes.utils import validators as vals
 
@@ -446,48 +446,4 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                             connection_requirements={
                                 'input_instrument': interface.instrument_name(),
                                 'input_channel': interface.modulation_channel()})))
-        return additional_pulses
-
-
-class MultiSinePulseImplementation(PulseImplementation):
-    pulse_class = MultiSinePulse
-
-    def target_pulse(self, pulse, interface, **kwargs):
-        assert pulse.power is not None, "Pulse must have power defined"
-        return super().target_pulse(pulse, interface, **kwargs)
-
-    def get_additional_pulses(self, interface: InstrumentInterface):
-        # Add an envelope pulse
-        additional_pulses = [
-            MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
-                        amplitude=interface.marker_amplitude(),
-                        connection_requirements={
-                            'input_instrument': interface.instrument_name(),
-                            'input_channel': 'trig_in'})]
-
-        if (interface.IQ_modulation() == 'off') or (interface.FM_mode() == 'ramp'):
-            raise ValueError('FM_mode should be IQ and '
-                             'IQ_modulation should be ON for MultiSinePulses')
-        else:
-            frequencies_IQ = np.array(self.pulse.frequencies) - interface.frequency()
-
-        additional_pulses.extend([
-            MultiSinePulse(name='sideband_I',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
-                           amplitude=1,
-                           phase=self.pulse.phase,
-                           connection_requirements={
-                               'input_instrument': interface.instrument_name(),
-                               'input_channel': 'I'}),
-            MultiSinePulse(name='sideband_Q',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequency=frequencies_IQ,
-                           phase=self.pulse.phase-90,
-                           amplitude=1,
-                           connection_requirements={
-                               'input_instrument': interface.instrument_name(),
-                               'input_channel': 'Q'})])
         return additional_pulses
