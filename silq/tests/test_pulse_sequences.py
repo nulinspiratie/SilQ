@@ -341,6 +341,16 @@ class TestPulseSequence(unittest.TestCase):
         )
         self.assertEqual(pulse_sequence._last_pulse, plunge_pulse)
 
+    def test_add_pulse_explicit_t_start(self):
+        pulse_sequence = PulseSequence()
+        plunge_pulse, = pulse_sequence.add(DCPulse('plunge', duration=1))
+        sine_pulse, = pulse_sequence.add(SinePulse('sine', duration=0.5), connect=False)
+        self.assertEqual(sine_pulse.t_start, 1)
+        plunge_pulse.t_start  = 3
+        plunge_pulse.duration = 3
+        self.assertEqual(sine_pulse.t_start, 1)
+
+
 
 class TestPulseSequenceQuickAdd(unittest.TestCase):
     def test_quick_add_pulses(self):

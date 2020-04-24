@@ -133,10 +133,6 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
             'shots_per_frequency': 1
         })
 
-        # Primary ESR pulses, the first ESR pulse in each plunge.
-        # Used for assigning names during analysis
-        self.primary_RF_pulses = []
-
         self.frequencies = Parameter()
 
     @property
@@ -240,22 +236,36 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         for k, RF_subpulse in enumerate(RF_pulses_single_stage):
             if RF_subpulse is None:
                 continue
+            elif isinstance(RF_subpulse, Pulse):
+                # Add a plunge and read pulse for each frequency
+                RF_pulse, = self.add(RF_subpulse, connect=False)
+                t_connect(RF_pulse['t_start'])
 
-            # Add a plunge and read pulse for each frequency
-            RF_pulse, = self.add(RF_subpulse)
-            t_connect(RF_pulse['t_start'])
+                if k < len(RF_pulses_single_stage) - 1:
+                    # Determine delay between NMR pulses
+                    inter_delay = self.pulse_settings['inter_delay']
+                    if isinstance(inter_delay, Sequence):
+                        # inter_delay contains an element for each pulse
+                        inter_delay = inter_delay[k]
 
-            if k < len(RF_pulses_single_stage) - 1:
-                # Determine delay between NMR pulses
-                inter_delay = self.pulse_settings['inter_delay']
-                if isinstance(inter_delay, Sequence):
-                    # inter_delay contains an element for each pulse
-                    inter_delay = inter_delay[k]
+                    t_connect = partial(RF_pulse['t_stop'].connect, offset=inter_delay)
+                elif isinstance(RF_subpulse, PulseSequence):
+                    for pulse in RF_subpulse:
+                        RF_pulse, = self.add(RF_pulse, connect=False)
+                        t_connect(RF_pulse['t_start'], offset=pulse.t_start)
 
-                t_connect = partial(RF_pulse['t_stop'].connect, offset=inter_delay)
-
-            if not k:
-                self.primary_RF_pulses.append(RF_pulse)
+                    final_delay = RF_subpulse.duration - RF_pulse.t_stop
+                    inter_delay = self.pulse_settings['inter_delay']
+                    assert not isinstance(inter_delay, Sequence)
+                    t_connect = partial(
+                        RF_pulse['t_stop'].connect,
+                        offset=final_delay + inter_delay
+                    )
+                else:
+                    raise ValueError(
+                        f'Pulse {RF_subpulse} not understood. It must either be '
+                        f'a pulse or pulse sequence.'
+                    )
 
         if RF_pulse is not None:
             # Either connect stage_pulse.t_stop to the last RF_pulse, or
@@ -312,9 +322,6 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
               frequencies, in which case multiple pulses with the provided
               subfrequencies will be used.
         """
-
-        self.primary_RF_pulses = []  # Clear primary RF pulses (first in each plunge)
-
         # Add pulses to pulse sequence
         for RF_pulses_single_stage in self.pulse_settings['RF_pulses']:
 
