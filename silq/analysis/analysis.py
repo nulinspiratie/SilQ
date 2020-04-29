@@ -730,21 +730,21 @@ def analyse_threshold_up_proportion(up_proportions_arrs: np.ndarray,
     if len(peak_idxs) == 0:
         logger.debug(f'Adaptive thresholding routine: 0 peaks were '
                      f'found, using threshold 0.5')
-        true_idx = round((len(proportion_space) - 1) / 2)
+        trough_idx = (shots_per_frequency + 1) // 2
     elif len(peak_idxs) == 1:
         if (len(proportion_space) - peak_idxs[0]) / len(proportion_space) > 0.5:
-            true_slice = slice(*[peak_idxs[0], len(proportion_space)])
-            true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4)) + \
-                       peak_idxs[0]
+            trough_slice = slice(*[peak_idxs[0], len(proportion_space)])
+            trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4)) + \
+                         peak_idxs[0]
         else:
-            true_slice = slice(*[0, peak_idxs[0]])
-            true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4))
+            trough_slice = slice(*[0, peak_idxs[0]])
+            trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4))
     else:
-        true_slice = slice(*[min(peak_idxs), max(peak_idxs)])
-        true_idx = np.argmin(np.round(gaussian_up_proportions[true_slice], 4)) + \
-                   peak_idxs[0]
+        trough_slice = slice(*[min(peak_idxs), max(peak_idxs)])
+        trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4)) + \
+                     peak_idxs[0]
 
-    threshold_up_proportion = proportion_space[true_idx]
+    threshold_up_proportion = proportion_space[trough_idx]
 
     return threshold_up_proportion
 
