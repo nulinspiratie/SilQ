@@ -11,6 +11,8 @@ from silq import config
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
 from qcodes.utils.helpers import arreqclose_in_list
+from qcodes.instrument.parameter import Parameter
+from qcodes.instrument.parameter_node import parameter
 
 
 logger = logging.getLogger(__name__)
@@ -71,29 +73,41 @@ class ArbStudio1104Interface(InstrumentInterface):
             MarkerPulseImplementation(),
             TriggerPulseImplementation()]
 
-        self.add_parameter('trigger_in_duration',
-                           set_cmd=None,
-                           unit='s',
-                           initial_value=100e-9)
-        self.add_parameter('pulse_final_delay',
-                           set_cmd=None,
-                           unit='s', initial_value=1e-6,
-                           docstring='Final delay up to the end of pulses that '
-                                     'have full waveforms, to ensure that the '
-                                     'waveform is finished before the next '
-                                     'trigger arrives. This does not count for '
-                                     'pulses such as DCPulse, which only have '
-                                     'four points')
+        self.trigger_in_duration = Parameter(
+            set_cmd=None,
+            unit='s',
+            initial_value=100e-9,
+            docstring="Required duration of a trigger pulse, to be requested "
+                      "from the pulse that triggers the Arbstudio"
+        )
+        self.pulse_final_dela = Parameter(
+            set_cmd=None,
+            unit='s', initial_value=1e-6,
+            docstring='Final delay up to the end of pulses that '
+                      'have full waveforms, to ensure that the '
+                      'waveform is finished before the next '
+                      'trigger arrives. This does not count for '
+                      'pulses such as DCPulse, which only have '
+                      'four points'
+        )
 
-        self.add_parameter('active_channels', get_cmd=self._get_active_channels)
+        self.active_channels = Parameter()
 
-    def _get_active_channels(self) -> List[str]:
+        self.waveforms = {}
+        self.sequences = {}
+
+    @parameter
+    def active_channels_get(self) -> List[str]:
         """Get all active channels used in pulses"""
         active_channels = [pulse.connection.output['channel'].name for pulse in
                            self.pulse_sequence]
         # Transform into set to ensure that elements are unique
         return list({pulse.connection.output['channel'].name
                      for pulse in self.pulse_sequence})
+
+    @property
+    def active_channels_id(self):
+        return [self._channels[channel].id for channel in self.active_channels()]
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
@@ -191,40 +205,39 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         # Clear waveforms and sequences
         for ch in self._output_channels.values():
-            self.instrument._waveforms = [[] for k in range(4)]
-            exec(f'self.instrument.ch{ch.id}_sequence([])')
+            self.instrument._waveforms = [[] for _ in range(4)]
+            self.instrument.channels[f'ch{ch.id}'].sequence([])
 
         # Generate waveforms and sequences
         self.generate_waveforms_sequences()
 
         for ch in self.active_channels():
+            channel = self.instrument.channels[f'ch{ch}']
 
-            self.instrument.parameters[f'{ch}_trigger_source']('fp_trigger_in')
-            self.instrument.functions[f'{ch}_clear_waveforms']()
+            channel.trigger_source = 'fp_trigger_in'
+            channel.clear_waveforms()
 
-            if self.pulse_sequence.get_pulses(output_channel=ch,
-                                              pulse_class=SinePulse):
+            if self.pulse_sequence.get_pulses(
+                    output_channel=ch, pulse_class=SinePulse
+            ):
                 # TODO better check for when to use burst or stepped mode
-                self.instrument.parameters[f'{ch}_trigger_mode']('burst')
+                channel.trigger_mode = 'burst'
             else:
-                self.instrument.parameters[f'{ch}_trigger_mode']('stepped')
+                channel.trigger_mode = 'stepped'
 
             # Add waveforms to channel
             for waveform in self.waveforms[ch]:
-                self.instrument.functions[f'{ch}_add_waveform'](waveform)
+                channel.add_waveform(waveform)
 
             # Add sequence to channel
-            self.instrument.parameters[f'{ch}_sequence'](self.sequences[ch])
+            channel.sequence = self.sequences[ch]
 
-        active_channels_id = [self._channels[channel].id for channel in
-                              self.active_channels()]
-        self.instrument.load_waveforms(channels=active_channels_id)
-        self.instrument.load_sequence(channels=active_channels_id)
+        self.instrument.load_waveforms(channels=self.active_channels_id)
+        self.instrument.load_sequence(channels=self.active_channels_id)
 
     def start(self):
         """Start instrument"""
-        self.instrument.run(channels=[self._channels[channel].id for channel in
-                                      self.active_channels()])
+        self.instrument.run(channels=self.active_channels_id)
 
     def stop(self):
         """Stop instrument"""
@@ -239,10 +252,14 @@ class ArbStudio1104Interface(InstrumentInterface):
         Returns:
             Trigger pulse with specified start time
         """
-        trigger_pulse = TriggerPulse(t_start=t,
+        trigger_pulse = TriggerPulse(
+            t_start=t,
             duration=self.trigger_in_duration(),
-            connection_requirements={'input_instrument': self.instrument_name(),
-                'trigger': True})
+            connection_requirements={
+                'input_instrument': self.instrument_name(),
+                'trigger': True
+            }
+        )
         return trigger_pulse
 
     def generate_waveforms_sequences(self) -> List:
@@ -254,8 +271,10 @@ class ArbStudio1104Interface(InstrumentInterface):
             List of waveforms
         """
         # Determine sampling rates
-        sampling_rates = {ch: 250e6 / self.instrument.parameters[
-            ch + '_sampling_rate_prescaler']() for ch in self.active_channels()}
+        sampling_rates = {
+            ch: 250e6 / self.channels[ch].sampling_rate_prescaler()
+            for ch in self.active_channels()
+        }
 
         # Set time t_pulse to zero for each channel
         # This will increase as we iterate over pulses, and is used to ensure
@@ -265,20 +284,21 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
         for pulse in self.pulse_sequence:
-
             # For each channel, obtain list of waverforms, and the sequence
             # in which to perform the waveforms
-            channels_waveforms, channels_sequence = \
-                pulse.implementation.implement(
-                    sampling_rates=sampling_rates,
-                    input_pulse_sequence=self.input_pulse_sequence)
+            channels_waveforms, channels_sequence = pulse.implementation.implement(
+                sampling_rates=sampling_rates,
+                input_pulse_sequence=self.input_pulse_sequence
+            )
 
             for ch in channels_waveforms:
                 # Ensure that the start of this pulse corresponds to the end of
                 # the previous pulse for each channel
-                assert abs(pulse.t_start - t_pulse[
-                    ch]) < 1e-11, f"Pulse {pulse}: pulses.t_start = " \
-                                  f"{pulse.t_start} does not match {t_pulse[ch]}"
+                if abs(pulse.t_start - t_pulse[ch]) > 1e-11:
+                    raise ValueError(
+                        f"Pulse {pulse}: pulses.t_start = {pulse.t_start} "
+                        f"does not match {t_pulse[ch]}"
+                    )
 
                 channel_waveforms = channels_waveforms[ch]
                 channel_sequence = channels_sequence[ch]
