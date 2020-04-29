@@ -254,7 +254,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                     RF_pulse, = self.add(pulse, connect=False)
                     t_connect(RF_pulse['t_start'], offset=pulse.t_start)
 
-                final_delay = RF_subpulse.duration - RF_pulse.t_stop
+                final_delay = RF_subpulse.duration - pulse.t_stop
                 inter_delay = self.pulse_settings['inter_delay']
                 assert not isinstance(inter_delay, Sequence)
                 t_connect = partial(
