@@ -815,7 +815,7 @@ class MultiSinePulse(Pulse):
             waveform += amp * np.sin(2 * np.pi * (freq * t + self.phase / 360))
         waveform += self.offset
         # We need to insure the waveform is limited by +- 1V:
-        waveform = waveform/sum(amplitudes)
+        waveform = waveform/len(self.frequencies)
         return waveform
 
 
