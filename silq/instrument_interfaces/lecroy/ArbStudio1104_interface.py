@@ -80,7 +80,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             docstring="Required duration of a trigger pulse, to be requested "
                       "from the pulse that triggers the Arbstudio"
         )
-        self.pulse_final_dela = Parameter(
+        self.pulse_final_delay = Parameter(
             set_cmd=None,
             unit='s', initial_value=1e-6,
             docstring='Final delay up to the end of pulses that '
@@ -89,6 +89,12 @@ class ArbStudio1104Interface(InstrumentInterface):
                       'trigger arrives. This does not count for '
                       'pulses such as DCPulse, which only have '
                       'four points'
+        )
+        self.force_upload_waveform = Parameter(
+            set_cmd=None,
+            initial_value=False,
+            docstring="Upload waveforms during setup even if they are identical "
+                      "to the already uploaded waveforms"
         )
 
         self.active_channels = Parameter()
@@ -215,7 +221,6 @@ class ArbStudio1104Interface(InstrumentInterface):
             channel = self.instrument.channels[f'ch{ch}']
 
             channel.trigger_source = 'fp_trigger_in'
-            channel.clear_waveforms()
 
             if self.pulse_sequence.get_pulses(
                     output_channel=ch, pulse_class=SinePulse
@@ -225,15 +230,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             else:
                 channel.trigger_mode = 'stepped'
 
-            # Add waveforms to channel
-            for waveform in self.waveforms[ch]:
-                channel.add_waveform(waveform)
-
-            # Add sequence to channel
-            channel.sequence = self.sequences[ch]
-
-        self.instrument.load_waveforms(channels=self.active_channels_id)
-        self.instrument.load_sequence(channels=self.active_channels_id)
+        self.load_waveforms_sequences()
 
     def start(self):
         """Start instrument"""
@@ -262,13 +259,11 @@ class ArbStudio1104Interface(InstrumentInterface):
         )
         return trigger_pulse
 
-    def generate_waveforms_sequences(self) -> List:
-        """Generate waveforms and sequence
+    def generate_waveforms_sequences(self):
+        """Generate waveforms and sequence from pulse sequence
 
         Updates self.waveforms and self.sequence.
-
-        Returns:
-            List of waveforms
+        The waveforms aren't actually uploaded yet
         """
         # Determine sampling rates
         sampling_rates = {
@@ -332,7 +327,39 @@ class ArbStudio1104Interface(InstrumentInterface):
             assert abs(t_pulse[ch] - self.pulse_sequence.duration) < 1e-11, \
                 f"Final pulse of channel {ch} ends at {t_pulse[ch]} " \
                 f"instead of {self.pulse_sequence.duration}"
-        return self.waveforms
+
+    def load_waveforms_sequences(self):
+        for ch in self.active_channels():
+            channel = self.instrument.channels[f'ch{ch}']
+
+            if not self.force_upload_waveform():
+                # Check if all waveforms already exist on the arbstudio channel.
+                # If so, do not upload waveforms
+                channel_idxs = [
+                    arreqclose_in_list(wf, channel.waveforms, rtol=1e-4, atol=1e-5)
+                    for wf in self.waveforms[ch]
+                ]
+
+                if None not in channel_idxs:
+                    # All waveforms are already uploaded, skip uploading waveforms
+                    self.waveforms[ch] = channel.waveforms
+                    # Remap sequences to existing waveforms
+                    self.sequences[ch] = [
+                        channel_idxs[sequence_idx]
+                        for sequence_idx in self.sequences[sequence_idx]
+                    ]
+                    upload_waveforms = False
+                else:
+                    upload_waveforms = True
+
+            if upload_waveforms:
+                for waveform in self.waveforms[ch]:
+                    channel.add_waveform(waveform)
+                self.instrument.load_waveforms(channels=self.active_channels_id)
+
+            # Add sequence to channel
+            channel.sequence = self.sequences[ch]
+            self.instrument.load_sequence(channels=self.active_channels_id)
 
 
 class SinePulseImplementation(PulseImplementation):
