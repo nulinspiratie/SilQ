@@ -699,7 +699,9 @@ class MultiSinePulse(Pulse):
                  frequencies: List[float] = None,
                  phase: float = None,
                  amplitude: float = None,
+                 amplitudes: List[float] = None,
                  power: float = None,
+                 powers: List[float] = None,
                  offset: float = None,
                  frequency_sideband: float = None,
                  sideband_mode: float = None,
@@ -716,8 +718,12 @@ class MultiSinePulse(Pulse):
                                vals=vals.Numbers())
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
+        self.powers = Parameter(initial_value=powers, unit='dBm', set_cmd=None,
+                                vals=vals.Lists())
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
                                    set_cmd=None, vals=vals.Numbers())
+        self.amplitudes = Parameter(initial_value=amplitude, unit='V',
+                                    set_cmd=None, vals=vals.Lists())
         self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
                                 vals=vals.Numbers())
         self.frequency_sideband = Parameter(initial_value=frequency_sideband,
@@ -729,8 +735,9 @@ class MultiSinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'frequencies', 'phase', 'power', 'amplitude', 'phase',
-             'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
+            ['frequency', 'frequencies', 'phase', 'power', 'powers', 'amplitude',
+             'amplitudes', 'phase', 'offset', 'frequency_sideband', 'sideband_mode',
+             'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
@@ -748,14 +755,18 @@ class MultiSinePulse(Pulse):
             properties_str += f', f={self.frequencies} Hz'
             properties_str += f', phase={self.phase} deg '
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+
             if self.power is not None:
-                properties_str += f', power={self.power} dBm'
-
+                properties_str += f', power_LO={self.power} dBm'
+            if self.powers is not None:
+                properties_str += f', powers={self.powers} dBm'
             if self.amplitude is not None:
-                properties_str += f', A={self.amplitude} V'
-
+                properties_str += f', A_LO={self.amplitude} V'
+            if self.amplitudes is not None:
+                properties_str += f', A={self.amplitudes} V'
             if self.offset:
                 properties_str += f', offset={self.offset} V'
+
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
                                   f'{self.sideband_mode}'
@@ -783,14 +794,25 @@ class MultiSinePulse(Pulse):
 
         amplitude = self.amplitude
         if amplitude is None:
-            assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
+            assert self.power is not None, f'Pulse {self.name} does not have ' \
+                                           f'a specified power_LO or amplitude_LO.'
             if self['power'].unit == 'dBm':
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
+
+        amplitudes = self.amplitudes
+        if amplitudes is None:
+            assert self.powers is not None, f'Pulse {self.name} does not have ' \
+                                            f'specified powers or amplitudes.'
+            if self['powers'].unit == 'dBm':
+                # This formula assumes the source is 50 Ohm matched and power is in dBm
+                # A factor of 2 comes from the conversion from amplitude to RMS.
+                amplitudes = np.sqrt(10**(np.array(self.powers)/10) * 1e-3 * 100)
+
         waveform = 0.0
-        for frequency in self.frequencies:
-            waveform += amplitude * np.sin(2 * np.pi * (frequency * t + self.phase / 360))
+        for amp, freq in zip(amplitudes, self.frequencies):
+            waveform += amp * np.sin(2 * np.pi * (freq * t + self.phase / 360))
         waveform += self.offset
         # We need to insure the waveform is limited by +- 1V:
         waveform = waveform/len(self.frequencies)

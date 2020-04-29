@@ -477,24 +477,46 @@ class MultiSinePulseImplementation(PulseImplementation):
                              'IQ_modulation should be ON for MultiSinePulses')
         else:
             frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
+            amplitudes_IQ = self.pulse.amplitudes
 
-        additional_pulses.extend([
-            MultiSinePulse(name='sideband_I',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
-                           amplitude=1,
-                           phase=self.pulse.phase,
-                           connection_requirements={
-                               'input_instrument': interface.instrument_name(),
-                               'input_channel': 'I'}),
-            MultiSinePulse(name='sideband_Q',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
-                           phase=self.pulse.phase-90,
-                           amplitude=1,
-                           connection_requirements={
+        if amplitudes_IQ is None:
+            additional_pulses.extend([
+                MultiSinePulse(name='sideband_I',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               powers=self.pulse.powers,
+                               phase=self.pulse.phase,
+                               connection_requirements={
+                                   'input_instrument': interface.instrument_name(),
+                                   'input_channel': 'I'}),
+                MultiSinePulse(name='sideband_Q',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               phase=self.pulse.phase-90,
+                               powers=self.pulse.powers,
+                               connection_requirements={
                                'input_instrument': interface.instrument_name(),
                                'input_channel': 'Q'})])
+        else:
+            additional_pulses.extend([
+                MultiSinePulse(name='sideband_I',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               amplitudes=amplitudes_IQ,
+                               phase=self.pulse.phase,
+                               connection_requirements={
+                                   'input_instrument': interface.instrument_name(),
+                                   'input_channel': 'I'}),
+                MultiSinePulse(name='sideband_Q',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               phase=self.pulse.phase - 90,
+                               amplitudes=amplitudes_IQ,
+                               connection_requirements={
+                                   'input_instrument': interface.instrument_name(),
+                                   'input_channel': 'Q'})])
         return additional_pulses
