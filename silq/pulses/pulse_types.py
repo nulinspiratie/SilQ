@@ -722,7 +722,7 @@ class MultiSinePulse(Pulse):
                                 vals=vals.Lists())
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
                                    set_cmd=None, vals=vals.Numbers())
-        self.amplitudes = Parameter(initial_value=amplitude, unit='V',
+        self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
                                     set_cmd=None, vals=vals.Lists())
         self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
                                 vals=vals.Numbers())
